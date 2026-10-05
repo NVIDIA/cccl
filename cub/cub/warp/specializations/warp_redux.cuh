@@ -23,7 +23,8 @@
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/__functional/operator_properties.h>
-#include <cuda/std/__floating_point/cast.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__floating_point/cast.h>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
@@ -47,11 +48,11 @@ inline constexpr bool is_warp_redux_op_supported_sm80 =
       || is_cuda_std_bitwise_v<ReduceOp, T>);
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
-inline constexpr bool is_warp_redux_bitwise_large_supported =
+inline constexpr bool is_warp_redux_bitwise_large_int_supported =
   ::cuda::std::__cccl_is_integer_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_bitwise_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
-inline constexpr bool is_warp_redux_min_max_large_supported =
+inline constexpr bool is_warp_redux_min_max_large_int_supported =
   ::cuda::std::__cccl_is_integer_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_minimum_maximum_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
@@ -65,18 +66,22 @@ inline constexpr bool is_warp_redux_plus_128bit_supported =
   && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
-inline constexpr bool is_warp_redux_min_max_f32_supported =
-  __cccl_ptx_isa >= 860 && (::cuda::std::is_same_v<T, float> || is_half_v<T> || is_bfloat16_v<T>)
-  && is_cuda_minimum_maximum_v<ReduceOp, T>;
+inline constexpr bool is_warp_redux_min_max_floating_point_supported =
+  is_floating_point_comparable_v<T> && is_cuda_minimum_maximum_v<ReduceOp, T>;
+
+// redux.sync.{min,max}.f32
+template <typename T>
+inline constexpr bool is_warp_redux_min_max_f32_hw_supported =
+  __cccl_ptx_isa >= 860 && (::cuda::std::is_same_v<T, float> || is_half_v<T> || is_bfloat16_v<T>);
 
 template <typename Op, typename T>
 inline constexpr bool is_warp_redux_op_supported =
   is_warp_redux_op_supported_sm80<Op, T> //
   || is_warp_redux_plus_64bit_supported<Op, T> //
   || is_warp_redux_plus_128bit_supported<Op, T> //
-  || is_warp_redux_bitwise_large_supported<Op, T> //
-  || is_warp_redux_min_max_large_supported<Op, T> //
-  || is_warp_redux_min_max_f32_supported<Op, T>;
+  || is_warp_redux_bitwise_large_int_supported<Op, T> //
+  || is_warp_redux_min_max_large_int_supported<Op, T> //
+  || is_warp_redux_min_max_floating_point_supported<Op, T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 Redux
@@ -206,7 +211,7 @@ template <typename T, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 warp_redux_bitwise_large(const T input, const ::cuda::std::uint32_t mask, ReductionOp reduction_op)
 {
-  static_assert(is_warp_redux_bitwise_large_supported<ReductionOp, T>, "Reduction operator not supported");
+  static_assert(is_warp_redux_bitwise_large_int_supported<ReductionOp, T>, "Reduction operator not supported");
   using unsigned_t          = ::cuda::std::make_unsigned_t<T>; // avoid signed shift UB
   constexpr int chunk_bits  = 32; // 32 bits
   constexpr int num_chunks  = sizeof(T) / sizeof(unsigned);
@@ -229,7 +234,7 @@ template <typename T, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE T
 warp_redux_min_max_large(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
-  static_assert(is_warp_redux_min_max_large_supported<ReductionOp, T>, "Reduction operator not supported");
+  static_assert(is_warp_redux_min_max_large_int_supported<ReductionOp, T>, "Reduction operator not supported");
   using top_word_t              = ::cuda::std::conditional_t<::cuda::std::is_signed_v<T>, int, unsigned>;
   using generalized_op_t        = generalize_operator_t<ReductionOp>; // map minimum<int64_t> to minimum<>
   constexpr auto generalized_op = generalized_op_t{};
@@ -285,7 +290,9 @@ template <typename T, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE_API
 _CCCL_FORCEINLINE T warp_redux_min_max_f32(const T input, const ::cuda::std::uint32_t mask, ReductionOp)
 {
-  static_assert(is_warp_redux_min_max_f32_supported<ReductionOp, T>, "Reduction operator not supported");
+  static_assert(is_warp_redux_min_max_floating_point_supported<ReductionOp, T> //
+                  && is_warp_redux_min_max_f32_hw_supported<T>,
+                "Reduction operator not supported");
   _CCCL_ASSERT(mask != 0, "Mask must not be 0");
 
   const float value = ::cuda::std::__fp_cast<float>(input);
@@ -323,22 +330,38 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_plus_128bit(input, mask, reduction_op);))
   }
-  else if constexpr (is_warp_redux_bitwise_large_supported<ReductionOp, T>)
+  else if constexpr (is_warp_redux_bitwise_large_int_supported<ReductionOp, T>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_bitwise_large(input, mask, reduction_op);))
   }
-  else if constexpr (is_warp_redux_min_max_large_supported<ReductionOp, T>)
+  else if constexpr (is_warp_redux_min_max_large_int_supported<ReductionOp, T>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return cub::detail::warp_redux_min_max_large(input, mask, reduction_op);))
   }
-  else if constexpr (is_warp_redux_min_max_f32_supported<ReductionOp, T>)
+  else if constexpr (is_warp_redux_min_max_floating_point_supported<ReductionOp, T>)
   {
-    // Before PTX ISA 8.8, float reductions are only supported on sm100a.
-#if __cccl_ptx_isa >= 880
-    NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return cub::detail::warp_redux_min_max_f32(input, mask, reduction_op);))
-#else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
-    NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::warp_redux_min_max_f32(input, mask, reduction_op);))
-#endif // ^^^ __cccl_ptx_isa < 880 ^^^
+#if __cccl_ptx_isa >= 860
+    if constexpr (is_warp_redux_min_max_f32_hw_supported<T>)
+    {
+      // Before PTX ISA 8.8, float reductions are only supported on sm100a.
+#  if __cccl_ptx_isa >= 880
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100f, (return cub::detail::warp_redux_min_max_f32(input, mask, reduction_op);))
+#  else // ^^^ __cccl_ptx_isa >= 880 ^^^ / vvv __cccl_ptx_isa < 880 vvv
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::warp_redux_min_max_f32(input, mask, reduction_op);))
+#  endif // ^^^ __cccl_ptx_isa < 880 ^^^
+    }
+#endif // __cccl_ptx_isa >= 860
+
+    // maps floating-point values to signed integers that preserve their ordering
+    using generalized_op_t = generalize_operator_t<ReductionOp>; // map minimum<float> to minimum<>
+    const auto input_int   = cub::detail::floating_point_to_comparable_int(input);
+    // the NaN mapping is derived from the identity element of the reduction operator
+    constexpr auto nan_int = ::cuda::identity_element<generalized_op_t, decltype(input_int)>();
+    const auto input_int1  = ::cuda::std::isnan(input) ? nan_int : input_int;
+    if (const auto output = cub::detail::warp_redux(input_int1, mask, generalized_op_t{}))
+    {
+      return cub::detail::comparable_int_to_floating_point<T>(*output); // IWYU pragma: keep
+    }
   }
   return ::cuda::std::nullopt;
 }
