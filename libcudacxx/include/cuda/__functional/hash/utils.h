@@ -22,8 +22,10 @@
 #endif // no system header
 
 #include <cuda/__memory/is_aligned.h>
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
+#include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,29 +44,20 @@ template <typename _Tp, typename _Extent>
 
   const auto __ptr = __bytes + __index * sizeof(_Tp);
 
-  _Tp __chunk;
-  if constexpr (alignof(_Tp) == 8)
+  if (::cuda::is_aligned(__ptr, alignof(_Tp)))
   {
-    if (::cuda::is_aligned(__ptr, 8))
-    {
-      ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
-      return __chunk;
-    }
+    _Tp __chunk;
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<alignof(_Tp)>(__ptr), sizeof(_Tp));
+    return __chunk;
   }
 
-  if (::cuda::is_aligned(__ptr, 4))
+  // Keep the unaligned path separate so alignment assumptions cannot be propagated to its loads.
+  ::cuda::std::array<::cuda::std::byte, sizeof(_Tp)> __bytes_copy;
+  for (::cuda::std::size_t __i = 0; __i < sizeof(_Tp); ++__i)
   {
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<4>(__ptr), sizeof(_Tp));
+    __bytes_copy[__i] = __ptr[__i];
   }
-  else if (::cuda::is_aligned(__ptr, 2))
-  {
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<2>(__ptr), sizeof(_Tp));
-  }
-  else
-  {
-    ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
-  }
-  return __chunk;
+  return ::cuda::std::bit_cast<_Tp>(__bytes_copy);
 }
 
 //! @brief Type erased holder of all the bytes
