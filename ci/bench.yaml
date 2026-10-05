@@ -33,6 +33,7 @@ benchmarks:
   filters:
     # CUB C++ benchmark filters (regex matched against ninja target names).
     cub:
+      - '^cub\.bench\.segmented_topk\.variable\.(keys|indexed)\.cluster\.base$'
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
@@ -45,6 +46,8 @@ benchmarks:
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
+    - "h100"       # sm_90
+    - "rtxpro6000" # sm_120
     # - "t4"         # sm_75, 16 GB
     # - "rtx2080"    # sm_75,  8 GB
     # - "rtxa6000"   # sm_86, 48 GB
