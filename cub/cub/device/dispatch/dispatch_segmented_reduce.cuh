@@ -533,10 +533,10 @@ struct DeviceAdaptiveSegmentedReduceKernelSource
       ReductionOpT,
       InitValueT>)
 
-  static constexpr int FillItemsPerThread =
+  static constexpr int InitItemsPerThread =
     adaptive_segmented_reduce_default_policy_selector{}(::cuda::compute_capability{}).items_per_thread;
 
-  CUB_DEFINE_KERNEL_GETTER(FillKernel, AdaptiveSegmentedReduceFillKernel<T, FillItemsPerThread>)
+  CUB_DEFINE_KERNEL_GETTER(InitKernel, AdaptiveSegmentedReduceInitKernel<T, InitItemsPerThread>)
 };
 
 template <class AdaptiveKernelSource,
@@ -584,12 +584,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_adaptive_segmented_red
   // 1) Empty segments not visited by the kernel; and
   // 2) Segments shared across threads, which will use an atomic.
   constexpr int V              = 16 / sizeof(T);
-  constexpr int ItemsPerThread = KernelSource::FillItemsPerThread;
-  const int fill_grid =
+  constexpr int ItemsPerThread = KernelSource::InitItemsPerThread;
+  const int init_grid =
     ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_segments, THREADS * ItemsPerThread * V)));
   if (const auto error = CubDebug(
-        launcher_factory(static_cast<::cuda::std::uint32_t>(fill_grid), THREADS, 0, stream)
-          .doit(KernelSource::FillKernel(), static_cast<T*>(d_out), num_segments, static_cast<T>(init))))
+        launcher_factory(static_cast<::cuda::std::uint32_t>(init_grid), THREADS, 0, stream)
+          .doit(KernelSource::InitKernel(), static_cast<T*>(d_out), num_segments, static_cast<T>(init))))
   {
     return error;
   }
@@ -599,7 +599,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_adaptive_segmented_red
     return error;
   }
 
-  // Launch the reduction as a PDL-dependent kernel to overlap with the fill.
+  // Launch the reduction as a PDL-dependent kernel to overlap with the init.
   if (const auto error = CubDebug(
         launcher_factory(static_cast<::cuda::std::uint32_t>(grid), THREADS, 0, stream, /*dependent_launch=*/true)
           .doit(
@@ -712,7 +712,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   {
     // Force NVCC to register adaptive kernel symbols at dispatch() instantiation time.
     [[maybe_unused]] auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
-    [[maybe_unused]] auto _adaptive_fill_kern   = AdaptiveKernelSource::FillKernel();
+    [[maybe_unused]] auto _adaptive_init_kern   = AdaptiveKernelSource::InitKernel();
 
     NV_IF_TARGET(
       NV_IS_HOST,

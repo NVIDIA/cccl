@@ -505,7 +505,7 @@ struct adaptive_segmented_reduce_default_policy_selector
 /// Seeds d_out[0..n) with val. Used as the PDL primary before the adaptive reduce.
 /// Issues ItemsPerThread × 16-byte vector stores to maximise bytes in flight.
 template <typename T, int ItemsPerThread>
-_CCCL_KERNEL_ATTRIBUTES void AdaptiveSegmentedReduceFillKernel(T* d_out, int n, T val)
+_CCCL_KERNEL_ATTRIBUTES void AdaptiveSegmentedReduceInitKernel(T* d_out, int n, T val)
 {
   constexpr int V = 16 / sizeof(T);
   using VecT      = typename ::cuda::vector_type<T, V>::type;
