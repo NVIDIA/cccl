@@ -108,6 +108,7 @@ _CCCL_API constexpr void __fill_layout_right_strides(const _Extents& __ext, _Str
   }
 }
 
+// NOLINTBEGIN(bugprone-branch-clone)
 template <class _Extents, class _StrideArray>
 _CCCL_API constexpr void __sort_ranks_by_stride(
   const _Extents& __ext,
@@ -139,9 +140,11 @@ _CCCL_API constexpr void __sort_ranks_by_stride(
     }
   }
 }
+// NOLINTEND(bugprone-branch-clone)
 
 // True when some permutation P of ranks satisfies
 // stride(P(i)) >= stride(P(i-1)) * extent(P(i-1)). Empty mappings are unique.
+// NOLINTBEGIN(bugprone-branch-clone)
 template <class _Extents, class _StrideArray>
 [[nodiscard]] _CCCL_API constexpr bool
 __is_unique_strided_mapping(const _Extents& __ext, const _StrideArray& __strides) noexcept
@@ -185,6 +188,7 @@ __is_unique_strided_mapping(const _Extents& __ext, const _StrideArray& __strides
     return true;
   }
 }
+// NOLINTEND(bugprone-branch-clone)
 } // namespace __mdspan_detail
 
 namespace __layout_stride_detail
@@ -270,6 +274,7 @@ private:
     }
   }
 
+  // NOLINTBEGIN(bugprone-branch-clone)
   template <class _OtherIndexType>
   [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(
     const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
@@ -294,6 +299,7 @@ private:
       return !::cuda::std::__mdspan_detail::__strided_required_span_size(__ext, __strides).overflow;
     }
   }
+  // NOLINTEND(bugprone-branch-clone)
 
   // compute offset of a strided layout mapping
   template <class _StridedMapping, size_t... _Pos>
