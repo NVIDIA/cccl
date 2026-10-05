@@ -1021,12 +1021,17 @@ struct split_t
   {
     using operation_state_concept = operation_state_t;
     using values_t                = typename sndr_t<Sndr>::values_t;
+    // Keep the ready handle and its cleanup alive until this operation dies.
+    // Declared first so it is destroyed after the receiver and shared state.
+    ::std::shared_ptr<typename sndr_t<Sndr>::control> control_;
     Rcvr rcvr_;
     ::std::shared_ptr<shared_base<values_t>> state_;
 
     _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_HOST_DEVICE opstate_t(Rcvr r, ::std::shared_ptr<shared_base<values_t>> st)
-        : rcvr_{static_cast<Rcvr&&>(r)}
+    _CCCL_HOST_DEVICE opstate_t(
+      Rcvr r, ::std::shared_ptr<shared_base<values_t>> st, ::std::shared_ptr<typename sndr_t<Sndr>::control> ctl)
+        : control_{::std::move(ctl)}
+        , rcvr_{static_cast<Rcvr&&>(r)}
         , state_{::std::move(st)}
     {
       this->complete_ = [](waiter* w) {
@@ -1199,7 +1204,7 @@ struct split_t
         impl->handle_ = &ctl_->handle_;
         ctl_->impl_   = impl;
       }
-      return {static_cast<Rcvr&&>(r), ctl_->impl_};
+      return {static_cast<Rcvr&&>(r), ctl_->impl_, ctl_};
     }
     _CCCL_EXEC_CHECK_DISABLE
     [[nodiscard]] _CCCL_HOST_DEVICE auto get_env() const noexcept -> attrs_t<Sndr>
