@@ -115,8 +115,25 @@ template <class _Tp>
     using ::cuda::std::uint32_t;
     using ::cuda::std::uint64_t;
 
+    if constexpr (sizeof(_Tp) < sizeof(uint16_t))
+    {
+      uint32_t __result;
+      asm("mul.wide.u16 %0, %1, %2;" : "=r"(__result) : "h"(uint16_t{__lhs}), "h"(uint16_t{__rhs}));
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
+    {
+      uint32_t __result;
+      asm("mul.wide.u16 %0, %1, %2;" : "=r"(__result) : "h"(__lhs), "h"(__rhs));
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+    else if constexpr (sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t))
+    {
+      // Compiler already generates optimal PTX code
+      return {__lhs * __rhs, ::cuda::mul_hi(__lhs, __rhs) != 0};
+    }
 #  if _CCCL_HAS_INT128()
-    if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
     {
       // Registers only go up to 64-bit; need to handle
       // multiplying 128-bit words in stages:
@@ -350,10 +367,13 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
     const auto __product = static_cast<_CommonAll>(__lhs1 * __rhs1);
     return ::cuda::overflow_cast<_ActResult>(__product);
   }
+
   // * int x int -> int
   // perf:
   //   - int8/int16
   //     > No change (https://godbolt.org/z/o4ecTz1rY)
+  //   - int32/int64
+  //     > No change (uses mul_overflow_generic_impl)
   //   - int128
   //     > 107 to 99 SASS instructions (https://godbolt.org/z/Mj8Me48W1)
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActResult>) // all signed
@@ -361,6 +381,29 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
     using _Sp            = __make_nbit_int_t<__num_bits_v<_CommonAll>>;
     const auto __lhs1    = static_cast<_Sp>(__lhs);
     const auto __rhs1    = static_cast<_Sp>(__rhs);
+    const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
+    const auto __ret     = ::cuda::overflow_cast<_ActResult>(__product.value);
+    return overflow_result<_ActResult>{__ret.value, __ret.overflow || __product.overflow};
+  }
+  // Positive inputs
+  // * unsigned x unsigned (compile-time)
+  // perf:
+  //   - uint8
+  //     > 27 to 19 SASS instructions (https://godbolt.org/z/Ma1sMW17G)
+  //   - uint16
+  //     > No change (replaced 4 SASS instructions with noop) (https://godbolt.org/z/8h4n6fr3E)
+  //   - uint32/uint64
+  //     > No change (https://godbolt.org/z/hW9K6K7j8)
+  //   - uint128
+  //     > 67 to 59 SASS instructions (https://godbolt.org/z/ndbvWocWz)
+  // * unsigned x int >= 0 (compile-time + run-time check)
+  // * int >= 0 x unsigned (compile-time + run-time check)
+  // * int >= 0 x int >= 0 -> _ActResult=unsigned (_ActResult=signed already handled above) (run-time check)
+  else if (__is_lhs_ge_zero && __is_rhs_ge_zero)
+  {
+    using _Up            = __make_nbit_uint_t<__num_bits_v<_CommonAll>>;
+    const auto __lhs1    = static_cast<_Up>(__lhs);
+    const auto __rhs1    = static_cast<_Up>(__rhs);
     const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
     const auto __ret     = ::cuda::overflow_cast<_ActResult>(__product.value);
     return overflow_result<_ActResult>{__ret.value, __ret.overflow || __product.overflow};
