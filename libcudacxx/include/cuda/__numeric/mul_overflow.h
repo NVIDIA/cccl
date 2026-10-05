@@ -110,7 +110,86 @@ template <class _Tp>
 template <class _Tp>
 [[nodiscard]] _CCCL_DEVICE_API overflow_result<_Tp> __mul_overflow_device(_Tp __lhs, _Tp __rhs) noexcept
 {
-  return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
+  if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+  {
+    using ::cuda::std::uint32_t;
+    using ::cuda::std::uint64_t;
+
+#  if _CCCL_HAS_INT128()
+    if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+    {
+      // Registers only go up to 64-bit; need to handle
+      // multiplying 128-bit words in stages:
+      //
+      // a * b = (a1·2^64 + a0) * (b1·2^64 + b0)
+      //       = a1·b1·2^128 + a1·b0·2^64 + a0·b1·2^64 + a0·b0
+      //
+      //   __r3    |    __r2    |    __r1    |    __r0
+      //           |            |  hi(a0*b0) |  lo(a0*b0)
+      //           |  hi(a0*b1) |  lo(a0*b1) |
+      //           |  hi(a1*b0) |  lo(a1*b0) |
+      // hi(a1*b1) |  lo(a1*b1) |            |
+
+      const uint64_t __a0 = static_cast<uint64_t>(__lhs);
+      const uint64_t __a1 = static_cast<uint64_t>(__lhs >> 64);
+      const uint64_t __b0 = static_cast<uint64_t>(__rhs);
+      const uint64_t __b1 = static_cast<uint64_t>(__rhs >> 64);
+
+      const uint64_t __r0_a0b0 = __a0 * __b0;
+      const uint64_t __r1_a0b0 = ::cuda::mul_hi(__a0, __b0);
+      const uint64_t __r1_a0b1 = __a0 * __b1;
+      const uint64_t __r1_a1b0 = __a1 * __b0;
+      const uint64_t __r1      = __r1_a0b0 + __r1_a0b1 + __r1_a1b0;
+
+      const bool __overflow = (__a1 != 0 && __b1 != 0) || (::cuda::mul_hi(__a0, __b1) != 0)
+                           || (::cuda::mul_hi(__a1, __b0) != 0) || (__r1 < __r1_a0b0);
+
+      return {(static_cast<__uint128_t>(__r1) << 64) | __r0_a0b0, __overflow};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
+    }
+  }
+  else
+  {
+    using ::cuda::std::int32_t;
+
+    if constexpr (sizeof(_Tp) < sizeof(int32_t))
+    {
+      const auto __result = int32_t{__lhs} * int32_t{__rhs};
+      return {static_cast<_Tp>(__result), !::cuda::std::in_range<_Tp>(__result)};
+    }
+#  if _CCCL_HAS_INT128()
+    else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
+    {
+      using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+
+      const bool __lhs_neg = __lhs < 0;
+      const bool __rhs_neg = __rhs < 0;
+
+      const _Up __ulhs = __lhs_neg ? _Up{0} - static_cast<_Up>(__lhs) : static_cast<_Up>(__lhs);
+      const _Up __urhs = __rhs_neg ? _Up{0} - static_cast<_Up>(__rhs) : static_cast<_Up>(__rhs);
+
+      const auto __umul = ::cuda::__mul_overflow_device(__ulhs, __urhs);
+
+      const bool __neg = __lhs_neg != __rhs_neg;
+
+      const _Up __limit = (_Up{1} << 127) - (__neg ? _Up{0} : _Up{1});
+
+      const bool __overflow = __umul.overflow || __umul.value > __limit;
+      const _Up __val       = __umul.value;
+      const _Tp __result    = static_cast<_Tp>(__neg ? _Up{0} - __val : __val);
+      return {__result, __overflow};
+    }
+#  endif // _CCCL_HAS_INT128()
+    else
+    {
+      // For 32 and 64 bit ints, this seems to be the more efficient path.
+      return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
+    }
+  }
 }
 
 #endif // _CCCL_DEVICE_COMPILATION()
@@ -256,17 +335,35 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
-  using _CommonAll = ::cuda::std::common_type_t<_Common, _ActResult>;
+  using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActResult>;
+  [[maybe_unused]] const bool __is_lhs_ge_zero = is_unsigned_v<_Lhs> || __lhs >= 0;
+  [[maybe_unused]] const bool __is_rhs_ge_zero = is_unsigned_v<_Rhs> || __rhs >= 0;
 
   // shortcut for the case where inputs are representable with the max type
   // perf:
-  //   - No change in SASS (https://godbolt.org/z/vGMYMYMzq)
+  //   - all widths
+  //     > No change (https://godbolt.org/z/vGMYMYMzq)
   if constexpr (__is_mul_representable_v<_ActResult, _Lhs, _Rhs>)
   {
     const auto __lhs1    = static_cast<_CommonAll>(__lhs);
     const auto __rhs1    = static_cast<_CommonAll>(__rhs);
     const auto __product = static_cast<_CommonAll>(__lhs1 * __rhs1);
     return ::cuda::overflow_cast<_ActResult>(__product);
+  }
+  // * int x int -> int
+  // perf:
+  //   - int8/int16
+  //     > No change (https://godbolt.org/z/o4ecTz1rY)
+  //   - int128
+  //     > 107 to 99 SASS instructions (https://godbolt.org/z/Mj8Me48W1)
+  else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActResult>) // all signed
+  {
+    using _Sp            = __make_nbit_int_t<__num_bits_v<_CommonAll>>;
+    const auto __lhs1    = static_cast<_Sp>(__lhs);
+    const auto __rhs1    = static_cast<_Sp>(__rhs);
+    const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
+    const auto __ret     = ::cuda::overflow_cast<_ActResult>(__product.value);
+    return overflow_result<_ActResult>{__ret.value, __ret.overflow || __product.overflow};
   }
   else
   {
