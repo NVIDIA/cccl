@@ -365,11 +365,30 @@ public:
     }
   }
 
-  //! @brief Returns false - uniqueness depends on strides (conservative)
+  //! @brief Returns whether the mapping is unique for the stored strides
   [[nodiscard]] _CCCL_API constexpr bool is_unique() const noexcept
   {
-    // Conservative: negative/zero strides make uniqueness hard to determine
-    return false;
+    if constexpr (__rank_ == 0)
+    {
+      return true;
+    }
+    else if (::cuda::std::__mdspan_detail::__is_empty_extents(extents()))
+    {
+      return true;
+    }
+    else if (!__has_positive_strides())
+    {
+      return false;
+    }
+    else
+    {
+      ::cuda::std::array<offset_type, __rank_> __stride_array{};
+      for (rank_type __r = 0; __r != __rank_; ++__r)
+      {
+        __stride_array[__r] = strides().stride(__r);
+      }
+      return ::cuda::std::__mdspan_detail::__is_unique_strided_mapping(extents(), __stride_array);
+    }
   }
 
   //! @brief Returns false - exhaustiveness depends on strides (conservative)
