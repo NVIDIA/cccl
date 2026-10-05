@@ -347,9 +347,6 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
 
   // Host fallback + device implementation.
 #if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_MUL_OVERFLOW) || (_CCCL_HAS_INT128() && _CCCL_COMPILER(NVHPC))
-  using ::cuda::std::__make_nbit_int_t;
-  using ::cuda::std::__make_nbit_uint_t;
-  using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
   using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActResult>;
@@ -368,7 +365,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   // * int x int -> int
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActResult>) // all signed
   {
-    using _Sp            = __make_nbit_int_t<__num_bits_v<_CommonAll>>;
+    using _Sp            = ::cuda::std::make_signed_t<_CommonAll>;
     const auto __lhs1    = static_cast<_Sp>(__lhs);
     const auto __rhs1    = static_cast<_Sp>(__rhs);
     const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
@@ -382,7 +379,7 @@ _CCCL_REQUIRES((::cuda::std::is_void_v<_Result> || ::cuda::std::__cccl_is_intege
   // * int >= 0 x int >= 0 -> _ActResult=unsigned (_ActResult=signed already handled above) (run-time check)
   else if (__is_lhs_ge_zero && __is_rhs_ge_zero)
   {
-    using _Up            = __make_nbit_uint_t<__num_bits_v<_CommonAll>>;
+    using _Up            = ::cuda::std::make_unsigned_t<_CommonAll>;
     const auto __lhs1    = static_cast<_Up>(__lhs);
     const auto __rhs1    = static_cast<_Up>(__rhs);
     const auto __product = ::cuda::__mul_overflow_uniform_type(__lhs1, __rhs1);
