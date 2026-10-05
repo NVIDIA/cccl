@@ -366,6 +366,7 @@ public:
   }
 
   //! @brief Returns whether the mapping is unique for the stored strides
+  // NOLINTBEGIN(bugprone-branch-clone)
   [[nodiscard]] _CCCL_API constexpr bool is_unique() const noexcept
   {
     if constexpr (__rank_ == 0)
@@ -390,6 +391,7 @@ public:
       return ::cuda::std::__mdspan_detail::__is_unique_strided_mapping(extents(), __stride_array);
     }
   }
+  // NOLINTEND(bugprone-branch-clone)
 
   //! @brief Returns false - exhaustiveness depends on strides (conservative)
   [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const noexcept
