@@ -27,6 +27,7 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__type_traits/remove_const.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -52,6 +53,17 @@ _CCCL_CONCEPT __has_query_get_stream = _CCCL_REQUIRES_EXPR((_Env), const _Env& _
   requires(!__convertible_to_stream_ref<_Env>),
   requires(!__has_member_stream<_Env>),
   requires(__convertible_to_stream_ref<decltype(__env.query(__cpo))>));
+
+template <class _Tp>
+_CCCL_CONCEPT __convertible_to_stream =
+  ::cuda::std::convertible_to<_Tp, ::cudaStream_t> || __convertible_to_stream_ref<_Tp>;
+
+// Types whose conversion to a stream is only available on a non-const object (e.g. `operator cudaStream_t() &`).
+// Such types would silently be ignored by get_stream, since it receives them by const reference.
+template <class _Tp, class _Up = ::cuda::std::remove_const_t<_Tp>>
+_CCCL_CONCEPT __has_nonconst_stream_conversion = _CCCL_REQUIRES_EXPR(
+  (_Tp, _Up))(requires(!__convertible_to_stream<const _Up&>),
+              requires(__convertible_to_stream<_Up&> || __convertible_to_stream<_Up>));
 
 //! @brief `get_stream` is a customization point object that queries a type `T` for an associated stream
 struct get_stream_t
@@ -95,6 +107,16 @@ struct get_stream_t
   {
     static_assert(noexcept(__env.query(get_stream_t{})));
     return __env.query(get_stream_t{});
+  }
+
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__has_nonconst_stream_conversion<_Tp>)
+  _CCCL_API ::cuda::stream_ref _CCCL_STATIC_CALL_OPERATOR(const _Tp&) noexcept
+  {
+    static_assert(!__has_nonconst_stream_conversion<_Tp>,
+                  "The type is convertible to a stream only through a non-const conversion operator, which "
+                  "cuda::get_stream cannot use. Make the conversion operator const.");
+    return ::cuda::stream_ref{};
   }
 
   [[nodiscard]] _CCCL_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
