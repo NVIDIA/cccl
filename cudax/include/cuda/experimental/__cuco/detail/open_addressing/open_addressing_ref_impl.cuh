@@ -30,6 +30,7 @@
 #include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/__utility/static_for.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
@@ -938,6 +939,38 @@ public:
     }
   }
 
+  struct __find_insert_slot_fn
+  {
+    template <class _Index, class _ProbeKey>
+    _CCCL_DEVICE_API void operator()(
+      _Index __i,
+      const __open_addressing_ref_impl& __self,
+      const _ProbeKey& __key,
+      const __bucket_type& __bucket_slots,
+      __bucket_probing_results& __result) const noexcept
+    {
+      if (__result.__state == detail::__equal_result::__unequal)
+      {
+        switch (__self.__predicate.template operator()<detail::__is_insert::__yes>(
+          __key, __self.__extract_key(__bucket_slots[__i()])))
+        {
+          case detail::__equal_result::__available:
+            __result = __bucket_probing_results{detail::__equal_result::__available, __i()};
+            break;
+          case detail::__equal_result::__equal:
+            if constexpr (!__allows_duplicates)
+            {
+              __result = __bucket_probing_results{detail::__equal_result::__equal, __i()};
+            }
+            break;
+          case detail::__equal_result::__unequal:
+          case detail::__equal_result::__empty:
+            break;
+        }
+      }
+    }
+  };
+
   //!
   //! @brief Scans a bucket for the first slot available for inserting @p __key.
   //!
@@ -954,23 +987,9 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API __bucket_probing_results
   __find_insert_slot(const _ProbeKey& __key, __bucket_type __bucket_slots) const noexcept
   {
-    for (::cuda::std::int32_t __i = 0; __i < __bucket_size; ++__i)
-    {
-      switch (__predicate.template operator()<detail::__is_insert::__yes>(__key, __extract_key(__bucket_slots[__i])))
-      {
-        case detail::__equal_result::__available:
-          return __bucket_probing_results{detail::__equal_result::__available, __i};
-        case detail::__equal_result::__equal:
-          if constexpr (!__allows_duplicates)
-          {
-            return __bucket_probing_results{detail::__equal_result::__equal, __i};
-          }
-          break;
-        default:
-          break;
-      }
-    }
-    return __bucket_probing_results{detail::__equal_result::__unequal, -1};
+    auto __result = __bucket_probing_results{detail::__equal_result::__unequal, -1};
+    ::cuda::static_for<__bucket_size>(__find_insert_slot_fn{}, *this, __key, __bucket_slots, __result);
+    return __result;
   }
 
   //!
