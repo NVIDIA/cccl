@@ -281,97 +281,85 @@ template <class L, class R>
 inline constexpr bool
   HasShiftRightAssign<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>() >>= cuda::std::declval<R&>())>> = true;
 
-template <class T, class = void>
+template <class T, bool = HasPreIncrement<T>>
 inline constexpr bool HasNoexceptPreIncrement = false;
 template <class T>
-inline constexpr bool HasNoexceptPreIncrement<T, cuda::std::enable_if_t<noexcept(++cuda::std::declval<T&>())>> = true;
+inline constexpr bool HasNoexceptPreIncrement<T, true> = noexcept(++cuda::std::declval<T&>());
 
-template <class T, class = void>
+template <class T, bool = HasPostIncrement<T>>
 inline constexpr bool HasNoexceptPostIncrement = false;
 template <class T>
-inline constexpr bool HasNoexceptPostIncrement<T, cuda::std::enable_if_t<noexcept(cuda::std::declval<T&>()++)>> = true;
+inline constexpr bool HasNoexceptPostIncrement<T, true> = noexcept(cuda::std::declval<T&>()++);
 
-template <class T, class = void>
+template <class T, bool = HasPreDecrement<T>>
 inline constexpr bool HasNoexceptPreDecrement = false;
 template <class T>
-inline constexpr bool HasNoexceptPreDecrement<T, cuda::std::enable_if_t<noexcept(--cuda::std::declval<T&>())>> = true;
+inline constexpr bool HasNoexceptPreDecrement<T, true> = noexcept(--cuda::std::declval<T&>());
 
-template <class T, class = void>
+template <class T, bool = HasPostDecrement<T>>
 inline constexpr bool HasNoexceptPostDecrement = false;
 template <class T>
-inline constexpr bool HasNoexceptPostDecrement<T, cuda::std::enable_if_t<noexcept(cuda::std::declval<T&>()--)>> = true;
+inline constexpr bool HasNoexceptPostDecrement<T, true> = noexcept(cuda::std::declval<T&>()--);
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasPlusAssign<L, R>>
 inline constexpr bool HasNoexceptPlusAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptPlusAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() += cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptPlusAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() += cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasMinusAssign<L, R>>
 inline constexpr bool HasNoexceptMinusAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptMinusAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() -= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptMinusAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() -= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasMultiplyAssign<L, R>>
 inline constexpr bool HasNoexceptMultiplyAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptMultiplyAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() *= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptMultiplyAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() *= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasDivideAssign<L, R>>
 inline constexpr bool HasNoexceptDivideAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptDivideAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() /= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptDivideAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() /= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasModuloAssign<L, R>>
 inline constexpr bool HasNoexceptModuloAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptModuloAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() %= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptModuloAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() %= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitAndAssign<L, R>>
 inline constexpr bool HasNoexceptBitAndAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitAndAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() &= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptBitAndAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() &= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitOrAssign<L, R>>
 inline constexpr bool HasNoexceptBitOrAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitOrAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() |= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptBitOrAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() |= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitXorAssign<L, R>>
 inline constexpr bool HasNoexceptBitXorAssign = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitXorAssign<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() ^= cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptBitXorAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() ^= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasShiftLeftAssign<L, R>>
 inline constexpr bool HasNoexceptShiftLeftAssign = false;
 template <class L, class R>
-inline constexpr bool HasNoexceptShiftLeftAssign<
-  L,
-  R,
-  cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() <<= cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptShiftLeftAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() <<= cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasShiftRightAssign<L, R>>
 inline constexpr bool HasNoexceptShiftRightAssign = false;
 template <class L, class R>
-inline constexpr bool HasNoexceptShiftRightAssign<
-  L,
-  R,
-  cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() >>= cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptShiftRightAssign<L, R, true> =
+  noexcept(cuda::std::declval<L&>() >>= cuda::std::declval<R&>());
 
 // Pseudo-mutators does work with int as built-in types mutating operators are const
 static_assert(!HasPreIncrement<cuda::std::__constant_wrapper<6>>);

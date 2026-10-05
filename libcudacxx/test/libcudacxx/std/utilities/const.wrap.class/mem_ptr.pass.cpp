@@ -40,12 +40,10 @@ template <class L, class R>
 inline constexpr bool
   HasPtrToMem<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>()->*cuda::std::declval<R&>())>> = true;
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasPtrToMem<L, R>>
 inline constexpr bool HasNoexceptPtrToMem = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptPtrToMem<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>()->*cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptPtrToMem<L, R, true> = noexcept(cuda::std::declval<L&>()->*cuda::std::declval<R&>());
 
 struct WithOps
 {
