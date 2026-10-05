@@ -80,7 +80,7 @@ CUB_RUNTIME_FUNCTION void validate_env_or_object()
   {
     static_assert(::cuda::std::__is_callable_v<::cuda::get_stream_t, const EnvT&>
                     || ::cuda::std::__is_callable_v<::cuda::mr::get_memory_resource_t, const EnvT&>,
-                  "An object passed as a DeviceReduce environment must provide a stream or a memory resource.");
+                  "An non-env object passed as a DeviceReduce environment must provide a stream or a memory resource.");
   }
 }
 
