@@ -70,7 +70,7 @@ inline constexpr bool __is_constexpr_param_v<_Tp, void_t<constant_wrapper<_Tp::v
 #endif // ^^^ !_CCCL_COMPILER(MSVC, <, 19, 30) ^^^
 
 template <auto _Xp>
-inline constexpr constant_wrapper<_Xp> __cw;
+inline constexpr constant_wrapper<_Xp> cw;
 
 struct __cw_operators
 {
