@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/cstdint>
@@ -38,12 +39,12 @@ using __index_type = ::cuda::std::int64_t;
 // These helpers are used by bulk kernels launched with one-dimensional grids and blocks.
 [[nodiscard]] _CCCL_DEVICE_API inline __index_type __global_thread_id() noexcept
 {
-  return static_cast<__index_type>(blockIdx.x) * blockDim.x + threadIdx.x;
+  return ::cuda::gpu_thread.index_as<__index_type>(::cuda::grid).x;
 }
 
 [[nodiscard]] _CCCL_DEVICE_API inline __index_type __grid_stride() noexcept
 {
-  return static_cast<__index_type>(gridDim.x) * blockDim.x;
+  return ::cuda::gpu_thread.dims_as<__index_type>(::cuda::grid).x;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
