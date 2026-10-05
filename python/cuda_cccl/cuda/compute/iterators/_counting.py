@@ -102,7 +102,7 @@ class CountingIterator(IteratorBase):
     def _make_output_deref_op(self) -> Op | None:
         return None
 
-    def __add__(self, offset: int) -> "CountingIterator":
+    def __add__(self, offset: int) -> CountingIterator:
         """Return a new CountingIterator advanced by offset elements."""
         new_start = self._start_value + offset
         return CountingIterator(new_start)

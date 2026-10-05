@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 import numpy as np
 
@@ -41,14 +42,14 @@ class _Scan(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
-        "init_value_cccl",
-        "op_cccl",
-        "init_kind",
-        "force_inclusive",
         "device_scan_fn",
+        "force_inclusive",
+        "init_kind",
+        "init_value_cccl",
+        "loaded_build_result",
+        "op_cccl",
     ]
 
     __serialization_schema__ = (

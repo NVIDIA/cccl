@@ -127,10 +127,10 @@ struct dynamic_accessibility_property
 template <bool _HostAccessible, bool _DeviceAccessible>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL __memory_accessibility __memory_accessibility_from_static_properties() noexcept
 {
-  return _HostAccessible && _DeviceAccessible ? __memory_accessibility ::__host_device
-       : _DeviceAccessible                    ? __memory_accessibility ::__device
-       : _HostAccessible                      ? __memory_accessibility ::__host
-                                              : __memory_accessibility ::__unknown;
+  return _HostAccessible && _DeviceAccessible ? __memory_accessibility::__host_device
+       : _DeviceAccessible                    ? __memory_accessibility::__device
+       : _HostAccessible                      ? __memory_accessibility::__host
+                                              : __memory_accessibility::__unknown;
 }
 
 template <class... _Properties>

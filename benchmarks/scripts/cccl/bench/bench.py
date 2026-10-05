@@ -21,9 +21,7 @@ def first_val(my_dict):
 
     if not all(value == first_value for value in values):
         raise ValueError(
-            "All values in the dictionary are not equal. First value: {} All values: {}".format(
-                first_value, values
-            )
+            f"All values in the dictionary are not equal. First value: {first_value} All values: {values}"
         )
 
     return first_value
@@ -109,12 +107,10 @@ def store_bench_axes(conn, algname, subbench, axes_values, cccl):
     # against the new one, which is worth saying out loud.
     if recorded and json.loads(recorded[0]) != axes_values:
         print(
-            "#### WARNING {}.{} declared {} when this database was last written"
-            " and declares {} now, both as CCCL {}. `git describe` does not see"
+            f"#### WARNING {algname}.{subbench} declared {json.loads(recorded[0])} when this database was last written"
+            f" and declares {axes_values} now, both as CCCL {cccl}. `git describe` does not see"
             " uncommitted edits, so the two cannot be told apart: measurements"
-            " already stored are re-weighted against the new axes.".format(
-                algname, subbench, json.loads(recorded[0]), axes_values, cccl
-            )
+            " already stored are re-weighted against the new axes."
         )
 
 
@@ -130,8 +126,8 @@ def create_benches_tables(conn, subbench, bench_axes):
 
         for algorithm_name in bench_axes:
             axes = bench_axes[algorithm_name]
-            column_names = ", ".join(['"{}"'.format(name) for name in axes])
-            columns = ", ".join(['"{}" TEXT'.format(name) for name in axes])
+            column_names = ", ".join([f'"{name}"' for name in axes])
+            columns = ", ".join([f'"{name}" TEXT' for name in axes])
 
             conn.execute(
                 """
@@ -146,8 +142,8 @@ def create_benches_tables(conn, subbench, bench_axes):
                 columns = ", " + columns
                 column_names = ", " + column_names
                 conn.execute(
-                    """
-                CREATE TABLE IF NOT EXISTS "{0}" (
+                    f"""
+                CREATE TABLE IF NOT EXISTS "{get_bench_table_name(subbench, algorithm_name)}" (
                     ctk TEXT NOT NULL,
                     cccl TEXT NOT NULL,
                     gpu TEXT NOT NULL,
@@ -156,14 +152,10 @@ def create_benches_tables(conn, subbench, bench_axes):
                     center REAL,
                     bw REAL,
                     samples BLOB
-                    {1}
-                    , UNIQUE(ctk, cccl, gpu, variant {2})
+                    {columns}
+                    , UNIQUE(ctk, cccl, gpu, variant {column_names})
                 );
-                """.format(
-                        get_bench_table_name(subbench, algorithm_name),
-                        columns,
-                        column_names,
-                    )
+                """
                 )
 
 
@@ -339,7 +331,7 @@ def get_device_name(device):
     bus_width = device["global_memory_bus_width"]
     sms = device["number_of_sms"]
     ecc = "eccon" if device["ecc_state"] else "eccoff"
-    name = "{} ({}, {}, {})".format(gpu_name, bus_width, sms, ecc)
+    name = f"{gpu_name} ({bus_width}, {sms}, {ecc})"
     return name.replace("NVIDIA ", "")
 
 
@@ -377,7 +369,7 @@ def state_to_rt_workload(bench, state):
         name, value = param.split("=")
         if is_ct_axis(name):
             continue
-        rt_workload.append("{}={}".format(name, value))
+        rt_workload.append(f"{name}={value}")
     return rt_workload
 
 
@@ -477,7 +469,7 @@ class BenchCache:
 
                     for name in state.point:
                         value = state.point[name]
-                        columns = columns + ', "{}"'.format(name)
+                        columns = columns + f', "{name}"'
                         placeholders = placeholders + ", ?"
                         values.append(value)
 
@@ -494,11 +486,11 @@ class BenchCache:
                         samples,
                     ) + tuple(values)
 
-                    query = """
-                    INSERT INTO "{0}" (ctk, cccl, gpu, variant, elapsed, center, bw, samples {1})
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ? {2})
-                    ON CONFLICT(ctk, cccl, gpu, variant {1}) DO NOTHING;
-                    """.format(table_name, columns, placeholders)
+                    query = f"""
+                    INSERT INTO "{table_name}" (ctk, cccl, gpu, variant, elapsed, center, bw, samples {columns})
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ? {placeholders})
+                    ON CONFLICT(ctk, cccl, gpu, variant {columns}) DO NOTHING;
+                    """
 
                     conn.execute(query, to_insert)
                     centers[subbench][state.name()] = center
@@ -528,13 +520,11 @@ class BenchCache:
                     for axis in workload_point:
                         name, value = axis.split("=")
                         point_map[name] = value
-                        point_checks = point_checks + ' AND "{}" = "{}"'.format(
-                            name, value
-                        )
+                        point_checks = point_checks + f' AND "{name}" = "{value}"'
 
-                    query = """
-                    SELECT center FROM "{0}" WHERE ctk = ? AND cccl = ? AND gpu = ? AND variant = ?{1};
-                    """.format(table_name, point_checks)
+                    query = f"""
+                    SELECT center FROM "{table_name}" WHERE ctk = ? AND cccl = ? AND gpu = ? AND variant = ?{point_checks};
+                    """
 
                     result = conn.execute(
                         query, (ctk, cccl, gpu, bench.variant_name())
@@ -583,7 +573,7 @@ def speedup(base, variant):
 def values_to_space(axes):
     result = []
     for axis in axes:
-        result.append(["{}={}".format(axis, value) for value in axes[axis]])
+        result.append([f"{axis}={value}" for value in axes[axis]])
     return list(itertools.product(*result))
 
 
@@ -592,7 +582,7 @@ class ProcessRunner:
 
     def __new__(cls, *args, **kwargs):
         if not isinstance(cls._instance, cls):
-            cls._instance = super(ProcessRunner, cls).__new__(cls, *args, **kwargs)
+            cls._instance = super().__new__(cls, *args, **kwargs)
         return cls._instance
 
     def __init__(self):
@@ -765,9 +755,7 @@ class Bench:
             ct_axis_name, ct_value = ct_component.split("=")
             description = descriptions[ct_axis_name][ct_value]
             ct_axis_name = ct_axis_name.replace("{ct}", "")
-            definitions = definitions + "#define TUNE_{} {}\n".format(
-                ct_axis_name, description
-            )
+            definitions = definitions + f"#define TUNE_{ct_axis_name} {description}\n"
 
         return definitions
 
@@ -816,17 +804,13 @@ class Bench:
             elapsed = time.perf_counter() - begin
 
             logger.info(
-                "finished benchmark {} with {} ({}) in {:.3f}s".format(
-                    self.label(), ct_point, p.returncode, elapsed
-                )
+                f"finished benchmark {self.label()} with {ct_point} ({p.returncode}) in {elapsed:.3f}s"
             )
 
             return BenchResult(result_path, p.returncode, elapsed)
         except subprocess.TimeoutExpired:
             logger.info(
-                "benchmark {} with {} reached timeout of {:.3f}s".format(
-                    self.label(), ct_point, timeout
-                )
+                f"benchmark {self.label()} with {ct_point} reached timeout of {timeout:.3f}s"
             )
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             return BenchResult(None, 42, float("inf"))
@@ -852,7 +836,7 @@ class Bench:
             self, ct_workload_point, rt_values
         )
         if cached_centers:
-            logger.info("found benchmark {} in cache".format(self.label()))
+            logger.info(f"found benchmark {self.label()} in cache")
             return cached_centers
 
         timeout = None

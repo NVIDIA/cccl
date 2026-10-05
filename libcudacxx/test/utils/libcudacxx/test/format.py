@@ -21,7 +21,7 @@ import libcudacxx.util
 from libcudacxx.test.executor import LocalExecutor as LocalExecutor
 
 
-class LibcxxTestFormat(object):
+class LibcxxTestFormat:
     """
     Custom test format handler for use with the test format use by libc++.
 

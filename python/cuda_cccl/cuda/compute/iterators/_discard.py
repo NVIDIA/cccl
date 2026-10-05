@@ -99,5 +99,5 @@ extern "C" __device__ void {symbol}(void*, void*) {{
             extra_ltoirs=[],
         )
 
-    def __add__(self, offset: int) -> "DiscardIterator":
+    def __add__(self, offset: int) -> DiscardIterator:
         return DiscardIterator(self._reference_iterator)

@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Optional
 
 # type: ignore[import-not-found]
 from cuda.pathfinder import find_nvidia_header_directory
@@ -15,17 +14,17 @@ from cuda.pathfinder import find_nvidia_header_directory
 
 @dataclass
 class IncludePaths:
-    cuda: Optional[Path]
-    libcudacxx: Optional[Path]
-    cub: Optional[Path]
-    thrust: Optional[Path]
+    cuda: Path | None
+    libcudacxx: Path | None
+    cub: Path | None
+    thrust: Path | None
 
     def as_tuple(self):
         # Note: higher-level ... lower-level order:
         return (self.thrust, self.cub, self.libcudacxx, self.cuda)
 
 
-@lru_cache()
+@lru_cache
 def get_include_paths(probe_file: str = "cub/version.cuh") -> IncludePaths:
     cuda_incl = find_nvidia_header_directory("cudart")
     if cuda_incl is None:

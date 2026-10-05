@@ -40,8 +40,8 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 torch = pytest.importorskip("torch")
 
@@ -393,31 +393,30 @@ def test_burger():
     lSnapIter = ctx.logical_data(snap_iter_host, name="snap_iter")
 
     # Time-stepping: repeat > graph_scope > repeat > newton_solver
-    with ctx.repeat(outer_iters):
-        with ctx.graph_scope():
-            with ctx.repeat(substeps):
-                newton_solver(
-                    ctx,
-                    lU,
-                    lA_val,
-                    N,
-                    h,
-                    dt,
-                    nu,
-                    max_newton=20,
-                    newton_tol=1e-10,
-                    max_cg=100,
-                )
+    with ctx.repeat(outer_iters), ctx.graph_scope():
+        with ctx.repeat(substeps):
+            newton_solver(
+                ctx,
+                lU,
+                lA_val,
+                N,
+                h,
+                dt,
+                nu,
+                max_newton=20,
+                newton_tol=1e-10,
+                max_cg=100,
+            )
 
-            # Store snapshot via GPU copy (graph-safe, no host callback)
-            with pytorch_task(ctx, lU.read(), lSnapshots.rw(), lSnapIter.rw()) as (
-                tU,
-                tSnap,
-                tIter,
-            ):
-                idx = tIter[0:1].long()
-                tSnap.index_copy_(0, idx, tU.unsqueeze(0))
-                tIter.add_(1)
+        # Store snapshot via GPU copy (graph-safe, no host callback)
+        with pytorch_task(ctx, lU.read(), lSnapshots.rw(), lSnapIter.rw()) as (
+            tU,
+            tSnap,
+            tIter,
+        ):
+            idx = tIter[0:1].long()
+            tSnap.index_copy_(0, idx, tU.unsqueeze(0))
+            tIter.add_(1)
 
     ctx.finalize()
 

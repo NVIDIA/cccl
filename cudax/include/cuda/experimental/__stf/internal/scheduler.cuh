@@ -334,7 +334,7 @@ private:
     int num_devices;
     const double bandwidth = 250 * 1e5; // Bytes/ms, Obtained by running
                                         // cuda-samples/Samples/5_Domain_Specific/p2pBandwidthLatencyTest
-    using cache_state = ::std::vector<::std::pair<msi_state, double>>;
+    using cache_state      = ::std::vector<::std::pair<msi_state, double>>;
     ::std::unordered_map<::std::string, cache_state> cache;
 
     cache_state& get_symbol_info(const ::std::string& symbol)

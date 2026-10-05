@@ -466,7 +466,7 @@ inline _CCCL_HOST_DEVICE
 bool operator==(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
                 iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return iterator_core_access::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -487,7 +487,7 @@ inline _CCCL_HOST_DEVICE
 bool operator!=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
                 iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return !iterator_core_access ::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+  return !iterator_core_access::equal(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -509,7 +509,7 @@ bool operator<(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1
                iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-       > iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+       > iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -531,7 +531,7 @@ bool operator>(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1
                iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-       < iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+       < iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -553,7 +553,7 @@ bool operator<=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference
                 iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-      >= iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+      >= iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 template <typename Derived1,
@@ -575,7 +575,7 @@ bool operator>=(iterator_facade<Derived1, Value1, System1, Traversal1, Reference
                 iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
   return 0
-      <= iterator_core_access ::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
+      <= iterator_core_access::distance_from(*static_cast<Derived1 const*>(&lhs), *static_cast<Derived2 const*>(&rhs));
 }
 
 // Iterator difference
@@ -600,7 +600,7 @@ detail::distance_from_result<iterator_facade<Derived1, Value1, System1, Traversa
 operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
           iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)
 {
-  return iterator_core_access ::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
+  return iterator_core_access::distance_from(static_cast<Derived1 const&>(lhs), static_cast<Derived2 const&>(rhs));
 }
 
 // Iterator addition

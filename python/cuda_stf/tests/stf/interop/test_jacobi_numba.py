@@ -14,12 +14,12 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
+from numba import cuda
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.numba import (  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import (
     get_arg_numba,
     numba_arguments,
 )
@@ -186,11 +186,10 @@ def test_graph_scope_numba():
             add_kernel[bpg, tpb, nb_stream](dX, 1.0)
 
     # Another graph scope: X *= 3
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            scale_kernel[bpg, tpb, nb_stream](dX, 3.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale_kernel[bpg, tpb, nb_stream](dX, 3.0)
 
     ctx.finalize()
 
@@ -209,11 +208,10 @@ def test_repeat_numba():
     tpb = 256
     bpg = (n + tpb - 1) // tpb
 
-    with ctx.repeat(10):
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dX, 1.0)
+    with ctx.repeat(10), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dX, 1.0)
 
     ctx.finalize()
 

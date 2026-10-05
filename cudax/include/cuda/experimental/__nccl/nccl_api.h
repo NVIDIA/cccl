@@ -393,14 +393,14 @@ _CCCL_CONCEPT __has_nccl_redop_of = _CCCL_REQUIRES_EXPR((_Op), )(
 
 [[nodiscard]] _CCCL_HOST_API inline const char* __ncclGetLastErrorNoThrow(__ncclComm_t __comm) noexcept
 {
-  static auto* const __fn = _CCCL_LOAD_NCCL_SYMBOL(ncclGetLastError, const char* (*) (__ncclComm_t));
+  static auto* const __fn = _CCCL_LOAD_NCCL_SYMBOL(ncclGetLastError, const char* (*)(__ncclComm_t));
 
   return __fn(__comm);
 }
 
 [[nodiscard]] _CCCL_HOST_API inline const char* __ncclGetErrorStringNoThrow(__ncclResult_t __result) noexcept
 {
-  static auto* const __fn = _CCCL_LOAD_NCCL_SYMBOL(ncclGetErrorString, const char* (*) (__ncclResult_t));
+  static auto* const __fn = _CCCL_LOAD_NCCL_SYMBOL(ncclGetErrorString, const char* (*)(__ncclResult_t));
 
   return __fn(__result);
 }

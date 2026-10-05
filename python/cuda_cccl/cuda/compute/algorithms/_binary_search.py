@@ -40,12 +40,12 @@ class _BinarySearch:
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_data_cccl",
-        "d_values_cccl",
         "d_out_cccl",
-        "op_cccl",
+        "d_values_cccl",
         "data_ptr",
+        "loaded_build_result",
+        "op_cccl",
         "out_ptr",
     ]
 

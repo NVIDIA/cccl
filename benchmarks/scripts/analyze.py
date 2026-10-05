@@ -124,7 +124,7 @@ def extract_rt_space(df):
     rt_axes_values = []
     for rt_axis in rt_axes:
         values = df[rt_axis].unique()
-        rt_axes_values.append(["{}={}".format(rt_axis, v) for v in values])
+        rt_axes_values.append([f"{rt_axis}={v}" for v in values])
     return list(itertools.product(*rt_axes_values))
 
 
@@ -176,7 +176,7 @@ def incomplete_variants(dfs):
 def compute_workload_weight(rt_axes_values, rt_axes_ids, weights, row):
     rt_workload = []
     for rt_axis in rt_axes_values:
-        rt_workload.append("{}={}".format(rt_axis, row[rt_axis]))
+        rt_workload.append(f"{rt_axis}={row[rt_axis]}")
 
     return cccl.bench.get_workload_weight(
         rt_workload, rt_axes_values, rt_axes_ids, weights
@@ -309,15 +309,8 @@ def collect_declared_axes(declared_axes, algname, subbench, axes_values, source)
     for version in axes_values:
         if version in recorded and recorded[version] != axes_values[version]:
             raise Exception(
-                "{} records a different axis space for {}.{} under CCCL {} than"
-                " another database does: {} vs {}".format(
-                    source,
-                    algname,
-                    subbench,
-                    version,
-                    axes_values[version],
-                    recorded[version],
-                )
+                f"{source} records a different axis space for {algname}.{subbench} under CCCL {version} than"
+                f" another database does: {axes_values[version]} vs {recorded[version]}"
             )
         recorded[version] = axes_values[version]
 
@@ -366,15 +359,13 @@ def check_axis_space_recorded(algname, declared_axes, seen):
         for version in sorted(seen[subbench]):
             declared = declared_axes.get(subbench, {}).get(version)
             if not declared:
-                missing.append("{}.{} under CCCL {}".format(algname, subbench, version))
+                missing.append(f"{algname}.{subbench} under CCCL {version}")
                 continue
 
             for rt_axis in sorted(seen[subbench][version]):
                 if rt_axis not in declared:
                     missing.append(
-                        "the {} axis of {}.{} under CCCL {}".format(
-                            rt_axis, algname, subbench, version
-                        )
+                        f"the {rt_axis} axis of {algname}.{subbench} under CCCL {version}"
                     )
 
     if missing:
@@ -486,14 +477,14 @@ def iterate_case_dfs(args, callable):
 
                         for ct_point in ct_space(target_df):
                             point_str = ", ".join(
-                                ["{}={}".format(k, ct_point[k]) for k in ct_point]
+                                [f"{k}={ct_point[k]}" for k in ct_point]
                             )
                             case_df = extract_complete_variants(
                                 extract_case(target_df, ct_point)
                             )
-                            case_df["variant"] = case_df["variant"].astype(
-                                str
-                            ) + " ({})".format(file)
+                            case_df["variant"] = (
+                                case_df["variant"].astype(str) + f" ({file})"
+                            )
                             if point_str not in case_dfs:
                                 case_dfs[point_str] = {}
                             if subbench not in case_dfs[point_str]:
@@ -511,7 +502,7 @@ def iterate_case_dfs(args, callable):
 
 
 def case_top(alpha, N, algname, ct_point_name, case_dfs, declared_axes):
-    print("{}[{}]:".format(algname, ct_point_name))
+    print(f"{algname}[{ct_point_name}]:")
 
     if alpha < 1.0:
         for subbench in case_dfs:
@@ -548,11 +539,9 @@ def case_coverage(algname, ct_point_name, case_dfs, declared_axes):
         num_covered_variants = len(case_dfs[subbench]["variant"].unique())
         coverage = (num_covered_variants / num_variants) * 100
         min_coverage = min(min_coverage, coverage)
-    case_str = "{}[{}]".format(algname, ct_point_name)
+    case_str = f"{algname}[{ct_point_name}]"
     print(
-        "{} coverage: {} / {} ({:.4f}%)".format(
-            case_str, num_covered_variants, num_variants, min_coverage
-        )
+        f"{case_str} coverage: {num_covered_variants} / {num_variants} ({min_coverage:.4f}%)"
     )
 
 
@@ -562,7 +551,7 @@ def coverage(args):
 
 def parallel_coordinates_plot(df, title):
     # Parallel coordinates plot adaptation of https://stackoverflow.com/a/69411450
-    import matplotlib.patches as patches
+    from matplotlib import patches
     from matplotlib.path import Path
 
     # Variables (the first variable must be categoric):
@@ -683,7 +672,7 @@ def case_coverage_plot(algname, ct_point_name, case_dfs, declared_axes):
             data_list.append(data_dict)
 
     df = pd.DataFrame(data_list)
-    parallel_coordinates_plot(df, "{} ({})".format(algname, ct_point_name))
+    parallel_coordinates_plot(df, f"{algname} ({ct_point_name})")
 
 
 def coverage_plot(args):
@@ -717,7 +706,7 @@ def case_pair_plot(algname, ct_point_name, case_dfs, declared_axes):
 
     df = pd.DataFrame(data_list)
     sns.pairplot(df, hue="speedup")
-    plt.title("{} ({})".format(algname, ct_point_name))
+    plt.title(f"{algname} ({ct_point_name})")
     plt.show()
 
 
@@ -921,9 +910,7 @@ def case_variants(pattern, mode, algname, ct_point_name, case_dfs, declared_axes
         def extract_horizontal_space(df):
             values = []
             for rt_axis in horizontal_axes:
-                values.append(
-                    ["{}={}".format(rt_axis, v) for v in df[rt_axis].unique()]
-                )
+                values.append([f"{rt_axis}={v}" for v in df[rt_axis].unique()])
             return list(itertools.product(*values))
 
         if len(horizontal_axes) > 0:
@@ -948,7 +935,7 @@ def case_variants(pattern, mode, algname, ct_point_name, case_dfs, declared_axes
         ):
             vertical_val = vertical_row_description[vertical_axis_name]
             vertical_id = vertical_axis_ids[vertical_val]
-            vertical_name = "{}={}".format(vertical_axis_name, vertical_val)
+            vertical_name = f"{vertical_axis_name}={vertical_val}"
 
             vertical_df = df[df[vertical_axis_name] == vertical_val]
 
@@ -968,7 +955,7 @@ def case_variants(pattern, mode, algname, ct_point_name, case_dfs, declared_axes
                     horizontal_point = []
                     for rt_axis in horizontal_axes:
                         horizontal_point.append(
-                            "{}={}".format(rt_axis, horizontal_row_description[rt_axis])
+                            f"{rt_axis}={horizontal_row_description[rt_axis]}"
                         )
                     horizontal_name = " / ".join(horizontal_point)
                     horizontal_id = horizontal_axis_ids[horizontal_name]
@@ -1053,7 +1040,7 @@ def case_offload(algname, ct_point_name, case_dfs, declared_axes):
                 point_df = point_df[point_df[key] == value]
             point_name = ct_point_name + " " + " ".join(rt_point)
             point_name = point_name.replace(",", "")
-            bench_name = "{}.{}-{}".format(algname, subbench, point_name)
+            bench_name = f"{algname}.{subbench}-{point_name}"
             bench_name = bench_name.replace(" ", "___")
             bench_name = "".join(c if c.isalnum() else "_" for c in bench_name)
             with open(bench_name + ".json", "w") as f:

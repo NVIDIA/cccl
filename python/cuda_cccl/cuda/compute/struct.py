@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import functools
 from types import new_class
-from typing import Any, ClassVar, TypeGuard, Union, cast, get_type_hints
+from typing import Any, ClassVar, TypeGuard, cast, get_type_hints
 
 import numpy as np
 
@@ -20,7 +20,7 @@ This module provides `gpu_struct`, a factory for producing struct types.
 
 
 def gpu_struct(
-    field_dict: Union[dict, np.dtype, type],
+    field_dict: dict | np.dtype | type,
     name: str = "AnonymousStruct",
 ):
     """

@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Tuple
 
 import numpy as np
 import pytest
@@ -58,7 +57,7 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
 
 def make_uniform_segments(
     num_segments: int, segment_size: int
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     start_offsets = np.arange(num_segments, dtype=np.int64) * segment_size
     end_offsets = start_offsets + segment_size
     return start_offsets, end_offsets
@@ -70,7 +69,7 @@ def host_segmented_sort(
     start_offsets: np.ndarray,
     end_offsets: np.ndarray,
     order: cuda.compute.SortOrder,
-) -> Tuple[np.ndarray, np.ndarray | None]:
+) -> tuple[np.ndarray, np.ndarray | None]:
     assert start_offsets.shape == end_offsets.shape
     keys = h_keys.copy()
     vals = None if h_vals is None else h_vals.copy()

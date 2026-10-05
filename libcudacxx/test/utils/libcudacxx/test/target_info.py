@@ -16,7 +16,7 @@ import sys
 from libcudacxx.util import executeCommand
 
 
-class DefaultTargetInfo(object):
+class DefaultTargetInfo:
     def __init__(self, full_config):
         self.full_config = full_config
 
@@ -74,18 +74,18 @@ def add_common_locales(features, lit_config, is_windows=False):
     for loc_id, windows_loc_name in locales:
         loc_name = windows_loc_name if is_windows else loc_id
         if test_locale(loc_name):
-            features.add("locale.{0}".format(loc_id))
+            features.add(f"locale.{loc_id}")
         else:
             lit_config.warning(
-                "The locale {0} is not supported by "
+                f"The locale {loc_name} is not supported by "
                 "your platform. Some tests will be "
-                "unsupported.".format(loc_name)
+                "unsupported."
             )
 
 
 class DarwinLocalTI(DefaultTargetInfo):
     def __init__(self, full_config):
-        super(DarwinLocalTI, self).__init__(full_config)
+        super().__init__(full_config)
 
     def is_host_macosx(self):
         name = subprocess.check_output(["sw_vers", "-productName"]).strip()
@@ -174,7 +174,7 @@ class DarwinLocalTI(DefaultTargetInfo):
 
 class FreeBSDLocalTI(DefaultTargetInfo):
     def __init__(self, full_config):
-        super(FreeBSDLocalTI, self).__init__(full_config)
+        super().__init__(full_config)
 
     def add_locale_features(self, features):
         add_common_locales(features, self.full_config.lit_config)
@@ -185,7 +185,7 @@ class FreeBSDLocalTI(DefaultTargetInfo):
 
 class NetBSDLocalTI(DefaultTargetInfo):
     def __init__(self, full_config):
-        super(NetBSDLocalTI, self).__init__(full_config)
+        super().__init__(full_config)
 
     def add_locale_features(self, features):
         add_common_locales(features, self.full_config.lit_config)
@@ -196,7 +196,7 @@ class NetBSDLocalTI(DefaultTargetInfo):
 
 class LinuxLocalTI(DefaultTargetInfo):
     def __init__(self, full_config):
-        super(LinuxLocalTI, self).__init__(full_config)
+        super().__init__(full_config)
 
     def platform(self):
         return "linux"
@@ -234,7 +234,7 @@ class LinuxLocalTI(DefaultTargetInfo):
 
 class WindowsLocalTI(DefaultTargetInfo):
     def __init__(self, full_config):
-        super(WindowsLocalTI, self).__init__(full_config)
+        super().__init__(full_config)
 
     def add_locale_features(self, features):
         add_common_locales(features, self.full_config.lit_config, is_windows=True)

@@ -13,7 +13,7 @@ from libcudacxx.test import tracing
 from libcudacxx.util import executeCommand
 
 
-class Executor(object):
+class Executor:
     def run(self, exe_path, cmd, local_cwd, file_deps=None, env=None):
         """Execute a command.
             Be very careful not to change shared state in this function.
@@ -32,7 +32,7 @@ class Executor(object):
 
 class LocalExecutor(Executor):
     def __init__(self):
-        super(LocalExecutor, self).__init__()
+        super().__init__()
         self.timeout = 0
         self.is_windows = platform.system() == "Windows"
 
@@ -46,7 +46,7 @@ class LocalExecutor(Executor):
 
 class NoopExecutor(Executor):
     def __init__(self):
-        super(NoopExecutor, self).__init__()
+        super().__init__()
 
     def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         cmd = cmd or [exe_path]
@@ -66,7 +66,7 @@ class PrefixExecutor(Executor):
     """
 
     def __init__(self, commandPrefix, chain):
-        super(PrefixExecutor, self).__init__()
+        super().__init__()
 
         self.commandPrefix = commandPrefix
         self.chain = chain
@@ -82,7 +82,7 @@ class PostfixExecutor(Executor):
     """Postfix an executor with some args."""
 
     def __init__(self, commandPostfix, chain):
-        super(PostfixExecutor, self).__init__()
+        super().__init__()
 
         self.commandPostfix = commandPostfix
         self.chain = chain
@@ -99,7 +99,7 @@ class TimeoutExecutor(PrefixExecutor):
     """
 
     def __init__(self, duration, chain):
-        super(TimeoutExecutor, self).__init__(["timeout", duration], chain)
+        super().__init__(["timeout", duration], chain)
 
 
 class RemoteExecutor(Executor):
@@ -166,7 +166,7 @@ class RemoteExecutor(Executor):
 
 class SSHExecutor(RemoteExecutor):
     def __init__(self, host, username=None):
-        super(SSHExecutor, self).__init__()
+        super().__init__()
 
         self.user_prefix = username + "@" if username else ""
         self.host = host
@@ -186,7 +186,7 @@ class SSHExecutor(RemoteExecutor):
 
         # Not sure how to do suffix on osx yet
         dir_arg = "-d" if is_dir else ""
-        cmd = "mktemp -q {} /tmp/libcxx.XXXXXXXXXX".format(dir_arg)
+        cmd = f"mktemp -q {dir_arg} /tmp/libcxx.XXXXXXXXXX"
         _, temp_path, err, exitCode = self._execute_command_remote([cmd])
         temp_path = temp_path.strip()
         if exitCode != 0:

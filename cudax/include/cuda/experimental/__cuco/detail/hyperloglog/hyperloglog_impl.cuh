@@ -416,8 +416,8 @@ public:
   //! @return Approximate distinct items count
   [[nodiscard]] _CCCL_DEVICE_API double __estimate(const ::cooperative_groups::thread_block& __group) const noexcept
   {
-    __shared__ ::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
-    __shared__ ::cuda::atomic<::cuda::std::int32_t, ::cuda::std::thread_scope_block> __block_zeroes;
+    __shared__::cuda::atomic<__fp_type, ::cuda::std::thread_scope_block> __block_sum;
+    __shared__::cuda::atomic<::cuda::std::int32_t, ::cuda::std::thread_scope_block> __block_zeroes;
     __shared__ __fp_type __estimate;
 
     if (__group.thread_rank() == 0)

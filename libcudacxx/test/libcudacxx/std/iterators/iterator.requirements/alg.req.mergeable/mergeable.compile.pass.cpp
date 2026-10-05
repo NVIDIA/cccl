@@ -100,7 +100,7 @@ static_assert(!cuda::std::mergeable<Input, Input, Output, BadComp>);
 
 // No indirect strict weak order between I1 and I2 (bad projection).
 using ToInt = int (*)(int);
-using ToPtr = int* (*) (int);
+using ToPtr = int* (*)(int);
 static_assert(cuda::std::mergeable<Input, Input, Output, GoodComp, cuda::std::identity, cuda::std::identity>);
 static_assert(cuda::std::mergeable<Input, Input, Output, GoodComp, ToInt, ToInt>);
 static_assert(!cuda::std::mergeable<Input, Input, Output, GoodComp, ToPtr, ToInt>);

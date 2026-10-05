@@ -9,9 +9,9 @@ import re
 import subprocess
 import sys
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
 
 import yaml
 
@@ -23,7 +23,7 @@ CORE_PROJECT_KEY = "core"
 class SummaryWriter:
     """Utility for duplicating output to stdout and an optional summary file."""
 
-    def __init__(self, path: Optional[Path]):
+    def __init__(self, path: Path | None):
         self._handle = path.open("a", encoding="utf-8") if path else None
 
     def __enter__(self):
@@ -45,28 +45,28 @@ class ProjectConfig:
 
     key: str
     name: str
-    matrix_project: Optional[str]
-    include_regexes: Tuple[str, ...]
-    exclude_regexes: Tuple[str, ...]
-    exclude_project_files: Tuple[str, ...]
-    lite_dependencies: Tuple[str, ...]
-    full_dependencies: Tuple[str, ...]
-    transitive_lite_dependencies: Tuple[str, ...] = ()
+    matrix_project: str | None
+    include_regexes: tuple[str, ...]
+    exclude_regexes: tuple[str, ...]
+    exclude_project_files: tuple[str, ...]
+    lite_dependencies: tuple[str, ...]
+    full_dependencies: tuple[str, ...]
+    transitive_lite_dependencies: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class Config:
     """Aggregated configuration for change detection."""
 
-    projects: Dict[str, ProjectConfig]
-    project_keys: Tuple[str, ...]
-    ignore_regexes: Tuple[str, ...]
+    projects: dict[str, ProjectConfig]
+    project_keys: tuple[str, ...]
+    ignore_regexes: tuple[str, ...]
 
     def project(self, key: str) -> ProjectConfig:
         return self.projects[key]
 
 
-def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse CLI arguments for determining dirty files."""
     parser = argparse.ArgumentParser(
         description="Identify which CCCL projects require rebuilds between two commits."
@@ -103,15 +103,15 @@ def load_config(path: Path) -> Config:
     if not isinstance(projects_raw, dict) or not projects_raw:
         raise SystemExit(f"No projects defined in {path}")
 
-    def to_tuple(value: Optional[Sequence[str] | str]) -> Tuple[str, ...]:
+    def to_tuple(value: Sequence[str] | str | None) -> tuple[str, ...]:
         if value is None:
             return tuple()
         if isinstance(value, (list, tuple)):
             return tuple(value)
         return (value,)
 
-    project_keys: List[str] = list(projects_raw.keys())
-    projects: Dict[str, ProjectConfig] = {}
+    project_keys: list[str] = list(projects_raw.keys())
+    projects: dict[str, ProjectConfig] = {}
     for key in project_keys:
         entry = projects_raw.get(key) or {}
         name = entry.get("name", key)
@@ -203,7 +203,7 @@ def anchor_regex(pattern: str) -> re.Pattern[str]:
     return re.compile(anchored)
 
 
-def compile_patterns(patterns: Sequence[str]) -> Tuple[re.Pattern[str], ...]:
+def compile_patterns(patterns: Sequence[str]) -> tuple[re.Pattern[str], ...]:
     """Compile a list of regex strings into anchored patterns."""
     return tuple(anchor_regex(pattern) for pattern in patterns)
 
@@ -214,12 +214,12 @@ def matches_any(patterns: Sequence[re.Pattern[str]], path: str) -> bool:
 
 
 def build_dependency_graph_raw(
-    projects: Dict[str, ProjectConfig],
-) -> Dict[str, List[Tuple[str, str]]]:
+    projects: dict[str, ProjectConfig],
+) -> dict[str, list[tuple[str, str]]]:
     """Return mapping of project -> [(dependency, type)]."""
-    graph: Dict[str, List[Tuple[str, str]]] = {}
+    graph: dict[str, list[tuple[str, str]]] = {}
     for key, project in projects.items():
-        edges: List[Tuple[str, str]] = []
+        edges: list[tuple[str, str]] = []
         edges.extend((dep, "full") for dep in project.full_dependencies)
         edges.extend((dep, "lite") for dep in project.lite_dependencies)
         graph[key] = edges
@@ -228,11 +228,11 @@ def build_dependency_graph_raw(
 
 def compute_transitive_dependencies(
     project_keys: Sequence[str],
-    projects: Dict[str, ProjectConfig],
-    graph: Dict[str, List[Tuple[str, str]]],
-) -> Dict[str, Tuple[str, ...]]:
+    projects: dict[str, ProjectConfig],
+    graph: dict[str, list[tuple[str, str]]],
+) -> dict[str, tuple[str, ...]]:
     """Return a dictionary of transitive dependencies for each project."""
-    result: Dict[str, Tuple[str, ...]] = {}
+    result: dict[str, tuple[str, ...]] = {}
 
     for key in project_keys:
         visited: set[str] = set()
@@ -261,7 +261,7 @@ def compute_transitive_dependencies(
 
 def project_dirty_files(
     project: ProjectConfig, dirty_files: Sequence[str]
-) -> List[str]:
+) -> list[str]:
     """Collect dirty files that belong to the given project. Does not apply project exclusions yet."""
     include_patterns = compile_patterns(project.include_regexes)
     exclude_patterns = compile_patterns(project.exclude_regexes)
@@ -281,9 +281,9 @@ def project_dirty_files(
 
 def build_project_dirty_map(
     config: Config, dirty_files: Sequence[str]
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     """Compute per-project dirty file lists, including a residual `core` list."""
-    project_files: Dict[str, List[str]] = {}
+    project_files: dict[str, list[str]] = {}
 
     # First gather matches for every non-core project. Files may belong to multiple projects.
     for key in config.project_keys:
@@ -332,7 +332,7 @@ def write_output(key: str, value: str) -> None:
 
 def collect_dirty_files(
     args: argparse.Namespace, config: Config
-) -> Tuple[List[str], List[str]]:
+) -> tuple[list[str], list[str]]:
     """Return normalized dirty file paths and the subset filtered as ignored."""
     if args.refs:
         if repo_is_shallow():
@@ -371,8 +371,8 @@ def collect_dirty_files(
 
     ignore_patterns = compile_patterns(config.ignore_regexes)
     if ignore_patterns:
-        kept: List[str] = []
-        ignored: List[str] = []
+        kept: list[str] = []
+        ignored: list[str] = []
         for path in dirty_files:
             if matches_any(ignore_patterns, path):
                 ignored.append(path)
@@ -383,14 +383,14 @@ def collect_dirty_files(
     return dirty_files, []
 
 
-def format_bullet_list(lines: Sequence[str], indent: str = "  ") -> List[str]:
+def format_bullet_list(lines: Sequence[str], indent: str = "  ") -> list[str]:
     """Convert each string into a markdown bullet line with the given indent."""
     return [f"{indent}- {line}" for line in lines]
 
 
-def build_reverse_dependency_graph(config: Config) -> Dict[str, List[Tuple[str, bool]]]:
+def build_reverse_dependency_graph(config: Config) -> dict[str, list[tuple[str, bool]]]:
     """Return mapping of dependency -> (dependent, requires_full_rebuild)."""
-    reverse: Dict[str, List[Tuple[str, bool]]] = {}
+    reverse: dict[str, list[tuple[str, bool]]] = {}
 
     for project in config.projects.values():
         for dep in project.full_dependencies:
@@ -406,16 +406,16 @@ def build_reverse_dependency_graph(config: Config) -> Dict[str, List[Tuple[str, 
 def propagate_dirty_projects(
     config: Config,
     initial_full: Sequence[str],  # Projects with dirty files
-    reverse_graph: Dict[
-        str, List[Tuple[str, bool]]
+    reverse_graph: dict[
+        str, list[tuple[str, bool]]
     ],  # dependency -> [(dependent, requires_full_rebuild)]
-) -> Tuple[set[str], set[str]]:  # (full_set, lite_set)
+) -> tuple[set[str], set[str]]:  # (full_set, lite_set)
     """Propagate rebuild requirements through the reverse dependency graph."""
     full_set: set[str] = set(initial_full)
     lite_set: set[str] = set()
     # BFS queue of (project_key, depth)
-    queue: deque[Tuple[str, int]] = deque((key, 0) for key in initial_full)
-    seen: set[Tuple[str, int]] = set(queue)
+    queue: deque[tuple[str, int]] = deque((key, 0) for key in initial_full)
+    seen: set[tuple[str, int]] = set(queue)
 
     while queue:
         current, depth = queue.popleft()
@@ -479,11 +479,11 @@ def log_dependency_overview(config: Config) -> None:
 
 def build_dirty_sections(
     config: Config,
-    project_dirty_map: Dict[str, List[str]],
+    project_dirty_map: dict[str, list[str]],
     ignored_files: Sequence[str],
-) -> List[Tuple[str, List[str]]]:
+) -> list[tuple[str, list[str]]]:
     """Create (heading, files) tuples for non-empty dirty buckets."""
-    sections: List[Tuple[str, List[str]]] = []
+    sections: list[tuple[str, list[str]]] = []
     for key in config.project_keys:
         if key == CORE_PROJECT_KEY:
             continue
@@ -508,7 +508,7 @@ def build_dirty_sections(
 
 def log_dirty_files(
     combined_dirty: Sequence[str],
-    sections: Sequence[Tuple[str, Sequence[str]]],
+    sections: Sequence[tuple[str, Sequence[str]]],
 ) -> None:
     """Emit dirty-file information in markdown list form."""
     if sections:
@@ -532,18 +532,18 @@ def log_dirty_files(
 
 def determine_rebuild_sets(
     config: Config,
-    project_dirty_map: Dict[str, List[str]],  # key -> dirty files
-    reverse_graph: Dict[
-        str, List[Tuple[str, bool]]
+    project_dirty_map: dict[str, list[str]],  # key -> dirty files
+    reverse_graph: dict[
+        str, list[tuple[str, bool]]
     ],  # dependency -> [(dependent, requires_full_rebuild)]
-) -> Tuple[
-    Dict[str, str], set[str], set[str]
+) -> tuple[
+    dict[str, str], set[str], set[str]
 ]:  # (project_statuses, full_set, lite_set)
     """Return project statuses plus the full/lite rebuild sets."""
     core_dirty_files = project_dirty_map[CORE_PROJECT_KEY]
 
     if core_dirty_files:
-        project_statuses: Dict[str, str] = {key: "Dirty" for key in config.project_keys}
+        project_statuses: dict[str, str] = {key: "Dirty" for key in config.project_keys}
         return project_statuses, set(config.project_keys), set()
 
     initially_dirty = [
@@ -560,7 +560,7 @@ def determine_rebuild_sets(
         reverse_graph,
     )
 
-    project_statuses: Dict[str, str] = {}
+    project_statuses: dict[str, str] = {}
     for key in config.project_keys:
         if key in full_set:
             project_statuses[key] = "Dirty"
@@ -576,7 +576,7 @@ def compute_outputs(
     config: Config,
     full_set: set[str],
     lite_set: set[str],
-) -> Tuple[List[str], List[str]]:  # (FULL_BUILD, LITE_BUILD) matrix_project lists
+) -> tuple[list[str], list[str]]:  # (FULL_BUILD, LITE_BUILD) matrix_project lists
     """Convert rebuild sets into ordered matrix project lists."""
     full_output = [
         config.project(key).matrix_project
@@ -601,7 +601,7 @@ def emit_outputs(full_output: Sequence[str], lite_output: Sequence[str]) -> None
 
 def write_project_summary(
     config: Config,
-    project_statuses: Dict[str, str],
+    project_statuses: dict[str, str],
     writer: SummaryWriter,
 ) -> None:
     """Render the status table inside the summary section."""
@@ -617,7 +617,7 @@ def write_project_summary(
 
 def write_summary_dirty_sections(
     combined_dirty: Sequence[str],
-    sections: Sequence[Tuple[str, Sequence[str]]],
+    sections: Sequence[tuple[str, Sequence[str]]],
     writer: SummaryWriter,
 ) -> None:
     """Render dirty-file details inside the summary section."""
@@ -639,7 +639,7 @@ def write_summary_dirty_sections(
     writer.log("</details>")
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     """Entrypoint used by the GitHub Action wrapper."""
     args = parse_args(argv)
     config = load_config(CONFIG_PATH)

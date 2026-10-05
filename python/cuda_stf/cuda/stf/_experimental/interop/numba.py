@@ -30,14 +30,14 @@ _NUMBA_INSTALL_HINT = (
 def _import_numba_cuda():
     """Import :mod:`numba.cuda`, raising a friendly error if unavailable."""
     try:
-        from numba import cuda  # noqa: PLC0415
+        from numba import cuda
     except ImportError as exc:
         raise ImportError(_NUMBA_INSTALL_HINT) from exc
     return cuda
 
 
 def _import_stf_types():
-    from cuda.stf._experimental._stf_bindings import (  # noqa: PLC0415
+    from cuda.stf._experimental._stf_bindings import (
         context,
         dep,
         exec_place,
@@ -145,7 +145,7 @@ class _stf_bound_kernel:
     the (expensive) Numba compilation stays cached on the shared decorator.
     """
 
-    __slots__ = ("_decorator", "_grid_dim", "_block_dim", "_ctx", "_exec_pl")
+    __slots__ = ("_block_dim", "_ctx", "_decorator", "_exec_pl", "_grid_dim")
 
     def __init__(self, decorator, grid_dim, block_dim, ctx, exec_pl):
         self._decorator = decorator
@@ -191,8 +191,6 @@ class _stf_bound_kernel:
 
             nb_stream = cuda.external_stream(t.stream_ptr())
             compiled_kernel[gridDim, blockDim, nb_stream](*dev_args, **kwargs)
-
-        return None
 
 
 class stf_kernel_decorator:

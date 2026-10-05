@@ -39,9 +39,7 @@ class VariantPoint:
     def label(self):
         if self.is_base():
             return "base"
-        return ".".join(
-            ["{}_{}".format(point.label, point.value) for point in self.range_points]
-        )
+        return ".".join([f"{point.label}_{point.value}" for point in self.range_points])
 
     def is_base(self):
         return len(self.range_points) == 0
@@ -52,7 +50,7 @@ class VariantPoint:
 
         tuning = "#pragma once\n\n"
         for point in self.range_points:
-            tuning += "#define {} {}\n".format(point.definition, point.value)
+            tuning += f"#define {point.definition} {point.value}\n"
         return tuning
 
 
@@ -74,7 +72,7 @@ def parse_ranges(columns):
 
 def parse_meta(path="cccl_meta_bench.csv"):
     if not os.path.isfile(path):
-        print("{} not found".format(path), file=sys.stderr)
+        print(f"{path} not found", file=sys.stderr)
         print(
             "make sure to run the script from the CUB build directory", file=sys.stderr
         )

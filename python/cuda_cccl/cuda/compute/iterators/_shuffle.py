@@ -46,7 +46,7 @@ class ShuffleIterator(IteratorBase):
             different (deterministic) permutations. Defaults to 0.
     """
 
-    __slots__ = ["_num_items", "_seed", "_current_index"]
+    __slots__ = ["_current_index", "_num_items", "_seed"]
 
     def __init__(self, num_items: int, seed: int = 0, *, _current_index: int = 0):
         if num_items <= 0:
@@ -140,7 +140,7 @@ class ShuffleIterator(IteratorBase):
     def _make_output_deref_op(self) -> Op | None:
         return None
 
-    def __add__(self, offset: int) -> "ShuffleIterator":
+    def __add__(self, offset: int) -> ShuffleIterator:
         return ShuffleIterator(
             self._num_items,
             self._seed,

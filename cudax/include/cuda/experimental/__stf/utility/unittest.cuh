@@ -210,12 +210,12 @@ struct expecter
      * evaluating
      * `==`.
      */
-#  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
-    template <typename U>                                                                  \
-    auto operator op(U&& rhs) &&                                                           \
-    {                                                                                      \
-      using Result = decltype(value op ::cuda::std::forward<U>(rhs));                      \
-      return term<Result>(::cuda::std::forward<T>(value) op ::cuda::std::forward<U>(rhs)); \
+#  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                           \
+    template <typename U>                                                                 \
+    auto operator op(U&& rhs) &&                                                          \
+    {                                                                                     \
+      using Result = decltype(value op::cuda::std::forward<U>(rhs));                      \
+      return term<Result>(::cuda::std::forward<T>(value) op::cuda::std::forward<U>(rhs)); \
     }
 
     _9d10c7e37932af3c4f39a5ce7ff00b5a(*);

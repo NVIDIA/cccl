@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import List
 
 import numpy as np
 import pytest
@@ -49,7 +48,7 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
         raise ValueError(f"Unsupported dtype {dtype}")
 
 
-def type_to_problem_sizes(dtype) -> List[int]:
+def type_to_problem_sizes(dtype) -> list[int]:
     if dtype in DTYPE_LIST:
         return [2, 4, 6, 8, 10, 16, 20]
     else:

@@ -10,8 +10,8 @@ torch = pytest.importorskip("torch")
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.pytorch import (  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import (
     pytorch_task,
     tensor_arg,
     tensor_arguments,

@@ -328,7 +328,7 @@ public:
 
     // Use raw aligned storage because Clang rejects a directly declared __shared__ barrier
     using __barrier_type = ::cuda::barrier<::cuda::thread_scope_block>;
-    __shared__ ::cuda::std::aligned_storage_t<sizeof(__barrier_type), alignof(__barrier_type)> __barrier_storage;
+    __shared__::cuda::std::aligned_storage_t<sizeof(__barrier_type), alignof(__barrier_type)> __barrier_storage;
     auto* const __barrier = reinterpret_cast<__barrier_type*>(&__barrier_storage);
 
     if (__group.thread_rank() == 0)

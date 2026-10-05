@@ -94,7 +94,7 @@ def capture(args, env=None):
     err = convert_string(err)
     if p.returncode != 0:
         raise subprocess.CalledProcessError(
-            cmd=args, returncode=p.returncode, output="{}\n{}".format(out, err)
+            cmd=args, returncode=p.returncode, output=f"{out}\n{err}"
         )
     return out
 
@@ -241,7 +241,7 @@ def executeCommand(command, cwd=None, env=None, input=None, timeout=0):
 
     if hitTimeOut[0]:
         raise ExecuteCommandTimeoutException(
-            msg="Reached timeout of {} seconds".format(timeout),
+            msg=f"Reached timeout of {timeout} seconds",
             out=out,
             err=err,
             exitCode=exitCode,
@@ -265,7 +265,7 @@ def killProcessAndChildren(pid):
           remove our dependency on it.
     """
     if platform.system() == "AIX":
-        subprocess.call("kill -kill $(ps -o pid= -L{})".format(pid), shell=True)
+        subprocess.call(f"kill -kill $(ps -o pid= -L{pid})", shell=True)
     else:
         import psutil
 

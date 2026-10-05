@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from .. import _bindings, types
 from .. import _cccl_interop as cccl
@@ -22,12 +22,12 @@ class _ThreeWayPartition(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
-        "d_in_cccl",
         "d_first_part_out_cccl",
+        "d_in_cccl",
+        "d_num_selected_out_cccl",
         "d_second_part_out_cccl",
         "d_unselected_out_cccl",
-        "d_num_selected_out_cccl",
+        "loaded_build_result",
         "select_first_part_op_cccl",
         "select_second_part_op_cccl",
     ]

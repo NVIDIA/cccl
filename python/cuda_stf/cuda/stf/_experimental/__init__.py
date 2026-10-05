@@ -125,9 +125,9 @@ __all__ = [
     "native_partition_fn",
     "partition_fn_blocked",
     "partition_fn_cyclic",
+    "paths",
     "placement_evaluate",
     "placement_stats",
-    "paths",
     "stackable_context",
     "task_graph",
 ]

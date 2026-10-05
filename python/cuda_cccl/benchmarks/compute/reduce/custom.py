@@ -18,17 +18,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import SIGNED_TYPES as TYPE_MAP
 from utils import as_cupy_stream, generate_data_with_entropy
 
+from cuda import bench
 from cuda.compute import make_reduce_into
 
 
 def max_op(a, b):
-    return a if a > b else b
+    return max(b, a)
 
 
 def bench_reduce_custom(state: bench.State):

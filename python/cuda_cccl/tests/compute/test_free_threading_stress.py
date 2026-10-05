@@ -8,8 +8,8 @@ import concurrent.futures
 import sys
 import sysconfig
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import numpy as np
 import pytest
@@ -1751,8 +1751,8 @@ def _make_clamped_max_op(k):
     """
 
     def clamped_max(a, b):
-        m = a if a > b else b
-        return m if m > k else k
+        m = max(b, a)
+        return max(k, m)
 
     return clamped_max
 
@@ -1984,7 +1984,7 @@ def test_concurrent_cold_gpu_struct_registration(jit_compute_module):
             def minmax_op(a, b):
                 c_min = min(a.min_val, b.min_val)
                 c_max = max(a.max_val, b.max_val)
-                return MinMax(c_min if c_min > floor else floor, c_max)
+                return MinMax(max(floor, c_min), c_max)
 
             stream = _make_stream()
             d_in = DeviceArray.from_numpy(h_pairs.view(MinMax.dtype))

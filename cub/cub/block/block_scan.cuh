@@ -39,7 +39,6 @@ CUB_NAMESPACE_BEGIN
 //!        parallel prefix scan across a CUDA thread block.
 enum BlockScanAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
-
   //! @rst
   //! Overview
   //! ++++++++++++++++++++++++++

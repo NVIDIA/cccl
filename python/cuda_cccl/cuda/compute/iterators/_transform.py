@@ -41,12 +41,12 @@ class TransformIterator(IteratorBase):
     """
 
     __slots__ = [
-        "_underlying",
-        "_transform_op",
-        "_value_type",
-        "_is_input",
         "_compiled_op",
+        "_is_input",
         "_op_state_offset",
+        "_transform_op",
+        "_underlying",
+        "_value_type",
     ]
 
     def __init__(
@@ -272,7 +272,7 @@ class TransformIterator(IteratorBase):
             ],
         )
 
-    def advance(self, offset: int) -> "TransformIterator":
+    def advance(self, offset: int) -> TransformIterator:
         """Return a new iterator advanced by offset elements."""
         if not hasattr(self._underlying, "__add__"):
             raise AttributeError("Underlying iterator does not support advance")
@@ -283,10 +283,10 @@ class TransformIterator(IteratorBase):
             is_input=self._is_input,
         )
 
-    def __add__(self, offset: int) -> "TransformIterator":
+    def __add__(self, offset: int) -> TransformIterator:
         return self.advance(offset)
 
-    def __radd__(self, offset: int) -> "TransformIterator":
+    def __radd__(self, offset: int) -> TransformIterator:
         return self.advance(offset)
 
     @property

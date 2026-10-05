@@ -30,16 +30,16 @@ CCCL_C_EXTERN_C_BEGIN
 
 typedef enum cccl_type_enum
 {
-  CCCL_INT8    = 0,
-  CCCL_INT16   = 1,
-  CCCL_INT32   = 2,
-  CCCL_INT64   = 3,
-  CCCL_UINT8   = 4,
-  CCCL_UINT16  = 5,
-  CCCL_UINT32  = 6,
-  CCCL_UINT64  = 7,
-  CCCL_FLOAT16 = 8, // This may be unsupported if _CCCL_HAS_NVFP16() is false but we can't include the header to check
-                    // that here
+  CCCL_INT8     = 0,
+  CCCL_INT16    = 1,
+  CCCL_INT32    = 2,
+  CCCL_INT64    = 3,
+  CCCL_UINT8    = 4,
+  CCCL_UINT16   = 5,
+  CCCL_UINT32   = 6,
+  CCCL_UINT64   = 7,
+  CCCL_FLOAT16  = 8, // This may be unsupported if _CCCL_HAS_NVFP16() is false but we can't include the header to check
+                     // that here
   CCCL_FLOAT32  = 9,
   CCCL_FLOAT64  = 10,
   CCCL_STORAGE  = 11,
@@ -92,12 +92,12 @@ typedef enum cccl_op_kind_t
 
 typedef enum cccl_op_code_type
 {
-  CCCL_OP_LTOIR = 0, // Pre-compiled LTO-IR (escape hatch for callers with existing nvcc -dlto artifacts).
-                     // LTO-IR is a binary container passed to nvJitLink at the PTX level — the LLVM optimizer
-                     // never sees it, so the operator cannot be inlined into the CUB kernel and pays a real
-                     // CALL on every iteration. CCCL_OP_LLVM_IR feeds LLVM's bitcode linker instead, which
-                     // merges the operator into the CUB module before PTX codegen and enables full inlining.
-                     // Prefer CCCL_OP_LLVM_IR or CCCL_OP_CPP_SOURCE for any new code.
+  CCCL_OP_LTOIR      = 0, // Pre-compiled LTO-IR (escape hatch for callers with existing nvcc -dlto artifacts).
+                          // LTO-IR is a binary container passed to nvJitLink at the PTX level — the LLVM optimizer
+                          // never sees it, so the operator cannot be inlined into the CUB kernel and pays a real
+                          // CALL on every iteration. CCCL_OP_LLVM_IR feeds LLVM's bitcode linker instead, which
+                          // merges the operator into the CUB module before PTX codegen and enables full inlining.
+                          // Prefer CCCL_OP_LLVM_IR or CCCL_OP_CPP_SOURCE for any new code.
   CCCL_OP_CPP_SOURCE = 1, // C++ source code (compiled to LLVM bitcode by hostjit's Clang).
   CCCL_OP_LLVM_IR    = 2 // LLVM bitcode (recommended) — merges into the CUB module before PTX gen, so inlines.
 } cccl_op_code_type;

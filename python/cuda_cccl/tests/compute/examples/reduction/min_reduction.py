@@ -15,7 +15,7 @@ import cuda.compute
 
 def min_op(a, b):
     # the binary operation for the reduction
-    return a if a < b else b
+    return min(b, a)
 
 
 # Prepare the input and output arrays.

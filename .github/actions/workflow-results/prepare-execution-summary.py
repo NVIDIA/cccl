@@ -50,7 +50,7 @@ def extract_jobs(workflow):
     return jobs
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def get_sccache_stats(job_id):
     sccache_file = f"jobs/{job_id}/sccache_stats.json"
     if os.path.exists(sccache_file):

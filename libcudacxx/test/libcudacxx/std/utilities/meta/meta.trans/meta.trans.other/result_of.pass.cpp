@@ -114,19 +114,19 @@ int main(int, char**)
   }
   { // pointer to function
     using RF0  = bool (&)();
-    using RF1  = bool* (&) (int);
-    using RF2  = bool& (&) (int, int);
-    using RF3  = bool const& (&) (int, int, int);
+    using RF1  = bool* (&)(int);
+    using RF2  = bool& (&)(int, int);
+    using RF3  = bool const& (&)(int, int, int);
     using RF4  = bool (&)(int, ...);
     using PF0  = bool (*)();
-    using PF1  = bool* (*) (int);
-    using PF2  = bool& (*) (int, int);
-    using PF3  = bool const& (*) (int, int, int);
+    using PF1  = bool* (*)(int);
+    using PF2  = bool& (*)(int, int);
+    using PF3  = bool const& (*)(int, int, int);
     using PF4  = bool (*)(int, ...);
     using PRF0 = bool (*&)();
-    using PRF1 = bool* (*&) (int);
-    using PRF2 = bool& (*&) (int, int);
-    using PRF3 = bool const& (*&) (int, int, int);
+    using PRF1 = bool* (*&)(int);
+    using PRF2 = bool& (*&)(int, int);
+    using PRF3 = bool const& (*&)(int, int, int);
     using PRF4 = bool (*&)(int, ...);
     test_result_of<RF0(), bool>();
     test_result_of<RF1(int), bool*>();
@@ -147,9 +147,9 @@ int main(int, char**)
   { // pointer to member function
 
     using PMS0 = int (S::*)();
-    using PMS1 = int* (S::*) (long);
-    using PMS2 = int& (S::*) (long, int);
-    using PMS3 = const int& (S::*) (int, ...);
+    using PMS1 = int* (S::*)(long);
+    using PMS2 = int& (S::*)(long, int);
+    using PMS3 = const int& (S::*)(int, ...);
     test_result_of<PMS0(S), int>();
     test_result_of<PMS0(S&), int>();
     test_result_of<PMS0(S*), int>();
@@ -233,9 +233,9 @@ int main(int, char**)
     test_result_of<PMS3(S&, int, long), const int&>();
 
     using PMS0C = int (S::*)() const;
-    using PMS1C = int* (S::*) (long) const;
-    using PMS2C = int& (S::*) (long, int) const;
-    using PMS3C = const int& (S::*) (int, ...) const;
+    using PMS1C = int* (S::*)(long) const;
+    using PMS2C = int& (S::*)(long, int) const;
+    using PMS3C = const int& (S::*)(int, ...) const;
     test_result_of<PMS0C(S), int>();
     test_result_of<PMS0C(S&), int>();
     test_result_of<PMS0C(const S&), int>();
@@ -289,9 +289,9 @@ int main(int, char**)
     test_result_of<PMS3C(S&, int, long), const int&>();
 
     using PMS0V = int (S::*)() volatile;
-    using PMS1V = int* (S::*) (long) volatile;
-    using PMS2V = int& (S::*) (long, int) volatile;
-    using PMS3V = const int& (S::*) (int, ...) volatile;
+    using PMS1V = int* (S::*)(long) volatile;
+    using PMS2V = int& (S::*)(long, int) volatile;
+    using PMS3V = const int& (S::*)(int, ...) volatile;
     test_result_of<PMS0V(S), int>();
     test_result_of<PMS0V(S&), int>();
     test_result_of<PMS0V(volatile S&), int>();
@@ -335,9 +335,9 @@ int main(int, char**)
     test_result_of<PMS3V(S&, int, long), const int&>();
 
     using PMS0CV = int (S::*)() const volatile;
-    using PMS1CV = int* (S::*) (long) const volatile;
-    using PMS2CV = int& (S::*) (long, int) const volatile;
-    using PMS3CV = const int& (S::*) (int, ...) const volatile;
+    using PMS1CV = int* (S::*)(long) const volatile;
+    using PMS2CV = int& (S::*)(long, int) const volatile;
+    using PMS3CV = const int& (S::*)(int, ...) const volatile;
     test_result_of<PMS0CV(S), int>();
     test_result_of<PMS0CV(S&), int>();
     test_result_of<PMS0CV(const S&), int>();

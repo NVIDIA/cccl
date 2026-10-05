@@ -98,6 +98,6 @@ class ConstantIterator(IteratorBase):
     def _make_output_deref_op(self) -> Op | None:
         return None
 
-    def __add__(self, offset: int) -> "ConstantIterator":
+    def __add__(self, offset: int) -> ConstantIterator:
         """Return a new ConstantIterator (value doesn't change with position)."""
         return ConstantIterator(self._constant_value)

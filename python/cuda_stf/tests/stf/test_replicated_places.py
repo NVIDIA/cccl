@@ -14,7 +14,7 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 
 class TestReplicatedDataPlace:
@@ -72,7 +72,6 @@ class TestReplicatedDataPlace:
         X = np.zeros(64, dtype=np.float32)
         lX = ctx.logical_data(X)
 
-        with pytest.raises(Exception, match="read"):
-            with ctx.task(grid, lX.rw(rep)):
-                pass
+        with pytest.raises(Exception, match="read"), ctx.task(grid, lX.rw(rep)):
+            pass
         ctx.finalize()

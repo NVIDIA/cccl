@@ -696,7 +696,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
 
   // STORE --pos_buf_free--> COMPUTE staging (this is because we have the case where pos_ring_stages < key_ring_stages);
   // if it is mapped 1:1, then this would have been protected by empty / fall as well, but here we need an extra barrier
-  __shared__ ::cuda::std::uint64_t pos_buf_free[max_pos_ring_stages];
+  __shared__::cuda::std::uint64_t pos_buf_free[max_pos_ring_stages];
   // barrier dependency graph, per key-ring slot; A = arrives, W = waits (arrival counts in the init loop below)
   //
   // spine:  LOAD --> {COMPUTE, POLL} --> {STORE, BOOKKEEPER} --> LOAD  (slot recycles)
@@ -710,16 +710,16 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_rle_encode_lookahead_body(
   // pos_buf_free                      W                  A                       staging gate, pos ring is shallower
   // empty                  W                              A             A        POLL never waits on empty: it is
   //                                                                              transitively gated by LOAD's next full
-  __shared__ ::cuda::std::uint64_t full[max_key_ring_stages];
-  __shared__ ::cuda::std::uint64_t computed[max_key_ring_stages], prefixed[max_key_ring_stages],
+  __shared__::cuda::std::uint64_t full[max_key_ring_stages];
+  __shared__::cuda::std::uint64_t computed[max_key_ring_stages], prefixed[max_key_ring_stages],
     empty[max_key_ring_stages];
   // COMPUTE warp w --staged_warp_tile[w]--> STORE: we arrive per warp tile handoff
   // i.e. store warps start working to drain a warp-tile as soon as ITS positions are staged
-  __shared__ ::cuda::std::uint64_t staged_warp_tile[max_key_ring_stages][compute_warps];
+  __shared__::cuda::std::uint64_t staged_warp_tile[max_key_ring_stages][compute_warps];
 
   // try_cancel writes a 16-byte response into clc_resp + completes clc_bar's tx.
   __shared__ __align__(16) uint4 clc_resp;
-  __shared__ ::cuda::std::uint64_t clc_bar;
+  __shared__::cuda::std::uint64_t clc_bar;
   static_assert(
     sizeof(tile_id_buf) + sizeof(warp_run_counts) + sizeof(head_flag_buf) + sizeof(warp_first_heads)
         + sizeof(warp_last_heads) + sizeof(prefix_packed) + sizeof(pos_buf_free) + sizeof(full) + sizeof(computed)

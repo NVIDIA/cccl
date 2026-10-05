@@ -9,12 +9,12 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
+from numba import cuda
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.numba import numba_arguments  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import numba_arguments
 
 
 @pytest.fixture(autouse=True)
@@ -38,11 +38,10 @@ def _record_add_graph(n=256, value=1.0):
     tpb = 128
     bpg = (n + tpb - 1) // tpb
 
-    with graph:
-        with ctx.task(lx.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dx = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dx, value)
+    with graph, ctx.task(lx.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dx = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dx, value)
 
     return graph, x_host
 
@@ -102,9 +101,8 @@ def test_task_graph_reset_before_recording_is_noop():
 def test_task_graph_reset_after_failed_recording_is_noop():
     graph = stf.task_graph()
 
-    with pytest.raises(ValueError):
-        with graph:
-            raise ValueError("record failed")
+    with pytest.raises(ValueError), graph:
+        raise ValueError("record failed")
 
     graph.reset()
     graph.reset()
@@ -136,10 +134,8 @@ def test_task_graph_task_outside_recording_raises():
 def test_task_graph_nested_enter_raises():
     graph = stf.task_graph()
     try:
-        with graph:
-            with pytest.raises(RuntimeError):
-                with graph:
-                    pass
+        with graph, pytest.raises(RuntimeError), graph:
+            pass
     finally:
         graph.finalize()
 
@@ -147,9 +143,8 @@ def test_task_graph_nested_enter_raises():
 def test_task_graph_second_recording_raises():
     graph, _ = _record_add_graph()
     try:
-        with pytest.raises(RuntimeError):
-            with graph:
-                pass
+        with pytest.raises(RuntimeError), graph:
+            pass
     finally:
         graph.finalize()
 
@@ -159,9 +154,8 @@ def test_task_graph_enter_after_reset_raises():
     graph.reset()
 
     try:
-        with pytest.raises(RuntimeError):
-            with graph:
-                pass
+        with pytest.raises(RuntimeError), graph:
+            pass
     finally:
         graph.finalize()
 
@@ -170,23 +164,20 @@ def test_task_graph_enter_after_finalize_raises():
     graph = stf.task_graph()
     graph.finalize()
 
-    with pytest.raises(RuntimeError):
-        with graph:
-            pass
+    with pytest.raises(RuntimeError), graph:
+        pass
 
 
 def test_task_graph_failed_recording_locks_graph():
     graph = stf.task_graph()
 
-    with pytest.raises(ValueError):
-        with graph:
-            raise ValueError("record failed")
+    with pytest.raises(ValueError), graph:
+        raise ValueError("record failed")
 
     with pytest.raises(RuntimeError):
         graph.launch()
-    with pytest.raises(RuntimeError):
-        with graph:
-            pass
+    with pytest.raises(RuntimeError), graph:
+        pass
 
     graph.finalize()
 
@@ -245,9 +236,8 @@ def test_task_graph_accessors_after_reset_raise():
 def test_task_graph_finalize_while_recording_raises():
     graph = stf.task_graph()
 
-    with graph:
-        with pytest.raises(RuntimeError):
-            graph.finalize()
+    with graph, pytest.raises(RuntimeError):
+        graph.finalize()
 
     graph.finalize()
 

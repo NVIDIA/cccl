@@ -88,8 +88,8 @@ int main(int, char**)
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::result_type, void>::value));
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::result_type, int*>::value));
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::result_type, void>::value));
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::result_type, int*>::value));
-  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (C::*) (double*)>::result_type, int*>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*)(double*)>::result_type, int*>::value));
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (C::*)(double*)>::result_type, int*>::value));
   static_assert(
     (cuda::std::is_same<cuda::std::reference_wrapper<int (C::*)(double*) const volatile>::result_type, int>::value));
   static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C()>::result_type, C>::value));

@@ -20,7 +20,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import (
@@ -33,6 +32,7 @@ from utils import (
     generate_uniform_segment_offsets,
 )
 
+from cuda import bench
 from cuda.compute import SortOrder, make_segmented_sort
 
 

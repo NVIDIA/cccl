@@ -20,14 +20,14 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_condition ::error_condition()
+error_condition::error_condition()
     : m_val(0)
     , m_cat(&generic_category())
 {
   ;
 } // end error_condition::error_condition()
 
-error_condition ::error_condition(int val, const error_category& cat)
+error_condition::error_condition(int val, const error_category& cat)
     : m_val(val)
     , m_cat(&cat)
 {
@@ -35,7 +35,7 @@ error_condition ::error_condition(int val, const error_category& cat)
 } // end error_condition::error_condition()
 
 template <typename ErrorConditionEnum>
-error_condition ::error_condition(
+error_condition::error_condition(
   ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
 #if !_CCCL_COMPILER(MSVC)
@@ -46,7 +46,7 @@ error_condition ::error_condition(
     : error_condition(make_error_condition(e))
 {} // end error_condition::error_condition()
 
-void error_condition ::assign(int val, const error_category& cat)
+void error_condition::assign(int val, const error_category& cat)
 {
   m_val = val;
   m_cat = &cat;
@@ -62,35 +62,35 @@ template <typename ErrorConditionEnum>
 #else
 error_condition&
 #endif // !_CCCL_COMPILER(MSVC)
-error_condition ::operator=(ErrorConditionEnum e)
+error_condition::operator=(ErrorConditionEnum e)
 {
   *this = make_error_condition(e);
   return *this;
 } // end error_condition::operator=()
 // NOLINTEND(misc-unconventional-assign-operator)
 
-void error_condition ::clear()
+void error_condition::clear()
 {
   m_val = 0;
   m_cat = &generic_category();
 } // end error_condition::clear()
 
-int error_condition ::value() const
+int error_condition::value() const
 {
   return m_val;
 } // end error_condition::value()
 
-const error_category& error_condition ::category() const
+const error_category& error_condition::category() const
 {
   return *m_cat;
 } // end error_condition::category()
 
-std::string error_condition ::message() const
+std::string error_condition::message() const
 {
   return category().message(value());
 } // end error_condition::message()
 
-error_condition ::operator bool() const
+error_condition::operator bool() const
 {
   return value() != 0;
 } // end error_condition::operator bool ()

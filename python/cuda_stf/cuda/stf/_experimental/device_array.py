@@ -125,24 +125,24 @@ class DeviceArray:
     """
 
     __slots__ = (
+        "__weakref__",
+        "_base",
+        "_dplace",
+        "_dtype",
+        "_finalizer_ref",
+        "_nbytes",
         "_ptr",
         "_shape",
         "_size",
-        "_dtype",
-        "_nbytes",
-        "_dplace",
         "_stream",
         "_stream_int",
-        "_base",
-        "_finalizer_ref",
-        "__weakref__",
     )
 
     def __init__(
         self,
         shape,
         dtype,
-        dplace: "data_place",
+        dplace: data_place,
         stream=None,
         *,
         dims=None,
@@ -194,9 +194,9 @@ class DeviceArray:
     @staticmethod
     def from_host(
         host_array: np.ndarray,
-        dplace: "data_place",
+        dplace: data_place,
         stream=None,
-    ) -> "DeviceArray":
+    ) -> DeviceArray:
         """Allocate on *dplace* and copy *host_array* to the device.
 
         The host array is made C-contiguous; its shape is preserved.
@@ -211,14 +211,14 @@ class DeviceArray:
 
     @staticmethod
     def _view(
-        base_or_owner: "DeviceArray",
+        base_or_owner: DeviceArray,
         ptr: int,
         shape: tuple,
         dtype: np.dtype,
-        dplace: "data_place",
+        dplace: data_place,
         stream_int: int,
         stream=None,
-    ) -> "DeviceArray":
+    ) -> DeviceArray:
         """Create a non-owning view into an existing DeviceArray.
 
         The view holds the owning (root) array through ``_base`` so the
@@ -238,7 +238,7 @@ class DeviceArray:
         view._finalizer_ref = None
         return view
 
-    def reshape(self, *shape) -> "DeviceArray":
+    def reshape(self, *shape) -> DeviceArray:
         """Return a non-owning view with a new C-order shape.
 
         The storage is C-contiguous, so any reshape preserving the element
@@ -337,7 +337,7 @@ class DeviceArray:
         """
         if self._ptr:
             try:
-                from cuda.bindings import driver as _drv  # noqa: PLC0415
+                from cuda.bindings import driver as _drv
 
                 err, dev = _drv.cuPointerGetAttribute(
                     _drv.CUpointer_attribute.CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
@@ -428,7 +428,7 @@ class DeviceArray:
                 "representable in DLPack"
             )
         self._make_ready_on(stream)
-        from cuda.stf._experimental._stf_bindings import dlpack_export  # noqa: PLC0415
+        from cuda.stf._experimental._stf_bindings import dlpack_export
 
         owner = self._base if self._base is not None else self
         return dlpack_export(
@@ -463,7 +463,7 @@ class DeviceArray:
         return self._nbytes
 
     @property
-    def data_place(self) -> "data_place":
+    def data_place(self) -> data_place:
         """The :class:`data_place` backing this array."""
         return self._dplace
 

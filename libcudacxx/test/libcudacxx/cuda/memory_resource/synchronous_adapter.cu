@@ -43,7 +43,7 @@ struct explicit_dynamic_resource
   friend constexpr cuda::mr::__memory_accessibility
   get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
   {
-    return cuda::mr::__memory_accessibility ::__device;
+    return cuda::mr::__memory_accessibility::__device;
   }
 };
 
@@ -95,6 +95,6 @@ C2H_CCCLRT_TEST("synchronous_resource_adapter", "[memory_resource]")
     const cuda::mr::synchronous_resource_adapter<explicit_dynamic_resource> adapter{explicit_dynamic_resource{}};
     STATIC_CHECK(cuda::has_property<decltype(adapter), cuda::mr::dynamic_accessibility_property>);
     CHECK(get_property(adapter, cuda::mr::dynamic_accessibility_property{})
-          == cuda::mr::__memory_accessibility ::__device);
+          == cuda::mr::__memory_accessibility::__device);
   }
 }

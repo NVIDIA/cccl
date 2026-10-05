@@ -6,17 +6,15 @@
 CUDA version detection utilities shared across the cccl package.
 """
 
-from typing import Optional
-
 import cuda.bindings
 
 
-def detect_cuda_version() -> Optional[int]:
+def detect_cuda_version() -> int | None:
     cuda_version = cuda.bindings.__version__
     return int(cuda_version.split(".")[0])
 
 
-def get_recommended_extra(cuda_version: Optional[int]) -> str:
+def get_recommended_extra(cuda_version: int | None) -> str:
     """Get the recommended pip extra for the detected CUDA version."""
     if cuda_version == 13:
         return "cu13"

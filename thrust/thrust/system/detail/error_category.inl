@@ -23,38 +23,38 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-error_category ::~error_category()
+error_category::~error_category()
 {
   ;
 } // end error_category::~error_category()
 
-error_condition error_category ::default_error_condition(int ev) const
+error_condition error_category::default_error_condition(int ev) const
 {
   return error_condition(ev, *this);
 } // end error_category::default_error_condition()
 
-bool error_category ::equivalent(int code, const error_condition& condition) const
+bool error_category::equivalent(int code, const error_condition& condition) const
 {
   return default_error_condition(code) == condition;
 } // end error_condition::equivalent()
 
-bool error_category ::equivalent(const error_code& code, int condition) const
+bool error_category::equivalent(const error_code& code, int condition) const
 {
   const bool result = (this->operator==(code.category())) && (code.value() == condition);
   return result;
 } // end error_code::equivalent()
 
-bool error_category ::operator==(const error_category& rhs) const
+bool error_category::operator==(const error_category& rhs) const
 {
   return this == &rhs;
 } // end error_category::operator==()
 
-bool error_category ::operator!=(const error_category& rhs) const
+bool error_category::operator!=(const error_category& rhs) const
 {
   return !this->operator==(rhs);
 } // end error_category::operator!=()
 
-bool error_category ::operator<(const error_category& rhs) const
+bool error_category::operator<(const error_category& rhs) const
 {
   return ::cuda::std::less<const error_category*>()(this, &rhs);
 } // end error_category::operator<()

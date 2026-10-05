@@ -71,7 +71,7 @@ __global__ void insert_shmem_kernel(fixed_capacity_map_512_type::ref_type global
   static_assert(ref_t::capacity_v != ::cuda::std::dynamic_extent,
                 "capacity_v must be a compile-time constant for static extents");
 
-  __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v> smem;
+  __shared__::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v> smem;
 
   const auto idx    = static_cast<int>(blockIdx.x) * blockDim.x + threadIdx.x;
   smem[threadIdx.x] = (idx < num_keys) ? pairs[idx] : ref_t::value_type{};
@@ -123,7 +123,7 @@ __global__ void shmem_map_lifecycle_kernel(int* thread_ok)
                 "capacity_v must be a compile-time constant for static extents");
 
   // Alignment to sizeof(value_type) enables packed CAS when value_type has a packable representation
-  __shared__ ::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v, sizeof(ref_t::value_type)> smem;
+  __shared__::cuda::__uninitialized_array<ref_t::value_type, ref_t::capacity_v, sizeof(ref_t::value_type)> smem;
 
   const auto block = ::cooperative_groups::this_thread_block();
   ref_t ref{cudax::cuco::empty_key{empty_key},
@@ -183,7 +183,7 @@ make_copy_shmem_kernel(GlobalRef global_ref, int num_keys, int* keys_exist, int*
   using value_type  = typename ref_t::value_type;
 
   // Alignment to sizeof(value_type) enables packed CAS when value_type has a packable representation
-  __shared__ ::cuda::__uninitialized_array<value_type, ref_t::capacity_v, sizeof(value_type)> smem;
+  __shared__::cuda::__uninitialized_array<value_type, ref_t::capacity_v, sizeof(value_type)> smem;
 
   const auto block = ::cooperative_groups::this_thread_block();
   // Exercise destruction and reinitialization of make_copy's shared barrier.

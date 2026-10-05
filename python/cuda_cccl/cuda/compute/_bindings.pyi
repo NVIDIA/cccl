@@ -5,7 +5,7 @@
 
 import ctypes
 from enum import IntEnum
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Buffer
 
@@ -83,7 +83,7 @@ class BinarySearchMode(IntEnum):
 class Op:
     def __init__(
         self,
-        name: Optional[str] = ...,
+        name: str | None = ...,
         operator_type: OpKind = ...,
         ltoir=None,
         state=None,
@@ -148,9 +148,7 @@ class Iterator:
         value_type: TypeInfo,
         state=None,
         host_advance_fn=None,
-    ):
-        pass
-
+    ): ...
     @property
     def advance_op(self) -> Op: ...
     @property

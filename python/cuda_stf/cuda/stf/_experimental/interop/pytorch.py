@@ -28,7 +28,7 @@ _TORCH_INSTALL_HINT = (
 def _import_torch():
     """Import :mod:`torch`, raising a friendly error if unavailable."""
     try:
-        import torch  # noqa: PLC0415
+        import torch
     except ImportError as exc:
         raise ImportError(_TORCH_INSTALL_HINT) from exc
     return torch

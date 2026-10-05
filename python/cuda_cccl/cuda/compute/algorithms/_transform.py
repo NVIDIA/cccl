@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -20,11 +20,11 @@ from ..typing import DeviceArrayLike, IteratorT, Operator
 class _UnaryTransform(Serializable):
     __slots__ = [
         "_bound_build_result",
+        "build_results",
         "d_in_cccl",
         "d_out_cccl",
-        "op_cccl",
-        "build_results",
         "loaded_build_result",
+        "op_cccl",
     ]
 
     __serialization_schema__ = (
@@ -92,18 +92,17 @@ class _UnaryTransform(Serializable):
             self.op_cccl,
             stream_handle,
         )
-        return None
 
 
 class _BinaryTransform(Serializable):
     __slots__ = [
         "_bound_build_result",
+        "build_results",
         "d_in1_cccl",
         "d_in2_cccl",
         "d_out_cccl",
-        "op_cccl",
-        "build_results",
         "loaded_build_result",
+        "op_cccl",
     ]
 
     __serialization_schema__ = (
@@ -180,7 +179,6 @@ class _BinaryTransform(Serializable):
             self.op_cccl,
             stream_handle,
         )
-        return None
 
 
 @cache_with_registered_key_functions

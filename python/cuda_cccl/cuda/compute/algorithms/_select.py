@@ -47,7 +47,7 @@ def _get_always_false_op():
 
 
 class _Select(Serializable):
-    __slots__ = ["_bound_build_result", "partitioner", "always_false_op", "_discards"]
+    __slots__ = ["_bound_build_result", "_discards", "always_false_op", "partitioner"]
 
     __serialization_schema__ = (("partitioner", NESTED(_ThreeWayPartition)),)
 

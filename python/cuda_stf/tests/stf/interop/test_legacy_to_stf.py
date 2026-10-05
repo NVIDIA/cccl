@@ -60,11 +60,11 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
+from numba import cuda
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 
 @pytest.fixture(autouse=True)

@@ -32,7 +32,6 @@ CUB_NAMESPACE_BEGIN
 //!        block-wide histograms.
 enum BlockHistogramAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
-
   //! @rst
   //!
   //! Overview

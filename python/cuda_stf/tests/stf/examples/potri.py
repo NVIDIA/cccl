@@ -47,7 +47,7 @@ import pytest
 # the STF bindings skips cleanly instead of raising a misleading dependency
 # ImportError first.
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 try:
     import cupy as cp

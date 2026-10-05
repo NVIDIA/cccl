@@ -146,11 +146,11 @@ class RawOp(_OpAdapter):
     """
 
     __slots__ = [
+        "_extra_ltoirs",
         "_ltoir",
         "_name",
         "_state",
         "_state_alignment",
-        "_extra_ltoirs",
     ]
 
     def __init__(
@@ -324,6 +324,6 @@ cache_with_registered_key_functions.register(RawOp, lambda op: op._identity)
 __all__ = [
     "OpAdapter",
     "OpKind",
-    "make_op_adapter",
     "RawOp",
+    "make_op_adapter",
 ]

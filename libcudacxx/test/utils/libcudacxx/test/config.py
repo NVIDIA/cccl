@@ -20,7 +20,7 @@ from libcudacxx.compiler import CXXCompiler
 
 # The wildcard import is to support `eval(exec_str)` in
 # `Configuration.configure_executor()` below.
-from libcudacxx.test.executor import *  # noqa: F403
+from libcudacxx.test.executor import *
 from libcudacxx.test.executor import LocalExecutor, NoopExecutor
 from libcudacxx.test.target_info import make_target_info
 
@@ -61,7 +61,7 @@ def intMacroValue(token):
     return int(token.rstrip("LlUu"))
 
 
-class Configuration(object):
+class Configuration:
     # pylint: disable=redefined-outer-name
     def __init__(self, lit_config, config):
         self.lit_config = lit_config
@@ -104,9 +104,7 @@ class Configuration(object):
                 return True
             if value.lower() in ("", "0", "false"):
                 return False
-            self.lit_config.fatal(
-                "parameter '{}' should be true or false".format(var_name)
-            )
+            self.lit_config.fatal(f"parameter '{var_name}' should be true or false")
 
         conf_val = self.get_lit_conf(name)
         if (
@@ -210,7 +208,7 @@ class Configuration(object):
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            text=True,
         )
         archs = result.stdout.strip().splitlines()
 
@@ -403,10 +401,10 @@ class Configuration(object):
             self.config.available_features.add(
                 "%s-%s.%s.%s" % (self.cxx.type, maj_v, min_v, patch_v)
             )
-            self.lit_config.note("detected cxx.type as: {}".format(self.cxx.type))
-            self.lit_config.note("detected cxx.version as: {}".format(self.cxx.version))
+            self.lit_config.note(f"detected cxx.type as: {self.cxx.type}")
+            self.lit_config.note(f"detected cxx.version as: {self.cxx.version}")
             self.lit_config.note(
-                "detected cxx.default_dialect as: {}".format(self.cxx.default_dialect)
+                f"detected cxx.default_dialect as: {self.cxx.default_dialect}"
             )
             self.cxx.compile_env = dict(os.environ)
         # If compiler is *not* NVRTCC
@@ -451,10 +449,10 @@ class Configuration(object):
                 self.config.available_features.add(
                     "%s-%s.%s.%s" % (cxx_type, maj_v, min_v, patch_v)
                 )
-            self.lit_config.note("detected cxx.type as: {}".format(self.cxx.type))
-            self.lit_config.note("detected cxx.version as: {}".format(self.cxx.version))
+            self.lit_config.note(f"detected cxx.type as: {self.cxx.type}")
+            self.lit_config.note(f"detected cxx.version as: {self.cxx.version}")
             self.lit_config.note(
-                "detected cxx.default_dialect as: {}".format(self.cxx.default_dialect)
+                f"detected cxx.default_dialect as: {self.cxx.default_dialect}"
             )
             self.cxx.compile_env = dict(os.environ)
             # 'CCACHE_CPP2' prevents ccache from stripping comments while
@@ -485,15 +483,13 @@ class Configuration(object):
                         "%s-%s.%s" % (self.host_cxx_type, maj_v, min_v)
                     )
                 self.lit_config.note(
-                    "detected host_cxx.type as: {}".format(self.cxx.host_cxx.type)
+                    f"detected host_cxx.type as: {self.cxx.host_cxx.type}"
                 )
                 self.lit_config.note(
-                    "detected host_cxx.version as: {}".format(self.cxx.host_cxx.version)
+                    f"detected host_cxx.version as: {self.cxx.host_cxx.version}"
                 )
                 self.lit_config.note(
-                    "detected host_cxx.default_dialect as: {}".format(
-                        self.cxx.host_cxx.default_dialect
-                    )
+                    f"detected host_cxx.default_dialect as: {self.cxx.host_cxx.default_dialect}"
                 )
 
     def _configure_clang_cl(self, clang_path):
@@ -833,7 +829,7 @@ class Configuration(object):
         nvcc_host_compiler = self.get_lit_conf("nvcc_host_compiler")
 
         if nvcc_host_compiler and self.cxx.type == "nvcc":
-            self.cxx.compile_flags += ["-ccbin={0}".format(nvcc_host_compiler)]
+            self.cxx.compile_flags += [f"-ccbin={nvcc_host_compiler}"]
 
         # Try and get the std version from the command line. Fall back to
         # default given in lit.site.cfg is not present. If default is not
@@ -894,12 +890,12 @@ class Configuration(object):
 
         if std:
             # We found a dialect flag.
-            stdflag = "-std={0}".format(std)
+            stdflag = f"-std={std}"
             if self.cxx.type == "msvc":
                 if std in ("23", "c++23", "c++2b"):
                     stdflag = "/std:c++23preview"
                 else:
-                    stdflag = "/std:{0}".format(std)
+                    stdflag = f"/std:{std}"
 
             extraflags = []
             if self.cxx.type == "clang":
@@ -907,9 +903,7 @@ class Configuration(object):
 
             # Do a check with the user/config flag to ensure that the flag is supported.
             if not self.cxx.hasCompileFlag([stdflag] + extraflags):
-                raise OSError(
-                    "Configured compiler does not support flag {0}".format(stdflag)
-                )
+                raise OSError(f"Configured compiler does not support flag {stdflag}")
 
             self.cxx.flags += [stdflag]
 
@@ -1001,7 +995,6 @@ class Configuration(object):
                 "-include",
                 os.path.join(support_path, "msvc_stdlib_force_include.h"),
             ]
-            pass
 
         cxx_headers = self.get_lit_conf("cxx_headers")
         if cxx_headers == "" or (
@@ -1126,7 +1119,7 @@ class Configuration(object):
     def configure_link_flags(self):
         nvcc_host_compiler = self.get_lit_conf("nvcc_host_compiler")
         if nvcc_host_compiler and self.cxx.type == "nvcc":
-            self.cxx.link_flags += ["-ccbin={0}".format(nvcc_host_compiler)]
+            self.cxx.link_flags += [f"-ccbin={nvcc_host_compiler}"]
 
         if self.is_windows:
             self.cxx.link_flags += ["--use-local-env"]
@@ -1290,7 +1283,6 @@ class Configuration(object):
                     self.cxx.warning_flags += [
                         "-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER"
                     ]
-                pass
         else:
             self.cxx.warning_flags += [
                 "-Wall",
@@ -1386,9 +1378,7 @@ class Configuration(object):
                 self.config.available_features.add("tsan")
                 self.config.available_features.add("sanitizer-new-delete")
             else:
-                self.lit_config.fatal(
-                    "unsupported value for use_sanitizer: {0}".format(san)
-                )
+                self.lit_config.fatal(f"unsupported value for use_sanitizer: {san}")
             san_lib = self.get_lit_conf("sanitizer_library")
             if san_lib:
                 if self.cxx.type == "nvcc":

@@ -220,7 +220,7 @@ def test_zip_iterator_with_transform(num_items):
 
     for i, result_item in enumerate(result):
         assert result_item["sum_indices"] == expected_sum_indices[i]
-        assert result[i]["product_values"] == expected_product_values[i]
+        assert result_item["product_values"] == expected_product_values[i]
 
 
 @pytest.mark.parametrize("num_items", [10, 1_000])

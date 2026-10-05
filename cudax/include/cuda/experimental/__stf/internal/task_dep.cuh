@@ -262,7 +262,8 @@ public:
   using op_type     = reduce_op;
   enum : bool
   {
-    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
+    does_work = !::cuda::std::is_same_v < reduce_op,
+    ::cuda::std::monostate >
   };
 
   template <typename... Args>

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -31,13 +31,13 @@ class _SegmentedReduce(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
         "d_in_cccl",
         "d_out_cccl",
-        "start_offsets_in_cccl",
         "end_offsets_in_cccl",
         "h_init_cccl",
+        "loaded_build_result",
         "op_cccl",
+        "start_offsets_in_cccl",
     ]
 
     __serialization_schema__ = (

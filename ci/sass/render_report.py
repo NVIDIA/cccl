@@ -18,7 +18,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from compare_sass import Status  # noqa: E402
+from compare_sass import Status
 
 # A header change can touch every target on every architecture, and a GitHub
 # comment holds 65536 characters. Thus the comment names this many targets and

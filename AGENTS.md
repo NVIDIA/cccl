@@ -247,9 +247,11 @@ Requirements:
 
 ```python
 import cuda.compute
+
 result = cuda.compute.reduce_into(input_array, output_scalar, init_val, binary_op)
 
 import cuda.cccl.headers as headers
+
 include_paths = headers.get_include_paths()
 ```
 

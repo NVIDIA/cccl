@@ -57,8 +57,8 @@ static_assert(!cuda::std::ranges::random_access_range<Holder<Incomplete>* const&
 static_assert(!cuda::std::ranges::random_access_range<Holder<Incomplete>* const&&>);
 
 static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* [10]>);
-static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* (&) [10]>);
-static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* (&&) [10]>);
+static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* (&)[10]>);
+static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* (&&)[10]>);
 static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* const[10]>);
 static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* const (&)[10]>);
 static_assert(cuda::std::ranges::random_access_range<Holder<Incomplete>* const (&&)[10]>);

@@ -30,16 +30,16 @@ CCCL_C_EXTERN_C_BEGIN
 
 typedef enum cccl_type_enum // NOLINT(cppcoreguidelines-use-enum-class)
 {
-  CCCL_INT8    = 0,
-  CCCL_INT16   = 1,
-  CCCL_INT32   = 2,
-  CCCL_INT64   = 3,
-  CCCL_UINT8   = 4,
-  CCCL_UINT16  = 5,
-  CCCL_UINT32  = 6,
-  CCCL_UINT64  = 7,
-  CCCL_FLOAT16 = 8, // This may be unsupported if _CCCL_HAS_NVFP16() is false but we can't include the header to check
-                    // that here
+  CCCL_INT8     = 0,
+  CCCL_INT16    = 1,
+  CCCL_INT32    = 2,
+  CCCL_INT64    = 3,
+  CCCL_UINT8    = 4,
+  CCCL_UINT16   = 5,
+  CCCL_UINT32   = 6,
+  CCCL_UINT64   = 7,
+  CCCL_FLOAT16  = 8, // This may be unsupported if _CCCL_HAS_NVFP16() is false but we can't include the header to check
+                     // that here
   CCCL_FLOAT32  = 9,
   CCCL_FLOAT64  = 10,
   CCCL_STORAGE  = 11,

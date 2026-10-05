@@ -62,7 +62,7 @@ class TypeDescriptor:
         representation (e.g. bfloat16 without the ml_dtypes package)."""
         return self._dtype
 
-    def pointer(self) -> "PointerTypeDescriptor":
+    def pointer(self) -> PointerTypeDescriptor:
         """Create a pointer type to this type."""
         return PointerTypeDescriptor(self)
 
@@ -81,7 +81,7 @@ class TypeDescriptor:
 class StructTypeDescriptor(TypeDescriptor):
     def __init__(
         self,
-        fields: dict[str, "TypeDescriptor"],
+        fields: dict[str, TypeDescriptor],
         name: str = "AnonStruct",
     ):
         dtype = _build_struct_dtype(fields)
@@ -101,10 +101,10 @@ class StructTypeDescriptor(TypeDescriptor):
         return self._name
 
     @property
-    def fields(self) -> dict[str, "TypeDescriptor"]:
+    def fields(self) -> dict[str, TypeDescriptor]:
         return self._fields
 
-    def layout_key(self) -> tuple[tuple[str, "TypeDescriptor"], ...]:
+    def layout_key(self) -> tuple[tuple[str, TypeDescriptor], ...]:
         """Return a stable, hashable key for this struct layout."""
         return tuple(self._fields.items())
 
@@ -297,21 +297,21 @@ def signature_from_annotations(py_func):
 
 
 __all__ = [
+    "bfloat16",
+    "boolean",
+    "float16",
+    "float32",
+    "float64",
+    "from_numpy_dtype",
     "int8",
     "int16",
     "int32",
     "int64",
+    "pointer",
+    "struct",
+    "to_ctypes_type",
     "uint8",
     "uint16",
     "uint32",
     "uint64",
-    "float16",
-    "bfloat16",
-    "float32",
-    "float64",
-    "boolean",
-    "struct",
-    "pointer",
-    "from_numpy_dtype",
-    "to_ctypes_type",
 ]

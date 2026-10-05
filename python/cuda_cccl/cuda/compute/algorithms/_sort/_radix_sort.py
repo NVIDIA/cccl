@@ -23,12 +23,12 @@ from ._sort_common import DoubleBuffer, SortOrder, _get_arrays
 class _RadixSort(Serializable):
     __slots__ = [
         "_bound_build_result",
+        "build_results",
         "d_in_keys_cccl",
-        "d_out_keys_cccl",
         "d_in_values_cccl",
+        "d_out_keys_cccl",
         "d_out_values_cccl",
         "decomposer_op",
-        "build_results",
         "loaded_build_result",
     ]
 
@@ -67,7 +67,7 @@ class _RadixSort(Serializable):
             state_alignment=1,
             state=b"",  # explicit empty bytes so the serialize path is byte-safe
         )
-        decomposer_return_type = "".encode("utf-8")
+        decomposer_return_type = b""
 
         build_order = (
             _bindings.SortOrder.ASCENDING

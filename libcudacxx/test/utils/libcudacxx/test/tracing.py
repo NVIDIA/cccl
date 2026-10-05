@@ -11,21 +11,21 @@ import inspect
 
 def trace_function(function, log_calls, log_results, label=""):
     def wrapper(*args, **kwargs):
-        kwarg_strs = ["{}={}".format(k, v) for (k, v) in kwargs]
+        kwarg_strs = [f"{k}={v}" for (k, v) in kwargs]
         arg_str = ", ".join([str(a) for a in args] + kwarg_strs)
-        call_str = "{}({})".format(function.func_name, arg_str)
+        call_str = f"{function.func_name}({arg_str})"
 
         # Perform the call itself, logging before, after, and anything thrown.
         try:
             if log_calls:
-                print("{}: Calling {}".format(label, call_str))
+                print(f"{label}: Calling {call_str}")
             res = function(*args, **kwargs)
             if log_results:
-                print("{}: {} -> {}".format(label, call_str, res))
+                print(f"{label}: {call_str} -> {res}")
             return res
         except Exception as ex:
             if log_results:
-                print("{}: {} raised {}".format(label, call_str, type(ex)))
+                print(f"{label}: {call_str} raised {type(ex)}")
             raise ex
 
     return wrapper

@@ -107,8 +107,8 @@ TEST_FUNC void test_basic()
   }
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
-    using V = cuda::std::variant<int, long, const int&, int&&, TestTypes::NoCtors>; //,
-                                                                                    // cuda::std::string>;
+    using V     = cuda::std::variant<int, long, const int&, int&&, TestTypes::NoCtors>; //,
+                                                                                        // cuda::std::string>;
     const int x = 100;
     int y       = 42;
     int z       = 43;
