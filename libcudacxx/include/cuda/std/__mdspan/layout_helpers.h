@@ -53,6 +53,9 @@ template <class _Extents>
   }
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702)
+
 // Product of extents in [__begin, __end) as _IndexType.
 // An empty range yields 1. A zero extent in range yields 0 without overflow.
 template <class _IndexType, class _Extents>
@@ -85,6 +88,7 @@ template <class _IndexType, class _Extents>
   }
   return {__prod, false};
 }
+_CCCL_DIAG_POP
 
 template <class _IndexType, class _Extents>
 [[nodiscard]] _CCCL_API constexpr _IndexType __extents_product_value(
