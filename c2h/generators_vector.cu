@@ -55,23 +55,28 @@ struct random_to_vec_item_t
 };
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  define VEC_SPECIALIZATION(T)                                                                              \
-    template <>                                                                                              \
-    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                            \
-    {                                                                                                        \
-      thrust::tabulate(device_policy,                                                                        \
-                       data.begin(),                                                                         \
-                       data.end(),                                                                           \
-                       random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max});         \
-    }                                                                                                        \
-    template <>                                                                                              \
-    void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max) \
-    {                                                                                                        \
-      const scoped_current_device device_scope{stream.device().get()};                                       \
-      thrust::tabulate(device_policy.on(stream.get()),                                                       \
-                       data.begin(),                                                                         \
-                       data.end(),                                                                           \
-                       random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max});         \
+
+namespace
+{
+template <typename Policy, typename T, typename OpT>
+void _gen_values_op(const Policy& policy, ::cuda::std::span<T> data, OpT op)
+{
+  thrust::tabulate(policy, data.begin(), data.end(), op);
+}
+} // namespace
+#  define VEC_SPECIALIZATION(T)                                                                                         \
+    template <>                                                                                                         \
+    void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)                                       \
+    {                                                                                                                   \
+      _gen_values_op(device_policy, data, random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max}); \
+    }                                                                                                                   \
+    template <>                                                                                                         \
+    void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)            \
+    {                                                                                                                   \
+      const scoped_current_device device_scope{stream.device().get()};                                                  \
+      _gen_values_op(device_policy.on(stream.get()),                                                                    \
+                     data,                                                                                              \
+                     random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max});                      \
     }
 
 VEC_SPECIALIZATION(char2);

@@ -15,19 +15,33 @@
 
 namespace c2h::detail
 {
+namespace
+{
+template <typename Policy, typename T, typename OpT>
+void _gen_values_op(const Policy& policy, ::cuda::std::span<T> data, OpT op)
+{
+  thrust::tabulate(policy, data.begin(), data.end(), op);
+}
+} // namespace
+
+template <typename Policy, typename T>
+void gen_values_between_impl(const Policy& policy, seed_t seed, ::cuda::std::span<T> data, T min, T max)
+{
+  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
+  _gen_values_op(policy, data, op);
+}
+
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
-  thrust::tabulate(device_policy, data.begin(), data.end(), op);
+  gen_values_between_impl(device_policy, seed, data, min, max);
 }
 
 template <typename T>
 void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
   const scoped_current_device device_scope{stream.device().get()};
-  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
-  thrust::tabulate(device_policy.on(stream.get()), data.begin(), data.end(), op);
+  gen_values_between_impl(device_policy.on(stream.get()), seed, data, min, max);
 }
 
 template <typename T>

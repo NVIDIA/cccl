@@ -70,7 +70,9 @@ struct random_to_custom_t
   }
 };
 
-void gen_custom_type_state(
+template <typename Policy>
+void gen_custom_type_state_impl(
+  const Policy& policy,
   seed_t seed,
   char* d_out,
   custom_type_state_t min,
@@ -79,7 +81,18 @@ void gen_custom_type_state(
   std::size_t element_size)
 {
   auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
-  thrust::tabulate(device_policy, out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
+  thrust::tabulate(policy, out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
+}
+
+void gen_custom_type_state(
+  seed_t seed,
+  char* d_out,
+  custom_type_state_t min,
+  custom_type_state_t max,
+  std::size_t elements,
+  std::size_t element_size)
+{
+  gen_custom_type_state_impl(device_policy, seed, d_out, min, max, elements, element_size);
 }
 
 void gen_custom_type_state(
@@ -92,8 +105,7 @@ void gen_custom_type_state(
   std::size_t element_size)
 {
   const scoped_current_device device_scope{stream.device().get()};
-  auto out_it = offset_to_iterator_t<custom_type_state_t>{d_out, element_size}(std::size_t{0});
-  thrust::tabulate(device_policy.on(stream.get()), out_it, out_it + elements, random_to_custom_t{min, max, seed.get()});
+  gen_custom_type_state_impl(device_policy.on(stream.get()), seed, d_out, min, max, elements, element_size);
 }
 
 template <class T>
