@@ -22,7 +22,7 @@
 using namespace cuda::experimental::stf;
 
 // Performs Binary Search on a given array with start/end bounds and a lookup element
-_CCCL_HOST_DEVICE int binary_search(slice<const int> arr, int start, int end, int lookup)
+__host__ __device__ int binary_search(slice<const int> arr, int start, int end, int lookup)
 {
   while (start <= end)
   {
@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE int binary_search(slice<const int> arr, int start, int end, in
  * @param v          Index of the second vertex.
  * @return The number of common neighbors (intersection size) of vertices u and v.
  */
-_CCCL_HOST_DEVICE int calculate_intersection_size(slice<const int> loffsets, slice<const int> lnonzeros, int u, int v)
+__host__ __device__ int calculate_intersection_size(slice<const int> loffsets, slice<const int> lnonzeros, int u, int v)
 {
   int count = 0;
   for (int i = loffsets[u]; i < loffsets[u + 1]; i++)
@@ -74,7 +74,7 @@ _CCCL_HOST_DEVICE int calculate_intersection_size(slice<const int> loffsets, sli
  * @param v          Index of the second vertex.
  * @return The number of unique neighbors (union size) of vertices u and v.
  */
-_CCCL_HOST_DEVICE int calculate_union_size(slice<const int> loffsets, slice<const int> lnonzeros, int u, int v)
+__host__ __device__ int calculate_union_size(slice<const int> loffsets, slice<const int> lnonzeros, int u, int v)
 {
   int count = (loffsets[u + 1] - loffsets[u]) + (loffsets[v + 1] - loffsets[v]);
   for (int i = loffsets[u]; i < loffsets[u + 1]; i++)
