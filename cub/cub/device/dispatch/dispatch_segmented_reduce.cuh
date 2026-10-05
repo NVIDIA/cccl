@@ -481,19 +481,22 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
 namespace detail::segmented_reduce
 {
 // DeviceAdaptiveSegmentedReduceKernel currently requires:
+//  - InputIteratorT is a raw pointer (the kernel takes &d_in[j] for vector loads)
 //  - sizeof(T) == 4 or 8 (16-byte coalesced load via cuda::vector_type)
 //  - T is arithmetic (vector loads, atomics)
 //  - OutputIteratorT == T* (cuda::atomic_ref needs an lvalue T)
 //  - ReductionOpT is plus<>, minimum<>, or maximum<> (atomic fallback handles only these)
 //  - AccumT == T (the kernel accumulates in T throughout)
 //  - sizeof(OffsetT) == 4 (the kernel uses int for offsets internally)
-template <typename T,
+template <typename InputIteratorT,
+          typename T,
           typename OutputIteratorT,
           typename ReductionOpT,
           typename AccumT,
           typename OffsetT>
 inline constexpr bool is_adaptive_segmented_reduce_compatible_v =
-  (sizeof(T) == 4 || sizeof(T) == 8) //
+  ::cuda::std::is_pointer_v<InputIteratorT> //
+  && (sizeof(T) == 4 || sizeof(T) == 8) //
   && ::cuda::std::is_arithmetic_v<T> //
   && ::cuda::std::is_same_v<OutputIteratorT, T*> //
   && (::cuda::__is_cuda_std_plus_v<ReductionOpT> //
@@ -703,7 +706,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   // and there is currently no way for a user to assert this is true. For now,
   // dispatch only when d_begin_offsets + 1 == d_end_offsets.
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
-  if constexpr (is_adaptive_segmented_reduce_compatible_v<InputT, OutputIteratorT, ReductionOpT, AccumT, OffsetT>)
+  if constexpr (
+    is_adaptive_segmented_reduce_compatible_v<InputIteratorT, InputT, OutputIteratorT, ReductionOpT, AccumT, OffsetT>)
   {
     // Force NVCC to register adaptive kernel symbols at dispatch() instantiation time.
     [[maybe_unused]] auto _adaptive_reduce_kern = AdaptiveKernelSource::ReduceKernel();
