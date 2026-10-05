@@ -728,7 +728,7 @@ owns a native cache of launch configurations (``async_config`` /
 ``prefetch_config``) in ``c/parallel/src/transform.cu``. Because one build
 result is shared by every thread using the same specialization, and the Cython
 bindings release the GIL around the native call, each configuration is filled
-exactly once through ``std::call_once``; later calls on any thread only pay the
+exactly once through ``cuda::std::call_once``; later calls on any thread only pay the
 ``once_flag`` fast-path check. This holds on every interpreter build — regular
 GIL builds also execute the native call concurrently once the GIL is released,
 so the cache must be thread-safe unconditionally.

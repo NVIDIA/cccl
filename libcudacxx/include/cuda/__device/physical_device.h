@@ -28,9 +28,9 @@
 #  include <cuda/__device/logical_device.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__fwd/devices.h>
-#  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__mutex/once_flag.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/span>
 #  include <cuda/std/string_view>
@@ -224,7 +224,7 @@ public:
   //! @return A reference to the primary context for this device.
   [[nodiscard]] _CCCL_HOST_API ::CUcontext __primary_context()
   {
-    ::cuda::__call_once(__primary_ctx_once_flag_, [this]() {
+    ::cuda::std::call_once(__primary_ctx_once_flag_, [this]() {
       __primary_ctx_ = ::cuda::__driver::__primaryCtxRetain(__device_);
     });
 
@@ -233,7 +233,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::string_view __name()
   {
-    ::cuda::__call_once(__name_once_flag_, [this]() {
+    ::cuda::std::call_once(__name_once_flag_, [this]() {
       this->__set_name();
     });
 
@@ -242,7 +242,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const device_ref> __peers()
   {
-    ::cuda::__call_once(__peers_once_flag_, [this]() {
+    ::cuda::std::call_once(__peers_once_flag_, [this]() {
       this->__set_peers();
     });
 
@@ -251,7 +251,7 @@ public:
 
   [[nodiscard]] _CCCL_HOST_API ::cuda::std::span<const __logical_device_ref> __locality_domains()
   {
-    ::cuda::__call_once(__locality_domains_once_flag_, [this]() {
+    ::cuda::std::call_once(__locality_domains_once_flag_, [this]() {
       this->__set_locality_domains();
     });
 

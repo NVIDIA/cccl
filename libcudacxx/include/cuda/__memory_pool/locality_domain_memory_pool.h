@@ -27,8 +27,8 @@
 #  include <cuda/__device/logical_device_ref.h>
 #  include <cuda/__device/physical_device.h>
 #  include <cuda/__memory_pool/device_memory_pool.h>
-#  include <cuda/__utility/call_once.h>
 #  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__mutex/once_flag.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -85,7 +85,7 @@ class __per_device_locality_pools
 public:
   [[nodiscard]] _CCCL_HOST_API device_memory_pool_ref& __get(::cuda::device_ref __device, ::cuda::std::size_t __domain)
   {
-    ::cuda::__call_once(__once_, [this, __device] {
+    ::cuda::std::call_once(__once_, [this, __device] {
       this->__init(__device);
     });
 

@@ -19,11 +19,11 @@
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/memory>
+#include <cuda/std/mutex>
 
 #include <cstdlib>
 #include <cstring>
 #include <format>
-#include <mutex>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -118,8 +118,8 @@ struct cache
   // native call with the GIL released (or on free-threaded CPython). Each
   // config is therefore filled exactly once through its once_flag; after that,
   // readers on any thread take only the call_once fast path.
-  std::once_flag async_config_once;
-  std::once_flag prefetch_config_once;
+  cuda::std::once_flag async_config_once;
+  cuda::std::once_flag prefetch_config_once;
   cuda::std::optional<cub::detail::transform::cuda_expected<cub::detail::transform::async_config>> async_config{};
   cuda::std::optional<cub::detail::transform::cuda_expected<cub::detail::transform::prefetch_config>> prefetch_config{};
 };
@@ -139,7 +139,7 @@ struct transform_kernel_source
     {
       return action();
     }
-    std::call_once(cache->async_config_once, [&] {
+    cuda::std::call_once(cache->async_config_once, [&] {
       cache->async_config = action();
     });
     return *cache->async_config;
@@ -154,7 +154,7 @@ struct transform_kernel_source
     {
       return action();
     }
-    std::call_once(cache->prefetch_config_once, [&] {
+    cuda::std::call_once(cache->prefetch_config_once, [&] {
       cache->prefetch_config = action();
     });
     return *cache->prefetch_config;
