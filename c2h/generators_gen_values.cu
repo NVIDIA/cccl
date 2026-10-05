@@ -6,8 +6,8 @@
 #include <cuda/stream>
 
 #include <c2h/bfloat16.cuh>
+#include <c2h/detail/current_device.cuh>
 #include <c2h/detail/generators.cuh>
-#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
@@ -40,7 +40,7 @@ void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 template <typename T>
 void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  const scoped_current_device device_scope{stream.device().get()};
+  assert_current_device(stream.device().get());
   gen_values_between_impl(device_policy.on(stream.get()), seed, data, min, max);
 }
 

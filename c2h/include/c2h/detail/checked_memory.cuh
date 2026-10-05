@@ -15,8 +15,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <c2h/detail/current_device.cuh>
 #include <c2h/detail/env.cuh>
-#include <c2h/detail/scoped_current_device.cuh>
 
 namespace c2h::detail
 {
@@ -136,7 +136,7 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
     return nullptr;
   }
 
-  const scoped_current_device guard{device};
+  assert_current_device(device);
 
   void* ptr                = nullptr;
   const cudaError_t status = checked_cuda_malloc(&ptr, bytes);
@@ -156,15 +156,8 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
     return;
   }
 
-  try
-  {
-    const scoped_current_device guard{device};
-    (void) cudaFree(ptr);
-  }
-  catch (...)
-  {
-    (void) cudaFree(ptr);
-  }
+  assert_current_device(device);
+  (void) cudaFree(ptr);
 }
 
 [[nodiscard]] inline std::size_t checked_host_allocation_size(std::size_t bytes, std::size_t alignment)
@@ -257,7 +250,7 @@ enum class integrated_device_cache_state : unsigned char
 
   if (is_integrated_device(device))
   {
-    const scoped_current_device guard{device};
+    assert_current_device(device);
     const auto status = check_free_device_memory(allocation_size);
     if (status != cudaSuccess)
     {

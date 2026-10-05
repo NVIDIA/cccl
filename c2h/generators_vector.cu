@@ -7,8 +7,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/stream>
 
+#include <c2h/detail/current_device.cuh>
 #include <c2h/detail/generators.cuh>
-#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/fill_striped.h>
@@ -73,7 +73,7 @@ void _gen_values_op(const Policy& policy, ::cuda::std::span<T> data, OpT op)
     template <>                                                                                                         \
     void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)            \
     {                                                                                                                   \
-      const scoped_current_device device_scope{stream.device().get()};                                                  \
+      assert_current_device(stream.device().get());                                                                     \
       _gen_values_op(device_policy.on(stream.get()),                                                                    \
                      data,                                                                                              \
                      random_to_vec_item_t<T, ::cuda::std::tuple_size_v<T>>{seed.get(), min, max});                      \

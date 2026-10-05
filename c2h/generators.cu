@@ -12,8 +12,8 @@
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
+#include <c2h/detail/current_device.cuh>
 #include <c2h/detail/generators.cuh>
-#include <c2h/detail/scoped_current_device.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
 #include <c2h/generators.h>
@@ -104,7 +104,7 @@ void gen_custom_type_state(
   std::size_t elements,
   std::size_t element_size)
 {
-  const scoped_current_device device_scope{stream.device().get()};
+  assert_current_device(stream.device().get());
   gen_custom_type_state_impl(device_policy.on(stream.get()), seed, d_out, min, max, elements, element_size);
 }
 

@@ -31,6 +31,7 @@ endif()
 add_library(
   cccl.c2h
   STATIC
+  current_device.cu
   generators.cu
   generators_gen_values.cu
   generators_uniform_offsets.cu

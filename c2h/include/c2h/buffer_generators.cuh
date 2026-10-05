@@ -15,6 +15,7 @@
 #include <cstddef>
 
 #include <c2h/checked_memory_resource.cuh>
+#include <c2h/detail/current_device.cuh>
 #include <c2h/generator_common.h>
 
 namespace c2h
@@ -26,7 +27,7 @@ template <typename T>
 device_buffer_to_host_buffer(cuda::stream_ref stream, const cuda::device_buffer<T>& d_items, std::size_t num_items)
 {
   const auto device = stream.device();
-  const ::c2h::detail::scoped_current_device device_scope{device.get()};
+  ::c2h::detail::assert_current_device(device.get());
 
   auto h_items = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
   cuda::copy_bytes(stream, d_items.first(num_items), h_items);
@@ -71,6 +72,7 @@ struct sized_device_host_buffers
 //! @brief Generates random data with the existing c2h device generator and returns it in device memory.
 //!
 //! @pre @c stream must not be the legacy default stream.
+//! @pre @c stream must belong to the current C2H test device.
 template <typename T>
 [[nodiscard]] cuda::device_buffer<T> gen_device_buffer(
   cuda::stream_ref stream,
@@ -80,7 +82,7 @@ template <typename T>
   T max = ::cuda::std::numeric_limits<T>::max())
 {
   const auto device = stream.device();
-  const ::c2h::detail::scoped_current_device device_scope{device.get()};
+  ::c2h::detail::assert_current_device(device.get());
 
   auto d_items = ::c2h::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
   ::c2h::detail::gen_into_device_buffer(seed, d_items, min, max);
@@ -91,6 +93,7 @@ template <typename T>
 //! @brief Generates random data with the existing c2h device generator and returns device and host buffers.
 //!
 //! @pre @c stream must not be the legacy default stream.
+//! @pre @c stream must belong to the current C2H test device.
 template <typename T>
 [[nodiscard]] sized_device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
@@ -110,6 +113,7 @@ template <typename T>
 //! @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
 //!
 //! @pre @c stream must not be the legacy default stream.
+//! @pre @c stream must belong to the current C2H test device.
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,

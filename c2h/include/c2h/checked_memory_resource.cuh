@@ -17,9 +17,13 @@
 #include <cstddef>
 
 #include <c2h/detail/checked_memory.cuh>
+#include <c2h/detail/current_device.cuh>
 
 namespace c2h
 {
+//! @brief Device memory resource that rejects allocations when insufficient device memory is available.
+//!
+//! @pre The resource's device must be the current C2H test device when memory is allocated or deallocated.
 class checked_device_memory_resource : public ::cuda::mr::memory_resource_base<checked_device_memory_resource>
 {
 public:
@@ -71,20 +75,33 @@ private:
 
 static_assert(::cuda::mr::synchronous_resource_with<checked_device_memory_resource, ::cuda::mr::device_accessible>);
 
+//! @brief Creates a device buffer backed by the checked C2H memory resource.
+//!
+//! @pre @p stream and @p device must refer to the current C2H test device.
 template <typename T, typename... Args>
 [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
 make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&... args)
 {
+  ::c2h::detail::assert_current_device(stream.device().get());
+  ::c2h::detail::assert_current_device(device.get());
   return ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, ::cuda::std::forward<Args>(args)...);
 }
 
+//! @brief Creates an initialized device buffer backed by the checked C2H memory resource.
+//!
+//! @pre @p stream and @p device must refer to the current C2H test device.
 template <typename T>
 [[nodiscard]] _CCCL_HOST_API ::cuda::device_buffer<T>
 make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::std::initializer_list<T> values)
 {
+  ::c2h::detail::assert_current_device(stream.device().get());
+  ::c2h::detail::assert_current_device(device.get());
   return ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, values);
 }
 
+//! @brief Host memory resource that rejects allocations when insufficient integrated-device memory is available.
+//!
+//! @pre The resource's device must be the current C2H test device when memory is allocated.
 class checked_host_buffer_memory_resource : public ::cuda::mr::memory_resource_base<checked_host_buffer_memory_resource>
 {
 public:
@@ -133,10 +150,15 @@ private:
 
 static_assert(::cuda::mr::synchronous_resource_with<checked_host_buffer_memory_resource, ::cuda::mr::host_accessible>);
 
+//! @brief Creates a host buffer backed by the checked C2H memory resource.
+//!
+//! @pre @p stream and @p device must refer to the current C2H test device.
 template <typename T, typename... Args>
 [[nodiscard]] _CCCL_HOST_API ::cuda::host_buffer<T>
 make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, Args&&... args)
 {
+  ::c2h::detail::assert_current_device(stream.device().get());
+  ::c2h::detail::assert_current_device(device.get());
   return ::cuda::make_buffer<T>(
     stream, checked_host_buffer_memory_resource{device}, ::cuda::std::forward<Args>(args)...);
 }
