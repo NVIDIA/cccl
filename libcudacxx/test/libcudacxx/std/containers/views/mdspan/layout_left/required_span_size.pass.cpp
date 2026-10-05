@@ -41,6 +41,8 @@ TEST_FUNC constexpr bool test()
   test_required_span_size(cuda::std::extents<int64_t, D, 8, D, D>(7, 9, 10), 5040);
   test_required_span_size(cuda::std::extents<int64_t, 1, 8, D, D>(9, 10), 720);
   test_required_span_size(cuda::std::extents<int64_t, 1, 0, D, D>(9, 10), 0);
+  test_required_span_size(cuda::std::extents<signed char, D, D, D>(20, 20, 0), 0);
+  test_required_span_size(cuda::std::extents<signed char, 20, 20, 0>(), 0);
   return true;
 }
 
