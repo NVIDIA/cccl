@@ -163,11 +163,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
 
 #if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 
-#  define _CUDAX_LET_COMPLETIONS(...)                  \
-    if constexpr ([[maybe_unused]] __VA_ARGS__; false) \
-    {                                                  \
-    }                                                  \
-    else
+#  if defined(__circle_lang__)
+// Circle (build 232) rejects the use of an if-constexpr init-statement variable of class type
+// ("used before its declaration"); declare it as a plain statement instead.
+#    define _CUDAX_LET_COMPLETIONS(...) \
+      [[maybe_unused]] __VA_ARGS__;     \
+      if constexpr (false)              \
+      {                                 \
+      }                                 \
+      else
+#  else // ^^^ Circle ^^^ / vvv other compilers vvv
+#    define _CUDAX_LET_COMPLETIONS(...)                  \
+      if constexpr ([[maybe_unused]] __VA_ARGS__; false) \
+      {                                                  \
+      }                                                  \
+      else
+#  endif // ^^^ other compilers ^^^
 
 template <class... _Sndr>
 [[noreturn, nodiscard]] _CCCL_HOST_DEVICE_API consteval auto __dependent_sender() -> completion_signatures<>
@@ -181,14 +192,27 @@ template <class... _Sndr>
 #  define _CUDAX_PP_EXPAND_AUTO_auto(_ID) auto _ID
 #  define _CUDAX_LET_COMPLETIONS_ID(...) _CCCL_PP_EXPAND(_CCCL_PP_CAT(_CUDAX_PP_EAT_AUTO_, __VA_ARGS__) _CCCL_PP_RPAREN)
 
-#  define _CUDAX_LET_COMPLETIONS(...)                                                                                 \
-    if constexpr (_CCCL_PP_CAT(_CUDAX_PP_EXPAND_AUTO_, __VA_ARGS__);                                                  \
-                  !::cuda::experimental::execution::__valid_completion_signatures<decltype(_CUDAX_LET_COMPLETIONS_ID( \
-                    __VA_ARGS__))>)                                                                                   \
-    {                                                                                                                 \
-      return _CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__);                                                                  \
-    }                                                                                                                 \
-    else
+#  if defined(__circle_lang__)
+// Circle (build 232) rejects the use of an if-constexpr init-statement variable of class type
+// ("used before its declaration"); declare it as a plain statement instead.
+#    define _CUDAX_LET_COMPLETIONS(...)                                              \
+      _CCCL_PP_CAT(_CUDAX_PP_EXPAND_AUTO_, __VA_ARGS__);                             \
+      if constexpr (!::cuda::experimental::execution::__valid_completion_signatures< \
+                      decltype(_CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__))>)             \
+      {                                                                              \
+        return _CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__);                               \
+      }                                                                              \
+      else
+#  else // ^^^ Circle ^^^ / vvv other compilers vvv
+#    define _CUDAX_LET_COMPLETIONS(...)                                              \
+      if constexpr (_CCCL_PP_CAT(_CUDAX_PP_EXPAND_AUTO_, __VA_ARGS__);               \
+                    !::cuda::experimental::execution::__valid_completion_signatures< \
+                      decltype(_CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__))>)             \
+      {                                                                              \
+        return _CUDAX_LET_COMPLETIONS_ID(__VA_ARGS__);                               \
+      }                                                                              \
+      else
+#  endif // ^^^ other compilers ^^^
 
 template <class... _Sndr>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __dependent_sender() -> __dependent_sender_error<_Sndr...>
