@@ -36,6 +36,7 @@
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -487,7 +488,7 @@ namespace detail::segmented_reduce
 //  - OutputIteratorT == T* (cuda::atomic_ref needs an lvalue T)
 //  - ReductionOpT is plus<>, minimum<>, or maximum<> (atomic fallback handles only these)
 //  - AccumT == T (the kernel accumulates in T throughout)
-//  - sizeof(OffsetT) == 4 (the kernel uses int for offsets internally)
+//  - OffsetT is a signed 32-bit integer (the kernel uses int for offsets internally)
 template <typename InputIteratorT,
           typename T,
           typename OutputIteratorT,
@@ -503,7 +504,7 @@ inline constexpr bool is_adaptive_segmented_reduce_compatible_v =
       || ::cuda::__is_cuda_minimum_v<ReductionOpT> //
       || ::cuda::__is_cuda_maximum_v<ReductionOpT>) //
   &&::cuda::std::is_same_v<AccumT, T> //
-  && (sizeof(OffsetT) == 4);
+  && (sizeof(OffsetT) == 4 && ::cuda::std::is_signed_v<OffsetT>);
 
 template <class PolicySelector,
           class InputIteratorT,
@@ -716,7 +717,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     NV_IF_TARGET(
       NV_IS_HOST,
       (if (cc.get() >= 90
-           && num_segments <= static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<int>::max())) {
+           && num_segments <= static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<int>::max() - 32)) {
         if constexpr (::cuda::std::is_pointer_v<BeginOffsetIteratorT> && ::cuda::std::is_pointer_v<EndOffsetIteratorT>)
         {
           if (d_begin_offsets + 1 == d_end_offsets)
