@@ -13,7 +13,18 @@
 #include "cub_test_macros.h"
 #include <c2h/generators.h>
 
-using float_type_list = c2h::type_list<float, double>;
+using float_type_list =
+  c2h::type_list<float,
+                 double
+#if _CCCL_HAS_NVFP16()
+                 ,
+                 __half
+#endif
+#if _CCCL_HAS_NVBF16()
+                 ,
+                 __nv_bfloat16
+#endif
+                 >;
 
 CUB_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproducible",
          "[scan][deterministic][run_to_run]",
@@ -51,7 +62,7 @@ CUB_TEST("DeviceScan::ExclusiveScan with run_to_run determinism is bit-reproduci
   CAPTURE(num_items, num_runs);
 
   // use reasonable magnitude to avoid overflow
-  constexpr type max_mag = type{100};
+  const type max_mag = type{100};
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_input, -max_mag, max_mag);
 
@@ -104,7 +115,7 @@ CUB_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host ref
     }));
   CAPTURE(num_items);
 
-  constexpr type max_mag = type{100};
+  const type max_mag = type{100};
   c2h::device_vector<type> d_input(num_items, thrust::no_init);
   c2h::gen(C2H_SEED(1), d_input, type{0}, max_mag);
 

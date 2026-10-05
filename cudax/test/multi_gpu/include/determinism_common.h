@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 #include <cuda/std/random>
@@ -36,7 +37,7 @@ template <class T, class RNG>
     return values;
   }
 
-  if constexpr (cuda::std::is_floating_point_v<T>)
+  if constexpr (::cuda::is_floating_point_v<T>)
   {
     cuda::std::uniform_real_distribution<T> dist{T{0.5}, T{1.5}};
 

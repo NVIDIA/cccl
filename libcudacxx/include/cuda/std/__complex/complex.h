@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
@@ -29,7 +30,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -635,7 +635,7 @@ template <class _Tp>
 
 // 26.3.7 values:
 
-template <class _Tp, bool = is_integral_v<_Tp>, bool = is_floating_point_v<_Tp>>
+template <class _Tp, bool = is_integral_v<_Tp>, bool = ::cuda::is_floating_point_v<_Tp>>
 struct __cccl_complex_overload_traits
 {};
 

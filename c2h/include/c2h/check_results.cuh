@@ -6,6 +6,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
@@ -29,14 +30,14 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   {
     return;
   }
-  if constexpr (cuda::std::is_floating_point_v<T>)
-  {
-    REQUIRE_APPROX_EQ(expected_data, test_results);
-  }
-  else if constexpr (cuda::std::is_same_v<T, __nv_bfloat16> || cuda::std::is_same_v<T, __half>)
+  if constexpr (cuda::std::is_same_v<T, __nv_bfloat16> || cuda::std::is_same_v<T, __half>)
   {
     constexpr auto rel_err = cuda::std::is_same_v<T, __half> ? 0.08f : 0.2f;
     REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, rel_err);
+  }
+  else if constexpr (::cuda::is_floating_point_v<T>)
+  {
+    REQUIRE_APPROX_EQ(expected_data, test_results);
   }
   else if constexpr (cuda::std::is_same_v<T, float2>)
   {

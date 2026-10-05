@@ -42,7 +42,7 @@ template <class _Tp>
 _CCCL_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
 template <class _Tp>
-_CCCL_CONCEPT floating_point = is_floating_point_v<_Tp>;
+_CCCL_CONCEPT floating_point = is_floating_point_v<_Tp>; // NOLINT(cccl-prefer-cuda-traits)
 
 template <class _Tp>
 _CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer_v<_Tp>;

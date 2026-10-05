@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
@@ -47,9 +47,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_impl(_Tp __x) noexcept
 {
-  static_assert(is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>,
-                "Only floating-point types are supported");
-  if constexpr (is_floating_point_v<_Tp>)
+  static_assert(::cuda::is_floating_point_v<_Tp>, "Only floating-point types are supported");
+
+  // isinf(__float128) or isinf(__half) is not guaranteed to exist, we still need to do the
+  // isnan() + min/max check
+  if constexpr (is_floating_point_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
   {
 #if !_CCCL_TILE_COMPILATION() // nvbug6077402: error: "call to non-tile function not supported!"
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
@@ -58,6 +60,7 @@ template <class _Tp>
     }
 #endif // !_CCCL_TILE_COMPILATION()
   }
+
   if (::cuda::std::isnan(__x))
   {
     return false;
