@@ -27,8 +27,10 @@
 #include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
+#include <cuda/std/__mdspan/layout_helpers.h>
 #include <cuda/std/__mdspan/submdspan_helper.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/integral_constant_like.h>
@@ -118,7 +120,7 @@ public:
 
 private:
   static constexpr rank_type __rank_    = extents_type::rank();
-  static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
+  static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>{};
 
   //! @brief Helper to construct strides from another mapping using stride(r) calls
   template <class _StridedLayoutMapping>

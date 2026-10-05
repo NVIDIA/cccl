@@ -373,7 +373,7 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
                  "mdspan: operator[] out of bounds access");
     return accessor().access(data_handle(), mapping()(static_cast<index_type>(::cuda::std::move(__indices))...));
   }
@@ -393,7 +393,7 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
                  "mdspan: operator[array] out of bounds access");
     return mapping()(__indices[_Idxs]...);
   }
@@ -404,7 +404,7 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices[_Idxs]...),
                  "mdspan: operator[span] out of bounds access");
     return mapping()(__indices[_Idxs]...);
   }
@@ -436,33 +436,14 @@ public:
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __indices...),
                  "mdspan: operator() out of bounds access");
     return accessor().access(data_handle(), mapping()(__indices...));
   }
 
-  template <size_t... _Idxs>
   [[nodiscard]] _CCCL_API constexpr bool __check_size() const noexcept
   {
-    if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
-    {
-      size_t __prod = 1;
-      for (size_t __r = 0; __r < extents_type::rank(); ++__r)
-      {
-        const auto __extent = static_cast<size_t>(mapping().extents().extent(__r));
-        if (__mdspan_detail::__mul_overflow(__prod, __extent, &__prod))
-        {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  template <size_t... _Idxs>
-  [[nodiscard]] _CCCL_API constexpr size_type __op_size(index_sequence<_Idxs...>) const noexcept
-  {
-    return (size_type{1} * ... * static_cast<size_type>(mapping().extents().extent(_Idxs)));
+    return !::cuda::std::__mdspan_detail::__extents_product<size_type>(mapping().extents()).overflow;
   }
 
   [[nodiscard]] _CCCL_API constexpr size_type size() const noexcept
@@ -470,7 +451,7 @@ public:
     // Could leave this as only checked in debug mode: semantically size() is never
     // guaranteed to be related to any accessible range
     _CCCL_ASSERT(__check_size(), "mdspan: size() is not representable as size_type");
-    return __op_size(make_index_sequence<rank()>());
+    return ::cuda::std::__mdspan_detail::__extents_product<size_type>(mapping().extents()).value;
   }
 
   template <size_t... _Idxs>

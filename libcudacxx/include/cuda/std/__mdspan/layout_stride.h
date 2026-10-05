@@ -29,6 +29,8 @@
 #endif // no system header
 
 #include <cuda/__numeric/add_overflow.h>
+#include <cuda/__numeric/mul_overflow.h>
+#include <cuda/__numeric/overflow_result.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
@@ -48,6 +50,61 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+namespace __mdspan_detail
+{
+// REQUIRED-SPAN-SIZE for a strided mapping: 1 if rank is 0, 0 if the index space is
+// empty, otherwise 1 + sum((extent(r) - 1) * stride(r)).
+template <class _Extents, class _StrideArray, class _IndexType = typename _Extents::index_type>
+[[nodiscard]] _CCCL_API constexpr ::cuda::overflow_result<_IndexType>
+__strided_required_span_size(const _Extents& __ext, const _StrideArray& __strides) noexcept
+{
+  using _RankType = typename _Extents::rank_type;
+  if constexpr (_Extents::rank() == 0)
+  {
+    return {_IndexType{1}, false};
+  }
+  else if (::cuda::std::__mdspan_detail::__is_empty_extents(__ext))
+  {
+    return {_IndexType{0}, false};
+  }
+  else
+  {
+    _IndexType __size = 1;
+    for (_RankType __r = 0; __r != _Extents::rank(); ++__r)
+    {
+      _IndexType __term{};
+      if (::cuda::mul_overflow(__term, __ext.extent(__r) - _IndexType{1}, static_cast<_IndexType>(__strides[__r])))
+      {
+        return {__term, true};
+      }
+      if (::cuda::add_overflow(__size, __size, __term))
+      {
+        return {__size, true};
+      }
+    }
+    return {__size, false};
+  }
+}
+
+// layout_right strides: stride(r) is the product of extents in (r, rank).
+// On overflow, store 0 so empty mappings stay constructible when a suffix product
+// does not fit in index_type.
+template <class _Extents, class _StrideArray>
+_CCCL_API constexpr void __fill_layout_right_strides(const _Extents& __ext, _StrideArray& __strides) noexcept
+{
+  using _IndexType = typename _Extents::index_type;
+  using _RankType  = typename _Extents::rank_type;
+  if constexpr (_Extents::rank() > 0)
+  {
+    for (_RankType __r = 0; __r != _Extents::rank(); ++__r)
+    {
+      const auto __prod = ::cuda::std::__mdspan_detail::__extents_product<_IndexType>(__ext, __r + 1, _Extents::rank());
+      __strides[__r]    = __prod.overflow ? _IndexType{0} : __prod.value;
+    }
+  }
+}
+} // namespace __mdspan_detail
 
 namespace __layout_stride_detail
 {
@@ -112,16 +169,9 @@ public:
 
 private:
   static constexpr rank_type __rank_    = extents_type::rank();
-  static constexpr auto __rank_sequence = ::cuda::std::make_index_sequence<extents_type::rank()>();
+  static constexpr auto __rank_sequence = make_index_sequence<extents_type::rank()>{};
 
   using __stride_array = __mdspan_detail::__possibly_empty_array<index_type, extents_type::rank()>;
-
-  // Used for default construction check and mandates
-  [[nodiscard]] _CCCL_API static constexpr bool
-  __add_overflow(index_type __x, index_type __y, index_type* __res) noexcept
-  {
-    return ::cuda::add_overflow(*__res, __x, __y);
-  }
 
   template <class _OtherIndexType>
   [[nodiscard]] _CCCL_API static constexpr bool
@@ -143,35 +193,25 @@ private:
   [[nodiscard]] _CCCL_API static constexpr bool __required_span_size_is_representable(
     const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
   {
-    // nvcc believes strides is unused here
-    if constexpr (extents_type::rank() != 0)
+    if constexpr (extents_type::rank() == 0)
     {
-      index_type __size = 1;
-      for (rank_type __r = 0; __r != extents_type::rank(); __r++)
+      return true;
+    }
+    else if (::cuda::std::__mdspan_detail::__is_empty_extents(__ext))
+    {
+      return true;
+    }
+    else
+    {
+      for (rank_type __r = 0; __r != extents_type::rank(); ++__r)
       {
-        // We can only check correct conversion of _OtherIndexType if it is an integral
         if (__conversion_may_overflow(__strides[__r]))
         {
           return false;
         }
-        if (__ext.extent(__r) == index_type{0})
-        {
-          return true;
-        }
-
-        index_type __prod = (__ext.extent(__r) - 1);
-        if (::cuda::std::__mdspan_detail::__mul_overflow(__prod, static_cast<index_type>(__strides[__r]), &__prod))
-        {
-          return false;
-        }
-        if (__add_overflow(__size, __prod, &__size))
-        {
-          return false;
-        }
       }
+      return !::cuda::std::__mdspan_detail::__strided_required_span_size(__ext, __strides).overflow;
     }
-
-    return true;
   }
 
   // compute offset of a strided layout mapping
@@ -211,13 +251,7 @@ public:
   {
     if constexpr (extents_type::rank() > 0)
     {
-      index_type __stride = 1;
-      for (rank_type __r = __rank_ - 1; __r > rank_type{0}; __r--)
-      {
-        __strides()[__r] = __stride;
-        __stride *= extents().extent(__r);
-      }
-      __strides()[0] = __stride;
+      ::cuda::std::__mdspan_detail::__fill_layout_right_strides(extents(), __strides());
     }
   }
 
@@ -398,20 +432,6 @@ public:
     return __to_strides(__rank_sequence);
   }
 
-  template <size_t... _Pos>
-  [[nodiscard]] _CCCL_API constexpr index_type __required_span_size(index_sequence<_Pos...>) const noexcept
-  {
-    const index_type __product = (index_type{1} * ... * extents().extent(_Pos));
-    if (__product == index_type{0})
-    {
-      return index_type{0};
-    }
-    else
-    {
-      return (index_type{1} + ... + ((extents().extent(_Pos) - index_type{1}) * __strides()[_Pos]));
-    }
-  }
-
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
   {
     if constexpr (extents_type::rank() == 0)
@@ -420,7 +440,7 @@ public:
     }
     else
     {
-      return __required_span_size(__rank_sequence);
+      return ::cuda::std::__mdspan_detail::__strided_required_span_size(extents(), __strides()).value;
     }
   }
 
@@ -440,7 +460,7 @@ public:
     // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
     // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
-    //_CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
+    //_CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(__extents_, __idx...),
     //             "layout_stride::mapping: out of bounds indexing");
     if constexpr (extents_type::rank() == 0)
     {
@@ -448,7 +468,7 @@ public:
     }
     else
     {
-      return __op_index(__strides(), ::cuda::std::make_index_sequence<sizeof...(_Indices)>(), __idx...);
+      return __op_index(__strides(), make_index_sequence<sizeof...(_Indices)>{}, __idx...);
     }
   }
 
@@ -474,12 +494,6 @@ public:
   // extents are zero.
   // Technically it is meaningless to query is_exhaustive() in that case, but unfortunately
   // the way the standard defines this function, we can't give a simple true or false then.
-  template <size_t... _Pos>
-  [[nodiscard]] _CCCL_API constexpr index_type __to_total_size(index_sequence<_Pos...>) const noexcept
-  {
-    return (index_type{1} * ... * (extents().extent(_Pos)));
-  }
-
   [[nodiscard]] _CCCL_API constexpr bool is_exhaustive() const noexcept
   {
     if constexpr (extents_type::rank() == 0)
@@ -518,8 +532,7 @@ public:
       }
       else
       {
-        const index_type __total_size = __to_total_size(__rank_sequence);
-        return __span_size == __total_size;
+        return __span_size == ::cuda::std::__mdspan_detail::__extents_product<index_type>(extents()).value;
       }
     }
   }

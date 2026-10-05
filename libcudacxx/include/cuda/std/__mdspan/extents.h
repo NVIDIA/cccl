@@ -30,6 +30,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__mdspan/concepts.h>
+#include <cuda/std/__mdspan/layout_helpers.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -207,7 +208,7 @@ private:
 
 public:
   _CCCL_API constexpr __maybe_static_array() noexcept
-      : _DynamicValues{__zeros(make_index_sequence<__size_dynamic_>())}
+      : _DynamicValues{__zeros(make_index_sequence<__size_dynamic_>{})}
   {}
 
   template <class _Tp, size_t _Size>
@@ -355,7 +356,7 @@ _CCCL_TEMPLATE(class _To, class... _From)
 _CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 [[nodiscard]] _CCCL_API constexpr bool __are_representable_as(_From... __values)
 {
-  return (__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
+  return (::cuda::std::__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
 }
 
 _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
@@ -364,31 +365,12 @@ _CCCL_REQUIRES(__cccl_is_integer_v<_To>)
 {
   for (size_t __i = 0; __i != _Size; __i++)
   {
-    if (!__mdspan_detail::__is_representable_as<_To>(__values[__i]))
+    if (!::cuda::std::__mdspan_detail::__is_representable_as<_To>(__values[__i]))
     {
       return false;
     }
   }
   return true;
-}
-
-// ------------------------------------------------------------------
-// ------------ __mul_overflow --------------------------------------
-// ------------------------------------------------------------------
-
-// Multiplies two values and detects overflow. Returns true if overflow occurred.
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y, _Tp* __res) noexcept
-{
-  *__res = __x * __y;
-  return __x && ((*__res / __x) != __y);
-}
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr bool __mul_overflow(_Tp __x, _Tp __y) noexcept
-{
-  const auto __res = __x * __y;
-  return __x && ((__res / __x) != __y);
 }
 } // namespace __mdspan_detail
 
@@ -457,7 +439,7 @@ public:
   {
     // Not catching this could lead to out of bounds errors later
     // e.g. mdspan m(ptr, dextents<char, 1>(200u)); leads to an extent of -56 on m
-    _CCCL_ASSERT(__mdspan_detail::__are_representable_as<index_type>(__dynvals...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__are_representable_as<index_type>(__dynvals...),
                  "extents ctor: arguments must be representable as index_type and nonnegative");
   }
 
@@ -487,7 +469,7 @@ public:
     // Not catching this could lead to out of bounds errors later
     // e.g. array a{200u}; mdspan<int, dextents<char,1>> m(ptr, extents(span<unsigned,1>(a))); leads to an extent of -56
     // on m
-    _CCCL_ASSERT(__mdspan_detail::__are_representable_as<index_type>(__exts),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__are_representable_as<index_type>(__exts),
                  "extents ctor: arguments must be representable as index_type and nonnegative");
   }
 
@@ -500,7 +482,7 @@ public:
     // Not catching this could lead to out of bounds errors later
     // e.g. array a{200u}; mdspan<int, dextents<char,1>> m(ptr, extents(span<unsigned,1>(a))); leads to an extent of -56
     // on m
-    _CCCL_ASSERT(__mdspan_detail::__are_representable_as<index_type>(__exts),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__are_representable_as<index_type>(__exts),
                  "extents ctor: arguments must be representable as index_type and nonnegative");
   }
 
@@ -642,31 +624,6 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES extents(_IndexTypes...)
 
 namespace __mdspan_detail
 {
-// ------------------------------------------------------------------
-// ------------ __required_span_size_is_representable ---------------
-// ------------------------------------------------------------------
-
-// Checks if the product of extents is representable as index_type without overflow
-template <class _Extents>
-[[nodiscard]] _CCCL_API constexpr bool __required_span_size_is_representable(const _Extents& __ext) noexcept
-{
-  using ::cuda::std::__mdspan_detail::__mul_overflow;
-  if constexpr (_Extents::rank() != 0)
-  {
-    using __index_type  = typename _Extents::index_type;
-    using __rank_type   = typename _Extents::rank_type;
-    __index_type __prod = __ext.extent(0);
-    for (__rank_type __r = 1; __r < _Extents::rank(); __r++)
-    {
-      if (__mul_overflow(__prod, __ext.extent(__r), &__prod))
-      {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
 // Function to check whether a set of indices are a multidimensional
 // index into extents. This is a word of power in the C++ standard
 // requiring that the indices are larger than 0 and smaller than
@@ -703,14 +660,14 @@ template <size_t... _Idxs, class _Extents, class... _From>
 [[nodiscard]] _CCCL_API constexpr bool
 __is_multidimensional_index_in_impl(index_sequence<_Idxs...>, const _Extents& __ext, _From... __values)
 {
-  return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ...);
+  return (::cuda::std::__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ...);
 }
 
 template <class _Extents, class... _From>
 [[nodiscard]] _CCCL_API constexpr bool __is_multidimensional_index_in(const _Extents& __ext, _From... __values)
 {
-  return __mdspan_detail::__is_multidimensional_index_in_impl(
-    make_index_sequence<_Extents::rank()>(), __ext, __values...);
+  return ::cuda::std::__mdspan_detail::__is_multidimensional_index_in_impl(
+    make_index_sequence<_Extents::rank()>{}, __ext, __values...);
 }
 } // namespace __mdspan_detail
 
