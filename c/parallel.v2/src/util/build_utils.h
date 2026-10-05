@@ -79,10 +79,10 @@ inline std::string parse_ctk_root(const char* ctk_path)
   return fp.string();
 }
 
-// Looks for `relative_marker` under `ctk_root`; if not found there, scans
-// `ctk_root`'s sibling directories for one containing it. Returns the full
-// path to the marker if found anywhere, or `ctk_root / relative_marker`
-// (the default, possibly nonexistent, location) otherwise.
+// Looks for `relative_marker` under `ctk_root`; if not found there, looks in
+// the `cuda_nvcc` sibling package directory. Returns the full path to the
+// marker if found, or `ctk_root / relative_marker` (the default, possibly
+// nonexistent, location) otherwise.
 //
 // CUDA 13.x pip wheels merge every CTK component into one shared
 // nvidia/cu13/ tree, so markers rooted under `ctk_root` (the layout used by
@@ -92,31 +92,25 @@ inline std::string parse_ctk_root(const char* ctk_path)
 // package directory — e.g. cudart headers/libs under nvidia/cuda_runtime/,
 // but nvcc-provided content (libdevice, crt/ headers, ...) under the
 // sibling nvidia/cuda_nvcc/ — so `ctk_root` (derived from the cudart
-// include path) never contains those markers directly.
+// include path) never contains those markers directly. Only `cuda_nvcc` is
+// consulted so a sibling from a different toolkit (e.g. nvidia/cu13) is
+// never picked up by mistake.
 inline std::string find_in_ctk_or_siblings(const std::string& ctk_root, const std::filesystem::path& relative_marker)
 {
   if (ctk_root.empty())
   {
     return {};
   }
+  std::error_code ec;
   std::filesystem::path default_path = std::filesystem::path(ctk_root) / relative_marker;
-  if (std::filesystem::exists(default_path))
+  if (std::filesystem::exists(default_path, ec))
   {
     return default_path.string();
   }
-  std::filesystem::path parent = std::filesystem::path(ctk_root).parent_path();
-  std::error_code ec;
-  for (const auto& entry : std::filesystem::directory_iterator(parent, ec))
+  std::filesystem::path candidate = std::filesystem::path(ctk_root).parent_path() / "cuda_nvcc" / relative_marker;
+  if (std::filesystem::exists(candidate, ec))
   {
-    if (!entry.is_directory(ec))
-    {
-      continue;
-    }
-    std::filesystem::path candidate = entry.path() / relative_marker;
-    if (std::filesystem::exists(candidate))
-    {
-      return candidate.string();
-    }
+    return candidate.string();
   }
   // Not found anywhere; return the default location so callers get the same
   // "file not found" error they would have gotten before this fallback.
@@ -139,15 +133,16 @@ inline std::string find_libdevice_bc(const std::string& ctk_root)
 // (nvidia-cuda-nvcc-cu12) instead. See find_in_ctk_or_siblings().
 inline std::string find_extra_ctk_include_dir(const std::string& ctk_root)
 {
+  std::error_code ec;
   if (ctk_root.empty()
-      || std::filesystem::exists(std::filesystem::path(ctk_root) / "include" / "crt" / "host_defines.h"))
+      || std::filesystem::exists(std::filesystem::path(ctk_root) / "include" / "crt" / "host_defines.h", ec))
   {
     return {};
   }
   std::string found = find_in_ctk_or_siblings(ctk_root, std::filesystem::path("include") / "crt" / "host_defines.h");
   // find_in_ctk_or_siblings() falls back to the (nonexistent) default
   // location when the marker isn't found anywhere; only trust a real hit.
-  return std::filesystem::exists(found) ? std::filesystem::path(found).parent_path().parent_path().string() : "";
+  return std::filesystem::exists(found, ec) ? std::filesystem::path(found).parent_path().parent_path().string() : "";
 }
 
 // In source-tree (dev) builds, cub/ and thrust/ live at sibling paths to
