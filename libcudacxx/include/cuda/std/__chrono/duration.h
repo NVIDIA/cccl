@@ -25,7 +25,6 @@
 #  include <cuda/std/__compare/ordering.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
@@ -102,12 +101,14 @@ _CCCL_REQUIRES(__is_cuda_std_duration_v<_ToDuration>)
   }
 }
 
+// The standard mandates the inheritance relationshiip
 template <class _Rep>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT treat_as_floating_point : is_floating_point<_Rep>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+treat_as_floating_point : is_floating_point<_Rep> // NOLINT(cccl-prefer-cuda-traits)
 {};
 
 template <class _Rep>
-inline constexpr bool treat_as_floating_point_v = is_floating_point_v<_Rep>;
+inline constexpr bool treat_as_floating_point_v = is_floating_point_v<_Rep>; // NOLINT(cccl-prefer-cuda-traits)
 
 template <class _Rep>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values

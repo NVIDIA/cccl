@@ -59,8 +59,10 @@ _CCCL_API constexpr unsigned long long __convert_to_integral(unsigned long long 
   return __val;
 }
 
+// It's not guaranteed that user types convert to long long
 template <typename _Fp>
-_CCCL_API constexpr enable_if_t<is_floating_point_v<_Fp>, long long> __convert_to_integral(_Fp __val)
+_CCCL_API constexpr enable_if_t<::cuda::std::is_floating_point_v<_Fp>, long long> // NOLINT(cccl-prefer-cuda-traits)
+__convert_to_integral(_Fp __val)
 {
   return __val;
 }

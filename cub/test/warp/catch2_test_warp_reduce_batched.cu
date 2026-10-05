@@ -5,6 +5,7 @@
 #include <cub/warp/warp_reduce.cuh>
 #include <cub/warp/warp_reduce_batched.cuh>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/iterator>
@@ -219,7 +220,7 @@ _CCCL_DIAG_POP
 template <typename T, int N>
 void gen_bounded_input(c2h::seed_t seed, c2h::device_vector<T>& d_input)
 {
-  if constexpr (cuda::std::is_floating_point_v<T>)
+  if constexpr (::cuda::is_floating_point_v<T>)
   {
     // Small positive range to minimize floating point error in reductions
     c2h::gen(seed, d_input, T(0.5), T(1.5));

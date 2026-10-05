@@ -20,9 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -68,7 +67,7 @@ template <class _Tp>
   {
     return __numeric_limits_type::__integral;
   }
-  else if constexpr (is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>)
+  else if constexpr (::cuda::is_floating_point_v<_Tp>)
   {
     return __numeric_limits_type::__floating_point;
   }

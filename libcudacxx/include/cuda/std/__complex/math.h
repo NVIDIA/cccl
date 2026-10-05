@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/sincos.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
 #include <cuda/std/__cmath/isinf.h>
@@ -29,7 +30,6 @@
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
 
@@ -95,7 +95,7 @@ template <class _Tp>
 }
 
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES((is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>) )
+_CCCL_REQUIRES(::cuda::is_floating_point_v<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   if (::cuda::std::isinf(__re))

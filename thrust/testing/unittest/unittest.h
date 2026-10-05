@@ -9,6 +9,7 @@
 #include <thrust/mr/host_memory_resource.h>
 #include <thrust/universal_vector.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cmath>
@@ -376,7 +377,7 @@ std::string type_name()
 template <typename T>
 T truncate_to_max_representable(::cuda::std::size_t n)
 {
-  if constexpr (::cuda::std::is_floating_point_v<T>)
+  if constexpr (::cuda::is_floating_point_v<T>)
   {
     return ::cuda::std::min<T>(static_cast<T>(n), ::cuda::std::numeric_limits<T>::max());
   }

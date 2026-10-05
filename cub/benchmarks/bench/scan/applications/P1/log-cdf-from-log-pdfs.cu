@@ -7,6 +7,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/cmath>
 
 #include <look_back_helper.cuh>
@@ -99,7 +100,7 @@ template <typename T>
 template <typename FloatingPointT, typename OffsetT>
 static void inclusive_scan(nvbench::state& state, nvbench::type_list<FloatingPointT, OffsetT>)
 {
-  static_assert(cuda::std::is_floating_point_v<FloatingPointT>);
+  static_assert(::cuda::is_floating_point_v<FloatingPointT>);
 
   using value_t                  = FloatingPointT;
   using input_t                  = const value_t*;

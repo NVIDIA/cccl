@@ -519,14 +519,13 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_multiplies_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_floating_point_v<_Up>
-                  || ::cuda::std::is_same_v<_Up, char>)
-    {
-      return _Up{1};
-    }
-    else if constexpr (::cuda::std::__is_extended_floating_point_v<_Up>)
+    if constexpr (is_floating_point_v<_Up>)
     {
       return ::cuda::std::__fp_one<_Up>();
+    }
+    else if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
+    {
+      return _Up{1};
     }
     else
     {

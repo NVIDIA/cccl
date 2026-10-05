@@ -5,6 +5,8 @@
 
 #include <cub/device/device_segmented_scan.cuh>
 
+#include <cuda/__type_traits/is_floating_point.h>
+
 #include <cstdint>
 #include <iostream>
 #include <utility>
@@ -70,7 +72,7 @@ bool check_segment(const c2h::host_vector<ValueT>& h_output,
   bool correct = true;
   for (OffsetT pos = begin_offset; pos < end_offset; ++pos)
   {
-    if constexpr (cuda::std::is_floating_point_v<ValueT>)
+    if constexpr (::cuda::is_floating_point_v<ValueT>)
     {
       ValueT ref_v  = h_ref[pos];
       ValueT act_v  = h_output[pos];
@@ -81,21 +83,6 @@ bool check_segment(const c2h::host_vector<ValueT>& h_output,
 
       ValueT eps = ::cuda::std::numeric_limits<ValueT>::epsilon();
       correct    = correct && (adiff < 3 * eps + 2 * eps * (::cuda::std::max(ref_av, act_av)));
-    }
-    else if constexpr (cuda::std::is_same_v<ValueT, half_t> || cuda::std::is_same_v<ValueT, bfloat16_t>)
-    {
-      const float ref_v = h_ref[pos];
-      const float act_v = h_output[pos];
-      if (cuda::std::isfinite(ref_v) && cuda::std::isfinite(act_v))
-      {
-        const float diff   = (ref_v - act_v);
-        const float adiff  = (diff > float{0}) ? diff : -diff;
-        const float ref_av = (ref_v > float{0}) ? ref_v : -ref_v;
-        const float act_av = (act_v > float{0}) ? act_v : -act_v;
-
-        const float eps = float{1} / float{128};
-        correct         = correct && (adiff < 3 * eps + 5 * eps * (::cuda::std::max(ref_av, act_av)));
-      }
     }
     else
     {

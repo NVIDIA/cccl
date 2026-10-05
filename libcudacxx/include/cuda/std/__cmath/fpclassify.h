@@ -26,6 +26,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
 
@@ -94,8 +95,10 @@ template <class _Tp>
       return FP_INFINITE;
     }
   }
-  // comparison based classification keeps this path constexpr for types whose storage would need bit_cast
-  if constexpr (is_floating_point_v<_Tp> || __is_ext_compiler_fp_v<_Tp>)
+  // comparison based classification keeps this path constexpr for types whose storage would
+  // need bit_cast. We can't use ::cuda::is_floating_point_v here (and have no branch at all)
+  // because _nv_fp4_* and friends don't implement unary minus.
+  if constexpr (is_floating_point_v<_Tp> || __is_ext_compiler_fp_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
   {
     if (__x > -numeric_limits<_Tp>::min() && __x < numeric_limits<_Tp>::min())
     {
