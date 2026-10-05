@@ -24,7 +24,7 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__hierarchy/hierarchy_levels.h>
-#  include <cuda/std/tuple>
+#  include <cuda/std/__tuple_dir/tie.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
+// todo(dabayer): Enable for msvc. It has problems selecting the constexpr path.
 // UNSUPPORTED: msvc
 
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
@@ -126,12 +126,10 @@ template <class T, class Arg>
 inline constexpr bool
   HasSubscript<T, Arg, cuda::std::void_t<decltype(cuda::std::declval<T&>()[cuda::std::declval<Arg>()])>> = true;
 
-template <class T, class Arg, class = void>
+template <class T, class Arg, bool = HasSubscript<T, Arg>>
 inline constexpr bool HasNothrowSubscript = false;
 template <class T, class Arg>
-inline constexpr bool
-  HasNothrowSubscript<T, Arg, cuda::std::enable_if_t<noexcept(cuda::std::declval<T&>()[cuda::std::declval<Arg>()])>> =
-    true;
+inline constexpr bool HasNothrowSubscript<T, Arg, true> = noexcept(cuda::std::declval<T&>()[cuda::std::declval<Arg>()]);
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 static_assert(!HasSubscript<cuda::std::__constant_wrapper<4>, cuda::std::__constant_wrapper<1>>);

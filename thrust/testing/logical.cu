@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestAllOf()
+void test_all_of()
 {
   using T = typename Vector::value_type;
 
@@ -22,7 +22,7 @@ void TestAllOf()
   REQUIRE_FALSE(thrust::all_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE_FALSE(thrust::all_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestAllOf);
+DECLARE_VECTOR_UNITTEST(test_all_of);
 
 template <class InputIterator, class Predicate>
 bool all_of(my_system& system, InputIterator, InputIterator, Predicate)
@@ -31,7 +31,7 @@ bool all_of(my_system& system, InputIterator, InputIterator, Predicate)
   return false;
 }
 
-void TestAllOfDispatchExplicit()
+TEST_CASE("TestAllOfDispatchExplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -40,7 +40,6 @@ void TestAllOfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestAllOfDispatchExplicit);
 
 template <class InputIterator, class Predicate>
 bool all_of(my_tag, InputIterator first, InputIterator, Predicate)
@@ -49,7 +48,7 @@ bool all_of(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestAllOfDispatchImplicit()
+TEST_CASE("TestAllOfDispatchImplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -57,10 +56,9 @@ void TestAllOfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestAllOfDispatchImplicit);
 
 template <class Vector>
-void TestAnyOf()
+void test_any_of()
 {
   using T = typename Vector::value_type;
 
@@ -77,7 +75,7 @@ void TestAnyOf()
   REQUIRE(thrust::any_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE_FALSE(thrust::any_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestAnyOf);
+DECLARE_VECTOR_UNITTEST(test_any_of);
 
 template <class InputIterator, class Predicate>
 bool any_of(my_system& system, InputIterator, InputIterator, Predicate)
@@ -86,7 +84,7 @@ bool any_of(my_system& system, InputIterator, InputIterator, Predicate)
   return false;
 }
 
-void TestAnyOfDispatchExplicit()
+TEST_CASE("TestAnyOfDispatchExplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -95,7 +93,6 @@ void TestAnyOfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestAnyOfDispatchExplicit);
 
 template <class InputIterator, class Predicate>
 bool any_of(my_tag, InputIterator first, InputIterator, Predicate)
@@ -104,7 +101,7 @@ bool any_of(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestAnyOfDispatchImplicit()
+TEST_CASE("TestAnyOfDispatchImplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -112,10 +109,9 @@ void TestAnyOfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestAnyOfDispatchImplicit);
 
 template <class Vector>
-void TestNoneOf()
+void test_none_of()
 {
   using T = typename Vector::value_type;
 
@@ -132,7 +128,7 @@ void TestNoneOf()
   REQUIRE_FALSE(thrust::none_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE(thrust::none_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestNoneOf);
+DECLARE_VECTOR_UNITTEST(test_none_of);
 
 template <class InputIterator, class Predicate>
 bool none_of(my_system& system, InputIterator, InputIterator, Predicate)
@@ -141,7 +137,7 @@ bool none_of(my_system& system, InputIterator, InputIterator, Predicate)
   return false;
 }
 
-void TestNoneOfDispatchExplicit()
+TEST_CASE("TestNoneOfDispatchExplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -150,7 +146,6 @@ void TestNoneOfDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestNoneOfDispatchExplicit);
 
 template <class InputIterator, class Predicate>
 bool none_of(my_tag, InputIterator first, InputIterator, Predicate)
@@ -159,7 +154,7 @@ bool none_of(my_tag, InputIterator first, InputIterator, Predicate)
   return false;
 }
 
-void TestNoneOfDispatchImplicit()
+TEST_CASE("TestNoneOfDispatchImplicit", "[logical]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -167,4 +162,3 @@ void TestNoneOfDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestNoneOfDispatchImplicit);

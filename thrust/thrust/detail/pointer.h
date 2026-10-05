@@ -274,9 +274,9 @@ public:
   }
 
 #if _CCCL_HOSTED()
-  template <typename charT, typename traits>
-  _CCCL_HOST friend std::basic_ostream<charT, traits>&
-  operator<<(std::basic_ostream<charT, traits>& os, const pointer& p)
+  template <typename CharT, typename Traits>
+  _CCCL_HOST friend std::basic_ostream<CharT, Traits>&
+  operator<<(std::basic_ostream<CharT, Traits>& os, const pointer& p)
   {
     return os << p.get();
   }

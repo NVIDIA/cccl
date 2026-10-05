@@ -21,7 +21,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundDescendingSimple()
+void test_vector_lower_bound_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -38,15 +38,15 @@ void TestVectorLowerBoundDescendingSimple()
   const typename IntVector::iterator output_end = thrust::lower_bound(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(integral_output.end(), output_end);
+  REQUIRE(integral_output.end() == output_end);
 
   const IntVector ref{4, 4, 3, 3, 3, 2, 2, 1, 0, 0};
   REQUIRE(ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_lower_bound_descending_simple);
 
 template <class Vector>
-void TestVectorUpperBoundDescendingSimple()
+void test_vector_upper_bound_descending_simple()
 {
   Vector vec{8, 7, 5, 2, 0};
 
@@ -62,15 +62,15 @@ void TestVectorUpperBoundDescendingSimple()
   const typename IntVector::iterator output_end = thrust::upper_bound(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(output_end, integral_output.end());
+  REQUIRE(output_end == integral_output.end());
 
   const IntVector ref{5, 4, 4, 3, 3, 3, 2, 2, 1, 0};
   REQUIRE(ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_upper_bound_descending_simple);
 
 template <class Vector>
-void TestVectorBinarySearchDescendingSimple()
+void test_vector_binary_search_descending_simple()
 {
   Vector vec{8, 7, 5, 2, 0};
 
@@ -87,7 +87,7 @@ void TestVectorBinarySearchDescendingSimple()
   const typename BoolVector::iterator bool_output_end = thrust::binary_search(
     vec.begin(), vec.end(), input.begin(), input.end(), bool_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(bool_output_end, bool_output.end());
+  REQUIRE(bool_output_end == bool_output.end());
 
   const BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
   REQUIRE(bool_ref == bool_output);
@@ -97,13 +97,13 @@ void TestVectorBinarySearchDescendingSimple()
   const typename IntVector::iterator int_output_end = thrust::binary_search(
     vec.begin(), vec.end(), input.begin(), input.end(), integral_output.begin(), ::cuda::std::greater<T>());
 
-  ASSERT_EQUAL_QUIET(int_output_end, integral_output.end());
+  REQUIRE(int_output_end == integral_output.end());
 
   const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
 
   REQUIRE(int_ref == integral_output);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_binary_search_descending_simple);
 
 template <typename T>
 struct TestVectorLowerBoundDescending

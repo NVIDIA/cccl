@@ -49,7 +49,7 @@ struct TestTupleTransform
     ASSERT_ALMOST_EQUAL(h_t1, d_t1);
     ASSERT_ALMOST_EQUAL(h_t2, d_t2);
 
-    ASSERT_EQUAL_QUIET(h_tuples, d_tuples);
+    REQUIRE((h_tuples == d_tuples));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleTransform, SignedIntegralTypes);

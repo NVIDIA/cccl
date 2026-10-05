@@ -42,7 +42,7 @@ SIMD
      - CCCL 3.6.0
      - CUDA 13.6
 
-   * - :ref:`cuda::simd::add_min and cuda::simd::add_max <libcudacxx-extended-api-simd-add-min-max>`
-     - Perform element-wise addition followed by a minimum or maximum
+   * - :ref:`cuda::simd::add_min, cuda::simd::add_max, cuda::simd::add_min_relu, and cuda::simd::add_max_relu <libcudacxx-extended-api-simd-add-min-max>`
+     - Perform element-wise addition followed by a minimum or maximum, optionally followed by ReLU
      - CCCL 3.6.0
      - CUDA 13.6

@@ -145,9 +145,10 @@ protected:
       , __green_ctx_{__green_ctx}
   {}
 
-  device_ref __device_{0};
-  ::CUcontext __cu_ctx_{};
-  ::CUgreenCtx __green_ctx_{};
+  // The owning logical device class manages these handles directly.
+  device_ref __device_{0}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  ::CUcontext __cu_ctx_{}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  ::CUgreenCtx __green_ctx_{}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 };
 
 _CCCL_END_NAMESPACE_CUDA

@@ -27,7 +27,7 @@
 #include <cuda/__memcpy_async/cp_async_fallback.h>
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 

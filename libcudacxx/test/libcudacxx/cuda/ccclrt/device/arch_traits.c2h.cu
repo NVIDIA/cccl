@@ -84,6 +84,11 @@ void constexpr compare_static_and_dynamic()
   constexpr cuda::arch_traits_t static_traits  = cuda::arch_traits<cuda::to_arch_id(cc)>();
   constexpr cuda::arch_traits_t dynamic_traits = cuda::arch_traits_for(cuda::to_arch_id(cc));
 
+  static_assert(cuda::compute_capability{static_traits.arch_id} == cc);
+  static_assert(static_traits.compute_capability == cc);
+  static_assert(static_traits.compute_capability_major == cc.major_cap());
+  static_assert(static_traits.compute_capability_minor == cc.minor_cap());
+
   static_assert(static_traits.arch_id == dynamic_traits.arch_id);
   static_assert(static_traits.max_threads_per_block == dynamic_traits.max_threads_per_block);
   static_assert(static_traits.max_block_dim_x == dynamic_traits.max_block_dim_x);

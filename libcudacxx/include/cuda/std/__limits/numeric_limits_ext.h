@@ -698,35 +698,21 @@ public:
   _CCCL_DEPRECATED_IN_CXX23 static constexpr float_denorm_style has_denorm = denorm_present;
   _CCCL_DEPRECATED_IN_CXX23 static constexpr bool has_denorm_loss          = false;
 
-#  if defined(_CCCL_BUILTIN_HUGE_VALF128)
   _CCCL_API static constexpr type infinity() noexcept
   {
     return _CCCL_BUILTIN_HUGE_VALF128();
   }
-#  else // ^^^ _CCCL_BUILTIN_HUGE_VALF128 ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF128 vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type infinity() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(__uint128_t{0x7fff'0000'0000'0000} << 64);
-  }
-#  endif // ^^^ !_CCCL_BUILTIN_HUGE_VALF128 ^^^
-#  if defined(_CCCL_BUILTIN_NANF128)
   _CCCL_API static constexpr type quiet_NaN() noexcept
   {
-    return _CCCL_BUILTIN_NANF128("");
+    return _CCCL_BUILTIN_NANF128();
   }
-#  else // ^^^ _CCCL_BUILTIN_NANF128 ^^^ // vvv !_CCCL_BUILTIN_NANF128 vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
-  {
-    return ::cuda::std::bit_cast<type>(__uint128_t{0x7fff'8000'0000'0000} << 64);
-  }
-#  endif // ^^^ !_CCCL_BUILTIN_NANF128 ^^^
 #  if defined(_CCCL_BUILTIN_NANSF128)
   _CCCL_API static constexpr type signaling_NaN() noexcept
   {
-    return _CCCL_BUILTIN_NANSF128("");
+    return _CCCL_BUILTIN_NANSF128();
   }
 #  else // ^^^ _CCCL_BUILTIN_NANSF128 ^^^ // vvv !_CCCL_BUILTIN_NANSF128 vvv
-  _CCCL_API inline static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
+  _CCCL_API static _CCCL_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
   {
     return ::cuda::std::bit_cast<type>(__uint128_t{0x7fff'4000'0000'0000} << 64);
   }

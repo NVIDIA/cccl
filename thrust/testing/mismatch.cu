@@ -3,7 +3,7 @@
 
 #include <unittest/unittest.h>
 template <class Vector>
-void TestMismatchSimple()
+void test_mismatch_simple()
 {
   Vector a{1, 2, 3, 4};
   Vector b{1, 2, 4, 3};
@@ -21,10 +21,10 @@ void TestMismatchSimple()
   REQUIRE(thrust::mismatch(a.begin(), a.end(), b.begin()).first - a.begin() == 4);
   REQUIRE(thrust::mismatch(a.begin(), a.end(), b.begin()).second - b.begin() == 4);
 }
-DECLARE_VECTOR_UNITTEST(TestMismatchSimple);
+DECLARE_VECTOR_UNITTEST(test_mismatch_simple);
 
 template <class Vector>
-void TestMismatchBoundedSimple()
+void test_mismatch_bounded_simple()
 {
   using T = typename Vector::value_type;
 
@@ -91,9 +91,9 @@ void TestMismatchBoundedSimple()
     REQUIRE(result.second - b.begin() == 0);
   }
 }
-DECLARE_VECTOR_UNITTEST(TestMismatchBoundedSimple);
+DECLARE_VECTOR_UNITTEST(test_mismatch_bounded_simple);
 
-void TestMismatchBoundedWithExec()
+TEST_CASE("TestMismatchBoundedWithExec", "[mismatch]")
 {
   thrust::device_vector<int> a{1, 2, 3, 4};
   thrust::device_vector<int> b{1, 2, 99};
@@ -108,7 +108,6 @@ void TestMismatchBoundedWithExec()
   REQUIRE(result.first - a.begin() == 2);
   REQUIRE(result.second - b.begin() == 2);
 }
-DECLARE_UNITTEST(TestMismatchBoundedWithExec);
 
 template <typename InputIterator1, typename InputIterator2>
 cuda::std::pair<InputIterator1, InputIterator2>
@@ -118,7 +117,7 @@ mismatch(my_system& system, InputIterator1 first, InputIterator1, InputIterator2
   return cuda::std::make_pair(first, first);
 }
 
-void TestMismatchDispatchExplicit()
+TEST_CASE("TestMismatchDispatchExplicit", "[mismatch]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -127,7 +126,6 @@ void TestMismatchDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMismatchDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2>
 cuda::std::pair<InputIterator1, InputIterator2> mismatch(my_tag, InputIterator1 first, InputIterator1, InputIterator2)
@@ -136,7 +134,7 @@ cuda::std::pair<InputIterator1, InputIterator2> mismatch(my_tag, InputIterator1 
   return cuda::std::make_pair(first, first);
 }
 
-void TestMismatchDispatchImplicit()
+TEST_CASE("TestMismatchDispatchImplicit", "[mismatch]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -145,4 +143,3 @@ void TestMismatchDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMismatchDispatchImplicit);

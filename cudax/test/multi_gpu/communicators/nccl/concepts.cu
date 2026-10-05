@@ -30,7 +30,7 @@ struct non_trivial
 {
   non_trivial(const non_trivial&) {} // NOLINT(modernize-use-equals-default)
 
-  int value;
+  int value{};
 };
 
 struct unsupported_op

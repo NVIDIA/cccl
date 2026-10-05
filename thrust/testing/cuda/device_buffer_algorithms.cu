@@ -14,7 +14,7 @@
 
 #include <unittest/unittest.h>
 
-void TestDeviceBufferShuffleCudaStreams()
+TEST_CASE("TestDeviceBufferShuffleCudaStreams", "[device_buffer_algorithms]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -30,9 +30,8 @@ void TestDeviceBufferShuffleCudaStreams()
 
   test_runtime::assert_equal(stream, buffer, {0, 1, 2, 3, 4});
 }
-DECLARE_UNITTEST(TestDeviceBufferShuffleCudaStreams);
 
-void TestDeviceBufferSortCudaStreams()
+TEST_CASE("TestDeviceBufferSortCudaStreams", "[device_buffer_algorithms]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -44,4 +43,3 @@ void TestDeviceBufferSortCudaStreams()
 
   test_runtime::assert_equal(stream, buffer, {0, 1, 2, 3, 4});
 }
-DECLARE_UNITTEST(TestDeviceBufferSortCudaStreams);

@@ -349,15 +349,15 @@ stable_partition(execution_policy<Derived>& policy, Iterator first, Iterator las
 template <class Predicate>
 struct __is_partitioned_fn
 {
-  Predicate pred_;
+  Predicate pred;
 
-  // Not const-qualified: a const operator() would propagate const onto pred_
+  // Not const-qualified: a const operator() would propagate const onto pred
   // and reject predicates whose own operator() is non-const (Thrust permits these).
   template <class Tuple>
   [[nodiscard]] _CCCL_HOST_DEVICE bool operator()(const Tuple& tuple)
   {
-    const bool lhs = pred_(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
-    const bool rhs = pred_(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
+    const bool lhs = pred(thrust::raw_reference_cast(::cuda::std::get<0>(tuple)));
+    const bool rhs = pred(thrust::raw_reference_cast(::cuda::std::get<1>(tuple)));
     return !lhs && rhs;
   }
 };

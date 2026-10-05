@@ -22,6 +22,7 @@ inline std::string membar_scope(Scope sco)
     std::pair{Scope::GPU, ".gl"},
     std::pair{Scope::System, ".sys"},
     std::pair{Scope::CTA, ".cta"},
+    std::pair{Scope::Cluster, ".gl"},
   };
 
   return scope_map[sco];
@@ -40,6 +41,7 @@ _CCCL_DEVICE_API inline void __cuda_atomic_membar({0})
     std::pair{Scope::GPU, ".gl"},
     std::pair{Scope::System, ".sys"},
     std::pair{Scope::CTA, ".cta"},
+    std::pair{Scope::Cluster, ".gl"},
   };
 
   for (const auto& sco : membar_scopes)

@@ -23,7 +23,7 @@ using namespace cuda::experimental::places;
 
 __global__ void increment_kernel(int* data, int n)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
   {
     data[tid] += 1;
@@ -36,7 +36,7 @@ __global__ void increment_kernel(int* data, int n)
 void test_basic_pick_stream()
 {
   exec_place_resources resources;
-  exec_place place = exec_place::current_device();
+  const exec_place place = exec_place::current_device();
 
   cudaStream_t stream = place.pick_stream(resources);
   _CCCL_ASSERT(stream != nullptr, "pick_stream must return a valid stream");
@@ -51,7 +51,7 @@ void test_basic_pick_stream()
 void test_pick_stream_computation_hint()
 {
   exec_place_resources resources;
-  exec_place place = exec_place::current_device();
+  const exec_place place = exec_place::current_device();
 
   cudaStream_t compute_stream  = place.pick_stream(resources, true);
   cudaStream_t transfer_stream = place.pick_stream(resources, false);
@@ -73,8 +73,8 @@ void test_pick_stream_specific_device(int ndevs)
   exec_place_resources resources;
   for (int d = 0; d < ndevs && d < 2; d++)
   {
-    exec_place dev      = exec_place::device(d);
-    cudaStream_t stream = dev.pick_stream(resources);
+    const exec_place dev = exec_place::device(d);
+    cudaStream_t stream  = dev.pick_stream(resources);
     _CCCL_ASSERT(stream != nullptr, "stream must be valid");
     _CCCL_ASSERT(get_device_from_stream(stream) == d, "stream must belong to the requested device");
   }
@@ -85,8 +85,8 @@ void test_pick_stream_specific_device(int ndevs)
 void test_launch_kernel_on_picked_stream()
 {
   exec_place_resources resources;
-  exec_place place    = exec_place::current_device();
-  cudaStream_t stream = place.pick_stream(resources);
+  const exec_place place = exec_place::current_device();
+  cudaStream_t stream    = place.pick_stream(resources);
 
   constexpr int N = 256;
   int* d_data;
@@ -113,7 +113,7 @@ void test_launch_kernel_on_picked_stream()
 void test_round_robin_streams()
 {
   exec_place_resources resources;
-  exec_place place = exec_place::current_device();
+  const exec_place place = exec_place::current_device();
 
   cudaStream_t first  = place.pick_stream(resources);
   cudaStream_t second = place.pick_stream(resources);
@@ -132,7 +132,7 @@ void test_two_handles_isolation()
 {
   exec_place_resources r1;
   exec_place_resources r2;
-  exec_place place = exec_place::current_device();
+  const exec_place place = exec_place::current_device();
 
   cudaStream_t s1 = place.pick_stream(r1);
   cudaStream_t s2 = place.pick_stream(r2);

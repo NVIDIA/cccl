@@ -120,19 +120,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&)
       : __value_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a)
       : __value_(__a)
   {}
 
@@ -146,19 +146,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -220,7 +220,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -294,18 +294,18 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a)
       : _Hp(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a)
       : _Hp(__a)
   {}
 
@@ -319,19 +319,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a, _Tp&& __t)
       : _Hp(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -380,8 +380,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& __source, __tuple_indices<_Indices...>)
 {
-  using ::cuda::std::get;
-  ((void) (get<_Indices>(__dest) = get<_Indices>(__source)), ...);
+  ((void) (::cuda::std::get<_Indices>(__dest) = ::cuda::std::get<_Indices>(__source)), ...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -389,19 +388,18 @@ template <class _Dest, class _Source, class... _Up, size_t... _Indices>
 _CCCL_API constexpr void
 __memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up...>, __tuple_indices<_Indices...>)
 {
-  using ::cuda::std::get;
-  ((void) (get<_Indices>(__dest) = ::cuda::std::forward<_Up>(get<_Indices>(__source))), ...);
+  ((void) (::cuda::std::get<_Indices>(__dest) = ::cuda::std::forward<_Up>(::cuda::std::get<_Indices>(__source))), ...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_tuple_assign(_Dest& __dest, _Source&& __source, __tuple_indices<_Indices...>)
 {
-  using ::cuda::std::get;
   // clang-tidy incorrectly reports "'__source' used after it was forwarded".
   // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
   // NOLINTNEXTLINE(bugprone-use-after-move)
-  ((void) (get<_Indices>(__dest) = get<_Indices>(::cuda::std::forward<_Source>(__source))), ...);
+  ((void) (::cuda::std::get<_Indices>(__dest) = ::cuda::std::get<_Indices>(::cuda::std::forward<_Source>(__source))),
+   ...);
 }
 
 template <class _Indx, class... _Tp>
@@ -454,9 +452,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class _Tuple>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, _Tuple&& __t)
       // clang-tidy incorrectly reports "'__t' used after it was forwarded".
-      // Each expansion forwards the tuple only to select __adl_get<I>'s cvref-qualified overload for a distinct
+      // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct
       // element. NOLINTNEXTLINE(bugprone-use-after-move)
-      : __tuple_leaf<_Indx, _Tp>(::cuda::std::__adl_get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -464,7 +462,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
-                                 ::cuda::std::__adl_get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
+                                 ::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
   _CCCL_HIDE_FROM_ABI __tuple_impl(const __tuple_impl&)            = default;

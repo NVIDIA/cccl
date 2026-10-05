@@ -9,7 +9,7 @@
 // To get around this, you can create your own allocator which ignores
 // deallocation failures that occur because the CUDA runtime is shut down.
 
-extern "C" cudaError_t cudaFreeIgnoreShutdown(void* ptr)
+extern "C" cudaError_t cuda_free_ignore_shutdown(void* ptr)
 {
   cudaError_t const err = cudaFree(ptr);
   if (cudaSuccess == err || cudaErrorCudartUnloading == err)
@@ -20,7 +20,7 @@ extern "C" cudaError_t cudaFreeIgnoreShutdown(void* ptr)
 }
 
 using device_ignore_shutdown_memory_resource =
-  thrust::system::cuda::detail::cuda_memory_resource<cudaMalloc, cudaFreeIgnoreShutdown, thrust::cuda::pointer<void>>;
+  thrust::system::cuda::detail::cuda_memory_resource<cudaMalloc, cuda_free_ignore_shutdown, thrust::cuda::pointer<void>>;
 
 template <typename T>
 using device_ignore_shutdown_allocator =

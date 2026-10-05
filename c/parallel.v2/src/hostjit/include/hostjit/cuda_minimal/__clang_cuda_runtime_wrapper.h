@@ -57,6 +57,8 @@
 #  include <climits>
 #  include <cmath>
 #  include <cstddef>
+
+#  include <assert.h>
 // string.h must precede __clang_cuda_device_functions.h: cuda_fp16.hpp uses
 // memcpy from __host__ __device__ ctors. device_functions.h only declares a
 // __device__ memcpy, so the host-side call site needs the stub's host-callable

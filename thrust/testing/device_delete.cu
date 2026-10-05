@@ -25,7 +25,7 @@ struct Foo
   bool* destroyed = nullptr;
 };
 
-void TestDeviceDeleteDestructorInvocation()
+TEST_CASE("TestDeviceDeleteDestructorInvocation", "[device_delete]")
 {
   const thrust::device_ptr<Foo> foo_ptr = thrust::device_new<Foo>();
 
@@ -36,7 +36,6 @@ void TestDeviceDeleteDestructorInvocation()
   thrust::device_delete(foo_ptr);
   REQUIRE(destructor_flag[0]);
 }
-DECLARE_UNITTEST(TestDeviceDeleteDestructorInvocation);
 
 // based on: https://github.com/NVIDIA/cccl/issues/6132
 struct base
@@ -70,7 +69,7 @@ struct derived : base
   bool* derived_destroyed = nullptr;
 };
 
-void TestDeviceDeleteVirtualDestructorInvocation()
+TEST_CASE("TestDeviceDeleteVirtualDestructorInvocation", "[device_delete]")
 {
   {
     const thrust::device_ptr<derived> ptr = thrust::device_new<derived>();
@@ -88,4 +87,3 @@ void TestDeviceDeleteVirtualDestructorInvocation()
     REQUIRE(destructor_flags[1]);
   }
 }
-DECLARE_UNITTEST(TestDeviceDeleteVirtualDestructorInvocation);

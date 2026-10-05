@@ -16,7 +16,7 @@ INPUT                  = ../../cudax/include/cuda/experimental/__copy_bytes \
                          ../../cudax/include/cuda/experimental/__device \
                          ../../cudax/include/cuda/experimental/graph.cuh \
                          ../../cudax/include/cuda/experimental/__graph \
-                         ../../cudax/include/cuda/experimental/__group \
+                         ../../cudax/include/cuda/experimental/coop/__group \
                          ../../cudax/include/cuda/experimental/__launch \
                          ../../cudax/include/cuda/experimental/__places \
                          ../../cudax/include/cuda/experimental/__places/exec \
@@ -46,7 +46,7 @@ EXCLUDE_SYMBOLS        = *detail* *RESERVED* *reserved* *__* _A* _B* _C* _D* _E*
 # Path for @snippet references to test/example files
 EXAMPLE_PATH           = ../../cudax/include/cuda/experimental/__stf/utility \
                          ../../cudax/test/multi_gpu/algorithms \
-                         ../../cudax/test/coop/reduce
+                         ../../cudax/test/coop/algorithm/reduce
 
 FILE_PATTERNS          = *.h *.hpp *.cuh
 EXTENSION_MAPPING      = cuh=C++ cu=C++

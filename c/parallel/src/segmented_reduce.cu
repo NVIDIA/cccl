@@ -134,7 +134,7 @@ CUresult cccl_device_segmented_reduce_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "device_segmented_reduce";
@@ -371,7 +371,7 @@ CUresult cccl_device_segmented_reduce_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_segmented_reduce_compile(
     build_ptr,

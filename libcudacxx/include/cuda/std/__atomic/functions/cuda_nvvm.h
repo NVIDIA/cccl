@@ -40,10 +40,14 @@ extern "C" _CCCL_DEVICE void __cuda_atomic_nvvm_cas_128b_unsupported_before_SM_9
 extern "C" _CCCL_DEVICE void __cuda_atomic_nvvm_exchange_128b_unsupported_before_SM_90();
 
 template <class _Order>
-inline constexpr int __cuda_atomic_nvvm_order = [] {
+struct __cuda_atomic_nvvm_invalid_order
+{
   static_assert(__always_false_v<_Order>, "invalid atomic memory order");
-  return 0;
-}();
+  static constexpr int __value = 0;
+};
+
+template <class _Order>
+inline constexpr int __cuda_atomic_nvvm_order = __cuda_atomic_nvvm_invalid_order<_Order>::__value;
 
 template <>
 inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_relaxed> = __NV_ATOMIC_RELAXED;
@@ -61,10 +65,14 @@ template <>
 inline constexpr int __cuda_atomic_nvvm_order<__cuda_atomic_order_seq_cst> = __NV_ATOMIC_SEQ_CST;
 
 template <class _Scope>
-inline constexpr int __cuda_atomic_nvvm_scope = [] {
+struct __cuda_atomic_nvvm_invalid_scope
+{
   static_assert(__always_false_v<_Scope>, "invalid atomic thread scope");
-  return 0;
-}();
+  static constexpr int __value = 0;
+};
+
+template <class _Scope>
+inline constexpr int __cuda_atomic_nvvm_scope = __cuda_atomic_nvvm_invalid_scope<_Scope>::__value;
 
 template <>
 inline constexpr int __cuda_atomic_nvvm_scope<__thread_scope_block_tag> = __NV_THREAD_SCOPE_BLOCK;

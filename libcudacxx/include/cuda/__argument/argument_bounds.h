@@ -24,7 +24,7 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

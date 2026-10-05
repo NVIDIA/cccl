@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <string>
 
-#include <cuda_runtime.h>
+#include <cuda.h>
 
 #include <hostjit/config.hpp>
 
@@ -164,17 +164,24 @@ CompilerConfig detectDefaultConfig()
     }
   }
 
-  // Auto-detect GPU compute capability using CUDA runtime
-  int device = 0;
-  if (cudaGetDevice(&device) == cudaSuccess)
+  // Auto-detect GPU compute capability using the CUDA driver API. The driver
+  // API is used instead of the CUDA runtime so this code doesn't pull a
+  // libcudart dependency into the hostjit shared libraries (see #11735).
+  if (cuInit(0) == CUDA_SUCCESS)
   {
-    cudaDeviceProp prop;
-    if (cudaGetDeviceProperties(&prop, device) == cudaSuccess)
+    CUdevice device;
+    if (cuDeviceGet(&device, 0) == CUDA_SUCCESS)
     {
-      int detected_sm = prop.major * 10 + prop.minor;
-      if (detected_sm >= 75)
+      int major = 0;
+      int minor = 0;
+      if (cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device) == CUDA_SUCCESS
+          && cuDeviceGetAttribute(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device) == CUDA_SUCCESS)
       {
-        config.sm_version = detected_sm;
+        int detected_sm = major * 10 + minor;
+        if (detected_sm >= 75)
+        {
+          config.sm_version = detected_sm;
+        }
       }
     }
   }

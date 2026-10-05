@@ -30,9 +30,9 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__optional/optional.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/optional>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -321,7 +321,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   synchronous_resource_ref(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
-      : __base(const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base())
+      : __base(__other.__get_base())
   {}
 
   // resource_ref is convertible to synchronous_resource_ref
@@ -335,14 +335,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES synchronous_resource_ref
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   synchronous_resource_ref& operator=(const synchronous_resource_ref<_OtherProperties...>& __other) noexcept
   {
-    __basic_any_access::__cast_to(
-      const_cast<synchronous_resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
   synchronous_resource_ref& operator=(const synchronous_resource_ref& __other) noexcept
   {
-    __basic_any_access::__cast_to(const_cast<synchronous_resource_ref&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
@@ -361,6 +360,11 @@ private:
   using __base::interface;
 
   __base& __get_base() noexcept
+  {
+    return *this;
+  }
+
+  const __base& __get_base() const noexcept
   {
     return *this;
   }
@@ -386,20 +390,20 @@ struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   resource_ref(const resource_ref<_OtherProperties...>& __other) noexcept
-      : __base(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base())
+      : __base(__other.__get_base())
   {}
 
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((::cuda::std::__type_set_contains_v<::cuda::std::__type_set<_OtherProperties...>, _Properties...>) )
   resource_ref& operator=(const resource_ref<_OtherProperties...>& __other) noexcept
   {
-    __basic_any_access::__cast_to(const_cast<resource_ref<_OtherProperties...>&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
   resource_ref& operator=(const resource_ref& __other) noexcept
   {
-    __basic_any_access::__cast_to(const_cast<resource_ref&>(__other).__get_base(), __get_base());
+    __basic_any_access::__cast_to(__other.__get_base(), __get_base());
     return *this;
   }
 
@@ -427,6 +431,11 @@ private:
   using __base::interface;
 
   __base& __get_base() noexcept
+  {
+    return *this;
+  }
+
+  const __base& __get_base() const noexcept
   {
     return *this;
   }
@@ -945,6 +954,26 @@ template <class... _Properties>
 using resource_ref = basic_resource_ref<_ResourceKind::_Asynchronous, _Properties...>;
 
 #  endif // _CCCL_DOXYGEN_INVOKED
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::device_accessible.
+using device_resource_ref = resource_ref<::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::host_accessible.
+using host_resource_ref = resource_ref<::cuda::mr::host_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::resource_ref configured with @c cuda::mr::host_accessible and
+//! @c cuda::mr::device_accessible.
+using host_device_resource_ref = resource_ref<::cuda::mr::host_accessible, ::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::device_accessible.
+using any_device_resource = any_resource<::cuda::mr::device_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::host_accessible.
+using any_host_resource = any_resource<::cuda::mr::host_accessible>;
+
+//! @brief Convenience alias for @c cuda::mr::any_resource configured with @c cuda::mr::host_accessible and
+//! @c cuda::mr::device_accessible.
+using any_host_device_resource = any_resource<::cuda::mr::host_accessible, ::cuda::mr::device_accessible>;
 
 template <class _Tp>
 inline constexpr bool __is_resource_ref = false;

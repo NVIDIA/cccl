@@ -519,21 +519,21 @@ template <class T, class Alloc>
 class deque;
 template <class T, class Alloc>
 class list;
-template <class _Key, class _Value, class _Less, class _Alloc>
+template <class Key, class Value, class Less, class Alloc>
 class map;
-template <class _Key, class _Value, class _Less, class _Alloc>
+template <class Key, class Value, class Less, class Alloc>
 class multimap;
-template <class _Value, class _Less, class _Alloc>
+template <class Value, class Less, class Alloc>
 class set;
-template <class _Value, class _Less, class _Alloc>
+template <class Value, class Less, class Alloc>
 class multiset;
-template <class _Key, class _Value, class _Hash, class _Equals, class _Alloc>
+template <class Key, class Value, class Hash, class Equals, class Alloc>
 class unordered_map;
-template <class _Key, class _Value, class _Hash, class _Equals, class _Alloc>
+template <class Key, class Value, class Hash, class Equals, class Alloc>
 class unordered_multimap;
-template <class _Value, class _Hash, class _Equals, class _Alloc>
+template <class Value, class Hash, class Equals, class Alloc>
 class unordered_set;
-template <class _Value, class _Hash, class _Equals, class _Alloc>
+template <class Value, class Hash, class Equals, class Alloc>
 class unordered_multiset;
 
 #ifdef _CCCL_END_NAMESPACE_CUDA_STD

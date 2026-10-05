@@ -11,12 +11,12 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -256,47 +256,7 @@ CUB_TEST("DeviceSelect::Flagged works with user provided memory and environment"
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::Flagged works with cudaStream_t")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_flagged(stream.get());
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_flagged(stream);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::stream_ref")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const cuda::stream_ref stream_ref{stream};
-    test_flagged(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_flagged(env);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged(policy);
-  }
-
-  SECTION("DeviceSelect::Flagged works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged(policy);
-  }
+  test_with_custom_streams(test_flagged);
 }
 #endif // TEST_LAUNCH == 0
 

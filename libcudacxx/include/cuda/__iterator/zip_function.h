@@ -22,15 +22,13 @@
 
 #include <cuda/__fwd/iterator.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/pair.h>
-#include <cuda/std/tuple>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -73,28 +71,26 @@ public:
   static constexpr bool __is_nothrow_invocable =
     noexcept(::cuda::std::apply(::cuda::std::declval<_Fn2>(), ::cuda::std::declval<_Tuple>()));
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen interprets this as a duplicated function
   //! @brief Applies a tuple to the stored functor
   //! @param __tuple The tuple of arguments to be passed
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tuple)
-  _CCCL_REQUIRES(::cuda::std::__can_apply<const _Fn&, _Tuple>)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<const _Fn&, _Tuple>) )
   [[nodiscard]] _CCCL_API constexpr decltype(auto) operator()(_Tuple&& __tuple) const
     noexcept(__is_nothrow_invocable<const _Fn&, _Tuple>)
   {
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
 
-  //! @brief Applies a tuple to the stored functor
+  //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tuple)
-  _CCCL_REQUIRES(::cuda::std::__can_apply<_Fn&, _Tuple>)
+  _CCCL_REQUIRES((::cuda::std::__can_apply<_Fn&, _Tuple>) )
   [[nodiscard]] _CCCL_API constexpr decltype(auto)
   operator()(_Tuple&& __tuple) noexcept(__is_nothrow_invocable<_Fn&, _Tuple>)
   {
     return ::cuda::std::apply(__fun_, ::cuda::std::forward<_Tuple>(__tuple));
   }
-#endif // !_CCCL_DOXYGEN_INVOKED
 
   [[nodiscard]] _CCCL_API constexpr _Fn& __fun() noexcept
   {

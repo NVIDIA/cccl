@@ -265,27 +265,24 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
   REQUIRE(output_values[4] == 15);
 }
 
-void TestReduceByKeyDeviceSeq()
+TEST_CASE("TestReduceByKeyDeviceSeq", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceSeq);
 
-void TestReduceByKeyDeviceDevice()
+TEST_CASE("TestReduceByKeyDeviceDevice", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceDevice);
 
-void TestReduceByKeyDeviceNoSync()
+TEST_CASE("TestReduceByKeyDeviceNoSync", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
+void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -378,17 +375,15 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestReduceByKeyCudaStreamsSync()
+TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
 {
-  TestReduceByKeyCudaStreams(thrust::cuda::par);
+  test_reduce_by_key_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsSync);
 
-void TestReduceByKeyCudaStreamsNoSync()
+TEST_CASE("TestReduceByKeyCudaStreamsNoSync", "[reduce_by_key]")
 {
-  TestReduceByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_reduce_by_key_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
 class div_op
@@ -427,7 +422,7 @@ public:
   }
 };
 
-void TestReduceByKeyWithBigIndexesHelper(int magnitude)
+void test_reduce_by_key_with_big_indexes_helper(int magnitude)
 {
   const std::int64_t key_size_magnitude = 8;
   REQUIRE(key_size_magnitude < magnitude);
@@ -474,18 +469,17 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   }
 }
 
-void TestReduceByKeyWithBigIndexes()
+TEST_CASE("TestReduceByKeyWithBigIndexes", "[reduce_by_key]")
 {
-  TestReduceByKeyWithBigIndexesHelper(30);
+  test_reduce_by_key_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestReduceByKeyWithBigIndexesHelper(31);
-  TestReduceByKeyWithBigIndexesHelper(32);
-  TestReduceByKeyWithBigIndexesHelper(33);
+  test_reduce_by_key_with_big_indexes_helper(31);
+  test_reduce_by_key_with_big_indexes_helper(32);
+  test_reduce_by_key_with_big_indexes_helper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
 
-void TestReduceByKeyWithCustomEqualityOp()
+TEST_CASE("TestReduceByKeyWithCustomEqualityOp", "[reduce_by_key]")
 {
   using key_vector_t = thrust::device_vector<cuda::std::int32_t>;
   using val_vector_t = thrust::device_vector<cuda::std::int32_t>;
@@ -527,9 +521,7 @@ void TestReduceByKeyWithCustomEqualityOp()
   REQUIRE(all_values_correct);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
-
-void TestReduceByKeyWithDifferentAccumulatorT()
+TEST_CASE("TestReduceByKeyWithDifferentAccumulatorT", "[reduce_by_key]")
 {
   using key_t          = cuda::std::uint32_t;
   using val_t          = cuda::std::uint8_t;
@@ -573,5 +565,3 @@ void TestReduceByKeyWithDifferentAccumulatorT()
   constexpr auto expected_aggregate = static_cast<val_t>(sum % mod_val);
   REQUIRE(aggregates_out[0] == expected_aggregate);
 }
-
-DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);

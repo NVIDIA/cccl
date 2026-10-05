@@ -44,6 +44,7 @@
 #include <cuda/__functional/call_or.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/__stream/stream_ref.h>
@@ -312,7 +313,7 @@ private:
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
     constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_std_plus_v<ReductionOpT>;
+      gpu_gpu_determinism && detail::is_one_of_v<AccumT, float, double> && ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
 
     constexpr auto float_double_min_max_fallback =
       gpu_gpu_determinism
@@ -345,7 +346,7 @@ private:
 
       constexpr auto is_contiguous_fallback =
         !no_determinism || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>;
-      constexpr auto is_plus_fallback = !no_determinism || detail::is_cuda_std_plus_v<ReductionOpT>;
+      constexpr auto is_plus_fallback = !no_determinism || ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
       constexpr auto is_4b_or_greater = !no_determinism || sizeof(AccumT) >= 4;
       constexpr auto is_output_accum  = !no_determinism || ::cuda::std::is_same_v<OutputT, AccumT>;
 
@@ -1167,8 +1168,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1277,8 +1276,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1299,8 +1296,6 @@ public:
 
   //! @overload
   //! @note Uses ``cuda::std::less`` as comparison operator
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1728,8 +1723,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1972,8 +1965,6 @@ public:
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-  // ExtremumOutIteratorT, which is wrong IMO
   _CCCL_TEMPLATE(typename InputIteratorT,
                  typename ExtremumOutIteratorT,
                  typename IndexOutIteratorT,
@@ -1998,8 +1989,6 @@ public:
             typename ExtremumOutIteratorT,
             typename IndexOutIteratorT,
             typename EnvT = ::cuda::std::execution::env<>,
-            // TODO(bgruber): this constraint is not accurate, since the implementation will compare the value types of
-            // ExtremumOutIteratorT, which is wrong IMO
             ::cuda::std::enable_if_t<!::cuda::std::indirectly_comparable<InputIteratorT, InputIteratorT, EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ArgMax(InputIteratorT d_in,

@@ -16,10 +16,10 @@
 
 #include "test_macros.h"
 
-template <class _CharT>
+template <class CharT>
 struct constexpr_char_traits
 {
-  using char_type  = _CharT;
+  using char_type  = CharT;
   using int_type   = int;
   using off_type   = std::streamoff;
   using pos_type   = std::streampos;
@@ -73,8 +73,8 @@ struct constexpr_char_traits
   }
 };
 
-template <class _CharT>
-constexpr int constexpr_char_traits<_CharT>::compare(const char_type* __s1, const char_type* __s2, size_t __n)
+template <class CharT>
+constexpr int constexpr_char_traits<CharT>::compare(const char_type* __s1, const char_type* __s2, size_t __n)
 {
   for (; __n; --__n, ++__s1, ++__s2)
   {
@@ -90,8 +90,8 @@ constexpr int constexpr_char_traits<_CharT>::compare(const char_type* __s1, cons
   return 0;
 }
 
-template <class _CharT>
-constexpr size_t constexpr_char_traits<_CharT>::length(const char_type* __s)
+template <class CharT>
+constexpr size_t constexpr_char_traits<CharT>::length(const char_type* __s)
 {
   size_t __len = 0;
   for (; !eq(*__s, char_type(0)); ++__s)
@@ -101,8 +101,8 @@ constexpr size_t constexpr_char_traits<_CharT>::length(const char_type* __s)
   return __len;
 }
 
-template <class _CharT>
-constexpr const _CharT* constexpr_char_traits<_CharT>::find(const char_type* __s, size_t __n, const char_type& __a)
+template <class CharT>
+constexpr const CharT* constexpr_char_traits<CharT>::find(const char_type* __s, size_t __n, const char_type& __a)
 {
   for (; __n; --__n)
   {
@@ -115,8 +115,8 @@ constexpr const _CharT* constexpr_char_traits<_CharT>::find(const char_type* __s
   return 0;
 }
 
-template <class _CharT>
-constexpr _CharT* constexpr_char_traits<_CharT>::move(char_type* __s1, const char_type* __s2, size_t __n)
+template <class CharT>
+constexpr CharT* constexpr_char_traits<CharT>::move(char_type* __s1, const char_type* __s2, size_t __n)
 {
   char_type* __r = __s1;
   if (__s1 < __s2)
@@ -138,8 +138,8 @@ constexpr _CharT* constexpr_char_traits<_CharT>::move(char_type* __s1, const cha
   return __r;
 }
 
-template <class _CharT>
-constexpr _CharT* constexpr_char_traits<_CharT>::copy(char_type* __s1, const char_type* __s2, size_t __n)
+template <class CharT>
+constexpr CharT* constexpr_char_traits<CharT>::copy(char_type* __s1, const char_type* __s2, size_t __n)
 {
   assert(__s2 < __s1 || __s2 >= __s1 + __n);
   char_type* __r = __s1;
@@ -150,8 +150,8 @@ constexpr _CharT* constexpr_char_traits<_CharT>::copy(char_type* __s1, const cha
   return __r;
 }
 
-template <class _CharT>
-constexpr _CharT* constexpr_char_traits<_CharT>::assign(char_type* __s, size_t __n, char_type __a)
+template <class CharT>
+constexpr CharT* constexpr_char_traits<CharT>::assign(char_type* __s, size_t __n, char_type __a)
 {
   char_type* __r = __s;
   for (; __n; --__n, ++__s)

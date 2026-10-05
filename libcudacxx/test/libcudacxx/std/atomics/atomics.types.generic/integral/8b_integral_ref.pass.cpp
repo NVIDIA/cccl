@@ -119,12 +119,14 @@ int main(int, char**)
     (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_system, local_memory_selector>();
      test_for_all_types<cuda_atomic_ref, cuda::thread_scope_system, local_memory_selector>();))
 
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
-                test_for_all_types<cuda_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
+     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_block, shared_memory_selector>();
 
-                test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
-                test_for_all_types<cuda_atomic_ref, cuda::thread_scope_device, global_memory_selector>();))
+     test_for_all_types<cuda_std_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
+     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_device, global_memory_selector>();
+     test_for_all_types<cuda_atomic_ref, cuda::thread_scope_cluster, global_memory_selector>();))
 
   return 0;
 }

@@ -93,7 +93,7 @@ DECLARE_VECTOR_UNITTEST_WITH_TYPES_AND_NAME(
   std::allocator,
   TestFunctionalPlaceholdersTransformIteratorHost);
 
-void TestFunctionalPlaceholdersArgumentValueCategories()
+TEST_CASE("TestFunctionalPlaceholdersArgumentValueCategories", "[functional_placeholders_miscellaneous]")
 {
   using namespace thrust::placeholders;
   auto expr = _1 * _1 + _2 * _2;
@@ -103,9 +103,8 @@ void TestFunctionalPlaceholdersArgumentValueCategories()
   REQUIRE(expr(a, b) == 13); // pass l-value
   REQUIRE(expr(::cuda::std::move(a), ::cuda::std::move(b)) == 13); // pass x-value
 }
-DECLARE_UNITTEST(TestFunctionalPlaceholdersArgumentValueCategories);
 
-void TestFunctionalPlaceholdersSemiRegular()
+TEST_CASE("TestFunctionalPlaceholdersSemiRegular", "[functional_placeholders_miscellaneous]")
 {
   using namespace thrust::placeholders;
   using Expr = decltype(_1 * _1 + _2 * _2);
@@ -120,4 +119,3 @@ void TestFunctionalPlaceholdersSemiRegular()
 
   static_assert(::cuda::std::semiregular<Expr>);
 }
-DECLARE_UNITTEST(TestFunctionalPlaceholdersSemiRegular);

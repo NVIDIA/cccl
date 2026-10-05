@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope device=tsd,GPU,non_block:cluster=tsc,GPU,non_block
 // %PARAM% TYPE,FILECHECK_PREFIX_WIDTH type int8_t=int8_t,byte:uint8_t=uint8_t,byte:int16_t=int16_t,halfword:uint16_t=uint16_t,halfword:f16=f16,halfword:bf16=bf16,halfword
 // Strong compare-exchange may retry internally using weak compare-exchange; only the weak overload must contain one CAS.
 // %PARAM% CAS,FILECHECK_PREFIX_SINGLE_CAS cas compare_exchange_weak=compare_exchange_weak,single_cas:compare_exchange_strong=compare_exchange_strong,smxx
