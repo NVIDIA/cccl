@@ -207,6 +207,16 @@ TEST_FUNC constexpr bool test()
   test_layout<cuda::std::layout_left>();
   test_layout<cuda::std::layout_stride>();
   test_layout<always_convertible_layout>();
+
+  using from_mapping = cuda::std::layout_stride::mapping<cuda::std::extents<long long, 0>>;
+  using to_mapping   = cuda::std::layout_stride::mapping<cuda::std::extents<int, 0>>;
+  cuda::std::array<long long, 1> strides{1LL << 40};
+  from_mapping src(cuda::std::extents<long long, 0>{}, strides);
+  to_mapping dest(src);
+  assert(dest.required_span_size() == 0);
+#if !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
+  assert(dest.stride(0) == static_cast<int>(1LL << 40));
+#endif // !TEST_CUDA_COMPILER(NVCC, <, 12, 5)
   return true;
 }
 
