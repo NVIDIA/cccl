@@ -190,8 +190,20 @@ TEST_FUNC constexpr bool test()
       cuda::std::is_same_v<decltype(cuda::std::ranges::views::transform), decltype(cuda::std::views::transform)>);
   }
 
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
+  static_assert(test());
+#endif // _CCCL_BUILTIN_ADDRESSOF
+
   // A copy-only function, and a function whose move may throw, can form a partial `views::transform`.
   {
+    int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+
     CopyOnlyFn copy_only{10};
     static_assert(noexcept(cuda::std::views::transform(copy_only)));
     [[maybe_unused]] auto copy_only_partial = cuda::std::views::transform(copy_only);
@@ -204,16 +216,6 @@ TEST_FUNC constexpr bool test()
     assert(throwing_result[1] == 11);
     assert(throwing_result[2] == 12);
   }
-
-  return true;
-}
-
-int main(int, char**)
-{
-  test();
-#if defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test());
-#endif // _CCCL_BUILTIN_ADDRESSOF
 
   return 0;
 }
