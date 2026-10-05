@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <thrust/tabulate.h>
+
 #include <cuda/std/complex>
 #include <cuda/std/cstddef>
 #include <cuda/type_traits>
@@ -17,6 +19,12 @@
 
 namespace c2h::detail
 {
+template <typename Policy, typename T, typename OpT>
+inline void gen_values_op(const Policy& policy, ::cuda::std::span<T> data, OpT op)
+{
+  thrust::tabulate(policy, data.begin(), data.end(), op);
+}
+
 // draws a single uniform float in (0, 1] from an independent stream per index, so many indices can be drawn
 // concurrently without any shared state
 struct index_to_random_uniform
