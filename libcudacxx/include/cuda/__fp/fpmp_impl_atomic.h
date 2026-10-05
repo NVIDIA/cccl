@@ -140,7 +140,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<float>(
     unsigned long long int __new_ull =
       static_cast<unsigned long long int>(__new_hi_bits) | (static_cast<unsigned long long int>(__new_lo_bits) << 32);
 
-    __old = atomicCAS(__address_as_ull, __assumed, __new_ull);
+    __old = ::atomicCAS(__address_as_ull, __assumed, __new_ull);
   } while (__assumed != __old);
 
   // Return old value - extract from the final 'old' value
