@@ -25,17 +25,17 @@
 
 #include "test_macros.h"
 
-static_assert(cuda::std::is_default_constructible_v<cuda::shared_barrier>);
-static_assert(!cuda::std::is_constructible_v<cuda::shared_barrier, cuda::std::ptrdiff_t>);
-static_assert(!cuda::std::is_same_v<cuda::shared_barrier::arrival_token, cuda::std::uint64_t>);
-static_assert(cuda::std::is_default_constructible_v<cuda::shared_barrier::arrival_token>);
-static_assert(!cuda::std::is_constructible_v<cuda::shared_barrier::arrival_token, int>);
-static_assert(!cuda::std::is_convertible_v<int, cuda::shared_barrier::arrival_token>);
-static_assert(!cuda::std::is_copy_constructible_v<cuda::shared_barrier::operation_status>);
-static_assert(!cuda::std::is_copy_assignable_v<cuda::shared_barrier::operation_status>);
-static_assert(cuda::std::is_move_constructible_v<cuda::shared_barrier::operation_status>);
-static_assert(cuda::std::is_move_assignable_v<cuda::shared_barrier::operation_status>);
-static_assert(!cuda::std::is_convertible_v<cuda::shared_barrier::operation_status, bool>);
+static_assert(cuda::std::is_default_constructible_v<cuda::shared_memory_barrier>);
+static_assert(!cuda::std::is_constructible_v<cuda::shared_memory_barrier, cuda::std::ptrdiff_t>);
+static_assert(!cuda::std::is_same_v<cuda::shared_memory_barrier::arrival_token, cuda::std::uint64_t>);
+static_assert(cuda::std::is_default_constructible_v<cuda::shared_memory_barrier::arrival_token>);
+static_assert(!cuda::std::is_constructible_v<cuda::shared_memory_barrier::arrival_token, int>);
+static_assert(!cuda::std::is_convertible_v<int, cuda::shared_memory_barrier::arrival_token>);
+static_assert(!cuda::std::is_copy_constructible_v<cuda::shared_memory_barrier::operation_status>);
+static_assert(!cuda::std::is_copy_assignable_v<cuda::shared_memory_barrier::operation_status>);
+static_assert(cuda::std::is_move_constructible_v<cuda::shared_memory_barrier::operation_status>);
+static_assert(cuda::std::is_move_assignable_v<cuda::shared_memory_barrier::operation_status>);
+static_assert(!cuda::std::is_convertible_v<cuda::shared_memory_barrier::operation_status, bool>);
 
 template <class Fn>
 TEST_DEVICE_FUNC void execute_on_thread_zero(Fn&& fn)
@@ -67,14 +67,14 @@ TEST_DEVICE_FUNC void concurrent_threads_launch(Fn0 fn0, Fn1 fn1)
 }
 
 template <int Id>
-TEST_DEVICE_FUNC cuda::shared_barrier* construct_barrier(int expected)
+TEST_DEVICE_FUNC cuda::shared_memory_barrier* construct_barrier(int expected)
 {
   // Each Id creates a distinct shared-memory object. The tests do not invalidate
   // these barriers because the memory is not reused for another purpose.
-  alignas(cuda::shared_barrier) __shared__ char storage[sizeof(cuda::shared_barrier)];
-  cuda::shared_barrier* bar = reinterpret_cast<cuda::shared_barrier*>(storage);
+  alignas(cuda::shared_memory_barrier) __shared__ char storage[sizeof(cuda::shared_memory_barrier)];
+  cuda::shared_memory_barrier* bar = reinterpret_cast<cuda::shared_memory_barrier*>(storage);
   execute_on_thread_zero([&] {
-    new ((void*) bar) cuda::shared_barrier;
+    new ((void*) bar) cuda::shared_memory_barrier;
     init(bar, expected);
   });
   return bar;
@@ -82,7 +82,7 @@ TEST_DEVICE_FUNC cuda::shared_barrier* construct_barrier(int expected)
 
 TEST_DEVICE_FUNC void test_concurrent_arrive_and_wait()
 {
-  cuda::shared_barrier* bar = construct_barrier<0>(2);
+  cuda::shared_memory_barrier* bar = construct_barrier<0>(2);
 
   auto worker = [=] __device__ {
     for (int i = 0; i != 10; ++i)
@@ -96,7 +96,7 @@ TEST_DEVICE_FUNC void test_concurrent_arrive_and_wait()
 
 TEST_DEVICE_FUNC void test_concurrent_arrive_wait()
 {
-  cuda::shared_barrier* bar = construct_barrier<1>(2);
+  cuda::shared_memory_barrier* bar = construct_barrier<1>(2);
 
   auto awaiter = [=] __device__ {
     auto token = bar->arrive();
@@ -116,7 +116,7 @@ TEST_DEVICE_FUNC void test_concurrent_arrive_wait()
 
 TEST_DEVICE_FUNC void test_concurrent_arrive_and_drop()
 {
-  cuda::shared_barrier* bar = construct_barrier<2>(2);
+  cuda::shared_memory_barrier* bar = construct_barrier<2>(2);
 
   auto dropper = [=] __device__ {
     bar->arrive_and_drop();
@@ -131,7 +131,7 @@ TEST_DEVICE_FUNC void test_concurrent_arrive_and_drop()
 
 TEST_DEVICE_FUNC void test_concurrent_try_wait_for()
 {
-  cuda::shared_barrier* bar = construct_barrier<3>(2);
+  cuda::shared_memory_barrier* bar = construct_barrier<3>(2);
   cuda::std::chrono::nanoseconds delay(0);
 
   auto awaiter = [=] __device__ {
@@ -149,7 +149,7 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_for()
 
 TEST_DEVICE_FUNC void test_concurrent_try_wait_until()
 {
-  cuda::shared_barrier* bar = construct_barrier<4>(2);
+  cuda::shared_memory_barrier* bar = construct_barrier<4>(2);
   cuda::std::chrono::duration<int> delay(0);
 
   auto awaiter = [=] __device__ {
@@ -168,8 +168,8 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_until()
 
 TEST_DEVICE_FUNC void test_concurrent_wait_phase()
 {
-  cuda::shared_barrier* bar = construct_barrier<5>(2);
-  cuda::std::uint32_t phase = 0;
+  cuda::shared_memory_barrier* bar = construct_barrier<5>(2);
+  cuda::std::uint32_t phase        = 0;
 
   execute_on_thread_zero([&] {
     (void) bar->arrive();
@@ -192,8 +192,8 @@ TEST_DEVICE_FUNC void test_concurrent_wait_phase()
 
 TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_for()
 {
-  cuda::shared_barrier* bar = construct_barrier<6>(2);
-  cuda::std::uint32_t phase = 0;
+  cuda::shared_memory_barrier* bar = construct_barrier<6>(2);
+  cuda::std::uint32_t phase        = 0;
   cuda::std::chrono::nanoseconds delay(0);
 
   execute_on_thread_zero([&] {
@@ -214,8 +214,8 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_for()
 
 TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_until()
 {
-  cuda::shared_barrier* bar = construct_barrier<7>(2);
-  cuda::std::uint32_t phase = 0;
+  cuda::shared_memory_barrier* bar = construct_barrier<7>(2);
+  cuda::std::uint32_t phase        = 0;
   cuda::std::chrono::duration<int> delay(0);
 
   execute_on_thread_zero([&] {
@@ -237,8 +237,8 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_phase_until()
 
 TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_for()
 {
-  cuda::shared_barrier* bar = construct_barrier<11>(2);
-  cuda::std::uint32_t phase = 0;
+  cuda::shared_memory_barrier* bar = construct_barrier<11>(2);
+  cuda::std::uint32_t phase        = 0;
   cuda::std::chrono::nanoseconds delay(0);
 
   execute_on_thread_zero([&] {
@@ -259,8 +259,8 @@ TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_for()
 
 TEST_DEVICE_FUNC void test_concurrent_try_wait_conditional_phase_until()
 {
-  cuda::shared_barrier* bar = construct_barrier<12>(2);
-  cuda::std::uint32_t phase = 0;
+  cuda::shared_memory_barrier* bar = construct_barrier<12>(2);
+  cuda::std::uint32_t phase        = 0;
   cuda::std::chrono::duration<int> delay(0);
 
   execute_on_thread_zero([&] {
@@ -294,7 +294,7 @@ TEST_DEVICE_FUNC void test_shared_memory_barrier_choreography()
   test_concurrent_try_wait_conditional_phase_until();
 }
 
-TEST_DEVICE_FUNC void check_success_status(const cuda::shared_barrier::operation_status& status)
+TEST_DEVICE_FUNC void check_success_status(const cuda::shared_memory_barrier::operation_status& status)
 {
   assert(status.complete());
   assert(!status.has_report());
@@ -308,7 +308,7 @@ TEST_DEVICE_FUNC void check_success_status(const cuda::shared_barrier::operation
   assert(visited == 0);
 }
 
-TEST_DEVICE_FUNC void complete_tx(cuda::shared_barrier& bar, int transaction_count)
+TEST_DEVICE_FUNC void complete_tx(cuda::shared_memory_barrier& bar, int transaction_count)
 {
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_90,
@@ -323,7 +323,7 @@ TEST_DEVICE_FUNC void complete_tx(cuda::shared_barrier& bar, int transaction_cou
     (__trap();));
 }
 
-TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_barrier* bar, int tx_count, int arrive_count = 1)
+TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_memory_barrier* bar, int tx_count, int arrive_count = 1)
 {
   auto token = bar->arrive_tx(arrive_count, tx_count);
   assert(!bar->test_wait(token, cuda::ignore_status));
@@ -341,15 +341,15 @@ TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_barrier* bar, int tx_count, int 
   check_success_status(status);
 }
 
-TEST_DEVICE_FUNC void test_tx_waits(cuda::shared_barrier* bar)
+TEST_DEVICE_FUNC void test_tx_waits(cuda::shared_memory_barrier* bar)
 {
   test_tx_wait(bar, 1);
   test_tx_wait(bar, 1024);
 }
 
-TEST_DEVICE_FUNC void test_test_waits(cuda::shared_barrier* bar)
+TEST_DEVICE_FUNC void test_test_waits(cuda::shared_memory_barrier* bar)
 {
-  cuda::shared_barrier::arrival_token token;
+  cuda::shared_memory_barrier::arrival_token token;
   execute_on_thread_zero([&] {
     token = bar->arrive();
     assert(!bar->test_wait(token, cuda::ignore_status));
@@ -409,7 +409,7 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_barrier* bar)
   });
 }
 
-TEST_DEVICE_FUNC void test_ignore_status_waits(cuda::shared_barrier* bar)
+TEST_DEVICE_FUNC void test_ignore_status_waits(cuda::shared_memory_barrier* bar)
 {
   auto token = bar->arrive();
   while (!bar->try_wait(token, cuda::ignore_status))
@@ -422,7 +422,7 @@ TEST_DEVICE_FUNC void test_ignore_status_waits(cuda::shared_barrier* bar)
   bar->arrive_and_wait(cuda::ignore_status);
 }
 
-TEST_DEVICE_FUNC void test_status_waits(cuda::shared_barrier* bar)
+TEST_DEVICE_FUNC void test_status_waits(cuda::shared_memory_barrier* bar)
 {
   auto token       = bar->arrive();
   auto poll_status = bar->try_wait(token, cuda::return_status);
@@ -440,7 +440,7 @@ TEST_DEVICE_FUNC void test_status_waits(cuda::shared_barrier* bar)
   bar->arrive_and_wait(cuda::ignore_status);
 }
 
-TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_barrier* bar)
+TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier* bar)
 {
   (void) bar->arrive();
   bar->wait(0, cuda::ignore_status);
@@ -486,9 +486,9 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_barrier* bar)
   check_success_status(status);
 }
 
-TEST_DEVICE_FUNC void test_shared_barrier_common_extensions()
+TEST_DEVICE_FUNC void test_shared_memory_barrier_common_extensions()
 {
-  cuda::shared_barrier* bar = construct_barrier<8>(blockDim.x);
+  cuda::shared_memory_barrier* bar = construct_barrier<8>(blockDim.x);
 
   test_test_waits(bar);
   test_ignore_status_waits(bar);
@@ -496,22 +496,22 @@ TEST_DEVICE_FUNC void test_shared_barrier_common_extensions()
   test_phase_waits(construct_barrier<10>(blockDim.x));
 }
 
-TEST_DEVICE_FUNC void test_shared_barrier_sm90_extensions()
+TEST_DEVICE_FUNC void test_shared_memory_barrier_sm90_extensions()
 {
-  cuda::shared_barrier* bar = construct_barrier<9>(blockDim.x);
+  cuda::shared_memory_barrier* bar = construct_barrier<9>(blockDim.x);
 
   test_tx_waits(bar);
 
-  cuda::shared_barrier* batched_bar = construct_barrier<13>(2 * blockDim.x);
+  cuda::shared_memory_barrier* batched_bar = construct_barrier<13>(2 * blockDim.x);
   test_tx_wait(batched_bar, 1, 2);
   test_tx_wait(batched_bar, 1024, 2);
 }
 
-TEST_DEVICE_FUNC void test_shared_barrier_device()
+TEST_DEVICE_FUNC void test_shared_memory_barrier_device()
 {
   NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (test_shared_memory_barrier_choreography(); test_shared_barrier_common_extensions();
-                test_shared_barrier_sm90_extensions();))
+               (test_shared_memory_barrier_choreography(); test_shared_memory_barrier_common_extensions();
+                test_shared_memory_barrier_sm90_extensions();))
 }
 
 int main(int, char**)
@@ -522,7 +522,7 @@ int main(int, char**)
       // Required by the device-side concurrent_threads_launch helper.
       cuda_thread_count = 2;),
     NV_IS_DEVICE,
-    (test_shared_barrier_device();))
+    (test_shared_memory_barrier_device();))
 
   return 0;
 }
