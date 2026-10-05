@@ -14,7 +14,7 @@ repos:
   # Self-installing: the hook downloads a pinned, checksum-verified trufflehog on
   # first use (no manual install). Skipped on pre-commit.ci; Pulse CI enforces server-side.
   - repo: https://github.com/NVIDIA/security-workflows
-    rev: v0.2.0
+    rev: v0.4.0
     hooks:
       - id: secret-scan-trufflehog
 
@@ -39,7 +39,7 @@ repos:
       - id: check-yaml
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+    rev: v0.11.0.1-1
     hooks:
       - id: shellcheck
         exclude: |
@@ -48,7 +48,7 @@ repos:
           )
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v22.1.5
+    rev: v23.1.2
     hooks:
       - id: clang-format
         types_or: [file]
@@ -70,7 +70,7 @@ repos:
   # TODO/REMINDER: add the Ruff vscode extension to the devcontainers
   # Ruff, the Python auto-correcting linter/formatter written in Rust
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.20
+    rev: v0.16.10
     hooks:
     - id: ruff  # linter
     - id: ruff-format  # formatter
@@ -82,7 +82,7 @@ repos:
     - id: gersemi
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
@@ -94,7 +94,7 @@ repos:
           )
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v2.1.0'
+    rev: 'v2.4.0'
     hooks:
       - id: mypy
         # numpy is intentionally not installed here: numpy>=2.3 ships PEP 695
