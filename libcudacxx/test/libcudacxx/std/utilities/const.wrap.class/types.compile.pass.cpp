@@ -55,12 +55,13 @@ static_assert(cuda::std::same_as<SValue::value_type, S>);
 template <auto V>
 TEST_FUNC constexpr bool value_ref_to_template_parameter_object()
 {
-// gcc < 13 evaluates this as taking address of rvalue. msvc crashes.
-#  if !TEST_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(MSVC)
+// gcc < 13 evaluates this as taking the address of an rvalue.
+// msvc 2019 misdeduces the type of the template-parameter object address.
+#  if !TEST_COMPILER(GCC, <, 13) && !TEST_COMPILER(MSVC, <, 19, 30)
   return &V == &cuda::std::__constant_wrapper<V>{};
-#  else // ^^^ !TEST_COMPILER(GCC, <, 13) ^^^ / vvv TEST_COMPILER(GCC, <, 13) vvv
+#  else // ^^^ supported template-parameter object address ^^^ / vvv fallback vvv
   return &V == &cuda::std::__constant_wrapper<V>::__get();
-#  endif // ^^^ TEST_COMPILER(GCC, <, 13) ^^^
+#  endif // ^^^ fallback ^^^
 }
 
 static_assert(value_ref_to_template_parameter_object<S{5}>());

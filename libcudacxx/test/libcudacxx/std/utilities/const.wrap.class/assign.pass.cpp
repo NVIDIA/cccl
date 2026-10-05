@@ -62,12 +62,11 @@ template <class T, class R>
 inline constexpr bool
   HasAssign<T, R, cuda::std::void_t<decltype(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> = true;
 
-template <class T, class R, class = void>
+template <class T, class R, bool = HasAssign<T, R>>
 inline constexpr bool HasNoexceptAssign = false;
 template <class T, class R>
-inline constexpr bool
-  HasNoexceptAssign<T, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptAssign<T, R, true> =
+  noexcept(cuda::std::declval<const T&>() = cuda::std::declval<R&>());
 
 static_assert(!HasAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
 static_assert(!HasNoexceptAssign<cuda::std::__constant_wrapper<5>, cuda::std::__constant_wrapper<3>>);
