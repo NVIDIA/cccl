@@ -678,8 +678,8 @@ CUB_DEFINE_VECTOR_TYPE(bool,               uchar)
 template <typename T>
 struct Uninitialized
 {
-  /// Largest memory-access word evenly dividing T and not increasing the alignment
-  using DeviceWord = typename UnitWord<T>::DeviceWord;
+  /// We never actually use DeviceWord internally, so it is much better to simply always use byte storage
+  using DeviceWord = unsigned char;
 
   static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
   static constexpr ::cuda::std::size_t WORD_SIZE = sizeof(DeviceWord);
