@@ -79,6 +79,19 @@ struct prefetch_config
   int sm_count;
 };
 
+// Occupancy of the async kernel for every items-per-thread the policy allows, plus the SM count. None of this depends
+// on the bytes-in-flight target, so it is computed once per kernel and cached; the target only decides where the
+// per-call search over this table stops (see configure_async_kernel). This is what allows the target to be a runtime
+// value (cuda::execution::min_bytes_in_flight) without re-querying occupancy on every call.
+struct async_occupancy_table
+{
+  static constexpr int capacity = 128;
+  int sm_count;
+  int min_items_per_thread;
+  int count; // number of valid entries, starting at min_items_per_thread
+  int occupancy[capacity]; // occupancy[i] for items_per_thread = min_items_per_thread + i; 0 = does not fit
+};
+
 template <typename PolicySelector,
           typename Offset,
           typename RandomAccessIteratorsIn,
@@ -113,9 +126,9 @@ struct TransformKernelSource<PolicySelector,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
 
   template <class ActionT>
-  CUB_RUNTIME_FUNCTION cuda_expected<async_config> CacheAsyncConfiguration(const ActionT& action)
+  CUB_RUNTIME_FUNCTION cuda_expected<async_occupancy_table> CacheAsyncOccupancyTable(const ActionT& action)
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (static auto cached_config = action(); return cached_config;), (return action();))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (static auto cached_table = action(); return cached_table;), (return action();))
   }
 
   template <class ActionT>
@@ -203,12 +216,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   PolicyGetter policy_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory,
-  ::cuda::compute_capability cc)
+  ::cuda::compute_capability cc,
+  int min_bytes_in_flight_override)
   -> cuda_expected<
     ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, nullptr)), decltype(kernel_source.TransformKernel()), int>>
 {
   CUB_DETAIL_CONSTEXPR_ISH const TransformPolicy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH int threads_per_block        = policy.async_copy.threads_per_block;
+  const int min_bytes_in_flight =
+    min_bytes_in_flight_override > 0 ? min_bytes_in_flight_override : policy.min_bytes_in_flight;
 
   _CCCL_ASSERT(threads_per_block % alignment == 0, "threads_per_block needs to be a multiple of the copy alignment");
   // ^ then tile_size is a multiple of it
@@ -220,22 +236,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
   // pulled outside of the lambda below to make MSVC happy
   CUB_DETAIL_STATIC_ISH_ASSERT(min_items_per_thread <= max_items_per_thread, "invalid policy");
 
-  auto determine_element_counts = [&]() -> cuda_expected<async_config> {
-    int sm_count = 0;
-    auto error   = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
+  // Occupancy for every allowed items-per-thread, computed once per kernel. Benchmarking shows that each occupancy
+  // query takes well below a microsecond, so filling the table is a one-time cost of a few microseconds. This
+  // computation MUST NOT depend on any runtime state of the current API invocation (like num_items or the
+  // bytes-in-flight target), since the result is cached.
+  auto build_occupancy_table = [&]() -> cuda_expected<async_occupancy_table> {
+    async_occupancy_table table{};
+    auto error = CubDebug(launcher_factory.MultiProcessorCount(table.sm_count));
     if (error != cudaSuccess)
     {
       return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
     }
-
-    // Increase the number of output elements per thread until we reach the required bytes in flight.
-    // Benchmarking shows that even for a few iteration, this loop takes around 4-7 us, so should not be a concern.
-    // This computation MUST NOT depend on any runtime state of the current API invocation (like num_items), since the
-    // result will be cached.
-    async_config last_config{};
-    for (int items_per_thread = +min_items_per_thread; items_per_thread <= +max_items_per_thread; ++items_per_thread)
+    table.min_items_per_thread = +min_items_per_thread;
+    table.count =
+      (::cuda::std::min) (+max_items_per_thread - +min_items_per_thread + 1, async_occupancy_table::capacity);
+    for (int i = 0; i < table.count; ++i)
     {
-      const int tile_size     = threads_per_block * items_per_thread;
+      const int tile_size     = threads_per_block * (table.min_items_per_thread + i);
       const int dyn_smem_size = dyn_smem_for_tile_size(tile_size, alignment);
       int max_occupancy       = 0;
       error                   = CubDebug(launcher_factory.MaxSmOccupancy(
@@ -244,30 +261,39 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
       {
         return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
       }
+      table.occupancy[i] = max_occupancy;
       if (max_occupancy == 0)
       {
-        // assert should be prevented by smem check in policy
-        _CCCL_ASSERT(last_config.items_per_thread > 0, "min_items_per_thread exceeds available shared memory");
-        return last_config;
+        table.count = i; // larger tiles do not fit either
+        break;
       }
-
-      const auto config = async_config{items_per_thread, max_occupancy, sm_count};
-
-      const int bytes_in_flight_SM = max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
-      if (policy.min_bytes_in_flight <= bytes_in_flight_SM)
-      {
-        return config;
-      }
-
-      last_config = config;
     }
-    return last_config;
+    // assert should be prevented by smem check in policy
+    _CCCL_ASSERT(table.count > 0, "min_items_per_thread exceeds available shared memory");
+    return table;
   };
-  cuda_expected<async_config> config = kernel_source.CacheAsyncConfiguration(determine_element_counts);
-  if (!config)
+  cuda_expected<async_occupancy_table> table = kernel_source.CacheAsyncOccupancyTable(build_occupancy_table);
+  if (!table)
   {
-    return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(config.error());
+    return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(table.error());
   }
+
+  // Increase the number of output elements per thread until we reach the required bytes in flight.
+  async_config config_value{};
+  for (int i = 0; i < table->count; ++i)
+  {
+    const int items_per_thread   = table->min_items_per_thread + i;
+    const int max_occupancy      = table->occupancy[i];
+    const int bytes_in_flight_SM = max_occupancy * threads_per_block * items_per_thread
+                                 * kernel_source.LoadedBytesPerIteration();
+    config_value = async_config{items_per_thread, max_occupancy, table->sm_count};
+    if (min_bytes_in_flight <= bytes_in_flight_SM)
+    {
+      break;
+    }
+  }
+  const async_config* config = &config_value;
+
   _CCCL_ASSERT(config->items_per_thread > 0, "");
   _CCCL_ASSERT((config->items_per_thread * threads_per_block) % alignment == 0, "");
 
@@ -292,7 +318,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_as
           config->max_occupancy,
           ipt,
           config->max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration(),
-          policy.min_bytes_in_flight,
+          min_bytes_in_flight,
           reduced_note);
       }
     }));
@@ -334,10 +360,19 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_async_algorithm(
   PolicyGetter policy_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory,
-  ::cuda::compute_capability cc)
+  ::cuda::compute_capability cc,
+  int min_bytes_in_flight_override)
 {
   auto ret = configure_async_kernel<(sizeof...(RandomAccessIteratorsIn) == 0)>(
-    num_items, alignment, dyn_smem_for_tile_size, stream, policy_getter, kernel_source, launcher_factory, cc);
+    num_items,
+    alignment,
+    dyn_smem_for_tile_size,
+    stream,
+    policy_getter,
+    kernel_source,
+    launcher_factory,
+    cc,
+    min_bytes_in_flight_override);
   if (!ret)
   {
     return ret.error();
@@ -376,13 +411,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
   PolicyGetter policy_getter,
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory,
-  ::cuda::compute_capability cc)
+  ::cuda::compute_capability cc,
+  int min_bytes_in_flight_override)
 {
   CUB_DETAIL_CONSTEXPR_ISH const TransformPolicy policy = policy_getter();
   CUB_DETAIL_CONSTEXPR_ISH const int threads_per_block =
     policy.algorithm == TransformAlgorithm::vectorized
       ? policy.vectorized.threads_per_block
       : policy.prefetch.threads_per_block;
+  const int min_bytes_in_flight =
+    min_bytes_in_flight_override > 0 ? min_bytes_in_flight_override : policy.min_bytes_in_flight;
 
   auto determine_config = [&]() -> cuda_expected<prefetch_config> {
     int max_occupancy = 0;
@@ -437,8 +475,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_prefetch_or_vectorized
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? items_per_thread_no_input
-        : ::cuda::ceil_div(policy.min_bytes_in_flight,
-                           config->max_occupancy * threads_per_block * loaded_bytes_per_iter);
+        : ::cuda::ceil_div(min_bytes_in_flight, config->max_occupancy * threads_per_block * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16/2^20 elements
     ipt = spread_out_items_per_thread(
@@ -495,6 +532,7 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
   KernelSource kernel_source;
   KernelLauncherFactory launcher_factory;
   ::cuda::compute_capability cc;
+  int min_bytes_in_flight_override = 0;
 
   template <typename PolicyGetter>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t operator()(PolicyGetter policy_getter) const
@@ -522,7 +560,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         policy_getter,
         kernel_source,
         launcher_factory,
-        cc);
+        cc,
+        min_bytes_in_flight_override);
     }
     else if CUB_DETAIL_CONSTEXPR_ISH (TransformAlgorithm::ldgsts == active_policy.algorithm)
     {
@@ -542,7 +581,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         policy_getter,
         kernel_source,
         launcher_factory,
-        cc);
+        cc,
+        min_bytes_in_flight_override);
     }
     else
     {
@@ -557,7 +597,8 @@ struct invoke_for_cc<::cuda::std::tuple<RandomAccessIteratorsIn...>,
         policy_getter,
         kernel_source,
         launcher_factory,
-        cc);
+        cc,
+        min_bytes_in_flight_override);
     }
   }
 };
@@ -588,7 +629,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
-  KernelLauncherFactory launcher_factory = {})
+  KernelLauncherFactory launcher_factory = {},
+  int min_bytes_in_flight_override       = 0)
 {
   static_assert(::cuda::std::is_same_v<Offset, ::cuda::std::int64_t>,
                 "cub::DeviceTransform is only tested and tuned for int64_t");
@@ -638,7 +680,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       stream,
       kernel_source,
       launcher_factory,
-      cc});
+      cc,
+      min_bytes_in_flight_override});
 }
 } // namespace detail::transform
 CUB_NAMESPACE_END

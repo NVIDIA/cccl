@@ -74,6 +74,36 @@ template <class... _PolicySelectors>
   return ::cuda::std::execution::prop{__get_tuning_t{}, tuning_env{}};
 }
 
+
+//! Runtime override of the "minimum bytes in flight per SM" target that bandwidth-bound algorithms (currently
+//! cub::DeviceTransform) use to size their tiles. Unlike a policy selector passed to tune(), this is a plain
+//! runtime value: it does not instantiate a kernel per value, it only changes the host-side grid configuration.
+//! A value <= 0 means "use the tuning's value".
+struct __get_min_bytes_in_flight_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<_Env, __get_min_bytes_in_flight_t>)
+  [[nodiscard]] _CCCL_NODEBUG_API constexpr auto operator()(const _Env& __env) const noexcept -> int
+  {
+    static_assert(noexcept(__env.query(*this)));
+    return __env.query(*this);
+  }
+
+  [[nodiscard]]
+  _CCCL_NODEBUG_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
+};
+
+_CCCL_GLOBAL_CONSTANT auto __get_min_bytes_in_flight = __get_min_bytes_in_flight_t{};
+
+[[nodiscard]] _CCCL_NODEBUG_API constexpr auto min_bytes_in_flight(int __bytes) noexcept
+{
+  return ::cuda::std::execution::prop{__get_min_bytes_in_flight_t{}, __bytes};
+}
+
 _CCCL_END_NAMESPACE_CUDA_EXECUTION
 
 #include <cuda/std/__cccl/epilogue.h>
