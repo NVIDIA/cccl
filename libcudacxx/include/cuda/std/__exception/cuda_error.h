@@ -125,14 +125,18 @@ namespace __detail
 {
 inline constexpr long long __cuda_error_unknown = 999; // ::cudaErrorUnknown, spelled out so the header needs no CTK
 
-// The CUDA Runtime status family is identified by one tag whether or not the translation unit saw the
-// toolkit, so `holds<cudaError_t>()` in a CUDA translation unit and `holds<int>()` in a host-only one
-// agree about an error thrown by either. Every other status type is identified as itself.
+// The CUDA Runtime status family (`cudaError_t`, spelled `int` where the toolkit is not included) is
+// identified by one tag whether or not the translation unit saw the toolkit, so `holds<cudaError_t>()`
+// and `holds<int>()` agree about an error thrown from either kind of translation unit. Every other
+// status type is identified as itself.
 struct __cuda_runtime_status_tag
 {};
 template <class _Status>
+inline constexpr bool __is_cuda_runtime_status_v =
+  ::cuda::std::is_same_v<_Status, __cuda_error_t> || ::cuda::std::is_same_v<_Status, int>;
+template <class _Status>
 using __canonical_status_t =
-  ::cuda::std::conditional_t<::cuda::std::is_same_v<_Status, __cuda_error_t>, __cuda_runtime_status_tag, _Status>;
+  ::cuda::std::conditional_t<__is_cuda_runtime_status_v<_Status>, __cuda_runtime_status_tag, _Status>;
 
 [[nodiscard]] _CCCL_HOST_API inline char* __format_cuda_error(
   ::cuda::__msg_storage& __msg_buffer,
@@ -210,7 +214,7 @@ class cuda_error : public ::std::runtime_error
   template <class _Status>
   [[nodiscard]] _CCCL_HOST_API static ::cuda::std::string_view __name_of() noexcept
   {
-    if constexpr (::cuda::std::is_same_v<_Status, __cuda_error_t>)
+    if constexpr (__detail::__is_cuda_runtime_status_v<_Status>)
     {
       return "cudaError_t"; // one spelling for the runtime family, with or without the toolkit
     }
@@ -272,9 +276,12 @@ public:
     return static_cast<__cuda_error_t>(__cuda_family ? __raw_code_ : __detail::__cuda_error_unknown);
   }
 
-  //! @brief Whether the stored status came from a value of type `_Status`. The CUDA Runtime family is
-  //! one type for this purpose: `holds<cudaError_t>()` is true for an error thrown from a translation
-  //! unit without the toolkit, where the status was an `int`.
+  //! @brief Whether the stored status came from a value of type `_Status`. Type identity follows
+  //! `_CCCL_TYPEID`: `typeid` when RTTI is on, otherwise the address of the type's descriptor or, across
+  //! translation units, its spelled name, so two distinct types with the same spelled name (say, in anonymous
+  //! namespaces of different translation units) are not told apart. The CUDA Runtime family is one type for
+  //! this purpose: `holds<cudaError_t>()` and `holds<int>()` are both true for an error thrown from a
+  //! translation unit without the toolkit, where the status was an `int`, and for one thrown with it.
   template <class _Status>
   [[nodiscard]] _CCCL_HOST_API bool holds() const noexcept
   {
