@@ -27,7 +27,6 @@
 #  include <cuda/std/climits>
 #  include <cuda/std/ctime>
 
-#  include <errno.h>
 #  include <pthread.h>
 #  include <semaphore.h>
 #  if defined(__linux__)
@@ -36,6 +35,8 @@
 #    include <linux/futex.h>
 #    include <sys/syscall.h>
 #  endif // __linux__
+
+#  include <cuda/std/__thread/sleep_for.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -72,26 +73,6 @@ using __cccl_tls_key = pthread_key_t;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC
 
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr timespec __cccl_to_timespec(const ::cuda::std::chrono::nanoseconds& __ns)
-{
-  constexpr auto __ts_sec_max = numeric_limits<time_t>::max();
-
-  timespec __ts{};
-  const auto __s = ::cuda::std::chrono::duration_cast<chrono::seconds>(__ns);
-
-  if (::cuda::std::cmp_less(__s.count(), __ts_sec_max))
-  {
-    __ts.tv_sec  = static_cast<time_t>(__s.count());
-    __ts.tv_nsec = static_cast<decltype(__ts.tv_nsec)>((__ns - __s).count());
-  }
-  else
-  {
-    __ts.tv_sec  = __ts_sec_max;
-    __ts.tv_nsec = 999'999'999;
-  }
-  return __ts;
-}
-
 // Semaphore
 
 _CCCL_HOST_DEVICE_API inline bool __cccl_semaphore_init(__cccl_semaphore_t* __sem, int __init)
@@ -119,14 +100,6 @@ __cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, ::cuda::std::chrono::nano
 {
   const auto __ts = __cccl_to_timespec(__ns);
   return sem_timedwait(__sem, &__ts) == 0;
-}
-
-_CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
-{
-  auto __ts = __cccl_to_timespec(__ns);
-  while (nanosleep(&__ts, &__ts) == -1 && errno == EINTR)
-  {
-  }
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD
