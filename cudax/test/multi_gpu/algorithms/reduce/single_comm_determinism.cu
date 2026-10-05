@@ -10,6 +10,7 @@
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/buffer>
 #include <cuda/functional>
 #include <cuda/memory_resource>
@@ -286,7 +287,7 @@ MULTI_GPU_TEST("reduce single-comm, not_guaranteed correctness", nondeterministi
 
       const auto actual = ::detail::to_vec(out[i]);
       REQUIRE(actual.size() == 1);
-      if constexpr (cuda::std::is_floating_point_v<T>)
+      if constexpr (::cuda::is_floating_point_v<T>)
       {
         REQUIRE_APPROX_EQ_EPSILON(std::vector<T>{expected}, actual, 0.001);
       }

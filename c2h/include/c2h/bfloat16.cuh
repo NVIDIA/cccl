@@ -47,6 +47,12 @@ struct bfloat16_t
     *this = bfloat16_t(static_cast<float>(a));
   }
 
+  /// Constructor from integer
+  __host__ __device__ __forceinline__ explicit bfloat16_t(unsigned int a)
+  {
+    *this = bfloat16_t(static_cast<float>(a));
+  }
+
   /// Constructor from std::size_t
   __host__ __device__ __forceinline__ explicit bfloat16_t(std::size_t a)
   {
@@ -155,6 +161,11 @@ struct bfloat16_t
     return bfloat16_t(static_cast<float>(*this) - static_cast<float>(other));
   }
 
+  __host__ __device__ __forceinline__ bfloat16_t operator-() const
+  {
+    return bfloat16_t(-static_cast<float>(*this));
+  }
+
   /// Less-than
   __host__ __device__ __forceinline__ bool operator<(const bfloat16_t& other) const
   {
@@ -240,6 +251,11 @@ public:
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t lowest()
   {
     return bfloat16_t(numeric_limits<__nv_bfloat16>::lowest());
+  }
+
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bfloat16_t epsilon() noexcept
+  {
+    return bfloat16_t(numeric_limits<__nv_bfloat16>::epsilon());
   }
 };
 

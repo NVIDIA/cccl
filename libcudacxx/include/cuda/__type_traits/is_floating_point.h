@@ -33,7 +33,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //! Users are allowed to specialize this template for their own types.
 template <class _Tp>
 inline constexpr bool is_floating_point_v =
-  ::cuda::std::is_floating_point_v<::cuda::std::remove_cv_t<_Tp>>
+  ::cuda::std::is_floating_point_v<_Tp> // NOLINT(cccl-prefer-cuda-traits)
   || ::cuda::std::__is_extended_floating_point_v<::cuda::std::remove_cv_t<_Tp>>;
 
 // we define the trait as alias, so users cannot specialize it (they should specialize the variable template instead)

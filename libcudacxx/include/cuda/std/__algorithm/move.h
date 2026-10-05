@@ -20,13 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -50,8 +50,8 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
-          enable_if_t<is_same_v<remove_const_t<_Tp>, _Up>, int> = 0,
-          enable_if_t<is_trivially_copyable_v<_Up>, int>        = 0>
+          enable_if_t<is_same_v<remove_const_t<_Tp>, _Up>, int>  = 0,
+          enable_if_t<::cuda::is_trivially_copyable_v<_Up>, int> = 0>
 _CCCL_API constexpr pair<_Tp*, _Up*> __move(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;

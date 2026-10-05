@@ -19,6 +19,7 @@
 #include <cub/util_arch.cuh>
 
 #include <cuda/__numeric/sub_overflow.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -208,7 +209,7 @@ struct Transforms
     template <typename T>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, T max_level, T min_level)
     {
-      return this->ComputeScale(num_levels, max_level, min_level, ::cuda::std::is_floating_point<T>{});
+      return this->ComputeScale(num_levels, max_level, min_level, ::cuda::is_floating_point<T>{});
     }
 
 #if _CCCL_HAS_NVFP16()
@@ -298,7 +299,7 @@ struct Transforms
           (::__bfloat162float(sample) - ::__bfloat162float(min_level)) * ::__bfloat162float(scale.reciprocal));
       }
 #endif // _CCCL_HAS_NVBF16()
-      else if constexpr (::cuda::std::is_floating_point_v<T>)
+      else if constexpr (::cuda::is_floating_point_v<T>)
       {
         return static_cast<int>((sample - min_level) * scale.reciprocal);
       }

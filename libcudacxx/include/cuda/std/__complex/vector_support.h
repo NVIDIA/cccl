@@ -32,9 +32,6 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-inline constexpr bool __is_complex_float_v = is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>;
-
-template <class _Tp>
 inline constexpr size_t __complex_alignment_v = 2 * sizeof(_Tp);
 
 #define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment_v<_Tp>)

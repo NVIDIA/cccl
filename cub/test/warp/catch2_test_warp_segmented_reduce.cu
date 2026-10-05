@@ -4,6 +4,7 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -116,7 +117,7 @@ void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT 
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, cuda::std::enable_if_t<cuda::std::is_floating_point_v<T>, int> = 0>
+template <typename T, cuda::std::enable_if_t<::cuda::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE_APPROX_EQ(expected_data, test_results);
@@ -125,7 +126,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, cuda::std::enable_if_t<!cuda::std::is_floating_point_v<T>, int> = 0>
+template <typename T, cuda::std::enable_if_t<!::cuda::is_floating_point_v<T>, int> = 0>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   REQUIRE(expected_data == test_results);

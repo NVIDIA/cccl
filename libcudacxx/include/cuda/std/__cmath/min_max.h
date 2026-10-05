@@ -26,6 +26,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/promote.h>
@@ -43,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // We do explicitly also enable GCC here, because that makes the condition below simpler
 #if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmax(_Tp __x, _Tp __y) noexcept
 {
 #  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
@@ -127,7 +128,7 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
         }
 #endif // _CCCL_HAS_FLOAT128()
 #if _CCCL_USE_BUILTIN_FMAX()
-        if constexpr (is_floating_point_v<_Tp>)
+        if constexpr (is_floating_point_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
         {
 // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
@@ -181,7 +182,7 @@ _CCCL_REQUIRES(::cuda::is_floating_point_v<_Tp> _CCCL_AND ::cuda::is_floating_po
 // We do explicitly also enable GCC here, because that makes the condition below simpler
 #if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(is_floating_point_v<_Tp>)
+_CCCL_REQUIRES(is_floating_point_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
 [[nodiscard]] _CCCL_API _Tp __with_builtin_fmin(_Tp __x, _Tp __y) noexcept
 {
 #  if _CCCL_COMPILER(CLANG) && _CCCL_HOST_ARCH(ARM64) && _CCCL_HOST_COMPILATION()
@@ -264,17 +265,17 @@ _CCCL_REQUIRES(__is_extended_arithmetic_v<_Tp>)
           NV_IF_TARGET(NV_PROVIDES_SM_100, (return ::__nv_fp128_fmin(__x, __y);))
         }
 #endif // _CCCL_HAS_FLOAT128()
-#if _CCCL_USE_BUILTIN_FMAX()
-        if constexpr (is_floating_point_v<_Tp>)
+#if _CCCL_USE_BUILTIN_FMIN()
+        if constexpr (is_floating_point_v<_Tp>) // NOLINT(cccl-prefer-cuda-traits)
         {
-// GCC builtins do not treat NaN properly
+          // GCC builtins do not treat NaN properly
 #  if _CCCL_COMPILER(GCC)
           NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::std::__with_builtin_fmin(__x, __y);))
 #  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC)
           return ::cuda::std::__with_builtin_fmin(__x, __y);
 #  endif // !_CCCL_COMPILER(GCC)
         }
-#endif // _CCCL_USE_BUILTIN_FMAX
+#endif // _CCCL_USE_BUILTIN_FMIN
       }
       if (::cuda::std::isnan(__x))
       {

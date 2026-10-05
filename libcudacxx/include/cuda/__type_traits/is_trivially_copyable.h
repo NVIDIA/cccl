@@ -42,7 +42,8 @@ inline constexpr bool __is_aggregate_trivially_copyable_v = false;
 
 template <typename _Tp>
 inline constexpr bool __is_trivially_copyable_v =
-  ::cuda::std::is_trivially_copyable_v<_Tp> || __is_aggregate_trivially_copyable_v<_Tp>;
+  ::cuda::std::is_trivially_copyable_v<_Tp> // NOLINT(cccl-prefer-cuda-traits)
+  || __is_aggregate_trivially_copyable_v<_Tp>;
 
 #if _CCCL_HAS_NVFP16()
 
@@ -92,8 +93,9 @@ using __is_trivially_copyable_callable = ::cuda::std::bool_constant<__is_trivial
 template <typename _Tp>
 inline constexpr bool __is_aggregate_trivially_copyable_v<
   _Tp,
-  ::cuda::std::enable_if_t<::cuda::std::is_aggregate_v<_Tp> && !::cuda::std::is_trivially_copyable_v<_Tp>>> =
-  ::cuda::std::__aggregate_all_of_v<__is_trivially_copyable_callable, _Tp>;
+  ::cuda::std::enable_if_t<
+    ::cuda::std::is_aggregate_v<_Tp> && !::cuda::std::is_trivially_copyable_v<_Tp> // NOLINT(cccl-prefer-cuda-traits)
+    >> = ::cuda::std::__aggregate_all_of_v<__is_trivially_copyable_callable, _Tp>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // public traits

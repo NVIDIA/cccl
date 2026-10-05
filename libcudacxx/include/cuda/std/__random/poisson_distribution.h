@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/exponential_functions.h>
@@ -118,7 +119,7 @@ private:
             bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits)>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _IntT __max_representable_int_for_float() noexcept
   {
-    static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
+    static_assert(::cuda::is_floating_point<_FloatT>::value, "must be a floating point type");
     static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
     constexpr int _bits = ::cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);

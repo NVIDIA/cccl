@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/std/cmath>
@@ -34,7 +35,7 @@ constexpr To clamp_to(From value)
   {
     return cuda::std::saturating_cast<To>(value);
   }
-  else if constexpr (cuda::std::__cccl_is_integer_v<To> && cuda::std::is_floating_point_v<From>)
+  else if constexpr (cuda::std::__cccl_is_integer_v<To> && ::cuda::is_floating_point_v<From>)
   {
     if (value <= static_cast<From>(cuda::std::numeric_limits<To>::lowest()))
     {
@@ -66,11 +67,10 @@ struct dist_interval
 };
 
 template <typename T, cuda::std::ptrdiff_t MaxReductionLength>
-struct dist_interval<
-  T,
-  cuda::std::plus<>,
-  MaxReductionLength,
-  cuda::std::enable_if_t<cuda::std::__cccl_is_signed_integer_v<T> || cuda::std::is_floating_point_v<T>>>
+struct dist_interval<T,
+                     cuda::std::plus<>,
+                     MaxReductionLength,
+                     cuda::std::enable_if_t<cuda::std::__cccl_is_signed_integer_v<T> || ::cuda::is_floating_point_v<T>>>
 {
   // signed_integer: Avoid possibility of over-/underflow causing UB
   // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
@@ -85,11 +85,10 @@ struct dist_interval<
 };
 
 template <typename T, cuda::std::ptrdiff_t MaxReductionLength>
-struct dist_interval<
-  T,
-  cuda::std::multiplies<>,
-  MaxReductionLength,
-  cuda::std::enable_if_t<cuda::std::__cccl_is_signed_integer_v<T> || cuda::std::is_floating_point_v<T>>>
+struct dist_interval<T,
+                     cuda::std::multiplies<>,
+                     MaxReductionLength,
+                     cuda::std::enable_if_t<cuda::std::__cccl_is_signed_integer_v<T> || ::cuda::is_floating_point_v<T>>>
 {
   // signed_integer: Avoid possibility of over-/underflow causing UB
   // floating_point: Avoid possibility of over-/underflow causing inf destroying pseudo-associativity
@@ -99,12 +98,13 @@ struct dist_interval<
   // UB.
   static constexpr T min()
   {
-    const double log2_abs_min = cuda::std::log2(cuda::std::fabs(cuda::std::numeric_limits<T>::lowest()));
+    const double log2_abs_min =
+      cuda::std::log2(cuda::std::fabs(static_cast<double>(cuda::std::numeric_limits<T>::lowest())));
     return clamp_to<T>(-cuda::std::exp2(log2_abs_min / MaxReductionLength));
   }
   static constexpr T max()
   {
-    const double log2_max = cuda::std::log2(cuda::std::numeric_limits<T>::max());
+    const double log2_max = cuda::std::log2(static_cast<double>(cuda::std::numeric_limits<T>::max()));
     return clamp_to<T>(cuda::std::exp2(log2_max / MaxReductionLength));
   }
 };
@@ -128,7 +128,7 @@ struct dist_interval
       res = cuda::std::max(
         res, detail::clamp_to<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::min()));
     }
-    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum> || cuda::std::is_floating_point_v<Accum>)
+    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum> || ::cuda::is_floating_point_v<Accum>)
     {
       res = cuda::std::max(res,
                            detail::clamp_to<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::min()));
@@ -143,7 +143,7 @@ struct dist_interval
       res = cuda::std::min(
         res, detail::clamp_to<Input>(detail::dist_interval<Output, Operator, MaxRedductionLength>::max()));
     }
-    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum> || cuda::std::is_floating_point_v<Accum>)
+    if constexpr (cuda::std::__cccl_is_signed_integer_v<Accum> || ::cuda::is_floating_point_v<Accum>)
     {
       res = cuda::std::min(res,
                            detail::clamp_to<Input>(detail::dist_interval<Accum, Operator, MaxRedductionLength>::max()));
