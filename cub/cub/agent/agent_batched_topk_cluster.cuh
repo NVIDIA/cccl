@@ -70,6 +70,7 @@
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/argument>
+#include <cuda/atomic>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -638,10 +639,10 @@ struct agent_batched_topk_cluster
     unsigned leader_rank;
     // `shared::cluster` addresses of the leader's `state` and `hist[0]`, remapped via `mapa` in
     // `compute_segment_layout`. Every block reads the leader's per-pass results from `leader_state32`; a cluster block
-    // also reduces histograms into `leader_hist32 + i * sizeof(offset_t)` (unused on the single-CTA path, which never
+    // also reduces histograms into `leader_hist[i]` (unused on the single-CTA path, which never
     // reduces).
     ::cuda::std::uint32_t leader_state32;
-    ::cuda::std::uint32_t leader_hist32;
+    offset_t* leader_hist;
     offset_t num_local_resident_chunks;
     offset_t num_local_overflow_chunks;
     offset_t resident_base;
@@ -789,32 +790,22 @@ private:
 
   // Adds `num_local_selected_for_scan`/`num_local_tied_for_scan` into the selected/tie placement counters of the CTA at
   // cluster rank `target_rank` through DSMEM (mirrors the Step 2 histogram reduction: `mapa` to `target_rank`, then a
-  // cluster-scope `red.add` per counter).
-  // Two independent 32-bit reductions rather than one 64-bit one: `red.add.u64` on shared memory is emulated with a
-  // CAS spin loop, whereas `red.add.u32` is a native shared-memory atomic. Drives the cross-CTA selected/tied
+  // cluster-scope `atomic_ref::fetch_add` per counter).
+  // Two independent 32-bit reductions rather than one 64-bit one: 64-bit addition on shared memory is emulated with a
+  // CAS spin loop, whereas 32-bit addition is a native shared-memory atomic. Drives the cross-CTA selected/tied
   // prefix scan (see `prime_placement_counters`).
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   add_remote_prefix(unsigned target_rank, offset_t num_local_selected_for_scan, offset_t num_local_tied_for_scan)
   {
-    const ::cuda::std::uint32_t own_selected =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.selected_offset_counter));
-    const ::cuda::std::uint32_t own_tied =
-      static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.tie_offset_counter));
     // `mapa` is affine (adds the target window's base delta, independent of the address), so one remap serves both
-    // counters: map `selected`, then reach `tied` by the same intra-CTA offset `own_tied - own_selected`. Both `cvta`s
-    // are symbol-relative offsets off the same `temp_storage` base, so NVVM cancels the base and folds the difference
-    // to a compile-time constant -- the emitted PTX is one base materialization, one `mapa`, and a constant `add`.
-    ::cuda::std::uint32_t remote_selected;
-    asm("mapa.shared::cluster.u32 %0, %1, %2;" : "=r"(remote_selected) : "r"(own_selected), "r"(target_rank));
-    const ::cuda::std::uint32_t remote_tied = remote_selected + (own_tied - own_selected);
-    asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;"
-                 :
-                 : "r"(remote_selected), "r"(num_local_selected_for_scan)
-                 : "memory");
-    asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;"
-                 :
-                 : "r"(remote_tied), "r"(num_local_tied_for_scan)
-                 : "memory");
+    // counters: map `temp_storage`, then reach each counter by its constant intra-CTA offset.
+    // The NVVM backend can retain shared::cluster addressing; inline PTX uses generic addressing.
+    // On SM100, both lower to ATOM.E.ADD, but inline PTX's generic form uses a memory descriptor.
+    auto* remote_storage = static_cast<_TempStorage*>(__cluster_map_shared_rank(&temp_storage, target_rank));
+    ::cuda::atomic_ref<offset_t, ::cuda::thread_scope_cluster>{remote_storage->selected_offset_counter}.fetch_add(
+      num_local_selected_for_scan, ::cuda::std::memory_order_relaxed);
+    ::cuda::atomic_ref<offset_t, ::cuda::thread_scope_cluster>{remote_storage->tie_offset_counter}.fetch_add(
+      num_local_tied_for_scan, ::cuda::std::memory_order_relaxed);
   }
 
   // Parallel prefix sum (cub::BlockScan) over the leader's merged histogram
@@ -1220,7 +1211,7 @@ private:
   // Exclusive cross-CTA prefix scan fused with priming the final-filter placement counters. Each working CTA pushes its
   // `num_local_selected_for_scan`/`num_local_tied_for_scan` counts into every successor's selected/tie counter in
   // `is_scan_descending` order (the leader is last and pushes to nobody, so it holds the full predecessor sum) and
-  // adds its own tie-region base `num_cluster_selected` to its own tie counter. All are commutative `red.add`s into
+  // adds its own tie-region base `num_cluster_selected` to its own tie counter. All are commutative atomic adds into
   // the counters zeroed in `process_impl` (so a single post-push barrier suffices), leaving
   // `selected_offset_counter = selected_prefix` and `tie_offset_counter = num_cluster_selected + tie_prefix` -- the
   // absolute output-slot bases `place_one` expects.
@@ -2808,7 +2799,7 @@ private:
     // blocks use to reach the leader (its per-pass `state` and the Step 2 histogram reduction target) are hoisted here,
     // once per segment, rather than repeated every pass. `leader_state32` is always mapped -- the single-CTA path runs
     // in a size-1 cluster, so rank 0 maps to itself and the state reads take the same `ld.shared::cluster` path as a
-    // wide cluster. `leader_hist32` is skipped there because the single CTA never reduces (`cluster_block_rank ==
+    // wide cluster. `leader_hist` is skipped there because the single CTA never reduces (`cluster_block_rank ==
     // leader_rank`).
     const ::cuda::std::uint32_t state_smem32 =
       static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state));
@@ -2817,11 +2808,7 @@ private:
         : "r"(state_smem32), "r"(layout.leader_rank));
     if (!is_single_cta)
     {
-      const ::cuda::std::uint32_t hist_smem32 =
-        static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(temp_storage.hist));
-      asm("mapa.shared::cluster.u32 %0, %1, %2;"
-          : "=r"(layout.leader_hist32)
-          : "r"(hist_smem32), "r"(layout.leader_rank));
+      layout.leader_hist = static_cast<offset_t*>(__cluster_map_shared_rank(temp_storage.hist, layout.leader_rank));
     }
 
     // Resident vs. streaming split, decided independently per CTA (CTAs need not agree -- cross-CTA traffic and every
@@ -2998,11 +2985,12 @@ private:
       // would only read zeros).
       if (cluster_block_rank != layout.leader_rank && !layout.is_idle_rank)
       {
-        // Reduce each non-zero bucket into the leader's `hist` through DSMEM: `layout.leader_hist32` is this block's
+        // Reduce each non-zero bucket into the leader's `hist` through DSMEM: `layout.leader_hist` is this block's
         // `hist[0]` remapped to the leader's `shared::cluster` window (identical per-CTA layouts, `mapa` hoisted into
-        // `compute_segment_layout`), so bucket `i` is reached by the constant offset `i * sizeof(offset_t)` and a
-        // cluster-scope `red.add` accumulates it -- no 64-bit pointer, no memory descriptor. Cluster scope makes it
+        // `compute_segment_layout`), so bucket `i` is reached by `leader_hist[i]` and a
+        // cluster-scope `atomic_ref::fetch_add` accumulates it. Cluster scope makes it
         // mutually atomic with the leader's own `hist` `atomicAdd`s (see `load_and_histogram_first_pass`).
+        // The inline PTX backend's 64-bit generic pointer can also increase address setup and register pressure here.
         //
         // Same split as `reset_hist`: unroll the full strided rounds, then (only when there's a remainder) at most one
         // more guarded reduction.
@@ -3010,12 +2998,8 @@ private:
           const offset_t num_local_bucket_keys = temp_storage.hist[i];
           if (num_local_bucket_keys != 0)
           {
-            const ::cuda::std::uint32_t remote =
-              layout.leader_hist32 + static_cast<::cuda::std::uint32_t>(i) * sizeof(offset_t);
-            asm volatile("red.relaxed.cluster.shared::cluster.add.u32 [%0], %1;"
-                         :
-                         : "r"(remote), "r"(num_local_bucket_keys)
-                         : "memory");
+            ::cuda::atomic_ref<offset_t, ::cuda::thread_scope_cluster>{layout.leader_hist[i]}.fetch_add(
+              num_local_bucket_keys, ::cuda::std::memory_order_relaxed);
           }
         };
         constexpr int full_rounds = num_buckets / policy.threads_per_block;
