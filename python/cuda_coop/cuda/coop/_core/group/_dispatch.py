@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from .._types import ParameterClassification
 from ..launch import LaunchFacts
 from ..thread_group import THREAD_GROUP_KINDS, ThreadGroup
-from ._contracts import _unsupported
+from ._execution_requirements import _unsupported
 from ._model import (
     GroupLoweringPlan,
     GroupOperationSemantics,
