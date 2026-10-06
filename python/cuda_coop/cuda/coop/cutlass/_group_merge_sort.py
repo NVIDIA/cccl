@@ -11,16 +11,37 @@ return fresh ThreadData without changing the inputs, so read-only inputs
 work. Key/value pairs keep independent dtypes and matching extents.
 """
 
+from __future__ import annotations
+
+from typing import TypeVar
+
 from cuda.coop._core.api._payload import (
     _validate_common_temp_storage,
 )
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import IntegerValue
 
-from ._thread_data import _snapshot_readable_payload
+from .._core.api.thread_group import BlockGroup, WarpGroup
+from .._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    TempStorageLike,
+)
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _snapshot_readable_payload,
+)
 from ._thread_group import (
     _require_complete_warp_partition,
     _resolve_primitive_group_from_launch,
 )
+
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+
+_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
+
 
 _SCOPE = "cuda.coop.cutlass"
 
@@ -94,15 +115,17 @@ def _merge_sort(
 
 
 def merge_sort_keys(
-    group,
-    keys,
+    group: BlockGroup | WarpGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    descending=False,
-    valid_items=None,
-    oob_default=None,
-    temp_storage=None,
-):
+    descending: bool = False,
+    valid_items: IntegerValue | None = None,
+    oob_default: CommonNumericScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData:
     """Sort keys across a block or warp without changing the input.
 
     This qualified form of :func:`cuda.coop.merge_sort_keys` also accepts
@@ -157,6 +180,21 @@ def merge_sort_keys(
     See Also
     --------
     cuda.coop.cutlass.merge_sort_pairs
+
+    Examples
+    --------
+    Sort a partial tile in ascending order and its key/index pairs in
+    descending order. Stores write only the valid output prefix.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_merge_sort_examples.py
+        :language: python
+        :start-after: # qualified-merge-sort-example-begin
+        :end-before: # qualified-merge-sort-example-end
+        :dedent: 4
     """
     return _merge_sort(
         group,
@@ -170,16 +208,20 @@ def merge_sort_keys(
 
 
 def merge_sort_pairs(
-    group,
-    keys,
-    values,
+    group: BlockGroup | WarpGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    values: CommonThreadDataLike[_ValueT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    descending=False,
-    valid_items=None,
-    oob_default=None,
-    temp_storage=None,
-):
+    descending: bool = False,
+    valid_items: IntegerValue | None = None,
+    oob_default: CommonNumericScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> tuple[ThreadData, ThreadData]:
     """Sort keys and their associated values without changing either input.
 
     This qualified form of :func:`cuda.coop.merge_sort_pairs` accepts CuTe
@@ -223,6 +265,22 @@ def merge_sort_pairs(
     See Also
     --------
     cuda.coop.cutlass.merge_sort_keys
+
+    Examples
+    --------
+    Carry original indices through a descending partial-tile sort.
+    The ascending keys-only call uses the same automatically synchronized
+    scratch descriptor.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_merge_sort_examples.py
+        :language: python
+        :start-after: # qualified-merge-sort-example-begin
+        :end-before: # qualified-merge-sort-example-end
+        :dedent: 4
     """
     return _merge_sort(
         group,
