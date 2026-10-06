@@ -13,11 +13,24 @@ These functions describe compiled operations and do not expand runs in Python.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
+import numpy
+
+from ..._typing import (
+    IntegralScalar,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    TempStorageLike,
+    ThreadDataLike,
+)
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
+
+_LengthT = TypeVar("_LengthT", bound=IntegralScalar)
+
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
 
 @group_operation(
@@ -25,18 +38,24 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_run_length",
 )
 def run_length_decode(
-    group: ThreadGroup,
-    run_values: Any,
-    run_lengths: Any,
+    group: BlockGroup,
+    run_values: PortableThreadDataLike[_ItemT] | numpy.ndarray,
+    run_lengths: PortableThreadDataLike[_LengthT] | numpy.ndarray,
     /,
     *,
     decoded_items_per_thread: int,
-    decoded_window_offset: Any = 0,
-    total_decoded_size: Any = None,
-    relative_offsets: Any = None,
-    decoded_offset_dtype: Any = None,
-    temp_storage: Any = None,
-) -> Any:
+    decoded_window_offset: IntegralScalar = 0,
+    total_decoded_size: ThreadDataLike[numpy.uint32]
+    | ThreadDataLike[numpy.uint64]
+    | numpy.ndarray
+    | None = None,
+    relative_offsets: ThreadDataLike[numpy.uint32]
+    | ThreadDataLike[numpy.uint64]
+    | numpy.ndarray
+    | None = None,
+    decoded_offset_dtype: object = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[_ItemT]:
     """Decode one window with optional per-thread totals and run offsets.
 
     Shared parameters, participation, ordering, zero-filled tail, input
@@ -68,6 +87,17 @@ def run_length_decode(
         The fresh value payload described by the common operation; optional
         auxiliary outputs are updated in place. Outputs must not overlap one
         another or either run input.
+
+    Examples
+    --------
+    Decode a shifted window with per-run offsets and the full decoded size.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
+        :language: python
+        :start-after: # run-length-window-example-begin
+        :end-before: # run-length-window-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "run_length_decode",
@@ -88,18 +118,18 @@ def run_length_decode(
     family_module="cuda.coop.numba_mlir._compiler._group_run_length",
 )
 def run_length_decode_into(
-    group: ThreadGroup,
-    run_values: Any,
-    run_lengths: Any,
-    destination: Any,
+    group: BlockGroup,
+    run_values: PortableThreadDataLike[_ItemT] | numpy.ndarray,
+    run_lengths: PortableThreadDataLike[_LengthT] | numpy.ndarray,
+    destination: object,
     /,
     *,
     decoded_items_per_thread: int,
-    destination_offset: Any = 0,
-    relative_offsets: Any = None,
-    decoded_offset_dtype: Any = None,
-    temp_storage: Any = None,
-) -> Any:
+    destination_offset: IntegralScalar = 0,
+    relative_offsets: object = None,
+    decoded_offset_dtype: object = None,
+    temp_storage: TempStorageLike | None = None,
+) -> numpy.uint32 | numpy.uint64:
     """Decode a full stream with optional global relative offsets.
 
     Shared parameters, input preservation, destination capacity checks,
@@ -127,6 +157,18 @@ def run_length_decode_into(
     uint32 or uint64
         The full decoded size in the selected dtype, available to every block
         member. Empty input returns zero and writes neither output array.
+
+    Examples
+    --------
+    Decode all runs with uint64 relative offsets and totals. Both output
+    arrays preserve their margins around the decoded interval.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
+        :language: python
+        :start-after: # qualified-run-length-bulk-example-begin
+        :end-before: # qualified-run-length-bulk-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "run_length_decode_into",
