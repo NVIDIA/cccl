@@ -240,7 +240,7 @@ struct __stringof_wrapper;
 //! of other values is whatever the compiler emits and is not guaranteed to be
 //! identical across compilers.
 template <auto _Vp>
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr string_view __stringof() noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr string_view __stringof() noexcept // NOLINT(bugprone-exception-escape)
 {
   string_view __sv = ::cuda::std::__find_stringof(::cuda::std::__pretty_nameof<::cuda::std::__stringof_wrapper<_Vp>>());
   // For a function argument, clang and cudafe prepend a '&' (e.g. "&fn"); drop
