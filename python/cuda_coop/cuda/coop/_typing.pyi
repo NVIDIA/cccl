@@ -133,6 +133,8 @@ CommonNumericScalar: TypeAlias = (
     | CompilerScalarLike
 )
 
+_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
+
 class _ExactScalar(Protocol[_ItemT]):
     """Match a seed's exact scalar type without widening the input type.
 
@@ -250,4 +252,5 @@ __all__ = [
     "ThreadLevel",
     "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
+    "_CommonNumericT",
 ]
