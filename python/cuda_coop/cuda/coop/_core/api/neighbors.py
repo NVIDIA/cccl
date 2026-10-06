@@ -17,10 +17,7 @@ flag predicates use the qualified Numba-CUDA-MLIR API.
 
 from __future__ import annotations
 
-from typing import Any
-
 from ..block.neighbors import validate_neighbor_options
-from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
     _common_group_operation,
@@ -29,10 +26,26 @@ from ._dispatch import (
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
-    _ReadableThreadDataLike,
     _validate_common_numeric_value,
     _validate_common_temp_storage,
 )
+
+try:
+    import numpy as np
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+from typing import Literal, TypeVar
+
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    IntegerValue,
+)
+
+from .thread_group import BlockGroup
+
+_T = TypeVar("_T", bound=CommonNumericScalar)
 
 
 def _validate_payload(operation, values, temp_storage):
@@ -57,16 +70,16 @@ def _validate_payload(operation, values, temp_storage):
 
 @_common_group_operation("adjacent_difference", group_kinds=("block",))
 def adjacent_difference(
-    group: ThreadGroup,
-    values: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    values: CommonThreadDataLike[_T],
     /,
     *,
-    direction: str = "left",
-    valid_items: object = None,
-    tile_predecessor_item: Any = None,
-    tile_successor_item: Any = None,
+    direction: Literal["left", "right"] = "left",
+    valid_items: IntegerValue | None = None,
+    tile_predecessor_item: CommonNumericScalar | None = None,
+    tile_successor_item: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> ThreadDataLike[Any]:
+) -> ThreadDataLike[_T]:
     """Return blocked neighbor differences without modifying the input.
 
     Implemented by both Numba-CUDA-MLIR and CUTLASS.
@@ -112,6 +125,19 @@ def adjacent_difference(
     Subtraction uses the input dtype. Use
     :func:`cuda.coop.numba_mlir.adjacent_difference` for a custom binary
     operator. The CUB counterpart is ``cub::BlockAdjacentDifference``.
+
+    Examples
+    --------
+    Delta-encode an array across three blocks with Numba-CUDA-MLIR. Each
+    block supplies the preceding tile's last input value, so differences
+    remain continuous across tile boundaries.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_neighbors.py
+        :language: python
+        :start-after: # adjacent-difference-example-begin
+        :end-before: # adjacent-difference-example-end
+        :dedent: 4
     """
     validate_neighbor_options(
         "adjacent_difference",
@@ -135,15 +161,18 @@ def adjacent_difference(
 
 @_common_group_operation("discontinuity", group_kinds=("block",))
 def discontinuity(
-    group: ThreadGroup,
-    values: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    values: CommonThreadDataLike[_T],
     /,
     *,
-    mode: str = "heads",
-    tile_predecessor_item: Any = None,
-    tile_successor_item: Any = None,
+    mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
+    tile_predecessor_item: CommonNumericScalar | None = None,
+    tile_successor_item: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> ThreadDataLike[Any] | tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
+) -> (
+    ThreadDataLike[np.int32]
+    | tuple[ThreadDataLike[np.int32], ThreadDataLike[np.int32]]
+):
     """Flag unequal adjacent items in a full, blocked block tile.
 
     Implemented by both Numba-CUDA-MLIR and CUTLASS.
@@ -187,6 +216,18 @@ def discontinuity(
     can change the last valid tail. Use
     :func:`cuda.coop.numba_mlir.discontinuity` for a custom binary predicate.
     The CUB counterpart is ``cub::BlockDiscontinuity``.
+
+    Examples
+    --------
+    Assign a label to each run of equal keys with Numba-CUDA-MLIR. Scanning
+    the head flags produces labels that restart at zero in each block tile.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_neighbors.py
+        :language: python
+        :start-after: # discontinuity-example-begin
+        :end-before: # discontinuity-example-end
+        :dedent: 4
     """
     validate_neighbor_options(
         "discontinuity",

@@ -9,11 +9,29 @@ Adjacent differences retain the value dtype; discontinuity returns Int32
 flags. Both preserve the input and use separate output storage.
 """
 
+from __future__ import annotations
+
+from typing import Literal, TypeVar
+
 from cuda.coop._core.block.neighbors import validate_neighbor_options
 from cuda.coop._core.thread_group import ThreadGroup
 
+from .._core.api.thread_group import BlockGroup
+from .._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    IntegerValue,
+    TempStorageLike,
+)
 from ._temp_storage import TempStorage
-from ._thread_data import _snapshot_readable_payload
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _snapshot_readable_payload,
+)
+
+_T = TypeVar("_T", bound=CommonNumericScalar)
 
 
 def _neighbors(
@@ -74,16 +92,18 @@ def _neighbors(
 
 
 def adjacent_difference(
-    group,
-    values,
+    group: BlockGroup,
+    values: CommonThreadDataLike[_T]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    direction="left",
-    valid_items=None,
-    tile_predecessor_item=None,
-    tile_successor_item=None,
-    temp_storage=None,
-):
+    direction: Literal["left", "right"] = "left",
+    valid_items: IntegerValue | None = None,
+    tile_predecessor_item: CommonNumericScalar | None = None,
+    tile_successor_item: CommonNumericScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData:
     """Return blocked neighbor differences, preserving the input payload.
 
     Parameters, partial tiles, boundary values, and scratch reuse follow
@@ -110,6 +130,22 @@ def adjacent_difference(
     static count raises ValueError when the kernel compiles. An out-of-range
     runtime count stops the kernel with a trap before conversion to CUB's
     int count.
+
+    Examples
+    --------
+    Compute left differences using zero as the tile predecessor, then
+    mark run heads and tails. Scratch is synchronized automatically before
+    reuse by the second collective.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_neighbors_examples.py
+        :language: python
+        :start-after: # qualified-neighbors-example-begin
+        :end-before: # qualified-neighbors-example-end
+        :dedent: 4
     """
     return _neighbors(
         group,
@@ -124,15 +160,17 @@ def adjacent_difference(
 
 
 def discontinuity(
-    group,
-    values,
+    group: BlockGroup,
+    values: CommonThreadDataLike[_T]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    mode="heads",
-    tile_predecessor_item=None,
-    tile_successor_item=None,
-    temp_storage=None,
-):
+    mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
+    tile_predecessor_item: CommonNumericScalar | None = None,
+    tile_successor_item: CommonNumericScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData | tuple[ThreadData, ThreadData]:
     """Flag unequal neighbors in a full blocked tile.
 
     Parameters, participation, boundary flags, and scratch reuse follow
@@ -152,6 +190,21 @@ def discontinuity(
     Python integers convert within the target dtype's range. Python floats
     require a floating-point input dtype; finite values must fit its range,
     and infinite values and NaNs are accepted.
+
+    Examples
+    --------
+    Mark both ends of each equal-value run and compute adjacent
+    differences over the same tile.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_neighbors_examples.py
+        :language: python
+        :start-after: # qualified-neighbors-example-begin
+        :end-before: # qualified-neighbors-example-end
+        :dedent: 4
     """
     return _neighbors(
         group,
