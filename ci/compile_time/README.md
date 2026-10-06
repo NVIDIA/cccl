@@ -61,16 +61,13 @@ the GitHub Actions matrix JSON. Missing or empty `compile_time.pull_request`
 emits `{"include":[]}`.
 
 The weekly workflow selects the third-party entries from this matrix and runs
-each twice: once against the head commit of the preceding scheduled weekly run,
-and once against the latest published final CCCL release (`vX.Y.Z`). It resolves
-the release tag to a commit SHA, including nested annotated tags. Python package
-releases, release candidates, and draft releases are excluded. Each comparison
-builds its baseline in the current runner environment; it does not reuse old
-trace artifacts. The weekly workflow uploads reports and traces without posting
-a PR comment.
+each against the head commit of the preceding scheduled weekly run. Each
+comparison builds its baseline in the current runner environment; it does not
+reuse old trace artifacts. The weekly workflow uploads reports and traces
+without posting a PR comment.
 
 The PR workflow selects only CCCL entries unless the opt-in tag is present.
-With the tag, it runs the same two third-party comparisons and includes them in
+With the tag, it runs the same third-party comparisons and includes them in
 the combined PR comment. Existing project skip tags and
 `[skip-compile-time-bench]` still take precedence.
 

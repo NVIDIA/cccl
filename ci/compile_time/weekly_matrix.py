@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Expand third-party compile-time jobs against two weekly baselines."""
+"""Build third-party compile-time jobs against the previous weekly run."""
 
 import argparse
 import json
@@ -11,11 +11,10 @@ import time
 from datetime import datetime
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlencode
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 SHA_RE = re.compile(r"[0-9a-f]{40}\Z")
-RELEASE_RE = re.compile(r"v([0-9]+)\.([0-9]+)\.([0-9]+)\Z")
 
 
 def timestamp(value: str) -> datetime:
@@ -42,46 +41,9 @@ def previous_weekly_run(
     return result
 
 
-def latest_cccl_release(
-    releases: list[dict[str, Any]], current_run: dict[str, Any]
-) -> dict[str, Any]:
-    current_time = timestamp(current_run["created_at"])
-    candidates = []
-    for release in releases:
-        match = RELEASE_RE.fullmatch(release.get("tag_name", ""))
-        published = release.get("published_at")
-        if (
-            match
-            and not release.get("draft")
-            and not release.get("prerelease")
-            and published
-            and timestamp(published) <= current_time
-        ):
-            candidates.append((tuple(map(int, match.groups())), release))
-    if not candidates:
-        raise ValueError("no published final CCCL release found")
-    return max(candidates, key=lambda item: item[0])[1]
-
-
-def tag_commit_sha(get_json: Any, repository: str, tag: str) -> str:
-    obj = get_json(f"repos/{repository}/git/ref/tags/{quote(tag, safe='')}")["object"]
-    for _ in range(10):
-        sha = obj["sha"]
-        if not SHA_RE.fullmatch(sha):
-            raise ValueError(f"release tag {tag} has an invalid object SHA")
-        if obj["type"] == "commit":
-            return sha
-        if obj["type"] != "tag":
-            raise ValueError(f"release tag {tag} points to {obj['type']}, not a commit")
-        obj = get_json(f"repos/{repository}/git/tags/{sha}")["object"]
-    raise ValueError(f"release tag {tag} has too many annotation levels")
-
-
 def expand_matrix(
     matrix: dict[str, Any],
     previous_sha: str,
-    release_sha: str,
-    release_tag: str,
     *,
     include_cccl: bool,
 ) -> dict[str, Any]:
@@ -94,21 +56,13 @@ def expand_matrix(
     for config in include:
         if config["project"] == "cccl":
             continue
-        expanded.extend(
-            [
-                {
-                    **config,
-                    "id": f"{config['id']}-previous-weekly",
-                    "name": f"{config['name']} vs previous weekly run",
-                    "baseline_ref": previous_sha,
-                },
-                {
-                    **config,
-                    "id": f"{config['id']}-latest-release",
-                    "name": f"{config['name']} vs {release_tag}",
-                    "baseline_ref": release_sha,
-                },
-            ]
+        expanded.append(
+            {
+                **config,
+                "id": f"{config['id']}-previous-weekly",
+                "name": f"{config['name']} vs previous weekly run",
+                "baseline_ref": previous_sha,
+            }
         )
     return {"include": expanded}
 
@@ -124,7 +78,7 @@ def main() -> None:
     matrix = json.load(sys.stdin)
     if not any(config["project"] != "cccl" for config in matrix["include"]):
         json.dump(
-            expand_matrix(matrix, "", "", "", include_cccl=args.include_cccl),
+            expand_matrix(matrix, "", include_cccl=args.include_cccl),
             sys.stdout,
         )
         print()
@@ -172,15 +126,9 @@ def main() -> None:
         + urlencode({"event": "schedule", "per_page": 100})
     )["workflow_runs"]
     previous = previous_weekly_run(weekly_runs, current_run, args.branch)
-    releases = get_json(f"repos/{repository}/releases?per_page=100")
-    release = latest_cccl_release(releases, current_run)
-    release_tag = release["tag_name"]
-    release_sha = tag_commit_sha(get_json, repository, release_tag)
     result = expand_matrix(
         matrix,
         previous["head_sha"],
-        release_sha,
-        release_tag,
         include_cccl=args.include_cccl,
     )
     json.dump(result, sys.stdout, separators=(",", ":"))
