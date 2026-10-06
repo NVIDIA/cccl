@@ -141,24 +141,22 @@ template <typename CounterT, int NumActiveChannels>
 template <bool IsEven, int NumActiveChannels>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int dynamic_smem_limit_bytes(const HistogramPolicy& policy)
 {
-  int dynamic_smem_max_bytes = policy.max_privatized_dynamic_smem_single_channel_bytes;
-  if constexpr (NumActiveChannels > 1)
+  if constexpr (NumActiveChannels == 1)
   {
-    if constexpr (IsEven)
-    {
-      dynamic_smem_max_bytes =
-        NumActiveChannels == 2   ? policy.max_privatized_dynamic_smem_2_channel_even_bytes
-        : NumActiveChannels == 3 ? policy.max_privatized_dynamic_smem_3_channel_even_bytes
-        : NumActiveChannels == 4
-          ? policy.max_privatized_dynamic_smem_4_channel_even_bytes
-          : 0;
-    }
-    else
-    {
-      dynamic_smem_max_bytes = policy.max_privatized_dynamic_smem_multi_channel_range_bytes;
-    }
+    return policy.max_privatized_dynamic_smem_single_channel_bytes;
   }
-  return dynamic_smem_max_bytes;
+  else if constexpr (IsEven)
+  {
+    return NumActiveChannels == 2 ? policy.max_privatized_dynamic_smem_2_channel_even_bytes
+         : NumActiveChannels == 3 ? policy.max_privatized_dynamic_smem_3_channel_even_bytes
+         : NumActiveChannels == 4
+           ? policy.max_privatized_dynamic_smem_4_channel_even_bytes
+           : 0;
+  }
+  else
+  {
+    return policy.max_privatized_dynamic_smem_multi_channel_range_bytes;
+  }
 }
 
 template <bool IsEven, typename CounterT, int NumActiveChannels>
@@ -341,9 +339,9 @@ public:
         supports_dynamic_smem && single_channel
         && (sample_size_bytes == 1 || sample_size_bytes == 4 || sample_size_bytes == 8);
       const bool has_multi_channel_dynamic_smem = supports_dynamic_smem && num_channels > 1;
-      int dynamic_smem_single_channel_bytes =
+      const int dynamic_smem_single_channel_bytes =
         has_single_channel_dynamic_smem ? max_privatized_dynamic_smem_single_channel_bytes : 0;
-      int dynamic_smem_multi_channel_range_bytes =
+      const int dynamic_smem_multi_channel_range_bytes =
         has_single_channel_dynamic_smem || (has_multi_channel_dynamic_smem && !is_even)
           ? max_privatized_dynamic_smem_range_bytes_per_channel * num_active_channels
           : 0;
