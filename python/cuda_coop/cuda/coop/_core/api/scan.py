@@ -13,31 +13,43 @@ shared by the supported backends.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal, TypeVar
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from cuda.coop._typing import (
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ScanAlgorithm,
+    ScanOperator,
+    ThreadDataLike,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _portable_group_operation,
 )
 from ._payload import (
     TempStorageLike,
 )
+from .thread_group import BlockGroup, WarpGroup
+
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+
 
 _PORTABLE_SCAN_GROUP_KINDS = ("block", "warp", "threads_within_warp")
 
 
 @_portable_group_operation("scan", group_kinds=_PORTABLE_SCAN_GROUP_KINDS)
 def scan(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    mode: str = "exclusive",
-    scan_op: Any = None,
-    initial_value: Any = None,
-    algorithm: str | None = None,
+    mode: Literal["exclusive", "inclusive"] = "exclusive",
+    scan_op: ScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Compute a prefix for every input value in a block or warp group.
 
     Parameters
@@ -126,13 +138,13 @@ def scan(
     group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
 )
 def exclusive_sum(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    algorithm: str | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Sum the inputs preceding each item, starting with zero.
 
     Parameters
@@ -200,13 +212,13 @@ def exclusive_sum(
     group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
 )
 def inclusive_sum(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    algorithm: str | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Sum the inputs up to and including each item.
 
     Parameters
@@ -276,15 +288,15 @@ def inclusive_sum(
     group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
 )
 def exclusive_scan(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    scan_op: Any = None,
-    initial_value: Any = None,
-    algorithm: str | None = None,
+    scan_op: ScanOperator | None = None,
+    initial_value: PortableNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Combine an initial value with the inputs preceding each item.
 
     Parameters
@@ -365,14 +377,14 @@ def exclusive_scan(
     group_kinds=_PORTABLE_SCAN_GROUP_KINDS,
 )
 def inclusive_scan(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    scan_op: Any = None,
-    algorithm: str | None = None,
+    scan_op: ScanOperator | None = None,
+    algorithm: ScanAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Combine the inputs up to and including each item.
 
     Parameters

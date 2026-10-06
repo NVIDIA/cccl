@@ -152,6 +152,8 @@ PortableNumericScalar: TypeAlias = (
     | CompilerScalarLike
 )
 
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+
 class _ExactScalar(Protocol[_ItemT]):
     """Match a seed's exact scalar type without widening the input type.
 
@@ -265,4 +267,5 @@ __all__ = [
     "ThreadLevel",
     "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
+    "_PortableNumericT",
 ]
