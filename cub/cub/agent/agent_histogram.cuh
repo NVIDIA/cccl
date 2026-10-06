@@ -565,7 +565,7 @@ struct AgentHistogram
     {
       const step_offset_t row_begin = row * row_stride_samples;
       const step_offset_t row_end   = row_begin + (num_row_pixels * NumChannels);
-      step_offset_t tile_offset     = row_begin + (blockIdx.x * tile_samples);
+      step_offset_t tile_offset     = row_begin + (static_cast<step_offset_t>(blockIdx.x) * tile_samples);
 
       while (tile_offset < row_end)
       {
@@ -580,7 +580,7 @@ struct AgentHistogram
 
         // Consume full tile
         ConsumeTile<IsAligned, true>(static_cast<OffsetT>(tile_offset), tile_samples);
-        tile_offset += gridDim.x * tile_samples;
+        tile_offset += static_cast<step_offset_t>(gridDim.x) * tile_samples;
       }
     }
   }
