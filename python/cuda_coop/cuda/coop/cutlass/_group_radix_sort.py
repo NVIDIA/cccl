@@ -9,10 +9,53 @@ optional associated values. Rank returns Int32 positions and can also write a
 separate bin-prefix payload. All forms require a complete block.
 """
 
+from __future__ import annotations
+
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import CompilerIntegerLike, CompilerScalarLike
 
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, _snapshot_readable_payload
+
+try:
+    import numpy as np
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+from typing import TypeVar
+
+from cuda.coop._typing import IntegerValue
+
+from .._core.api.thread_group import BlockGroup
+from .._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    TempStorageLike,
+    ThreadDataLike,
+)
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample
+
+_KeyT = TypeVar(
+    "_KeyT",
+    bound=(
+        "int | np.int32"
+        " | np.uint32 | np.int64"
+        " | np.uint64 | CompilerIntegerLike"
+        " | float | np.float32"
+        " | np.float64 | CompilerScalarLike"
+    ),
+)
+
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+
+_RankKeyT = TypeVar(
+    "_RankKeyT",
+    bound=(
+        "int | np.int32"
+        " | np.uint32 | np.int64"
+        " | np.uint64 | CompilerIntegerLike"
+    ),
+)
 
 
 def _validate_group(group):
@@ -104,16 +147,19 @@ def _sort(
 
 
 def radix_sort_keys(
-    group,
-    keys,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _KeyT,
     /,
     *,
-    begin_bit=0,
-    end_bit=None,
-    descending=False,
-    temp_storage=None,
-    blocked_to_striped=False,
-):
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorageLike | None = None,
+    blocked_to_striped: bool = False,
+) -> ThreadData | _KeyT:
     """Return stable radix-sorted keys without changing the input.
 
     This qualified form of :func:`cuda.coop.radix_sort_keys` adds scalar and
@@ -170,6 +216,22 @@ def radix_sort_keys(
     --------
     cuda.coop.cutlass.radix_sort_pairs
     cuda.coop.cutlass.radix_rank_keys
+
+    Examples
+    --------
+    Sort all key bits in ascending order, then sort key/index pairs by
+    their low four bits in descending order. The latter produces striped
+    registers, so its stores use ``algorithm="striped"``.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_radix_sort_examples.py
+        :language: python
+        :start-after: # qualified-radix-sort-example-begin
+        :end-before: # qualified-radix-sort-example-end
+        :dedent: 4
     """
     return _sort(
         group,
@@ -184,17 +246,23 @@ def radix_sort_keys(
 
 
 def radix_sort_pairs(
-    group,
-    keys,
-    values,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _KeyT,
+    values: CommonThreadDataLike[_ValueT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ValueT,
     /,
     *,
-    begin_bit=0,
-    end_bit=None,
-    descending=False,
-    temp_storage=None,
-    blocked_to_striped=False,
-):
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
+    descending: bool = False,
+    temp_storage: TempStorageLike | None = None,
+    blocked_to_striped: bool = False,
+) -> tuple[ThreadData, ThreadData] | tuple[_KeyT, _ValueT]:
     """Return stable radix-sorted keys and their associated values.
 
     This qualified form of :func:`cuda.coop.radix_sort_pairs` adds scalar and
@@ -240,6 +308,21 @@ def radix_sort_pairs(
     See Also
     --------
     cuda.coop.cutlass.radix_sort_keys
+
+    Examples
+    --------
+    Stably order key/index pairs by their low four bits in descending
+    order. Match striped output registers with striped stores.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_radix_sort_examples.py
+        :language: python
+        :start-after: # qualified-radix-sort-example-begin
+        :end-before: # qualified-radix-sort-example-end
+        :dedent: 4
     """
     if values is None:
         raise TypeError(
@@ -258,16 +341,21 @@ def radix_sort_pairs(
 
 
 def radix_rank_keys(
-    group,
-    keys,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_RankKeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _RankKeyT,
     /,
     *,
-    begin_bit=0,
-    end_bit=None,
-    radix_bits=None,
-    descending=False,
-    exclusive_digit_prefix=None,
-):
+    begin_bit: int = 0,
+    end_bit: int | None = None,
+    radix_bits: int | None = None,
+    descending: bool = False,
+    exclusive_digit_prefix: ThreadDataLike[np.int32]
+    | ThreadDataLike[CompilerIntegerLike]
+    | None = None,
+) -> ThreadData | CompilerIntegerLike:
     """Return stable digit ranks and optional exclusive bin prefixes.
 
     This qualified form of :func:`cuda.coop.radix_rank_keys` adds scalar
@@ -321,6 +409,21 @@ def radix_rank_keys(
     See Also
     --------
     cuda.coop.cutlass.radix_sort_keys
+
+    Examples
+    --------
+    Rank the low four bits and retrieve the starting offset of each of
+    the sixteen digit bins. Only the sixteen defined prefix slots are stored.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_radix_rank_examples.py
+        :language: python
+        :start-after: # qualified-radix-rank-example-begin
+        :end-before: # qualified-radix-rank-example-end
+        :dedent: 4
     """
     _validate_group(group)
     if not isinstance(descending, bool):

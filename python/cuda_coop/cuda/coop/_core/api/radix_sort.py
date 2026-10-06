@@ -19,11 +19,11 @@ range check and a device trap cover them.
 from __future__ import annotations
 
 from numbers import Integral
-from typing import Any
+
+from cuda.coop._typing import CompilerIntegerLike
 
 from .._bindings import ArgumentBinding
 from ..block.radix import make_radix_bit_range
-from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
     _common_group_operation,
@@ -36,6 +36,42 @@ from ._payload import (
     _validate_common_integer_value,
     _validate_common_numeric_value,
     _validate_common_temp_storage,
+)
+
+try:
+    import numpy
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+from typing import TypeVar
+
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    IntegerValue,
+    ThreadDataLike,
+)
+
+from .thread_group import BlockGroup
+
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+
+_KeyT = TypeVar(
+    "_KeyT",
+    bound=(
+        "int | numpy.int32"
+        " | numpy.uint32 | numpy.int64"
+        " | numpy.uint64 | CompilerIntegerLike"
+    ),
+)
+
+_RankKeyT = TypeVar(
+    "_RankKeyT",
+    bound=(
+        "int | numpy.int32"
+        " | numpy.uint32 | numpy.int64"
+        " | numpy.uint64 | CompilerIntegerLike"
+    ),
 )
 
 
@@ -155,15 +191,15 @@ def _validate(
 
 @_common_group_operation("radix_sort_keys", group_kinds=("block",))
 def radix_sort_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT],
     /,
     *,
-    begin_bit: int = 0,
-    end_bit: int | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_KeyT]:
     """Return stable, blocked radix-sorted integral keys without mutation.
 
     Parameters
@@ -211,6 +247,18 @@ def radix_sort_keys(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.radix_sort_keys
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Sort unsigned keys by their low byte in descending order. Keys with
+    equal low bytes retain their original order.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+        :language: python
+        :start-after: # radix-sort-keys-example-begin
+        :end-before: # radix-sort-keys-example-end
+        :dedent: 4
     """
     _validate(
         "radix_sort_keys",
@@ -235,16 +283,16 @@ def radix_sort_keys(
 
 @_common_group_operation("radix_sort_pairs", group_kinds=("block",))
 def radix_sort_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT],
+    values: CommonThreadDataLike[_ValueT],
     /,
     *,
-    begin_bit: int = 0,
-    end_bit: int | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorageLike | None = None,
-) -> tuple[Any, Any]:
+) -> tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]:
     """Return stable sorted keys and associated numeric values without mutation.
 
     Parameters
@@ -291,6 +339,18 @@ def radix_sort_pairs(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.radix_sort_pairs
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Sort signed keys together with their original positions. Equal keys
+    retain their input order, as checked by the stable host sort.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+        :language: python
+        :start-after: # radix-sort-example-begin
+        :end-before: # radix-sort-example-end
+        :dedent: 4
     """
     _validate(
         "radix_sort_pairs",
@@ -316,15 +376,15 @@ def radix_sort_pairs(
 
 @_common_group_operation("radix_rank_keys", group_kinds=("block",))
 def radix_rank_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_RankKeyT],
     /,
     *,
     begin_bit: int = 0,
     end_bit: int | None = None,
     radix_bits: int | None = None,
     descending: bool = False,
-) -> Any:
+) -> ThreadDataLike[numpy.int32]:
     """Return stable int32 digit ranks without mutating integral keys.
 
     Parameters
@@ -369,6 +429,18 @@ def radix_rank_keys(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.radix_rank_keys
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Find each key's position in a stable ordering by its low four bits.
+    Rank returns positions without rearranging the input keys.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+        :language: python
+        :start-after: # radix-rank-example-begin
+        :end-before: # radix-rank-example-end
+        :dedent: 4
     """
     _validate(
         "radix_rank_keys",
