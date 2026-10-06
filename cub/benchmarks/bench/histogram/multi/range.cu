@@ -34,9 +34,16 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  // Narrow integer samples need floating-point levels to represent more bins than sample values.
-  using level_t =
-    cuda::std::conditional_t<cuda::std::is_integral_v<SampleT> && (sizeof(SampleT) < sizeof(float)), float, SampleT>;
+  if constexpr (cuda::std::is_integral_v<SampleT>)
+  {
+    if (num_bins > upper_level - lower_level)
+    {
+      state.skip("Number of bins exceeds the integer sample range");
+      return;
+    }
+  }
+
+  using level_t      = cuda::std::common_type_t<SampleT, int>;
   const level_t step = static_cast<level_t>(upper_level - lower_level) / static_cast<level_t>(num_bins);
   thrust::device_vector<level_t> levels_r(num_bins + 1);
 
