@@ -11,32 +11,42 @@ provider; calling their Python bodies on the host raises a context error.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from cuda.coop._typing import (
+    IntegerValue,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _portable_group_operation,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
-    _ReadableThreadDataLike,
 )
+from .thread_group import BlockGroup, WarpGroup
+
+_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+
+_KeyT = TypeVar("_KeyT", bound=PortableNumericScalar)
 
 
 @_portable_group_operation(
     "merge_sort_keys", group_kinds=("block", "warp", "threads_within_warp")
 )
 def merge_sort_keys(
-    group: ThreadGroup,
-    keys: _ReadableThreadDataLike[Any],
+    group: BlockGroup | WarpGroup,
+    keys: PortableThreadDataLike[_KeyT],
     /,
     *,
     descending: bool = False,
-    valid_items: object = None,
-    oob_default: object = None,
+    valid_items: IntegerValue | None = None,
+    oob_default: PortableNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> ThreadDataLike[Any]:
+) -> ThreadDataLike[_KeyT]:
     """Return keys sorted across a block or warp in blocked order.
 
     Each thread contributes a fixed-size payload in blocked order: its items
@@ -102,6 +112,18 @@ def merge_sort_keys(
     See Also
     --------
     merge_sort_pairs
+
+    Examples
+    --------
+    Sort a partial tile in descending order. The sentinel ``-1`` sorts
+    after every valid key, and Store writes only the valid prefix.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
+        :language: python
+        :start-after: # merge-sort-keys-example-begin
+        :end-before: # merge-sort-keys-example-end
+        :dedent: 4
     """
 
     raise CoopCompilerContextRequiredError(
@@ -113,16 +135,16 @@ def merge_sort_keys(
     "merge_sort_pairs", group_kinds=("block", "warp", "threads_within_warp")
 )
 def merge_sort_pairs(
-    group: ThreadGroup,
-    keys: _ReadableThreadDataLike[Any],
-    values: _ReadableThreadDataLike[Any],
+    group: BlockGroup | WarpGroup,
+    keys: PortableThreadDataLike[_KeyT],
+    values: PortableThreadDataLike[_ValueT],
     /,
     *,
     descending: bool = False,
-    valid_items: object = None,
-    oob_default: object = None,
+    valid_items: IntegerValue | None = None,
+    oob_default: PortableNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-) -> tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
+) -> tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]:
     """Return key/value pairs sorted across a block or warp in blocked order.
 
     Each thread contributes a fixed-size payload in blocked order: its items
@@ -192,6 +214,18 @@ def merge_sort_pairs(
     See Also
     --------
     merge_sort_keys
+
+    Examples
+    --------
+    Sort keys while carrying their original positions as values. Each
+    returned position still identifies its corresponding key.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
+        :language: python
+        :start-after: # merge-sort-example-begin
+        :end-before: # merge-sort-example-end
+        :dedent: 4
     """
 
     raise CoopCompilerContextRequiredError(
