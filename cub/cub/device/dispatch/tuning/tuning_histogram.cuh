@@ -315,6 +315,22 @@ public:
         }
         // float32, 8-byte and 16-byte samples: no clean sm107 candidate, fall through
       }
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && is_even)
+      {
+        // 1-byte samples: every searched candidate costs ~25% at 2^16/2^20, intentionally left untuned
+        // 2-byte samples: every searched candidate costs ~20% at 2^16/2^20 with 2048 bins, intentionally left untuned
+        // 4-byte samples: every searched candidate regresses the 2048-bin class, intentionally left untuned
+        if (sample_size == 8)
+        {
+          if (sample_type == type_t::float64)
+          {
+            // ipt_16.tpb_512.rle_1.ws_0.mem_1.ld_0.laid_2.vec_0 0.974  0.995  1.138  1.181
+            return HistogramPolicy{512, 16, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+          }
+          // ipt_11.tpb_512.rle_1.ws_0.mem_1.ld_2.laid_2.vec_0 0.943  1.014  1.135  1.199
+          return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
+        }
+      }
     }
 
     if (cc >= ::cuda::compute_capability{10, 0})
