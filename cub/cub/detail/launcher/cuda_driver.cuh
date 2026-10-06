@@ -125,7 +125,7 @@ struct CudaDriverLauncherFactory
       ::cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_fn, block_size, dynamic_smem_bytes));
   }
 
-  _CCCL_HIDE_FROM_ABI ::cudaError_t CooperativeLaunchSupported(bool& supported) const
+  _CCCL_HIDE_FROM_ABI ::cudaError_t CooperativeLaunchSupported(bool& supported) const noexcept
   {
     int attribute = 0;
     const auto status =
@@ -136,7 +136,8 @@ struct CudaDriverLauncherFactory
 
   template <typename... Args>
   _CCCL_HIDE_FROM_ABI ::cudaError_t LaunchCooperative(
-    dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, ::CUkernel kernel, Args const&... args) const
+    dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, ::CUkernel kernel, Args const&... args)
+    const noexcept
   {
     void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
 
