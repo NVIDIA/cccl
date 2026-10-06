@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__optional/bad_optional_access.h>
 #include <cuda/std/__optional/hash.h>
 #include <cuda/std/__optional/make_optional.h>
@@ -27,5 +28,6 @@
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__optional/optional_base.h>
 #include <cuda/std/__optional/optional_ref.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_OPTIONAL
