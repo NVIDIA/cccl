@@ -9,10 +9,13 @@ struct stream_registry_factory_t;
 
 #include <cub/device/device_set_operations.cuh>
 
+#include <cuda/stream>
+
 #include <algorithm>
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetDifference, set_difference);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetIntersection, set_intersection);
@@ -127,8 +130,8 @@ CUB_TEST("DeviceSetOps keys work with default environment", "[set_ops][device]",
   using op    = c2h::get<0, TestType>;
   auto keys1  = c2h::device_vector<int>{0, 2, 2, 5};
   auto keys2  = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
-  auto num    = c2h::device_vector<int>(1, thrust::default_init);
+  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num    = c2h::device_vector<int>(1, thrust::no_init);
 
   // Direct call to the single-phase API with no environment argument.
   REQUIRE(cudaSuccess
@@ -147,8 +150,8 @@ CUB_TEST("DeviceSetOps keys use environment", "[set_ops][device]", CUB_SMALL, ke
   using op    = c2h::get<0, TestType>;
   auto keys1  = c2h::device_vector<int>{0, 1, 2, 2, 5, 7, 9};
   auto keys2  = c2h::device_vector<int>{0, 2, 3, 3, 4, 9};
-  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
-  auto num    = c2h::device_vector<int>(1, thrust::default_init);
+  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num    = c2h::device_vector<int>(1, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -180,11 +183,10 @@ CUB_TEST("DeviceSetOps keys use custom stream", "[set_ops][device]", CUB_SMALL, 
   using op    = c2h::get<0, TestType>;
   auto keys1  = c2h::device_vector<int>{0, 1, 2, 2, 5, 7, 9};
   auto keys2  = c2h::device_vector<int>{0, 2, 3, 3, 4, 9};
-  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
-  auto num    = c2h::device_vector<int>(1, thrust::default_init);
+  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num    = c2h::device_vector<int>(1, thrust::no_init);
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  const cuda::stream custom_stream = c2h::make_current_device_stream();
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -210,9 +212,8 @@ CUB_TEST("DeviceSetOps keys use custom stream", "[set_ops][device]", CUB_SMALL, 
     ::cuda::std::less<>{},
     env);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
+  custom_stream.sync();
   check_keys<op>(keys1, keys2, result, num, ::cuda::std::less<int>{});
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
 }
 
 CUB_TEST(
@@ -223,8 +224,8 @@ CUB_TEST(
   // descending-sorted inputs
   auto keys1  = c2h::device_vector<int>{9, 7, 5, 2, 2, 1, 0};
   auto keys2  = c2h::device_vector<int>{9, 4, 3, 3, 2, 0};
-  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
-  auto num    = c2h::device_vector<int>(1, thrust::default_init);
+  auto result = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num    = c2h::device_vector<int>(1, thrust::no_init);
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -276,9 +277,9 @@ CUB_TEST("DeviceSetOps keys can be tuned", "[set_ops][device]", CUB_SMALL, key_o
 
   auto keys1        = c2h::device_vector<int>{0, 2, 2, 5};
   auto keys2        = c2h::device_vector<int>{0, 3, 3, 4};
-  auto result       = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
-  auto num          = c2h::device_vector<int>(1, thrust::default_init);
-  auto d_block_size = c2h::device_vector<unsigned int>(1, 0u);
+  auto result       = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num          = c2h::device_vector<int>(1, thrust::no_init);
+  auto d_block_size = c2h::device_vector<unsigned int>{0u};
 
   const block_size_extracting_op<::cuda::std::less<>> block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
   auto env = ::cuda::execution::tune(set_ops_tuning<target_block_size>{});
