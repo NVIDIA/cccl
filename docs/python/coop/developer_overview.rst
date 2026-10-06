@@ -442,14 +442,16 @@ separate mixins:
    emits result handling and reuse barriers. It removes the compile-time
    constructors from the runtime IR.
 
-When group resolution changes the IR, the planner rebuilds Numba's
-definition lookup and control-flow analysis before rewriting calls. The
-second phase can then inspect the newly introduced providers and their
-operands. Rewriting also runs when no group resolution was needed, since
-payload constructors and private provider calls may remain. The mixins and
-rewrite helper have no separate registration. The planner reports whether
-either phase changed the IR so Numba can refresh the final analysis before
-typing and lowering the resulting device calls.
+When group resolution changes the IR, ``CoopWholeFunctionPlanner.run()``
+calls Numba's ``_planner_registry._repair_ir()`` before rewriting calls.
+This rebuilds the definition lookup and control-flow analysis so the second
+phase sees the newly introduced providers and their operands. Rewriting
+also runs when group resolution makes no changes, since payload constructors
+and private provider calls may remain. The mixins and rewrite helper have
+no separate registration. The planner returns ``True`` if either phase
+changed the IR; Numba then repairs the final IR before proceeding to later
+planners and compiler passes. That result does not request another run of
+the cooperative planner.
 
 Inlining is relevant to helper functions. A helper that receives a group and
 calls ``coop.load`` can be planned after it is inlined into its kernel
@@ -460,6 +462,16 @@ default helper inlining and recursively follows aliases and conditional
 definitions. A surviving unsupported helper or descriptor escape is
 diagnosed with its name. Standalone callbacks cannot contain primitives
 because they lack the caller's cooperative launch context.
+
+Here, group descriptors are compile-time ``ThreadGroup`` and
+``ThreadHierarchy`` values: they describe which threads cooperate.
+``_GroupCallPlanner._validate_group_descriptor_references()`` checks their
+remaining references after collecting replacements and before changing
+block bodies. A descriptor may feed another group or hierarchy assignment
+or a primitive call being replaced. Returning it or passing it to an
+unrelated runtime call raises ``EscapingGroupDescriptorError``. ``ThreadData``
+constructs a per-thread payload array and follows the separate payload
+analysis and materialization path.
 
 ``literal_unroll`` values shaping cooperative groups, selectors, payloads,
 or storage are unsupported. The planner diagnoses those uses and suggests
@@ -746,7 +758,7 @@ The plan records more than the selected CUB class:
    :header-rows: 1
    :widths: 25 75
 
-   * - Contract
+   * - Plan information
      - What the backend needs to know
    * - Topology and participation
      - Which threads form a group, how many group instances exist in a
@@ -760,14 +772,28 @@ The plan records more than the selected CUB class:
      - The CUB specialization, along with its source library
        and header.
 
-A supported plan must contain the required contracts. An unsupported
+A supported plan must contain its execution requirements. The shared
+``_build_execution_requirements()`` helper in
+``_core/group/_execution_requirements.py`` returns a
+``GroupExecutionRequirements`` record. Its named ``topology``,
+``participation``, ``synchronization``, and ``temp_storage`` fields hold
+``GroupTopologyRequirements``, ``ParticipationRequirements``,
+``SynchronizationRequirements``, and ``TempStorageRequirements`` respectively.
+Family planners copy these fields into the corresponding ``GroupLoweringPlan``
+fields. They describe what execution requires; constructing the records
+does not prove uniform participation or insert device barriers.
+
+An unsupported
 combination carries a reason that the backend reports before provider
 compilation. For instance, having a ``ThreadGroup`` descriptor for a scope
 does not imply that every primitive supports that scope.
 
 ``Algorithm`` describes a CUB template specialization and its method
-parameters without compiler types. ``NumbaMlirCoreAdapter`` maps those
-types and parameters to the Numba backend's representation.
+parameters without compiler types. Parameter descriptors such as ``Value``,
+``Pointer``, and ``Array`` describe the method's arguments. For example,
+``Array`` records a parameter's type and extent; ``ThreadData`` constructs
+the payload passed to that parameter. ``NumbaMlirCoreAdapter`` maps the
+core types and parameter descriptors to the Numba backend's representation.
 
 
 Construct ``Algorithm(..., template_arguments={...})`` with the template
@@ -1215,7 +1241,7 @@ Inspect these expressions:
 Expect ``operation == "load"``, target ``CUB_BLOCK``, ``T`` equal to
 ``int32``, ``BLOCK_DIM_X`` equal to 128, and ``ITEMS_PER_THREAD`` equal to
 2. ``ALGORITHM`` selects ``::cub::BLOCK_LOAD_DIRECT``. The participation
-contract requires the complete block. Direct Load needs no shared scratch,
+requirements specify the complete block. Direct Load needs no shared scratch,
 and its storage-reuse barrier is ``NONE``.
 
 In the same function, advance to ``statements.extend(...)`` near the end.
@@ -1444,7 +1470,7 @@ The existing Load/Store family shows the usual path:
    extensions in the qualified namespace.
 #. Describe the operation and C++ overload in the core family. Its group
    planner selects a supported implementation and returns complete result,
-   topology, storage, and synchronization contracts.
+   topology, storage, and synchronization requirements.
 #. Add the Numba family binding under ``numba_mlir/_compiler/`` and its
    provider lowering under ``numba_mlir/_lowering/``.
    ``register_group_primitive()`` connects group-call planning;
@@ -1452,7 +1478,7 @@ The existing Load/Store family shows the usual path:
    arguments and family-specific analysis.
 #. Check that the existing materialization and storage code can consume
    that description. Change the shared rewrite only when the new operation
-   needs a compiler behavior that the existing contracts cannot express.
+   needs a compiler behavior that the existing requirements cannot express.
 
 Tests live under ``python/cuda_coop/tests/``. Core contract tests check
 normalization and plan selection without a compiler. Backend unit tests
@@ -1536,7 +1562,7 @@ Paths below are relative to ``python/cuda_coop/cuda/coop/``:
    * - ``_core/api/`` and the adjacent ``.pyi`` files
      - Common signatures, descriptors, and argument rules.
    * - ``_core/group/``
-     - Group resolution, primitive semantics, and lowering contracts.
+     - Group resolution, primitive semantics, and lowering requirements.
    * - ``_core/block/`` and ``_core/warp/``
      - CUB algorithm specializations and generated support code.
    * - ``numba_mlir/_compiler/_planner.py``
