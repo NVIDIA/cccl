@@ -1,0 +1,155 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="coop-handoffs-classes-title coop-handoffs-classes-desc" viewBox="0 0 1024 2843">
+  <title id="coop-handoffs-classes-title">Compilation handoffs: classes</title>
+  <desc id="coop-handoffs-classes-desc">Read from top to bottom. Provider symbols and link inputs are available before the final cubin and kernel handle.</desc>
+  <defs>
+    <marker id="coop-handoffs-classes-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
+    </marker>
+  </defs>
+  <rect width="1024" height="2843" fill="#ffffff"/>
+  <rect x="4" y="0" width="254" height="2842.8" fill="#e9f2fb" fill-opacity="0.34"/>
+  <text x="131" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Numba compiler</text>
+  <rect x="258" y="0" width="254" height="2842.8" fill="#e5f1d7" fill-opacity="0.34"/>
+  <line x1="258" x2="258" y1="0" y2="2842.8" stroke="#d2dbe5" stroke-width="1"/>
+  <text x="385" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">cuda.coop</text>
+  <rect x="512" y="0" width="254" height="2842.8" fill="#fff0c9" fill-opacity="0.34"/>
+  <line x1="512" x2="512" y1="0" y2="2842.8" stroke="#d2dbe5" stroke-width="1"/>
+  <text x="639" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">NVRTC</text>
+  <rect x="766" y="0" width="254" height="2842.8" fill="#e7dff4" fill-opacity="0.34"/>
+  <line x1="766" x2="766" y1="0" y2="2842.8" stroke="#d2dbe5" stroke-width="1"/>
+  <text x="893" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
+  <g data-node="PostInlineWholeFunctionPlanners" role="group" aria-label="Numba compiler. PostInlineWholeFunctionPlanners. Invoke the registered planner.">
+    <rect x="12" y="76" width="238" height="137.2" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="112.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">PostInlineWhole</text>
+    <text x="24" y="141.6" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">FunctionPlanners</text>
+    <text x="24" y="170.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Invoke the registered</text>
+    <text x="24" y="199.20000000000002" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">planner.</text>
+  </g>
+  <path d="M131 216.2V265.2H385V277.2" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="160.02413177490234" y="238.2" width="195.9517364501953" height="27" fill="#ffffff"/>
+  <text x="258" y="256.2" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">FunctionIR + compiler state</text>
+  <g data-node="CoopWholeFunctionPlanner.run()" role="group" aria-label="cuda.coop. CoopWholeFunctionPlanner.run(). Resolve groups. Start call rewriting.">
+    <rect x="266" y="280.2" width="238" height="137.2" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="317" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopWholeFunction</text>
+    <text x="278" y="345.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Planner.run()</text>
+    <text x="278" y="374.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve groups. Start call</text>
+    <text x="278" y="403.40000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">rewriting.</text>
+  </g>
+  <path d="M385 420.4V454.4" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <g data-node="CoopSinglePhaseRewrite.match()" role="group" aria-label="cuda.coop. CoopSinglePhaseRewrite.match(). Scan all blocks for requirements.. Record calls in _RewriteMatch.">
+    <rect x="266" y="457.4" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="494.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopSinglePhase</text>
+    <text x="278" y="523" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Rewrite.match()</text>
+    <text x="278" y="551.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Scan all blocks for</text>
+    <text x="278" y="580.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">requirements.</text>
+    <text x="278" y="609.3999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Record calls in</text>
+    <text x="278" y="638.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_RewriteMatch.</text>
+  </g>
+  <path d="M385 655.2V689.2" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <g data-node="Algorithm" role="group" aria-label="cuda.coop. Provider class. Algorithm. collect_specializations() gathers providers.. prepare_ltoir_bundle() emits named wrappers.">
+    <rect x="266" y="692.2" width="238" height="192.10000000000002" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="726.3000000000001" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Provider class</text>
+    <text x="278" y="755.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Algorithm</text>
+    <text x="278" y="783.9" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">collect_specializations()</text>
+    <text x="278" y="812.6999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">gathers providers.</text>
+    <text x="278" y="841.4999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">prepare_ltoir_bundle()</text>
+    <text x="278" y="870.2999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">emits named wrappers.</text>
+  </g>
+  <path d="M385 887.3000000000001V936.3000000000001H639V948.3000000000001" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="436.7009582519531" y="909.3000000000001" width="150.59808349609375" height="27" fill="#ffffff"/>
+  <text x="512" y="927.3000000000001" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">C++ + layout queries</text>
+  <g data-node="nvrtcCompileProgram()" role="group" aria-label="NVRTC. nvrtcCompileProgram(). nvrtcGetLTOIR() returns the bundle image.">
+    <rect x="520" y="951.3000000000001" width="238" height="137.2" rx="7" fill="#fff0c9" stroke="#68798b" stroke-width="1"/>
+    <text x="532" y="988.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">nvrtcCompile</text>
+    <text x="532" y="1016.9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Program()</text>
+    <text x="532" y="1045.7" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">nvrtcGetLTOIR() returns</text>
+    <text x="532" y="1074.5" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">the bundle image.</text>
+  </g>
+  <path d="M639 1091.5V1140.5H385V1152.5" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="450.2760925292969" y="1113.5" width="123.44781494140625" height="27" fill="#ffffff"/>
+  <text x="512" y="1131.5" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">LTO-IR + layouts</text>
+  <g data-node="_SharedTempFile" role="group" aria-label="cuda.coop. _SharedTempFile. Keep the bundle alive.. match() creates scratch-bearing Invocable objects.">
+    <rect x="266" y="1155.5" width="238" height="166" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="1192.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">_SharedTempFile</text>
+    <text x="278" y="1221.1" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Keep the bundle alive.</text>
+    <text x="278" y="1249.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">match() creates</text>
+    <text x="278" y="1278.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">scratch-bearing Invocable</text>
+    <text x="278" y="1307.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">objects.</text>
+  </g>
+  <path d="M385 1324.5V1358.5" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <g data-node="CoopSinglePhaseRewrite.apply()" role="group" aria-label="cuda.coop. CoopSinglePhaseRewrite.apply(). Plan scratch. Reuse or create Invocable objects.. Emit ir.Global + ir.Expr.call.">
+    <rect x="266" y="1361.5" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="1398.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopSinglePhase</text>
+    <text x="278" y="1427.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Rewrite.apply()</text>
+    <text x="278" y="1455.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Plan scratch. Reuse or</text>
+    <text x="278" y="1484.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">create Invocable objects.</text>
+    <text x="278" y="1513.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Emit ir.Global +</text>
+    <text x="278" y="1542.2999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">ir.Expr.call.</text>
+  </g>
+  <path d="M385 1559.3V1608.3H131V1620.3" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="133.26630401611328" y="1581.3" width="249.46739196777344" height="27" fill="#ffffff"/>
+  <text x="258" y="1599.3" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Rewritten IR; Invocable retains files</text>
+  <g data-node="MLIRTypeInference" role="group" aria-label="Numba compiler. MLIRTypeInference. Determine callable types and signatures.">
+    <rect x="12" y="1623.3" width="238" height="108.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="1660.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">MLIRTypeInference</text>
+    <text x="24" y="1688.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Determine callable types</text>
+    <text x="24" y="1717.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">and signatures.</text>
+  </g>
+  <path d="M131 1734.7V1783.7H385V1795.7" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="180.3463897705078" y="1756.7" width="155.30722045898438" height="27" fill="#ffffff"/>
+  <text x="258" y="1774.7" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Request callable type</text>
+  <g data-node="Invocable._numba_type_" role="group" aria-label="cuda.coop. Invocable._numba_type_. Algorithm.codegen_method() builds ExternFunction.. Name + signature + ABI + link files.">
+    <rect x="266" y="1798.7" width="238" height="223.60000000000002" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="1835.5" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Invocable._numba_</text>
+    <text x="278" y="1864.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">type_</text>
+    <text x="278" y="1893.1" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Algorithm.codegen_</text>
+    <text x="278" y="1921.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">method() builds</text>
+    <text x="278" y="1950.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">ExternFunction.</text>
+    <text x="278" y="1979.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Name + signature + ABI +</text>
+    <text x="278" y="2008.2999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">link files.</text>
+  </g>
+  <path d="M385 2025.3000000000002V2074.3H131V2086.3" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="140.74037170410156" y="2047.3000000000002" width="234.51925659179688" height="27" fill="#ffffff"/>
+  <text x="258" y="2065.3" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Typed overload + ExternFunction</text>
+  <g data-node="MLIRLower" role="group" aria-label="Numba compiler. After typed rewrites. MLIRLower. Emit func.call @symbol.. Collect link inputs.">
+    <rect x="12" y="2089.3" width="238" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="2123.4" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">After typed rewrites</text>
+    <text x="24" y="2152.2000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">MLIRLower</text>
+    <text x="24" y="2181.0000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Emit func.call @symbol.</text>
+    <text x="24" y="2209.8000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Collect link inputs.</text>
+  </g>
+  <path d="M131 2226.8V2260.8" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <g data-node="optimize()" role="group" aria-label="Numba compiler. Compilation function. optimize(). Compile kernel LTO-IR.">
+    <rect x="12" y="2263.8" width="238" height="105.7" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="2297.9" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compilation function</text>
+    <text x="24" y="2326.7000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">optimize()</text>
+    <text x="24" y="2355.5000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Compile kernel LTO-IR.</text>
+  </g>
+  <path d="M131 2372.5V2421.5H893V2433.5" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="422.44629669189453" y="2394.5" width="179.10740661621094" height="27" fill="#ffffff"/>
+  <text x="512" y="2412.5" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Kernel + provider LTO-IR</text>
+  <g data-node="nvJitLink" role="group" aria-label="nvJitLink. Through Linker. nvJitLink. Resolve or inline the symbol.. Return a cubin.">
+    <rect x="774" y="2436.5" width="238" height="163.3" rx="7" fill="#e7dff4" stroke="#68798b" stroke-width="1"/>
+    <text x="786" y="2470.6" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Through Linker</text>
+    <text x="786" y="2499.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
+    <text x="786" y="2528.2000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve or inline the</text>
+    <text x="786" y="2557.0000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbol.</text>
+    <text x="786" y="2585.8000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Return a cubin.</text>
+  </g>
+  <path d="M893 2602.8V2651.8H131V2663.8" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="464.7451477050781" y="2624.8" width="94.50970458984375" height="27" fill="#ffffff"/>
+  <text x="512" y="2642.8" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Linked cubin</text>
+  <g data-node="CodeLibrary.get_cufunc()" role="group" aria-label="Numba compiler. CodeLibrary.get_cufunc(). Load the cubin.. Look up the kernel CUfunction handle.">
+    <rect x="12" y="2666.8" width="238" height="166" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="2703.6000000000004" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CodeLibrary.get_</text>
+    <text x="24" y="2732.4000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">cufunc()</text>
+    <text x="24" y="2761.2000000000007" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Load the cubin.</text>
+    <text x="24" y="2790.000000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Look up the kernel</text>
+    <text x="24" y="2818.800000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">CUfunction handle.</text>
+  </g>
+</svg>

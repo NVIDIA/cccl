@@ -1,0 +1,100 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="coop-phases-classes-title coop-phases-classes-desc" viewBox="0 0 1024 1748">
+  <title id="coop-phases-classes-title">Compiler phases: classes</title>
+  <desc id="coop-phases-classes-desc">Read from top to bottom. Cooperative planning runs before main type inference.</desc>
+  <defs>
+    <marker id="coop-phases-classes-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
+    </marker>
+  </defs>
+  <rect width="1024" height="1748" fill="#ffffff"/>
+  <text x="4" y="30" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">1. Build untyped</text>
+  <text x="4" y="58.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">IR</text>
+  <g data-node="TranslateByteCode → IRProcessing" role="group" aria-label="Numba compiler. Compiler pass classes. TranslateByteCode → IRProcessing. MLIRCompiler defines the pipeline in a PassManager.. Output: FunctionIR with ir.Block and ir.Expr objects.">
+    <rect x="154" y="8" width="862" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="42.099999999999994" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler pass classes</text>
+    <text x="166" y="70.89999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">TranslateByteCode → IRProcessing</text>
+    <text x="166" y="99.69999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">MLIRCompiler defines the pipeline in a PassManager.</text>
+    <text x="166" y="128.5" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Output: FunctionIR with ir.Block and ir.Expr objects.</text>
+  </g>
+  <path d="M585 145.5V170.5" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="206.5" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">2. Run early</text>
+  <text x="4" y="235.3" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">rewrites</text>
+  <g data-node="GenericRewrites → NumbaCudaMlirInlineInlinables" role="group" aria-label="Numba compiler. Compiler pass classes. GenericRewrites → NumbaCudaMlirInlineInlinables. Run the before-inference rewrite registry.. Inline supported device helpers before coop planning.">
+    <rect x="154" y="184.5" width="862" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="218.6" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler pass classes</text>
+    <text x="166" y="247.4" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">GenericRewrites → NumbaCudaMlirInlineInlinables</text>
+    <text x="166" y="276.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Run the before-inference rewrite registry.</text>
+    <text x="166" y="305" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Inline supported device helpers before coop planning.</text>
+  </g>
+  <path d="M585 322V347" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="383" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">3. Plan</text>
+  <text x="4" y="411.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">cooperative calls</text>
+  <g data-node="PostInlineWholeFunctionPlanners" role="group" aria-label="cuda.coop. Compiler pass → extension planner. PostInlineWholeFunctionPlanners">
+    <rect x="154" y="361" width="862" height="467.2000000000001" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="395.1" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler pass → extension planner</text>
+    <text x="166" y="423.90000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">PostInlineWholeFunctionPlanners</text>
+    <text x="166" y="458.00000000000006" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Planner class</text>
+    <text x="166" y="486.80000000000007" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopWholeFunctionPlanner.run()</text>
+    <text x="166" y="515.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_GroupPlanning._resolve_groups() uses _GroupCallPlanner.</text>
+    <text x="166" y="544.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Repair IR if group resolution changes it.</text>
+    <text x="166" y="573.1999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_CallRewriting._rewrite_calls() visits blocks.</text>
+    <text x="166" y="607.3" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Rewrite class</text>
+    <text x="166" y="636.0999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopSinglePhaseRewrite</text>
+    <text x="166" y="664.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">match(): collect whole-function requirements, then block work.</text>
+    <text x="166" y="693.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">apply(): plan backing storage and emit replacements.</text>
+    <text x="166" y="727.7999999999998" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Inherited helpers and carried data</text>
+    <text x="166" y="756.5999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_StorageRewrite: requirements and scratch allocation.</text>
+    <text x="166" y="785.3999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_InvocableRewrite: provider bundles and Invocable objects.</text>
+    <text x="166" y="814.1999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_RewriteMatch: factory, operands, and lowering plan.</text>
+  </g>
+  <path d="M585 831.2V856.2" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="154" y="888.2" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Coop planning complete · still before main typing</text>
+  <text x="4" y="929.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">4. Finish untyped</text>
+  <text x="4" y="958" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">passes</text>
+  <g data-node="FindLiterallyCalls → ReconstructSSA" role="group" aria-label="Numba compiler. Compiler pass classes. FindLiterallyCalls → ReconstructSSA. NumbaCudaMlirLiteralUnroll handles supported unrolling.. LiteralPropagationSubPipelinePass propagates literals.">
+    <rect x="154" y="907.2" width="862" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="941.3000000000001" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler pass classes</text>
+    <text x="166" y="970.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">FindLiterallyCalls → ReconstructSSA</text>
+    <text x="166" y="998.9" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">NumbaCudaMlirLiteralUnroll handles supported unrolling.</text>
+    <text x="166" y="1027.7" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">LiteralPropagationSubPipelinePass propagates literals.</text>
+  </g>
+  <path d="M585 1044.7V1069.7" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="1105.7" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">5. Infer types</text>
+  <g data-node="MLIRTypeInference" role="group" aria-label="Numba compiler. Compiler pass + provider typing hook. MLIRTypeInference">
+    <rect x="154" y="1083.7" width="862" height="171.3" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="1117.8" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler pass + provider typing hook</text>
+    <text x="166" y="1146.6" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">MLIRTypeInference</text>
+    <text x="166" y="1183.3999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Invocable._numba_type_</text>
+    <text x="166" y="1212.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Algorithm.codegen() builds local overload templates.</text>
+    <text x="166" y="1240.9999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">ExternFunction describes the symbol, signature, ABI, and link files.</text>
+  </g>
+  <path d="M585 1258V1283" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="1319" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">6. Run typed</text>
+  <text x="4" y="1347.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">rewrites</text>
+  <g data-node="PreLowerStripPhis → InlineOverloads → NopythonRewrites" role="group" aria-label="Numba compiler. Compiler pass classes. PreLowerStripPhis → InlineOverloads → NopythonRewrites. Run the compiler's after-inference rewrites.. CoopSinglePhaseRewrite is not registered here.">
+    <rect x="154" y="1297" width="862" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="1331.1" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compiler pass classes</text>
+    <text x="166" y="1359.8999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">PreLowerStripPhis → InlineOverloads → NopythonRewrites</text>
+    <text x="166" y="1388.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Run the compiler's after-inference rewrites.</text>
+    <text x="166" y="1417.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">CoopSinglePhaseRewrite is not registered here.</text>
+  </g>
+  <path d="M585 1434.5V1459.5" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="1495.5" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">7. Lower, link,</text>
+  <text x="4" y="1524.3" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">and load</text>
+  <g data-node="MLIRBackend → MLIRLower" role="group" aria-label="Numba compiler. Classes and a compilation function. MLIRBackend → MLIRLower. Lower symbolic calls. Collect external link inputs.">
+    <rect x="154" y="1473.5" width="862" height="265.70000000000005" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="1507.6" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Classes and a compilation function</text>
+    <text x="166" y="1536.3999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">MLIRBackend → MLIRLower</text>
+    <text x="166" y="1565.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Lower symbolic calls. Collect external link inputs.</text>
+    <text x="166" y="1601.9999999999998" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">optimize() → Linker</text>
+    <text x="166" y="1630.7999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Compile kernel LTO-IR.</text>
+    <text x="166" y="1659.5999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">nvJitLink links kernel and provider inputs into a cubin.</text>
+    <text x="166" y="1696.3999999999996" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CodeLibrary.get_cufunc()</text>
+    <text x="166" y="1725.1999999999996" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Load the cubin. Look up the kernel CUfunction handle.</text>
+  </g>
+</svg>
