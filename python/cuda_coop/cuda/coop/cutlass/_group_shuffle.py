@@ -9,14 +9,42 @@ ABIs. Shared planning checks the selected form and distance before the
 provider emits a call; qualified register inputs are converted to ThreadData.
 """
 
+from __future__ import annotations
+
 from enum import Enum
+from typing import Literal, TypeVar
 
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import IntegerValue
 
-from ._thread_data import _coerce_thread_payload
+from .._core.api.thread_group import BlockGroup
+from .._typing import (
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
+    ScalarShuffleMode,
+)
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _coerce_thread_payload,
+)
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
-def shuffle(group, value, /, *, mode="down", distance=1):
+def shuffle(
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ItemT,
+    /,
+    *,
+    mode: CommonShuffleMode | ScalarShuffleMode = "down",
+    distance: Literal[1] | IntegerValue = 1,
+) -> ThreadData | _ItemT:
     """Shift register payloads or select another block member's scalar.
 
     See :func:`cuda.coop.shuffle` for the shared block participation rules,

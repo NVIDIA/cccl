@@ -17,9 +17,14 @@ from __future__ import annotations
 
 from enum import Enum
 from numbers import Integral
-from typing import Any
+from typing import Literal, TypeVar
 
-from ..thread_group import ThreadGroup
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
+)
+
 from ._dispatch import (
     _backend_module_name,
     _common_group_operation,
@@ -28,9 +33,12 @@ from ._dispatch import (
 )
 from ._payload import (
     ThreadDataLike,
-    _ReadableThreadDataLike,
     _validate_common_numeric_value,
 )
+from .thread_group import BlockGroup
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _COMMON_SHUFFLE_MODES = frozenset({"down", "up"})
 
@@ -40,13 +48,13 @@ _COMMON_SHUFFLE_MODES = frozenset({"down", "up"})
     group_kinds=("block",),
 )
 def shuffle(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    mode: Any = "down",
-    distance: Any = 1,
-) -> ThreadDataLike[Any]:
+    mode: CommonShuffleMode = "down",
+    distance: Literal[1] = 1,
+) -> ThreadDataLike[_ItemT]:
     """Shift a block's flattened payload by one element.
 
     Parameters

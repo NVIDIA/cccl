@@ -16,9 +16,14 @@ available only through the qualified APIs.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
-from ..thread_group import ThreadGroup
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ExchangeMode,
+)
+
 from ._dispatch import (
     _backend_module_name,
     _common_group_operation,
@@ -27,9 +32,12 @@ from ._dispatch import (
 )
 from ._payload import (
     ThreadDataLike,
-    _ReadableThreadDataLike,
     _validate_common_numeric_value,
 )
+from .thread_group import MemoryGroup
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _COMMON_EXCHANGE_MODES = frozenset(
     {
@@ -44,12 +52,12 @@ _COMMON_EXCHANGE_MODES = frozenset(
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def exchange(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: MemoryGroup,
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    mode: Any = "striped_to_blocked",
-) -> ThreadDataLike[Any]:
+    mode: ExchangeMode = "striped_to_blocked",
+) -> ThreadDataLike[_ItemT]:
     """Convert between blocked and striped per-thread layouts.
 
     Parameters
