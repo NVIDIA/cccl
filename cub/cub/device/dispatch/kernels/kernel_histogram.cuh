@@ -21,6 +21,7 @@
 
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/atomic>
 #include <cuda/cmath>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__numeric/reduce.h>
@@ -57,18 +58,18 @@ struct Transforms
     }
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                         CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
 
-      WrappedLevelIteratorT wrapped_levels(d_levels);
+      const WrappedLevelIteratorT wrapped_levels(d_levels);
 
       const int num_bins = num_output_levels - 1;
       if (valid)
@@ -82,7 +83,7 @@ struct Transforms
     }
   };
 
-  // Scales samples to evenly-spaced bins.
+  // Scales samples to evenly-spaced bins
   struct ScaleTransform
   {
     using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
@@ -113,7 +114,7 @@ struct Transforms
 #endif // !_CCCL_HAS_INT128()
       >;
 
-  protected:
+  private:
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
     using is_integral_excl_int128 =
@@ -206,7 +207,7 @@ struct Transforms
       }
       else
       {
-        result.fraction.range = static_cast<FractionStorageT>(max_level - min_level);
+        result.fraction.range = static_cast<FractionStorageT>(max_level) - static_cast<FractionStorageT>(min_level);
       }
       return result;
     }
@@ -768,47 +769,40 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 
 //! Spills cache misses directly into the final output histogram with device-scope atomics.
 //!
-//! A spill operation owns the representation and initialization of its destination, accepts individual bin
-//! contributions through `spill`, flushes any per-thread aggregation through `finish`, and performs any final
-//! cooperative reduction through `finalize`.
+//! A spill operation owns the representation and initialization of its destination. Per-sample misses enter through
+//! `consume`, cache flushes bypass probing and per-sample aggregation through `spill`, `finish` flushes per-thread
+//! aggregation, and `finalize` performs any cooperative reduction required by the destination.
+template <typename CounterT, typename OutputCounterT>
 struct global_output_spill
 {
-  static constexpr bool defer_until_reconverged = false;
-  static constexpr bool coalesce_before_probe   = false;
+  using counter_type = CounterT;
+  using target_type  = OutputCounterT;
 
-  template <typename CounterT, typename OutputCounterT>
-  using target_type = OutputCounterT;
+  target_type* target{};
+  int num_bins{};
 
-  template <typename CounterT>
-  struct state
-  {};
-
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void initialize(
+  template <typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize(
+    OutputCounterT* output_histogram,
+    CounterT*,
+    int channel_num_bins,
     GridGroup grid,
     unsigned int global_thread,
     unsigned int total_threads,
     int,
-    int,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>& output_histograms,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>&,
-    ::cuda::std::array<OutputCounterT*, NumActiveChannels>& targets)
+    int)
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    target   = output_histogram;
+    num_bins = channel_num_bins;
+    for (unsigned int bin = global_thread; bin < static_cast<unsigned int>(num_bins); bin += total_threads)
     {
-      targets[channel] = output_histograms[channel];
-      for (unsigned int bin = global_thread; bin < static_cast<unsigned int>(num_bins[channel]); bin += total_threads)
-      {
-        targets[channel][bin] = OutputCounterT{0};
-      }
+      target[bin] = OutputCounterT{0};
     }
     grid.sync();
   }
 
-  template <typename OutputCounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void spill_direct(OutputCounterT* target, int bin, ContributionT contribution)
+  template <typename ContributionT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void spill(int bin, ContributionT contribution)
   {
     if constexpr (::cuda::std::is_integral_v<OutputCounterT> && sizeof(OutputCounterT) == sizeof(::cuda::std::uint64_t))
     {
@@ -822,112 +816,87 @@ struct global_output_spill
     }
   }
 
-  template <typename CounterT, typename OutputCounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  spill(state<CounterT>&, OutputCounterT* target, int bin, ContributionT contribution)
+  template <typename ProbeOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume(ProbeOp& probe_op, int bin, CounterT contribution)
   {
-    if (bin >= 0)
+    if (bin >= 0 && probe_op.try_cache(bin, contribution))
     {
-      spill_direct(target, bin, contribution);
+      spill(bin, contribution);
     }
   }
 
-  template <typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finish(state<CounterT>&, OutputCounterT*)
-  {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finish() {}
 
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finalize(
-    GridGroup,
-    unsigned int,
-    unsigned int,
-    const ::cuda::std::array<int, NumActiveChannels>&,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>&,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>&)
+  template <typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize(GridGroup, unsigned int, unsigned int)
   {}
 };
 
 //! Spills cache misses into a block-private global-memory histogram with block-scope atomics.
+template <typename CounterT, typename OutputCounterT>
 struct block_private_spill
 {
-  static constexpr bool defer_until_reconverged = false;
-  static constexpr bool coalesce_before_probe   = false;
+  using counter_type = CounterT;
+  using target_type  = CounterT;
 
-  template <typename CounterT, typename OutputCounterT>
-  using target_type = CounterT;
+  target_type* target{};
+  CounterT* private_histograms{};
+  OutputCounterT* output_histogram{};
+  int num_bins{};
 
-  template <typename CounterT>
-  struct state
-  {};
-
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void initialize(
+  template <typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize(
+    OutputCounterT* channel_output_histogram,
+    CounterT* channel_private_histograms,
+    int channel_num_bins,
     GridGroup,
     unsigned int,
     unsigned int,
     int thread_index,
-    int block_threads,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>&,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>& private_histograms,
-    ::cuda::std::array<CounterT*, NumActiveChannels>& targets)
+    int block_threads)
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    private_histograms = channel_private_histograms;
+    output_histogram   = channel_output_histogram;
+    num_bins           = channel_num_bins;
+    target             = private_histograms + static_cast<size_t>(blockIdx.x) * num_bins;
+    for (int bin = thread_index; bin < num_bins; bin += block_threads)
     {
-      targets[channel] = private_histograms[channel] + static_cast<size_t>(blockIdx.x) * num_bins[channel];
-      for (int bin = thread_index; bin < num_bins[channel]; bin += block_threads)
-      {
-        targets[channel][bin] = CounterT{0};
-      }
+      target[bin] = CounterT{0};
     }
     __syncthreads();
   }
 
-  template <typename CounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void spill_direct(CounterT* target, int bin, ContributionT contribution)
+  template <typename ContributionT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void spill(int bin, ContributionT contribution)
   {
-    atomicAdd_block(&target[bin], static_cast<CounterT>(contribution));
+    ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_block>{target[bin]}.fetch_add(
+      static_cast<CounterT>(contribution), ::cuda::memory_order_relaxed);
   }
 
-  template <typename CounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  spill(state<CounterT>&, CounterT* target, int bin, ContributionT contribution)
+  template <typename ProbeOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume(ProbeOp& probe_op, int bin, CounterT contribution)
   {
-    if (bin >= 0)
+    if (bin >= 0 && probe_op.try_cache(bin, contribution))
     {
-      spill_direct(target, bin, contribution);
+      spill(bin, contribution);
     }
   }
 
-  template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finish(state<CounterT>&, CounterT*)
-  {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finish() {}
 
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finalize(
-    GridGroup grid,
-    unsigned int global_thread,
-    unsigned int total_threads,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>& private_histograms,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>& output_histograms)
+  template <typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize(GridGroup grid, unsigned int global_thread, unsigned int total_threads)
   {
     grid.sync();
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    const unsigned int channel_bins = static_cast<unsigned int>(num_bins);
+    for (unsigned int bin = global_thread; bin < channel_bins; bin += total_threads)
     {
-      const unsigned int channel_bins = static_cast<unsigned int>(num_bins[channel]);
-      for (unsigned int bin = global_thread; bin < channel_bins; bin += total_threads)
+      OutputCounterT total = OutputCounterT{0};
+      for (unsigned int block = 0; block < gridDim.x; ++block)
       {
-        OutputCounterT total = OutputCounterT{0};
-        for (unsigned int block = 0; block < gridDim.x; ++block)
-        {
-          total +=
-            static_cast<OutputCounterT>(private_histograms[channel][static_cast<size_t>(block) * channel_bins + bin]);
-        }
-        output_histograms[channel][bin] = total;
+        total += static_cast<OutputCounterT>(private_histograms[static_cast<size_t>(block) * channel_bins + bin]);
       }
+      output_histogram[bin] = total;
     }
   }
 };
@@ -936,78 +905,76 @@ struct block_private_spill
 template <typename UnderlyingSpillOp>
 struct warp_coalesced_spill
 {
-  static constexpr bool defer_until_reconverged = true;
-  static constexpr bool coalesce_before_probe   = true;
+  using counter_type = typename UnderlyingSpillOp::counter_type;
+  using target_type  = typename UnderlyingSpillOp::target_type;
 
-  template <typename CounterT, typename OutputCounterT>
-  using target_type = typename UnderlyingSpillOp::template target_type<CounterT, OutputCounterT>;
+  UnderlyingSpillOp underlying{};
 
-  template <typename CounterT>
-  struct state
-  {};
-
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT, typename TargetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void initialize(
+  template <typename OutputCounterT, typename CounterT, typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize(
+    OutputCounterT* output_histogram,
+    CounterT* private_histograms,
+    int num_bins,
     GridGroup grid,
     unsigned int global_thread,
     unsigned int total_threads,
     int thread_index,
-    int block_threads,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>& output_histograms,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>& private_histograms,
-    ::cuda::std::array<TargetT*, NumActiveChannels>& targets)
+    int block_threads)
   {
-    UnderlyingSpillOp::template initialize<NumActiveChannels>(
-      grid,
-      global_thread,
-      total_threads,
-      thread_index,
-      block_threads,
-      num_bins,
-      output_histograms,
-      private_histograms,
-      targets);
+    underlying.initialize(
+      output_histogram, private_histograms, num_bins, grid, global_thread, total_threads, thread_index, block_threads);
   }
 
-  template <typename CounterT, typename SpillCounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  spill(state<CounterT>&, SpillCounterT* target, int bin, ContributionT contribution)
+  template <typename ContributionT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void spill(int bin, ContributionT contribution)
   {
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_70,
-      (const unsigned int active = __activemask();
-       const unsigned int peers  = __match_any_sync(active, static_cast<unsigned int>(bin));
-       const int leader          = __ffs(static_cast<int>(peers)) - 1;
-       const int lane_id         = static_cast<int>(threadIdx.x & 0x1f);
-       if (bin >= 0 && lane_id == leader) {
-         UnderlyingSpillOp::spill_direct(
-           target, bin, static_cast<ContributionT>(contribution * static_cast<ContributionT>(__popc(peers))));
-       }),
-      (if (bin >= 0) { UnderlyingSpillOp::spill_direct(target, bin, contribution); }));
+    underlying.spill(bin, contribution);
   }
 
-  template <typename CounterT, typename SpillCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finish(state<CounterT>&, SpillCounterT*)
-  {}
-
-  template <typename SpillCounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void spill_direct(SpillCounterT* target, int bin, ContributionT contribution)
+  template <typename ProbeOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume(ProbeOp& probe_op, int bin, counter_type contribution)
   {
-    UnderlyingSpillOp::spill_direct(target, bin, contribution);
+    if constexpr (sizeof(counter_type) > sizeof(::cuda::std::uint32_t))
+    {
+      const unsigned int lane_id = threadIdx.x & 0x1f;
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_70,
+        (const unsigned int peers = __match_any_sync(__activemask(), static_cast<unsigned int>(bin));
+         const int leader         = __ffs(static_cast<int>(peers)) - 1;
+         if (bin >= 0 && static_cast<int>(lane_id) == leader) {
+           const counter_type coalesced_count = static_cast<counter_type>(__popc(peers));
+           if (probe_op.try_cache(bin, coalesced_count))
+           {
+             spill(bin, coalesced_count);
+           }
+         }),
+        (if (bin >= 0 && probe_op.try_cache(bin, contribution)) { spill(bin, contribution); }));
+    }
+    else
+    {
+      const int spill_bin = bin >= 0 && probe_op.try_cache(bin, contribution) ? bin : -1;
+      NV_IF_ELSE_TARGET(
+        NV_PROVIDES_SM_70,
+        (const unsigned int active = __activemask();
+         const unsigned int peers  = __match_any_sync(active, static_cast<unsigned int>(spill_bin));
+         const int leader          = __ffs(static_cast<int>(peers)) - 1;
+         const int lane_id         = static_cast<int>(threadIdx.x & 0x1f);
+         if (spill_bin >= 0 && lane_id == leader) {
+           spill(spill_bin, static_cast<counter_type>(contribution * static_cast<counter_type>(__popc(peers))));
+         }),
+        (if (spill_bin >= 0) { spill(spill_bin, contribution); }));
+    }
   }
 
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finalize(
-    GridGroup grid,
-    unsigned int global_thread,
-    unsigned int total_threads,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>& private_histograms,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>& output_histograms)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finish()
   {
-    UnderlyingSpillOp::template finalize<NumActiveChannels>(
-      grid, global_thread, total_threads, num_bins, private_histograms, output_histograms);
+    underlying.finish();
+  }
+
+  template <typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize(GridGroup grid, unsigned int global_thread, unsigned int total_threads)
+  {
+    underlying.finalize(grid, global_thread, total_threads);
   }
 };
 
@@ -1015,89 +982,72 @@ struct warp_coalesced_spill
 template <typename UnderlyingSpillOp>
 struct rle_spill
 {
-  static constexpr bool defer_until_reconverged = false;
-  static constexpr bool coalesce_before_probe   = false;
+  using counter_type = typename UnderlyingSpillOp::counter_type;
+  using target_type  = typename UnderlyingSpillOp::target_type;
 
-  template <typename CounterT, typename OutputCounterT>
-  using target_type = typename UnderlyingSpillOp::template target_type<CounterT, OutputCounterT>;
+  UnderlyingSpillOp underlying{};
+  int pending_bin            = -1;
+  counter_type pending_count = counter_type{0};
 
-  template <typename CounterT>
-  struct state
-  {
-    int pending_bin        = -1;
-    CounterT pending_count = CounterT{0};
-  };
-
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT, typename TargetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void initialize(
+  template <typename OutputCounterT, typename CounterT, typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize(
+    OutputCounterT* output_histogram,
+    CounterT* private_histograms,
+    int num_bins,
     GridGroup grid,
     unsigned int global_thread,
     unsigned int total_threads,
     int thread_index,
-    int block_threads,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>& output_histograms,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>& private_histograms,
-    ::cuda::std::array<TargetT*, NumActiveChannels>& targets)
+    int block_threads)
   {
-    UnderlyingSpillOp::template initialize<NumActiveChannels>(
-      grid,
-      global_thread,
-      total_threads,
-      thread_index,
-      block_threads,
-      num_bins,
-      output_histograms,
-      private_histograms,
-      targets);
+    underlying.initialize(
+      output_histogram, private_histograms, num_bins, grid, global_thread, total_threads, thread_index, block_threads);
   }
 
-  template <typename CounterT, typename SpillCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finish(state<CounterT>& pending, SpillCounterT* target)
+  template <typename ContributionT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void spill(int bin, ContributionT contribution)
   {
-    if (pending.pending_bin >= 0)
-    {
-      UnderlyingSpillOp::spill_direct(target, pending.pending_bin, pending.pending_count);
-      pending.pending_bin   = -1;
-      pending.pending_count = CounterT{0};
-    }
+    underlying.spill(bin, contribution);
   }
 
-  template <typename CounterT, typename SpillCounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  spill(state<CounterT>& pending, SpillCounterT* target, int bin, ContributionT contribution)
+  template <typename ProbeOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume(ProbeOp& probe_op, int bin, counter_type contribution)
   {
-    if (bin < 0)
+    if (bin < 0 || !probe_op.try_cache(bin, contribution))
     {
       return;
     }
-    if (pending.pending_bin == bin)
+    if (pending_bin == bin)
     {
-      pending.pending_count += static_cast<CounterT>(contribution);
+      pending_count += contribution;
       return;
     }
-    finish(pending, target);
-    pending.pending_bin   = bin;
-    pending.pending_count = static_cast<CounterT>(contribution);
+    flush_pending();
+    pending_bin   = bin;
+    pending_count = contribution;
   }
 
-  template <typename SpillCounterT, typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void spill_direct(SpillCounterT* target, int bin, ContributionT contribution)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finish()
   {
-    UnderlyingSpillOp::spill_direct(target, bin, contribution);
+    flush_pending();
+    underlying.finish();
   }
 
-  template <int NumActiveChannels, typename GridGroup, typename CounterT, typename OutputCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void finalize(
-    GridGroup grid,
-    unsigned int global_thread,
-    unsigned int total_threads,
-    const ::cuda::std::array<int, NumActiveChannels>& num_bins,
-    const ::cuda::std::array<CounterT*, NumActiveChannels>& private_histograms,
-    const ::cuda::std::array<OutputCounterT*, NumActiveChannels>& output_histograms)
+  template <typename GridGroup>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize(GridGroup grid, unsigned int global_thread, unsigned int total_threads)
   {
-    UnderlyingSpillOp::template finalize<NumActiveChannels>(
-      grid, global_thread, total_threads, num_bins, private_histograms, output_histograms);
+    underlying.finalize(grid, global_thread, total_threads);
+  }
+
+private:
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush_pending()
+  {
+    if (pending_bin >= 0)
+    {
+      underlying.spill(pending_bin, pending_count);
+      pending_bin   = -1;
+      pending_count = counter_type{0};
+    }
   }
 };
 
@@ -1106,79 +1056,64 @@ struct rle_spill
 //! Probe operations own cache initialization, per-thread channel state, insertion/update attempts, and the final cache
 //! flush. A cache miss is forwarded through the selected spill operation after any required warp reconvergence.
 //! `UseSecondProbe == false` is the single-probe direct-mapped cache; `true` adds the cuckoo fallback probe.
-template <bool UseSecondProbe>
+template <bool UseSecondProbe, typename CounterT>
 struct cuckoo_cache_probe
 {
-  static constexpr bool coalesce_before_probe = true;
+  ::cuda::std::uint32_t* keys{};
+  CounterT* counts_base{};
+  CounterT* thread_counts{};
+  int slots_per_channel{};
+  int count_replicas{};
+  int mask{};
+  int log2_slots{};
 
-  template <typename CounterT>
-  struct state
-  {
-    ::cuda::std::uint32_t* keys;
-    CounterT* counts_base;
-    CounterT* thread_counts;
-    int mask;
-    int log2_slots;
-  };
-
-  template <int NumActiveChannels, typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void initialize(
-    ::cuda::std::uint32_t* keys,
-    CounterT* counts,
-    int slots_per_channel,
-    int count_replicas,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize(
+    ::cuda::std::uint32_t* cache_keys,
+    CounterT* cache_counts,
+    int channel,
+    int channel_slots,
+    int channel_count_replicas,
     int thread_index,
     int block_threads)
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int channel = 0; channel < NumActiveChannels; ++channel)
+    const int replica = static_cast<int>((threadIdx.x >> 5) % channel_count_replicas);
+    keys              = cache_keys + static_cast<size_t>(channel) * channel_slots;
+    counts_base       = cache_counts + static_cast<size_t>(channel) * channel_count_replicas * channel_slots;
+    thread_counts     = counts_base + static_cast<size_t>(replica) * channel_slots;
+    slots_per_channel = channel_slots;
+    count_replicas    = channel_count_replicas;
+    mask              = channel_slots - 1;
+    log2_slots        = 31 - ::cuda::std::countl_zero(static_cast<::cuda::std::uint32_t>(channel_slots));
+    for (int slot = thread_index; slot < slots_per_channel; slot += block_threads)
     {
-      auto* channel_keys   = keys + static_cast<size_t>(channel) * slots_per_channel;
-      auto* channel_counts = counts + static_cast<size_t>(channel) * count_replicas * slots_per_channel;
-      for (int slot = thread_index; slot < slots_per_channel; slot += block_threads)
-      {
-        channel_keys[slot] = UINT32_MAX;
-      }
-      for (int count = thread_index; count < count_replicas * slots_per_channel; count += block_threads)
-      {
-        channel_counts[count] = CounterT{0};
-      }
+      keys[slot] = UINT32_MAX;
+    }
+    for (int count = thread_index; count < count_replicas * slots_per_channel; count += block_threads)
+    {
+      counts_base[count] = CounterT{0};
     }
     __syncthreads();
   }
 
-  template <typename CounterT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static state<CounterT>
-  make_state(::cuda::std::uint32_t* keys, CounterT* counts, int channel, int slots_per_channel, int count_replicas)
-  {
-    const int replica     = static_cast<int>((threadIdx.x >> 5) % count_replicas);
-    CounterT* counts_base = counts + static_cast<size_t>(channel) * count_replicas * slots_per_channel;
-    return {keys + static_cast<size_t>(channel) * slots_per_channel,
-            counts_base,
-            counts_base + static_cast<size_t>(replica) * slots_per_channel,
-            slots_per_channel - 1,
-            31 - ::cuda::std::countl_zero(static_cast<::cuda::std::uint32_t>(slots_per_channel))};
-  }
-
-  template <typename CounterT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static bool
-  try_cache(state<CounterT>& probe_state, int bin, CounterT contribution)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool try_cache(int bin, CounterT contribution)
   {
     constexpr ::cuda::std::uint32_t empty_key = UINT32_MAX;
     const auto bin_key                        = static_cast<::cuda::std::uint32_t>(bin);
     const auto try_slot                       = [&](int slot) {
-      ::cuda::std::uint32_t key = probe_state.keys[slot];
+      ::cuda::std::uint32_t key = keys[slot];
       if (key == bin_key)
       {
-        atomicAdd_block(&probe_state.thread_counts[slot], contribution);
+        ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_block>{thread_counts[slot]}.fetch_add(
+          contribution, ::cuda::memory_order_relaxed);
         return true;
       }
       if (key == empty_key)
       {
-        key = atomicCAS_block(&probe_state.keys[slot], empty_key, bin_key);
+        key = atomicCAS_block(&keys[slot], empty_key, bin_key);
         if (key == empty_key || key == bin_key)
         {
-          atomicAdd_block(&probe_state.thread_counts[slot], contribution);
+          ::cuda::atomic_ref<CounterT, ::cuda::thread_scope_block>{thread_counts[slot]}.fetch_add(
+            contribution, ::cuda::memory_order_relaxed);
           return true;
         }
       }
@@ -1186,8 +1121,7 @@ struct cuckoo_cache_probe
     };
 
     const unsigned int hash = static_cast<unsigned int>(bin) * 2654435761u;
-    const int primary =
-      static_cast<int>((hash >> (32 - probe_state.log2_slots)) & static_cast<unsigned int>(probe_state.mask));
+    const int primary       = static_cast<int>((hash >> (32 - log2_slots)) & static_cast<unsigned int>(mask));
     if (try_slot(primary))
     {
       return false;
@@ -1196,8 +1130,7 @@ struct cuckoo_cache_probe
     if constexpr (UseSecondProbe)
     {
       const unsigned int hash2 = (static_cast<unsigned int>(bin) ^ 0x9e3779b9u) * 2246822519u;
-      const int secondary =
-        static_cast<int>((hash2 >> (32 - probe_state.log2_slots)) & static_cast<unsigned int>(probe_state.mask));
+      const int secondary      = static_cast<int>((hash2 >> (32 - log2_slots)) & static_cast<unsigned int>(mask));
       if (try_slot(secondary))
       {
         return false;
@@ -1206,180 +1139,52 @@ struct cuckoo_cache_probe
     return true;
   }
 
-  template <typename CounterT, typename SpillOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void
-  flush(state<CounterT>& probe_state,
-        SpillOp& spill_op,
-        int slots_per_channel,
-        int count_replicas,
-        int thread_index,
-        int block_threads)
+  template <typename SpillOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush(SpillOp& spill_op, int thread_index, int block_threads)
   {
     __syncthreads();
     for (int slot = thread_index; slot < slots_per_channel; slot += block_threads)
     {
-      const auto key = probe_state.keys[slot];
+      const auto key = keys[slot];
       if (key != UINT32_MAX)
       {
         CounterT count = CounterT{0};
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int replica = 0; replica < count_replicas; ++replica)
         {
-          count += probe_state.counts_base[static_cast<size_t>(replica) * slots_per_channel + slot];
+          count += counts_base[static_cast<size_t>(replica) * slots_per_channel + slot];
         }
         if (count > CounterT{0})
         {
-          spill_op.spill_direct(static_cast<int>(key), count);
+          spill_op.spill(static_cast<int>(key), count);
         }
       }
     }
   }
 };
 
-using single_probe_cache = cuckoo_cache_probe<false>;
-using double_probe_cache = cuckoo_cache_probe<true>;
+template <typename CounterT>
+using single_probe_cache = cuckoo_cache_probe<false, CounterT>;
+
+template <typename CounterT>
+using double_probe_cache = cuckoo_cache_probe<true, CounterT>;
 
 //! Probe operation that bypasses shared-memory caching and forwards every contribution to the spill operation.
 //!
 //! It implements the same lifecycle as `cuckoo_cache_probe`; initialization and flushing are intentionally no-ops.
+template <typename CounterT>
 struct no_cache_probe
 {
-  template <typename CounterT>
-  struct state
-  {};
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize(::cuda::std::uint32_t*, CounterT*, int, int, int, int, int) {}
 
-  template <int NumActiveChannels, typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void initialize(::cuda::std::uint32_t*, CounterT*, int, int, int, int)
-  {}
-
-  template <typename CounterT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static state<CounterT>
-  make_state(::cuda::std::uint32_t*, CounterT*, int, int, int)
-  {
-    return {};
-  }
-
-  template <typename CounterT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static bool try_cache(state<CounterT>&, int, CounterT)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool try_cache(int, CounterT)
   {
     return true;
   }
 
-  template <typename CounterT, typename SpillOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE static void flush(state<CounterT>&, SpillOp&, int, int, int, int)
-  {}
-};
-
-//! Agent for the policy-configurable cooperative high-bin histogram kernel.
-template <HistogramSpillAlgorithm SpillAlgorithm, HistogramAggregationAlgorithm AggregationAlgorithm>
-struct select_histogram_spill_op
-{
-  using atomic_spill_op =
-    ::cuda::std::conditional_t<SpillAlgorithm == HistogramSpillAlgorithm::global_memory_privatized,
-                               block_private_spill,
-                               global_output_spill>;
-  using type =
-    ::cuda::std::conditional_t<AggregationAlgorithm == HistogramAggregationAlgorithm::warp_coalesced,
-                               warp_coalesced_spill<atomic_spill_op>,
-                               ::cuda::std::conditional_t<AggregationAlgorithm == HistogramAggregationAlgorithm::rle,
-                                                          rle_spill<atomic_spill_op>,
-                                                          atomic_spill_op>>;
-};
-
-//! Per-channel spill operation used by the cooperative histogram agent.
-//!
-//! The operation owns its aggregation state and destination. `spill_immediate` is called from a possibly divergent
-//! cache-miss path, while `spill_deferred` is called after reconvergence. Each spill policy implements exactly one of
-//! those entry points and makes the other a no-op. Cache flushes use `spill_direct` to bypass per-sample aggregation.
-template <typename SpillPolicy, typename CounterT, typename OutputCounterT>
-struct histogram_spill_op
-{
-  using target_type = typename SpillPolicy::template target_type<CounterT, OutputCounterT>;
-
-  typename SpillPolicy::template state<CounterT> state{};
-  target_type* target = nullptr;
-
-  template <typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void spill_direct(int bin, ContributionT contribution)
-  {
-    SpillPolicy::spill_direct(target, bin, contribution);
-  }
-
-  template <typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void spill_immediate(int bin, ContributionT contribution)
-  {
-    if constexpr (!SpillPolicy::defer_until_reconverged)
-    {
-      SpillPolicy::spill(state, target, bin, contribution);
-    }
-  }
-
-  template <typename ContributionT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void spill_deferred(int bin, ContributionT contribution)
-  {
-    if constexpr (SpillPolicy::defer_until_reconverged)
-    {
-      SpillPolicy::spill(state, target, bin, contribution);
-    }
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish()
-  {
-    SpillPolicy::finish(state, target);
-  }
-
-  template <typename ProbeOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void consume(ProbeOp& probe_op, int bin, CounterT contribution)
-  {
-    const auto consume_one = [&](int selected_bin, CounterT selected_contribution) {
-      const bool should_spill = selected_bin >= 0 && probe_op.try_cache(selected_bin, selected_contribution);
-      spill_immediate(should_spill ? selected_bin : -1, selected_contribution);
-      spill_deferred(should_spill ? selected_bin : -1, selected_contribution);
-    };
-
-    constexpr bool coalesce_before_probe =
-      sizeof(CounterT) > sizeof(::cuda::std::uint32_t) && SpillPolicy::coalesce_before_probe;
-    if constexpr (coalesce_before_probe)
-    {
-      const unsigned int lane_id = threadIdx.x & 0x1f;
-      NV_IF_ELSE_TARGET(
-        NV_PROVIDES_SM_70,
-        (const unsigned int peers = __match_any_sync(0xffffffffu, static_cast<unsigned int>(bin));
-         const int leader         = __ffs(static_cast<int>(peers)) - 1;
-         if (bin >= 0 && static_cast<int>(lane_id) == leader) {
-           const CounterT coalesced_count = static_cast<CounterT>(__popc(peers));
-           if (probe_op.try_cache(bin, coalesced_count))
-           {
-             spill_direct(bin, coalesced_count);
-           }
-         }),
-        (consume_one(bin, contribution);));
-    }
-    else
-    {
-      consume_one(bin, contribution);
-    }
-  }
-};
-
-//! Per-channel cache probe operation. It owns the channel-local cache pointers and exposes the probe/flush protocol as
-//! ordinary member functions.
-template <typename ProbePolicy, typename CounterT>
-struct histogram_probe_op
-{
-  typename ProbePolicy::template state<CounterT> state{};
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool try_cache(int bin, CounterT contribution)
-  {
-    return ProbePolicy::try_cache(state, bin, contribution);
-  }
-
   template <typename SpillOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  flush(SpillOp& spill_op, int slots_per_channel, int count_replicas, int thread_index, int block_threads)
-  {
-    ProbePolicy::flush(state, spill_op, slots_per_channel, count_replicas, thread_index, block_threads);
-  }
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush(SpillOp&, int, int)
+  {}
 };
 
 template <typename PolicySelector,
@@ -1408,16 +1213,22 @@ struct AgentHistogramCooperative
   {
     static constexpr HistogramPolicy policy = current_policy<PolicySelector>();
     static constexpr int count_replicas     = policy.high_bin_cache_count_replicas;
-    using ProbePolicy                       = ::cuda::std::conditional_t<
+    using ProbeOp                           = ::cuda::std::conditional_t<
       policy.high_bin_cache == HistogramCacheAlgorithm::none,
-      no_cache_probe,
+      no_cache_probe<CounterT>,
       ::cuda::std::conditional_t<policy.high_bin_cache == HistogramCacheAlgorithm::single_probe,
-                                 single_probe_cache,
-                                 double_probe_cache>>;
-    using SpillPolicy   = typename select_histogram_spill_op<policy.high_bin_spill, policy.high_bin_aggregation>::type;
-    using ProbeOp       = histogram_probe_op<ProbePolicy, CounterT>;
-    using SpillOp       = histogram_spill_op<SpillPolicy, CounterT, OutputCounterT>;
-    using SpillCounterT = typename SpillOp::target_type;
+                                 single_probe_cache<CounterT>,
+                                 double_probe_cache<CounterT>>>;
+    using AtomicSpillOp =
+      ::cuda::std::conditional_t<policy.high_bin_spill == HistogramSpillAlgorithm::global_memory_privatized,
+                                 block_private_spill<CounterT, OutputCounterT>,
+                                 global_output_spill<CounterT, OutputCounterT>>;
+    using SpillOp = ::cuda::std::conditional_t<
+      policy.high_bin_aggregation == HistogramAggregationAlgorithm::warp_coalesced,
+      warp_coalesced_spill<AtomicSpillOp>,
+      ::cuda::std::conditional_t<policy.high_bin_aggregation == HistogramAggregationAlgorithm::rle,
+                                 rle_spill<AtomicSpillOp>,
+                                 AtomicSpillOp>>;
     static_assert(policy.high_bin_pixels_per_thread > 0, "Histogram cooperative pixels_per_thread must be positive");
     static_assert(policy.high_bin_blocks_per_sm >= 0, "Histogram cooperative blocks per SM must not be negative");
     namespace cg        = ::cooperative_groups;
@@ -1439,28 +1250,13 @@ struct AgentHistogramCooperative
     const int thread_idx    = threadIdx.x;
     const int block_threads = blockDim.x;
 
-    // Phase 1: initialize the selected cache and spill destinations. The operations own all synchronization required by
-    // their storage protocols.
-    ProbePolicy::template initialize<NumActiveChannels>(
-      cache_keys, cache_counts, cache_slots_per_channel, count_replicas, thread_idx, block_threads);
-
-    ::cuda::std::array<SpillCounterT*, NumActiveChannels> spill_targets{};
-    SpillPolicy::template initialize<NumActiveChannels>(
-      grid,
-      tid_global,
-      total_threads,
-      thread_idx,
-      block_threads,
-      num_output_bins_wrapper,
-      d_output_histograms_wrapper,
-      d_privatized_histograms_wrapper,
-      spill_targets);
-
+    using PixelOffsetT =
+      ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(::cuda::std::int64_t)), ::cuda::std::int64_t, OffsetT>;
     constexpr int pixels_per_thread = policy.high_bin_pixels_per_thread;
-    const OffsetT total_pixels      = num_rows * num_row_pixels;
-    const OffsetT step              = static_cast<OffsetT>(total_threads);
-    const OffsetT chunk             = static_cast<OffsetT>(pixels_per_thread) * step;
-    const OffsetT chunk_count       = ::cuda::ceil_div(total_pixels, chunk);
+    const PixelOffsetT total_pixels = static_cast<PixelOffsetT>(num_rows) * num_row_pixels;
+    const PixelOffsetT step         = static_cast<PixelOffsetT>(total_threads);
+    const PixelOffsetT chunk        = static_cast<PixelOffsetT>(pixels_per_thread) * step;
+    const PixelOffsetT chunk_count  = ::cuda::ceil_div(total_pixels, chunk);
     const bool contiguous_input     = num_rows == 1;
 
     PrivatizedDecodeOpT decode_op[NumActiveChannels];
@@ -1473,28 +1269,34 @@ struct AgentHistogramCooperative
     ProbeOp probe_ops[NumActiveChannels];
     SpillOp spill_ops[NumActiveChannels];
 
+    // Phase 1: initialize each channel's probe and spill operations. The operations own their storage and the
+    // synchronization required to make that storage ready for use.
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      probe_ops[ch].state = ProbePolicy::template make_state<CounterT>(
-        cache_keys, cache_counts, ch, cache_slots_per_channel, count_replicas);
-      spill_ops[ch].target = spill_targets[ch];
+      probe_ops[ch].initialize(
+        cache_keys, cache_counts, ch, cache_slots_per_channel, count_replicas, thread_idx, block_threads);
+      spill_ops[ch].initialize(
+        d_output_histograms_wrapper[ch],
+        d_privatized_histograms_wrapper[ch],
+        num_output_bins_wrapper[ch],
+        grid,
+        tid_global,
+        total_threads,
+        thread_idx,
+        block_threads);
     }
 
-    // Phase 2: decode input items and route every in-range contribution through the selected probe operation. A
-    // negative bin is the common sentinel for an out-of-range sample or a cache hit that leaves no deferred spill.
-    const auto consume_bin = [&](int ch, int bin) {
-      spill_ops[ch].consume(probe_ops[ch], bin, CounterT{1});
-    };
-
+    // Phase 2: decode input pixels and pass each channel's bin to the selected spill operation. The spill operation
+    // owns cache probing and any per-thread or warp-level aggregation; a negative bin denotes an out-of-range sample.
     using SampleValueT = it_value_t<SampleIteratorT>;
     if (contiguous_input)
     {
       if constexpr (NumActiveChannels == 1)
       {
-        for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+        for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
         {
-          const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+          const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
           SampleValueT staged_samples[pixels_per_thread];
           bool valid_samples[pixels_per_thread];
           int bins[pixels_per_thread];
@@ -1502,10 +1304,10 @@ struct AgentHistogramCooperative
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel_index = 0; pixel_index < pixels_per_thread; ++pixel_index)
           {
-            const OffsetT pixel         = first_pixel + static_cast<OffsetT>(pixel_index) * step;
-            valid_samples[pixel_index]  = pixel < total_pixels;
-            const OffsetT safe_pixel    = valid_samples[pixel_index] ? pixel : OffsetT{0};
-            staged_samples[pixel_index] = d_samples[safe_pixel * NumChannels];
+            const PixelOffsetT pixel      = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
+            valid_samples[pixel_index]    = pixel < total_pixels;
+            const PixelOffsetT safe_pixel = valid_samples[pixel_index] ? pixel : PixelOffsetT{0};
+            staged_samples[pixel_index]   = d_samples[safe_pixel * NumChannels];
           }
 
           _CCCL_PRAGMA_UNROLL_FULL()
@@ -1526,7 +1328,7 @@ struct AgentHistogramCooperative
           _CCCL_PRAGMA_UNROLL_FULL()
           for (int pixel_index = 0; pixel_index < pixels_per_thread; ++pixel_index)
           {
-            consume_bin(0, bins[pixel_index]);
+            spill_ops[0].consume(probe_ops[0], bins[pixel_index], CounterT{1});
           }
         }
       }
@@ -1549,15 +1351,15 @@ struct AgentHistogramCooperative
           if (vectorizable)
           {
             const PixelT* const pixels = reinterpret_cast<const PixelT*>(native_base);
-            for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+            for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
             {
-              const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+              const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
               _CCCL_PRAGMA_UNROLL_FULL()
               for (int pixel_index = 0; pixel_index < pixels_per_thread; ++pixel_index)
               {
-                const OffsetT pixel       = first_pixel + static_cast<OffsetT>(pixel_index) * step;
+                const PixelOffsetT pixel  = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
                 const bool valid          = pixel < total_pixels;
-                const PixelT packed       = pixels[valid ? pixel : OffsetT{0}];
+                const PixelT packed       = pixels[valid ? pixel : PixelOffsetT{0}];
                 const SampleValueT* lanes = reinterpret_cast<const SampleValueT*>(&packed);
                 int bins[NumActiveChannels];
 
@@ -1578,22 +1380,22 @@ struct AgentHistogramCooperative
                 _CCCL_PRAGMA_UNROLL_FULL()
                 for (int ch = 0; ch < NumActiveChannels; ++ch)
                 {
-                  consume_bin(ch, bins[ch]);
+                  spill_ops[ch].consume(probe_ops[ch], bins[ch], CounterT{1});
                 }
               }
             }
           }
           else
           {
-            for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+            for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
             {
-              const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+              const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
               _CCCL_PRAGMA_UNROLL_FULL()
               for (int pixel_index = 0; pixel_index < pixels_per_thread; ++pixel_index)
               {
-                const OffsetT pixel      = first_pixel + static_cast<OffsetT>(pixel_index) * step;
-                const bool valid         = pixel < total_pixels;
-                const OffsetT safe_pixel = valid ? pixel : OffsetT{0};
+                const PixelOffsetT pixel      = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
+                const bool valid              = pixel < total_pixels;
+                const PixelOffsetT safe_pixel = valid ? pixel : PixelOffsetT{0};
                 int bins[NumActiveChannels];
 
                 _CCCL_PRAGMA_UNROLL_FULL()
@@ -1614,7 +1416,7 @@ struct AgentHistogramCooperative
                 _CCCL_PRAGMA_UNROLL_FULL()
                 for (int ch = 0; ch < NumActiveChannels; ++ch)
                 {
-                  consume_bin(ch, bins[ch]);
+                  spill_ops[ch].consume(probe_ops[ch], bins[ch], CounterT{1});
                 }
               }
             }
@@ -1622,15 +1424,15 @@ struct AgentHistogramCooperative
         }
         else
         {
-          for (OffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+          for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
           {
-            const OffsetT first_pixel = static_cast<OffsetT>(tid_global) + chunk_idx * chunk;
+            const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
             _CCCL_PRAGMA_UNROLL_FULL()
             for (int pixel_index = 0; pixel_index < pixels_per_thread; ++pixel_index)
             {
-              const OffsetT pixel      = first_pixel + static_cast<OffsetT>(pixel_index) * step;
-              const bool valid         = pixel < total_pixels;
-              const OffsetT safe_pixel = valid ? pixel : OffsetT{0};
+              const PixelOffsetT pixel      = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
+              const bool valid              = pixel < total_pixels;
+              const PixelOffsetT safe_pixel = valid ? pixel : PixelOffsetT{0};
               int bins[NumActiveChannels];
 
               _CCCL_PRAGMA_UNROLL_FULL()
@@ -1651,7 +1453,7 @@ struct AgentHistogramCooperative
               _CCCL_PRAGMA_UNROLL_FULL()
               for (int ch = 0; ch < NumActiveChannels; ++ch)
               {
-                consume_bin(ch, bins[ch]);
+                spill_ops[ch].consume(probe_ops[ch], bins[ch], CounterT{1});
               }
             }
           }
@@ -1660,10 +1462,11 @@ struct AgentHistogramCooperative
     }
     else
     {
-      for (OffsetT pixel = static_cast<OffsetT>(tid_global); pixel < total_pixels; pixel += step)
+      for (PixelOffsetT pixel = static_cast<PixelOffsetT>(tid_global); pixel < total_pixels; pixel += step)
       {
-        const OffsetT row          = pixel / num_row_pixels;
-        const OffsetT pixel_offset = row * row_stride_samples + (pixel - row * num_row_pixels) * NumChannels;
+        const PixelOffsetT row = pixel / num_row_pixels;
+        const PixelOffsetT pixel_offset =
+          row * static_cast<PixelOffsetT>(row_stride_samples) + (pixel - row * num_row_pixels) * NumChannels;
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ch = 0; ch < NumActiveChannels; ++ch)
@@ -1672,7 +1475,7 @@ struct AgentHistogramCooperative
           decode_op[ch].template BinSelect<LOAD_DEFAULT>(d_samples[pixel_offset + ch], bin, true);
           if (bin >= 0 && bin < num_output_bins_wrapper[ch])
           {
-            consume_bin(ch, bin);
+            spill_ops[ch].consume(probe_ops[ch], bin, CounterT{1});
           }
         }
       }
@@ -1688,18 +1491,16 @@ struct AgentHistogramCooperative
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      probe_ops[ch].flush(spill_ops[ch], cache_slots_per_channel, count_replicas, thread_idx, block_threads);
+      probe_ops[ch].flush(spill_ops[ch], thread_idx, block_threads);
     }
 
     // Phase 4: finalize the spill destination. Block-private storage performs its cooperative gather here; direct
     // output spilling has no final work.
-    SpillPolicy::template finalize<NumActiveChannels>(
-      grid,
-      tid_global,
-      total_threads,
-      num_output_bins_wrapper,
-      d_privatized_histograms_wrapper,
-      d_output_histograms_wrapper);
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ch = 0; ch < NumActiveChannels; ++ch)
+    {
+      spill_ops[ch].finalize(grid, tid_global, total_threads);
+    }
   }
 };
 
