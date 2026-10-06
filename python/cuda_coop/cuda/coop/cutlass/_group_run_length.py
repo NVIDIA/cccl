@@ -11,10 +11,31 @@ decoded window as ThreadData. run_length_decode_into writes the whole stream
 to a global tensor and returns its length.
 """
 
-from cuda.coop._core.thread_group import ThreadGroup
+from __future__ import annotations
 
+from typing import TypeVar
+
+from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import CompilerIntegerLike
+
+from .._core.api.thread_group import BlockGroup
+from .._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    IntegralScalar,
+    TempStorageLike,
+)
 from ._temp_storage import TempStorage
-from ._thread_data import _snapshot_readable_payload
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _snapshot_readable_payload,
+)
+
+_LengthT = TypeVar("_LengthT", bound=IntegralScalar)
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 def _decode(
@@ -74,15 +95,19 @@ def _decode(
 
 
 def run_length_decode(
-    group,
-    run_values,
-    run_lengths,
+    group: BlockGroup,
+    run_values: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    run_lengths: CommonThreadDataLike[_LengthT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    decoded_items_per_thread,
-    decoded_window_offset=0,
-    temp_storage=None,
-):
+    decoded_items_per_thread: int,
+    decoded_window_offset: IntegralScalar = 0,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData:
     """Decode a blocked window without changing either input payload.
 
     Participation, length validation, window offsets, zero-filled tails, and
@@ -115,6 +140,22 @@ def run_length_decode(
         Fresh payload with the run-value dtype and requested output extent.
         Neither input is modified. The decoded total must fit uint32; negative
         lengths, misplaced zero padding, and overflow trap before decoding.
+
+    Examples
+    --------
+    Decode a 64-item window starting inside a run, then write the full
+    decoded stream at destination offset five. A window extending beyond
+    the stream ends with zeros.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_run_length_examples.py
+        :language: python
+        :start-after: # qualified-run-length-example-begin
+        :end-before: # qualified-run-length-example-end
+        :dedent: 4
     """
     return _decode(
         group,
@@ -129,16 +170,20 @@ def run_length_decode(
 
 
 def run_length_decode_into(
-    group,
-    run_values,
-    run_lengths,
-    destination,
+    group: BlockGroup,
+    run_values: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    run_lengths: CommonThreadDataLike[_LengthT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    destination: CutlassTensorSample,
     /,
     *,
-    decoded_items_per_thread,
-    destination_offset=0,
-    temp_storage=None,
-):
+    decoded_items_per_thread: int,
+    destination_offset: IntegralScalar = 0,
+    temp_storage: TempStorageLike | None = None,
+) -> CompilerIntegerLike:
     """Decode a full stream into a CuTe global-memory tensor.
 
     Length validation, input preservation, offset/capacity checks, and scratch
@@ -172,6 +217,22 @@ def run_length_decode_into(
         nothing. Insufficient capacity traps before any output write; elements
         outside the decoded interval remain unchanged. The total must fit
         uint32.
+
+    Examples
+    --------
+    Write the full decoded stream at destination offset five, alongside
+    a register window of the same runs. Every thread receives the total
+    decoded length.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_run_length_examples.py
+        :language: python
+        :start-after: # qualified-run-length-example-begin
+        :end-before: # qualified-run-length-example-end
+        :dedent: 4
     """
     return _decode(
         group,

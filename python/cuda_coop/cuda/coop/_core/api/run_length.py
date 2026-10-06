@@ -19,10 +19,7 @@ writes, destination capacity at runtime, and traps on failure.
 
 from __future__ import annotations
 
-from typing import Any
-
 from ..dtype_policy import validate_common_integer_value_dtype_name
-from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
     _common_group_operation,
@@ -30,18 +27,38 @@ from ._dispatch import (
 )
 from ._payload import TempStorageLike, _validate_common_numeric_value
 
+try:
+    import numpy
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+from typing import TypeVar
+
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    CompilerIntegerLike,
+    IntegralScalar,
+    ThreadDataLike,
+)
+from .thread_group import BlockGroup
+
+_LengthT = TypeVar("_LengthT", bound=IntegralScalar)
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 @_common_group_operation("run_length_decode", group_kinds=("block",))
 def run_length_decode(
-    group: ThreadGroup,
-    run_values: Any,
-    run_lengths: Any,
+    group: BlockGroup,
+    run_values: CommonThreadDataLike[_ItemT],
+    run_lengths: CommonThreadDataLike[_LengthT],
     /,
     *,
     decoded_items_per_thread: int,
-    decoded_window_offset: Any = 0,
+    decoded_window_offset: IntegralScalar = 0,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_ItemT]:
     """Return a fresh blocked window of the decoded run stream.
 
     Parameters
@@ -94,6 +111,20 @@ def run_length_decode(
     operation also accepts local-array run inputs. The CUTLASS-qualified form
     :func:`cuda.coop.cutlass.run_length_decode` also accepts CuTe register
     payloads.
+
+    Examples
+    --------
+    Decode a window beginning partway through a run with Numba-CUDA-MLIR.
+    The output window contains the remaining decoded values followed by
+    zeros. The number of decoded items per thread is independent of the
+    input runs per thread.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
+        :language: python
+        :start-after: # common-run-length-window-example-begin
+        :end-before: # common-run-length-window-example-end
+        :dedent: 4
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -126,16 +157,16 @@ def run_length_decode(
 
 @_common_group_operation("run_length_decode_into", group_kinds=("block",))
 def run_length_decode_into(
-    group: ThreadGroup,
-    run_values: Any,
-    run_lengths: Any,
+    group: BlockGroup,
+    run_values: CommonThreadDataLike[_ItemT],
+    run_lengths: CommonThreadDataLike[_LengthT],
     destination: object,
     /,
     *,
     decoded_items_per_thread: int,
-    destination_offset: Any = 0,
+    destination_offset: IntegralScalar = 0,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> numpy.uint32 | CompilerIntegerLike:
     """Decode a complete run stream into an array and return its total size.
 
     Parameters
@@ -185,6 +216,20 @@ def run_length_decode_into(
     run inputs and can write relative run offsets to a separate output array.
     :func:`cuda.coop.cutlass.run_length_decode_into` takes a contiguous CuTe
     global-memory tensor as its destination and returns a CuTe ``Uint32``.
+
+    Examples
+    --------
+    Decode a complete stream into a destination interval with
+    Numba-CUDA-MLIR. The stream spans three internal windows, and the kernel
+    reports its total size. Values outside the destination interval remain
+    unchanged.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
+        :language: python
+        :start-after: # run-length-bulk-example-begin
+        :end-before: # run-length-bulk-example-end
+        :dedent: 4
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
