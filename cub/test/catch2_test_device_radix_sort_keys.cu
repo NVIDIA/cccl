@@ -9,6 +9,8 @@
 #include <thrust/functional.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
+#include <thrust/system/cuda/error.h>
+#include <thrust/system_error.h>
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
@@ -453,6 +455,15 @@ void do_large_offset_test(std::size_t num_items)
 
   CAPTURE(num_items, is_descending);
 
+  const auto report_allocation_failure = [&]([[maybe_unused]] const char* message) {
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
+    const std::size_t num_bytes = num_items * sizeof(KeyT);
+    std::cerr
+      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << message << "\n";
+#endif // DEBUG_CHECKED_ALLOC_FAILURE
+    SUCCEED("allocation failure is not a test failure");
+  };
+
   try
   {
     large_array_sort_helper<KeyT> arrays;
@@ -474,14 +485,17 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
   }
-  catch ([[maybe_unused]] std::bad_alloc& e)
+  catch (const std::bad_alloc& e)
   {
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const std::size_t num_bytes = num_items * sizeof(KeyT);
-    std::cerr
-      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
-#endif // DEBUG_CHECKED_ALLOC_FAILURE
-    SUCCEED("allocation failure is not a test failure");
+    report_allocation_failure(e.what());
+  }
+  catch (const thrust::system_error& e)
+  {
+    if (e.code() != thrust::system::error_code{cudaErrorMemoryAllocation, thrust::cuda_category()})
+    {
+      throw;
+    }
+    report_allocation_failure(e.what());
   }
 }
 
