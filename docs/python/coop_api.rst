@@ -144,6 +144,7 @@ Reduction
 ^^^^^^^^^
 
 .. autofunction:: reduce
+.. autofunction:: sum
 
 
 Data rearrangement

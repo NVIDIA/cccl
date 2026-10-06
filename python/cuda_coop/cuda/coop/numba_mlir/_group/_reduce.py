@@ -11,11 +11,23 @@ resolves them to CUB or CUDAX providers before ordinary type inference.
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable
+from typing import Literal, TypeVar
 
+import numpy
+
+from ..._typing import (
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ReduceAlgorithm,
+    ReduceOperator,
+    ValidItems,
+)
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup, ReductionGroup, WarpGroup
 from ._marker import group_primitive_marker
+
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
 
 @group_operation(
@@ -23,15 +35,19 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_reduce",
 )
 def reduce(
-    group: ThreadGroup,
-    value: Any,
+    group: ReductionGroup | BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
     /,
     *,
-    binary_op: Any = None,
+    binary_op: ReduceOperator
+    | Callable[[_ItemT, _ItemT], _ItemT]
+    | None = None,
     broadcast: bool = True,
-    valid_items: Any = None,
-    algorithm: Any = None,
-) -> Any:
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm
+    | Literal["raking", "warp_reductions"]
+    | None = None,
+) -> _ItemT:
     """Reduce values with a built-in alias or custom device operator.
 
     See :func:`cuda.coop.reduce` for the shared parameters, defaults, supported
@@ -67,6 +83,18 @@ def reduce(
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
         C++ primitives used for custom operators, valid prefixes, and explicit
         block algorithms. Full-group built-in reductions use CUDAX.
+
+    Examples
+    --------
+    Reduce a tile with a custom device maximum and read the leader-owned
+    result.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_reduce_examples.py
+        :language: python
+        :start-after: # qualified-reduce-example-begin
+        :end-before: # qualified-reduce-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(
@@ -85,14 +113,14 @@ def reduce(
     family_module="cuda.coop.numba_mlir._compiler._group_reduce",
 )
 def sum(
-    group: ThreadGroup,
-    value: Any,
+    group: ReductionGroup | BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
     /,
     *,
     broadcast: bool = True,
-    valid_items: Any = None,
-    algorithm: Any = None,
-) -> Any:
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+) -> _ItemT:
     """Sum values with Numba-CUDA-MLIR.
 
     See :func:`cuda.coop.sum` for all parameters, defaults, supported groups,
@@ -113,6 +141,17 @@ def sum(
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
         C++ primitives used for valid prefixes and explicit block algorithms.
         Full-group built-in reductions use CUDAX.
+
+    Examples
+    --------
+    Broadcast the sum of each eight-lane logical warp.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_reduce_examples.py
+        :language: python
+        :start-after: # qualified-sum-example-begin
+        :end-before: # qualified-sum-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(

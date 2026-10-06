@@ -12,12 +12,24 @@ its result visibility. The Python bodies reject host execution.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from cuda.coop._typing import (
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ReduceAlgorithm,
+    ReduceOperator,
+    ValidItems,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _portable_group_operation,
 )
+from .thread_group import BlockGroup, ReductionGroup, WarpGroup
+
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+
 
 _PORTABLE_REDUCTION_GROUP_KINDS = (
     "thread",
@@ -34,15 +46,15 @@ _PORTABLE_REDUCTION_GROUP_KINDS = (
     group_kinds=_PORTABLE_REDUCTION_GROUP_KINDS,
 )
 def reduce(
-    group: ThreadGroup,
-    value: object,
+    group: ReductionGroup | BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    binary_op: Any = None,
+    binary_op: ReduceOperator | None = None,
     broadcast: bool = True,
-    valid_items: object = None,
-    algorithm: str | None = None,
-) -> Any:
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+) -> _ItemT:
     """Combine a group's values into one scalar.
 
     Parameters
@@ -123,14 +135,14 @@ def reduce(
     group_kinds=_PORTABLE_REDUCTION_GROUP_KINDS,
 )
 def sum(
-    group: ThreadGroup,
-    value: object,
+    group: ReductionGroup | BlockGroup | WarpGroup,
+    value: PortableThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
     broadcast: bool = True,
-    valid_items: object = None,
-    algorithm: str | None = None,
-) -> Any:
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+) -> _ItemT:
     """Add a group's values and return one scalar.
 
     This is equivalent to :func:`cuda.coop.reduce` with ``binary_op="sum"``.

@@ -8,7 +8,9 @@ import importlib.util
 import inspect
 import sys
 from pathlib import Path
+from typing import get_args
 
+import numpy as np
 import pytest
 
 import cuda.coop as portable_coop
@@ -187,10 +189,10 @@ def test_qualified_surface_is_portable_plus_backend_extensions():
         coop.load,
         eval_str=True,
     )
-    assert (
-        qualified_load_annotations["output"]
-        == portable_load_annotations["output"]
-    )
+    assert set(get_args(qualified_load_annotations["output"])) == {
+        portable_load_annotations["output"],
+        np.ndarray,
+    }
     assert (
         qualified_load_annotations["return"]
         == portable_load_annotations["return"]
