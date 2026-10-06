@@ -31,6 +31,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -910,6 +911,7 @@ struct policy_selector
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
   bool require_stable_reduction_order = false;
+  bool input_synthesizing             = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_lookahead_policy() const -> ScanLookaheadPolicy
   {
@@ -1078,8 +1080,10 @@ struct policy_selector
     }
 #  endif // _CCCL_CUDACC_BELOW(13, 4)
 
-    if (!input_contiguous || !output_contiguous || !input_trivially_copyable || !output_trivially_copyable
-        || !output_default_constructible)
+    // Synthesizing iterators have no memory to copy. The load squad writes their values into shared memory directly,
+    // so lookahead does not require a contiguous input. The store still bulk-copies, so the output must be contiguous.
+    if (!(input_contiguous || input_synthesizing) || !output_contiguous || !input_trivially_copyable
+        || !output_trivially_copyable || !output_default_constructible)
     {
       return false;
     }
@@ -1101,6 +1105,13 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy                    = get_policy(cc);
+    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    return policy;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_policy(::cuda::compute_capability cc) const -> ScanPolicy
   {
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the old scan impl.
     // For stable reduction order (fp + plus), lookahead can only be used on sm_90+, Older arches fall back to classic
@@ -1559,7 +1570,8 @@ struct policy_selector_from_types
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match,
-      StableReductionOrder};
+      StableReductionOrder,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>};
     return policies(cc);
   }
 };

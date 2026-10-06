@@ -24,6 +24,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -905,6 +906,14 @@ class BlockLoad
 
   using _TempStorage = decltype(temp_storage_helper());
 
+  // A synthesizing iterator produces values from its own state. Transposing that load through shared memory only
+  // coalesces accesses that never happen, so those algorithms load directly into the blocked arrangement.
+  template <typename Iterator>
+  static constexpr bool skip_transpose_for_synthesizing_v =
+    ::cuda::__is_synthesizing_iterator_v<Iterator>
+    && (Algorithm == BLOCK_LOAD_TRANSPOSE || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+        || Algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED);
+
   // Internal storage allocator
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
   {
@@ -997,7 +1006,11 @@ public:
   template <typename RandomAccessIterator>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Load(RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread])
   {
-    if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
+    if constexpr (skip_transpose_for_synthesizing_v<RandomAccessIterator>)
+    {
+      LoadDirectBlocked(linear_tid, block_src_it, dst_items);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_DIRECT)
     {
       LoadDirectBlocked(linear_tid, block_src_it, dst_items);
     }
@@ -1085,7 +1098,11 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Load(RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end)
   {
-    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
+    if constexpr (skip_transpose_for_synthesizing_v<RandomAccessIterator>)
+    {
+      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
       LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
     }
@@ -1161,7 +1178,11 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   Load(RandomAccessIterator block_src_it, T (&dst_items)[ItemsPerThread], int block_items_end, DefaultT oob_default)
   {
-    if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
+    if constexpr (skip_transpose_for_synthesizing_v<RandomAccessIterator>)
+    {
+      LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
+    }
+    else if constexpr (Algorithm == BLOCK_LOAD_DIRECT || Algorithm == BLOCK_LOAD_VECTORIZE)
     {
       LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end, oob_default);
     }

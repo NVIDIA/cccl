@@ -24,6 +24,7 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1789,6 +1790,7 @@ struct policy_selector
   int offset_size_bytes;
   bool distinct_partitions;
   SelectImpl selection_impl;
+  bool inputs_synthesizing = false; // items and, if present, flags are produced by synthesizing iterators
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_policy(CacheLoadModifier load_modifier) const
@@ -3116,7 +3118,9 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
   {
-    return SelectPolicy{SelectAlgorithm::lookback, get_lookback_policy(cc)};
+    auto lookback_policy           = get_lookback_policy(cc);
+    lookback_policy.load_algorithm = load_algorithm_for_input(lookback_policy.load_algorithm, inputs_synthesizing);
+    return SelectPolicy{SelectAlgorithm::lookback, lookback_policy};
   }
 };
 
@@ -3129,16 +3133,19 @@ struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
   {
-    using input_t = it_value_t<InputIteratorT>;
-    using flag_t  = it_value_t<FlagsInputIteratorT>;
+    using input_t                     = it_value_t<InputIteratorT>;
+    using flag_t                      = it_value_t<FlagsInputIteratorT>;
+    constexpr bool has_flags          = !::cuda::std::is_same_v<flag_t, NullType>;
+    constexpr bool flags_synthesizing = !has_flags || ::cuda::__is_synthesizing_iterator_v<FlagsInputIteratorT>;
     return policy_selector{
       classify_type<input_t>,
       sizeof(input_t),
       is_primitive_v<input_t>,
-      ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
+      has_flags ? sizeof(flag_t) : 0,
       SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
       is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
-      SelectionOpt}(cc);
+      SelectionOpt,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT> && flags_synthesizing}(cc);
   }
 };
 
