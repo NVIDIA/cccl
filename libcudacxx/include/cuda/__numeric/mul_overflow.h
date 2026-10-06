@@ -99,12 +99,6 @@ template <class _Result, class _Lhs, class _Rhs>
   }
 }
 
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr overflow_result<_Tp> __mul_overflow_generic(_Tp __lhs, _Tp __rhs) noexcept
-{
-  return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
-}
-
 #if _CCCL_DEVICE_COMPILATION()
 
 template <class _Tp>
@@ -183,22 +177,16 @@ template <class _Tp>
     {
       using _Up = ::cuda::std::make_unsigned_t<_Tp>;
 
-      const bool __lhs_neg = __lhs < 0;
-      const bool __rhs_neg = __rhs < 0;
-
-      const _Up __ulhs = __lhs_neg ? _Up{0} - static_cast<_Up>(__lhs) : static_cast<_Up>(__lhs);
-      const _Up __urhs = __rhs_neg ? _Up{0} - static_cast<_Up>(__rhs) : static_cast<_Up>(__rhs);
-
-      const auto __umul = ::cuda::__mul_overflow_device(__ulhs, __urhs);
-
-      const bool __neg = __lhs_neg != __rhs_neg;
-
-      const _Up __limit = (_Up{1} << 127) - (__neg ? _Up{0} : _Up{1});
-
-      const bool __overflow = __umul.overflow || __umul.value > __limit;
-      const _Up __val       = __umul.value;
-      const _Tp __result    = static_cast<_Tp>(__neg ? _Up{0} - __val : __val);
-      return {__result, __overflow};
+      const bool __lhs_neg         = __lhs < 0;
+      const bool __rhs_neg         = __rhs < 0;
+      const bool __negative_result = __lhs_neg != __rhs_neg;
+      const _Up __ulhs             = __lhs_neg ? _Up{0} - static_cast<_Up>(__lhs) : static_cast<_Up>(__lhs);
+      const _Up __urhs             = __rhs_neg ? _Up{0} - static_cast<_Up>(__rhs) : static_cast<_Up>(__rhs);
+      const auto __overflow_result = ::cuda::__mul_overflow_device(__ulhs, __urhs);
+      const bool __overflow =
+        __overflow_result.overflow || __overflow_result.value > (_Up{1} << 127) - (__negative_result ? _Up{0} : _Up{1});
+      const _Up __value = __overflow_result.value;
+      return {static_cast<_Tp>(__negative_result ? _Up{0} - __value : __value), __overflow};
     }
 #  endif // _CCCL_HAS_INT128()
     else
@@ -302,7 +290,7 @@ template <typename _Tp>
                  (return ::cuda::__mul_overflow_host(__lhs, __rhs);))
   }
 #endif // !_CCCL_TILE_COMPILATION()
-  return ::cuda::__mul_overflow_generic(__lhs, __rhs);
+  return ::cuda::__mul_overflow_generic_impl<_Tp>(__lhs, __rhs);
 }
 
 template <typename _Result, typename _Lhs, typename _Rhs>
