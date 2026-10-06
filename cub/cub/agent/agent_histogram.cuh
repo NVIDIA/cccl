@@ -339,7 +339,7 @@ struct AgentHistogram
     else
     {
       using AliasedPixels = PixelT[items_per_thread];
-      WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
+      const WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
       // Load using a wrapped pixel iterator
       BlockLoadPixelT{static_smem_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
     }
@@ -369,8 +369,8 @@ struct AgentHistogram
       {
         // Load partially-full, aligned tile using the pixel iterator
         using AliasedPixels = PixelT[items_per_thread];
-        WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-        int valid_pixels = valid_samples / NumChannels;
+        const WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
+        const int valid_pixels = valid_samples / NumChannels;
 
         // Load using a wrapped pixel iterator
         BlockLoadPixelT{static_smem_storage.pixel_load}.Load(
@@ -660,8 +660,8 @@ struct AgentHistogram
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      CounterT* privatized_histogram = PrivatizedHistogram(ch);
-      const int channel_bins         = num_privatized_bins[ch];
+      const CounterT* const privatized_histogram = PrivatizedHistogram(ch);
+      const int channel_bins                     = num_privatized_bins[ch];
       for (int bin = static_cast<int>(threadIdx.x); bin < channel_bins; bin += threads_per_block)
       {
         int output_bin       = -1;
