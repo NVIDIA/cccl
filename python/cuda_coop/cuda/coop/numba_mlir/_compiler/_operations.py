@@ -31,10 +31,16 @@ from threading import RLock
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 if TYPE_CHECKING:
+    from cuda.coop._core import (
+        GroupTopologyRequirements,
+        SynchronizationRequirements,
+        TempStorageRequirements,
+    )
+
     from ._group_rewriting import GroupRewriteContext
     from ._rewrite_payload import PayloadInference
 
-from cuda.coop._core import SynchronizationScope
+from cuda.coop._core import StorageOwnership, SynchronizationScope
 
 _CallableT = TypeVar("_CallableT", bound=Callable[..., Any])
 
@@ -176,6 +182,42 @@ class FactoryOperation:
             raise ValueError(
                 "synchronization_scope must be NONE or match execution_scope"
             )
+
+
+def expected_storage_reuse_barrier(
+    topology: GroupTopologyRequirements,
+    storage: TempStorageRequirements,
+) -> SynchronizationScope:
+    """Require a reuse barrier only for automatically synchronized storage."""
+
+    return (
+        topology.execution_scope
+        if storage.ownership is not StorageOwnership.NONE and storage.auto_sync
+        else SynchronizationScope.NONE
+    )
+
+
+def provider_synchronization_matches(
+    metadata: FactoryOperation,
+    topology: GroupTopologyRequirements,
+    synchronization: SynchronizationRequirements,
+    storage: TempStorageRequirements,
+) -> bool:
+    """Check the provider's barrier declaration against planned scratch reuse.
+
+    Caller-owned storage may retain its allocating wrapper's declaration when
+    automatic synchronization is disabled: pointer rewrites bypass that wrapper
+    and let the caller synchronize. Implementation-owned storage has no such
+    exception. Callers validate the planned reuse barrier separately.
+    """
+
+    planned_barrier = synchronization.storage_reuse_barrier
+    return metadata.synchronization_scope is planned_barrier or (
+        planned_barrier is SynchronizationScope.NONE
+        and storage.ownership is StorageOwnership.CALLER
+        and not storage.auto_sync
+        and metadata.synchronization_scope is topology.execution_scope
+    )
 
 
 @dataclass(frozen=True)
@@ -728,10 +770,12 @@ __all__ = [
     "GroupPrimitiveRegistration",
     "RewriteOperationSpecification",
     "StorageABI",
+    "expected_storage_reuse_barrier",
     "factory_operation",
     "group_operation",
     "group_operation_name",
     "group_primitive",
+    "provider_synchronization_matches",
     "register_factory",
     "register_group_primitive",
     "register_rewrite_operation",

@@ -28,7 +28,11 @@ from cuda.coop._core import (
     SynchronizationScope,
 )
 
-from ._operations import StorageABI
+from ._operations import (
+    StorageABI,
+    expected_storage_reuse_barrier,
+    provider_synchronization_matches,
+)
 from ._rewrite_support import (
     _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
     _DYNAMIC_SHARED_MEMORY_ALIGNMENT,
@@ -177,10 +181,8 @@ class _StorageRewrite:
                 "cuda.coop.numba_mlir caller-owned TempStorage is supported "
                 "only for single-instance block-scoped cooperative primitives"
             )
-        expected_reuse_barrier = (
-            topology.execution_scope
-            if storage.auto_sync
-            else SynchronizationScope.NONE
+        expected_reuse_barrier = expected_storage_reuse_barrier(
+            topology, storage
         )
         planned_reuse_barrier = synchronization.storage_reuse_barrier
         if planned_reuse_barrier is not expected_reuse_barrier:
@@ -188,12 +190,8 @@ class _StorageRewrite:
                 "cooperative provider TempStorage automatic synchronization "
                 "disagrees with its planned storage-reuse barrier."
             )
-        allowed_provider_barriers = {planned_reuse_barrier}
-        if caller_owned and not storage.auto_sync:
-            allowed_provider_barriers.add(topology.execution_scope)
-        if (
-            match.factory_metadata.synchronization_scope
-            not in allowed_provider_barriers
+        if not provider_synchronization_matches(
+            match.factory_metadata, topology, synchronization, storage
         ):
             raise CoopSinglePhaseRewriteError(
                 "cooperative provider synchronization scope disagrees with "
@@ -203,7 +201,7 @@ class _StorageRewrite:
             # The group planner and this rewrite parse the same constructor
             # independently. The barrier is emitted only when both agree, so
             # any drift must fail loudly rather than drop the barrier.
-            specification = self._temp_storage_ctor_specifications.get(
+            specification = rewrite._temp_storage_ctor_specifications.get(
                 rewrite._canonical_temp_storage_ctor_key(ctor_key)
             )
             if specification is not None:
@@ -639,7 +637,7 @@ class _StorageRewrite:
                 for key in rewrite._func_temp_storage_requirements
             },
             key=lambda name: (
-                self._temp_storage_ctor_order.get(name, 1 << 30),
+                rewrite._temp_storage_ctor_order.get(name, 1 << 30),
                 name,
             ),
         )
@@ -1514,7 +1512,7 @@ class _StorageRewrite:
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
-        if not self._temp_storage_ctor_specifications:
+        if not rewrite._temp_storage_ctor_specifications:
             for match in matches.values():
                 if match.runtime_temp_storage_var is not None:
                     raise CoopSinglePhaseRewriteError(
@@ -1624,7 +1622,7 @@ class _StorageRewrite:
 
         constructor_keys = {
             rewrite._canonical_temp_storage_ctor_key(key)
-            for key in self._temp_storage_ctor_specifications
+            for key in rewrite._temp_storage_ctor_specifications
         }
         consumed_ctor_keys = {
             rewrite._canonical_temp_storage_ctor_key(key)
@@ -1721,7 +1719,7 @@ class _StorageRewrite:
                 1, int(getattr(invocable, "temp_storage_alignment", 0) or 0)
             )
             summary = (
-                self._implicit_temp_storage_requirements
+                rewrite._implicit_temp_storage_requirements
                 if ctor_key is None
                 else requirements.setdefault(
                     ctor_key, _TempStorageRequirementSummary()

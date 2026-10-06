@@ -13,6 +13,8 @@ emit array IR.
 
 from typing import TYPE_CHECKING, cast
 
+from cuda.coop._core import GroupLoweringPlan
+
 from ._group_rewriting import GroupRewriteContext
 from ._operations import rewrite_operation
 from ._parameters import normalize_dtype_param
@@ -49,6 +51,9 @@ class PayloadInference:
         Resolved inputs, updated in place without copying the dictionary.
     dtype_factory_kwargs : frozenset of str
         Names whose values need dtype normalization before comparison.
+    lowering_plan : GroupLoweringPlan or None
+        Facts already validated for this call in the current planning attempt.
+        Direct provider calls have no plan and require full payload inference.
     """
 
     def __init__(
@@ -60,6 +65,8 @@ class PayloadInference:
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
         dtype_factory_kwargs: frozenset[str],
+        *,
+        lowering_plan: GroupLoweringPlan | None = None,
     ) -> None:
         self.context = context
         self.op_name = op_name
@@ -68,6 +75,7 @@ class PayloadInference:
         self.seen_factory_kwargs = seen_factory_kwargs
         self.factory_kwargs = factory_kwargs
         self.dtype_factory_kwargs = dtype_factory_kwargs
+        self.lowering_plan = lowering_plan
 
     def factory_value(self, name: str) -> object:
         return self.factory_kwargs.get(name)
@@ -160,6 +168,8 @@ class _PayloadRewrite:
         allowed_factory_kwargs: set[str],
         seen_factory_kwargs: set[str],
         factory_kwargs: dict[str, object],
+        *,
+        lowering_plan: GroupLoweringPlan | None = None,
     ) -> None:
         """Use payload facts to complete a provider's specialization inputs.
 
@@ -183,6 +193,8 @@ class _PayloadRewrite:
             infers.
         factory_kwargs : dict of str to object
             Resolved specialization inputs, updated in place by the hook.
+        lowering_plan : GroupLoweringPlan or None
+            Semantic facts belonging to this provider call, when planned.
         """
 
         rewrite = cast("CoopSinglePhaseRewrite", self)
@@ -199,6 +211,7 @@ class _PayloadRewrite:
             seen_factory_kwargs,
             factory_kwargs,
             specification.dtype_factory_kwargs,
+            lowering_plan=lowering_plan,
         )
         specification.infer_payload(inference.context, inference)
 
