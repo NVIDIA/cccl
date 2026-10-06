@@ -69,11 +69,6 @@ warp. The input is laid out as 32 consecutive samples per warp, with
 ``items_per_thread`` consecutive features per sample. Each warp writes one
 result per feature.
 
-.. code-block:: python
-
-   from numba_cuda_mlir import cuda
-   from cuda import coop
-
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_batched.py
    :language: python
    :start-after: # example-begin reduce-batched-features
