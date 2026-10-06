@@ -564,30 +564,32 @@ and methods that implement the same phases.
    .. tab-item:: Overview
 
       .. figure:: visualizations/compiler-phases.svg
-         :alt: Seven compilation phases. The cooperative planner runs after early rewrites and device-helper inlining, before the remaining untyped passes and type inference.
+         :alt: Seven compilation phases. After device-helper inlining, the cooperative planner resolves calls and reuses planned payload facts during rewriting, before the remaining untyped passes and type inference.
          :width: 100%
 
-         Cooperative planning runs before the main type-inference pass.
+         Payload fact reuse stays within cooperative planning, before the
+         main type-inference pass.
 
    .. tab-item:: Python classes
 
       .. figure:: visualizations/compiler-phases-classes.svg
-         :alt: The seven phases with their Python classes. PostInlineWholeFunctionPlanners calls CoopWholeFunctionPlanner, which uses CoopSinglePhaseRewrite before MLIRTypeInference. MLIRBackend and MLIRLower prepare the kernel for compilation and linking.
+         :alt: The seven phases with their Python classes. CoopWholeFunctionPlanner passes lowering plans into CoopSinglePhaseRewrite, which retains analyzed calls before MLIRTypeInference. MLIRBackend and MLIRLower prepare the kernel for compilation and linking.
          :width: 100%
          :figclass: coop-compiler-diagram-desktop
 
          The classes follow the same seven phases.
 
       .. figure:: visualizations/compiler-phases-classes-mobile.svg
-         :alt: The seven compiler phases with their Python classes, arranged vertically. CoopWholeFunctionPlanner and CoopSinglePhaseRewrite run before MLIRTypeInference, then MLIRBackend and MLIRLower lower the kernel.
+         :alt: The seven compiler phases with their Python classes, arranged vertically. CoopWholeFunctionPlanner supplies plans to CoopSinglePhaseRewrite before MLIRTypeInference, then MLIRBackend and MLIRLower lower the kernel.
          :width: 100%
          :figclass: coop-compiler-diagram-mobile
 
          The classes follow the same seven phases.
 
       Mixin methods run on their owning planner or rewriter. They are not
-      separate compiler passes. ``_RewriteMatch`` carries data between
-      matching and replacement.
+      separate compiler passes. ``GroupLoweringPlan`` carries call semantics
+      into provider analysis; ``_RewriteMatch`` retains the analyzed call for
+      storage planning and replacement.
 
 Numba first builds *untyped IR*: statements and expressions without a full
 map of their types. Argument types and some constants are already known.
@@ -597,7 +599,8 @@ inlining then makes supported helper calls visible in the caller's IR.
 ``PostInlineWholeFunctionPlanners`` calls ``CoopWholeFunctionPlanner``
 at this point. The planner resolves groups, prepares providers, and rewrites
 cooperative calls. It uses argument types, constants, and value definitions
-to infer the payload facts that provider selection needs. This work runs before
+to infer the payload facts that provider selection needs. Planned Load/Store
+calls reuse those facts during provider analysis. This work runs before
 Numba's main type-inference pass.
 
 After planning, Numba processes literals, reconstructs static single
@@ -623,7 +626,7 @@ kernel and supplies both sets of link inputs to nvJitLink.
    .. tab-item:: Overview
 
       .. figure:: visualizations/compiler-swimlane.svg
-         :alt: Four actor swimlanes show Numba passing inlined IR to cuda.coop, cuda.coop sending a provider bundle to NVRTC, NVRTC returning LTO-IR and scratch layouts, and Numba later linking the kernel and provider inputs with nvJitLink.
+         :alt: Numba passes inlined IR to cuda.coop, which reuses planned payload facts and retained call analysis before sending providers to NVRTC. NVRTC returns LTO-IR and scratch layouts; Numba later links kernel and provider inputs with nvJitLink.
          :width: 100%
 
          Provider LTO-IR returns before type inference. The final link happens
@@ -632,7 +635,7 @@ kernel and supplies both sets of link inputs to nvJitLink.
    .. tab-item:: Python classes
 
       .. figure:: visualizations/compiler-swimlane-classes.svg
-         :alt: Class-level handoffs across Numba, cuda.coop, NVRTC, and nvJitLink. Algorithm bundles compile during match. Invocable carries provider files into typing, ExternFunction describes a named call, and MLIRLower emits the symbolic call before linking.
+         :alt: Class-level handoffs across Numba, cuda.coop, NVRTC, and nvJitLink. PayloadInference consumes planned Load/Store facts and retained matches supply Algorithm bundles. Invocable carries provider files into typing; MLIRLower emits symbolic calls before linking.
          :width: 100%
          :figclass: coop-compiler-diagram-desktop
 
@@ -640,7 +643,7 @@ kernel and supplies both sets of link inputs to nvJitLink.
          the provider symbol.
 
       .. figure:: visualizations/compiler-swimlane-classes-mobile.svg
-         :alt: Class-level compilation handoffs in time order, with each actor named. CoopSinglePhaseRewrite binds Invocable objects, typing builds ExternFunction descriptors, MLIRLower emits symbolic calls, and nvJitLink returns a cubin.
+         :alt: Class-level compilation handoffs in time order. PayloadInference consumes Load/Store plan facts; CoopSinglePhaseRewrite reuses matches and binds Invocable objects. Typing builds ExternFunction descriptors, MLIRLower emits calls, and nvJitLink returns a cubin.
          :width: 100%
          :figclass: coop-compiler-diagram-mobile
 
@@ -656,17 +659,55 @@ can change how Numba compiles the kernel's link input. The provider bundle
 still contains LTO-IR. See :ref:`coop-numba-compilation-reuse` for cache
 controls and artifact lifetime.
 
+Carry payload facts into provider analysis
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For the tile copy, group planning has already established that ``items``
+holds two ``int32`` values per thread. The ``GroupLoadStoreSemantics`` in
+``plan.call.operation`` records that dtype and item count. The private
+provider call carries its ``GroupLoweringPlan`` in reserved compile-time
+metadata, which is removed before the provider factory is called.
+
+``_validate_and_split_args()`` passes this plan to ``PayloadInference``.
+The Load/Store hook normalizes the plan's dtype to a Numba type and merges
+both facts through ``infer_kwarg()``. Existing factory arguments must agree;
+the payload constructor's known extent must agree too. The hook records
+the dtype through constructor and alias state so ``apply()`` can allocate
+the local array. It does not repeat the memory/payload dtype walks or the
+Store payload-write scan that established the plan.
+
+Common-API numeric validation and runtime-control checks still run.
+Scalar Store boxing and scratch allocation remain part of emission.
+Direct private provider calls without a supported Load/Store plan use full
+operand inference. Other operation families retain their own inference
+hooks. The group and rewrite resolvers handle different IR forms, including
+loops and emitted payload markers, so sharing plan facts does not replace
+them with one resolver.
+
+These facts belong to the current function IR and compilation attempt.
+Provider analysis resolves the original operands and constructors; the
+completed matches retain assignment identity across block visits. A launch
+retry prepares a fresh rewriter. Provider artifact caches have a separate
+lifetime from these call facts.
+
 Collect the providers before rewriting calls
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first ``match()`` visit prepares the whole function. This order lets the
-compiler see calls in all blocks, including inlined helpers, before a block
-rewrite removes their original form. It also gives storage planning the
-C++ size and alignment of each provider's scratch type.
+``prepare_calls_and_storage()`` examines the whole function before any block is
+rewritten. A consumer in a later block can determine an earlier payload's
+dtype or add a requirement to a shared scratch descriptor. Keeping the
+original calls and definitions available lets the compiler collect these
+facts across blocks and inlined helpers. Provider preparation then supplies
+the C++ size and alignment of each scratch type.
 
-#. ``_compute_func_temp_storage_requirements`` scans constructors first,
-   then provider calls. It records payload facts, validates storage uses,
-   and collects the calls across all blocks.
+#. ``prepare_calls_and_storage()`` calls ``_collect_function_calls()`` to scan
+   constructors first, then analyze each provider call once with
+   ``_analyze_provider_call()``. Each ``_RewriteMatch`` records the resolved
+   factory arguments, runtime operands, and lowering metadata. Planned
+   Load/Store calls consume the payload facts described above during this
+   analysis.
+#. ``_collect_temp_storage_uses()`` consumes those matches and validates
+   storage ownership and descriptor uses before provider compilation.
 #. ``_prepare_ltoir_bundle_for_matches()`` removes duplicate specializations.
    It calls their factories inside ``collect_specializations()``. In this
    context, a factory records an ``Algorithm`` instead of building an
@@ -678,8 +719,13 @@ C++ size and alignment of each provider's scratch type.
    LTO-IR and scratch layouts. On a cache miss, one NVRTC compilation supplies both. On a cache
    hit, the cache supplies the saved image and its matching layouts.
 #. The algorithms retain a shared LTO-IR file. Their invocables use that
-   file as a link input. Storage planning uses the returned sizes and
+   file as a link input. ``_compute_func_temp_storage_requirements()`` uses
+   the validated storage uses and provider layouts to collect sizes and
    alignments before ``apply()`` emits arrays and scratch pointers.
+
+After preparation, ``_func_matches`` retains the completed call records by
+original assignment identity. Block matching reuses them; an assignment
+replaced by ``apply()`` no longer matches on a later visit.
 
 For the tile-copy example, the Load and Store providers can share one
 NVRTC compilation. Each call keeps its own signature and runtime operands.
@@ -734,17 +780,17 @@ whole-function planner, which still runs before type inference.
      - Purpose
    * - Prepare the function
      - ``prepare_calls_and_storage()``
-     - Collect all calls and storage requirements. Prepare the provider bundle
-       before changing block statements.
+     - Analyze each provider call, reusing planned Load/Store payload facts.
+       Validate storage uses, prepare the provider bundle, then collect
+       scratch requirements before changing statements.
    * - Stage shared storage
      - ``begin_rewrite()``: ``_stage_temp_storage_backing()``
      - Check shared-memory conflicts and insert the backing allocation in
        the entry block, so every scratch view can use it.
    * - Match one block
-     - ``_prepare_block()``, ``_match_assignment()``,
-       ``_match_provider_call()``
-     - Record constructors, payload extents, runtime operands, and static
-       factory arguments for this block.
+     - ``match()``: ``_prepare_block()``, ``_match_assignment()``
+     - Select prepared call records by assignment identity. Record this
+       block's constructors and payload extents.
    * - Prepare replacements
      - ``apply()``: ``_prepare_call_invocables()``
      - Reuse or materialize each call's provider and bind its specialization
@@ -785,9 +831,9 @@ To trace these stages, start with :github:`the planner
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_planner.py>` and
 :github:`the block rewrite
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite.py>`.
-:github:`The storage scan
-<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` calls
-:github:`the bundle preparation helper
+``prepare_calls_and_storage()`` coordinates :github:`storage validation and layout
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` with
+:github:`bundle preparation
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_invocables.py>`.
 :github:`Provider types and source generation
 <python/cuda_coop/cuda/coop/numba_mlir/_types.py>` connect those helpers to
@@ -1475,6 +1521,24 @@ and use ``self.state.func_ir.dump()`` again. Compare it with the earlier
 dump: group resolution has introduced private factories and constants
 for the resolved operations.
 
+Before continuing, set a breakpoint in ``_compiler/_rewrite_load_store.py``,
+inside ``_infer_load_store_payload()``, on
+``semantics = plan.call.operation``.
+Continue and inspect ``inference.lowering_plan``, ``semantics`` after that
+assignment, and ``payload_specification``. For the Load call, the plan's
+operation records ``int32`` and two items per thread.
+
+Step through the ``infer_kwarg()`` calls to see the plan and factory inputs
+checked for agreement, followed by constructor dtype recording. This branch
+returns before the operand dtype walks used by unplanned provider calls.
+Disable this breakpoint after inspecting Load.
+
+Before continuing from the Load hook, set a breakpoint in
+``_analyze_provider_call()`` on ``return _RewriteMatch(...)``. Inspect
+``factory_kwargs``, ``runtime_args``, and ``lowering_plan`` for Load and
+Store. This analysis runs once per call
+during function preparation; later block matching reuses the records.
+
 Before continuing, set a breakpoint in ``_types.py``, inside
 ``prepare_ltoir_bundle()``, on the call to
 ``nvrtc.compile_with_layouts(...)``.
@@ -1492,10 +1556,11 @@ provider's source generation on another run, stop in
 ``Algorithm._source_code()`` in the same file.
 
 The Call Stack at the bundle stop also explains its timing:
-``CoopSinglePhaseRewrite.match()`` collects function-wide storage
-requirements and prepares the providers before ``apply()`` replaces the
-calls. Provider compilation can supply the size and alignment facts that
-storage planning needs.
+``_CallRewriting._rewrite_calls()`` calls ``prepare_calls_and_storage()``, which
+analyzes calls and validates storage uses before preparing the bundle.
+After compilation supplies the layouts, it collects scratch requirements
+and saves the matches for block emission. This still occurs before
+``apply()`` replaces the calls and before Numba's main type-inference pass.
 
 Set a breakpoint in ``_compiler/_nvrtc.py``, inside ``compile_impl()``,
 on ``err, prog = nvrtc.nvrtcCreateProgram(...)``. Continue and inspect
