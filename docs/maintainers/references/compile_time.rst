@@ -205,8 +205,10 @@ compile-time benchmark workflow.
 CCCL configurations run on PRs by default. The weekly workflow runs each
 third-party configuration against the preceding scheduled weekly run's head
 SHA and uploads its reports and traces as artifacts. A PR runs those
-same comparisons only when its latest commit message contains
-``[run-third-party-compile-time-bench]``. Project skip tags and
+same comparisons when its latest commit message contains
+``[run-third-party-compile-time-bench]`` or when the configurations are selected
+in ``compile_time.override``. A non-empty override replaces the normal
+compile-time PR matrix; reset it to empty before merging. Project skip tags and
 ``[skip-compile-time-bench]`` still suppress their respective jobs.
 
 The third-party configurations report template-instantiation costs both by

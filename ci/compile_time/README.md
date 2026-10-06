@@ -3,7 +3,8 @@
 The compile-time benchmark CI flow is configured from `ci/matrix.yaml` under
 `compile_time.pull_request`. CCCL runs on PRs. Third-party configurations run
 weekly and can be enabled on a PR by adding
-`[run-third-party-compile-time-bench]` to its latest commit message.
+`[run-third-party-compile-time-bench]` to its latest commit message or placing
+configurations in `compile_time.override`.
 
 ## Matrix schema
 
@@ -66,9 +67,15 @@ comparison builds its baseline in the current runner environment; it does not
 reuse old trace artifacts. The weekly workflow uploads reports and traces
 without posting a PR comment.
 
-The PR workflow selects only CCCL entries unless the opt-in tag is present.
-With the tag, it runs the same third-party comparisons and includes them in
-the combined PR comment. Existing project skip tags and
+The PR workflow uses a non-empty `compile_time.override` list in place of the
+normal compile-time matrix and enables its third-party entries without an
+opt-in tag. Override entries use the same schema as `compile_time.pull_request`.
+Third-party entries compare against the preceding weekly run. Reset the
+override list to empty before merging.
+
+With an empty override, the PR workflow selects only CCCL entries unless the
+opt-in tag is present. With the tag, it also runs the third-party comparisons.
+Both routes include results in the combined PR comment. Existing project skip tags and
 `[skip-compile-time-bench]` still take precedence.
 
 In baseline comparisons, `threshold` is measured against the total selected

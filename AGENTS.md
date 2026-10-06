@@ -279,6 +279,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 * **`ci/matrix.yaml`**
 
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
+  * `compile_time.override` temporarily selects compile-time benchmark configurations for PRs and enables third-party comparisons without a commit tag. Reset it to empty before merging.
   * Pull request (PR) runs typically spawn ~250 jobs.
   * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
     * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.

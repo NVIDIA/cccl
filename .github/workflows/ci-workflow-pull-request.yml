@@ -127,7 +127,11 @@ jobs:
             exit 0
           fi
 
-          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow override)"
+          compile_time_override_active="$(jq -r '.include | length > 0' <<< "${compile_time_matrix_json}")"
+          if [[ "${compile_time_override_active}" != "true" ]]; then
+            compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          fi
           compile_time_matrix_json="$(
             jq -c \
               --argjson matx_enabled "${MATX_ENABLED}" \
@@ -141,7 +145,7 @@ jobs:
                 ))
               ' <<< "${compile_time_matrix_json}"
           )"
-          if [[ "${THIRD_PARTY_COMPILE_TIME_ENABLED}" == "true" ]]; then
+          if [[ "${compile_time_override_active}" == "true" || "${THIRD_PARTY_COMPILE_TIME_ENABLED}" == "true" ]]; then
             compile_time_matrix_json="$(
               python3 ci/compile_time/weekly_matrix.py \
                 --branch "${DEFAULT_BRANCH}" --include-cccl \

@@ -52,6 +52,8 @@ Tag reference
 To run the weekly MatX, PyTorch, and RAPIDS compile-time jobs on a PR, add
 ``[run-third-party-compile-time-bench]`` to the last commit message. This opt-in
 tag does not suppress CI jobs or block merging. Skip tags still take precedence.
+Alternatively, select the configurations in ``compile_time.override`` in
+``ci/matrix.yaml`` for temporary PR coverage, then reset that list before merge.
 
 ``[bench-only]`` shorthand
 --------------------------

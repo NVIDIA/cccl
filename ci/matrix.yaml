@@ -46,8 +46,9 @@ compile_time:
           sort: total
           top: 15
           threshold: 0.2
-    # Third-party configs run weekly; PRs opt in with [run-third-party-compile-time-bench].
-    - id: pytorch-gcc14
+    # Third-party configs run weekly; PRs opt in with the override below or [run-third-party-compile-time-bench].
+    - &compile_time_pytorch
+      id: pytorch-gcc14
       name: PyTorch compile-time bench
       project: pytorch
       runner: linux-amd64-cpu32
@@ -67,7 +68,8 @@ compile_time:
           top: 15
           threshold: 0.2
           group_by: primary-template
-    - id: matx-gcc14
+    - &compile_time_matx
+      id: matx-gcc14
       name: MatX compile-time bench
       project: matx
       runner: linux-amd64-cpu32
@@ -75,7 +77,8 @@ compile_time:
       baseline_ref: origin/main
       args: *compile_time_third_party_args
       slices: *compile_time_third_party_slices
-    - id: rapids-cudf
+    - &compile_time_rapids_cudf
+      id: rapids-cudf
       name: RAPIDS cuDF compile-time bench
       project: rapids
       runner: linux-amd64-cpu32
@@ -84,7 +87,8 @@ compile_time:
       args: *compile_time_third_party_args
       targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
       slices: *compile_time_third_party_slices
-    - id: rapids-cuvs
+    - &compile_time_rapids_cuvs
+      id: rapids-cuvs
       name: RAPIDS cuVS compile-time bench
       project: rapids
       runner: linux-amd64-cpu32
@@ -93,7 +97,8 @@ compile_time:
       args: *compile_time_third_party_args
       targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
       slices: *compile_time_third_party_slices
-    - id: rapids-cugraph
+    - &compile_time_rapids_cugraph
+      id: rapids-cugraph
       name: RAPIDS cuGraph compile-time bench
       project: rapids
       runner: linux-amd64-cpu32
@@ -102,7 +107,8 @@ compile_time:
       args: *compile_time_third_party_args
       targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
       slices: *compile_time_third_party_slices
-    - id: rapids-cuopt
+    - &compile_time_rapids_cuopt
+      id: rapids-cuopt
       name: RAPIDS cuOpt compile-time bench
       project: rapids
       runner: linux-amd64-cpu32
@@ -111,6 +117,16 @@ compile_time:
       args: *compile_time_third_party_args
       targets: [cuopt]
       slices: *compile_time_third_party_slices
+
+  # Temporary PR coverage: run these weekly configurations without an opt-in tag.
+  # Reset this list to empty before merging.
+  override:
+    - *compile_time_pytorch
+    - *compile_time_matx
+    - *compile_time_rapids_cudf
+    - *compile_time_rapids_cuvs
+    - *compile_time_rapids_cugraph
+    - *compile_time_rapids_cuopt
 
 # Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
 # the author to run the benchmarks when the generated code changed.

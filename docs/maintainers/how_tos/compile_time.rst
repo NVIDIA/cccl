@@ -62,6 +62,12 @@ head commit of the preceding scheduled weekly run. The CCCL public-header PR
 configuration still compares against
 ``origin/main``.
 
+For temporary PR coverage, put the desired configuration entries in
+``compile_time.override`` in ``ci/matrix.yaml``. A non-empty list replaces the
+normal compile-time PR matrix and enables those jobs without the commit tag.
+Third-party entries use the preceding weekly run as their baseline. Reset the
+list to empty before merging.
+
 The wrapper holds the build shape constant between the current tree and the
 baseline commit. CCCL comparisons reuse the same preset, targets, and build
 arguments; third-party comparisons reuse the same upstream checkout and
