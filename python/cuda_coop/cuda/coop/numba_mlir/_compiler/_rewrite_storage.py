@@ -406,7 +406,7 @@ class _StorageRewrite:
         Parameters
         ----------
         lowering_plan : GroupLoweringPlan or None
-            Plan whose topology and participation contracts govern
+            Plan whose topology and participation requirements govern
             storage. None preserves the legacy block-provider path.
 
         Returns
@@ -417,7 +417,7 @@ class _StorageRewrite:
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Required dimensions or contracts are missing, coverage is
+            Dimensions or execution requirements are missing, coverage is
             inconsistent, or no emitter supports the scope and rank formulas.
         """
 

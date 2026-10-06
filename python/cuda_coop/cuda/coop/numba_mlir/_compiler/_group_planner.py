@@ -9,11 +9,14 @@ A kernel can describe its participating threads with ``this_block()`` and
 Python descriptions cannot execute on the device. This module recovers them
 from the kernel's IR, resolves their sizes against the configured launch, and
 asks the operation's registered planning code to choose an implementation.
+These compile-time ``ThreadGroup`` and ``ThreadHierarchy`` values are called
+group descriptors here. ``ThreadData`` supplies the per-thread payload and
+is lowered separately to a local array.
 
 ``CoopWholeFunctionPlanner`` invokes this work after device-helper inlining
 and before type inference. ``has_group_markers`` first determines whether
 group resolution is needed; ``_GroupPlanning`` then requests launch facts and
-runs ``_GroupCallPlanner``. The latter builds replacements, checks that
+runs ``_GroupCallPlanner``. The latter builds replacements, checks that group
 descriptors have no remaining runtime uses, and substitutes calls to private
 provider factories. A provider factory is a host callable that specializes the
 selected implementation for types, item counts, and launch dimensions.
@@ -139,7 +142,7 @@ class _GroupCallPlanner:
         self.dead_func_names: set[str] = set()
         self.descriptor_assigns: set[ir.Assign] = set()
         self.replacements: dict[ir.Assign, list[Any]] = {}
-        # These descriptors are host planning values, keyed by IR names.
+        # Host-side thread groups and hierarchies, keyed by IR variable name.
         self._group_cache: dict[str, ThreadGroup] = {}
         self._hierarchy_cache: dict[str, ThreadHierarchy] = {}
         self.context = GroupPlanningContext(self)
@@ -1784,14 +1787,14 @@ class _GroupCallPlanner:
         self.replacements[inst] = replacement
 
     def _mark_descriptor_calls(self) -> None:
-        """Mark descriptor construction and forwarding IR for removal.
+        """Mark thread-group and hierarchy assignments for removal.
 
         Recognize hierarchy and group constructors by callable identity, and
         ``group_by`` only when its receiver resolves to a group. Then
         repeatedly follow aliases and casts until every reachable descriptor
         assignment is marked. Record consumed callable names too. This is
-        bookkeeping only: ``_validate_descriptor_uses`` must approve removal
-        before blocks change.
+        bookkeeping only: ``_validate_group_descriptor_references`` must
+        approve removal before blocks change.
         """
 
         for block in self.func_ir.blocks.values():
@@ -1840,15 +1843,21 @@ class _GroupCallPlanner:
                         descriptor_names.add(inst.target.name)
                         changed = True
 
-    def _validate_descriptor_uses(self) -> None:
-        """Reject runtime uses of descriptors that planning intends to erase.
+    def _validate_group_descriptor_references(self) -> None:
+        """Reject runtime references to thread groups or hierarchies.
 
-        A descriptor may feed another descriptor assignment, an operation with
-        a queued replacement, or a consumed method lookup. Any other remaining
-        use, such as returning it or passing it to an unrelated call, raises
-        ``EscapingGroupDescriptorError`` with the descriptor variable names.
-        Run this after collecting all replacements so valid compile-time uses
-        are recognized before ``run()`` rewrites any block bodies.
+        Here, a descriptor is a ``ThreadGroup`` from ``this_block()``,
+        ``this_warp()``, or another group constructor or ``group_by()`` call,
+        or a ``ThreadHierarchy`` value. These describe which threads cooperate.
+        ``ThreadData`` provides the per-thread payload array and is handled
+        separately.
+
+        A group or hierarchy value may feed another group/hierarchy assignment,
+        a primitive call with a queued replacement, or a method lookup marked
+        for removal. Returning that value or passing it to an unrelated call
+        would require a device object after its construction has been erased.
+        Such uses raise ``EscapingGroupDescriptorError`` naming the variables.
+        Run this after collecting replacements, before rewriting block bodies.
         """
 
         descriptor_names = {
@@ -1945,7 +1954,7 @@ class _GroupCallPlanner:
                 if operation is not None:
                     self._lower_root_operation(inst, call, function, operation)
                     continue
-        self._validate_descriptor_uses()
+        self._validate_group_descriptor_references()
         if not (
             self.descriptor_assigns or self.replacements or self.dead_func_names
         ):
