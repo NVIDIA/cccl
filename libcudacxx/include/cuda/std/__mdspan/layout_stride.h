@@ -380,7 +380,8 @@ public:
   template <class _OtherIndexType,
             enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
             enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
-  _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept
+  _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept(
+    is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
       : __base(__ext, __to_strides_array(__strides, __rank_sequence))
   {
     _CCCL_ASSERT(__check_strides(__strides, __rank_sequence),
@@ -396,7 +397,8 @@ public:
             enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
             enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
   _CCCL_API constexpr mapping(const extents_type& __ext,
-                              const array<_OtherIndexType, extents_type::rank()>& __strides) noexcept
+                              const array<_OtherIndexType, extents_type::rank()>&
+                                __strides) noexcept(is_nothrow_constructible_v<index_type, const _OtherIndexType&>)
       : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))
   {}
 
