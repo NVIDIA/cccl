@@ -4,9 +4,12 @@
 
 """Describe primitive arguments without importing a backend type system.
 
-A factory uses these records to describe a C++ method's signature. The records
-carry types, directions, and dependencies; they do not hold the device values
-passed to a call. An adapter turns them into its compiler's parameter objects.
+A factory uses parameter descriptors such as ``Value``, ``Pointer``, and
+``Array`` to describe a C++ method's signature. These records carry types,
+directions, and dependencies; they do not hold the device values passed to a
+call. For example, ``Array`` describes an array parameter's type and extent,
+while ``ThreadData`` constructs the per-thread payload supplied to it. An
+adapter turns the records into its compiler's parameter objects.
 
 Argument kind and parameter role answer different questions. Kind says whether
 the generated code embeds an argument or receives it at runtime. Role says
