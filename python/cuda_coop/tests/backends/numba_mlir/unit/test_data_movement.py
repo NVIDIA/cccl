@@ -150,6 +150,53 @@ def _rewrite_planned_movement(function, *, arg_types):
     return func_ir, rewrite, tuple(invocables.values())
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_load_store_calls_across_blocks_are_analyzed_once(
+    monkeypatch, items_per_thread
+):
+    from numba_cuda_mlir import cuda, types
+    from numba_cuda_mlir.numbair_transforms import ir
+
+    from cuda import coop
+    from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+
+    def kernel(source, destination, flag, items_per_thread):
+        block = coop.this_block()
+        items = coop.ThreadData(items_per_thread)
+        coop.load(block, source, items, algorithm="transpose")
+        if flag:
+            coop.store(block, destination, items, algorithm="transpose")
+        else:
+            coop.store(block, destination, items, algorithm="transpose")
+
+    analyzed = Counter()
+    split_args = CoopSinglePhaseRewrite._validate_and_split_args
+
+    def record_analysis(self, op_name, call, getitem_temp_storage):
+        analyzed[id(call)] += 1
+        return split_args(self, op_name, call, getitem_temp_storage)
+
+    monkeypatch.setattr(
+        CoopSinglePhaseRewrite, "_validate_and_split_args", record_analysis
+    )
+    array_type = types.Array(types.int32, 1, "C")
+    func_ir, _, invocables = _rewrite_planned_movement(
+        kernel,
+        arg_types=(
+            array_type,
+            array_type,
+            types.boolean,
+            types.IntegerLiteral(items_per_thread),
+        ),
+    )
+    targets = _resolved_python_call_targets(func_ir, ir)
+    assert len(analyzed) == 3
+    assert set(analyzed.values()) == {1}
+    assert targets.count(invocables[0]) == 1
+    assert targets.count(invocables[1]) == 2
+    assert targets.count(cuda.shared.array) == 1
+
+
 def _run_single_phase_to_provider_boundary(
     function,
     *,
@@ -184,7 +231,7 @@ def _run_single_phase_to_provider_boundary(
         monkeypatch.setattr(
             rewrite,
             "_compute_func_temp_storage_requirements",
-            lambda _func_ir: None,
+            lambda _storage_uses: {},
         )
     monkeypatch.setattr(
         rewrite,

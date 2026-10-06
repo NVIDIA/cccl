@@ -102,6 +102,7 @@ class _ProvenanceRewrite(Rewrite):
         self._block: ir.Block | None = None
         self._block_defs: dict[str, object] = {}
         self._matches: dict[ir.Assign, _RewriteMatch] = {}
+        self._func_matches: dict[ir.Assign, _RewriteMatch] = {}
         self._temp_storage_assigns: set[ir.Assign] = set()
         self._temp_storage_func_vars: set[str] = set()
         self._temp_storage_ctor_specifications: dict[

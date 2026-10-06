@@ -40,6 +40,7 @@ from ._rewrite_support import (
     _DeferredCoopRewrite,
     _next_global_name,
     _RewriteMatch,
+    _TempStorageRequirementSummary,
     ir,
 )
 
@@ -118,17 +119,22 @@ class CoopSinglePhaseRewrite(
         )
 
     def _prepare_function(self, func_ir: ir.FunctionIR) -> bool:
-        """Collect all storage requirements before rewriting any block.
+        """Analyze calls, compile providers, then collect scratch requirements.
 
-        A new IR object starts a new storage plan. Keep that plan across
-        this function's blocks so constructors include requirements from
-        every consumer.
+        Keep the completed call records and storage plan across this
+        function's blocks. A fresh rewriter recomputes them after a launch
+        retry; an incomplete preparation is never reused.
         """
 
         func_ir_identity = id(func_ir)
         if self._func_ir_identity == func_ir_identity:
             return True
-        self._func_ir_identity = func_ir_identity
+        self._func_ir_identity = None
+        self._func_matches = {}
+        self._func_temp_storage_requirements = {}
+        self._implicit_temp_storage_requirements = (
+            _TempStorageRequirementSummary()
+        )
         self._func_ir = func_ir
         self._thread_data_specifications = {}
         self._thread_data_like_vars = set()
@@ -141,14 +147,91 @@ class CoopSinglePhaseRewrite(
         self._temp_storage_backing_emitted = False
         self._prebundled_specializations = {}
         try:
+            matches = self._collect_function_calls(func_ir)
+            storage_uses = self._collect_temp_storage_uses(func_ir, matches)
+            self._prepare_ltoir_bundle_for_matches(list(matches.values()))
             self._func_temp_storage_requirements = (
-                self._compute_func_temp_storage_requirements(func_ir)
+                self._compute_func_temp_storage_requirements(storage_uses)
             )
         except _DeferredCoopRewrite:
             self._func_temp_storage_requirements = {}
             return False
 
+        self._func_matches = matches
+        self._func_ir_identity = func_ir_identity
         return True
+
+    def _collect_function_calls(
+        self, func_ir: ir.FunctionIR
+    ) -> dict[ir.Assign, _RewriteMatch]:
+        """Analyze every provider call before any block is replaced.
+
+        Record all payload and scratch constructors first so consumers in
+        other blocks see the same facts. Retain completed call analysis by
+        original assignment identity for compilation, storage planning and
+        block emission. Replaced assignments no longer match on later visits.
+        """
+
+        matches: dict[ir.Assign, _RewriteMatch] = {}
+        saved_block_defs = self._block_defs
+        saved_block = self._block
+        self._temp_storage_ctor_specifications = {}
+        self._temp_storage_ctor_order = {}
+        self._temp_storage_ctor_roots = {}
+        self._temp_storage_ctor_sites = {}
+        try:
+            ctor_order = 0
+            for label in sorted(func_ir.blocks):
+                scan_block = func_ir.blocks[label]
+                self._block = scan_block
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in scan_block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in scan_block.body:
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    if self._is_thread_data_ctor_call(call):
+                        self._thread_data_like_vars.add(inst.target.name)
+                        self._thread_data_specifications[inst.target.name] = (
+                            self._merge_thread_data_specifications(
+                                self._thread_data_specifications.get(
+                                    inst.target.name
+                                ),
+                                self._extract_thread_data_specification(call),
+                            )
+                        )
+                    elif self._is_temp_storage_ctor_call(call):
+                        self._record_temp_storage_ctor(inst, call)
+                        self._temp_storage_ctor_order.setdefault(
+                            inst.target.name, ctor_order
+                        )
+                        ctor_order += 1
+            self._validate_temp_storage_ctor_sites()
+            for label in sorted(func_ir.blocks):
+                self._block = func_ir.blocks[label]
+                self._block_defs = {
+                    inst.target.name: inst.value
+                    for inst in self._block.body
+                    if isinstance(inst, ir.Assign)
+                }
+                for inst in self._block.body:
+                    if not isinstance(inst, ir.Assign):
+                        continue
+                    call = inst.value
+                    if not isinstance(call, ir.Expr) or call.op != "call":
+                        continue
+                    match = self._analyze_provider_call(inst, call)
+                    if match is not None:
+                        matches[inst] = match
+        finally:
+            self._block_defs = saved_block_defs
+            self._block = saved_block
+        return matches
 
     def _prepare_block(self, block: ir.Block) -> None:
         """Reset block matches and keep the function-wide storage plan."""
@@ -168,6 +251,10 @@ class CoopSinglePhaseRewrite(
     def _match_assignment(self, inst: ir.Assign) -> None:
         """Record a payload query, constructor, or provider call."""
 
+        match = self._func_matches.get(inst)
+        if match is not None:
+            self._matches[inst] = match
+            return
         call = inst.value
         if (
             isinstance(call, ir.Expr)
@@ -191,25 +278,14 @@ class CoopSinglePhaseRewrite(
         if self._is_temp_storage_ctor_call(call):
             self._temp_storage_assigns.add(inst)
             self._temp_storage_func_vars.add(call.func.name)
-            self._record_temp_storage_ctor(inst, call)
-            self._temp_storage_ctor_order.setdefault(
-                inst.target.name, len(self._temp_storage_ctor_order)
-            )
             return
         if self._is_thread_data_ctor_call(call):
             self._thread_data_func_vars.add(call.func.name)
-            self._thread_data_like_vars.add(inst.target.name)
-            self._thread_data_specifications[inst.target.name] = (
-                self._merge_thread_data_specifications(
-                    self._thread_data_specifications.get(inst.target.name),
-                    self._extract_thread_data_specification(call),
-                )
-            )
             return
 
-        self._match_provider_call(inst, call)
-
-    def _match_provider_call(self, inst: ir.Assign, call: ir.Expr) -> None:
+    def _analyze_provider_call(
+        self, inst: ir.Assign, call: ir.Expr
+    ) -> _RewriteMatch | None:
         """Separate compile-time factory inputs from device operands.
 
         Keep the group lowering plan beside the match. It controls storage
@@ -219,19 +295,16 @@ class CoopSinglePhaseRewrite(
 
         target = self._resolve_call_target(call)
         if target is None:
-            return
+            return None
         op_name = target.operation
-        try:
-            (
-                runtime_args,
-                runtime_temp_storage_var,
-                factory_kwargs,
-                factory_kw_value_vars,
-            ) = self._validate_and_split_args(
-                op_name, call, target.getitem_temp_storage
-            )
-        except _DeferredCoopRewrite:
-            return
+        (
+            runtime_args,
+            runtime_temp_storage_var,
+            factory_kwargs,
+            factory_kw_value_vars,
+        ) = self._validate_and_split_args(
+            op_name, call, target.getitem_temp_storage
+        )
         lowering_plan = cast(
             GroupLoweringPlan | None,
             factory_kwargs.pop(_GROUP_LOWERING_PLAN_KWARG, None),
@@ -241,7 +314,7 @@ class CoopSinglePhaseRewrite(
             runtime_args=runtime_args,
             factory_kwargs=factory_kwargs,
         )
-        self._matches[inst] = _RewriteMatch(
+        return _RewriteMatch(
             op_name=op_name,
             factory=target.factory,
             factory_metadata=target.factory_metadata,

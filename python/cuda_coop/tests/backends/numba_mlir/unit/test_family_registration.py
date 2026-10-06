@@ -636,9 +636,9 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
             },
         )
     ]
-    assert len(infer_events) == 2
+    assert len(infer_events) == 1
     assert all(len(event[1]) == 1 for event in infer_events)
-    assert len(analyze_events) == 2
+    assert len(analyze_events) == 1
     assert all(event[1] == operation for event in analyze_events)
     assert all(
         event[3]
@@ -650,9 +650,9 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
         for event in analyze_events
     )
     assert len(prepare_events) == 1
-    assert len(validate_events) == 2
+    assert len(validate_events) == 1
     assert all(event[1] == operation for event in validate_events)
-    assert len(contexts) == 7
+    assert len(contexts) == 4
 
     resolver = object.__new__(CoopSinglePhaseRewrite)
     resolver._func_ir = func_ir

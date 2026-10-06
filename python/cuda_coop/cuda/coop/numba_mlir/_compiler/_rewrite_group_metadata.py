@@ -32,8 +32,8 @@ class _GroupMetadataRewrite:
     ) -> object:
         """Collect operation-specific facts before compiling a provider.
 
-        Block matching and function-wide storage collection call this after
-        separating specialization inputs from runtime operands. The family
+        Whole-function call analysis invokes this once after separating
+        specialization inputs from runtime operands. The family
         hook can then check details that the generic rewrite cannot infer,
         such as whether Store needs to box a scalar in a one-element array.
         Its result is saved on the match for operand preparation during
