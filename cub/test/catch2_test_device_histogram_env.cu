@@ -681,14 +681,14 @@ CUB_TEST("DeviceHistogram::MultiHistogramEven handles the device-launch dynamic-
   constexpr int num_levels = num_bins + 1;
   auto d_samples           = c2h::device_vector<int>{0, 1, 2, 3};
 
-  cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
-  cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
-  cuda::std::array<int, num_active_channels> upper_levels{num_bins, num_bins, num_bins};
+  const cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
+  const cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
+  const cuda::std::array<int, num_active_channels> upper_levels{num_bins, num_bins, num_bins};
 
-  auto d_histogram_r                                                = c2h::device_vector<unsigned int>(num_bins, 0);
-  auto d_histogram_g                                                = c2h::device_vector<unsigned int>(num_bins, 0);
-  auto d_histogram_b                                                = c2h::device_vector<unsigned int>(num_bins, 0);
-  cuda::std::array<unsigned int*, num_active_channels> d_histograms = {
+  auto d_histogram_r = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto d_histogram_g = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto d_histogram_b = c2h::device_vector<unsigned int>(num_bins, 0);
+  const cuda::std::array<unsigned int*, num_active_channels> d_histograms = {
     thrust::raw_pointer_cast(d_histogram_r.data()),
     thrust::raw_pointer_cast(d_histogram_g.data()),
     thrust::raw_pointer_cast(d_histogram_b.data())};
