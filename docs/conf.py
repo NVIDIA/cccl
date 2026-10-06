@@ -212,6 +212,33 @@ autodoc_default_options = {
 autodoc_type_hints = "description"
 autodoc_type_aliases = {
     "Operator": "Operator",
+    **{
+        name: name
+        for name in (
+            "BlockExchangeMode",
+            "BlockGroup",
+            "BlockLoadStoreAlgorithm",
+            "CommonNumericScalar",
+            "CommonShuffleMode",
+            "CommonThreadDataLike",
+            "IntegerValue",
+            "IntegralScalar",
+            "MemoryGroup",
+            "PortableNumericScalar",
+            "PortableThreadDataLike",
+            "ReduceAlgorithm",
+            "ReduceOperator",
+            "ReductionGroup",
+            "ScalarShuffleMode",
+            "ScanAlgorithm",
+            "ScanOperator",
+            "SignedIntegerScalar",
+            "ThreadDataLike",
+            "ValidItems",
+            "WarpGroup",
+            "WarpLoadStoreAlgorithm",
+        )
+    },
 }
 
 # Set Python domain primary for intersphinx
