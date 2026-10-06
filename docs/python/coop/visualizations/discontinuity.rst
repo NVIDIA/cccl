@@ -72,8 +72,7 @@ Turning heads into run IDs
 
 An inclusive sum of head flags counts how many runs have started. Subtract
 one to obtain zero-based IDs. With four items per thread, this kernel uses
-128 threads to process each full 512-item tile. Import ``cuda`` from
-``numba_cuda_mlir``, ``numpy as np``, and ``coop`` from ``cuda``.
+128 threads to process each full 512-item tile.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_neighbors.py
    :language: python
