@@ -5,6 +5,7 @@
 
 #cuda-coop-api-reference .sig-name,
 #cuda-coop-api-reference .sig-prename,
+#cuda-coop-api-reference .sig-param,
 #cuda-coop-api-reference code.xref .pre {
   overflow-wrap: anywhere;
   white-space: normal;
