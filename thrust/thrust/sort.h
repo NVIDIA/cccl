@@ -228,6 +228,7 @@ _CCCL_HOST_DEVICE void sort(RandomAccessIterator first, RandomAccessIterator las
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort compares objects using \c operator<.
  *
@@ -282,6 +283,7 @@ _CCCL_HOST_DEVICE void stable_sort(const thrust::detail::execution_policy_base<D
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort compares objects using \c operator<.
  *
@@ -329,6 +331,7 @@ void stable_sort(RandomAccessIterator first, RandomAccessIterator last);
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort compares objects using a function object
  *  \p comp.
@@ -387,6 +390,7 @@ _CCCL_HOST_DEVICE void stable_sort(
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort compares objects using a function object
  *  \p comp.
@@ -702,6 +706,7 @@ void sort_by_key(RandomAccessIterator1 keys_first,
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort_by_key is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort_by_key compares key objects using \c operator<.
  *
@@ -771,6 +776,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort_by_key is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort_by_key compares key objects using \c operator<.
  *
@@ -831,6 +837,7 @@ void stable_sort_by_key(
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort_by_key is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort_by_key compares key objects using the function
  *  object \p comp.
@@ -904,6 +911,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
  *  and if the two elements are equivalent (neither <tt>x < y</tt> nor
  *  <tt>y < x</tt>) then a postcondition of \p stable_sort_by_key is that \c x
  *  still precedes \c y.
+ *  This also holds for floating-point \c -0.0 and \c +0.0, which are equivalent.
  *
  *  This version of \p stable_sort_by_key compares key objects using the function
  *  object \p comp.
