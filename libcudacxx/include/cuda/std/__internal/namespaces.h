@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===---------------------------------------------------------------------===//
 
@@ -66,6 +66,8 @@
 // cuda specific namespaces
 #define _CCCL_BEGIN_NAMESPACE_CUDA                     _CCCL_BEGIN_NAMESPACE(cuda)
 #define _CCCL_END_NAMESPACE_CUDA                       _CCCL_END_NAMESPACE(cuda)
+#define _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC              _CCCL_BEGIN_NAMESPACE(cuda::fabric)
+#define _CCCL_END_NAMESPACE_CUDA_FABRIC                _CCCL_END_NAMESPACE(cuda::fabric)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_MR                  _CCCL_BEGIN_NAMESPACE(cuda::mr)
 #define _CCCL_END_NAMESPACE_CUDA_MR                    _CCCL_END_NAMESPACE(cuda::mr)
 #define _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE              _CCCL_BEGIN_NAMESPACE(cuda::device)
