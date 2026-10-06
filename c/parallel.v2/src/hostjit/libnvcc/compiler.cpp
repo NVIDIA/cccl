@@ -2045,6 +2045,11 @@ public:
     appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+    if (kind == LIBNVCC_PCH_HOST)
+    {
+      arg_strings.push_back("-include");
+      arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs/cxa_guard.h");
+    }
 
     appendIncludePaths(arg_strings, config);
 
