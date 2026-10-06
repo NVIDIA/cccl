@@ -140,6 +140,16 @@ public:
     __base_t::__set_size_unsynchronized(__capacity_);
   }
 
+  // Resizable buffers cannot be released or reinterpreted with zero-copy APIs.
+  // For a resizable buffer, size() represents the logical size, not the
+  // allocation size, so releasing or reinterpreting the allocation would be
+  // using the wrong size.
+  void release() && = delete;
+  template <class _Byte>
+  void as_bytes() && = delete;
+  template <class _Up>
+  void as_type() && = delete;
+
   //! @brief Returns the number of elements that fit in the current allocation
   //! without reallocating.
   [[nodiscard]] _CCCL_HOST_API size_type capacity() const noexcept

@@ -38,9 +38,11 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__cstddef/byte.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__host_stdlib/cstddef>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/reverse_iterator.h>
@@ -50,6 +52,7 @@
 #  include <cuda/std/__ranges/size.h>
 #  include <cuda/std/__ranges/unwrap_end.h>
 #  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/is_one_of.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstdint>
@@ -65,6 +68,10 @@ template <class _Env>
 inline constexpr bool __buffer_compatible_env =
   ::cuda::std::is_same_v<::cuda::std::decay_t<_Env>, ::cuda::std::execution::env<>>
   || ::cuda::std::execution::__queryable_with<const _Env&, allocation_alignment_t>;
+
+template <class _Tp>
+inline constexpr bool __is_buffer_byte_type_v =
+  ::cuda::std::__is_one_of_v<_Tp, ::std::byte, ::cuda::std::byte, char, unsigned char>;
 
 _CCCL_BEGIN_NAMESPACE_ABI_VER4_BUMP
 //! @rst
@@ -758,6 +765,103 @@ public:
   _CCCL_HOST_API friend void swap(buffer& __lhs, buffer& __rhs) noexcept
   {
     __lhs.swap(__rhs);
+  }
+
+  //! @brief An allocation whose ownership was released from a buffer by
+  //! `release()`. Passing the members to `acquire()` creates an equivalent
+  //! buffer.
+  struct released_allocation
+  {
+    ::cuda::stream_ref stream;
+    __resource_t mr;
+    pointer ptr;
+    size_type size;
+    size_type alignment;
+  };
+
+  //! @brief Releases ownership of the allocation without deallocating it.
+  //! @return The stream, memory resource, pointer, element count and alignment
+  //! of the allocation. The caller becomes responsible for deallocating `ptr`
+  //! with `mr.deallocate(stream, ptr, bytes, alignment)`, where `bytes` is
+  //! `size * sizeof(T)` rounded up to a multiple of `alignment`.
+  //! @warning After this call, the buffer can only be assigned to or destroyed.
+  [[nodiscard]] _CCCL_HOST_API released_allocation release() && noexcept
+  {
+    const pointer __ptr               = __buf_.data();
+    const size_type __size            = __buf_.size();
+    const size_type __alignment       = __buf_.alignment();
+    const ::cuda::stream_ref __stream = __buf_.stream();
+    return released_allocation{__stream, __buf_.__release_allocation(), __ptr, __size, __alignment};
+  }
+
+  //! @brief Creates a buffer that takes ownership of an existing allocation.
+  //! @param __stream The stream stored in the buffer.
+  //! @param __mr The memory resource used to deallocate the allocation.
+  //! @param __ptr The allocation. May only be null if \p __size is zero.
+  //! @param __size The number of elements in the allocation.
+  //! @param __alignment The alignment of the allocation.
+  //! @pre \p __ptr is not owned by anything else and can be deallocated with
+  //! `__mr.deallocate(__stream, __ptr, bytes, __alignment)`, where `bytes` is
+  //! `__size * sizeof(T)` rounded up to a multiple of \p __alignment.
+  //! @throw std::invalid_argument if \p __alignment is not a power of two that
+  //! is at least `alignof(T)`, if \p __ptr is not aligned to \p __alignment,
+  //! if \p __ptr is null and \p __size is not zero, or if the allocation size
+  //! overflows.
+  [[nodiscard]] _CCCL_HOST_API static buffer acquire(
+    ::cuda::stream_ref __stream,
+    __resource_t __mr,
+    pointer __ptr,
+    size_type __size,
+    size_type __alignment = alignof(_Tp))
+  {
+    return buffer{__buffer_t::__adopt_allocation(__stream, ::cuda::std::move(__mr), __ptr, __size, __alignment)};
+  }
+
+  //! @brief Converts the buffer into a buffer of bytes that owns the same
+  //! allocation.
+  //! @tparam _Byte One of `std::byte`, `cuda::std::byte`, `char` or
+  //! `unsigned char`.
+  //! @return A buffer of `size() * sizeof(T)` bytes with the same data
+  //! pointer, memory resource, stream and alignment.
+  //! @warning After this call, the buffer can only be assigned to or destroyed.
+  _CCCL_TEMPLATE(class _Byte)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
+  [[nodiscard]] _CCCL_HOST_API buffer<_Byte, _Properties...> as_bytes() && noexcept
+  {
+    auto __alloc = ::cuda::std::move(*this).release();
+    return buffer<_Byte, _Properties...>::acquire(
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Byte*>(__alloc.ptr),
+      __alloc.size * sizeof(_Tp),
+      __alloc.alignment);
+  }
+
+  //! @brief Converts a buffer of bytes into a buffer of \p _Up that owns the
+  //! same allocation. Only available if `T` is one of `std::byte`,
+  //! `cuda::std::byte`, `char` or `unsigned char`.
+  //! @return A buffer of `size() / sizeof(_Up)` elements with the same data
+  //! pointer, memory resource, stream and alignment.
+  //! @throw std::invalid_argument if `size()` is not a multiple of
+  //! `sizeof(_Up)` or if `alignment()` is less than `alignof(_Up)`. The buffer
+  //! is left unchanged in that case.
+  //! @warning After a successful call, the buffer can only be assigned to or
+  //! destroyed.
+  _CCCL_TEMPLATE(class _Up, class _Byte = _Tp)
+  _CCCL_REQUIRES(__is_buffer_byte_type_v<_Byte>)
+  [[nodiscard]] _CCCL_HOST_API buffer<_Up, _Properties...> as_type() &&
+  {
+    if (size() % sizeof(_Up) != 0 || alignment() < alignof(_Up))
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::buffer::as_type: size or alignment is incompatible with _Up");
+    }
+    auto __alloc = ::cuda::std::move(*this).release();
+    return buffer<_Up, _Properties...>::acquire(
+      __alloc.stream,
+      ::cuda::std::move(__alloc.mr),
+      reinterpret_cast<_Up*>(__alloc.ptr),
+      __alloc.size / sizeof(_Up),
+      __alloc.alignment);
   }
 
   //! @brief Destroys the buffer, deallocates the buffer and destroys the memory
