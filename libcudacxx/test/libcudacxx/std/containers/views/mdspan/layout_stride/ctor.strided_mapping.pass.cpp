@@ -189,6 +189,87 @@ TEST_FUNC constexpr void test_static_extent_mismatch()
   static_assert(!cuda::std::is_constructible<ToM<int, 5, D>, FromM<FromL, int, 4, D>>::value);
 }
 
+// index_type construction from this conversion is not non-throwing.
+struct not_nothrow_index
+{
+  int val;
+
+  TEST_FUNC constexpr explicit not_nothrow_index(int v) noexcept
+      : val(v)
+  {}
+
+  TEST_FUNC constexpr operator unsigned char() const
+  {
+    return static_cast<unsigned char>(val);
+  }
+};
+
+// Stride conversion can throw. Rank zero never calls stride(), so that conversion stays non-throwing.
+struct throwing_stride_layout
+{
+  template <class Extents>
+  class mapping
+  {
+  public:
+    using extents_type = Extents;
+    using index_type   = typename Extents::index_type;
+    using rank_type    = typename Extents::rank_type;
+    using layout_type  = throwing_stride_layout;
+
+    TEST_FUNC constexpr mapping() = default;
+
+    TEST_FUNC constexpr const extents_type& extents() const
+    {
+      return extents_;
+    }
+
+    TEST_FUNC constexpr index_type required_span_size() const
+    {
+      return index_type{0};
+    }
+
+    TEST_FUNC static constexpr bool is_always_unique() noexcept
+    {
+      return true;
+    }
+    TEST_FUNC static constexpr bool is_always_exhaustive() noexcept
+    {
+      return true;
+    }
+    TEST_FUNC static constexpr bool is_always_strided() noexcept
+    {
+      return true;
+    }
+    TEST_FUNC constexpr bool is_unique() const noexcept
+    {
+      return true;
+    }
+    TEST_FUNC constexpr bool is_exhaustive() const noexcept
+    {
+      return true;
+    }
+    TEST_FUNC constexpr bool is_strided() const noexcept
+    {
+      return true;
+    }
+
+    template <size_t Rank = extents_type::rank(), cuda::std::enable_if_t<(Rank > 0), int> = 0>
+    TEST_FUNC constexpr not_nothrow_index stride(rank_type) const
+    {
+      return not_nothrow_index{1};
+    }
+
+    template <class... Indices>
+    TEST_FUNC constexpr index_type operator()(Indices...) const
+    {
+      return index_type{0};
+    }
+
+  private:
+    extents_type extents_{};
+  };
+};
+
 template <class FromL>
 TEST_FUNC constexpr void test_layout()
 {
@@ -207,6 +288,20 @@ TEST_FUNC constexpr bool test()
   test_layout<cuda::std::layout_left>();
   test_layout<cuda::std::layout_stride>();
   test_layout<always_convertible_layout>();
+
+  {
+    // not no-throw constructible index_type from stride()
+    using from_mapping_t = throwing_stride_layout::mapping<cuda::std::dextents<unsigned char, 2>>;
+    using to_mapping_t   = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
+    static_assert(!cuda::std::is_nothrow_constructible<unsigned char, not_nothrow_index>::value);
+    static_assert(cuda::std::is_constructible<to_mapping_t, from_mapping_t>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<to_mapping_t, from_mapping_t>::value);
+
+    using from_rank0_t = throwing_stride_layout::mapping<cuda::std::extents<unsigned char>>;
+    using to_rank0_t   = cuda::std::layout_stride::mapping<cuda::std::extents<unsigned char>>;
+    static_assert(cuda::std::is_constructible<to_rank0_t, from_rank0_t>::value);
+    static_assert(cuda::std::is_nothrow_constructible<to_rank0_t, from_rank0_t>::value);
+  }
 
   using from_mapping = cuda::std::layout_stride::mapping<cuda::std::extents<long long, 0>>;
   using to_mapping   = cuda::std::layout_stride::mapping<cuda::std::extents<int, 0>>;
