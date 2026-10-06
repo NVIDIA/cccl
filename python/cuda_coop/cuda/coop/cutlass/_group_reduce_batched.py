@@ -11,16 +11,44 @@ to the CUB lowering. Batch totals are spread across lanes, and some lanes
 may get none.
 """
 
-from enum import Enum
+from __future__ import annotations
 
+from collections.abc import Callable
+from enum import Enum
+from typing import Literal, TypeVar
+
+from cuda.coop._core.api.thread_group import WarpGroup
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ReduceOperator,
+)
 
 from ._compiler._launch import current_kernel_launch_facts
-from ._thread_data import _snapshot_readable_payload
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _snapshot_readable_payload,
+)
 from ._thread_group import _require_complete_warp_partition
 
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
-def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
+
+def reduce_batched(
+    group: WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    /,
+    *,
+    binary_op: ReduceOperator
+    | Callable[[object, object], object]
+    | None = None,
+    output_layout: Literal["striped", "blocked"] = "striped",
+) -> ThreadData:
     """Reduce each payload slot independently across a warp.
 
     The groups, output ownership, and participation contract are those of
@@ -65,6 +93,22 @@ def reduce_batched(group, value, /, *, binary_op=None, output_layout="striped"):
     -----
     See the :doc:`Batched Warp Reduction visualization
     <coop/visualizations/reduce-batched>` for lane and result ownership.
+
+    Examples
+    --------
+    Sum each per-thread slot independently within two physical warps.
+    Guard result reads by the batch index: lanes without a batch have no
+    defined result.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_reduce_batched_examples.py
+        :language: python
+        :start-after: # qualified-reduce-batched-example-begin
+        :end-before: # qualified-reduce-batched-example-end
+        :dedent: 4
     """
     if not isinstance(group, ThreadGroup):
         raise TypeError(
