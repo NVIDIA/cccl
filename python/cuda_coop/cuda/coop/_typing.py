@@ -11,14 +11,17 @@ without importing an optional GPU compiler.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Protocol, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias, TypeVar
 
-try:
+if TYPE_CHECKING:
     import numpy
-except ModuleNotFoundError as exc:
-    if exc.name != "numpy":
-        raise
-    numpy = None
+else:
+    try:
+        import numpy
+    except ModuleNotFoundError as exc:
+        if exc.name != "numpy":
+            raise
+        numpy = None
 
 from ._core.api._payload import (
     TempStorageLike,
@@ -62,7 +65,7 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
     signed: bool
 
 
-if numpy is None:
+if not TYPE_CHECKING and numpy is None:
     PortableNumericScalar: TypeAlias = int | float | CompilerScalarLike
     IntegerValue: TypeAlias = int | CompilerIntegerLike
 else:
