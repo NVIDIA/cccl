@@ -83,6 +83,56 @@ borrowed = numba.cuda.as_cuda_array(arr)   # CAI: arr must stay alive
 owned    = torch.from_dlpack(arr)          # DLPack: the tensor keeps it alive
 ```
 
+For pytorch-flavored code, an optional convenience attaches the factory
+family as a `torch.localized` namespace (an attribute plus a `sys.modules`
+entry -- purely additive, nothing about torch's own behavior changes, and
+`uninstall()` reverses it):
+
+```python
+import torch
+import cuda.stf._experimental as stf
+
+stf.interop.pytorch.install()      # adds torch.localized
+stf.machine_init()
+grid = stf.exec_place_grid.from_devices([0, 1])
+
+w = torch.localized.parameter((4096, 4096), torch.bfloat16, grid,
+                              spec=(("blocked", 0), None))
+# no spec => the default: blocked along dim 0 (here: batch rows split
+# across the grid). Placement granularity is the 2 MiB VMM page, so give
+# the split something to work with -- a tensor smaller than one page lands
+# on a single place no matter the spec.
+x = torch.localized.zeros((8192, 4096), torch.float32, grid)
+b = torch.localized.zeros_like(x)  # reuses x's placement verbatim
+torch.localized.placement_report(x)  # dry-run: bytes per grid position
+```
+
+Compute is ordinary pytorch: a localized tensor is a plain `torch.Tensor`,
+so every op and library call works unchanged (correct, but placement-blind:
+one launch reaches every die's pages). Where compute should follow the
+pages, `torch.localized.views(t)` returns one plain strided view per die --
+the placement-aware `chunk` -- and the per-die loop is stock torch:
+`for xv, yv in zip(views(x), views(y)): yv.add_(xv, alpha=a)`. Pointwise
+and dim-wise ops along unsplit dims are valid per die; reductions over a
+split dim are per-die partials plus a fold. Out-of-place results come from
+the ordinary allocator and are not localized -- write in place, or into a
+localized `out=`. The runnable spectrum -- including an `nn.Module` -- lives
+in `tests/stf/test_localized_views_examples.py`.
+
+`from torch.localized import zeros` works too. For codebases that prefer
+explicit imports over patching, `stf.interop.pytorch.namespace()` returns
+the identical object without touching torch. `install()` refuses to clobber a
+`torch.localized` that is not ours.
+
+The localized-allocation surface (`interop.pytorch.localized_empty`, plus
+the factory family `localized_zeros/ones/full` and the placement-reusing
+`*_like` variants) exposes
+this as `lifetime="pinned"` (CAI + registry, freed by `release()`) versus
+`lifetime="gc"` (DLPack; the tensor — typically an `nn.Parameter`, where it
+is the default — owns the pages, freed when the module is unloaded). See
+`tests/stf/test_device_array_dlpack.py` and
+`tests/stf/interop/test_localized_weights_example.py`.
+
 ## Documentation
 
 For complete documentation, examples, and API reference, visit:
