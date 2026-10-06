@@ -253,19 +253,19 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_mid_dmul(__fpbits64 
 
     if constexpr (_Acc == fpemu_accuracy::mid)
     {
-      // Shift the mantissa to the left by _CCCL_FP64_EXTRA_BITS (9) bits to preserve low bits
-      __a_32x2 = __shl_64(__a_32x2, _CCCL_FP64_EXTRA_BITS);
-      __b_32x2 = __shl_64(__b_32x2, _CCCL_FP64_EXTRA_BITS);
+      // Shift the mantissa to the left by _CCCL_FPEMU_EXTRA_BITS (9) bits to preserve low bits
+      __a_32x2 = __shl_64(__a_32x2, _CCCL_FPEMU_EXTRA_BITS);
+      __b_32x2 = __shl_64(__b_32x2, _CCCL_FPEMU_EXTRA_BITS);
 
       // Multiply the mantissas
       __result_32x2 = __mul_64<_Acc>(__a_32x2, __b_32x2);
 
       // Check if the carry bit is set
-      __carry_bit = (__result_32x2.x[1] >= (1 << (_CCCL_FP64_MANT_MUL_CARRY_BIT + _CCCL_FP64_EXTRA_BITS * 2 + 1)));
+      __carry_bit = (__result_32x2.x[1] >= (1 << (_CCCL_FP64_MANT_MUL_CARRY_BIT + _CCCL_FPEMU_EXTRA_BITS * 2 + 1)));
 
       // Shift the mantissa back with directed rounding for ru/rd
-      const int __mant_shift = (__carry_bit) ? (((_CCCL_FP64_EXTRA_BITS * 2) - _CCCL_FP64_MANT_MUL_SHIFT) + 1)
-                                             : ((_CCCL_FP64_EXTRA_BITS * 2) - _CCCL_FP64_MANT_MUL_SHIFT);
+      const int __mant_shift = (__carry_bit) ? (((_CCCL_FPEMU_EXTRA_BITS * 2) - _CCCL_FP64_MANT_MUL_SHIFT) + 1)
+                                             : ((_CCCL_FPEMU_EXTRA_BITS * 2) - _CCCL_FP64_MANT_MUL_SHIFT);
       __result_32x2          = __shr_64_rnd<_Rm>(__result_32x2, __mant_shift, __result_sign != 0);
     }
     else
@@ -488,7 +488,7 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
       __e = __nan_exp;
     }
 
-    const int __sh = (11 - EXTRA_BITS) + __mul_nzeros; // 2 or 3
+    const int __sh = (11 - _CCCL_FPEMU_EXTRA_BITS) + __mul_nzeros; // 2 or 3
     // 64-bit normalization (no __uint128_t). Shift the high 64 bits up by
     // sh, pulling in the top sh bits of the low word (the guard bits), and
     // fold the remaining low bits into the sticky LSB -- this is how the
@@ -528,7 +528,7 @@ __internal_fp64emu_dmul_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __
       __e = __nan_exp;
     }
 
-    uint64_t __m = ::cuda::std::bit_cast<uint64_t>(__hi) << (11 - EXTRA_BITS + __mul_nzeros);
+    uint64_t __m = ::cuda::std::bit_cast<uint64_t>(__hi) << (11 - _CCCL_FPEMU_EXTRA_BITS + __mul_nzeros);
     __r.sign     = __sign_ab;
     __r.exponent = static_cast<uint32_t>(__e);
     __r.mantissa = __m;

@@ -31,10 +31,18 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 template <thread_scope _Sco, class _CompletionF = ::cuda::std::__empty_completion>
 class barrier;
 
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
+class shared_barrier;
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
+
 template <class _Tp>
 inline constexpr bool __is_cuda_barrier_v = false;
 template <thread_scope _Sco, class _ComplFn>
 inline constexpr bool __is_cuda_barrier_v<barrier<_Sco, _ComplFn>> = true;
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
+template <>
+inline constexpr bool __is_cuda_barrier_v<shared_barrier> = true;
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 
 _CCCL_END_NAMESPACE_CUDA
 
