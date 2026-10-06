@@ -2005,7 +2005,6 @@ template <SortOrder Order,
           typename KernelSource = DeviceRadixSortKernelSource<PolicySelector, Order, KeyT, ValueT, OffsetT, DecomposerT>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
-  const experimental::RunsOn& runs_on,
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   DoubleBuffer<KeyT>& d_keys,
@@ -2015,6 +2014,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   int end_bit,
   bool can_overwrite_source_buffer,
   cudaStream_t stream,
+  const experimental::RunsOn& runs_on,
   DecomposerT decomposer                 = {},
   PolicySelector policy_selector         = {},
   KernelSource kernel_source             = {},
