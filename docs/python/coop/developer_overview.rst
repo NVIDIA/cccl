@@ -593,9 +593,12 @@ compiler see calls in all blocks, including inlined helpers, before a block
 rewrite removes their original form. It also gives storage planning the
 C++ size and alignment of each provider's scratch type.
 
-#. ``_compute_func_temp_storage_requirements`` scans constructors first,
-   then provider calls. It records payload facts, validates storage uses,
-   and collects the calls across all blocks.
+#. ``_prepare_function()`` calls ``_collect_function_calls()`` to scan
+   constructors first, then analyze each provider call once with
+   ``_analyze_provider_call()``. Each ``_RewriteMatch`` records the resolved
+   factory arguments, runtime operands, and lowering metadata.
+#. ``_collect_temp_storage_uses()`` consumes those matches and validates
+   storage ownership and descriptor uses before provider compilation.
 #. ``_prepare_ltoir_bundle_for_matches()`` removes duplicate specializations.
    It calls their factories inside ``collect_specializations()``. In this
    context, a factory records an ``Algorithm`` instead of building an
@@ -607,8 +610,13 @@ C++ size and alignment of each provider's scratch type.
    LTO-IR and scratch layouts. On a cache miss, one NVRTC compilation supplies both. On a cache
    hit, the cache supplies the saved image and its matching layouts.
 #. The algorithms retain a shared LTO-IR file. Their invocables use that
-   file as a link input. Storage planning uses the returned sizes and
+   file as a link input. ``_compute_func_temp_storage_requirements()`` uses
+   the validated storage uses and provider layouts to collect sizes and
    alignments before ``apply()`` emits arrays and scratch pointers.
+
+After preparation, ``_func_matches`` retains the completed call records by
+original assignment identity. Block matching reuses them; an assignment
+replaced by ``apply()`` no longer matches on a later visit.
 
 For the tile-copy example, the Load and Store providers can share one
 NVRTC compilation. Each call keeps its own signature and runtime operands.
@@ -660,13 +668,12 @@ visits. Block-local matches are reset for each visit.
      - Purpose
    * - Prepare the function
      - ``match()``: ``_prepare_function()``
-     - Collect all calls and storage requirements. Prepare the provider bundle
-       before changing block statements.
+     - Analyze all provider calls, validate storage uses, prepare the provider
+       bundle, then collect scratch requirements before changing statements.
    * - Match one block
-     - ``_prepare_block()``, ``_match_assignment()``,
-       ``_match_provider_call()``
-     - Record constructors, payload extents, runtime operands, and static
-       factory arguments for this block.
+     - ``_prepare_block()``, ``_match_assignment()``
+     - Select prepared call records by assignment identity. Record this
+       block's constructors and payload extents.
    * - Prepare replacements
      - ``apply()``: ``_stage_temp_storage_backing()``,
        ``_prepare_call_invocables()``
@@ -694,9 +701,9 @@ To trace these stages, start with :github:`the planner
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_planner.py>` and
 :github:`the block rewrite
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite.py>`.
-:github:`The storage scan
-<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` calls
-:github:`the bundle preparation helper
+``_prepare_function()`` coordinates :github:`storage validation and layout
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` with
+:github:`bundle preparation
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_invocables.py>`.
 :github:`Provider types and source generation
 <python/cuda_coop/cuda/coop/numba_mlir/_types.py>` connect those helpers to
@@ -1231,6 +1238,11 @@ and use ``self.state.func_ir.dump()`` again. Compare it with the earlier
 dump: group resolution has introduced private factories and constants
 for the resolved operations.
 
+To inspect the call analysis, stop in ``_analyze_provider_call()`` on
+``return _RewriteMatch(...)``. Inspect ``factory_kwargs``, ``runtime_args``,
+and ``lowering_plan`` for Load and Store. This analysis runs once per call
+during function preparation; later block matching reuses the records.
+
 Before continuing, set a breakpoint in ``_types.py``, inside
 ``prepare_ltoir_bundle()``, on the call to
 ``nvrtc.compile_with_layouts(...)``.
@@ -1248,10 +1260,11 @@ provider's source generation on another run, stop in
 ``Algorithm._source_code()`` in the same file.
 
 The Call Stack at the bundle stop also explains its timing:
-``CoopSinglePhaseRewrite.match()`` collects function-wide storage
-requirements and prepares the providers before ``apply()`` replaces the
-calls. Provider compilation can supply the size and alignment facts that
-storage planning needs.
+``CoopSinglePhaseRewrite.match()`` enters ``_prepare_function()``, which
+analyzes calls and validates storage uses before preparing the bundle.
+After compilation supplies the layouts, it collects scratch requirements
+and saves the matches for block emission. This still occurs before
+``apply()`` replaces the calls and before Numba's main type-inference pass.
 
 Set a breakpoint in ``_compiler/_nvrtc.py``, inside ``compile_impl()``,
 on ``err, prog = nvrtc.nvrtcCreateProgram(...)``. Continue and inspect

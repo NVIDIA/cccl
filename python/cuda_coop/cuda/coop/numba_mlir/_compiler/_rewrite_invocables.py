@@ -4,7 +4,7 @@
 
 """Batch provider compilation and reuse callable specializations.
 
-The whole-function storage scan collects the kernel's distinct provider
+Whole-function call analysis collects the kernel's distinct provider
 specializations before materializing any invocable. On the successful batching
 path, their generated C++ shares one translation unit and, on a cache miss,
 one NVRTC compilation to LTO IR, avoiding a separate compiler invocation for
@@ -169,9 +169,10 @@ class _InvocableRewrite:
     ) -> None:
         """Prepare a shared LTO IR bundle when distinct matches permit it.
 
-        The function-wide storage scan calls this before materializing its
-        providers. A shared translation unit lets NVRTC compile all distinct
-        provider bodies together, avoiding per-primitive compiler startup and
+        Function preparation calls this after analyzing calls and validating
+        storage uses, before materializing providers. A shared translation
+        unit lets NVRTC compile all distinct provider bodies together,
+        avoiding per-primitive compiler startup and
         repeated header processing. The resulting invocables share the LTO
         artifact; this does not combine the kernel's own compilation with it.
 
