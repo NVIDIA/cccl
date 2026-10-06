@@ -134,7 +134,7 @@ using __canonical_status_t =
     __api ? " " : "",
     static_cast<int>(__status_type.size()),
     __status_type.data(),
-    __raw_code,
+    static_cast<long long>(__raw_code), // int64_t is long on some targets; %lld wants long long
     __text ? __text : "",
     __text ? ": " : "",
     __msg);
