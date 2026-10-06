@@ -71,7 +71,7 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool isnan(double __x) noexcept
 {
   // isnan() for fp64 maps to DSETP instruction, which is generally very slow on desktop GPUs, e.g. 64:1 fp32:fp64
-  // throughput. We can optmize isnan() on desktop GPUs by using integer comparison instead
+  // throughput. We can optimize isnan() on desktop GPUs by using integer comparison instead
   // note: we cannot understand if the code will run on desktop or datacenter GPUs for some SM versions, e.g. SM80 is
   //       binary compatible with SM86
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
