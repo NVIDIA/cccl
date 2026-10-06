@@ -402,12 +402,16 @@ CUB_TEST(
   CAPTURE(c2h::type_name<predefined_op>(), logical_warp_threads, valid_items, sparse);
 
   c2h::device_vector<uint8_t> d_rand(input_size);
-  c2h::gen(C2H_SEED(5), d_rand, uint8_t{0}, static_cast<uint8_t>(2 * logical_warp_threads - 1));
+  c2h::gen(C2H_SEED(5), d_rand);
   const c2h::host_vector<uint8_t> h_rand = d_rand;
   c2h::host_vector<bool> h_in(input_size);
+
+  // generate true values with probability 1/logical_warp_threads
+  constexpr auto uint8_total    = cuda::std::numeric_limits<uint8_t>::max() + 1;
+  constexpr auto true_threshold = cuda::ceil_div(uint8_total, logical_warp_threads);
   for (unsigned i = 0; i < input_size; ++i)
   {
-    h_in[i] = (h_rand[i] < 82) == sparse; // 1/32 chance of true
+    h_in[i] = (h_rand[i] < true_threshold) == sparse;
   }
   c2h::device_vector<bool> d_in = h_in;
   c2h::device_vector<bool> d_out(output_size);
