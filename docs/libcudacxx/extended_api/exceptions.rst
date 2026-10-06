@@ -73,8 +73,20 @@ its own when the operation status says so:
                                                     : cufileop_status_error(s.err); }
     };
 
-    throw cuda::cuda_error(status, "cuFileRead failed");
+    int main()
+    try
+    {
+        CUfileError_t status = cuFileRead(...);
+        if (status.err != CU_FILE_SUCCESS)
+        {
+            throw cuda::cuda_error(status, "cuFileRead failed");
+        }
+    }
     catch (const cuda::cuda_error& e)
     {
-        if (e.holds<CUfileError_t>()) { auto s = e.status<CUfileError_t>(); /* both fields available */ }
+        if (e.holds<CUfileError_t>())
+        {
+            auto s = e.status<CUfileError_t>(); // both fields available
+        }
+        return 1;
     }

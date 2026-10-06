@@ -48,12 +48,10 @@ using __cuda_error_t = int;
 #endif
 
 #if _CCCL_HOSTED()
-/**
- * @brief The rules `cuda_error` applies to a status value of type `_Status`. The defaults are the rules
- * every CUDA library's status enumeration follows: zero is success, the value is the code, and no text is
- * known. A library whose status is a struct, or that can describe its codes, specializes
- * @ref cuda_status_traits and may inherit these defaults for the members it keeps.
- */
+//! @brief The rules `cuda_error` applies to a status value of type `_Status`. The defaults are the rules
+//! every CUDA library's status enumeration follows: zero is success, the value is the code, and no text is
+//! known. A library whose status is a struct, or that can describe its codes, specializes
+//! @ref cuda_status_traits and may inherit these defaults for the members it keeps.
 template <class _Status>
 struct cuda_status_defaults
 {
@@ -71,32 +69,30 @@ struct cuda_status_defaults
   }
 };
 
-/**
- * @brief Customization point for status types that `cuda_error` can carry. The primary template applies
- * @ref cuda_status_defaults, so any status enumeration works unchanged. Specialize it to supply text, or
- * to carry a composite status.
- *
- * Specializations for the status types of NVIDIA libraries (cuBLAS, cuSOLVER, cuFFT, cuFile, NCCL, ...)
- * are reserved to CCCL, which ships them in opt-in headers as it gains them; a program specializes
- * this trait only for its own status types, so that a later CCCL cannot collide with it.
- *
- * A composite status decides which of its fields is the code. cuFile's `CUfileError_t` carries a cuFile
- * operation status and, when that status is `CU_FILE_CUDA_DRIVER_ERROR`, a driver status as well:
- *
- * @code
- * template <> struct cuda::cuda_status_traits<CUfileError_t>
- * {
- *   static bool failed(CUfileError_t s) noexcept { return s.err != CU_FILE_SUCCESS; }
- *   static long long raw_code(CUfileError_t s) noexcept
- *   { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? static_cast<long long>(s.cu_err) : s.err; }
- *   static const char* text(CUfileError_t s) noexcept
- *   { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? cuda_status_traits<CUresult>::text(s.cu_err)
- *                                               : cufileop_status_error(s.err); }
- * };
- * @endcode
- *
- * The whole struct is stored, so a handler can read both fields through `status<CUfileError_t>()`.
- */
+//! @brief Customization point for status types that `cuda_error` can carry. The primary template applies
+//! @ref cuda_status_defaults, so any status enumeration works unchanged. Specialize it to supply text, or
+//! to carry a composite status.
+//!
+//! Specializations for the status types of NVIDIA libraries (cuBLAS, cuSOLVER, cuFFT, cuFile, NCCL, ...)
+//! are reserved to CCCL, which ships them in opt-in headers as it gains them; a program specializes
+//! this trait only for its own status types, so that a later CCCL cannot collide with it.
+//!
+//! A composite status decides which of its fields is the code. cuFile's `CUfileError_t` carries a cuFile
+//! operation status and, when that status is `CU_FILE_CUDA_DRIVER_ERROR`, a driver status as well:
+//!
+//! @code
+//! template <> struct cuda::cuda_status_traits<CUfileError_t>
+//! {
+//!   static bool failed(CUfileError_t s) noexcept { return s.err != CU_FILE_SUCCESS; }
+//!   static long long raw_code(CUfileError_t s) noexcept
+//!   { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? static_cast<long long>(s.cu_err) : s.err; }
+//!   static const char* text(CUfileError_t s) noexcept
+//!   { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? cuda_status_traits<CUresult>::text(s.cu_err)
+//!                                               : cufileop_status_error(s.err); }
+//! };
+//! @endcode
+//!
+//! The whole struct is stored, so a handler can read both fields through `status<CUfileError_t>()`.
 template <class _Status>
 struct cuda_status_traits : cuda_status_defaults<_Status>
 {};
@@ -166,15 +162,13 @@ using __canonical_status_t =
 }
 } // namespace __detail
 
-/**
- * @brief Exception thrown when a CUDA error is encountered.
- *
- * The exception carries the failing status object itself (`status<Status>()`, with `holds<Status>()` and
- * `status_type_name()` to ask what it is), its code as the API reported it (`raw_code()`), and where it was
- * raised (`location()`). Any status enumeration can be thrown; a struct status up to sixteen trivially
- * copyable bytes as well, see @ref cuda_status_traits. `status()` keeps its historical meaning: the
- * status seen as a CUDA Runtime error code.
- */
+//! @brief Exception thrown when a CUDA error is encountered.
+//!
+//! The exception carries the failing status object itself (`status<Status>()`, with `holds<Status>()` and
+//! `status_type_name()` to ask what it is), its code as the API reported it (`raw_code()`), and where it was
+//! raised (`location()`). Any status enumeration can be thrown; a struct status up to sixteen trivially
+//! copyable bytes as well, see @ref cuda_status_traits. `status()` keeps its historical meaning: the
+//! status seen as a CUDA Runtime error code.
 class cuda_error : public ::std::runtime_error
 {
   static constexpr ::cuda::std::size_t __status_capacity = 16;
