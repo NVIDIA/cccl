@@ -13,31 +13,51 @@ StatefulFunction state. They do not execute a host-side scan.
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable
+from typing import Literal, TypeVar
 
+import numpy
+
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ScanAlgorithm,
+    ScanOperator,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+)
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._stateful_function import StatefulFunction
+from .._thread_group import BlockGroup, WarpGroup
 from ._marker import group_primitive_marker
+
+_PrefixStateT = TypeVar("_PrefixStateT", bound=CommonNumericScalar)
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _FAMILY_MODULE = "cuda.coop.numba_mlir._compiler._group_scan"
 
 
 @group_operation("scan", family_module=_FAMILY_MODULE)
 def scan(
-    group: ThreadGroup,
-    value: Any,
-    prefix_state: Any = None,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    prefix_state: ThreadDataLike[_PrefixStateT] | numpy.ndarray | None = None,
     /,
     *,
-    mode: str = "exclusive",
-    scan_op: Any = None,
-    initial_value: Any = None,
-    algorithm: Any = None,
-    temp_storage: Any = None,
-    valid_items: Any = None,
-    aggregate_output: Any = None,
-    prefix_op: Any = None,
-) -> Any:
+    mode: Literal["exclusive", "inclusive"] = "exclusive",
+    scan_op: ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    initial_value: CommonNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
+    prefix_op: Callable[[_ItemT], _ItemT]
+    | StatefulFunction[_PrefixStateT, _ItemT]
+    | None = None,
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Scan with device operators, aggregate outputs, or prefix callbacks.
 
     Extends :func:`cuda.coop.scan` with the options below. Group requirements,
@@ -106,6 +126,16 @@ def scan(
     :func:`~cuda.coop.numba_mlir.exclusive_scan` for a partial warp and
     aggregate output, and :func:`~cuda.coop.numba_mlir.exclusive_sum` for a
     stateful prefix across tiles.
+
+    Compare inclusive maximum prefixes with inclusive sums over the same
+    input.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_prefix_examples.py
+        :language: python
+        :start-after: # qualified-prefix-example-begin
+        :end-before: # qualified-prefix-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(
@@ -126,19 +156,21 @@ def scan(
 
 @group_operation("exclusive_scan", family_module=_FAMILY_MODULE)
 def exclusive_scan(
-    group: ThreadGroup,
-    value: Any,
-    prefix_state: Any = None,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    prefix_state: ThreadDataLike[_PrefixStateT] | numpy.ndarray | None = None,
     /,
     *,
-    scan_op: Any = None,
-    initial_value: Any = None,
-    algorithm: Any = None,
-    temp_storage: Any = None,
-    valid_items: Any = None,
-    aggregate_output: Any = None,
-    prefix_op: Any = None,
-) -> Any:
+    scan_op: ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    initial_value: CommonNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
+    prefix_op: Callable[[_ItemT], _ItemT]
+    | StatefulFunction[_PrefixStateT, _ItemT]
+    | None = None,
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return an exclusive prefix using a built-in or device operator.
 
     Extends :func:`cuda.coop.exclusive_scan` with the parameters and return
@@ -181,18 +213,20 @@ def exclusive_scan(
 
 @group_operation("inclusive_scan", family_module=_FAMILY_MODULE)
 def inclusive_scan(
-    group: ThreadGroup,
-    value: Any,
-    prefix_state: Any = None,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    prefix_state: ThreadDataLike[_PrefixStateT] | numpy.ndarray | None = None,
     /,
     *,
-    scan_op: Any = None,
-    algorithm: Any = None,
-    temp_storage: Any = None,
-    valid_items: Any = None,
-    aggregate_output: Any = None,
-    prefix_op: Any = None,
-) -> Any:
+    scan_op: ScanOperator | Callable[[_ItemT, _ItemT], _ItemT] | None = None,
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
+    prefix_op: Callable[[_ItemT], _ItemT]
+    | StatefulFunction[_PrefixStateT, _ItemT]
+    | None = None,
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return an inclusive prefix using a built-in or device operator.
 
     Extends :func:`cuda.coop.inclusive_scan` with the parameters and return
@@ -234,17 +268,19 @@ def inclusive_scan(
 
 @group_operation("exclusive_sum", family_module=_FAMILY_MODULE)
 def exclusive_sum(
-    group: ThreadGroup,
-    value: Any,
-    prefix_state: Any = None,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    prefix_state: ThreadDataLike[_PrefixStateT] | numpy.ndarray | None = None,
     /,
     *,
-    algorithm: Any = None,
-    temp_storage: Any = None,
-    valid_items: Any = None,
-    aggregate_output: Any = None,
-    prefix_op: Any = None,
-) -> Any:
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
+    prefix_op: Callable[[_ItemT], _ItemT]
+    | StatefulFunction[_PrefixStateT, _ItemT]
+    | None = None,
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return exclusive sums, optionally carrying a prefix across block tiles.
 
     Extends :func:`cuda.coop.exclusive_sum` with the parameters and return
@@ -287,17 +323,19 @@ def exclusive_sum(
 
 @group_operation("inclusive_sum", family_module=_FAMILY_MODULE)
 def inclusive_sum(
-    group: ThreadGroup,
-    value: Any,
-    prefix_state: Any = None,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    prefix_state: ThreadDataLike[_PrefixStateT] | numpy.ndarray | None = None,
     /,
     *,
-    algorithm: Any = None,
-    temp_storage: Any = None,
-    valid_items: Any = None,
-    aggregate_output: Any = None,
-    prefix_op: Any = None,
-) -> Any:
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
+    prefix_op: Callable[[_ItemT], _ItemT]
+    | StatefulFunction[_PrefixStateT, _ItemT]
+    | None = None,
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return inclusive sums, optionally carrying a prefix across block tiles.
 
     Extends :func:`cuda.coop.inclusive_sum` with the parameters and return
@@ -313,6 +351,17 @@ def inclusive_sum(
     --------
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
         C++ primitive types providing ``InclusiveSum``.
+
+    Examples
+    --------
+    Compute inclusive sums without changing the loaded input payload.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_prefix_examples.py
+        :language: python
+        :start-after: # qualified-prefix-example-begin
+        :end-before: # qualified-prefix-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(
