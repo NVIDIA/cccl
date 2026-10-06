@@ -113,6 +113,11 @@ struct __sstring
 template <class _Tp, size_t _Np>
 struct __static_nameof;
 
+// GCC 7 cannot constant-evaluate null comparisons with pointers into a
+// class template's static data member. Use a copy with internal linkage.
+template <class _Tp, size_t _Np>
+static constexpr __sstring<_Np> __static_nameof_v = __static_nameof<_Tp, _Np>::value;
+
 template <size_t _Np, size_t _Mp, size_t... _Is>
 _CCCL_HOST_DEVICE_API constexpr __sstring<_Np>
 __make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
@@ -126,8 +131,8 @@ template <class _Tp, size_t _Np>
 {
   if constexpr (_Np == size_t(-1))
   {
-    using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
-    return string_view{_TpName::value.__str_, _TpName::value.__len_};
+    constexpr auto& __name = __static_nameof_v<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
+    return string_view{__name.__str_, __name.__len_};
   }
   else
   {
