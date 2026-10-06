@@ -196,6 +196,24 @@ Kernels and their generated C++
      overflow-wrap: anywhere;
    }
    .coop-shim-pair .sd-col { width: auto; min-width: 0; }
+   .coop-compiler-tabs { container-type: inline-size; }
+   .coop-compiler-tabs .coop-compiler-diagram-mobile {
+     display: none;
+     max-width: 360px;
+     margin-inline: auto;
+   }
+   #compiler-phases-and-handoffs code.literal .pre {
+     white-space: normal;
+     overflow-wrap: anywhere;
+   }
+   @container (max-width: 760px) {
+     .coop-compiler-tabs .coop-compiler-diagram-desktop { display: none; }
+     .coop-compiler-tabs .coop-compiler-diagram-mobile { display: block; }
+   }
+   @media print {
+     .coop-compiler-tabs .coop-compiler-diagram-desktop { display: block; }
+     .coop-compiler-tabs .coop-compiler-diagram-mobile { display: none; }
+   }
    </style>
 
 The following pairs use source captured while compiling real kernels. Each
@@ -454,6 +472,239 @@ The common API primitives in ``_core/api/`` are compiler markers with shared
 signatures and validation rules. Numba's planner recognizes their identity
 and binds the call arguments. Reading the Python body alone does not show
 the path that runs during kernel compilation.
+
+.. _cuda.coop.compiler_flow:
+
+Compiler phases and handoffs
+----------------------------
+
+The figures show a new kernel compilation in Numba-CUDA-MLIR 0.5.x.
+Read each figure from top to bottom. These compiler stages run on the host.
+The GPU executes the kernel after compilation and linking finish.
+
+The first figure locates cooperative planning within the compiler pipeline.
+It groups small compiler passes by purpose. The green block is the single
+registered ``cuda.coop`` planner. Select **Python classes** to see the classes
+and methods that implement the same phases.
+
+.. tab-set::
+   :class: coop-compiler-tabs
+
+   .. tab-item:: Overview
+
+      .. figure:: visualizations/compiler-phases.svg
+         :alt: Seven compilation phases. The cooperative planner runs after early rewrites and device-helper inlining, before the remaining untyped passes and type inference.
+         :width: 100%
+
+         Cooperative planning runs before the main type-inference pass.
+
+   .. tab-item:: Python classes
+
+      .. figure:: visualizations/compiler-phases-classes.svg
+         :alt: The seven phases with their Python classes. PostInlineWholeFunctionPlanners calls CoopWholeFunctionPlanner, which uses CoopSinglePhaseRewrite before MLIRTypeInference. MLIRBackend and MLIRLower prepare the kernel for compilation and linking.
+         :width: 100%
+         :figclass: coop-compiler-diagram-desktop
+
+         The classes follow the same seven phases.
+
+      .. figure:: visualizations/compiler-phases-classes-mobile.svg
+         :alt: The seven compiler phases with their Python classes, arranged vertically. CoopWholeFunctionPlanner and CoopSinglePhaseRewrite run before MLIRTypeInference, then MLIRBackend and MLIRLower lower the kernel.
+         :width: 100%
+         :figclass: coop-compiler-diagram-mobile
+
+         The classes follow the same seven phases.
+
+      Mixin methods run on their owning planner or rewriter. They are not
+      separate compiler passes. ``_RewriteMatch`` carries data between
+      matching and replacement.
+
+Numba first builds *untyped IR*: statements and expressions without a full
+map of their types. Argument types and some constants are already known.
+Early rewrites fold constants and remove dead branches. Device-helper
+inlining then makes supported helper calls visible in the caller's IR.
+
+``PostInlineWholeFunctionPlanners`` calls ``CoopWholeFunctionPlanner``
+at this point. The planner resolves groups, prepares providers, and rewrites
+cooperative calls. It uses argument types, constants, and value definitions
+to infer the payload facts that provider selection needs. This work runs before
+Numba's main type-inference pass.
+
+After planning, Numba processes literals, reconstructs static single
+assignment (SSA) form, and propagates literal values. ``MLIRTypeInference``
+then builds the type map and call signatures. Typed passes remove phi nodes,
+inline overloads, and run the after-inference rewrites. MLIR lowering and
+optimization follow.
+
+``GenericRewrites`` runs the compiler's ``before-inference`` rewrite
+registry. ``NopythonRewrites`` runs its ``after-inference`` registry.
+``CoopSinglePhaseRewrite`` is a helper inside the whole-function planner;
+it has no separate registration in either registry. Its name does not imply
+a second cooperative pass after typing.
+
+The next figure expands the handoffs between the compiler and the CUDA
+tools. It shows successful bundling on a provider-cache miss. NVRTC compiles
+the generated C++ providers. Numba-CUDA-MLIR compiles the surrounding Python
+kernel and supplies both sets of link inputs to nvJitLink.
+
+.. tab-set::
+   :class: coop-compiler-tabs
+
+   .. tab-item:: Overview
+
+      .. figure:: visualizations/compiler-swimlane.svg
+         :alt: Four actor swimlanes show Numba passing inlined IR to cuda.coop, cuda.coop sending a provider bundle to NVRTC, NVRTC returning LTO-IR and scratch layouts, and Numba later linking the kernel and provider inputs with nvJitLink.
+         :width: 100%
+
+         Provider LTO-IR returns before type inference. The final link happens
+         after Numba compiles the kernel.
+
+   .. tab-item:: Python classes
+
+      .. figure:: visualizations/compiler-swimlane-classes.svg
+         :alt: Class-level handoffs across Numba, cuda.coop, NVRTC, and nvJitLink. Algorithm bundles compile during match. Invocable carries provider files into typing, ExternFunction describes a named call, and MLIRLower emits the symbolic call before linking.
+         :width: 100%
+         :figclass: coop-compiler-diagram-desktop
+
+         The rewrite binds an ``Invocable``. Linking resolves or inlines
+         the provider symbol.
+
+      .. figure:: visualizations/compiler-swimlane-classes-mobile.svg
+         :alt: Class-level compilation handoffs in time order, with each actor named. CoopSinglePhaseRewrite binds Invocable objects, typing builds ExternFunction descriptors, MLIRLower emits symbolic calls, and nvJitLink returns a cubin.
+         :width: 100%
+         :figclass: coop-compiler-diagram-mobile
+
+         The rewrite binds an ``Invocable``. Linking resolves or inlines
+         the provider symbol.
+
+      Solid arrows show inputs or calls. Dashed arrows show returned results.
+      This path uses ``Algorithm`` providers. Direct C-ABI providers and extra
+      support images use other paths.
+
+The figure shows the default LTO path. Debug settings or extra PTX inputs
+can change how Numba compiles the kernel's link input. The provider bundle
+still contains LTO-IR. See :ref:`coop-numba-compilation-reuse` for cache
+controls and artifact lifetime.
+
+Collect the providers before rewriting calls
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The first ``match()`` visit prepares the whole function. This order lets the
+compiler see calls in all blocks, including inlined helpers, before a block
+rewrite removes their original form. It also gives storage planning the
+C++ size and alignment of each provider's scratch type.
+
+#. ``_compute_func_temp_storage_requirements`` scans constructors first,
+   then provider calls. It records payload facts, validates storage uses,
+   and collects the calls across all blocks.
+#. ``_prepare_ltoir_bundle_for_matches()`` removes duplicate specializations.
+   It calls their factories inside ``collect_specializations()``. In this
+   context, a factory records an ``Algorithm`` instead of building an
+   ``Invocable`` immediately.
+#. ``prepare_ltoir_bundle()`` combines compatible algorithms into one C++
+   source unit. It shares the includes and emits each distinct provider
+   body and its ABI wrappers.
+#. Bundle preparation calls ``compile_with_layouts()`` to get the provider
+   LTO-IR and scratch layouts. On a cache miss, one NVRTC compilation supplies both. On a cache
+   hit, the cache supplies the saved image and its matching layouts.
+#. The algorithms retain a shared LTO-IR file. Their invocables use that
+   file as a link input. Storage planning uses the returned sizes and
+   alignments before ``apply()`` emits arrays and scratch pointers.
+
+For the tile-copy example, the Load and Store providers can share one
+NVRTC compilation. Each call keeps its own signature and runtime operands.
+Bundling requires compatible specializations and at least two distinct
+providers. A single provider uses its individual compilation path. If the
+optional bundle cannot be prepared, the rewrite can materialize providers
+individually. Extra support images and kernel compilation remain separate.
+Thus, one provider bundle does not guarantee one NVRTC call for every kernel
+compilation.
+
+Rewrite calls before the device address is known
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The rewrite needs the provider's symbol name and calling convention.
+It does not need the provider's final device address. ``Algorithm`` uses
+the same qualified name for the generated wrapper and its call descriptor.
+
+#. ``match()`` prepares the provider bundle and creates invocables for
+   calls that need scratch storage. Their LTO-IR and scratch layouts are
+   already available. ``apply()`` reuses these invocables or creates others.
+#. ``apply()`` binds an ``Invocable`` with ``ir.Global`` and emits an
+   ``ir.Expr.call``. The global contains a Python object for the compiler,
+   not a device function pointer. The object retains the provider link files.
+#. During typing, ``Invocable._numba_type_`` builds local overload templates.
+   ``Algorithm.codegen_method()`` creates an ``ExternFunction`` with the
+   symbol name, signature, ABI, and link files. The compiler uses this
+   description; it does not execute ``Invocable.__call__``.
+#. ``MLIRLower`` declares the external symbol, emits a symbolic ``func.call``,
+   and collects the link files. Kernel compilation produces the other
+   LTO-IR input. nvJitLink resolves the symbol across these inputs and can
+   inline the provider into the kernel.
+#. ``CodeLibrary.get_cufunc()`` loads the linked cubin and obtains the kernel's
+   ``CUfunction`` handle. This path does not request a separate provider handle.
+
+Read ``match()`` and ``apply()`` by phase
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``_CallRewriting._rewrite_calls()`` visits each IR block. It calls
+``match()`` and, when work is present, installs the block returned by
+``apply()``. Function-wide facts and provider caches survive these block
+visits. Block-local matches are reset for each visit.
+
+.. list-table:: Main responsibilities in ``CoopSinglePhaseRewrite``
+   :header-rows: 1
+   :widths: 22 38 40
+
+   * - Phase
+     - Entry points
+     - Purpose
+   * - Prepare the function
+     - ``match()``: ``_prepare_function()``
+     - Collect all calls and storage requirements. Prepare the provider bundle
+       before changing block statements.
+   * - Match one block
+     - ``_prepare_block()``, ``_match_assignment()``,
+       ``_match_provider_call()``
+     - Record constructors, payload extents, runtime operands, and static
+       factory arguments for this block.
+   * - Prepare replacements
+     - ``apply()``: ``_stage_temp_storage_backing()``,
+       ``_prepare_call_invocables()``
+     - Plan and stage shared backing storage. Bind each call to its
+       specialization.
+   * - Emit replacements
+     - ``_emit_thread_data_array()``, ``_emit_temp_storage()``,
+       ``_emit_provider_call()``
+     - Create payload arrays and scratch views. Emit provider calls, result
+       handling, and the required storage-reuse barriers.
+   * - Clean unused bindings
+     - ``_remove_unused_factory_arguments()``,
+       ``_clear_unused_payload_callees()``
+     - Remove unused compile-time arguments and constructor references.
+       Check uses in other blocks. Refresh the typing context.
+
+``match()`` can compile providers and update caches, but it preserves the
+block's statements. ``apply()`` builds the replacement block. It can also
+stage shared backing storage in the entry block and clear unused constructor
+bindings in other blocks. Their boundary separates collection from IR
+replacement; compilation can occur on either side when an individual
+provider still needs materialization.
+
+To trace these stages, start with :github:`the planner
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_planner.py>` and
+:github:`the block rewrite
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite.py>`.
+:github:`The storage scan
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` calls
+:github:`the bundle preparation helper
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_invocables.py>`.
+:github:`Provider types and source generation
+<python/cuda_coop/cuda/coop/numba_mlir/_types.py>` connect those helpers to
+:github:`the NVRTC interface
+<python/cuda_coop/cuda/coop/numba_mlir/_compiler/_nvrtc.py>`.
+The :ref:`cuda.coop.debugger_walkthrough` provides breakpoints for the same
+flow. The remaining passes belong to the installed compiler's
+``mlir_compiler.py``, ``mlir_lowering.py``, and ``mlir_optimization.py``.
 
 .. _the-portable-core-and-the-numba-backend:
 .. _coop-implementation-families:
@@ -981,7 +1232,8 @@ dump: group resolution has introduced private factories and constants
 for the resolved operations.
 
 Before continuing, set a breakpoint in ``_types.py``, inside
-``prepare_ltoir_bundle()``, on ``_, ltoir = nvrtc.compile(...)``.
+``prepare_ltoir_bundle()``, on the call to
+``nvrtc.compile_with_layouts(...)``.
 At that stop, inspect ``src`` and:
 
 .. code-block:: python
@@ -1017,7 +1269,8 @@ Open that file for a more convenient view of the complete source.
 Materialize the payload and device calls
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Set a breakpoint in ``CoopSinglePhaseRewrite.apply()`` in
+Set a breakpoint in the ``_prepare_call_invocables()`` method of
+``CoopSinglePhaseRewrite`` in
 ``_compiler/_rewrite.py`` on
 ``self._record_invocable_specialization(invocable)``. Continue to it.
 The preceding statement has materialized a callable provider for a match.
