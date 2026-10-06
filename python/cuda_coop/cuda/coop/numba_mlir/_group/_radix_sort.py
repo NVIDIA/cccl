@@ -14,7 +14,7 @@ ordinary Numba type inference.
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 
 import numpy
 
@@ -34,25 +34,23 @@ from ._marker import group_primitive_marker
 
 _ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
 
+_IntegerKey: TypeAlias = (
+    int
+    | numpy.int32
+    | numpy.uint32
+    | numpy.int64
+    | numpy.uint64
+    | CompilerIntegerLike
+)
 _KeyT = TypeVar(
     "_KeyT",
-    bound=(
-        "int | numpy.int32"
-        " | numpy.uint32 | numpy.int64"
-        " | numpy.uint64 | CompilerIntegerLike"
-        " | float | numpy.float32"
-        " | numpy.float64 | CompilerScalarLike"
-    ),
+    bound=_IntegerKey
+    | float
+    | numpy.float32
+    | numpy.float64
+    | CompilerScalarLike,
 )
-
-_RankKeyT = TypeVar(
-    "_RankKeyT",
-    bound=(
-        "int | numpy.int32"
-        " | numpy.uint32 | numpy.int64"
-        " | numpy.uint64 | CompilerIntegerLike"
-    ),
-)
+_RankKeyT = TypeVar("_RankKeyT", bound=_IntegerKey)
 
 
 @group_operation(
