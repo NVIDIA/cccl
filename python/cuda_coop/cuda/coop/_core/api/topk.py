@@ -17,27 +17,38 @@ storage descriptor. Calls require an active compiler backend.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
-from ..thread_group import ThreadGroup
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    IntegralScalar,
+    ThreadDataLike,
+)
 from ._dispatch import (
     _backend_module_name,
     _common_group_operation,
     _group_primitive_marker,
 )
-from ._payload import TempStorageLike, _validate_common_numeric_value
+from ._payload import _validate_common_numeric_value
+from .temp_storage import TempStorageLike as TempStorage
+from .thread_group import BlockGroup
+
+_K = TypeVar("_K", bound=CommonNumericScalar)
+
+_V = TypeVar("_V", bound=CommonNumericScalar)
 
 
 @_common_group_operation("topk_min_keys", group_kinds=("block",))
 def topk_min_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_K],
     /,
     *,
-    k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> ThreadDataLike[_K]:
     """Select the smallest keys in a block.
 
     Parameters
@@ -97,6 +108,19 @@ def topk_min_keys(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.topk_min_keys
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Select the smallest and largest eight keys from a partial tile. If
+    fewer than eight keys are valid, store only that many results. The
+    selected keys are unordered.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
+        :language: python
+        :start-after: # topk-keys-example-begin
+        :end-before: # topk-keys-example-end
+        :dedent: 4
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -118,15 +142,15 @@ def topk_min_keys(
 
 @_common_group_operation("topk_min_pairs", group_kinds=("block",))
 def topk_min_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_K],
+    values: CommonThreadDataLike[_V],
     /,
     *,
-    k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]:
     """Select the smallest key/value pairs in a block.
 
     Parameters
@@ -191,6 +215,19 @@ def topk_min_pairs(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.topk_min_pairs
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Select the smallest eight keys and their original positions from a
+    partial tile. Each selected position still identifies its key; the
+    selected pairs are unordered.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
+        :language: python
+        :start-after: # topk-min-pairs-example-begin
+        :end-before: # topk-min-pairs-example-end
+        :dedent: 4
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -220,14 +257,14 @@ def topk_min_pairs(
 
 @_common_group_operation("topk_max_keys", group_kinds=("block",))
 def topk_max_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_K],
     /,
     *,
-    k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> ThreadDataLike[_K]:
     """Select the largest keys in a block.
 
     Parameters
@@ -287,6 +324,19 @@ def topk_max_keys(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.topk_max_keys
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Select the smallest and largest eight keys from a partial tile. If
+    fewer than eight keys are valid, store only that many results. The
+    selected keys are unordered.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
+        :language: python
+        :start-after: # topk-keys-example-begin
+        :end-before: # topk-keys-example-end
+        :dedent: 4
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(
@@ -308,15 +358,15 @@ def topk_max_keys(
 
 @_common_group_operation("topk_max_pairs", group_kinds=("block",))
 def topk_max_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_K],
+    values: CommonThreadDataLike[_V],
     /,
     *,
-    k: Any,
-    valid_items: object = None,
-    temp_storage: TempStorageLike | None = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]:
     """Select the largest key/value pairs in a block.
 
     Parameters
@@ -381,6 +431,18 @@ def topk_max_pairs(
         Numba-CUDA-MLIR payloads and qualified controls.
     cuda.coop.cutlass.topk_max_pairs
         CuTe payloads and qualified controls.
+
+    Examples
+    --------
+    Select the largest eight keys and their original positions from a
+    partial tile. Store only the selected prefix; the pairs are unordered.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_topk_examples.py
+        :language: python
+        :start-after: # topk-example-begin
+        :end-before: # topk-example-end
+        :dedent: 4
     """
     if _backend_module_name() is not None:
         _validate_common_numeric_value(

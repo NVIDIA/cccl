@@ -11,10 +11,26 @@ new ThreadData, so inputs remain unchanged. Keys and values keep independent
 element types and need matching extents. The selected prefix is unsorted.
 """
 
-from cuda.coop._core.thread_group import ThreadGroup
+from __future__ import annotations
 
+from typing import TypeVar
+
+from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import IntegralScalar
+
+from .._core.api.thread_group import BlockGroup
+from .._typing import CommonNumericScalar, CommonThreadDataLike, TempStorageLike
 from ._temp_storage import TempStorage
-from ._thread_data import _snapshot_readable_payload
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _snapshot_readable_payload,
+)
+
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+
+_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
 
 
 def _topk(group, keys, values, *, selection, k, valid_items, temp_storage):
@@ -61,7 +77,17 @@ def _topk(group, keys, values, *, selection, k, valid_items, temp_storage):
     )
 
 
-def topk_min_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
+def topk_min_keys(
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    /,
+    *,
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData:
     """Select the block's smallest keys without changing the input.
 
     This qualified form of :func:`cuda.coop.topk_min_keys` also accepts CuTe
@@ -116,6 +142,22 @@ def topk_min_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
     --------
     cuda.coop.cutlass.topk_max_keys
     cuda.coop.cutlass.topk_min_pairs
+
+    Examples
+    --------
+    Select the seven smallest and seven largest keys. All threads
+    participate, and each store writes only the seven defined positions.
+    Neither selection sorts its output.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-keys-example-begin
+        :end-before: # qualified-topk-keys-example-end
+        :dedent: 4
     """
     return _topk(
         group,
@@ -128,7 +170,17 @@ def topk_min_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
     )
 
 
-def topk_max_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
+def topk_max_keys(
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    /,
+    *,
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData:
     """Select the block's largest keys without changing the input.
 
     This qualified form of :func:`cuda.coop.topk_max_keys` accepts the same
@@ -168,6 +220,21 @@ def topk_max_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
     --------
     cuda.coop.cutlass.topk_min_keys
     cuda.coop.cutlass.topk_max_pairs
+
+    Examples
+    --------
+    Select the seven largest and seven smallest keys, storing only
+    defined output positions. The selected keys are unsorted.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-keys-example-begin
+        :end-before: # qualified-topk-keys-example-end
+        :dedent: 4
     """
     return _topk(
         group,
@@ -181,8 +248,19 @@ def topk_max_keys(group, keys, /, *, k, valid_items=None, temp_storage=None):
 
 
 def topk_min_pairs(
-    group, keys, values, /, *, k, valid_items=None, temp_storage=None
-):
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    values: CommonThreadDataLike[_ValueT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    /,
+    *,
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> tuple[ThreadData, ThreadData]:
     """Select the smallest keys and their associated values.
 
     This qualified form of :func:`cuda.coop.topk_min_pairs` accepts CuTe
@@ -224,6 +302,21 @@ def topk_min_pairs(
     --------
     cuda.coop.cutlass.topk_min_keys
     cuda.coop.cutlass.topk_max_pairs
+
+    Examples
+    --------
+    Select seven minimum and maximum key/index pairs from a partial
+    input tile. Original indices remain associated with their selected keys.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-pairs-example-begin
+        :end-before: # qualified-topk-pairs-example-end
+        :dedent: 4
     """
     if values is None:
         raise TypeError("TopK values must be a numeric ThreadData payload")
@@ -239,8 +332,19 @@ def topk_min_pairs(
 
 
 def topk_max_pairs(
-    group, keys, values, /, *, k, valid_items=None, temp_storage=None
-):
+    group: BlockGroup,
+    keys: CommonThreadDataLike[_KeyT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    values: CommonThreadDataLike[_ValueT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    /,
+    *,
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> tuple[ThreadData, ThreadData]:
     """Select the largest keys and their associated values.
 
     This qualified form of :func:`cuda.coop.topk_max_pairs` accepts the same
@@ -282,6 +386,21 @@ def topk_max_pairs(
     --------
     cuda.coop.cutlass.topk_min_pairs
     cuda.coop.cutlass.topk_max_keys
+
+    Examples
+    --------
+    Select seven maximum and minimum key/index pairs from a partial
+    input tile. Stores exclude the undefined output tail.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-pairs-example-begin
+        :end-before: # qualified-topk-pairs-example-end
+        :dedent: 4
     """
     if values is None:
         raise TypeError("TopK values must be a numeric ThreadData payload")
