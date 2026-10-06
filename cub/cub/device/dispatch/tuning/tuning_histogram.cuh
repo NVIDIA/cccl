@@ -226,6 +226,7 @@ struct policy_selector
   int num_channels;
   int num_active_channels;
   bool is_even;
+  type_t sample_type;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
@@ -237,6 +238,32 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
+    // SM107 adds dedicated single-channel HistogramRange sweep tuning for 16-bit samples and non-floating-point
+    // 32-bit samples. Other cases retain the established SM90 policy.
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && num_channels == 1
+        && num_active_channels == 1 && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
+        && !is_even)
+    {
+      auto sweep = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
+      if (sample_size_bytes == 2)
+      {
+        sweep = HistogramPrivatizationPolicy{1024, 9, 4, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, false};
+      }
+      else if (sample_size_bytes == 4 && sample_type != type_t::float32)
+      {
+        sweep = HistogramPrivatizationPolicy{992, 9, 2, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, true, false};
+      }
+      else
+      {
+        sweep = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
+      }
+
+      if (sample_size_bytes == 2 || (sample_size_bytes == 4 && sample_type != type_t::float32))
+      {
+        return HistogramPolicy{sweep, sweep, sweep, 256, 1024, 0, 0, 0, 0, 0, 0, 8192};
+      }
+    }
+
     // SM100 and SM120 use the autoresearch launch shapes. Their dynamic-SMEM budgets differ because SM100 permits
     // 227 KiB per block while SM120 permits 99 KiB per block.
     if (cc == ::cuda::compute_capability{10, 0} || cc == ::cuda::compute_capability{12, 0})
@@ -421,7 +448,8 @@ struct policy_selector_from_types
       int{sizeof(SampleT)},
       NumChannels,
       NumActiveChannels,
-      IsEven}(cc);
+      IsEven,
+      classify_type<SampleT>}(cc);
   }
 };
 } // namespace detail::histogram
