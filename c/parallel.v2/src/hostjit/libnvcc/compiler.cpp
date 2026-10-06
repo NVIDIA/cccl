@@ -1564,6 +1564,13 @@ public:
     appendCudaToolkitIncludePaths(arg_strings, config);
     arg_strings.push_back("-include");
     arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/__clang_cuda_runtime_wrapper.h");
+    // Self-contained __cxa_guard_acquire/release/abort (see cxa_guard.h):
+    // generated host code can contain guarded function-local statics (e.g.
+    // CUB's device_count_cached_value()), and must not depend on borrowing
+    // those symbols from whatever libstdc++ the host process happens to
+    // have loaded.
+    arg_strings.push_back("-include");
+    arg_strings.push_back(config.hostjit_include_path + "/hostjit/cuda_minimal/stubs/cxa_guard.h");
 
     appendIncludePaths(arg_strings, config);
 
