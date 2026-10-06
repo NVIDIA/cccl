@@ -97,7 +97,7 @@ CUB_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
       bin_counts_even<int32_t>(parse_input_shape("concentrated:1.0"), input_size, num_bins, lower_bound, upper_bound);
     const double mean = static_cast<double>(input_size) / num_bins;
     REQUIRE(nonzero_bins(counts) == num_bins);
-    for (long long c : counts)
+    for (const long long c : counts)
     {
       REQUIRE(std::abs(c - mean) < 0.15 * mean);
     }
@@ -147,7 +147,7 @@ CUB_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_sh
   const int num_bins = 64;
   // Different seeds should move the hot bin (spike-slab at entropy 0.3).
   std::map<int, int> argmax_seen;
-  for (uint64_t seed : {1ull, 2ull, 3ull, 4ull, 5ull})
+  for (const uint64_t seed : {1ull, 2ull, 3ull, 4ull, 5ull})
   {
     const auto counts = bin_counts_even<int32_t>(
       parse_input_shape("concentrated:0.3"), input_size, num_bins, lower_bound, upper_bound, seed);
@@ -290,7 +290,7 @@ CUB_TEST("histogram input: RANGE path maps bins into level intervals", "[histogr
 
   // All samples equal (constant) and inside the same level interval.
   const int32_t v0 = h[0];
-  for (int32_t v : h)
+  for (const int32_t v : h)
   {
     REQUIRE(v == v0);
   }
@@ -302,7 +302,7 @@ CUB_TEST("histogram input: RANGE path maps bins into level intervals", "[histogr
     parse_input_shape("strided_sweep"), input_size, num_bins, thrust::raw_pointer_cast(d_levels.data()));
   h = d_input;
   std::vector<int64_t> interval_counts(num_bins, 0);
-  for (int32_t value : h)
+  for (const int32_t value : h)
   {
     const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), value);
     REQUIRE(upper != h_levels.begin());

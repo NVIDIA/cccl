@@ -156,10 +156,10 @@ struct even_bin_to_value
 
   __host__ __device__ SampleT operator()(int32_t bin) const
   {
-    double v = lower_level + (static_cast<double>(bin) + 0.5) * bin_width;
     if constexpr (::cuda::std::is_integral_v<SampleT>)
     {
-      double f = ::floor(v);
+      const double v = lower_level + (static_cast<double>(bin) + 0.5) * bin_width;
+      double f       = ::floor(v);
       if (f < static_cast<double>(lower))
       {
         f = static_cast<double>(lower);
@@ -172,6 +172,7 @@ struct even_bin_to_value
     }
     else
     {
+      double v = lower_level + (static_cast<double>(bin) + 0.5) * bin_width;
       if (v < static_cast<double>(lower))
       {
         v = static_cast<double>(lower);
@@ -370,7 +371,7 @@ inline double normalized_entropy(const std::vector<double>& pmf)
     return 0.0;
   }
   double h = 0.0;
-  for (double p : pmf)
+  for (const double p : pmf)
   {
     if (p > 0.0)
     {
@@ -448,7 +449,7 @@ inline double softmax_pmf_into(const std::vector<double>& logits, double tempera
 {
   const int32_t num_bins = static_cast<int32_t>(logits.size());
   double max_logit       = logits[0];
-  for (double value : logits)
+  for (const double value : logits)
   {
     max_logit = value > max_logit ? value : max_logit;
   }
@@ -561,7 +562,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int32_t num_bins, Mapper m
   // Use a permutation of round-robin bins for exact uniform counts.
   if (spec.shape == InputShape::concentrated && knob_or(spec, default_concentrated_entropy) >= 1.0)
   {
-    shuffled_uniform_functor<SampleT, Mapper> fn{static_cast<uint64_t>(n), num_bins, seed, mapper};
+    const shuffled_uniform_functor<SampleT, Mapper> fn{static_cast<uint64_t>(n), num_bins, seed, mapper};
     thrust::tabulate(out.begin(), out.end(), fn);
     return out;
   }
@@ -578,7 +579,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int32_t num_bins, Mapper m
     }
     h_cdf[num_bins - 1]                 = 1.0;
     thrust::device_vector<double> d_cdf = h_cdf;
-    cdf_sample_functor<SampleT, Mapper> fn{thrust::raw_pointer_cast(d_cdf.data()), num_bins, seed, mapper};
+    const cdf_sample_functor<SampleT, Mapper> fn{thrust::raw_pointer_cast(d_cdf.data()), num_bins, seed, mapper};
     thrust::tabulate(out.begin(), out.end(), fn);
     return out;
   }
@@ -589,7 +590,7 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int32_t num_bins, Mapper m
       throw std::runtime_error("stale_resident is not available until the shared-memory cache policy lands");
     case InputShape::strided_sweep: {
       const uint64_t stride = spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : default_strided_stride;
-      strided_functor<SampleT, Mapper> fn{num_bins, stride, mapper};
+      const strided_functor<SampleT, Mapper> fn{num_bins, stride, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
@@ -598,14 +599,14 @@ generate_shape_impl(const ShapeSpec& spec, OffsetT n, int32_t num_bins, Mapper m
         spec.has_knob ? static_cast<uint64_t>(std::llround(spec.knob)) : default_sawtooth_period;
       const uint64_t period =
         (requested == 0) ? static_cast<uint64_t>(num_bins) : std::min(requested, static_cast<uint64_t>(num_bins));
-      sawtooth_functor<SampleT, Mapper> fn{period, mapper};
+      const sawtooth_functor<SampleT, Mapper> fn{period, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
     case InputShape::temporal_phases: {
       const int32_t requested = spec.has_knob ? static_cast<int32_t>(std::llround(spec.knob)) : default_temporal_phases;
       const int32_t phases    = std::max<int32_t>(1, std::min(requested, num_bins));
-      phases_functor<SampleT, Mapper> fn{num_bins, phases, static_cast<uint64_t>(n), offset, mapper};
+      const phases_functor<SampleT, Mapper> fn{num_bins, phases, static_cast<uint64_t>(n), offset, mapper};
       thrust::tabulate(out.begin(), out.end(), fn);
       break;
     }
@@ -623,7 +624,7 @@ thrust::device_vector<SampleT> generate_histogram_input_even(
   const ShapeSpec& spec, OffsetT n, int32_t num_bins, SampleT lower, SampleT upper, uint64_t seed = 42)
 {
   const double bin_width = (static_cast<double>(upper) - static_cast<double>(lower)) / static_cast<double>(num_bins);
-  even_bin_to_value<SampleT> mapper{static_cast<double>(lower), bin_width, lower, upper};
+  const even_bin_to_value<SampleT> mapper{static_cast<double>(lower), bin_width, lower, upper};
   return generate_shape_impl<SampleT, OffsetT>(spec, n, num_bins, mapper, seed);
 }
 
@@ -631,6 +632,6 @@ template <class SampleT, class OffsetT>
 thrust::device_vector<SampleT> generate_histogram_input_range(
   const ShapeSpec& spec, OffsetT n, int32_t num_bins, const SampleT* d_levels, uint64_t seed = 42)
 {
-  range_bin_to_value<SampleT> mapper{d_levels, num_bins};
+  const range_bin_to_value<SampleT> mapper{d_levels, num_bins};
   return generate_shape_impl<SampleT, OffsetT>(spec, n, num_bins, mapper, seed);
 }
