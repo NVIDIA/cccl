@@ -136,7 +136,7 @@ class InconsistentLoopPayloadExtentError(GroupRewriteError):
 
 
 class EscapingGroupDescriptorError(GroupRewriteError):
-    """A descriptor still feeds a use that would need a runtime object.
+    """A ThreadGroup or ThreadHierarchy value would be needed at runtime.
 
     Group planning erases these host descriptions after consuming their
     supported uses. Report the remaining variable names before changing IR.

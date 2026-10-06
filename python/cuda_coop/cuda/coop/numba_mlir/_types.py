@@ -7,10 +7,15 @@
 A provider is the implementation of a cooperative operation for a particular
 configuration, such as a block load with a fixed dtype and tile size. An
 ``Algorithm`` describes that configuration and emits a C++ wrapper around the
-CUB operation. Parameter descriptors connect the arguments accepted by Numba
-to the wrapper's C++ signature, including pointers, arrays, scalar controls,
-and values embedded at compile time. ``TypeWrapper`` supplies matching C++
-storage declarations for compiler types without a builtin C++ spelling.
+CUB operation. Parameter descriptors are ``Parameter`` objects such as
+``Value``, ``Pointer``, and ``Array``. They describe how arguments accepted by
+Numba map to the wrapper's C++ signature, including pointers, arrays, scalar
+controls, and values embedded at compile time. For example, ``Array`` describes
+an array parameter's type and extent; ``ThreadData`` constructs the per-thread
+payload passed to that parameter. Group planning separately uses
+``ThreadGroup`` and ``ThreadHierarchy`` to describe which threads cooperate.
+``TypeWrapper`` supplies matching C++ storage declarations for compiler types
+without a builtin C++ spelling.
 
 Construction specializes an algorithm, which can then be compiled to LTO IR
 and exposed through an ``Invocable``. The ``Invocable`` supplies compiler

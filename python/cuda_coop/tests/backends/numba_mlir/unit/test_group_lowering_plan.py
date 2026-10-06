@@ -5,7 +5,7 @@
 """Check scalar provenance and the core plans selected from compiler IR.
 
 Tests inspect plans before provider compilation, including loop dtype
-propagation, argument bindings, and storage and synchronization contracts.
+propagation, argument bindings, and storage and synchronization requirements.
 """
 
 from types import SimpleNamespace
