@@ -10,29 +10,37 @@ The Python body rejects host calls; the backend supplies the device operation.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal, TypeVar
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from cuda.coop._typing import (
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ReduceOperator,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _portable_group_operation,
 )
 from ._payload import (
     ThreadDataLike,
-    _ReadableThreadDataLike,
 )
+from .thread_group import WarpGroup
+
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
 
 @_portable_group_operation(
     "reduce_batched", group_kinds=("warp", "threads_within_warp")
 )
 def reduce_batched(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: WarpGroup,
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: Any = None,
-    output_layout: str = "striped",
-) -> ThreadDataLike[Any]:
+    binary_op: ReduceOperator | None = None,
+    output_layout: Literal["striped", "blocked"] = "striped",
+) -> ThreadDataLike[_ItemT]:
     """Reduce each payload slot independently across the selected warp.
 
     Parameters
@@ -73,6 +81,18 @@ def reduce_batched(
 
     Use :func:`cuda.coop.numba_mlir.reduce_batched` for a custom stateless
     device operator. The CUB counterpart is ``cub::WarpReduceBatched``.
+
+    Examples
+    --------
+    Sum each feature independently across a warp with Numba-CUDA-MLIR. Each
+    warp reads its own 32 rows, and the first lanes store the feature sums.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_batched.py
+        :language: python
+        :start-after: # example-begin reduce-batched-features
+        :end-before: # example-end reduce-batched-features
+        :dedent: 4
     """
 
     raise CoopCompilerContextRequiredError(
