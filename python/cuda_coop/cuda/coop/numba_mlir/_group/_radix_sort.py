@@ -14,11 +14,45 @@ ordinary Numba type inference.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
+
+import numpy
+
+from cuda.coop._typing import (
+    CompilerIntegerLike,
+    CompilerScalarLike,
+    IntegerValue,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    TempStorageLike,
+    ThreadDataLike,
+)
 
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
+
+_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+
+_KeyT = TypeVar(
+    "_KeyT",
+    bound=(
+        "int | numpy.int32"
+        " | numpy.uint32 | numpy.int64"
+        " | numpy.uint64 | CompilerIntegerLike"
+        " | float | numpy.float32"
+        " | numpy.float64 | CompilerScalarLike"
+    ),
+)
+
+_RankKeyT = TypeVar(
+    "_RankKeyT",
+    bound=(
+        "int | numpy.int32"
+        " | numpy.uint32 | numpy.int64"
+        " | numpy.uint64 | CompilerIntegerLike"
+    ),
+)
 
 
 @group_operation(
@@ -26,16 +60,16 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_radix_sort",
 )
 def radix_sort_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_KeyT] | _KeyT | numpy.ndarray,
     /,
     *,
-    begin_bit: Any = 0,
-    end_bit: Any | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
-    temp_storage: Any = None,
+    temp_storage: TempStorageLike | None = None,
     blocked_to_striped: bool = False,
-) -> Any:
+) -> ThreadDataLike[_KeyT] | _KeyT:
     """Return stable block radix-sorted keys without modifying the input.
 
     Parameters
@@ -77,6 +111,17 @@ def radix_sort_keys(
     keys keep their original representations. Negative and positive zero
     compare equivalently; NaNs follow CUB's transformed-bit ordering rather
     than a numeric total order. The input payload is preserved.
+
+    Examples
+    --------
+    Sort the low four bits and recover the stable rank of each original key.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_radix_examples.py
+        :language: python
+        :start-after: # qualified-radix-example-begin
+        :end-before: # qualified-radix-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "radix_sort_keys",
@@ -95,17 +140,20 @@ def radix_sort_keys(
     family_module="cuda.coop.numba_mlir._compiler._group_radix_sort",
 )
 def radix_sort_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_KeyT] | _KeyT | numpy.ndarray,
+    values: PortableThreadDataLike[_ValueT] | _ValueT | numpy.ndarray,
     /,
     *,
-    begin_bit: Any = 0,
-    end_bit: Any | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
-    temp_storage: Any = None,
+    temp_storage: TempStorageLike | None = None,
     blocked_to_striped: bool = False,
-) -> tuple[Any, Any]:
+) -> (
+    tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]
+    | tuple[_KeyT, _ValueT]
+):
     """Return stable radix-sorted keys and their associated values.
 
     Parameters
@@ -144,6 +192,17 @@ def radix_sort_pairs(
     Wraps the paired CUB ``BlockRadixSort`` overloads. Signed integer and
     floating-point bit transformations, signed-zero behavior, NaN ordering,
     bit intervals, and striped indexing are the same as ``radix_sort_keys``.
+
+    Examples
+    --------
+    Sort the low four bits and recover the stable rank of each original key.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_radix_examples.py
+        :language: python
+        :start-after: # qualified-radix-example-begin
+        :end-before: # qualified-radix-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "radix_sort_pairs",
@@ -163,16 +222,18 @@ def radix_sort_pairs(
     family_module="cuda.coop.numba_mlir._compiler._group_radix_sort",
 )
 def radix_rank_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_RankKeyT] | _RankKeyT | numpy.ndarray,
     /,
     *,
-    begin_bit: Any = 0,
-    end_bit: Any | None = None,
-    radix_bits: Any | None = None,
+    begin_bit: int = 0,
+    end_bit: int | None = None,
+    radix_bits: int | None = None,
     descending: bool = False,
-    exclusive_digit_prefix: Any = None,
-) -> Any:
+    exclusive_digit_prefix: ThreadDataLike[numpy.int32]
+    | numpy.ndarray
+    | None = None,
+) -> ThreadDataLike[numpy.int32] | numpy.int32:
     """Return stable block-wide int32 digit ranks and optional bin prefixes.
 
     Parameters
@@ -211,6 +272,17 @@ def radix_rank_keys(
     -----
     Wraps CUB ``BlockRadixRank::RankKeys`` with an optional exclusive-prefix
     output. Scratch allocation and its reuse barrier are automatic.
+
+    Examples
+    --------
+    Sort the low four bits and recover the stable rank of each original key.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_radix_examples.py
+        :language: python
+        :start-after: # qualified-radix-example-begin
+        :end-before: # qualified-radix-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "radix_rank_keys",

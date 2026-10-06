@@ -14,15 +14,52 @@ compile-time bounds.
 from __future__ import annotations
 
 from numbers import Integral
-from typing import Any
+
+from cuda.coop._typing import CompilerIntegerLike
 
 from ..block.radix import make_radix_bit_range
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _portable_group_operation,
 )
 from ._payload import (
     TempStorageLike,
+)
+
+try:
+    import numpy
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+from typing import TypeVar
+
+from cuda.coop._typing import (
+    IntegerValue,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ThreadDataLike,
+)
+
+from .thread_group import BlockGroup
+
+_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+
+_KeyT = TypeVar(
+    "_KeyT",
+    bound=(
+        "int | numpy.int32"
+        " | numpy.uint32 | numpy.int64"
+        " | numpy.uint64 | CompilerIntegerLike"
+    ),
+)
+
+_RankKeyT = TypeVar(
+    "_RankKeyT",
+    bound=(
+        "int | numpy.int32"
+        " | numpy.uint32 | numpy.int64"
+        " | numpy.uint64 | CompilerIntegerLike"
+    ),
 )
 
 
@@ -67,15 +104,15 @@ def _radix_bounds(operation, key_width, begin_bit, end_bit, radix_bits=None):
 
 @_portable_group_operation("radix_sort_keys", group_kinds=("block",))
 def radix_sort_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_KeyT],
     /,
     *,
-    begin_bit: int = 0,
-    end_bit: int | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[_KeyT]:
     """Return stable, blocked radix-sorted integral keys without mutation.
 
     Parameters
@@ -114,6 +151,18 @@ def radix_sort_keys(
     integers, the sign bit is inverted before selecting the bit interval,
     then restored in the returned keys. Use ``cuda.coop.numba_mlir`` for
     floating-point keys, scalar or local-array payloads, and striped output.
+
+    Examples
+    --------
+    Sort unsigned keys by their low byte in descending order. Keys with
+    equal low bytes retain their original order.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+        :language: python
+        :start-after: # radix-sort-keys-example-begin
+        :end-before: # radix-sort-keys-example-end
+        :dedent: 4
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.radix_sort_keys must be called from a supported GPU kernel."
@@ -122,16 +171,16 @@ def radix_sort_keys(
 
 @_portable_group_operation("radix_sort_pairs", group_kinds=("block",))
 def radix_sort_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_KeyT],
+    values: PortableThreadDataLike[_ValueT],
     /,
     *,
-    begin_bit: int = 0,
-    end_bit: int | None = None,
+    begin_bit: IntegerValue = 0,
+    end_bit: IntegerValue | None = None,
     descending: bool = False,
     temp_storage: TempStorageLike | None = None,
-) -> tuple[Any, Any]:
+) -> tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]:
     """Return stable sorted keys and associated numeric values without mutation.
 
     Parameters
@@ -170,6 +219,18 @@ def radix_sort_pairs(
     Wraps the key/value overload of CUB ``BlockRadixSort::Sort`` or
     ``SortDescending``. Qualified Numba-CUDA-MLIR calls additionally support
     floating-point keys, scalar or local-array payloads, and striped output.
+
+    Examples
+    --------
+    Sort signed keys together with their original positions. Equal keys
+    retain their input order, as checked by the stable host sort.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+        :language: python
+        :start-after: # radix-sort-example-begin
+        :end-before: # radix-sort-example-end
+        :dedent: 4
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.radix_sort_pairs must be called from a supported GPU kernel."
@@ -178,15 +239,15 @@ def radix_sort_pairs(
 
 @_portable_group_operation("radix_rank_keys", group_kinds=("block",))
 def radix_rank_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_RankKeyT],
     /,
     *,
     begin_bit: int = 0,
     end_bit: int | None = None,
     radix_bits: int | None = None,
     descending: bool = False,
-) -> Any:
+) -> ThreadDataLike[numpy.int32]:
     """Return stable int32 digit ranks without mutating integral keys.
 
     Parameters
@@ -222,6 +283,18 @@ def radix_rank_keys(
     ordered representation. Scratch allocation and its reuse barrier are
     automatic. The qualified API also accepts scalars and local arrays and
     can write exclusive digit prefixes into a caller-provided output array.
+
+    Examples
+    --------
+    Find each key's position in a stable ordering by its low four bits.
+    Rank returns positions without rearranging the input keys.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_radix_examples.py
+        :language: python
+        :start-after: # radix-rank-example-begin
+        :end-before: # radix-rank-example-end
+        :dedent: 4
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.radix_rank_keys must be called from a supported GPU kernel."
