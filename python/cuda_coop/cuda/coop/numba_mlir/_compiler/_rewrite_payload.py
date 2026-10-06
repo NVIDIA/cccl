@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Infer provider specialization inputs from the payloads they consume.
+"""Complete provider inputs from planned or inferred payload facts.
 
-Primitive-family hooks use ``PayloadInference`` to inspect runtime operands
-and merge inferred dtype and extent values with explicit factory keywords.
-Inference updates the pending specialization and payload metadata before
-provider creation; it does not replace the compiler's later type inference or
-emit array IR.
+Primitive-family hooks use ``PayloadInference`` to merge dtype and extent
+values with explicit factory keywords. It carries the current call's lowering
+plan, allowing Load/Store to reuse checked facts while retaining constructor
+bookkeeping. Direct calls without plans infer those facts from their operands.
+Hooks update the pending specialization and payload metadata before provider
+creation; they do not replace later compiler type inference or emit array IR.
 """
 
 from typing import TYPE_CHECKING, cast
@@ -98,7 +99,7 @@ class PayloadInference:
         return actual == expected
 
     def infer_kwarg(self, name: str, value: object) -> None:
-        """Merge a value inferred from payloads into factory inputs.
+        """Merge a planned or inferred payload value into factory inputs.
 
         Ignore unavailable values and keywords the operation does not accept.
         An already resolved keyword must agree with the payload; dtype
@@ -111,7 +112,7 @@ class PayloadInference:
         name : str
             Factory keyword to infer or check.
         value : object
-            Value inferred from a payload, or None when not known.
+            Planned or inferred payload value, or None when not known.
 
         Returns
         -------
@@ -122,7 +123,7 @@ class PayloadInference:
         Raises
         ------
         CoopSinglePhaseRewriteError
-            The inferred value conflicts with an already resolved keyword.
+            The supplied value conflicts with an already resolved keyword.
         """
 
         if name not in self.allowed_factory_kwargs or value is None:

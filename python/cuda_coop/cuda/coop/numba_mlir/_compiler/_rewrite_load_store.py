@@ -4,10 +4,10 @@
 
 """Apply Load/Store-specific payload and scalar rules during call rewriting.
 
-Registered hooks infer per-thread payload shape and dtype, validate optional
-counts and defaults, and recognize scalar Store operands. Scalar Stores need a
-one-element local array for the provider ABI. Emission checks the exact dtype
-before boxing so the array assignment cannot hide a conversion.
+Registered hooks merge planned or inferred per-thread payload shape and dtype,
+validate optional counts and defaults, and recognize scalar Store operands.
+Scalar Stores need a one-element local array for the provider ABI. Emission
+checks the exact dtype before boxing so assignment cannot hide a conversion.
 Unknown scalar types remain the responsibility of the later compiler typing
 pass, and these helpers do not prove runtime bounds or thread uniformity.
 """
@@ -391,18 +391,18 @@ class _LoadStoreRewrite:
         explicit factory inputs and populating constructor allocation state.
         Calls without a Load/Store plan infer these facts from their operands.
 
-        Array payloads supply their static extent; scalars imply one item per
-        thread. Prefer the memory element dtype when available, while checking
-        it against any known payload dtype. For an untyped Store array,
-        inspect typed writes before recording a destination-derived dtype so
-        an incompatible producer cannot be hidden by the destination type.
+        Without a supported Load/Store plan, array payloads supply their
+        static extent; scalars imply one item per thread. Prefer the memory
+        element dtype when available, while checking it against any known
+        payload dtype. For an untyped Store array, inspect typed writes before
+        recording a destination-derived dtype so an incompatible producer
+        cannot be hidden by the destination type. This fallback also checks
+        static scalar coercion against the destination dtype; known runtime
+        scalar dtypes must match it exactly.
 
-        Record inferred dtypes back through payload aliases for later
-        constructor lowering. Static scalar Store values use scalar coercion
-        rules against the destination dtype, while runtime scalars must match
-        it exactly when their type is known. This phase updates inference
-        metadata; boxing a scalar into the provider's array operand happens
-        during runtime-argument emission.
+        Both paths record dtypes through payload aliases for later constructor
+        lowering. This phase updates inference metadata; boxing a scalar into
+        the provider's array operand happens during runtime-argument emission.
 
         Parameters
         ----------
