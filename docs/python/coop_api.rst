@@ -154,6 +154,7 @@ Reduction
 ^^^^^^^^^
 
 .. autofunction:: reduce
+.. autofunction:: sum
 
 Scan
 ^^^^
