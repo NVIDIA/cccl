@@ -12,10 +12,8 @@ struct stream_registry_factory_t;
 #include <cub/util_runs_on.cuh>
 
 #include <cuda/execution>
-#include <cuda/std/optional>
 
 #include <cstdint>
-#include <stdexcept>
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
@@ -37,11 +35,17 @@ CUB_TEST("Device radix sort keys with runs_on sorts correctly", "[radix_sort][de
   CAPTURE(num_items);
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto provide_cc = GENERATE(false, true);
-  CAPTURE(provide_cc);
-  const auto optional_cc = provide_cc ? cuda::std::optional<cuda::compute_capability>{cc} : cuda::std::nullopt;
-  const auto env =
-    cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{optional_cc}});
+  int device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
+  int sm_count{};
+  REQUIRE(cudaSuccess == cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device));
+  const auto provide_description = GENERATE(false, true);
+  CAPTURE(provide_description);
+  const auto runs_on =
+    provide_description
+      ? cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, static_cast<std::uint32_t>(sm_count)}}
+      : cub::experimental::RunsOn{};
+  const auto env = cuda::execution::guarantee(runs_on);
 
   c2h::device_vector<std::int32_t> keys_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
@@ -68,11 +72,7 @@ CUB_TEST("Device radix sort keys with runs_on handles an SM limit", "[radix_sort
   CAPTURE(num_items);
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto provide_cc = GENERATE(false, true);
-  CAPTURE(provide_cc);
-  const auto optional_cc = provide_cc ? cuda::std::optional<cuda::compute_capability>{cc} : cuda::std::nullopt;
-  const auto env         = cuda::execution::guarantee(
-    cub::experimental::RunsOn{cub::experimental::DeviceDescription{optional_cc, /* __max_sm_count_ */ 1}});
+  const auto env = cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, 1}});
 
   c2h::device_vector<std::int32_t> keys_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
@@ -99,11 +99,17 @@ CUB_TEST("Device radix sort pairs with runs_on sorts correctly", "[radix_sort][d
   CAPTURE(num_items);
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto provide_cc = GENERATE(false, true);
-  CAPTURE(provide_cc);
-  const auto optional_cc = provide_cc ? cuda::std::optional<cuda::compute_capability>{cc} : cuda::std::nullopt;
-  const auto env =
-    cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{optional_cc}});
+  int device{};
+  REQUIRE(cudaSuccess == cudaGetDevice(&device));
+  int sm_count{};
+  REQUIRE(cudaSuccess == cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device));
+  const auto provide_description = GENERATE(false, true);
+  CAPTURE(provide_description);
+  const auto runs_on =
+    provide_description
+      ? cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, static_cast<std::uint32_t>(sm_count)}}
+      : cub::experimental::RunsOn{};
+  const auto env = cuda::execution::guarantee(runs_on);
 
   c2h::device_vector<std::int32_t> keys_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
@@ -151,11 +157,7 @@ CUB_TEST("Device radix sort pairs with runs_on handles an SM limit", "[radix_sor
   CAPTURE(num_items);
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto provide_cc = GENERATE(false, true);
-  CAPTURE(provide_cc);
-  const auto optional_cc = provide_cc ? cuda::std::optional<cuda::compute_capability>{cc} : cuda::std::nullopt;
-  const auto env         = cuda::execution::guarantee(
-    cub::experimental::RunsOn{cub::experimental::DeviceDescription{optional_cc, /* __max_sm_count_ */ 1}});
+  const auto env = cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, 1}});
 
   c2h::device_vector<std::int32_t> keys_in(num_items, thrust::no_init);
   c2h::device_vector<std::int32_t> keys_out(num_items, thrust::no_init);
@@ -197,7 +199,7 @@ CUB_TEST("Device radix sort pairs with runs_on handles an SM limit", "[radix_sor
   }
 }
 
-#if TEST_LAUNCH == 0 && defined(CCCL_ENABLE_ASSERTIONS) && _CCCL_HAS_EXCEPTIONS()
+#if TEST_LAUNCH == 0 && defined(CCCL_ENABLE_ASSERTIONS)
 CUB_TEST("Device radix sort rejects a mismatched runs_on capability", "[radix_sort][device][runs_on]", CUB_SMALL)
 {
   cuda::compute_capability cc{};
@@ -205,11 +207,12 @@ CUB_TEST("Device radix sort rejects a mismatched runs_on capability", "[radix_so
   const auto wrong_cc =
     cc == cuda::compute_capability{8, 0} ? cuda::compute_capability{9, 0} : cuda::compute_capability{8, 0};
   const auto env =
-    cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{wrong_cc}});
+    cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{wrong_cc, 1}});
   c2h::device_vector<std::int32_t> keys_in{3, 1, 2};
   c2h::device_vector<std::int32_t> keys_out(3);
 
-  REQUIRE_THROWS_AS(cub::DeviceRadixSort::SortKeys(keys_in.data().get(), keys_out.data().get(), 3, 0, 32, env),
-                    std::invalid_argument);
+  // A device mismatch reports a CUDA error without requiring exception support.
+  REQUIRE(cudaErrorInvalidValue
+          == cub::DeviceRadixSort::SortKeys(keys_in.data().get(), keys_out.data().get(), 3, 0, 32, env));
 }
-#endif // TEST_LAUNCH == 0 && defined(CCCL_ENABLE_ASSERTIONS) && _CCCL_HAS_EXCEPTIONS()
+#endif // TEST_LAUNCH == 0 && defined(CCCL_ENABLE_ASSERTIONS)
