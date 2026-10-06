@@ -12,16 +12,35 @@ planner selects CUDAX for full-group built-in reductions. It selects CUB when
 the call has ``valid_items`` or an explicit block algorithm.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
 from enum import Enum
 from numbers import Integral
+from typing import TypeVar
 
 from cuda.coop._core import ArgumentBinding
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ReduceAlgorithm,
+    ReduceOperator,
+    ValidItems,
+)
 
+from .._core.api.thread_group import BlockGroup, ReductionGroup, WarpGroup
 from ._compiler._launch import current_kernel_launch_facts
 from ._group_load_store import _is_boolean
-from ._thread_data import _coerce_thread_payload
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    _coerce_thread_payload,
+)
 from ._thread_group import _require_complete_warp_partition
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _SCOPE = "cuda.coop.cutlass"
 _ALGORITHMS = frozenset(
@@ -72,15 +91,20 @@ def _normalize_algorithm(algorithm):
 
 
 def reduce(
-    group,
-    value,
+    group: ReductionGroup | BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | _ItemT
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    binary_op=None,
-    broadcast=True,
-    valid_items=None,
-    algorithm=None,
-):
+    binary_op: ReduceOperator
+    | Callable[[object, object], object]
+    | None = None,
+    broadcast: bool = True,
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+) -> _ItemT:
     """Reduce scalars or per-thread register payloads with a built-in operator.
 
     See :func:`cuda.coop.reduce` for the shared parameters, supported groups,
@@ -126,6 +150,21 @@ def reduce(
         Sum with the same operand and result behavior.
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
         C++ primitives used for valid prefixes and explicit block algorithms.
+
+    Examples
+    --------
+    Compute a broadcast sum and a root-only maximum over the same tile.
+    Only the root reads the result when ``broadcast=False``.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_reduce_examples.py
+        :language: python
+        :start-after: # qualified-reduce-example-begin
+        :end-before: # qualified-reduce-example-end
+        :dedent: 4
     """
 
     from ._operators import normalize_operator
@@ -162,7 +201,18 @@ def reduce(
     )
 
 
-def sum(group, value, /, *, broadcast=True, valid_items=None, algorithm=None):
+def sum(
+    group: ReductionGroup | BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | _ItemT
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
+    /,
+    *,
+    broadcast: bool = True,
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+) -> _ItemT:
     """Sum scalars or per-thread register payloads with CUTLASS.
 
     See :func:`cuda.coop.sum` for the shared parameters, defaults, supported
@@ -184,6 +234,20 @@ def sum(group, value, /, *, broadcast=True, valid_items=None, algorithm=None):
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
         C++ primitives used for valid prefixes and explicit block algorithms.
         Full-group built-in reductions use CUDAX.
+
+    Examples
+    --------
+    Broadcast a tile sum to every thread, alongside a root-only maximum.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_reduce_examples.py
+        :language: python
+        :start-after: # qualified-reduce-example-begin
+        :end-before: # qualified-reduce-example-end
+        :dedent: 4
     """
     return reduce(
         group,
