@@ -24,8 +24,9 @@ namespace detail
 {
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T>
-device_buffer_to_host_buffer(cuda::stream_ref stream, const cuda::device_buffer<T>& d_items, std::size_t num_items)
+device_buffer_to_host_buffer(const cuda::device_buffer<T>& d_items, std::size_t num_items)
 {
+  const auto stream = d_items.stream();
   const auto device = stream.device();
   ::c2h::detail::assert_current_device(device.get());
 
@@ -35,27 +36,32 @@ device_buffer_to_host_buffer(cuda::stream_ref stream, const cuda::device_buffer<
 
   return h_items;
 }
+} // namespace detail
 
-template <typename T>
-void gen_into_device_buffer(seed_t seed, cuda::device_buffer<T>& d_items, T min, T max)
-{
-  ::c2h::detail::gen_values_between(d_items.stream(), seed, d_items.first(d_items.size()), min, max);
-}
-
+//! @brief Generates random values in @p data using its associated stream.
+//!
+//! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
 template <template <typename> class... Ps>
-void gen_into_device_buffer(
-  seed_t seed, cuda::device_buffer<custom_type_t<Ps...>>& d_items, custom_type_t<Ps...> min, custom_type_t<Ps...> max)
+void gen(seed_t seed,
+         cuda::device_buffer<custom_type_t<Ps...>>& data,
+         custom_type_t<Ps...> min = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::lowest(),
+         custom_type_t<Ps...> max = ::cuda::std::numeric_limits<custom_type_t<Ps...>>::max())
 {
   ::c2h::detail::gen_custom_type_state(
-    d_items.stream(),
-    seed,
-    reinterpret_cast<char*>(d_items.data()),
-    min,
-    max,
-    d_items.size(),
-    sizeof(custom_type_t<Ps...>));
+    data.stream(), seed, reinterpret_cast<char*>(data.data()), min, max, data.size(), sizeof(custom_type_t<Ps...>));
 }
-} // namespace detail
+
+//! @brief Generates random values in @p data using its associated stream.
+//!
+//! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
+template <typename T>
+void gen(seed_t seed,
+         cuda::device_buffer<T>& data,
+         T min = ::cuda::std::numeric_limits<T>::lowest(),
+         T max = ::cuda::std::numeric_limits<T>::max())
+{
+  ::c2h::detail::gen_values_between(data.stream(), seed, data.first(data.size()), min, max);
+}
 
 //! @brief Holds generated device and host buffers and their shared logical size.
 //!
@@ -69,31 +75,9 @@ struct sized_device_host_buffers
   std::size_t size;
 };
 
-//! @brief Generates random data with the existing c2h device generator and returns it in device memory.
-//!
-//! @pre @c stream must not be the legacy default stream.
-//! @pre @c stream must belong to the current C2H test device.
-template <typename T>
-[[nodiscard]] cuda::device_buffer<T> gen_device_buffer(
-  cuda::stream_ref stream,
-  seed_t seed,
-  std::size_t num_items,
-  T min = ::cuda::std::numeric_limits<T>::lowest(),
-  T max = ::cuda::std::numeric_limits<T>::max())
-{
-  const auto device = stream.device();
-  ::c2h::detail::assert_current_device(device.get());
-
-  auto d_items = ::c2h::make_device_buffer<T>(stream, device, num_items, cuda::no_init);
-  ::c2h::detail::gen_into_device_buffer(seed, d_items, min, max);
-
-  return d_items;
-}
-
 //! @brief Generates random data with the existing c2h device generator and returns device and host buffers.
 //!
-//! @pre @c stream must not be the legacy default stream.
-//! @pre @c stream must belong to the current C2H test device.
+//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] sized_device_host_buffers<T> gen_buffers(
   cuda::stream_ref stream,
@@ -102,18 +86,18 @@ template <typename T>
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  auto d_items = ::c2h::gen_device_buffer<T>(stream, seed, num_items, min, max);
+  auto d_items = ::c2h::make_device_buffer<T>(stream, num_items, cuda::no_init);
+  ::c2h::gen(seed, d_items, min, max);
 
   const auto items_count = d_items.size();
-  auto h_items           = ::c2h::detail::device_buffer_to_host_buffer(stream, d_items, items_count);
+  auto h_items           = ::c2h::detail::device_buffer_to_host_buffer(d_items, items_count);
 
   return {::cuda::std::move(d_items), ::cuda::std::move(h_items), items_count};
 }
 
 //! @brief Generates random data with the existing c2h device generator and returns it in host pageable memory.
 //!
-//! @pre @c stream must not be the legacy default stream.
-//! @pre @c stream must belong to the current C2H test device.
+//! @pre Querying the device of @p stream must succeed and return the current C2H test device.
 template <typename T>
 [[nodiscard]] cuda::host_buffer<T> gen_host_buffer(
   cuda::stream_ref stream,

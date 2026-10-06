@@ -18,6 +18,7 @@
 #include "cub_test_macros.h"
 #include <c2h/buffer_generators.cuh>
 #include <c2h/checked_memory_resource.cuh>
+#include <c2h/custom_type.h>
 #include <c2h/detail/env.cuh>
 #include <c2h/device_and_stream.h>
 
@@ -71,26 +72,54 @@ CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buf
   const auto device = c2h::current_device();
   const cuda::stream stream{device};
 
-  REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, device, get_alloc_bytes(), cuda::no_init), std::bad_alloc);
+  REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, get_alloc_bytes(), cuda::no_init), std::bad_alloc);
 
   constexpr std::size_t num_items = 256;
-  const auto d_items              = c2h::make_device_buffer<std::int32_t>(stream, device, num_items, cuda::no_init);
+  const auto d_items              = c2h::make_device_buffer<std::int32_t>(stream, num_items, cuda::no_init);
   REQUIRE(d_items.size() == num_items);
   REQUIRE(d_items.data() != nullptr);
 
-  const auto empty = c2h::make_device_buffer<std::int32_t>(stream, device, std::size_t{0}, cuda::no_init);
+  const auto empty = c2h::make_device_buffer<std::int32_t>(stream, std::size_t{0}, cuda::no_init);
   REQUIRE(empty.empty());
   REQUIRE(empty.data() == nullptr);
 
   constexpr std::array<std::int32_t, 4> expected{1, 2, 3, 4};
-  const auto d_initialized = c2h::make_device_buffer<std::int32_t>(stream, device, {1, 2, 3, 4});
-  const auto h_initialized = c2h::make_host_buffer<std::int32_t>(stream, device, d_initialized);
+  const auto d_initialized = c2h::make_device_buffer<std::int32_t>(stream, {1, 2, 3, 4});
+  const auto h_initialized = c2h::make_host_buffer<std::int32_t>(stream, d_initialized);
   stream.sync();
   REQUIRE(std::equal(h_initialized.begin(), h_initialized.end(), expected.begin(), expected.end()));
 
   auto resource                    = c2h::checked_device_memory_resource{device};
   constexpr auto invalid_alignment = cuda::mr::default_cuda_malloc_alignment - 1;
   REQUIRE_THROWS_AS(resource.allocate_sync(1, invalid_alignment), std::bad_alloc);
+}
+
+CUB_TEST("c2h checked memory resources support the legacy default stream", "[c2h][buffers]", CUB_SMALL)
+{
+  const auto device = c2h::current_device();
+  const auto stream = cuda::stream_ref{cudaStream_t{}};
+
+  constexpr std::size_t num_items = 1;
+  const auto d_items              = c2h::make_device_buffer<std::int32_t>(stream, device, num_items, cuda::no_init);
+  auto h_items                    = c2h::make_host_buffer<std::int32_t>(stream, device, num_items, cuda::no_init);
+  const auto d_initialized        = c2h::make_device_buffer<std::int32_t>(stream, device, {42});
+  const auto h_initialized        = c2h::make_host_buffer<std::int32_t>(stream, device, {42});
+
+  REQUIRE(d_items.size() == num_items);
+  REQUIRE(d_items.data() != nullptr);
+  REQUIRE(h_items.size() == num_items);
+  REQUIRE(h_items.data() != nullptr);
+  REQUIRE(d_initialized.size() == num_items);
+  REQUIRE(h_initialized.size() == num_items);
+  REQUIRE(h_initialized.front() == 42);
+
+  std::int32_t initialized_value{};
+  REQUIRE(cudaSuccess
+          == cudaMemcpy(&initialized_value, d_initialized.data(), sizeof(initialized_value), cudaMemcpyDeviceToHost));
+  REQUIRE(initialized_value == 42);
+
+  h_items.front() = 42;
+  REQUIRE(h_items.front() == 42);
 }
 
 CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h][buffers][host_resource]", CUB_SMALL)
@@ -102,16 +131,20 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   const cuda::stream stream{device};
 
   constexpr std::size_t num_items = 256;
-  auto h_items                    = c2h::make_host_buffer<std::int32_t>(stream, device, num_items, cuda::no_init);
+  auto h_items                    = c2h::make_host_buffer<std::int32_t>(stream, num_items, cuda::no_init);
   REQUIRE(h_items.size() == num_items);
   REQUIRE(h_items.data() != nullptr);
 
   h_items.front() = 42;
   REQUIRE(h_items.front() == 42);
 
-  const auto empty = c2h::make_host_buffer<std::int32_t>(stream, device, std::size_t{0}, cuda::no_init);
+  const auto empty = c2h::make_host_buffer<std::int32_t>(stream, std::size_t{0}, cuda::no_init);
   REQUIRE(empty.empty());
   REQUIRE(empty.data() == nullptr);
+
+  constexpr std::array<std::int32_t, 4> expected{1, 2, 3, 4};
+  const auto initialized = c2h::make_host_buffer<std::int32_t>(stream, {1, 2, 3, 4});
+  REQUIRE(std::equal(initialized.begin(), initialized.end(), expected.begin(), expected.end()));
 
   auto resource = c2h::checked_host_buffer_memory_resource{device};
 
@@ -127,8 +160,11 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
 
 CUB_TEST("c2h buffer generator handles zero items", "[c2h][buffers][generators]", CUB_SMALL)
 {
-  const auto stream  = c2h::make_current_device_stream();
-  const auto d_items = c2h::gen_device_buffer<std::int32_t>(stream, c2h::seed_t{1234}, 0);
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+  auto d_items = c2h::make_device_buffer<std::int32_t>(stream, std::size_t{0}, cuda::no_init);
+  c2h::gen(c2h::seed_t{1234}, d_items);
+
   REQUIRE(d_items.empty());
   REQUIRE(d_items.data() == nullptr);
 }
@@ -151,4 +187,19 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
     c2h::gen_host_buffer<std::int32_t>(stream, c2h::seed_t{5678}, num_items, host_expected, host_expected);
   REQUIRE(h_items.size() == num_items);
   REQUIRE(static_cast<std::size_t>(std::count(h_items.begin(), h_items.end(), host_expected)) == num_items);
+
+  using custom_type = c2h::custom_type_t<c2h::equal_comparable_t>;
+  custom_type custom_expected{};
+  custom_expected.key = 13;
+  custom_expected.val = 37;
+
+  auto d_custom = c2h::make_device_buffer<custom_type>(stream, num_items, cuda::no_init);
+  c2h::gen(c2h::seed_t{9012}, d_custom, custom_expected, custom_expected);
+  const auto h_custom = c2h::make_host_buffer<custom_type>(stream, d_custom);
+  stream.sync();
+
+  const bool custom_values_match = std::all_of(h_custom.begin(), h_custom.end(), [&](const custom_type& value) {
+    return value == custom_expected;
+  });
+  REQUIRE(custom_values_match);
 }
