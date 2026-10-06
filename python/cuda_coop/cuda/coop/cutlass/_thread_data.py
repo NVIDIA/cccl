@@ -20,9 +20,37 @@ import inspect as _inspect
 import operator as _operator
 from collections.abc import Callable, Iterator
 from copy import deepcopy as _deepcopy
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 from cuda.coop._core.api._payload import _normalize_alignment
+
+
+class CutlassTensorSample(Protocol):
+    """Describe the attributes read from a mutable CuTe tensor.
+
+    Each operation checks whether register or global memory is required.
+    """
+
+    @property
+    def element_type(self) -> object: ...
+    @property
+    def shape(self) -> object: ...
+    @property
+    def memspace(self) -> object: ...
+    def __getitem__(self, index: int, /) -> Any: ...
+    def load(self) -> object: ...
+
+
+class CutlassTensorSSASample(Protocol):
+    """Describe an immutable register value for payload conversion."""
+
+    @property
+    def dtype(self) -> object: ...
+    @property
+    def shape(self) -> object: ...
+    def __getitem__(self, index: int, /) -> Any: ...
+    def ir_value(self) -> object: ...
+
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
 _UNSET = object()

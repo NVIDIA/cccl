@@ -20,9 +20,9 @@ _ItemT = TypeVar("_ItemT", default=Any)
 _ValueT = TypeVar("_ValueT")
 
 class CutlassTensorSample(Protocol):
-    """Describe the attributes read from a mutable CuTe register tensor.
+    """Describe the attributes read from a mutable CuTe tensor.
 
-    Conversion also checks that memspace is the runtime's rmem value.
+    Each operation checks whether register or global memory is required.
     """
 
     @property

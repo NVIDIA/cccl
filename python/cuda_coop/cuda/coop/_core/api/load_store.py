@@ -14,6 +14,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from cuda.coop._typing import (
+    BlockLoadStoreAlgorithm,
+    CommonThreadDataLike,
+    IntegerValue,
+    ValidItems,
+    WarpLoadStoreAlgorithm,
+    _CommonNumericT,
+)
+
 from ..thread_group import ThreadGroup
 from ._dispatch import (
     _backend_module_name,
@@ -32,6 +41,7 @@ from ._payload import (
     _validate_common_numeric_value,
     _validate_common_temp_storage,
 )
+from .thread_group import BlockGroup, WarpGroup
 
 _I32_MAX = (1 << 31) - 1
 _I64_MAX = (1 << 63) - 1
@@ -148,15 +158,15 @@ def _validate_common_load_store_options(
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def load(
-    group: ThreadGroup,
+    group: BlockGroup | WarpGroup,
     source: object,
-    output: ThreadDataLike[Any],
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
-    algorithm: str = "direct",
-    valid_items: object = None,
-    oob_default: object = None,
-    offset: object = None,
+    algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: _CommonNumericT | float | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
     """Load a group tile from memory into per-thread values.
@@ -280,14 +290,14 @@ def load(
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def store(
-    group: ThreadGroup,
+    group: BlockGroup | WarpGroup,
     destination: object,
-    value: object,
+    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
     /,
     *,
-    algorithm: str = "direct",
-    valid_items: object = None,
-    offset: object = None,
+    algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
     """Store a group tile from per-thread values into memory.
