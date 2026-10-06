@@ -9,16 +9,34 @@ The shared plan selects the block or warp specialization and its owned
 scratch; lowering later emits the CuTe call and C++ wrapper.
 """
 
+from __future__ import annotations
+
 from enum import Enum
+from typing import Literal, TypeVar
 
 from cuda.coop._core import GroupExchangeMode
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import (
+    BlockExchangeMode,
+    IntegralScalar,
+    SignedIntegerScalar,
+)
 
-from ._thread_data import ThreadData, _coerce_thread_payload
+from .._core.api.thread_group import BlockGroup, WarpGroup
+from .._typing import CommonNumericScalar, CommonThreadDataLike, ExchangeMode
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _coerce_thread_payload,
+)
 from ._thread_group import (
     _require_complete_warp_partition,
     _resolve_primitive_group_from_launch,
 )
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _SCOPE = "cuda.coop.cutlass"
 _BLOCK_MODES = frozenset(mode.value for mode in GroupExchangeMode)
@@ -69,15 +87,27 @@ def _payload(value, *, name):
 
 
 def exchange(
-    group,
-    value,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample,
     /,
     *,
-    mode="striped_to_blocked",
-    ranks=None,
-    valid_flags=None,
-    warp_time_slicing=False,
-):
+    mode: BlockExchangeMode
+    | ExchangeMode
+    | Literal[
+        "scatter_to_striped_guarded", "scatter_to_striped_flagged"
+    ] = "striped_to_blocked",
+    ranks: CommonThreadDataLike[SignedIntegerScalar]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | None = None,
+    valid_flags: CommonThreadDataLike[IntegralScalar]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | None = None,
+    warp_time_slicing: bool = False,
+) -> ThreadData:
     """Exchange register payloads, including ranked block scatters.
 
     See :func:`cuda.coop.exchange` for the shared group requirements, layout
