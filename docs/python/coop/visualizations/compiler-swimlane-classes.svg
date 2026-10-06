@@ -3,153 +3,389 @@
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="coop-handoffs-classes-title coop-handoffs-classes-desc" viewBox="0 0 1024 2843">
-  <title id="coop-handoffs-classes-title">Compilation handoffs: classes</title>
-  <desc id="coop-handoffs-classes-desc">Read from top to bottom. Provider symbols and link inputs are available before the final cubin and kernel handle.</desc>
-  <defs>
-    <marker id="coop-handoffs-classes-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
-    </marker>
-  </defs>
-  <rect width="1024" height="2843" fill="#ffffff"/>
-  <rect x="4" y="0" width="254" height="2842.8" fill="#e9f2fb" fill-opacity="0.34"/>
-  <text x="131" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Numba compiler</text>
-  <rect x="258" y="0" width="254" height="2842.8" fill="#e5f1d7" fill-opacity="0.34"/>
-  <line x1="258" x2="258" y1="0" y2="2842.8" stroke="#d2dbe5" stroke-width="1"/>
-  <text x="385" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">cuda.coop</text>
-  <rect x="512" y="0" width="254" height="2842.8" fill="#fff0c9" fill-opacity="0.34"/>
-  <line x1="512" x2="512" y1="0" y2="2842.8" stroke="#d2dbe5" stroke-width="1"/>
-  <text x="639" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">NVRTC</text>
-  <rect x="766" y="0" width="254" height="2842.8" fill="#e7dff4" fill-opacity="0.34"/>
-  <line x1="766" x2="766" y1="0" y2="2842.8" stroke="#d2dbe5" stroke-width="1"/>
-  <text x="893" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
-  <g data-node="PostInlineWholeFunctionPlanners" role="group" aria-label="Numba compiler. PostInlineWholeFunctionPlanners. Invoke the registered planner.">
-    <rect x="12" y="76" width="238" height="137.2" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="112.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">PostInlineWhole</text>
-    <text x="24" y="141.6" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">FunctionPlanners</text>
-    <text x="24" y="170.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Invoke the registered</text>
-    <text x="24" y="199.20000000000002" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">planner.</text>
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 880 2354">
+  <title id="title">Compilation handoffs — Python classes</title>
+  <desc id="desc">Ordered handoffs between Numba, cuda.coop, NVRTC and nvJitLink. Solid arrows are calls or inputs; dashed arrows return results. Shows successful Algorithm bundling on a cache miss and the default kernel LTO path. Provider preparation completes before main type inference; final linking happens after kernel compilation.</desc>
+  <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#8998a5"/></marker></defs>
+  <rect width="880" height="2354" fill="#f8fafb" rx="10"/>
+  <text x="24" y="25" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#526273">PYTHON CLASSES · NUMBA-CUDA-MLIR</text>
+  <text x="24" y="60" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#182b3a">Compilation handoffs</text>
+  <text x="24" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">A</text>
+  <text x="35.3391" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="40.0625" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">provider-cache</text>
+  <text x="152.505" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="157.228" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">miss,</text>
+  <text x="196.889" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="201.612" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">successful</text>
+  <text x="280.977" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="285.7" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">bundling,</text>
+  <text x="354.705" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="359.428" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">and</text>
+  <text x="387.792" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="392.516" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">the</text>
+  <text x="416.148" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="420.872" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">default</text>
+  <text x="471.914" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="476.637" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">kernel</text>
+  <text x="522.939" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="527.662" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">LTO</text>
+  <text x="559.156" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273"> </text>
+  <text x="563.88" y="92" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#526273">path.</text>
+  <text x="24" y="164" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#182b3a">1  Prepare providers</text>
+  <text x="24" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Before</text>
+  <text x="71.1406" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="75.5859" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">main</text>
+  <text x="110.266" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="114.711" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">type</text>
+  <text x="144.953" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="149.398" y="190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">inference</text>
+  <rect x="24" y="226" width="832" height="92" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 236V308" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Invoke the planner" role="group" aria-label="Invoke the planner">
+  <text x="44" y="251" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#275e91">01</text>
+  <text x="74" y="251" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Invoke the planner</text>
+  <rect x="778.094" y="237" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="786.094" y="251" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="44" y="287" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">PostInlineWholeFunctionPlanners</text>
   </g>
-  <path d="M131 216.2V265.2H385V277.2" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="160.02413177490234" y="238.2" width="195.9517364501953" height="27" fill="#ffffff"/>
-  <text x="258" y="256.2" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">FunctionIR + compiler state</text>
-  <g data-node="CoopWholeFunctionPlanner.run()" role="group" aria-label="cuda.coop. CoopWholeFunctionPlanner.run(). Resolve groups. Start call rewriting.">
-    <rect x="266" y="280.2" width="238" height="137.2" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="278" y="317" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopWholeFunction</text>
-    <text x="278" y="345.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Planner.run()</text>
-    <text x="278" y="374.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve groups. Start call</text>
-    <text x="278" y="403.40000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">rewriting.</text>
+  <text x="67" y="342" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Inlined,</text>
+  <text x="115.369" y="342" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="119.536" y="342" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">untyped</text>
+  <text x="172.914" y="342" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="177.081" y="342" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">IR</text>
+  <path d="M50 321V364" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="368" width="832" height="144" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 378V502" stroke="#426b20" stroke-width="3"/>
+  <g data-node="Resolve and match" role="group" aria-label="Resolve and match">
+  <text x="44" y="393" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#426b20">02</text>
+  <text x="74" y="393" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Resolve and match</text>
+  <rect x="749.786" y="379" width="86.2141" height="21" rx="4" fill="#f0f6e9" stroke="none"/>
+  <text x="757.786" y="393" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#426b20" data-code="true">cuda.coop</text>
+  <text x="44" y="429" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">CoopWholeFunctionPlanner.run()</text>
+  <text x="44" y="455" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">CoopSinglePhaseRewrite.match()</text>
+  <text x="473" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Resolve</text>
+  <text x="538.03" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="543.031" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">groups;</text>
+  <text x="603.07" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="608.072" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">collect</text>
+  <text x="659.092" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="664.094" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">requirements</text>
+  <text x="769.141" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="774.142" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">across</text>
+  <text x="827.158" y="429" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="455" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">all</text>
+  <text x="491.008" y="455" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="496.009" y="455" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">blocks.</text>
+  <text x="473" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Record</text>
+  <text x="531.025" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="536.027" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">matched</text>
+  <text x="605.066" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="610.067" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">calls</text>
+  <text x="646.075" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="651.077" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">in</text>
+  <text x="665.086" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="670.087" y="481" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">_RewriteMatch</text>
+  <text x="810.508" y="481" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">.</text>
   </g>
-  <path d="M385 420.4V454.4" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <g data-node="CoopSinglePhaseRewrite.match()" role="group" aria-label="cuda.coop. CoopSinglePhaseRewrite.match(). Scan all blocks for requirements.. Record calls in _RewriteMatch.">
-    <rect x="266" y="457.4" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="278" y="494.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopSinglePhase</text>
-    <text x="278" y="523" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Rewrite.match()</text>
-    <text x="278" y="551.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Scan all blocks for</text>
-    <text x="278" y="580.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">requirements.</text>
-    <text x="278" y="609.3999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Record calls in</text>
-    <text x="278" y="638.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">_RewriteMatch.</text>
+  <text x="67" y="536" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">During</text>
+  <text x="111.188" y="536" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="115.355" y="536" font-family="'Liberation Mono', Consolas, monospace" font-size="15" font-weight="400" fill="#526273" data-code="true">match()</text>
+  <path d="M50 515V558" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="562" width="832" height="144" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 572V696" stroke="#426b20" stroke-width="3"/>
+  <g data-node="Build the provider bundle" role="group" aria-label="Build the provider bundle">
+  <text x="44" y="587" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#426b20">03</text>
+  <text x="74" y="587" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Build the provider bundle</text>
+  <rect x="749.786" y="573" width="86.2141" height="21" rx="4" fill="#f0f6e9" stroke="none"/>
+  <text x="757.786" y="587" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#426b20" data-code="true">cuda.coop</text>
+  <text x="44" y="623" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">Algorithm</text>
+  <text x="44" y="649" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">collect_specializations()</text>
+  <text x="44" y="675" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">prepare_ltoir_bundle()</text>
+  <text x="473" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Collect</text>
+  <text x="528.019" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="533.02" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">providers</text>
+  <text x="607.05" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="612.052" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">and</text>
+  <text x="642.084" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="647.086" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">emit</text>
+  <text x="681.091" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="686.092" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">named</text>
+  <text x="741.13" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="746.131" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">C++</text>
+  <text x="780.155" y="623" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="649" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">wrappers.</text>
   </g>
-  <path d="M385 655.2V689.2" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <g data-node="Algorithm" role="group" aria-label="cuda.coop. Provider class. Algorithm. collect_specializations() gathers providers.. prepare_ltoir_bundle() emits named wrappers.">
-    <rect x="266" y="692.2" width="238" height="192.10000000000002" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="278" y="726.3000000000001" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Provider class</text>
-    <text x="278" y="755.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Algorithm</text>
-    <text x="278" y="783.9" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">collect_specializations()</text>
-    <text x="278" y="812.6999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">gathers providers.</text>
-    <text x="278" y="841.4999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">prepare_ltoir_bundle()</text>
-    <text x="278" y="870.2999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">emits named wrappers.</text>
+  <text x="67" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">C++</text>
+  <text x="95.3516" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="99.5187" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">source</text>
+  <text x="144.541" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="148.708" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">+</text>
+  <text x="157.467" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="161.634" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">layout</text>
+  <text x="201.661" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="205.828" y="730" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">queries</text>
+  <path d="M50 709V752" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="756" width="832" height="118" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 766V864" stroke="#8a5918" stroke-width="3"/>
+  <g data-node="Compile providers" role="group" aria-label="Compile providers">
+  <text x="44" y="781" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#8a5918">04</text>
+  <text x="74" y="781" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Compile providers</text>
+  <rect x="775.461" y="767" width="60.5391" height="21" rx="4" fill="#fcf5e8" stroke="none"/>
+  <text x="783.461" y="781" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#8a5918">NVRTC</text>
+  <text x="44" y="817" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">nvrtcCompileProgram()</text>
+  <text x="44" y="843" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">nvrtcGetLTOIR()</text>
   </g>
-  <path d="M385 887.3000000000001V936.3000000000001H639V948.3000000000001" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="436.7009582519531" y="909.3000000000001" width="150.59808349609375" height="27" fill="#ffffff"/>
-  <text x="512" y="927.3000000000001" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">C++ + layout queries</text>
-  <g data-node="nvrtcCompileProgram()" role="group" aria-label="NVRTC. nvrtcCompileProgram(). nvrtcGetLTOIR() returns the bundle image.">
-    <rect x="520" y="951.3000000000001" width="238" height="137.2" rx="7" fill="#fff0c9" stroke="#68798b" stroke-width="1"/>
-    <text x="532" y="988.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">nvrtcCompile</text>
-    <text x="532" y="1016.9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Program()</text>
-    <text x="532" y="1045.7" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">nvrtcGetLTOIR() returns</text>
-    <text x="532" y="1074.5" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">the bundle image.</text>
+  <text x="67" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Provider</text>
+  <text x="122.855" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="127.022" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">LTO-IR</text>
+  <text x="174.806" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="178.973" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">+</text>
+  <text x="187.733" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="191.9" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">scratch</text>
+  <text x="240.247" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="244.414" y="898" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">layouts</text>
+  <path d="M50 877V920" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <rect x="24" y="924" width="832" height="118" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 934V1032" stroke="#426b20" stroke-width="3"/>
+  <g data-node="Keep the bundle alive" role="group" aria-label="Keep the bundle alive">
+  <text x="44" y="949" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#426b20">05</text>
+  <text x="74" y="949" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Keep the bundle alive</text>
+  <rect x="749.786" y="935" width="86.2141" height="21" rx="4" fill="#f0f6e9" stroke="none"/>
+  <text x="757.786" y="949" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#426b20" data-code="true">cuda.coop</text>
+  <text x="44" y="985" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">_SharedTempFile</text>
+  <text x="473" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Own</text>
+  <text x="510.011" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="515.013" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">the</text>
+  <text x="540.036" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="545.038" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">shared</text>
+  <text x="600.075" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="605.077" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">bundle</text>
+  <text x="659.13" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="664.131" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">file</text>
+  <text x="687.141" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="692.142" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">retained</text>
+  <text x="757.191" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="762.192" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">by</text>
+  <text x="781.203" y="985" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="1011" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">Invocable</text>
+  <text x="570.214" y="1011" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="575.216" y="1011" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">objects.</text>
   </g>
-  <path d="M639 1091.5V1140.5H385V1152.5" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="450.2760925292969" y="1113.5" width="123.44781494140625" height="27" fill="#ffffff"/>
-  <text x="512" y="1131.5" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">LTO-IR + layouts</text>
-  <g data-node="_SharedTempFile" role="group" aria-label="cuda.coop. _SharedTempFile. Keep the bundle alive.. match() creates scratch-bearing Invocable objects.">
-    <rect x="266" y="1155.5" width="238" height="166" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="278" y="1192.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">_SharedTempFile</text>
-    <text x="278" y="1221.1" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Keep the bundle alive.</text>
-    <text x="278" y="1249.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">match() creates</text>
-    <text x="278" y="1278.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">scratch-bearing Invocable</text>
-    <text x="278" y="1307.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">objects.</text>
+  <path d="M50 1045V1062" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="1066" width="832" height="144" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 1076V1200" stroke="#426b20" stroke-width="3"/>
+  <g data-node="Rewrite cooperative calls" role="group" aria-label="Rewrite cooperative calls">
+  <text x="44" y="1091" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#426b20">06</text>
+  <text x="74" y="1091" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Rewrite cooperative calls</text>
+  <rect x="749.786" y="1077" width="86.2141" height="21" rx="4" fill="#f0f6e9" stroke="none"/>
+  <text x="757.786" y="1091" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#426b20" data-code="true">cuda.coop</text>
+  <text x="44" y="1127" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">CoopSinglePhaseRewrite.apply()</text>
+  <text x="473" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Plan</text>
+  <text x="509.027" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="514.028" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">scratch;</text>
+  <text x="577.047" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="582.048" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">reuse</text>
+  <text x="627.075" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="632.077" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">or</text>
+  <text x="648.081" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="653.083" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">create</text>
+  <text x="703.111" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="708.112" y="1127" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">Invocable</text>
+  <text x="805.327" y="1127" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="1153" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">objects.</text>
+  <text x="473" y="1179" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Emit</text>
+  <text x="509" y="1179" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="514.002" y="1179" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">ir.Global</text>
+  <text x="611.216" y="1179" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="616.217" y="1179" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">and</text>
+  <text x="646.25" y="1179" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="651.252" y="1179" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">ir.Expr.call</text>
+  <text x="780.87" y="1179" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">.</text>
   </g>
-  <path d="M385 1324.5V1358.5" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <g data-node="CoopSinglePhaseRewrite.apply()" role="group" aria-label="cuda.coop. CoopSinglePhaseRewrite.apply(). Plan scratch. Reuse or create Invocable objects.. Emit ir.Global + ir.Expr.call.">
-    <rect x="266" y="1361.5" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="278" y="1398.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CoopSinglePhase</text>
-    <text x="278" y="1427.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Rewrite.apply()</text>
-    <text x="278" y="1455.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Plan scratch. Reuse or</text>
-    <text x="278" y="1484.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">create Invocable objects.</text>
-    <text x="278" y="1513.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Emit ir.Global +</text>
-    <text x="278" y="1542.2999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">ir.Expr.call.</text>
+  <text x="70" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Rewritten</text>
+  <text x="133.355" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="137.522" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">IR;</text>
+  <text x="156.689" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="160.856" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">invocables</text>
+  <text x="231.733" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="235.9" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">retain</text>
+  <text x="273.422" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="277.589" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">link</text>
+  <text x="300.097" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="304.264" y="1234" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">files</text>
+  <text x="70" y="1282" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#182b3a">2  Type and lower</text>
+  <text x="70" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Providers</text>
+  <text x="137.578" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="142.023" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">are</text>
+  <text x="165.148" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="169.594" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">ready;</text>
+  <text x="214.062" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="218.508" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">the</text>
+  <text x="240.75" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="245.195" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">kernel</text>
+  <text x="288.773" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="293.219" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">is</text>
+  <text x="304.773" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="309.219" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">still</text>
+  <text x="332.328" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="336.773" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">being</text>
+  <text x="375.922" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="380.367" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">compiled.</text>
+  <path d="M50 1213V1344" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <rect x="24" y="1348" width="832" height="92" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 1358V1430" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Infer callable types" role="group" aria-label="Infer callable types">
+  <text x="44" y="1373" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#275e91">07</text>
+  <text x="74" y="1373" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Infer callable types</text>
+  <rect x="778.094" y="1359" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="786.094" y="1373" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="44" y="1409" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">MLIRTypeInference</text>
   </g>
-  <path d="M385 1559.3V1608.3H131V1620.3" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="133.26630401611328" y="1581.3" width="249.46739196777344" height="27" fill="#ffffff"/>
-  <text x="258" y="1599.3" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Rewritten IR; Invocable retains files</text>
-  <g data-node="MLIRTypeInference" role="group" aria-label="Numba compiler. MLIRTypeInference. Determine callable types and signatures.">
-    <rect x="12" y="1623.3" width="238" height="108.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="1660.1" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">MLIRTypeInference</text>
-    <text x="24" y="1688.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Determine callable types</text>
-    <text x="24" y="1717.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">and signatures.</text>
+  <text x="67" y="1464" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Request</text>
+  <text x="122.869" y="1464" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="127.036" y="1464" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">callable</text>
+  <text x="177.903" y="1464" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="182.07" y="1464" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">type</text>
+  <path d="M50 1443V1486" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="1490" width="832" height="118" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 1500V1598" stroke="#426b20" stroke-width="3"/>
+  <g data-node="Describe the provider call" role="group" aria-label="Describe the provider call">
+  <text x="44" y="1515" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#426b20">08</text>
+  <text x="74" y="1515" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Describe the provider call</text>
+  <rect x="749.786" y="1501" width="86.2141" height="21" rx="4" fill="#f0f6e9" stroke="none"/>
+  <text x="757.786" y="1515" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#426b20" data-code="true">cuda.coop</text>
+  <text x="44" y="1551" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">Invocable._numba_type_</text>
+  <text x="44" y="1577" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">Algorithm.codegen_method()</text>
+  <text x="473" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Build</text>
+  <text x="513.025" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="518.027" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">an</text>
+  <text x="538.048" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="543.05" y="1551" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">ExternFunction</text>
+  <text x="694.272" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">:</text>
+  <text x="699.273" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="704.275" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">symbol</text>
+  <text x="761.289" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="766.291" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">name,</text>
+  <text x="816.319" y="1551" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">signature,</text>
+  <text x="552.05" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="557.052" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">ABI,</text>
+  <text x="591.067" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="596.069" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">and</text>
+  <text x="626.102" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="631.103" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">link</text>
+  <text x="658.111" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="663.112" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">files.</text>
   </g>
-  <path d="M131 1734.7V1783.7H385V1795.7" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="180.3463897705078" y="1756.7" width="155.30722045898438" height="27" fill="#ffffff"/>
-  <text x="258" y="1774.7" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Request callable type</text>
-  <g data-node="Invocable._numba_type_" role="group" aria-label="cuda.coop. Invocable._numba_type_. Algorithm.codegen_method() builds ExternFunction.. Name + signature + ABI + link files.">
-    <rect x="266" y="1798.7" width="238" height="223.60000000000002" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="278" y="1835.5" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">Invocable._numba_</text>
-    <text x="278" y="1864.3" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">type_</text>
-    <text x="278" y="1893.1" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Algorithm.codegen_</text>
-    <text x="278" y="1921.8999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">method() builds</text>
-    <text x="278" y="1950.6999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">ExternFunction.</text>
-    <text x="278" y="1979.4999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Name + signature + ABI +</text>
-    <text x="278" y="2008.2999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">link files.</text>
+  <text x="67" y="1632" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Callable</text>
+  <text x="121.2" y="1632" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="125.367" y="1632" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">descriptor</text>
+  <path d="M50 1611V1654" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <rect x="24" y="1658" width="832" height="144" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 1668V1792" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Lower the kernel" role="group" aria-label="Lower the kernel">
+  <text x="44" y="1683" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#275e91">09</text>
+  <text x="74" y="1683" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Lower the kernel</text>
+  <rect x="778.094" y="1669" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="786.094" y="1683" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="44" y="1719" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">MLIRLower</text>
+  <text x="473" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">After</text>
+  <text x="511.014" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="516.016" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">typed</text>
+  <text x="560.05" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="565.052" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">rewrites,</text>
+  <text x="633.061" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="638.062" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">emit</text>
+  <text x="672.067" y="1719" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="1745" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">func.call @symbol</text>
+  <text x="656.627" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="661.628" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">and</text>
+  <text x="691.661" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="696.662" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">collect</text>
+  <text x="747.683" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="752.684" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">link</text>
+  <text x="779.692" y="1745" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="1771" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">inputs.</text>
   </g>
-  <path d="M385 2025.3000000000002V2074.3H131V2086.3" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="140.74037170410156" y="2047.3000000000002" width="234.51925659179688" height="27" fill="#ffffff"/>
-  <text x="258" y="2065.3" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Typed overload + ExternFunction</text>
-  <g data-node="MLIRLower" role="group" aria-label="Numba compiler. After typed rewrites. MLIRLower. Emit func.call @symbol.. Collect link inputs.">
-    <rect x="12" y="2089.3" width="238" height="134.5" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="2123.4" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">After typed rewrites</text>
-    <text x="24" y="2152.2000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">MLIRLower</text>
-    <text x="24" y="2181.0000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Emit func.call @symbol.</text>
-    <text x="24" y="2209.8000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Collect link inputs.</text>
+  <path d="M50 1805V1822" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="1826" width="832" height="92" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 1836V1908" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Compile the kernel" role="group" aria-label="Compile the kernel">
+  <text x="44" y="1851" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#275e91">10</text>
+  <text x="74" y="1851" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Compile the kernel</text>
+  <rect x="778.094" y="1837" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="786.094" y="1851" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="44" y="1887" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">optimize()</text>
+  <text x="473" y="1887" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Compile</text>
+  <text x="539.022" y="1887" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="544.023" y="1887" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">kernel</text>
+  <text x="593.048" y="1887" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="598.05" y="1887" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">LTO-IR.</text>
   </g>
-  <path d="M131 2226.8V2260.8" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <g data-node="optimize()" role="group" aria-label="Numba compiler. Compilation function. optimize(). Compile kernel LTO-IR.">
-    <rect x="12" y="2263.8" width="238" height="105.7" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="2297.9" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Compilation function</text>
-    <text x="24" y="2326.7000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">optimize()</text>
-    <text x="24" y="2355.5000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Compile kernel LTO-IR.</text>
+  <text x="70" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Kernel</text>
+  <text x="113.359" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="117.527" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">LTO-IR</text>
+  <text x="165.311" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="169.478" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">+</text>
+  <text x="178.238" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="182.405" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">provider</text>
+  <text x="236.597" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="240.764" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">link</text>
+  <text x="263.272" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="267.439" y="1942" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">inputs</text>
+  <text x="70" y="1990" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#182b3a">3  Link and load</text>
+  <path d="M50 1921V2026" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="24" y="2030" width="832" height="92" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 2040V2112" stroke="#705193" stroke-width="3"/>
+  <g data-node="Link device code" role="group" aria-label="Link device code">
+  <text x="44" y="2055" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#705193">11</text>
+  <text x="74" y="2055" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Link device code</text>
+  <rect x="749.786" y="2041" width="86.2141" height="21" rx="4" fill="#f5f0fa" stroke="none"/>
+  <text x="757.786" y="2055" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#705193" data-code="true">nvJitLink</text>
+  <text x="44" y="2091" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">Linker → nvJitLink</text>
+  <text x="473" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Resolve</text>
+  <text x="538.03" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="543.031" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">or</text>
+  <text x="559.036" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="564.038" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">inline</text>
+  <text x="606.066" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="611.067" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">provider</text>
+  <text x="676.097" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="681.098" y="2091" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">symbols.</text>
   </g>
-  <path d="M131 2372.5V2421.5H893V2433.5" marker-end="url(#coop-handoffs-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="422.44629669189453" y="2394.5" width="179.10740661621094" height="27" fill="#ffffff"/>
-  <text x="512" y="2412.5" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Kernel + provider LTO-IR</text>
-  <g data-node="nvJitLink" role="group" aria-label="nvJitLink. Through Linker. nvJitLink. Resolve or inline the symbol.. Return a cubin.">
-    <rect x="774" y="2436.5" width="238" height="163.3" rx="7" fill="#e7dff4" stroke="#68798b" stroke-width="1"/>
-    <text x="786" y="2470.6" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Through Linker</text>
-    <text x="786" y="2499.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
-    <text x="786" y="2528.2000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve or inline the</text>
-    <text x="786" y="2557.0000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbol.</text>
-    <text x="786" y="2585.8000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Return a cubin.</text>
+  <text x="67" y="2146" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Linked</text>
+  <text x="111.202" y="2146" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="115.369" y="2146" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">cubin</text>
+  <path d="M50 2125V2168" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)" stroke-dasharray="4 3"/>
+  <rect x="24" y="2172" width="832" height="118" rx="8" fill="white" stroke="#d8e0e6"/><path d="M24 2182V2280" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Load the kernel" role="group" aria-label="Load the kernel">
+  <text x="44" y="2197" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#275e91">12</text>
+  <text x="74" y="2197" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#182b3a">Load the kernel</text>
+  <rect x="778.094" y="2183" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="786.094" y="2197" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="44" y="2233" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">CodeLibrary.get_cufunc()</text>
+  <text x="473" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">Load</text>
+  <text x="513.044" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="518.045" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">the</text>
+  <text x="543.069" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="548.07" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">cubin;</text>
+  <text x="596.103" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="601.105" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">look</text>
+  <text x="634.125" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="639.127" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">up</text>
+  <text x="659.148" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="664.15" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">the</text>
+  <text x="689.173" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="694.175" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">kernel</text>
+  <text x="743.2" y="2233" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="473" y="2259" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#526273" data-code="true">CUfunction</text>
+  <text x="581.016" y="2259" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273"> </text>
+  <text x="586.017" y="2259" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#526273">handle.</text>
   </g>
-  <path d="M893 2602.8V2651.8H131V2663.8" marker-end="url(#coop-handoffs-classes-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <rect x="464.7451477050781" y="2624.8" width="94.50970458984375" height="27" fill="#ffffff"/>
-  <text x="512" y="2642.8" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Linked cubin</text>
-  <g data-node="CodeLibrary.get_cufunc()" role="group" aria-label="Numba compiler. CodeLibrary.get_cufunc(). Load the cubin.. Look up the kernel CUfunction handle.">
-    <rect x="12" y="2666.8" width="238" height="166" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="24" y="2703.6000000000004" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">CodeLibrary.get_</text>
-    <text x="24" y="2732.4000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">cufunc()</text>
-    <text x="24" y="2761.2000000000007" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Load the cubin.</text>
-    <text x="24" y="2790.000000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Look up the kernel</text>
-    <text x="24" y="2818.800000000001" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">CUfunction handle.</text>
-  </g>
+  <text x="24" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Solid</text>
+  <text x="57.3547" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="61.5219" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">arrows:</text>
+  <text x="110.697" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="114.864" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">calls</text>
+  <text x="144.872" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="149.039" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">or</text>
+  <text x="162.377" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="166.544" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">inputs.</text>
+  <text x="210.738" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="214.905" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">Dashed</text>
+  <text x="266.606" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="270.773" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">arrows:</text>
+  <text x="319.948" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="324.116" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">returned</text>
+  <text x="379.984" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273"> </text>
+  <text x="384.152" y="2312" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" fill="#526273">results.</text>
 </svg>

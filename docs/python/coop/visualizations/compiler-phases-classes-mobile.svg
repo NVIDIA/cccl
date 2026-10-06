@@ -3,122 +3,300 @@
 SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="coop-phases-classes-title coop-phases-classes-desc" viewBox="0 0 270 2336">
-  <title id="coop-phases-classes-title">Compiler phases: classes</title>
-  <desc id="coop-phases-classes-desc">Read from top to bottom. Cooperative planning runs before main type inference.</desc>
-  <defs>
-    <marker id="coop-phases-classes-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
-    </marker>
-  </defs>
-  <rect width="270" height="2336" fill="#ffffff"/>
-  <text x="8" y="22" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">1. Build untyped IR</text>
-  <g data-node="TranslateByteCode → IRProcessing" role="group" aria-label="Numba compiler. Compiler pass classes. TranslateByteCode → IRProcessing. MLIRCompiler defines the pipeline in a PassManager.. Output: FunctionIR with ir.Block and ir.Expr objects.">
-    <rect x="8" y="36.400000000000006" width="254" height="176.70000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="64.7" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler pass classes</text>
-    <text x="20" y="87.10000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">TranslateByteCode →</text>
-    <text x="20" y="109.50000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">IRProcessing</text>
-    <text x="20" y="131.9" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">MLIRCompiler defines the pipeline in</text>
-    <text x="20" y="154.3" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">a PassManager.</text>
-    <text x="20" y="176.70000000000002" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Output: FunctionIR with ir.Block and</text>
-    <text x="20" y="199.10000000000002" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">ir.Expr objects.</text>
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 300 2349">
+  <title id="title">Compiler phases — Python classes</title>
+  <desc id="desc">Seven compiler phases in order. One registered cooperative planner runs before main type inference. Mixin helpers and rewrite data are grouped inside that planner, not separate compiler passes.</desc>
+  <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#8998a5"/></marker></defs>
+  <rect width="300" height="2349" fill="#f8fafb" rx="10"/>
+  <text x="4" y="22" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#526273">PYTHON CLASSES · NUMBA-CUDA-MLIR</text>
+  <text x="4" y="48" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700" fill="#182b3a">Compiler phases</text>
+  <text x="4" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Read</text>
+  <text x="37.4688" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="41.3578" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">from</text>
+  <text x="69.3578" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="73.2469" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">top</text>
+  <text x="92.7078" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="96.5969" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">to</text>
+  <text x="108.272" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="112.161" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">bottom.</text>
+  <text x="158.848" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="162.737" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Cooperative</text>
+  <text x="238.227" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="242.116" y="73" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">planning</text>
+  <text x="4" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">runs</text>
+  <text x="31.2344" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="35.1234" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">before</text>
+  <text x="74.8187" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="78.7078" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">main</text>
+  <text x="109.053" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="112.942" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">type</text>
+  <text x="139.403" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="143.292" y="96" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">inference.</text>
+  <rect x="4" y="133" width="292" height="224" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 143V347" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Build untyped IR" role="group" aria-label="Build untyped IR">
+  <text x="12" y="158" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#275e91">01</text>
+  <text x="42" y="158" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Build untyped IR</text>
+  <rect x="12" y="168" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="20" y="182" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="12" y="214" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">TranslateByteCode</text>
+  <text x="12" y="237" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">→ IRProcessing</text>
+  <text x="12" y="260" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">MLIRCompiler</text>
+  <text x="127.219" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="131.664" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">defines</text>
+  <text x="183.258" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="187.703" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">the</text>
+  <text x="209.945" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="214.391" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">pipeline</text>
+  <text x="269.547" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="273.992" y="260" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">in</text>
+  <text x="12" y="283" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">a</text>
+  <text x="20.8984" y="283" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="25.3438" y="283" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">PassManager</text>
+  <text x="130.961" y="283" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">.</text>
+  <text x="12" y="306" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Produces</text>
+  <text x="79.5938" y="306" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="84.0391" y="306" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">FunctionIR</text>
+  <text x="180.055" y="306" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="184.5" y="306" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">with</text>
+  <text x="212.953" y="306" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="329" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">ir.Block</text>
+  <text x="88.8125" y="329" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="93.2578" y="329" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">and</text>
+  <text x="119.953" y="329" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="124.398" y="329" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">ir.Expr</text>
+  <text x="191.609" y="329" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="196.055" y="329" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">objects.</text>
   </g>
-  <path d="M135 216.10000000000002V241.10000000000002" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="269.1" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">2. Run early rewrites</text>
-  <g data-node="GenericRewrites → NumbaCudaMlirInlineInlinables" role="group" aria-label="Numba compiler. Compiler pass classes. GenericRewrites → NumbaCudaMlirInlineInlinables. Run the before-inference rewrite registry.. Inline supported device helpers before coop planning.">
-    <rect x="8" y="283.5" width="254" height="199.10000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="311.8" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler pass classes</text>
-    <text x="20" y="334.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">GenericRewrites →</text>
-    <text x="20" y="356.59999999999997" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">NumbaCudaMlirInline</text>
-    <text x="20" y="378.99999999999994" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">Inlinables</text>
-    <text x="20" y="401.3999999999999" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Run the before-inference rewrite</text>
-    <text x="20" y="423.7999999999999" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">registry.</text>
-    <text x="20" y="446.1999999999999" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Inline supported device helpers</text>
-    <text x="20" y="468.59999999999985" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">before coop planning.</text>
+  <path d="M30 360V371" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="4" y="375" width="292" height="178" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 385V543" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Early rewrites" role="group" aria-label="Early rewrites">
+  <text x="12" y="400" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#275e91">02</text>
+  <text x="42" y="400" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Early rewrites</text>
+  <rect x="12" y="410" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="20" y="424" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="12" y="456" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">GenericRewrites</text>
+  <text x="12" y="479" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">NumbaCudaMlirInlineInlinables</text>
+  <text x="12" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Run</text>
+  <text x="41.3516" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="45.7969" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">before-inference</text>
+  <text x="162.312" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="166.758" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">rewrites,</text>
+  <text x="227.211" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="231.656" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">then</text>
+  <text x="262.797" y="502" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">inline</text>
+  <text x="49.3594" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="53.8047" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">supported</text>
+  <text x="124.969" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="129.414" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">device</text>
+  <text x="175.664" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="180.109" y="525" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">helpers.</text>
   </g>
-  <path d="M135 485.6V510.6" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="538.6" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">3. Plan cooperative calls</text>
-  <g data-node="PostInlineWholeFunctionPlanners" role="group" aria-label="cuda.coop. Compiler pass → extension planner. PostInlineWholeFunctionPlanners">
-    <rect x="8" y="553" width="254" height="597.5999999999998" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="581.3" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler pass → extension planner</text>
-    <text x="20" y="603.6999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">PostInlineWholeFunction</text>
-    <text x="20" y="626.0999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">Planners</text>
-    <text x="20" y="654.3999999999999" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Planner class</text>
-    <text x="20" y="676.7999999999998" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CoopWholeFunctionPlanner.</text>
-    <text x="20" y="699.1999999999998" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">run()</text>
-    <text x="20" y="721.5999999999998" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_GroupPlanning._resolve_groups()</text>
-    <text x="20" y="743.9999999999998" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">uses _GroupCallPlanner.</text>
-    <text x="20" y="766.3999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Repair IR if group resolution</text>
-    <text x="20" y="788.7999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">changes it.</text>
-    <text x="20" y="811.1999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_CallRewriting._rewrite_calls() visits</text>
-    <text x="20" y="833.5999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">blocks.</text>
-    <text x="20" y="861.8999999999996" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Rewrite class</text>
-    <text x="20" y="884.2999999999996" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CoopSinglePhaseRewrite</text>
-    <text x="20" y="906.6999999999996" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">match(): collect whole-function</text>
-    <text x="20" y="929.0999999999996" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">requirements, then block work.</text>
-    <text x="20" y="951.4999999999995" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">apply(): plan backing storage and</text>
-    <text x="20" y="973.8999999999995" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">emit replacements.</text>
-    <text x="20" y="1002.1999999999995" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Inherited helpers and carried data</text>
-    <text x="20" y="1024.5999999999995" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_StorageRewrite: requirements and</text>
-    <text x="20" y="1046.9999999999995" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">scratch allocation.</text>
-    <text x="20" y="1069.3999999999996" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_InvocableRewrite: provider bundles</text>
-    <text x="20" y="1091.7999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">and Invocable objects.</text>
-    <text x="20" y="1114.1999999999998" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">_RewriteMatch: factory, operands,</text>
-    <text x="20" y="1136.6" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">and lowering plan.</text>
+  <path d="M30 556V567" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="4" y="571" width="292" height="857" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 581V1418" stroke="#426b20" stroke-width="3"/>
+  <g data-node="Cooperative planning" role="group" aria-label="Cooperative planning">
+  <text x="12" y="596" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#426b20">03</text>
+  <text x="42" y="596" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Cooperative planning</text>
+  <rect x="12" y="606" width="86.2141" height="21" rx="4" fill="#f0f6e9" stroke="none"/>
+  <text x="20" y="620" font-family="'Liberation Mono', Consolas, monospace" font-size="13" font-weight="400" fill="#426b20" data-code="true">cuda.coop</text>
+  <text x="12" y="660" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">NUMBA COMPILER PASS</text>
+  <text x="12" y="683" font-family="'Liberation Mono', Consolas, monospace" font-size="14.8362" font-weight="400" fill="#182b3a" data-code="true">PostInlineWholeFunctionPlanners</text>
+  <text x="12" y="714" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">REGISTERED PLANNER</text>
+  <text x="12" y="737" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">CoopWholeFunctionPlanner</text>
+  <text x="24" y="760" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">.run()</text>
+  <path d="M12 777L288 777" stroke="#d8e0e6" stroke-width="1.3" fill="none"/>
+  <text x="12" y="793" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">1  RESOLVE GROUPS</text>
+  <text x="12" y="816" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">_GroupPlanning</text>
+  <text x="24" y="839" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">._resolve_groups()</text>
+  <text x="12" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Uses</text>
+  <text x="43.8969" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="47.7859" y="865" font-family="'Liberation Mono', Consolas, monospace" font-size="14" font-weight="400" fill="#526273" data-code="true">_GroupCallPlanner</text>
+  <text x="190.613" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">;</text>
+  <text x="194.502" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="198.391" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">repairs</text>
+  <text x="241.184" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">changed</text>
+  <text x="65.7156" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="69.6047" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">IR.</text>
+  <text x="12" y="921" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">2  REWRITE CALLS</text>
+  <text x="12" y="944" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">_CallRewriting</text>
+  <text x="24" y="967" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">._rewrite_calls()</text>
+  <text x="12" y="993" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Visits</text>
+  <text x="45.1953" y="993" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="49.0844" y="993" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">blocks</text>
+  <text x="88.7672" y="993" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="92.6562" y="993" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">with</text>
+  <text x="117.553" y="993" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="1016" font-family="'Liberation Mono', Consolas, monospace" font-size="14" font-weight="400" fill="#526273" data-code="true">CoopSinglePhaseRewrite</text>
+  <text x="196.834" y="1016" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">.</text>
+  <path d="M12 1043L288 1043" stroke="#d8e0e6" stroke-width="1.3" fill="none"/>
+  <text x="12" y="1067" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">REWRITER</text>
+  <text x="12" y="1090" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">CoopSinglePhaseRewrite</text>
+  <text x="12" y="1113" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#526273" data-code="true">match()</text>
+  <text x="12" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Collect</text>
+  <text x="54.7938" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="58.6828" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">whole-function</text>
+  <text x="148.958" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="152.847" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">requirements</text>
+  <text x="234.55" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="238.439" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">and</text>
+  <text x="261.797" y="1139" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="1162" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">block</text>
+  <text x="44.6828" y="1162" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="48.5719" y="1162" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">work.</text>
+  <text x="12" y="1195" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#526273" data-code="true">apply()</text>
+  <text x="12" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Plan</text>
+  <text x="40.0203" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="43.9094" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">storage</text>
+  <text x="90.6047" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="94.4938" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">and</text>
+  <text x="117.852" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="121.741" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">emit</text>
+  <text x="148.189" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
+  <text x="152.078" y="1221" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">replacements.</text>
+  <text x="12" y="1262" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">INHERITED HELPERS / CARRIED DATA</text>
+  <text x="12" y="1285" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">_StorageRewrite</text>
+  <text x="156.023" y="1285" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="160.469" y="1285" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">—</text>
+  <text x="176.469" y="1285" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="180.914" y="1285" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">requirements</text>
+  <text x="274.289" y="1285" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">and</text>
+  <text x="38.6953" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="43.1406" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">scratch</text>
+  <text x="94.7109" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="99.1562" y="1308" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">allocation</text>
+  <text x="12" y="1331" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">_InvocableRewrite</text>
+  <text x="175.227" y="1331" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="179.672" y="1331" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">—</text>
+  <text x="195.672" y="1331" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="200.117" y="1331" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">providers</text>
+  <text x="265.922" y="1331" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="1354" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">and</text>
+  <text x="38.6953" y="1354" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="43.1406" y="1354" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">Invocable</text>
+  <text x="129.555" y="1354" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="134" y="1354" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">objects</text>
+  <text x="12" y="1377" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">_RewriteMatch</text>
+  <text x="136.82" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="141.266" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">—</text>
+  <text x="157.266" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="161.711" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">matched</text>
+  <text x="223.078" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="227.523" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">call</text>
+  <text x="251.531" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="255.977" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">and</text>
+  <text x="282.672" y="1377" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="1400" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">lowering</text>
+  <text x="71.5859" y="1400" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="76.0312" y="1400" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">plan</text>
   </g>
-  <path d="M135 1153.6V1178.6" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="1206.6" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Coop planning complete · still before main</text>
-  <text x="8" y="1227.6" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">typing</text>
-  <text x="8" y="1258.6" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">4. Finish untyped passes</text>
-  <g data-node="FindLiterallyCalls → ReconstructSSA" role="group" aria-label="Numba compiler. Compiler pass classes. FindLiterallyCalls → ReconstructSSA. NumbaCudaMlirLiteralUnroll handles supported unrolling.. LiteralPropagationSubPipelinePass propagates literals.">
-    <rect x="8" y="1273" width="254" height="176.70000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="1301.3" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler pass classes</text>
-    <text x="20" y="1323.7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">FindLiterallyCalls →</text>
-    <text x="20" y="1346.1000000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">ReconstructSSA</text>
-    <text x="20" y="1368.5000000000002" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">NumbaCudaMlirLiteralUnroll handles</text>
-    <text x="20" y="1390.9000000000003" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">supported unrolling.</text>
-    <text x="20" y="1413.3000000000004" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">LiteralPropagationSubPipelinePass</text>
-    <text x="20" y="1435.7000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">propagates literals.</text>
+  <text x="47" y="1452" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#526273">Cooperative</text>
+  <text x="117.095" y="1452" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#526273"> </text>
+  <text x="120.708" y="1452" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#526273">planning</text>
+  <text x="169.861" y="1452" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#526273"> </text>
+  <text x="173.473" y="1452" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#526273">complete</text>
+  <path d="M30 1431V1471" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="4" y="1475" width="292" height="178" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 1485V1643" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Finish untyped passes" role="group" aria-label="Finish untyped passes">
+  <text x="12" y="1500" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#275e91">04</text>
+  <text x="42" y="1500" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Finish untyped passes</text>
+  <rect x="12" y="1510" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="20" y="1524" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="12" y="1556" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">FindLiterallyCalls</text>
+  <text x="12" y="1579" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">NumbaCudaMlirLiteralUnroll</text>
+  <text x="12" y="1602" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">ReconstructSSA</text>
+  <text x="12" y="1625" font-family="'Liberation Mono', Consolas, monospace" font-size="13.9371" font-weight="400" fill="#182b3a" data-code="true">LiteralPropagationSubPipelinePass</text>
   </g>
-  <path d="M135 1452.7V1477.7" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="1505.7" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">5. Infer types</text>
-  <g data-node="MLIRTypeInference" role="group" aria-label="Numba compiler. Compiler pass + provider typing hook. MLIRTypeInference">
-    <rect x="8" y="1520.1000000000001" width="254" height="184.70000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="1548.4" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler pass + provider typing hook</text>
-    <text x="20" y="1570.8000000000002" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">MLIRTypeInference</text>
-    <text x="20" y="1601.2000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">Invocable._numba_type_</text>
-    <text x="20" y="1623.6000000000004" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Algorithm.codegen() builds local</text>
-    <text x="20" y="1646.0000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">overload templates.</text>
-    <text x="20" y="1668.4000000000005" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">ExternFunction describes the</text>
-    <text x="20" y="1690.8000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">symbol, signature, ABI, and link files.</text>
+  <path d="M30 1656V1667" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="4" y="1671" width="292" height="178" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 1681V1839" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Infer types" role="group" aria-label="Infer types">
+  <text x="12" y="1696" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#275e91">05</text>
+  <text x="42" y="1696" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Infer types</text>
+  <rect x="12" y="1706" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="20" y="1720" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="12" y="1752" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">MLIRTypeInference</text>
+  <text x="12" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Build</text>
+  <text x="47.5781" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="52.0234" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">the</text>
+  <text x="74.2656" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="78.7109" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">type</text>
+  <text x="108.953" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="113.398" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">map</text>
+  <text x="144.523" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="148.969" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">and</text>
+  <text x="175.664" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="180.109" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">call</text>
+  <text x="204.117" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="208.562" y="1775" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">signatures.</text>
+  <text x="12" y="1798" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">Invocable._numba_type_</text>
+  <text x="223.234" y="1798" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">describes</text>
+  <text x="80.4766" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="84.9219" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">the</text>
+  <text x="107.164" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="111.609" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">provider</text>
+  <text x="169.414" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="173.859" y="1821" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">call.</text>
   </g>
-  <path d="M135 1707.8000000000002V1732.8000000000002" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="1760.8000000000002" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">6. Run typed rewrites</text>
-  <g data-node="PreLowerStripPhis → InlineOverloads → NopythonRewrites" role="group" aria-label="Numba compiler. Compiler pass classes. PreLowerStripPhis → InlineOverloads → NopythonRewrites. Run the compiler's after-inference rewrites.. CoopSinglePhaseRewrite is not registered here.">
-    <rect x="8" y="1775.2000000000003" width="254" height="199.10000000000002" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="1803.5000000000002" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Compiler pass classes</text>
-    <text x="20" y="1825.9000000000003" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">PreLowerStripPhis →</text>
-    <text x="20" y="1848.3000000000004" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">InlineOverloads →</text>
-    <text x="20" y="1870.7000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">NopythonRewrites</text>
-    <text x="20" y="1893.1000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Run the compiler's after-inference</text>
-    <text x="20" y="1915.5000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">rewrites.</text>
-    <text x="20" y="1937.9000000000008" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">CoopSinglePhaseRewrite is not</text>
-    <text x="20" y="1960.3000000000009" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">registered here.</text>
+  <path d="M30 1852V1863" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="4" y="1867" width="292" height="178" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 1877V2035" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Typed rewrites" role="group" aria-label="Typed rewrites">
+  <text x="12" y="1892" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#275e91">06</text>
+  <text x="42" y="1892" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Typed rewrites</text>
+  <rect x="12" y="1902" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="20" y="1916" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="12" y="1948" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">PreLowerStripPhis</text>
+  <text x="12" y="1971" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">→ InlineOverloads</text>
+  <text x="12" y="1994" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">NopythonRewrites</text>
+  <text x="12" y="2017" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Run</text>
+  <text x="41.3516" y="2017" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="45.7969" y="2017" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">after-inference</text>
+  <text x="148.961" y="2017" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="153.406" y="2017" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">rewrites.</text>
   </g>
-  <path d="M135 1977.3000000000002V2002.3000000000002" marker-end="url(#coop-phases-classes-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
-  <text x="8" y="2030.3000000000002" font-family="sans-serif" font-size="14px" font-weight="500" fill="#172b3a">7. Lower, link, and load</text>
-  <g data-node="MLIRBackend → MLIRLower" role="group" aria-label="Numba compiler. Classes and a compilation function. MLIRBackend → MLIRLower. Lower symbolic calls. Collect external link inputs.">
-    <rect x="8" y="2044.7000000000003" width="254" height="282.3" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
-    <text x="20" y="2073.0000000000005" font-family="sans-serif" font-size="12px" font-weight="400" fill="#44556b">Classes and a compilation function</text>
-    <text x="20" y="2095.4000000000005" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">MLIRBackend → MLIRLower</text>
-    <text x="20" y="2117.8000000000006" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Lower symbolic calls. Collect</text>
-    <text x="20" y="2140.2000000000007" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">external link inputs.</text>
-    <text x="20" y="2170.600000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">optimize() → Linker</text>
-    <text x="20" y="2193.000000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Compile kernel LTO-IR.</text>
-    <text x="20" y="2215.400000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">nvJitLink links kernel and provider</text>
-    <text x="20" y="2237.800000000001" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">inputs into a cubin.</text>
-    <text x="20" y="2268.200000000001" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">CodeLibrary.get_cufunc()</text>
-    <text x="20" y="2290.6000000000013" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Load the cubin. Look up the kernel</text>
-    <text x="20" y="2313.0000000000014" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">CUfunction handle.</text>
+  <path d="M30 2048V2059" stroke="#8998a5" stroke-width="1.4" fill="none" marker-end="url(#arrow)"/>
+  <rect x="4" y="2063" width="292" height="270" rx="8" fill="white" stroke="#d8e0e6"/><path d="M4 2073V2323" stroke="#275e91" stroke-width="3"/>
+  <g data-node="Lower, link, load" role="group" aria-label="Lower, link, load">
+  <text x="12" y="2088" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#275e91">07</text>
+  <text x="42" y="2088" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#182b3a">Lower, link, load</text>
+  <rect x="12" y="2098" width="57.9062" height="21" rx="4" fill="#edf4fa" stroke="none"/>
+  <text x="20" y="2112" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#275e91">Numba</text>
+  <text x="12" y="2144" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">MLIRBackend</text>
+  <text x="12" y="2167" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">→ MLIRLower</text>
+  <text x="12" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Lower</text>
+  <text x="55.5781" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="60.0234" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">symbolic</text>
+  <text x="122.258" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="126.703" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">calls</text>
+  <text x="158.711" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="163.156" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">and</text>
+  <text x="189.852" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="194.297" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">collect</text>
+  <text x="239.648" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="244.094" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">link</text>
+  <text x="268.102" y="2190" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="2213" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">inputs.</text>
+  <text x="12" y="2236" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">optimize()</text>
+  <text x="108.016" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="112.461" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">compiles</text>
+  <text x="175.594" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="180.039" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">the</text>
+  <text x="202.281" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="206.727" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">kernel;</text>
+  <text x="254.75" y="2236" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="12" y="2259" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">nvJitLink</text>
+  <text x="98.4141" y="2259" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="102.859" y="2259" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">links</text>
+  <text x="134.867" y="2259" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="139.312" y="2259" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">it.</text>
+  <text x="12" y="2282" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">CodeLibrary.get_cufunc()</text>
+  <text x="242.438" y="2282" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="246.883" y="2282" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">loads</text>
+  <text x="12" y="2305" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">the</text>
+  <text x="34.2422" y="2305" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="38.6875" y="2305" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">kernel</text>
+  <text x="82.2656" y="2305" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
+  <text x="86.7109" y="2305" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">handle.</text>
   </g>
 </svg>
