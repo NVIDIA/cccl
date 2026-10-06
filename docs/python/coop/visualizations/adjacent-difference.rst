@@ -82,8 +82,7 @@ Encoding deltas across block tiles
 ----------------------------------
 
 With four items per thread, this kernel uses 128 threads to process each
-full 512-item tile. Import ``cuda`` from ``numba_cuda_mlir``, ``numpy as np``,
-and ``coop`` from ``cuda``. The previous tile's final source item supplies the
+full 512-item tile. The previous tile's final source item supplies the
 left boundary. The first tile uses zero so its first result retains the first
 input. An inclusive sum of the resulting deltas reconstructs the original
 sequence when the first delta is the first original value.
