@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__algorithm/generate_n.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_GENERATE_N_H
