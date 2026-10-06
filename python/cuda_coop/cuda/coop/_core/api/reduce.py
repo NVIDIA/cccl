@@ -7,7 +7,16 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, TypeVar
+
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ReduceAlgorithm,
+    ReduceOperator,
+    TempStorageLike,
+    ValidItems,
+)
 
 from ..dtype_policy import validate_common_integer_value_dtype_name
 from ..thread_group import ThreadGroup
@@ -22,6 +31,10 @@ from ._payload import (
     _validate_common_integer_value,
     _validate_common_numeric_value,
 )
+from .thread_group import BlockGroup, WarpGroup
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _PARTIAL_REDUCTION_GROUP_KINDS = frozenset(
     {"block", "warp", "threads_within_warp"}
@@ -195,15 +208,15 @@ def _validate_common_reduce_value(
     group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
 )
 def reduce(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    binary_op: Any = None,
-    valid_items: object = None,
-    algorithm: str | None = None,
-    temp_storage: Any = None,
-) -> Any:
+    binary_op: ReduceOperator | None = None,
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> _ItemT:
     """Reduce a block or warp to a scalar defined at group rank zero.
 
     Parameters
@@ -302,14 +315,14 @@ def reduce(
     group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
 )
 def sum(
-    group: ThreadGroup,
-    value: object,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    valid_items: object = None,
-    algorithm: str | None = None,
-    temp_storage: Any = None,
-) -> Any:
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> _ItemT:
     """Sum a block or warp to a scalar defined at group rank zero.
 
     Equivalent to :func:`cuda.coop.reduce` with ``binary_op="sum"``. Its group,

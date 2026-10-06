@@ -120,7 +120,9 @@ ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
 class CompilerScalarLike(Protocol):
     """Describe a compiler scalar without importing its concrete type."""
 
-    width: int
+    @property
+    def width(self) -> int:
+        """Return this scalar's bit width."""
 
     @property
     def dtype(self) -> object:
@@ -133,7 +135,9 @@ class CompilerScalarLike(Protocol):
 class CompilerIntegerLike(CompilerScalarLike, Protocol):
     """Compiler scalar carrying the signedness metadata of an integer."""
 
-    signed: bool
+    @property
+    def signed(self) -> bool:
+        """Return whether this integer type is signed."""
 
 
 if not TYPE_CHECKING and numpy is None:
