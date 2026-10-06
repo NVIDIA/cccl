@@ -31,6 +31,7 @@
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/layout_helpers.h>
+#include <cuda/std/__mdspan/layout_stride.h>
 #include <cuda/std/__mdspan/submdspan_helper.h>
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/integral_constant_like.h>
