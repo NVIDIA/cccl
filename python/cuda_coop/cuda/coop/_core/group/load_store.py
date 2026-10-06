@@ -37,8 +37,12 @@ from ..warp.load_store import (
     make_warp_load_specialization,
     make_warp_store_specialization,
 )
-from ._contracts import _contracts, _unsupported, _unsupported_cub_warp_width
 from ._dispatch import _register_group_operation_family
+from ._execution_requirements import (
+    _build_execution_requirements,
+    _unsupported,
+    _unsupported_cub_warp_width,
+)
 from ._model import (
     ArgumentPrecondition,
     GroupLoweringPlan,
@@ -368,7 +372,7 @@ def _plan_load_store(
     Returns
     -------
     GroupLoweringPlan
-        CUB specialization, execution contracts, and implementation
+        CUB specialization, execution requirements, and implementation
         provenance, or an ``UNSUPPORTED`` plan with a reason when the group
         kind, warp width, or algorithm variant is unsupported. This builds
         metadata; compilation and device-storage allocation happen during
@@ -500,7 +504,7 @@ def _plan_load_store(
         )
     cpp_class = f"cub::{specialization.struct_name}"
     storage_free = operation.algorithm in _STORAGE_FREE_ALGORITHMS
-    contracts = _contracts(
+    requirements = _build_execution_requirements(
         resolved,
         launch,
         storage_ownership=(
@@ -567,11 +571,11 @@ def _plan_load_store(
         call=call,
         resolved_group=resolved,
         implementation=specialization,
-        topology=contracts[0],
-        participation=contracts[1],
+        topology=requirements.topology,
+        participation=requirements.participation,
         result=None,
-        synchronization=contracts[2],
-        temp_storage=contracts[3],
+        synchronization=requirements.synchronization,
+        temp_storage=requirements.temp_storage,
         provenance=ImplementationProvenance(
             library="CUB",
             header=header,

@@ -25,7 +25,7 @@ from ..thread_group import (
     ThreadHierarchy,
     normalize_thread_level,
 )
-from ._contracts import _unsupported
+from ._execution_requirements import _unsupported
 from ._model import (
     GroupLoweringPlan,
     GroupPrimitiveCall,
