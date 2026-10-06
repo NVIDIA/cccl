@@ -103,6 +103,13 @@ _CCCL_CONCEPT __has_hierarchy_member = _CCCL_FRAGMENT(__has_hierarchy_member_, _
 template <class _Type>
 inline constexpr bool __is_or_has_hierarchy_member_v = __has_hierarchy_member<_Type> || __is_hierarchy_v<_Type>;
 
+template <class _Unit, class _Level>
+inline constexpr bool __unit_same_as_or_below_v = __is_natively_reachable_hierarchy_level_v<_Unit, _Level>;
+template <class _Level>
+inline constexpr bool __unit_same_as_or_below_v<_Level, _Level> = true;
+template <>
+inline constexpr bool __unit_same_as_or_below_v<thread_level, warp_level> = true;
+
 _CCCL_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
