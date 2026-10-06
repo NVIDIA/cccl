@@ -583,9 +583,15 @@ CUB_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", CUB_SMA
 {
   using sample_t = c2h::get<0, TestType>;
   using level_t  = cs::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
-  // Max for int8/uint8 is 2^8, for half_t is 2^10. Beyond, we would need a different level generation
-  const auto max_level       = level_t{sizeof(sample_t) == 1 ? 126 : 1024};
-  const auto max_level_count = (sizeof(sample_t) == 1 ? 63 : 512) + 1;
+  // Integral RANGE fixtures need room to perturb interior levels while keeping them strictly ordered. Limit 8-bit
+  // samples and bfloat16 levels to values that remain exactly representable with a two-unit base bin width.
+#if TEST_BF_T()
+  constexpr bool has_narrow_levels = sizeof(sample_t) == 1 || cuda::std::is_same_v<sample_t, bfloat16_t>;
+#else // ^^^ TEST_BF_T() ^^^ / vvv !TEST_BF_T() vvv
+  constexpr bool has_narrow_levels = sizeof(sample_t) == 1;
+#endif // !TEST_BF_T()
+  const auto max_level       = level_t{has_narrow_levels ? 126 : 1024};
+  const auto max_level_count = (has_narrow_levels ? 63 : 512) + 1;
   test_even_and_range<sample_t, 4, 3, int>(max_level, max_level_count, 1920, 1080);
 }
 
