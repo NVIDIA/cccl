@@ -189,11 +189,15 @@ def test_only_one_logical_warp_participates(items_per_thread):
     )
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_warp_feature_sums_example(items_per_thread):
+def test_warp_feature_sums_example():
     """Check the feature-sums example independently for two physical warps."""
 
     # example-begin reduce-batched-features
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    from cuda import coop
+
     @cuda.jit
     def feature_sums(samples, totals, items_per_thread):
         warp = coop.this_warp()
@@ -206,12 +210,12 @@ def test_warp_feature_sums_example(items_per_thread):
                 (cuda.threadIdx.x // 32) * items_per_thread + warp.rank()
             ] = sums[0]
 
+    for items_per_thread in (1, 4):
+        samples = np.arange(64 * items_per_thread, dtype=np.float32)
+        totals = cuda.device_array(2 * items_per_thread, dtype=np.float32)
+        feature_sums[1, 64](cuda.to_device(samples), totals, items_per_thread)
+        np.testing.assert_array_equal(
+            totals.copy_to_host(),
+            samples.reshape(2, 32, items_per_thread).sum(axis=1).ravel(),
+        )
     # example-end reduce-batched-features
-
-    samples = np.arange(64 * items_per_thread, dtype=np.float32)
-    totals = cuda.device_array(2 * items_per_thread, dtype=np.float32)
-    feature_sums[1, 64](cuda.to_device(samples), totals, items_per_thread)
-    np.testing.assert_array_equal(
-        totals.copy_to_host(),
-        samples.reshape(2, 32, items_per_thread).sum(axis=1).ravel(),
-    )
