@@ -69,7 +69,7 @@ auto reference_histogram(const thrust::host_vector<sample_t>& samples, const thr
 {
   const int num_bins = static_cast<int>(levels.size()) - 1;
   thrust::host_vector<counter_t> ref(num_bins, 0);
-  for (sample_t s : samples)
+  for (const sample_t s : samples)
   {
     auto ub = std::upper_bound(levels.begin(), levels.end(), s);
     if (ub == levels.begin() || ub == levels.end())
@@ -129,8 +129,8 @@ CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: sequential calls o
   }
   const auto h_ref = reference_histogram(h_samples, h_levels);
 
-  thrust::device_vector<sample_t> d_samples = h_samples;
-  thrust::device_vector<sample_t> d_levels  = h_levels;
+  const thrust::device_vector<sample_t> d_samples = h_samples;
+  const thrust::device_vector<sample_t> d_levels  = h_levels;
 
   cudaStream_t stream_a;
   cudaStream_t stream_b;
@@ -142,7 +142,7 @@ CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: sequential calls o
     thrust::device_vector<counter_t> d_histogram(num_bins, 0);
     run_histogram_range(s, d_samples, d_levels, d_histogram);
     REQUIRE(cudaSuccess == cudaStreamSynchronize(s));
-    thrust::host_vector<counter_t> h_got = d_histogram;
+    const thrust::host_vector<counter_t> h_got = d_histogram;
     CHECK(h_got == h_ref);
   }
 
@@ -229,7 +229,7 @@ CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: concurrent threads
           failures.fetch_add(1);
           continue;
         }
-        thrust::host_vector<counter_t> h_got = d_histogram;
+        const thrust::host_vector<counter_t> h_got = d_histogram;
         if (h_got != h_ref)
         {
           failures.fetch_add(1);
@@ -271,15 +271,15 @@ CUB_TEST("DeviceHistogram::HistogramRange thread_local cache: same thread switch
   }
   const auto h_ref = reference_histogram(h_samples, h_levels);
 
-  for (int dev : {0, 1, 0})
+  for (const int dev : {0, 1, 0})
   {
     REQUIRE(cudaSuccess == cudaSetDevice(dev));
-    thrust::device_vector<sample_t> d_samples = h_samples;
-    thrust::device_vector<sample_t> d_levels  = h_levels;
+    const thrust::device_vector<sample_t> d_samples = h_samples;
+    const thrust::device_vector<sample_t> d_levels  = h_levels;
     thrust::device_vector<counter_t> d_histogram(num_bins, 0);
     run_histogram_range(/*stream=*/0, d_samples, d_levels, d_histogram);
     REQUIRE(cudaSuccess == cudaDeviceSynchronize());
-    thrust::host_vector<counter_t> h_got = d_histogram;
+    const thrust::host_vector<counter_t> h_got = d_histogram;
     INFO("device " << dev);
     CHECK(h_got == h_ref);
   }
