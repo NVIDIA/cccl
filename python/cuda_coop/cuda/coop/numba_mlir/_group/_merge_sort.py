@@ -13,16 +13,29 @@ before ordinary compiler typing.
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable
+from typing import TypeVar
+
+import numpy
+import numpy as np
+
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    IntegerValue,
+)
 
 from ..._core.api._payload import (
     TempStorageLike,
     ThreadDataLike,
-    _ReadableThreadDataLike,
 )
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup, WarpGroup
 from ._marker import group_primitive_marker
+
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
+
+_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -30,16 +43,16 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_merge_sort",
 )
 def merge_sort_keys(
-    group: ThreadGroup,
-    keys: _ReadableThreadDataLike[Any],
+    group: BlockGroup | WarpGroup,
+    keys: CommonThreadDataLike[_KeyT] | numpy.ndarray,
     /,
     *,
     descending: bool = False,
-    valid_items: Any = None,
-    oob_default: Any = None,
+    valid_items: IntegerValue | None = None,
+    oob_default: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-    compare_op: Any = None,
-) -> ThreadDataLike[Any]:
+    compare_op: Callable[[_KeyT, _KeyT], bool | np.bool_] | None = None,
+) -> ThreadDataLike[_KeyT]:
     """Return keys sorted across a block or warp in blocked order.
 
     Each thread contributes a fixed-size payload in blocked order: its items
@@ -110,6 +123,17 @@ def merge_sort_keys(
     See Also
     --------
     merge_sort_pairs
+
+    Examples
+    --------
+    Sort keys and key/index pairs with a custom descending predicate.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_merge_sort_examples.py
+        :language: python
+        :start-after: # qualified-sort-example-begin
+        :end-before: # qualified-sort-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(
@@ -129,17 +153,17 @@ def merge_sort_keys(
     family_module="cuda.coop.numba_mlir._compiler._group_merge_sort",
 )
 def merge_sort_pairs(
-    group: ThreadGroup,
-    keys: _ReadableThreadDataLike[Any],
-    values: _ReadableThreadDataLike[Any],
+    group: BlockGroup | WarpGroup,
+    keys: CommonThreadDataLike[_KeyT] | numpy.ndarray,
+    values: CommonThreadDataLike[_ValueT] | numpy.ndarray,
     /,
     *,
     descending: bool = False,
-    valid_items: Any = None,
-    oob_default: Any = None,
+    valid_items: IntegerValue | None = None,
+    oob_default: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-    compare_op: Any = None,
-) -> tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
+    compare_op: Callable[[_KeyT, _KeyT], bool | np.bool_] | None = None,
+) -> tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]:
     """Return key/value pairs sorted across a block or warp in blocked order.
 
     Each thread contributes a fixed-size payload in blocked order: its items
@@ -215,6 +239,17 @@ def merge_sort_pairs(
     See Also
     --------
     merge_sort_keys
+
+    Examples
+    --------
+    Sort keys and key/index pairs with a custom descending predicate.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_merge_sort_examples.py
+        :language: python
+        :start-after: # qualified-sort-example-begin
+        :end-before: # qualified-sort-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(

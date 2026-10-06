@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the documented pair sort and verify its original-position values.
+"""Run the documented key and pair sorts against independent host results.
 
-The marked example is shared by the programming guide and visualization.
+The marked examples are shared by the API reference and guides.
 Keep its key order and key/index association checks together.
 """
 
@@ -65,3 +65,41 @@ def test_merge_sort_pairs_example():
         np.testing.assert_array_equal(actual, np.sort(values))
         np.testing.assert_array_equal(actual, values[indices])
     # merge-sort-example-end
+
+
+def test_merge_sort_keys_example():
+    # merge-sort-keys-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    from cuda import coop
+
+    @cuda.jit
+    def order_partial_tile(source, count, destination, items_per_thread):
+        block = coop.this_block()
+        keys = coop.ThreadData(items_per_thread)
+        coop.load(block, source, keys, valid_items=count, oob_default=-1)
+        ordered = coop.merge_sort_keys(
+            block,
+            keys,
+            descending=True,
+            valid_items=count,
+            oob_default=-1,
+        )
+        coop.store(block, destination, ordered, valid_items=count)
+
+    for items_per_thread in (1, 4):
+        values = (
+            np.random.default_rng(42)
+            .permutation(64 * items_per_thread - 7)
+            .astype(np.int32)
+        )
+        source = cuda.to_device(values)
+        destination = cuda.device_array_like(source)
+        order_partial_tile[1, 64](
+            source, len(values), destination, items_per_thread
+        )
+        np.testing.assert_array_equal(
+            destination.copy_to_host(), np.sort(values)[::-1]
+        )
+    # merge-sort-keys-example-end
