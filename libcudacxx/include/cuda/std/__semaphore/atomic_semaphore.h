@@ -22,6 +22,7 @@
 
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/time_point.h>
+#include <cuda/std/__thread/poll.h>
 #include <cuda/std/atomic>
 #include <cuda/std/cstdint>
 

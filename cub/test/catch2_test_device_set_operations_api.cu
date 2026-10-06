@@ -87,3 +87,71 @@ CUB_TEST("cub::detail::DeviceSetOps::SetUnion accepts an environment", "[set_ops
   result.resize(num_selected[0]);
   REQUIRE(result == expected);
 }
+
+CUB_TEST("cub::detail::DeviceSetOps::SetIntersection accepts an environment", "[set_ops][env]", CUB_SMALL)
+{
+  // example-begin set-intersection-env
+  auto keys1        = thrust::device_vector<int>{0, 2, 4, 5, 7};
+  auto keys2        = thrust::device_vector<int>{1, 2, 3, 5};
+  auto result       = thrust::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num_selected = thrust::device_vector<int>(1, thrust::no_init);
+
+  const cuda::stream stream{cuda::devices[0]};
+
+  auto error = cub::detail::DeviceSetOps::SetIntersection(
+    keys1.begin(),
+    keys1.size(),
+    keys2.begin(),
+    keys2.size(),
+    result.begin(),
+    num_selected.begin(),
+    cuda::std::less<>{},
+    cuda::stream_ref{stream});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::detail::DeviceSetOps::SetIntersection failed with status: " << error << '\n';
+  }
+
+  // keys present in both keys1 and keys2
+  const thrust::device_vector<int> expected{2, 5};
+  // example-end set-intersection-env
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  result.resize(num_selected[0]);
+  REQUIRE(result == expected);
+}
+
+CUB_TEST("cub::detail::DeviceSetOps::SetSymmetricDifference accepts an environment", "[set_ops][env]", CUB_SMALL)
+{
+  // example-begin set-symmetric-difference-env
+  auto keys1        = thrust::device_vector<int>{0, 2, 4, 5, 7};
+  auto keys2        = thrust::device_vector<int>{1, 2, 3, 5};
+  auto result       = thrust::device_vector<int>(keys1.size() + keys2.size(), thrust::no_init);
+  auto num_selected = thrust::device_vector<int>(1, thrust::no_init);
+
+  const cuda::stream stream{cuda::devices[0]};
+
+  auto error = cub::detail::DeviceSetOps::SetSymmetricDifference(
+    keys1.begin(),
+    keys1.size(),
+    keys2.begin(),
+    keys2.size(),
+    result.begin(),
+    num_selected.begin(),
+    cuda::std::less<>{},
+    cuda::stream_ref{stream});
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::detail::DeviceSetOps::SetSymmetricDifference failed with status: " << error << '\n';
+  }
+
+  // keys present in exactly one of keys1 and keys2
+  const thrust::device_vector<int> expected{0, 1, 3, 4, 7};
+  // example-end set-symmetric-difference-env
+
+  stream.sync();
+  REQUIRE(error == cudaSuccess);
+  result.resize(num_selected[0]);
+  REQUIRE(result == expected);
+}

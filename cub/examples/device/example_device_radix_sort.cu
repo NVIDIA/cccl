@@ -160,10 +160,10 @@ int main(int argc, char** argv)
 
   // Check for correctness (and display results, if specified)
   stream.sync();
-  int compare = CompareDeviceResults(h_reference_keys, d_keys.Current(), num_items, true, g_verbose);
+  int compare = CompareDeviceResults(h_reference_keys, d_keys.Current(), num_items, true, g_verbose, stream);
   printf("\t Compare keys (selector %d): %s\n", d_keys.selector, compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
-  compare = CompareDeviceResults(h_reference_values, d_values.Current(), num_items, true, g_verbose);
+  compare = CompareDeviceResults(h_reference_values, d_values.Current(), num_items, true, g_verbose, stream);
   printf("\t Compare values (selector %d): %s\n", d_values.selector, compare ? "FAIL" : "PASS");
   AssertEquals(0, compare);
 
