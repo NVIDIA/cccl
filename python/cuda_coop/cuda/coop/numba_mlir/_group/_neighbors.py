@@ -13,16 +13,27 @@ stateless callbacks to those contracts.
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Callable
+from typing import Literal, TypeVar
+
+import numpy
+import numpy as np
+
+from cuda.coop._typing import (
+    IntegerValue,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+)
 
 from ..._core.api._payload import (
     TempStorageLike,
     ThreadDataLike,
-    _ReadableThreadDataLike,
 )
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
+
+_T = TypeVar("_T", bound=PortableNumericScalar)
 
 
 @group_operation(
@@ -30,17 +41,17 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_neighbors",
 )
 def adjacent_difference(
-    group: ThreadGroup,
-    values: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    values: PortableThreadDataLike[_T] | numpy.ndarray,
     /,
     *,
-    direction: str = "left",
-    valid_items: Any = None,
-    tile_predecessor_item: Any = None,
-    tile_successor_item: Any = None,
+    direction: Literal["left", "right"] = "left",
+    valid_items: IntegerValue | None = None,
+    tile_predecessor_item: PortableNumericScalar | None = None,
+    tile_successor_item: PortableNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-    difference_op: Any = None,
-) -> ThreadDataLike[Any]:
+    difference_op: Callable[[_T, _T], _T] | None = None,
+) -> ThreadDataLike[_T]:
     """Compute neighbor differences with an optional device operator.
 
     Shared parameters, participation, boundaries, partial tiles, and scratch
@@ -63,6 +74,19 @@ def adjacent_difference(
         Fresh blocked values with the input dtype and extent, including the
         unchanged invalid suffix. Common API calls recognize this result as
         ThreadData only when the input was ThreadData.
+
+    Examples
+    --------
+    Use device callbacks to measure absolute gaps to right neighbors and
+    flag transitions whose magnitude exceeds two. The final gap uses zero
+    as the tile successor.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_neighbor_examples.py
+        :language: python
+        :start-after: # qualified-neighbor-example-begin
+        :end-before: # qualified-neighbor-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "adjacent_difference",
@@ -82,16 +106,19 @@ def adjacent_difference(
     family_module="cuda.coop.numba_mlir._compiler._group_neighbors",
 )
 def discontinuity(
-    group: ThreadGroup,
-    values: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    values: PortableThreadDataLike[_T] | numpy.ndarray,
     /,
     *,
-    mode: str = "heads",
-    tile_predecessor_item: Any = None,
-    tile_successor_item: Any = None,
+    mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
+    tile_predecessor_item: PortableNumericScalar | None = None,
+    tile_successor_item: PortableNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
-    flag_op: Any = None,
-) -> ThreadDataLike[Any] | tuple[ThreadDataLike[Any], ThreadDataLike[Any]]:
+    flag_op: Callable[[_T, _T], bool | np.bool_] | None = None,
+) -> (
+    ThreadDataLike[np.int32]
+    | tuple[ThreadDataLike[np.int32], ThreadDataLike[np.int32]]
+):
     """Flag adjacent items with an optional device predicate.
 
     Shared parameters, participation, boundaries, and scratch behavior follow
@@ -116,6 +143,19 @@ def discontinuity(
         ``mode="heads_and_tails"``. Each array has the input extent. Common
         API calls recognize these results as ThreadData only when the input
         was ThreadData.
+
+    Examples
+    --------
+    Use device callbacks to measure absolute gaps to right neighbors and
+    flag transitions whose magnitude exceeds two. The final gap uses zero
+    as the tile successor.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_neighbor_examples.py
+        :language: python
+        :start-after: # qualified-neighbor-example-begin
+        :end-before: # qualified-neighbor-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "discontinuity",
