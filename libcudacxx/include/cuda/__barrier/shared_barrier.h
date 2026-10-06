@@ -168,6 +168,7 @@ public:
           return true;
       }
       _CCCL_UNREACHABLE();
+      return false; // NVCC with MSVC does not treat __assume(0) as a terminating path.
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static ::cudaFabricOpStatusSource
@@ -179,6 +180,7 @@ public:
           return ::cudaFabricOpStatusSourceMbarrierV1;
       }
       _CCCL_UNREACHABLE();
+      return ::cudaFabricOpStatusSource{}; // NVCC with MSVC requires a return after __assume(0).
     }
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned int __error_count(status_source __source) const noexcept
