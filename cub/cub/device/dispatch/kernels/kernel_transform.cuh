@@ -285,7 +285,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
     [[maybe_unused]] auto load_tile = [](auto in, auto& input) {
       using it_t    = decltype(in);
       using value_t = it_value_t<it_t>;
-      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(in)>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<it_t>)
       {
         // TODO(bgruber): we could add a max_load_store_size to the policy to avoid huge load types and huge alignment
         // requirements

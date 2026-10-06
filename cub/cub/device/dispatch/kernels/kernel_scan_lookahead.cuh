@@ -73,10 +73,10 @@ _CCCL_HOST_DEVICE_API constexpr int num_total_threads(const ScanLookaheadPolicy&
   return num_total_warps * warp_threads;
 }
 
-template <typename InputT, typename OutputT, typename AccumT>
+template <typename InputIteratorT, typename OutputT, typename AccumT>
 struct scanKernelParams
 {
-  const InputT* ptrIn;
+  InputIteratorT input;
   OutputT* ptrOut;
   warpspeed::tile_state_t<AccumT>* ptrTileStates;
   ::cuda::std::uint32_t* atomicCounter;
@@ -270,7 +270,7 @@ threadScanPartial(Tp (&regAggrInclusive)[ElemPerThread], ScanOpT& scan_op, Tp pr
 // lookahead scan kernel can have lighter signatures. Each squad uses an instance of this to provide its context. In
 // principle, it does not hold any mutable state. But it refers to the shared scan resources (SMEM + barriers etc.).
 template <typename PolicySelector,
-          typename InputT,
+          typename InputIteratorT,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
@@ -279,6 +279,7 @@ template <typename PolicySelector,
           bool StableReductionOrder = false>
 struct lookahead_scan_closure
 {
+  using InputT                                              = it_value_t<InputIteratorT>;
   static constexpr ScanLookaheadPolicy policy               = current_policy<PolicySelector>().lookahead;
   static constexpr warpspeed::SquadDesc squadReduce         = squad_reduce(policy);
   static constexpr warpspeed::SquadDesc squadScan           = squad_scan(policy);
@@ -314,7 +315,7 @@ struct lookahead_scan_closure
   using thread_and_warp_aggr_t = typename scan_resources_t::thread_and_warp_aggr_t;
 
   const warpspeed::SpecialRegisters specialRegisters;
-  const scanKernelParams<InputT, OutputT, AccumT> params;
+  const scanKernelParams<InputIteratorT, OutputT, AccumT> params;
   mutable ScanOpT scan_op; // mutable, so we can support non-const operator()
   const RealInitValueT real_init_value;
   scan_resources_t res; // this is the only shared mutable state
@@ -328,13 +329,39 @@ struct lookahead_scan_closure
                       (squadGetNextBlockIdxAtomic(squad, refNextBlockIdxW, params.atomicCounter);));
   }
 
+  // A synthesizing iterator has no address to bulk-copy. One warp writes the tile into shared memory at offset 0, which
+  // is the layout the reduce and scan squads read when smemStartSkipBytes is 0.
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_synthesized_tile(
+    const warpspeed::Squad& squad,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutW,
+    ::cuda::std::size_t idxTileBase,
+    int valid_items) const
+  {
+    warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
+    auto* smem                   = reinterpret_cast<InputT*>(refInOutW.data().inout);
+    const auto tile_input        = params.input + static_cast<it_difference_t<InputIteratorT>>(idxTileBase);
+    for (int i = squad.threadRank(); i < valid_items; i += squad.threadCount())
+    {
+      smem[i] = tile_input[i];
+    }
+  }
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
     warpspeed::SmemPhase<in_out_t>& phaseInOutW,
-    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
+    const warpspeed::CpAsyncOobInfo<InputT>& loadInfo,
+    ::cuda::std::size_t idxTileBase,
+    int valid_items) const
   {
-    warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
-    warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    if constexpr (::cuda::__is_synthesizing_iterator_v<InputIteratorT>)
+    {
+      load_synthesized_tile(squad, phaseInOutW, idxTileBase, valid_items);
+    }
+    else
+    {
+      warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
+      warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
@@ -823,8 +850,13 @@ struct lookahead_scan_closure
       const int valid_items =
         static_cast<int>(cuda::std::min(params.numElem - idxTileBase, ::cuda::std::size_t(tile_size)));
       const bool is_last_tile = valid_items < tile_size;
-      const warpspeed::CpAsyncOobInfo loadInfo =
-        warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.ptrIn) + idxTileBase, valid_items);
+      // Synthesized tiles are stored at the start of the shared buffer, so the skip is zero and no global pointer is
+      // required. Memory-backed tiles still use a bulk copy, which may skip the first few bytes to reach alignment.
+      warpspeed::CpAsyncOobInfo<InputT> loadInfo{};
+      if constexpr (!::cuda::__is_synthesizing_iterator_v<InputIteratorT>)
+      {
+        loadInfo = warpspeed::prepareCpAsyncOob(const_cast<InputT*>(params.input) + idxTileBase, valid_items);
+      }
 
       // Async loading and async tile index stealing are very lightweight, so one squad is enough to do both
       // slice is intentional, see SquadDesc::operator==()
@@ -833,7 +865,7 @@ struct lookahead_scan_closure
         _CCCL_IKET_RANGE_START(SquadLoadAndNextIdx);
 
         _CCCL_IKET_RANGE_PUSH(Load);
-        load_current_tile(squad, phaseInOutW, loadInfo);
+        load_current_tile(squad, phaseInOutW, loadInfo, idxTileBase, valid_items);
         _CCCL_IKET_RANGE_POP();
 
         _CCCL_IKET_RANGE_PUSH(NextIdx);
@@ -949,13 +981,13 @@ template <typename PolicySelector,
           bool ForceInclusive,
           typename RealInitValueT,
           bool StableReductionOrder,
-          typename InputT,
+          typename InputIteratorT,
           typename OutputT,
           typename AccumT,
           typename ScanOpT,
           typename InitValueT>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
-  const scanKernelParams<InputT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
+  const scanKernelParams<InputIteratorT, OutputT, AccumT>& params, const ScanOpT& scan_op, const InitValueT& init_value)
 {
 #if __cccl_ptx_isa >= 860
   _CCCL_IKET_RANGE_PUSH(Prologue);
@@ -969,7 +1001,8 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   auto res = [&] {
     warpspeed::SyncHandler syncHandler{};
     warpspeed::SmemAllocator smemAllocator{};
-    auto r = allocResources<PolicySelector, InputT, OutputT, AccumT>(syncHandler, smemAllocator, params.numStages);
+    auto r = allocResources<PolicySelector, it_value_t<InputIteratorT>, OutputT, AccumT>(
+      syncHandler, smemAllocator, params.numStages);
     syncHandler.clusterInitSync<num_total_threads(policy)>(specialRegisters);
     return r;
   }();
@@ -977,7 +1010,7 @@ _CCCL_DEVICE_API _CCCL_FORCEINLINE void device_scan_lookahead_body(
   // Dispatch each warp to its respective squad
   using closure_t = lookahead_scan_closure<
     PolicySelector,
-    InputT,
+    InputIteratorT,
     OutputT,
     AccumT,
     ScanOpT,

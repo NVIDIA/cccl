@@ -640,7 +640,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename LengthT        = non_void_value_t<LengthsOutputIteratorT, OffsetT>,
           typename KeyT           = it_value_t<InputIteratorT>,
-          typename PolicySelector = non_trivial_runs::policy_selector_from_types<LengthT, KeyT>>
+          typename PolicySelector = non_trivial_runs::policy_selector_from_types<LengthT, KeyT, InputIteratorT>>
 #if _CCCL_HAS_CONCEPTS()
   requires non_trivial_runs::rle_non_trivial_runs_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()

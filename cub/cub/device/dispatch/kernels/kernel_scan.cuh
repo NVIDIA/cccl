@@ -220,7 +220,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
       NV_PROVIDES_SM_90, ({
-        auto scan_params = scanKernelParams<it_value_t<InputIteratorT>, it_value_t<OutputIteratorT>, AccumT>{
+        auto scan_params = scanKernelParams<InputIteratorT, it_value_t<OutputIteratorT>, AccumT>{
           d_in, d_out, tile_state.lookahead.tile_states, tile_state.lookahead.atomic_counter, num_items, num_stages};
         device_scan_lookahead_body<PolicySelector, ForceInclusive, RealInitValueT, StableReductionOrder>(
           scan_params, scan_op, init_value);

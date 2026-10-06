@@ -105,8 +105,8 @@ static cub::ScanPolicy select_policy_for_jit(const cub::detail::scan::policy_sel
   {
     // These are the compiler-independent checks of policy_selector::can_use_lookahead.
     const auto lookahead_policy = sel.get_lookahead_policy(cc);
-    if (lookahead_policy && sel.input_contiguous && sel.output_contiguous && sel.input_trivially_copyable
-        && sel.output_trivially_copyable && sel.output_default_constructible
+    if (lookahead_policy && (sel.input_contiguous || sel.input_synthesizing) && sel.output_contiguous
+        && sel.input_trivially_copyable && sel.output_trivially_copyable && sel.output_default_constructible
         && cub::detail::scan::smem_for_stages(
              *lookahead_policy,
              /* num_stages */ 1,
@@ -120,10 +120,12 @@ static cub::ScanPolicy select_policy_for_jit(const cub::detail::scan::policy_sel
       return {cub::ScanAlgorithm::lookahead, cub::ScanLookbackPolicy{}, *lookahead_policy};
     }
   }
-  // input_contiguous is consulted only by can_use_lookahead, so clearing it yields the lookback policy the selector
-  // would pick if the lookahead scan were unavailable, without affecting which lookback tuning is chosen.
-  auto lookback_sel             = sel;
-  lookback_sel.input_contiguous = false;
+  // input_contiguous and input_synthesizing are consulted only by can_use_lookahead, so clearing them yields the
+  // lookback policy the selector would pick if the lookahead scan were unavailable, without affecting which lookback
+  // tuning is chosen.
+  auto lookback_sel               = sel;
+  lookback_sel.input_contiguous   = false;
+  lookback_sel.input_synthesizing = false;
   return lookback_sel(cc);
 }
 
