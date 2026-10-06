@@ -88,6 +88,8 @@ PortableNumericScalar: TypeAlias = (
     | numpy.float64
     | CompilerScalarLike
 )
+
+_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
 _ReadableItemT_co = TypeVar(
     "_ReadableItemT_co", bound=PortableNumericScalar, covariant=True
 )
@@ -157,4 +159,5 @@ __all__ = [
     "ThreadGroupKind",
     "ThreadLevel",
     "WarpLoadStoreAlgorithm",
+    "_PortableNumericT",
 ]
