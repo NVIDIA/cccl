@@ -6,12 +6,23 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal, TypeVar
 
-from ..._core.api._payload import ThreadDataLike, _ReadableThreadDataLike
+import numpy
+
+from ..._core.api._payload import ThreadDataLike
+from ..._typing import (
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
+    IntegerValue,
+    ScalarShuffleMode,
+)
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -19,13 +30,13 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_shuffle",
 )
 def shuffle(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
     /,
     *,
-    mode: Any = "down",
-    distance: Any = 1,
-) -> ThreadDataLike[Any]:
+    mode: CommonShuffleMode | ScalarShuffleMode = "down",
+    distance: Literal[1] | IntegerValue = 1,
+) -> ThreadDataLike[_ItemT] | _ItemT:
     """Shift arrays or select another thread's scalar within a block.
 
     See :func:`cuda.coop.shuffle` for the shared block participation rules,

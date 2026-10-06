@@ -107,6 +107,8 @@ CommonNumericScalar: TypeAlias = (
     | numpy.float64
     | CompilerScalarLike
 )
+
+_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
 _ReadableItemT_co = TypeVar(
     "_ReadableItemT_co", bound=CommonNumericScalar, covariant=True
 )
@@ -189,5 +191,6 @@ __all__ = [
     "ThreadLevel",
     "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
+    "_CommonNumericT",
     'CommonShuffleMode',
 ]

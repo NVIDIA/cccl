@@ -6,12 +6,29 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal, TypeVar
 
-from ..._core.api._payload import ThreadDataLike, _ReadableThreadDataLike
+import numpy
+
+from cuda.coop._typing import BlockExchangeMode
+
+from ..._core.api._payload import ThreadDataLike
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ExchangeMode,
+    IntegralScalar,
+    SignedIntegerScalar,
+)
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup, WarpGroup
 from ._marker import group_primitive_marker
+
+_RankT = TypeVar("_RankT", bound=SignedIntegerScalar)
+
+_FlagT = TypeVar("_FlagT", bound=IntegralScalar)
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -19,15 +36,19 @@ from ._marker import group_primitive_marker
     family_module="cuda.coop.numba_mlir._compiler._group_exchange",
 )
 def exchange(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT] | numpy.ndarray,
     /,
     *,
-    mode: Any = "striped_to_blocked",
-    ranks: _ReadableThreadDataLike[Any] | None = None,
-    valid_flags: _ReadableThreadDataLike[Any] | None = None,
+    mode: BlockExchangeMode
+    | ExchangeMode
+    | Literal[
+        "scatter_to_striped_guarded", "scatter_to_striped_flagged"
+    ] = "striped_to_blocked",
+    ranks: CommonThreadDataLike[_RankT] | numpy.ndarray | None = None,
+    valid_flags: CommonThreadDataLike[_FlagT] | numpy.ndarray | None = None,
     warp_time_slicing: bool = False,
-) -> ThreadDataLike[Any]:
+) -> ThreadDataLike[_ItemT]:
     """Exchange per-thread values, including ranked block scatters.
 
     See :func:`cuda.coop.exchange` for shared group requirements, layout
