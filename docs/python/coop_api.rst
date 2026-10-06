@@ -214,6 +214,7 @@ Reduction
 ^^^^^^^^^
 
 .. autofunction:: reduce
+.. autofunction:: sum
 .. autofunction:: reduce_batched
 
 Scan
@@ -315,3 +316,9 @@ Per-thread payloads and CuTe conversion
 .. automethod:: ThreadData.from_payload
 .. automethod:: ThreadData.to_tensor_ssa
 .. automethod:: ThreadData.to_register_tensor
+
+Memory operations
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: load
+.. autofunction:: store
