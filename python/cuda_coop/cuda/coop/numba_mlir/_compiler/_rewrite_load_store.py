@@ -20,7 +20,11 @@ from typing import TYPE_CHECKING, NoReturn
 
 from numba_cuda_mlir import cuda as _cuda_module
 
-from cuda.coop._core import ArgumentBinding, BindingKind
+from cuda.coop._core import (
+    ArgumentBinding,
+    BindingKind,
+    GroupLoadStoreSemantics,
+)
 
 from ._group_rewriting import GroupRewriteContext
 from ._rewrite_payload import PayloadInference
@@ -383,6 +387,10 @@ class _LoadStoreRewrite:
     ) -> None:
         """Reconcile Load/Store payload shape and dtype.
 
+        Planned calls reuse their checked dtype and extent while still merging
+        explicit factory inputs and populating constructor allocation state.
+        Calls without a Load/Store plan infer these facts from their operands.
+
         Array payloads supply their static extent; scalars imply one item per
         thread. Prefer the memory element dtype when available, while checking
         it against any known payload dtype. For an untyped Store array,
@@ -419,6 +427,32 @@ class _LoadStoreRewrite:
         """
 
         payload_var, payload_specification = inference.candidate(1)
+        plan = inference.lowering_plan
+        if (
+            plan is not None
+            and plan.unsupported is None
+            and isinstance(plan.call.operation, GroupLoadStoreSemantics)
+        ):
+            from .._lowering._core import NumbaMlirCoreAdapter
+
+            semantics = plan.call.operation
+            dtype = NumbaMlirCoreAdapter().normalize_dtype(semantics.dtype)
+            inference.infer_kwarg(
+                "items_per_thread", semantics.items_per_thread
+            )
+            inference.infer_kwarg(
+                "items_per_thread",
+                payload_specification.items_per_thread
+                if payload_specification is not None
+                else 1,
+            )
+            inference.infer_kwarg("dtype", dtype)
+            if payload_specification is not None and payload_var is not None:
+                # Allocation still needs constructor and alias state. The plan
+                # has already checked memory, payload writes and scalar widths.
+                context.record_thread_data_dtype(payload_var, dtype)
+            return
+
         memory_var = (
             inference.runtime_args[0] if inference.runtime_args else None
         )
