@@ -676,6 +676,7 @@ class CoopSinglePhaseRewrite(
     ) -> None:
         """Replace a payload constructor with ``cuda.local.array``."""
 
+        assert isinstance(inst.value, ir.Expr)
         is_typed_group_payload = self._is_typed_group_payload_ctor_call(
             inst.value
         )
