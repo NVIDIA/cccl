@@ -70,6 +70,10 @@ class CoopWholeFunctionPlanner(
 
         groups_changed = self._resolve_groups()
         if groups_changed:
+            # Group resolution changes IR statements. Use Numba's repair helper
+            # to rebuild definitions and control-flow analysis before rewriting
+            # the new provider calls. The registry repairs a planner's changes
+            # after run() returns, too late for this call to _rewrite_calls().
             _planner_registry._repair_ir(self.state.func_ir)
         calls_changed = self._rewrite_calls()
         return groups_changed or calls_changed
