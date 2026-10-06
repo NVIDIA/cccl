@@ -32,6 +32,7 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__iterator/zip_common.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/advance.h>
@@ -341,6 +342,12 @@ _CCCL_HOST_DEVICE_API inline zip_iterator<::cuda::std::tuple<Iterators...>> make
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class... _Iterators>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::zip_iterator<::cuda::std::tuple<_Iterators...>>> =
+  (__is_synthesizing_iterator_v<_Iterators> && ...);
+_CCCL_END_NAMESPACE_CUDA
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")

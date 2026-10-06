@@ -21,6 +21,7 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traversal_tags.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -178,3 +179,9 @@ _CCCL_HOST_DEVICE_API shuffle_iterator<IndexType> make_shuffle_iterator(IndexTyp
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _IndexType, class _BijectionFunc>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::shuffle_iterator<_IndexType, _BijectionFunc>> =
+  true;
+_CCCL_END_NAMESPACE_CUDA

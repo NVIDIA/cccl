@@ -22,6 +22,8 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
+
 // Some code bases define `empty_bases` as a macro, which would break _CCCL_DECLSPEC_EMPTY_BASES.
 #ifdef empty_bases
 #  pragma push_macro("empty_bases")
@@ -166,6 +168,15 @@ make_strided_iterator(Iterator it)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _Iter, class _StrideHolder>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::strided_iterator<_Iter, _StrideHolder>> =
+  __is_synthesizing_iterator_v<_Iter>;
+_CCCL_END_NAMESPACE_CUDA
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #ifdef _THRUST_POP_MACRO_empty_bases
 #  pragma pop_macro("empty_bases")
