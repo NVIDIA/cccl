@@ -19,7 +19,17 @@ from typing import Any
 from cuda.coop._core import ArgumentBinding, GroupLoadStoreAlgorithm
 from cuda.coop._core.api._payload import _validate_common_temp_storage
 from cuda.coop._core.thread_group import ThreadGroup as CommonThreadGroup
+from cuda.coop._typing import (
+    BlockLoadStoreAlgorithm,
+    CommonThreadDataLike,
+    IntegerValue,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+    _CommonNumericT,
+)
 
+from .._core.api.thread_group import BlockGroup
 from ._thread_data import ThreadData
 from ._thread_group import _resolve_primitive_group_from_launch
 
@@ -54,16 +64,16 @@ def _resolve_group(group, algorithm, temp_storage, operation):
 
 
 def load(
-    group: CommonThreadGroup,
-    source: Any,
-    output: ThreadData,
+    group: BlockGroup,
+    source: object,
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
-    algorithm: Any = "direct",
-    valid_items: Any = None,
-    oob_default: Any = None,
-    offset: Any = None,
-    temp_storage: Any = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    oob_default: _CommonNumericT | float | None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> None:
     """Load a contiguous block tile into a writable per-thread payload.
 
@@ -93,6 +103,19 @@ def load(
     compiler allocates it and inserts a trailing reuse barrier. An explicit
     :class:`cuda.coop.cutlass.TempStorage` sets sharing and synchronization
     policy. Its default ``auto_sync=False`` requires a barrier before reuse.
+
+    Examples
+    --------
+    Copy a partial tile between different source and destination offsets.
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_load_store_examples.py
+        :language: python
+        :start-after: # qualified-load-store-example-begin
+        :end-before: # qualified-load-store-example-end
+        :dedent: 4
     """
 
     if not isinstance(output, ThreadData):
@@ -123,15 +146,15 @@ def load(
 
 
 def store(
-    group: CommonThreadGroup,
-    destination: Any,
-    value: Any,
+    group: BlockGroup,
+    destination: object,
+    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
     /,
     *,
-    algorithm: Any = "direct",
-    valid_items: Any = None,
-    offset: Any = None,
-    temp_storage: Any = None,
+    algorithm: BlockLoadStoreAlgorithm = "direct",
+    valid_items: ValidItems | None = None,
+    offset: IntegerValue | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> None:
     """Store per-thread values into a contiguous block tile.
 
@@ -153,6 +176,19 @@ def store(
     descriptor controls allocation and reuse; the caller must synchronize
     before reuse unless ``auto_sync=True``. DIRECT, STRIPED, and VECTORIZE do
     not need scratch or a reuse barrier.
+
+    Examples
+    --------
+    Copy a partial tile between different source and destination offsets.
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_load_store_examples.py
+        :language: python
+        :start-after: # qualified-load-store-example-begin
+        :end-before: # qualified-load-store-example-end
+        :dedent: 4
     """
 
     group, launch, algorithm = _resolve_group(
