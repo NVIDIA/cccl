@@ -11,16 +11,24 @@ Python call raises an error.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal, TypeVar
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _common_group_operation,
 )
 from ._payload import (
     ThreadDataLike,
-    _ReadableThreadDataLike,
 )
+from .thread_group import BlockGroup
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 @_common_group_operation(
@@ -28,13 +36,13 @@ from ._payload import (
     group_kinds=("block",),
 )
 def shuffle(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    mode: Any = "down",
-    distance: Any = 1,
-) -> ThreadDataLike[Any]:
+    mode: CommonShuffleMode = "down",
+    distance: Literal[1] = 1,
+) -> ThreadDataLike[_ItemT]:
     """Shift a block's flattened payload by one element.
 
     Parameters

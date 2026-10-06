@@ -95,6 +95,27 @@ NonSumScanOperator: TypeAlias = Literal[
 
 ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
 
+ExchangeMode: TypeAlias = Literal[
+    "striped_to_blocked",
+    "blocked_to_striped",
+]
+
+BlockExchangeMode: TypeAlias = (
+    ExchangeMode
+    | Literal[
+        "warp_striped_to_blocked",
+        "blocked_to_warp_striped",
+        "scatter_to_blocked",
+        "scatter_to_striped",
+        "scatter_to_striped_guarded",
+        "scatter_to_striped_flagged",
+    ]
+)
+
+CommonShuffleMode: TypeAlias = Literal["down", "up"]
+
+ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
+
 
 class CompilerScalarLike(Protocol):
     """Describe a compiler scalar without importing its concrete type."""
