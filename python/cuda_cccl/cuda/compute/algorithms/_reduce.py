@@ -207,6 +207,30 @@ class _Reduce(Serializable):
         return temp_storage_bytes
 
 
+def _input_item_dtype(d_in) -> np.dtype | None:
+    """Item dtype of a reduce input, or None when it cannot be determined.
+
+    Best-effort, for error messages only: some inputs (e.g. a struct with a
+    bfloat16 field and no ml_dtypes installed) have no numpy representation.
+    """
+    try:
+        if isinstance(d_in, IteratorBase):
+            return d_in.value_type.dtype
+        return get_dtype(d_in)
+    except (AttributeError, TypeError, KeyError):
+        return None
+
+
+def _input_item_type_info(d_in) -> _bindings.TypeInfo | None:
+    """CCCL type info for one input item, or None when it cannot be determined."""
+    try:
+        if isinstance(d_in, IteratorBase):
+            return d_in.value_type.info
+        return cccl._type_info_from_dtype(get_dtype(d_in))
+    except (AttributeError, TypeError, KeyError):
+        return None
+
+
 @cache_with_registered_key_functions
 def make_reduce_into(
     *,
@@ -234,7 +258,10 @@ def make_reduce_into(
             the initial value ``h_init`` (or of the input items when ``h_init``
             is None).
         h_init: Numpy array or GPU struct storing initial value of the
-            reduction, or None for no initial value
+            reduction, or None for no initial value. When ``h_init`` is a
+            struct or complex dtype, the input items must share its layout;
+            reduce a different item type into it by wrapping ``d_in`` in a
+            ``TransformIterator`` that returns the accumulator type.
         compute_capability: Compute capability, or list of capabilities, to
             build for ahead of time. Accepts a packed int (e.g. ``90``), a
             ``(major, minor)`` pair, a string (e.g. ``"9.0"``), or a list
@@ -270,6 +297,50 @@ def make_reduce_into(
                         f"Ensure {name} elements and h_init have identical dtype to "
                         "avoid truncation or misinterpretation."
                     )
+
+        # The C layer names both the input item type and the accumulator
+        # `storage_t` when each is an opaque struct, so a struct accumulator
+        # constrains the input's layout. Compare CCCL's type enum, not numpy's
+        # dtype, so a primitive input into a struct accumulator is caught even
+        # though complex dtypes are also STORAGE here. Compare alignment with
+        # `<` rather than `!=` so a structured dtype built without align=True
+        # (numpy reports alignment 1 for it, even though its fields are
+        # aligned) is not rejected for being under-strict about a bound it
+        # already satisfies.
+        in_info = _input_item_type_info(d_in)
+        accum_info = cccl._type_info_from_dtype(accum_dtype)
+        if (
+            in_info is not None
+            and accum_info.typenum == _bindings.TypeEnum.STORAGE
+            and (
+                in_info.typenum != _bindings.TypeEnum.STORAGE
+                or in_info.size != accum_info.size
+                or in_info.alignment < accum_info.alignment
+            )
+        ):
+            in_dtype = _input_item_dtype(d_in)
+            in_dtype_repr = (
+                in_dtype
+                if in_dtype is not None
+                else f"{in_info.size}-byte, {in_info.alignment}-aligned type"
+            )
+            if in_info.typenum != _bindings.TypeEnum.STORAGE:
+                reason = (
+                    "Input items are not an opaque type, so they have no "
+                    "conversion to the accumulator's generated storage type."
+                )
+            else:
+                reason = (
+                    f"Input items are {in_info.size} bytes aligned to "
+                    f"{in_info.alignment}, h_init is {accum_info.size} bytes "
+                    f"aligned to {accum_info.alignment}; they must match."
+                )
+            raise TypeError(
+                f"reduce_into dtype mismatch: input dtype "
+                f"{in_dtype_repr} != accumulator dtype {accum_dtype}. {reason} "
+                "To reduce items of a different type into this accumulator, wrap "
+                "d_in in a TransformIterator that returns the accumulator type."
+            )
 
     op_adapter = make_op_adapter(op)
     return _Reduce(

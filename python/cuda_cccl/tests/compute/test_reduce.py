@@ -18,6 +18,7 @@ from cuda.compute import (
     OpKind,
     TransformIterator,
     TransformOutputIterator,
+    ZipIterator,
     deserialize,
     gpu_struct,
     make_reduce_into,
@@ -1085,6 +1086,149 @@ def test_reduce_input_and_accumulator_type_mismatch():
         cuda.compute.reduce_into(
             d_in=d_data, d_out=d_out, op=op, num_items=h_data.size, h_init=h_init
         )
+
+
+def test_reduce_iterator_and_accumulator_layout_mismatch():
+    # https://github.com/NVIDIA/cccl/issues/11349 - the same mismatch the array
+    # path already rejects, reached through an iterator input.
+    @gpu_struct
+    class Acc:
+        value: np.float32
+        index: np.int32
+
+    def smaller(a: Acc, b: Acc):
+        return a if a.value < b.value else b
+
+    num_items = 1000
+    d_vals = DeviceArray.from_numpy(np.arange(num_items, dtype=np.float32))
+    # Zip items are {float32, int64} == 16 bytes; the accumulator is 8 bytes.
+    d_in = ZipIterator(d_vals, CountingIterator(np.int64(0)))
+    d_out = DeviceArray.empty(1, Acc.dtype)
+
+    with pytest.raises(TypeError, match="reduce_into dtype mismatch: input dtype"):
+        cuda.compute.reduce_into(
+            d_in=d_in,
+            d_out=d_out,
+            num_items=num_items,
+            op=smaller,
+            h_init=Acc(np.inf, -1),
+        )
+
+
+def test_reduce_iterator_accumulator_same_layout_different_field_names():
+    # A ZipIterator names its fields field_0/field_1, so the guard above has to
+    # compare layout rather than dtype equality or this would stop working.
+    h_input = np.asarray([0, 1, 2, 4, 7, 3, 5, 6], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    zip_it = ZipIterator(CountingIterator(np.int32(0)), d_input)
+
+    def max_by_value(p1, p2):
+        return p1 if p1[1] > p2[1] else p2
+
+    dtype = np.dtype([("index", np.int32), ("value", np.int32)], align=True)
+    h_init = np.asarray([(-1, -1)], dtype=dtype)
+    d_output = DeviceArray.empty(1, dtype)
+
+    cuda.compute.reduce_into(
+        d_in=zip_it,
+        d_out=d_output,
+        num_items=len(h_input),
+        op=max_by_value,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    assert result["index"] == 4
+    assert result["value"] == 7
+
+
+def test_reduce_scalar_iterator_and_struct_accumulator_mismatch():
+    # A scalar-valued iterator into a struct accumulator is the other half
+    # of https://github.com/NVIDIA/cccl/issues/11349 - the array form of
+    # this call already raises, the iterator form used to reach NVRTC.
+    #
+    # Acc is built to match CountingIterator(np.int64(0)) exactly at (8, 8),
+    # so equal size and equal alignment cannot be what rejects this call -
+    # only the "input is not STORAGE" clause can.
+    @gpu_struct
+    class Acc:
+        value: np.float64
+
+    def smaller(a: Acc, b: Acc):
+        return a if a.value < b.value else b
+
+    d_out = DeviceArray.empty(1, Acc.dtype)
+
+    with pytest.raises(TypeError, match="reduce_into dtype mismatch: input dtype"):
+        cuda.compute.reduce_into(
+            d_in=CountingIterator(np.int64(0)),
+            d_out=d_out,
+            num_items=100,
+            op=smaller,
+            h_init=Acc(np.inf),
+        )
+
+
+def test_reduce_primitive_iterator_and_struct_accumulator_message():
+    # https://github.com/NVIDIA/cccl/issues/11349 - the primitive-input branch
+    # of the mismatch message must say the input has no conversion to the
+    # accumulator's storage type, not claim two layouts differ when they
+    # don't: CountingIterator(np.int64(0)) is (8, 8), same as Acc below, so a
+    # layout-shaped message here would be misleading (and wrong).
+    @gpu_struct
+    class Acc:
+        value: np.float64
+
+    def smaller(a: Acc, b: Acc):
+        return a if a.value < b.value else b
+
+    d_out = DeviceArray.empty(1, Acc.dtype)
+
+    with pytest.raises(
+        TypeError, match="reduce_into dtype mismatch: input dtype"
+    ) as exc_info:
+        cuda.compute.reduce_into(
+            d_in=CountingIterator(np.int64(0)),
+            d_out=d_out,
+            num_items=100,
+            op=smaller,
+            h_init=Acc(np.inf),
+        )
+
+    message = str(exc_info.value)
+    assert "no conversion" in message or "not an opaque type" in message
+    assert "must match" not in message
+
+
+def test_reduce_zip_iterator_packed_struct_accumulator():
+    # https://github.com/NVIDIA/cccl/issues/11349 - numpy reports alignment 1
+    # for a structured dtype not built with align=True (align=True is not the
+    # default), even when its fields are naturally aligned. A packed h_init
+    # here must still be accepted: a ZipIterator of two int32s is (8, 4),
+    # which is not under-aligned relative to this dtype no matter what numpy
+    # calls its alignment.
+    h_input = np.asarray([0, 1, 2, 4, 7, 3, 5, 6], dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    zip_it = ZipIterator(CountingIterator(np.int32(0)), d_input)
+
+    def max_by_value(p1, p2):
+        return p1 if p1[1] > p2[1] else p2
+
+    dtype = np.dtype([("index", np.int32), ("value", np.int32)])  # packed
+    h_init = np.asarray([(-1, -1)], dtype=dtype)
+    d_output = DeviceArray.empty(1, dtype)
+
+    cuda.compute.reduce_into(
+        d_in=zip_it,
+        d_out=d_output,
+        num_items=len(h_input),
+        op=max_by_value,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    assert result["index"] == 4
+    assert result["value"] == 7
 
 
 def _serialization_add(a, b):
