@@ -49,14 +49,6 @@
 
 namespace c2h
 {
-//! @brief Returns a reference to the current CUDA device.
-[[nodiscard]] _CCCL_HOST_API inline cuda::device_ref current_test_device()
-{
-  int device_id{};
-  REQUIRE_CUDART(cudaGetDevice(&device_id));
-  return cuda::device_ref{device_id};
-}
-
 template <typename... Ts>
 using type_list = ::cuda::std::__type_list<Ts...>;
 

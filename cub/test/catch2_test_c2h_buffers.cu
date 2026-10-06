@@ -19,6 +19,7 @@
 #include <c2h/buffer_generators.cuh>
 #include <c2h/checked_memory_resource.cuh>
 #include <c2h/detail/env.cuh>
+#include <c2h/device_and_stream.h>
 
 namespace
 {
@@ -67,7 +68,7 @@ CUB_TEST("c2h checked device memory resource creates device buffers", "[c2h][buf
 {
   STATIC_REQUIRE(cuda::mr::synchronous_resource_with<c2h::checked_device_memory_resource, cuda::mr::device_accessible>);
 
-  const auto device = c2h::current_test_device();
+  const auto device = c2h::current_device();
   const cuda::stream stream{device};
 
   REQUIRE_THROWS_AS(c2h::make_device_buffer<char>(stream, device, get_alloc_bytes(), cuda::no_init), std::bad_alloc);
@@ -97,7 +98,7 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   STATIC_REQUIRE(
     cuda::mr::synchronous_resource_with<c2h::checked_host_buffer_memory_resource, cuda::mr::host_accessible>);
 
-  const auto device = c2h::current_test_device();
+  const auto device = c2h::current_device();
   const cuda::stream stream{device};
 
   constexpr std::size_t num_items = 256;
@@ -126,8 +127,7 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
 
 CUB_TEST("c2h buffer generator handles zero items", "[c2h][buffers][generators]", CUB_SMALL)
 {
-  const auto device = c2h::current_test_device();
-  const cuda::stream stream{device};
+  const auto stream  = c2h::make_current_device_stream();
   const auto d_items = c2h::gen_device_buffer<std::int32_t>(stream, c2h::seed_t{1234}, 0);
   REQUIRE(d_items.empty());
   REQUIRE(d_items.data() == nullptr);
@@ -135,8 +135,7 @@ CUB_TEST("c2h buffer generator handles zero items", "[c2h][buffers][generators]"
 
 CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][generators]", CUB_SMALL)
 {
-  const auto device = c2h::current_test_device();
-  const cuda::stream stream{device};
+  const auto stream = c2h::make_current_device_stream();
 
   constexpr std::size_t num_items = 256;
   constexpr std::int32_t expected = 42;
