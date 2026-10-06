@@ -20,7 +20,65 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_HAS_THREAD_API_WIN32)
+#if _CCCL_NATIVE_MUTEX(SRWLOCK)
+
+#  include <nv/target>
+
+#  include <windows.h>
+
+#  include <cuda/std/__cccl/prologue.h>
+
+_CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+static_assert(sizeof(__cccl_mutex_t) == sizeof(void*), "mutex storage must match SRWLOCK");
+static_assert(alignof(__cccl_mutex_t) == alignof(void*), "mutex storage must match SRWLOCK");
+
+_CCCL_HOST_API inline void __cccl_mutex_lock_host(__cccl_mutex_t* __mutex)
+{
+  ::AcquireSRWLockExclusive(reinterpret_cast<::PSRWLOCK>(__mutex));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline bool __cccl_mutex_trylock_host(__cccl_mutex_t* __mutex) noexcept
+{
+  return ::TryAcquireSRWLockExclusive(reinterpret_cast<::PSRWLOCK>(__mutex)) != 0;
+}
+
+_CCCL_HOST_API inline void __cccl_mutex_unlock_host(__cccl_mutex_t* __mutex) noexcept
+{
+  ::ReleaseSRWLockExclusive(reinterpret_cast<::PSRWLOCK>(__mutex));
+}
+
+template <thread_scope _Sco>
+_CCCL_HOST_DEVICE_API inline void __cccl_mutex_lock(__cccl_mutex_t* __mutex)
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (__cccl_mutex_lock_host(__mutex);),
+                    (__cccl_mutex_lock_atomic<_Sco, __cuda_atomic_device_backend>(__mutex);))
+}
+
+template <thread_scope _Sco>
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __cccl_mutex_trylock(__cccl_mutex_t* __mutex) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (return __cccl_mutex_trylock_host(__mutex);),
+                    (return __cccl_mutex_trylock_atomic<_Sco, __cuda_atomic_device_backend>(__mutex);))
+}
+
+template <thread_scope _Sco>
+_CCCL_HOST_DEVICE_API inline void __cccl_mutex_unlock(__cccl_mutex_t* __mutex) noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (__cccl_mutex_unlock_host(__mutex);),
+                    (__cccl_mutex_unlock_atomic<_Sco, __cuda_atomic_device_backend>(__mutex);))
+}
+
+_CCCL_END_NAMESPACE_CUDA_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_NATIVE_MUTEX(SRWLOCK)
+
+#if defined(_CCCL_HAS_THREAD_API_WIN32) && _CCCL_HOSTED()
 
 #  include <cuda/std/__chrono/duration.h>
 
@@ -30,10 +88,6 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-// Mutex
-using __cccl_mutex_t = void*;
-#  define _LIBCUDACXX_MUTEX_INITIALIZER 0
 
 #  if _CCCL_HOST_ARCH(ARM64) || _CCCL_HOST_ARCH(X86_64)
 using __cccl_recursive_mutex_t = void* [5];
