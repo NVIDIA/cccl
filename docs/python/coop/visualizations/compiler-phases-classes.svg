@@ -104,19 +104,11 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <text x="44" y="563" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">PostInlineWholeFunctionPlanners</text>
   <text x="44" y="597" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#526273">REGISTERED PLANNER</text>
   <text x="44" y="623" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">CoopWholeFunctionPlanner.run()</text>
+  <text x="450" y="623" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Repairs changed IR between phases.</text>
   <path d="M44 643L836 643" stroke="#d8e0e6" stroke-width="1.3" fill="none"/>
   <text x="44" y="659" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#526273">1  RESOLVE GROUPS</text>
   <text x="44" y="685" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">_GroupPlanning._resolve_groups()</text>
-  <text x="44" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Uses</text>
-  <text x="80.4531" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
-  <text x="84.8984" y="714" font-family="'Liberation Mono', Consolas, monospace" font-size="16" font-weight="400" fill="#526273" data-code="true">_GroupCallPlanner</text>
-  <text x="248.125" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">;</text>
-  <text x="252.57" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
-  <text x="257.016" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">repairs</text>
-  <text x="305.922" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
-  <text x="310.367" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">changed</text>
-  <text x="371.758" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273"> </text>
-  <text x="376.203" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">IR.</text>
+  <text x="44" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Uses <tspan font-family="'Liberation Mono', Consolas, monospace" data-code="true">_GroupCallPlanner</tspan> to resolve groups.</text>
   <text x="450" y="659" font-family="Arial, Helvetica, sans-serif" font-size="12" font-weight="700" fill="#526273">2  REWRITE CALLS</text>
   <text x="450" y="685" font-family="'Liberation Mono', Consolas, monospace" font-size="18" font-weight="400" fill="#182b3a" data-code="true">_CallRewriting._rewrite_calls()</text>
   <text x="450" y="714" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#526273">Visits</text>

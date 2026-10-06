@@ -104,20 +104,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <text x="12" y="714" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">REGISTERED PLANNER</text>
   <text x="12" y="737" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">CoopWholeFunctionPlanner</text>
   <text x="24" y="760" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">.run()</text>
+  <text x="95" y="760" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="400" fill="#526273">repairs IR between phases</text>
   <path d="M12 777L288 777" stroke="#d8e0e6" stroke-width="1.3" fill="none"/>
   <text x="12" y="793" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">1  RESOLVE GROUPS</text>
   <text x="12" y="816" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">_GroupPlanning</text>
   <text x="24" y="839" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">._resolve_groups()</text>
-  <text x="12" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Uses</text>
-  <text x="43.8969" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
-  <text x="47.7859" y="865" font-family="'Liberation Mono', Consolas, monospace" font-size="14" font-weight="400" fill="#526273" data-code="true">_GroupCallPlanner</text>
-  <text x="190.613" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">;</text>
-  <text x="194.502" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
-  <text x="198.391" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">repairs</text>
-  <text x="241.184" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
-  <text x="12" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">changed</text>
-  <text x="65.7156" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273"> </text>
-  <text x="69.6047" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">IR.</text>
+  <text x="12" y="865" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">Uses <tspan font-family="'Liberation Mono', Consolas, monospace" data-code="true">_GroupCallPlanner</tspan> to</text>
+  <text x="12" y="888" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="400" fill="#526273">resolve group calls.</text>
   <text x="12" y="921" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#526273">2  REWRITE CALLS</text>
   <text x="12" y="944" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">_CallRewriting</text>
   <text x="24" y="967" font-family="'Liberation Mono', Consolas, monospace" font-size="15.5" font-weight="400" fill="#182b3a" data-code="true">._rewrite_calls()</text>
