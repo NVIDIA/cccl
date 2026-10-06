@@ -6,16 +6,24 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+from cuda.coop._typing import (
+    ExchangeMode,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _portable_group_operation,
 )
 from ._payload import (
     ThreadDataLike,
-    _ReadableThreadDataLike,
 )
+from .thread_group import MemoryGroup
+
+_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 
 
 @_portable_group_operation(
@@ -23,12 +31,12 @@ from ._payload import (
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def exchange(
-    group: ThreadGroup,
-    value: _ReadableThreadDataLike[Any],
+    group: MemoryGroup,
+    value: PortableThreadDataLike[_ItemT],
     /,
     *,
-    mode: Any = "striped_to_blocked",
-) -> ThreadDataLike[Any]:
+    mode: ExchangeMode = "striped_to_blocked",
+) -> ThreadDataLike[_ItemT]:
     """Convert between blocked and striped per-thread layouts.
 
     Parameters
