@@ -25,6 +25,7 @@
 
 DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetDifference, set_difference);
 DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetUnion, set_union);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetIntersection, set_intersection);
 
 // Small key types stress the duplicate handling of the balanced merge path (many equal keys).
 using key_types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
@@ -90,6 +91,19 @@ void test_all_ops(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op
       },
       [](auto... a) {
         std::set_union(a...);
+      },
+      size1,
+      size2,
+      compare_op);
+  }
+  {
+    INFO("operation: set_intersection");
+    test_keys<Key, Offset>(
+      [](auto&&... a) {
+        set_intersection(static_cast<decltype(a)>(a)...);
+      },
+      [](auto... a) {
+        std::set_intersection(a...);
       },
       size1,
       size2,
@@ -220,6 +234,17 @@ try
       num_keys2,
       key_t{0},
       n1);
+  }
+  SECTION("intersection") // keys1 ∩ keys2 == [0, num_keys2)
+  {
+    test_op_large<key_t>(
+      [](auto&&... a) {
+        set_intersection(static_cast<decltype(a)>(a)...);
+      },
+      num_keys1,
+      num_keys2,
+      key_t{0},
+      n2);
   }
 }
 catch (const std::bad_alloc&)
