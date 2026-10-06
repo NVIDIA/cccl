@@ -10,6 +10,7 @@ import numpy as np
 from typing_extensions import assert_type
 
 from cuda import coop
+from cuda.coop._typing import CompilerIntegerLike
 
 _ItemT = TypeVar("_ItemT")
 
@@ -375,5 +376,5 @@ def check_run_length_surface(destination: object) -> None:
             destination_offset=np.int64(3),
             temp_storage=coop.TempStorage(),
         ),
-        np.uint32,
+        np.uint32 | CompilerIntegerLike,
     )
