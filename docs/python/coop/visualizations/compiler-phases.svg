@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 1050" role="img" aria-labelledby="title desc">
   <title id="title">Numba-CUDA-MLIR compilation phases</title>
-  <desc id="desc">Read down. Numba builds untyped IR, runs early rewrites, and inlines helpers. The cuda.coop planner resolves groups, collects and compiles providers, and rewrites calls before type inference. Numba then finishes untyped passes, infers types, runs typed rewrites, lowers to MLIR, and compiles and links the kernel.</desc>
+  <desc id="desc">Seven compiler phases in order. Cooperative planning remains before main type inference. Group planning computes Load/Store payload dtype and item count. The private provider call carries its GroupLoweringPlan into PayloadInference, which reuses those facts while checking explicit inputs and candidate extent and recording constructor state for allocation. Retained _RewriteMatch records feed storage planning and call emission. Storage reuse and provider synchronization policies are shared; emitter restrictions and constructor-plan agreement checks remain local. Calls without plans use full inference. Facts belong to the current IR and compilation attempt. Provider artifact caches and the remaining pipeline are unchanged.</desc>
   <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#44556b" /></marker></defs>
   <rect width="1040" height="1050" rx="12" fill="#ffffff" />
   <text x="28" y="38" text-anchor="start" font-family="sans-serif" font-size="22" fill="#172b3a" font-weight="600">COMPILATION PHASES</text>
@@ -28,9 +28,9 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <text x="57" y="408.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">3</text>
   <text x="99" y="376" text-anchor="start" font-family="sans-serif" font-size="20" fill="#172b3a" font-weight="600">Plan cooperative calls</text>
   <text x="99" y="406" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">cuda.coop</text>
-  <text x="453" y="372" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Resolve groups and select providers.</text>
-  <text x="453" y="397" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Scan all blocks. Prepare the provider bundle.</text>
-  <text x="453" y="422" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Use scratch layouts. Rewrite calls and payloads.</text>
+  <text x="453" y="372" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Plan groups and Load/Store dtype and item count.</text>
+  <text x="453" y="397" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Reuse plan facts; check inputs; retain call matches.</text>
+  <text x="453" y="422" text-anchor="start" font-family="sans-serif" font-size="17" fill="#172b3a">Prepare providers. Allocate scratch and rewrite calls.</text>
   <path d="M 520 460 V 487" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
   <rect x="28" y="488" width="984" height="92" rx="9" fill="#e9f2fb" stroke="#68798b" />
   <text x="57" y="542.0" text-anchor="start" font-family="sans-serif" font-size="25" fill="#172b3a" font-weight="600">4</text>
