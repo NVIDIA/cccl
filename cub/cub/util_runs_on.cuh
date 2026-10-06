@@ -15,6 +15,8 @@
 
 #include <cub/util_debug.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/guarantee.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -32,6 +34,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace experimental
 {
+class RunsOn;
+
 class DeviceDescription
 {
 public:
@@ -52,7 +56,54 @@ public:
     return __max_sm_count_;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class Kernel, class LauncherFactory>
+  [[nodiscard]] _CCCL_API ::cudaError_t occupancy(
+    const Kernel& kernel,
+    const LauncherFactory& launcher_factory,
+    const void* d_temp_storage,
+    int threads_per_block,
+    int dynamic_smem_bytes,
+    int& blocks_per_sm) const
+  {
+    // Ignore user construction if we are in run mode
+    if (__user_constructed_ && !d_temp_storage)
+    {
+      const auto traits = ::cuda::arch_traits_for(__compute_capability());
+
+      blocks_per_sm =
+        ::cuda::std::min(traits.max_blocks_per_multiprocessor,
+                         traits.max_warps_per_multiprocessor / ::cuda::ceil_div(threads_per_block, traits.warp_size));
+
+      return ::cudaSuccess;
+    }
+
+    return launcher_factory.MaxSmOccupancy(blocks_per_sm, kernel, threads_per_block, dynamic_smem_bytes);
+  }
+
+  class __private_tag
+  {
+    _CCCL_HIDE_FROM_ABI __private_tag() = default;
+
+    friend class RunsOn;
+    friend class DeviceDescription;
+  };
+
+  _CCCL_API explicit DeviceDescription(__private_tag, ::cuda::compute_capability cc, ::cuda::std::uint32_t max_sm_count)
+      : __user_constructed_{false}
+      , __cc_{::cuda::std::move(cc)}
+      , __max_sm_count_{max_sm_count}
+  {}
+
 private:
+  // This is extremely icky, but for some queries (like occupancy()), we need to know much
+  // later down the pipeline whether this object was created from a user-provided guarantee or
+  // whether it was filled out by RunsOn using runtime values.
+  //
+  // Generally, if it was filled out by RunsOn (__user_constructed_ is false), then it should
+  // always defer to calling into the runtime or the driver. If it was user-constructed then it
+  // should consult what the user provided it unless we are in run mode.
+  bool __user_constructed_{true};
   ::cuda::compute_capability __cc_{};
   ::cuda::std::uint32_t __max_sm_count_{};
 };
@@ -134,7 +185,7 @@ public:
       return error;
     }
 
-    descr = DeviceDescription{cc, static_cast<::cuda::std::uint32_t>(sm_count)};
+    descr = DeviceDescription{DeviceDescription::__private_tag{}, cc, static_cast<::cuda::std::uint32_t>(sm_count)};
     return ::cudaSuccess;
   }
 

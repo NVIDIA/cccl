@@ -1246,7 +1246,8 @@ struct pass_config
     UpsweepKernelT upsweep_kern,
     ScanKernelT scan_kern,
     DownsweepKernelT downsweep_kern,
-    int sm_count,
+    const experimental::DeviceDescription& device_descr,
+    const void* d_temp_storage,
     OffsetT num_items,
     int pass_radix_bits,
     RadixSortUpsweepPolicy upsweep_policy,
@@ -1260,22 +1261,26 @@ struct pass_config
     this->radix_bits       = pass_radix_bits;
     radix_digits           = 1 << radix_bits;
 
-    if (const auto error = CubDebug(upsweep_config.__init(upsweep_kernel, upsweep_policy, launcher_factory)))
+    if (const auto error = CubDebug(
+          upsweep_config.__init(upsweep_kernel, upsweep_policy, launcher_factory, device_descr, d_temp_storage)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory)))
+    if (const auto error = CubDebug(
+          scan_config.__init(scan_kernel, scan_policy.lookback, launcher_factory, device_descr, d_temp_storage)))
     {
       return error;
     }
 
-    if (const auto error = CubDebug(downsweep_config.__init(downsweep_kernel, downsweep_policy, launcher_factory)))
+    if (const auto error = CubDebug(
+          downsweep_config.__init(downsweep_kernel, downsweep_policy, launcher_factory, device_descr, d_temp_storage)))
     {
       return error;
     }
 
-    max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
+    max_downsweep_grid_size =
+      (downsweep_config.sm_occupancy * static_cast<int>(device_descr.__max_sm_count())) * detail::subscription_factor;
 
     even_share.DispatchInit(
       num_items, max_downsweep_grid_size, ::cuda::std::max(downsweep_config.tile_size, upsweep_config.tile_size));
@@ -1556,25 +1561,14 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     DownsweepKernelT alt_downsweep_kernel,
     const RadixSortPolicy& policy)
   {
-    const auto sm_count = static_cast<int>(device_descr.__max_sm_count());
-
-    // if (const auto error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount,
-    // device_ordinal)))
-    // {
-    //   return error;
-    // }
-    // if (const auto& max_sm_count = device_descr.__max_sm_count_; max_sm_count.has_value())
-    // {
-    //   sm_count = ::cuda::std::min(sm_count, static_cast<int>(*max_sm_count));
-    // }
-
     // Init regular and alternate-digit kernel configurations
     pass_config<UpsweepKernelT, ScanKernelT, DownsweepKernelT, OffsetT> pc, alt_pc;
     if (const auto error = pc.init(
           upsweep_kernel,
           scan_kernel,
           downsweep_kernel,
-          sm_count,
+          device_descr,
+          d_temp_storage,
           num_items,
           policy.downsweep.radix_bits,
           policy.upsweep,
@@ -1589,7 +1583,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
           alt_upsweep_kernel,
           scan_kernel,
           alt_downsweep_kernel,
-          sm_count,
+          device_descr,
+          d_temp_storage,
           num_items,
           policy.alt_downsweep.radix_bits,
           policy.alt_upsweep,
@@ -1765,8 +1760,8 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     int histo_blocks_per_sm        = 1;
     auto histogram_kernel          = kernel_source.RadixSortHistogramKernel();
 
-    if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(histo_blocks_per_sm, histogram_kernel, histo_block_threads, 0)))
+    if (const auto error = CubDebug(device_descr.occupancy(
+          histogram_kernel, launcher_factory, d_temp_storage, histo_block_threads, 0, histo_blocks_per_sm)))
     {
       return error;
     }
