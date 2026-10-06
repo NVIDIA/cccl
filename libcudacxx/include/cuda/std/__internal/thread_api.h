@@ -26,37 +26,38 @@
 //
 // `_CCCL_HAS_THREAD_API(API)` is 1 when that API is available and 0 otherwise.
 // `API` is `EXTERNAL`, `CUDA`, `WIN32`, or `PTHREAD`.
-// Defining `_CCCL_HAS_THREAD_API_<API>_()` or the legacy `_CCCL_HAS_THREAD_API_<API>`
-// before including this header forces that API on.
 
-#if _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__)
+#define _CCCL_HAS_THREAD_API_EXTERNAL() 0
+#define _CCCL_HAS_THREAD_API_CUDA()     0
+#define _CCCL_HAS_THREAD_API_WIN32()    0
+#define _CCCL_HAS_THREAD_API_PTHREAD()  0
+
+#if _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__) || _CCCL_HOSTJIT()
+#  undef _CCCL_HAS_THREAD_API_EXTERNAL
 #  define _CCCL_HAS_THREAD_API_EXTERNAL() 1
-#else // ^^^ external thread API ^^^ / vvv no external thread API vvv
-#  define _CCCL_HAS_THREAD_API_EXTERNAL() 0
-#endif // no external thread API
+#endif // _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__) || _CCCL_HOSTJIT()
 
-#if (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) || defined(__EMSCRIPTEN__) || _CCCL_HOSTJIT()
+#if (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) || _CCCL_HAS_THREAD_API_EXTERNAL()
+#  undef _CCCL_HAS_THREAD_API_CUDA
 #  define _CCCL_HAS_THREAD_API_CUDA() 1
-#else // ^^^ CUDA thread API ^^^ / vvv no CUDA thread API vvv
-#  define _CCCL_HAS_THREAD_API_CUDA() 0
-#endif // no CUDA thread API
+#endif // (_CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)) || _CCCL_HAS_THREAD_API_EXTERNAL()
 
-#if (!_CCCL_COMPILER(NVRTC) && _CCCL_OS(WINDOWS))
+#if _CCCL_HAS_THREAD_API_EXTERNAL()
+// No windows thread API
+#elif _CCCL_OS(WINDOWS)
+#  undef _CCCL_HAS_THREAD_API_WIN32
 #  define _CCCL_HAS_THREAD_API_WIN32() 1
-#else // ^^^ Win32 thread API ^^^ / vvv no Win32 thread API vvv
-#  define _CCCL_HAS_THREAD_API_WIN32() 0
-#endif // no Win32 thread API
+#endif // (!_CCCL_COMPILER(NVRTC) && _CCCL_OS(WINDOWS))
 
-// NVRTC reports `_CCCL_OS(LINUX)` through `__LP64__` and has no host thread API.
-// Emscripten supplies its own thread API.
-#if !_CCCL_COMPILER(NVRTC) && !defined(__EMSCRIPTEN__) \
-  && (defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX))
+#if _CCCL_HAS_THREAD_API_EXTERNAL()
+// No pthread
+#elif defined(__GNU__) || _CCCL_OS(LINUX) || _CCCL_OS(APPLE) || _CCCL_OS(QNX)
+#  undef _CCCL_HAS_THREAD_API_PTHREAD
 #  define _CCCL_HAS_THREAD_API_PTHREAD() 1
-#elif !_CCCL_COMPILER(NVRTC) && defined(__MINGW32__) && __has_include(<pthread.h>)
+#elif defined(__MINGW32__) && __has_include(<pthread.h>)
+#  undef _CCCL_HAS_THREAD_API_PTHREAD
 #  define _CCCL_HAS_THREAD_API_PTHREAD() 1
-#else // ^^^ pthread thread API ^^^ / vvv no pthread thread API vvv
-#  define _CCCL_HAS_THREAD_API_PTHREAD() 0
-#endif // no pthread thread API
+#endif // ^^^ pthread thread API
 
 #define _CCCL_HAS_THREAD_API(_API) _CCCL_HAS_THREAD_API_##_API()
 

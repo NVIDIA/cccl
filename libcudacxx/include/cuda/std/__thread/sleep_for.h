@@ -24,15 +24,17 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__limits/numeric_limits.h>
 
-#if _CCCL_HAS_THREAD_API(PTHREAD)
-#  include <cuda/std/__utility/cmp.h>
-#  include <cuda/std/ctime>
+#if _CCCL_HOSTED()
+#  if _CCCL_HAS_THREAD_API(PTHREAD)
+#    include <cuda/std/__utility/cmp.h>
+#    include <cuda/std/ctime>
 
-#  include <errno.h>
-#endif // _CCCL_HAS_THREAD_API(PTHREAD)
-#if _CCCL_HAS_THREAD_API(WIN32)
-#  include <windows.h>
-#endif // _CCCL_HAS_THREAD_API(WIN32)
+#    include <errno.h>
+#  endif // _CCCL_HAS_THREAD_API(PTHREAD)
+#  if _CCCL_HAS_THREAD_API(WIN32)
+#    include <windows.h>
+#  endif // _CCCL_HAS_THREAD_API(WIN32)
+#endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -60,22 +62,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 }
 #endif // _CCCL_HAS_THREAD_API(PTHREAD)
 
-#if _CCCL_DEVICE_COMPILATION()
-_CCCL_DEVICE_API inline void __cccl_thread_sleep_for_device(::cuda::std::chrono::nanoseconds __ns){
-#  if _CCCL_HAS_THREAD_API(CUDA)
-  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
-                 auto const __step = __ns.count();
-                 _CCCL_ASSERT(__step < numeric_limits<unsigned>::max(), "invalid nanoseconds count");
-                 ::__nanosleep((unsigned) __step);
-               }))
-#  else // ^^^ _CCCL_HAS_THREAD_API(CUDA) ^^^ / vvv Unknown Thread API vvv
-#    error "Unknown Thread API"
-#  endif // Unknown Thread API
-}
-#endif // _CCCL_DEVICE_COMPILATION()
-
 #if _CCCL_HOST_COMPILATION()
-_CCCL_HOST_API inline void __cccl_thread_sleep_for_host(::cuda::std::chrono::nanoseconds __ns)
+_CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for_host(::cuda::std::chrono::nanoseconds __ns)
 {
 #  if _CCCL_HAS_THREAD_API(PTHREAD)
   auto __ts = ::cuda::std::__cccl_to_timespec(__ns);
@@ -89,6 +77,21 @@ _CCCL_HOST_API inline void __cccl_thread_sleep_for_host(::cuda::std::chrono::nan
 #  endif // Unknown Thread API
 }
 #endif // _CCCL_HOST_COMPILATION()
+
+#if _CCCL_DEVICE_COMPILATION()
+_CCCL_DEVICE_API inline void __cccl_thread_sleep_for_device(::cuda::std::chrono::nanoseconds __ns)
+{
+#  if _CCCL_HAS_THREAD_API(CUDA)
+  NV_IF_TARGET(NV_PROVIDES_SM_70, ({
+                 auto const __step = __ns.count();
+                 _CCCL_ASSERT(__step < numeric_limits<unsigned>::max(), "invalid nanoseconds count");
+                 ::__nanosleep((unsigned) __step);
+               }))
+#  elif _CCCL_CUDA_COMPILER(NVHPC)
+  ::cuda::std::__cccl_thread_sleep_for_host(__ns);
+#  endif // _CCCL_HAS_THREAD_API(CUDA)
+}
+#endif // _CCCL_DEVICE_COMPILATION()
 
 _CCCL_HOST_DEVICE_API inline void __cccl_thread_sleep_for(::cuda::std::chrono::nanoseconds __ns)
 {
