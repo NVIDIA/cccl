@@ -272,9 +272,13 @@ def test_qualified_custom_operators_and_shared_storage_reuse():
     np.testing.assert_array_equal(outputs[3], source)
 
 
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_multiblock_delta_example(items_per_thread):
+def test_multiblock_delta_example():
     # adjacent-difference-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    from cuda import coop
+
     @cuda.jit
     def delta_encode(source, output, items_per_thread):
         # Use distinct source/output arrays: another block needs the preceding
@@ -291,19 +295,26 @@ def test_multiblock_delta_example(items_per_thread):
         )
         coop.store(block, output, differences, offset=base)
 
+    for items_per_thread in (1, 4):
+        source = ((np.arange(3 * 128 * items_per_thread) * 13) % 101).astype(
+            np.int32
+        )
+        output = np.empty_like(source)
+        delta_encode[3, 128](source, output, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(
+            output, np.diff(source, prepend=np.int32(0))
+        )
     # adjacent-difference-example-end
 
-    source = ((np.arange(3 * 128 * items_per_thread) * 13) % 101).astype(
-        np.int32
-    )
-    output = np.empty_like(source)
-    delta_encode[3, 128](source, output, items_per_thread)
-    np.testing.assert_array_equal(output, np.diff(source, prepend=np.int32(0)))
 
-
-@pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_tile_run_labels_example(items_per_thread):
+def test_tile_run_labels_example():
     # discontinuity-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    from cuda import coop
+
     @cuda.jit
     def label_runs_per_tile(keys, output, items_per_thread):
         # Full block tiles; IDs restart at zero in each block.
@@ -317,17 +328,18 @@ def test_tile_run_labels_example(items_per_thread):
             labels[i] -= 1
         coop.store(block, output, labels, offset=base)
 
+    for items_per_thread in (1, 4):
+        source = (np.arange(2 * 128 * items_per_thread) // 13).astype(np.int32)
+        output = np.empty_like(source)
+        label_runs_per_tile[2, 128](source, output, items_per_thread)
+        cuda.synchronize()
+        for base in (0, 128 * items_per_thread):
+            tile = source[base : base + 128 * items_per_thread]
+            expected = np.cumsum(np.r_[1, tile[1:] != tile[:-1]]) - 1
+            np.testing.assert_array_equal(
+                output[base : base + 128 * items_per_thread], expected
+            )
     # discontinuity-example-end
-
-    source = (np.arange(2 * 128 * items_per_thread) // 13).astype(np.int32)
-    output = np.empty_like(source)
-    label_runs_per_tile[2, 128](source, output, items_per_thread)
-    for base in (0, 128 * items_per_thread):
-        tile = source[base : base + 128 * items_per_thread]
-        expected = np.cumsum(np.r_[1, tile[1:] != tile[:-1]]) - 1
-        np.testing.assert_array_equal(
-            output[base : base + 128 * items_per_thread], expected
-        )
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
