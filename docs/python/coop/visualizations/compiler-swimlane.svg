@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 1460" role="img" aria-labelledby="title desc">
   <title id="title">Compilation swimlanes: Numba-CUDA-MLIR, cuda.coop, NVRTC, and nvJitLink</title>
-  <desc id="desc">Time runs down four actor lanes. Numba passes inlined untyped IR to cuda.coop. The planner resolves groups, collects provider specializations across all blocks, and sends one C++ source bundle to NVRTC on a cache miss. NVRTC returns provider LTO-IR and scratch layouts. cuda.coop rewrites the IR and gives it back to Numba. Numba infers types, runs typed rewrites, lowers the kernel, and sends kernel and provider link inputs to nvJitLink. nvJitLink returns a cubin for Numba to load and launch.</desc>
+  <desc id="desc">Ordered handoffs between Numba, cuda.coop, NVRTC and nvJitLink. Successful provider bundling on a cache miss and the default kernel LTO path are shown. Provider preparation completes before main type inference. Group planning computes Load/Store payload dtype and item count. The private provider call carries its GroupLoweringPlan into PayloadInference, which reuses those facts while checking explicit inputs and candidate extent and recording constructor state for allocation. Retained _RewriteMatch records feed storage planning and call emission. Storage reuse and provider synchronization policies are shared; emitter restrictions and constructor-plan agreement checks remain local. Calls without plans use full inference. Facts belong to the current IR and compilation attempt. Provider artifact caches and the remaining pipeline are unchanged.</desc>
   <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#44556b" /></marker></defs>
   <rect width="1040" height="1460" rx="12" fill="#ffffff" />
   <text x="28" y="36" text-anchor="start" font-family="sans-serif" font-size="22" fill="#172b3a" font-weight="600">COMPILATION HANDOFFS</text>
@@ -29,13 +29,13 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <path d="M 150 236 V 259 H 425 V 282" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
   <text x="170" y="250" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">Inlined, untyped IR</text>
   <rect x="305" y="282" width="240" height="65" rx="8" fill="#e5f1d7" stroke="#68798b" />
-  <text x="425.0" y="308.0" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Resolve groups.</text>
-  <text x="425.0" y="333.0" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Select private providers.</text>
+  <text x="425.0" y="308.0" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Resolve groups; plan</text>
+  <text x="425.0" y="333.0" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Load/Store dtype and count.</text>
   <path d="M 425 347 V 376" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
   <rect x="305" y="376" width="240" height="85" rx="8" fill="#e5f1d7" stroke="#68798b" />
-  <text x="425.0" y="399.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Scan every block.</text>
-  <text x="425.0" y="424.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Collect distinct providers.</text>
-  <text x="425.0" y="449.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Emit one C++ source unit.</text>
+  <text x="425.0" y="399.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Reuse facts; check inputs.</text>
+  <text x="425.0" y="424.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Retain call matches; bundle</text>
+  <text x="425.0" y="449.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">distinct providers as C++.</text>
   <path d="M 545 418 H 585" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
   <rect x="585" y="376" width="190" height="85" rx="8" fill="#fff0c9" stroke="#68798b" />
   <text x="680.0" y="399.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Compile C++</text>
@@ -46,8 +46,8 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
   <text x="455" y="523" text-anchor="start" font-family="sans-serif" font-size="16" fill="#172b3a">+ scratch sizes and alignments</text>
   <rect x="305" y="539" width="240" height="85" rx="8" fill="#e5f1d7" stroke="#68798b" />
   <text x="425.0" y="562.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Keep shared link file.</text>
-  <text x="425.0" y="587.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Read provider layouts.</text>
-  <text x="425.0" y="612.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Record scratch requirements.</text>
+  <text x="425.0" y="587.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Use retained call matches.</text>
+  <text x="425.0" y="612.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">Read scratch requirements.</text>
   <path d="M 425 624 V 654" fill="none" stroke="#44556b" stroke-width="2" marker-end="url(#arrow)" />
   <rect x="305" y="654" width="240" height="85" rx="8" fill="#e5f1d7" stroke="#68798b" />
   <text x="425.0" y="677.5" text-anchor="middle" font-family="sans-serif" font-size="17" fill="#172b3a">apply(): plan scratch.</text>
