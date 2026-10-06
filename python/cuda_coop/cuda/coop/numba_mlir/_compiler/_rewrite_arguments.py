@@ -322,6 +322,7 @@ class _ArgumentRewrite:
             allowed_factory_kwargs,
             seen_factory_kwargs,
             factory_kwargs,
+            lowering_plan=lowering_plan,
         )
         if specification.validate_runtime_controls is not None:
             specification.validate_runtime_controls(

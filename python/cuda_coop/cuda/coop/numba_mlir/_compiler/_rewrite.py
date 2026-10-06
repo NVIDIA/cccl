@@ -213,13 +213,14 @@ class CoopSinglePhaseRewrite(
                         ctor_order += 1
             self._validate_temp_storage_ctor_sites()
             for label in sorted(func_ir.blocks):
-                self._block = func_ir.blocks[label]
+                scan_block = func_ir.blocks[label]
+                self._block = scan_block
                 self._block_defs = {
                     inst.target.name: inst.value
-                    for inst in self._block.body
+                    for inst in scan_block.body
                     if isinstance(inst, ir.Assign)
                 }
-                for inst in self._block.body:
+                for inst in scan_block.body:
                     if not isinstance(inst, ir.Assign):
                         continue
                     call = inst.value

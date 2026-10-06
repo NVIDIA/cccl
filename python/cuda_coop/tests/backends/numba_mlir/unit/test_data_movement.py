@@ -158,14 +158,23 @@ def test_load_store_calls_across_blocks_are_analyzed_once(
     from numba_cuda_mlir.numbair_transforms import ir
 
     from cuda import coop
+    from cuda.coop.numba_mlir._compiler._group_rewriting import (
+        GroupRewriteContext,
+    )
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
+    from cuda.coop.numba_mlir._compiler._rewrite_load_store import (
+        _LoadStoreRewrite,
+    )
 
     def kernel(source, destination, flag, items_per_thread):
         block = coop.this_block()
         items = coop.ThreadData(items_per_thread)
         coop.load(block, source, items, algorithm="transpose")
+        written = coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            written[item] = source[item]
         if flag:
-            coop.store(block, destination, items, algorithm="transpose")
+            coop.store(block, destination, written, algorithm="transpose")
         else:
             coop.store(block, destination, items, algorithm="transpose")
 
@@ -178,6 +187,24 @@ def test_load_store_calls_across_blocks_are_analyzed_once(
 
     monkeypatch.setattr(
         CoopSinglePhaseRewrite, "_validate_and_split_args", record_analysis
+    )
+    infer_payload = _LoadStoreRewrite._infer_load_store_payload
+
+    def infer_planned_payload(context, inference):
+        assert inference.lowering_plan is not None
+        with monkeypatch.context() as patch:
+            for name in ("dtype", "infer_thread_data_write_dtype"):
+                patch.setattr(
+                    GroupRewriteContext,
+                    name,
+                    lambda *_args: pytest.fail(
+                        "planned Load/Store repeated payload dtype inference"
+                    ),
+                )
+            infer_payload(context, inference)
+
+    monkeypatch.setattr(
+        _LoadStoreRewrite, "_infer_load_store_payload", infer_planned_payload
     )
     array_type = types.Array(types.int32, 1, "C")
     func_ir, _, invocables = _rewrite_planned_movement(
@@ -195,6 +222,7 @@ def test_load_store_calls_across_blocks_are_analyzed_once(
     assert targets.count(invocables[0]) == 1
     assert targets.count(invocables[1]) == 2
     assert targets.count(cuda.shared.array) == 1
+    assert targets.count(cuda.local.array) == 2
 
 
 def _run_single_phase_to_provider_boundary(
@@ -261,6 +289,56 @@ def _run_single_phase_to_provider_boundary(
         )
         matched_group_call |= bool(rewrite._matches)
     assert matched_group_call
+
+
+@pytest.mark.parametrize(
+    "keyword, change_plan",
+    [("dtype", False), ("items_per_thread", False), ("items_per_thread", True)],
+    ids=["factory-dtype", "factory-extent", "plan-extent"],
+)
+def test_planned_payload_rejects_conflicting_specialization(
+    monkeypatch, keyword, change_plan
+):
+    from numba_cuda_mlir import types
+
+    from cuda import coop
+    from cuda.coop.numba_mlir._compiler._group_load_store import (
+        _LoadStorePlanning,
+    )
+    from cuda.coop.numba_mlir._compiler._group_planning import (
+        GroupPlanningContext,
+    )
+    from cuda.coop.numba_mlir._compiler._rewrite_support import (
+        CoopSinglePhaseRewriteError,
+    )
+
+    def kernel(source):
+        items = coop.ThreadData(items_per_thread=1)
+        coop.load(coop.this_block(), source, items)
+
+    rewrite_call = GroupPlanningContext.rewrite_call
+
+    def conflicting_call(self, inst, **options):
+        options["kwargs"][keyword] = types.float32 if keyword == "dtype" else 4
+        return rewrite_call(self, inst, **options)
+
+    if change_plan:
+        monkeypatch.setattr(
+            _LoadStorePlanning, "_planning_items_per_thread", lambda *_args: 4
+        )
+    else:
+        monkeypatch.setattr(
+            GroupPlanningContext, "rewrite_call", conflicting_call
+        )
+    with pytest.raises(
+        CoopSinglePhaseRewriteError,
+        match=f"factory argument '{keyword}' does not match",
+    ):
+        _run_single_phase_to_provider_boundary(
+            kernel,
+            arg_types=(types.int32[::1],),
+            monkeypatch=monkeypatch,
+        )
 
 
 class _FailingAttribute:

@@ -48,7 +48,9 @@ from ._group_planner_support import GroupRewriteError, ir
 from ._operations import (
     _GROUP_LOWERING_PLAN_KWARG,
     StorageABI,
+    expected_storage_reuse_barrier,
     factory_operation,
+    provider_synchronization_matches,
 )
 from ._parameters import (
     _python_scalar_dtype,
@@ -384,10 +386,8 @@ class GroupPlanningContext:
                 "cuda.coop.numba_mlir caller-owned TempStorage is supported "
                 "only for single-instance block-scoped cooperative primitives"
             )
-        expected_reuse_barrier = (
-            topology.execution_scope
-            if storage_bearing and storage.auto_sync
-            else SynchronizationScope.NONE
+        expected_reuse_barrier = expected_storage_reuse_barrier(
+            topology, storage
         )
         if synchronization.storage_reuse_barrier is not expected_reuse_barrier:
             raise GroupRewriteError(
@@ -410,17 +410,9 @@ class GroupPlanningContext:
             if getattr(metadata, name) is not planned
         ]
         planned_synchronization = expected["synchronization_scope"]
-        allowed_synchronization = {planned_synchronization}
-        # The provider's convenience ``_alloc`` wrapper owns its declared
-        # reuse barrier. Pointer rewrites bypass that wrapper. The compiler
-        # rewrite emits the selected barrier only when auto_sync is on.
-        if (
-            planned_synchronization is SynchronizationScope.NONE
-            and caller_owned
-            and not storage.auto_sync
+        if not provider_synchronization_matches(
+            metadata, topology, synchronization, storage
         ):
-            allowed_synchronization.add(expected["execution_scope"])
-        if metadata.synchronization_scope not in allowed_synchronization:
             mismatches.append(
                 "synchronization_scope="
                 f"{metadata.synchronization_scope.value!r} "
