@@ -21,15 +21,16 @@ from ..launch import LaunchFacts
 from ..thread_group import ThreadGroup
 from ._model import (
     ArgumentPrecondition,
+    GroupExecutionRequirements,
     GroupLoweringPlan,
     GroupLoweringTarget,
     GroupPrimitiveCall,
-    GroupTopologyContract,
-    ParticipationContract,
+    GroupTopologyRequirements,
+    ParticipationRequirements,
     StorageOwnership,
-    SynchronizationContract,
+    SynchronizationRequirements,
     SynchronizationScope,
-    TempStorageContract,
+    TempStorageRequirements,
     UnsupportedReason,
     UnsupportedReasonCode,
 )
@@ -43,7 +44,7 @@ def _unsupported(
 ) -> GroupLoweringPlan:
     """Return a plan containing the call and the failed requirement.
 
-    Leave implementation and execution contracts unset. Callers can inspect
+    Leave implementation and execution requirements unset. Callers can inspect
     or report the failure without mistaking it for a usable device plan.
     """
 
@@ -65,7 +66,7 @@ def _unsupported(
 def _group_topology(
     resolved_group: ThreadGroup,
     launch: LaunchFacts,
-) -> GroupTopologyContract:
+) -> GroupTopologyRequirements:
     """Describe group instances and each thread's rank within an instance.
 
     This calculation is shared by primitive families. For a warp-based group,
@@ -82,7 +83,7 @@ def _group_topology(
 
     Returns
     -------
-    GroupTopologyContract
+    GroupTopologyRequirements
         Group width, instance count, rank expressions, and execution scope.
         Expressions describe the rank calculation for backend lowering.
 
@@ -95,20 +96,20 @@ def _group_topology(
 
     group_size = resolved_group.static_size
     if group_size is None:
-        raise ValueError("group contracts require a static group size")
+        raise ValueError("group topology requires a static group size")
 
     block_threads = launch.exact_block_threads
     kind = resolved_group.kind
     if kind == "thread":
         if block_threads is None:
-            raise ValueError("thread contracts require exact block dimensions")
+            raise ValueError("thread topology requires exact block dimensions")
         instances = block_threads
         index = "linear_thread_rank"
         thread_rank = "0"
         execution_scope = SynchronizationScope.NONE
     elif kind in {"warp", "threads_within_warp"}:
         if block_threads is None:
-            raise ValueError("warp contracts require exact block dimensions")
+            raise ValueError("warp topology requires exact block dimensions")
         if block_threads % group_size != 0:
             raise ValueError("group width must divide the enclosing block size")
         instances = block_threads // group_size
@@ -118,7 +119,7 @@ def _group_topology(
     elif kind == "warps_within_block":
         if block_threads is None:
             raise ValueError(
-                "mapped block contracts require exact block dimensions"
+                "mapped block topology requires exact block dimensions"
             )
         if block_threads % group_size != 0:
             raise ValueError("group width must divide the enclosing block size")
@@ -151,7 +152,7 @@ def _group_topology(
         thread_rank = "group.thread_rank()"
         execution_scope = SynchronizationScope.GROUP
 
-    return GroupTopologyContract(
+    return GroupTopologyRequirements(
         group_kind=kind,
         logical_width=group_size,
         instances=instances,
@@ -161,7 +162,7 @@ def _group_topology(
     )
 
 
-def _contracts(
+def _build_execution_requirements(
     resolved_group: ThreadGroup,
     launch: LaunchFacts,
     *,
@@ -174,12 +175,7 @@ def _contracts(
     uniform_arguments: tuple[str, ...] = (),
     valid_member_selection: str | None = None,
     argument_preconditions: tuple[ArgumentPrecondition, ...] = (),
-) -> tuple[
-    GroupTopologyContract,
-    ParticipationContract,
-    SynchronizationContract,
-    TempStorageContract,
-]:
+) -> GroupExecutionRequirements:
     """Build participation, synchronization, and storage requirements.
 
     A resolved group's topology determines both the storage instance index
@@ -204,7 +200,7 @@ def _contracts(
     cpp_type : str or None
         C++ storage type selected by the implementation, when applicable.
     storage_sharing : str, optional
-        Sharing policy to carry into the storage contract.
+        Sharing policy to carry into the storage requirements.
     requested_size_in_bytes : int, optional
         Caller-requested storage capacity to check against the actual layout.
     requested_alignment : int, optional
@@ -222,9 +218,9 @@ def _contracts(
 
     Returns
     -------
-    tuple
+    GroupExecutionRequirements
         Topology, participation, synchronization, and temporary-storage
-        contracts, in that order. Caller-owned storage requires an exact
+        requirements. Caller-owned storage requires an exact
         layout check; this helper does not calculate the compiled layout.
     """
 
@@ -240,9 +236,9 @@ def _contracts(
         if storage_free or not auto_sync
         else topology.execution_scope
     )
-    return (
-        topology,
-        ParticipationContract(
+    return GroupExecutionRequirements(
+        topology=topology,
+        participation=ParticipationRequirements(
             group_kind=resolved_group.kind,
             exact_group_size=group_size,
             exact_block_dim=launch.exact_block_dim,
@@ -258,11 +254,11 @@ def _contracts(
             valid_member_selection=valid_member_selection,
             argument_preconditions=argument_preconditions,
         ),
-        SynchronizationContract(
+        synchronization=SynchronizationRequirements(
             converged_entry=True,
             storage_reuse_barrier=barrier,
         ),
-        TempStorageContract(
+        temp_storage=TempStorageRequirements(
             ownership=storage_ownership,
             address_space=None if storage_free else "shared",
             cpp_type=cpp_type,
@@ -337,7 +333,7 @@ def _unsupported_cub_warp_width(
 
 
 __all__ = [
-    "_contracts",
+    "_build_execution_requirements",
     "_group_topology",
     "_unsupported",
     "_unsupported_cub_warp_width",

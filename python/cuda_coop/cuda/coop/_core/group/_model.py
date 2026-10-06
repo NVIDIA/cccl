@@ -20,8 +20,8 @@ callers can inspect a planning result before requiring executable support.
 
 Implementation provenance identifies the native library entry point selected
 by planning. Together with the specialized implementation and execution
-contracts, it contributes to the plan's artifact identity; the logical request
-and a particular implementation have separate keys.
+requirements, it contributes to the plan's artifact identity. The logical
+request and a particular implementation have separate keys.
 """
 
 from __future__ import annotations
@@ -101,7 +101,7 @@ class SynchronizationScope(str, Enum):
 
 
 @dataclass(frozen=True)
-class GroupTopologyContract:
+class GroupTopologyRequirements:
     """Describe the group instances and ranks needed by backend lowering.
 
     Topology supplies the indexing rules for per-group scratch and data
@@ -348,7 +348,7 @@ class ArgumentPrecondition:
 
 
 @dataclass(frozen=True)
-class ParticipationContract:
+class ParticipationRequirements:
     """Membership and argument requirements for executing a group primitive.
 
     Backends use these facts to check that their provider and launch model
@@ -420,14 +420,14 @@ class ParticipationContract:
 
 
 @dataclass(frozen=True)
-class SynchronizationContract:
+class SynchronizationRequirements:
     """Entry and scratch-reuse synchronization required by the plan.
 
     Attributes
     ----------
     converged_entry : bool
         Whether participating threads must reach the operation together.
-        Must agree with the plan's participation contract.
+        Must agree with the plan's participation requirements.
     storage_reuse_barrier : SynchronizationScope
         Scope of synchronization required before scratch is reused, or
         ``NONE`` when no automatic reuse barrier is requested. This does not
@@ -439,7 +439,7 @@ class SynchronizationContract:
 
 
 @dataclass(frozen=True)
-class TempStorageContract:
+class TempStorageRequirements:
     """Describe scratch ownership, per-group layout, and reuse policy.
 
     A storage-bearing primitive may need one independent scratch instance
@@ -474,11 +474,11 @@ class TempStorageContract:
         Positive caller-requested byte alignment, or no explicit request.
     auto_sync : bool, optional
         Whether lowering should arrange scratch-reuse synchronization.
-        Defaults to ``True``; storage-free contracts must set it to ``False``.
+        Defaults to ``True``; storage-free operations must set it to ``False``.
 
     Notes
     -----
-    Storage-free contracts carry no layout, sharing, or size requests.
+    Storage-free requirements carry no layout, sharing, or size requests.
     Implementation-owned storage carries no caller sharing, size, or
     alignment requests. Caller-owned storage must select a sharing policy.
     """
@@ -524,15 +524,15 @@ class TempStorageContract:
                 )
             ):
                 raise ValueError(
-                    "storage-free contracts cannot carry storage layout"
+                    "storage-free requirements cannot carry storage layout"
                 )
             if self.exact_layout_required:
                 raise ValueError(
-                    "storage-free contracts cannot require an exact layout"
+                    "storage-free requirements cannot require an exact layout"
                 )
             if self.auto_sync:
                 raise ValueError(
-                    "storage-free contracts cannot request automatic sync"
+                    "storage-free requirements cannot request automatic sync"
                 )
         else:
             if (
@@ -541,7 +541,7 @@ class TempStorageContract:
                 or self.instances < 1
             ):
                 raise ValueError(
-                    "storage-bearing contracts require "
+                    "storage-bearing operations require "
                     "a positive instance count"
                 )
             if (
@@ -549,7 +549,7 @@ class TempStorageContract:
                 or not self.instance_index
             ):
                 raise ValueError(
-                    "storage-bearing contracts require "
+                    "storage-bearing operations require "
                     "a non-empty instance index"
                 )
         if self.ownership is StorageOwnership.IMPLEMENTATION:
@@ -578,6 +578,20 @@ class TempStorageContract:
 
 
 @dataclass(frozen=True)
+class GroupExecutionRequirements:
+    """Group topology, participation, synchronization, and scratch requirements.
+
+    Operation planners attach these records to the selected implementation's
+    lowering plan so backends can arrange execution and temporary storage.
+    """
+
+    topology: GroupTopologyRequirements
+    participation: ParticipationRequirements
+    synchronization: SynchronizationRequirements
+    temp_storage: TempStorageRequirements
+
+
+@dataclass(frozen=True)
 class ImplementationProvenance:
     """Identify the native library entry point chosen for a group operation.
 
@@ -587,7 +601,7 @@ class ImplementationProvenance:
     supported provider. For example, a CUB block load records ``"CUB"``,
     ``"cub/block/block_load.cuh"``, ``"cub::BlockLoad"``, and ``"Load"``.
     A backend can use this tuple to select its load or store route, then check
-    the provider against the plan's contracts.
+    the provider against the plan's requirements.
 
     The same native entry point can serve many element types, tile sizes,
     and algorithm choices. Those details belong to the plan's specialized
@@ -686,7 +700,7 @@ class ThreadGroupLaunchResolution:
 
 @dataclass(frozen=True, eq=False)
 class GroupLoweringPlan:
-    """An implementation choice with the contracts required to lower a call.
+    """An implementation choice and its execution requirements.
 
     Operation planners construct this after resolving the requested group
     against launch facts. A supported plan combines a specialized native
@@ -710,16 +724,16 @@ class GroupLoweringPlan:
         Group after applying launch facts, or the group retained on failure.
     implementation : Algorithm or None
         Specialized primitive description; ``None`` for an unsupported plan.
-    topology : GroupTopologyContract or None
+    topology : GroupTopologyRequirements or None
         Group instances and rank rules used for indexing and execution.
-    participation : ParticipationContract or None
+    participation : ParticipationRequirements or None
         Required membership, launch shape, uniformity, and scalar bounds.
     result : None
         Load/Store writes its results through the supplied item array or
-        memory pointer and has no separate returned-result contract.
-    synchronization : SynchronizationContract or None
+        memory pointer and has no separate returned value.
+    synchronization : SynchronizationRequirements or None
         Converged-entry and scratch-reuse requirements.
-    temp_storage : TempStorageContract or None
+    temp_storage : TempStorageRequirements or None
         Scratch ownership, layout requests, and automatic reuse policy.
     provenance : ImplementationProvenance or None
         Native library entry point used for routing and artifact identity.
@@ -728,7 +742,7 @@ class GroupLoweringPlan:
 
     Notes
     -----
-    Supported plans require complete lowering contracts. Their equality and
+    Supported plans specify all lowering requirements. Their equality and
     hashing use ``artifact_key``. Unsupported plans have no artifact key;
     they compare by logical semantics and reason code, excluding diagnostic
     wording. ``semantic_key`` alone is not enough to identify an executable
@@ -739,18 +753,18 @@ class GroupLoweringPlan:
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
     implementation: Algorithm | None
-    topology: GroupTopologyContract | None
-    participation: ParticipationContract | None
+    topology: GroupTopologyRequirements | None
+    participation: ParticipationRequirements | None
     result: None
-    synchronization: SynchronizationContract | None
-    temp_storage: TempStorageContract | None
+    synchronization: SynchronizationRequirements | None
+    temp_storage: TempStorageRequirements | None
     provenance: ImplementationProvenance | None
     unsupported: UnsupportedReason | None = None
 
     def __post_init__(self) -> None:
         """Require a complete implementation plan or an unsupported reason.
 
-        For a supported plan, compare the execution contracts with the
+        For a supported plan, compare the execution requirements with the
         resolved group. This catches inconsistent group sizes, scratch
         indexing, launch dimensions, and convergence requirements before a
         backend consumes them.
@@ -768,7 +782,7 @@ class GroupLoweringPlan:
             or self.provenance is None
         ):
             raise ValueError(
-                "supported plans require complete lowering contracts"
+                "supported plans require complete lowering requirements"
             )
         if not is_unsupported:
             assert self.topology is not None
@@ -779,7 +793,7 @@ class GroupLoweringPlan:
                 or self.participation.group_kind != resolved_kind
             ):
                 raise ValueError(
-                    "supported plan group contracts must match "
+                    "supported plan group requirements must match "
                     "the resolved group kind"
                 )
             resolved_size = self.resolved_group.static_size
@@ -800,7 +814,7 @@ class GroupLoweringPlan:
                     "supported plan block dimensions must match "
                     "the resolved group"
                 )
-            from ._contracts import _group_topology
+            from ._execution_requirements import _group_topology
 
             expected_topology = _group_topology(
                 self.resolved_group,
@@ -856,7 +870,7 @@ class GroupLoweringPlan:
         """Identify a supported implementation and its lowering requirements.
 
         Include exact block dimensions, the specialized implementation,
-        execution/storage contracts, and native provenance. Backends can use
+        execution/storage requirements, and native provenance. Backends can use
         this identity when reusing generated artifacts, together with their
         compiler- and target-specific cache inputs. Unsupported plans return
         ``None`` because they have no executable implementation to reuse.
@@ -894,7 +908,7 @@ class GroupLoweringPlan:
     @property
     def _identity_key(self) -> tuple[Any, ...]:
         # Diagnostic prose can evolve without changing an unsupported request;
-        # successful requests must retain every artifact-affecting contract.
+        # successful requests must retain every artifact-affecting requirement.
         if self.artifact_key is not None:
             return "artifact", self.artifact_key
         assert self.unsupported is not None
@@ -913,19 +927,20 @@ class GroupLoweringPlan:
 
 __all__ = [
     "ArgumentPrecondition",
+    "GroupExecutionRequirements",
     "GroupLoweringPlan",
     "GroupLoweringTarget",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
-    "GroupTopologyContract",
+    "GroupTopologyRequirements",
     "ImplementationProvenance",
-    "ParticipationContract",
+    "ParticipationRequirements",
     "PreconditionEnforcement",
     "ResultVisibility",
     "StorageOwnership",
-    "SynchronizationContract",
+    "SynchronizationRequirements",
     "SynchronizationScope",
-    "TempStorageContract",
+    "TempStorageRequirements",
     "ThreadGroupLaunchResolution",
     "UnsupportedReason",
     "UnsupportedReasonCode",
