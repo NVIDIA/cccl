@@ -56,13 +56,15 @@ class _ArgumentRewrite:
         operand. Temporary storage is returned separately for later
         ABI-specific insertion.
 
-        Infer missing factory inputs from payloads and exact launch metadata,
-        validate runtime controls, and normalize the ``dim`` alias. The
-        private group lowering plan is carried in the factory dictionary for
-        the caller to remove before invoking the provider. Record the
-        variables that supplied compile-time inputs so ``apply`` can remove
-        their assignments if unused. The call expression itself is not
-        rewritten here.
+        Pass the call's lowering plan to payload inference so Load/Store can
+        reuse checked dtype and item-count facts while validating explicit
+        factory inputs. Infer missing inputs from operands and exact launch
+        metadata, validate runtime controls, and normalize the ``dim`` alias.
+        The private plan is also carried in the factory dictionary for the
+        caller to remove before invoking the provider. Record the variables
+        that supplied compile-time inputs so ``apply`` can remove their
+        assignments if unused. The call expression itself is not rewritten
+        here.
 
         Parameters
         ----------

@@ -51,10 +51,11 @@ _GROUP_LOWERING_PLAN_KWARG = "__cuda_coop_group_lowering_plan__"
 
 
 class _InferPayloadHook(Protocol):
-    """Infer factory inputs from operands before provider construction.
+    """Complete factory inputs from planned or inferred payload facts.
 
     Update the supplied inference state with compatible dtype and shape facts.
-    The context provides the active rewrite's analysis.
+    That state carries the call's optional lowering plan. The context supplies
+    the active rewrite's operand and constructor analysis.
     """
 
     def __call__(
