@@ -18,6 +18,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/guarantee.h>
 #include <cuda/__runtime/api_wrapper.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__host_stdlib/stdexcept>
@@ -31,10 +32,29 @@ CUB_NAMESPACE_BEGIN
 
 namespace experimental
 {
-struct DeviceDescription
+class DeviceDescription
 {
-  ::cuda::std::optional<::cuda::compute_capability> __cc_{};
-  ::cuda::std::optional<::cuda::std::uint32_t> __max_sm_count_{};
+public:
+  _CCCL_HIDE_FROM_ABI constexpr DeviceDescription() = default;
+
+  _CCCL_API explicit DeviceDescription(::cuda::compute_capability cc, ::cuda::std::uint32_t max_sm_count)
+      : __cc_{::cuda::std::move(cc)}
+      , __max_sm_count_{max_sm_count}
+  {}
+
+  [[nodiscard]] _CCCL_API ::cuda::compute_capability __compute_capability() const noexcept
+  {
+    return __cc_;
+  }
+
+  [[nodiscard]] _CCCL_API ::cuda::std::uint32_t __max_sm_count() const noexcept
+  {
+    return __max_sm_count_;
+  }
+
+private:
+  ::cuda::compute_capability __cc_{};
+  ::cuda::std::uint32_t __max_sm_count_{};
 };
 
 struct __get_runs_on_t;
@@ -48,18 +68,23 @@ class RunsOn : public ::cuda::execution::__guarantee
 public:
   _CCCL_HIDE_FROM_ABI constexpr RunsOn() noexcept = default;
 
-  _CCCL_API explicit constexpr RunsOn(DeviceDescription __descr) noexcept
+  _CCCL_API constexpr explicit RunsOn(DeviceDescription __descr) noexcept
       : __description_{::cuda::std::move(__descr)}
   {}
 
+  [[nodiscard]] _CCCL_API constexpr const ::cuda::std::optional<DeviceDescription>& description() const noexcept
+  {
+    return __description_;
+  }
+
   _CCCL_EXEC_CHECK_DISABLE
   template <class LauncherFactory>
-  [[nodiscard]] _CCCL_API constexpr ::cudaError_t compute_capability(
-    const LauncherFactory& __launcher_factory, const void* d_temp_storage, ::cuda::compute_capability& __ret) const
+  [[nodiscard]] _CCCL_API ::cudaError_t concrete_description(
+    const LauncherFactory& launcher_factory, const void* d_temp_storage, DeviceDescription& descr) const
   {
-    if (const auto& __cc = description().__cc_; __cc.has_value())
+    if (__description_.has_value())
     {
-      __ret = *__cc;
+      descr = *__description_;
 #ifdef CCCL_ENABLE_ASSERTIONS
       // We only check this invariant during the "run" phase of a CUB algorithm because the
       // user is allowed to do temporary storage requirement calculations on a host with a
@@ -69,14 +94,14 @@ public:
       // but that GPU should be *exactly* what they told us it would be.
       if (d_temp_storage)
       {
-        ::cuda::compute_capability __actual_cc{};
+        ::cuda::compute_capability actual_cc{};
 
-        if (const auto __err = CubDebug(__launcher_factory.PtxComputeCap(__actual_cc)))
+        if (const auto error = CubDebug(launcher_factory.PtxComputeCap(actual_cc)))
         {
-          return __err;
+          return error;
         }
 
-        if (__actual_cc != __ret)
+        if (actual_cc != descr.__compute_capability())
         {
           return ::cudaErrorInvalidValue;
         }
@@ -84,27 +109,43 @@ public:
 #else // ^^^ assertions ^^^ / vvv no assertions vvv
       static_cast<void>(d_temp_storage);
 #endif // ^^^ no assertions ^^^
-    }
-    else if (const auto __err = CubDebug(__launcher_factory.PtxComputeCap(__ret)))
-    {
-      return __err;
+      return ::cudaSuccess;
     }
 
+    ::compute_capability cc{};
+
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
+
+    int device_ordinal{};
+
+    if (const auto error = CubDebug(::cudaGetDevice(&device_ordinal)))
+    {
+      return error;
+    }
+
+    int sm_count{};
+
+    if (const auto error =
+          CubDebug(::cudaDeviceGetAttribute(&sm_count, ::cudaDevAttrMultiProcessorCount, device_ordinal)))
+    {
+      return error;
+    }
+
+    descr = DeviceDescription{cc, sm_count};
     return ::cudaSuccess;
   }
 
-  [[nodiscard]] _CCCL_API constexpr const DeviceDescription& description() const noexcept
-  {
-    return __description_;
-  }
-
-  [[nodiscard]] _CCCL_NODEBUG_API constexpr const RunsOn& query(const __get_runs_on_t&) const noexcept
+  [[nodiscard]]
+  _CCCL_NODEBUG_API constexpr const RunsOn& query(const __get_runs_on_t&) const noexcept
   {
     return *this;
   }
 
 private:
-  DeviceDescription __description_{};
+  ::cuda::std::optional<DeviceDescription> __description_{};
 };
 
 struct __get_runs_on_t

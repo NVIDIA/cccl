@@ -88,7 +88,7 @@ dispatch_with_env_and_runs_on(const EnvT& env, const AlgorithmCallable& algorith
 
   return detail::dispatch_with_env(
     env, [&](auto&& tuning, void* d_temp_storage, size_t& temp_storage_bytes, ::cudaStream_t stream) {
-      return algorithm_callable(tuning, d_temp_storage, temp_storage_bytes, stream, runs_on);
+      return algorithm_callable(runs_on, tuning, d_temp_storage, temp_storage_bytes, stream);
     });
 }
 
