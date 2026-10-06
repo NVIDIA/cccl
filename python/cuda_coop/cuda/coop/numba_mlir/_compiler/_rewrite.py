@@ -804,9 +804,9 @@ class _CallRewriting:
         ``CoopWholeFunctionPlanner.run`` invokes this after its
         group-resolution step, even when that step made no changes: a kernel
         can use ``ThreadData`` without any group operations. Visit
-        blocks in label order and repeatedly apply each block's matches until
-        no further rewrite is available. A fresh rewrite object sees the
-        inlined consumers when collecting payload and storage requirements.
+        blocks in label order and apply each block's collected matches once per
+        scan. The rewrite object sees the inlined consumers when collecting
+        payload and storage requirements.
 
         Public group resolution normally obtains launch facts before this
         method runs. If a remaining private provider call needs dimensions,
@@ -840,19 +840,18 @@ class _CallRewriting:
         modified = False
 
         def apply_matches() -> None:
-            """Apply ready block rewrites until no matches remain."""
+            """Match and rewrite each block once per scan."""
 
             nonlocal modified
             for label in sorted(planner.state.func_ir.blocks):
                 block = planner.state.func_ir.blocks[label]
-                while rewrite.match(
+                if rewrite.match(
                     planner.state.func_ir,
                     block,
                     planner.state.typemap,
                     planner.state.calltypes,
                 ):
-                    block = rewrite.apply()
-                    planner.state.func_ir.blocks[label] = block
+                    planner.state.func_ir.blocks[label] = rewrite.apply()
                     modified = True
 
         apply_matches()
