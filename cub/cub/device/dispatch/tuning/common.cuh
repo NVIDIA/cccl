@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/type_size.cuh>
@@ -20,6 +21,7 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -122,6 +124,7 @@ struct iterator_info
   int value_type_alignment;
   bool value_type_is_trivially_relocatable;
   bool is_contiguous;
+  bool is_synthesizing = false;
 };
 
 template <typename It>
@@ -132,7 +135,8 @@ template <typename It>
     static_cast<int>(size_of<vt>),
     static_cast<int>(align_of<vt>),
     ::cuda::is_trivially_copyable_v<vt>,
-    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>};
+    THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>,
+    ::cuda::__is_synthesizing_iterator_v<It>};
 }
 
 enum class primitive_key
@@ -188,6 +192,21 @@ template <class LengthT>
 _CCCL_HOST_DEVICE_API constexpr length_size classify_length_size()
 {
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
+}
+
+// Synthesizing iterators produce their values without accessing memory, so exchanging them through shared memory to
+// coalesce memory accesses only costs shared memory and synchronization. Loading them directly yields the same blocked
+// arrangement.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+load_algorithm_for_input(BlockLoadAlgorithm load_algorithm, bool input_synthesizing) noexcept -> BlockLoadAlgorithm
+{
+  if (input_synthesizing
+      && (load_algorithm == BLOCK_LOAD_TRANSPOSE || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+          || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+  {
+    return BLOCK_LOAD_DIRECT;
+  }
+  return load_algorithm;
 }
 } // namespace detail
 
