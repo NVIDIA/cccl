@@ -31,7 +31,8 @@ Thread groups
 
 See :ref:`thread groups <coop-thread-groups>` and
 :ref:`participation and synchronization <coop-participation>` for the shared
-execution model. A descriptor's availability does not imply that every
+execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
+threads cooperate. A descriptor's availability does not imply that every
 primitive supports that group.
 
 .. autofunction:: this_thread
@@ -56,6 +57,9 @@ primitive supports that group.
 
 Payloads and temporary storage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``ThreadData`` constructs the per-thread payload supplied to a primitive;
+thread-group descriptors describe the participating threads.
 
 .. autofunction:: ThreadData
 
