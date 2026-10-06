@@ -11,13 +11,35 @@ C++ call. These entry points retain the common Scan contract and add built-in
 aliases, CuTe payload forms, warp prefix counts, and aggregate outputs.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
 from enum import Enum
+from typing import Any, Literal, TypeVar
 
 from cuda.coop._core.api._payload import _validate_common_temp_storage
 from cuda.coop._core.thread_group import ThreadGroup
+from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ScanAlgorithm,
+    ScanOperator,
+    TempStorageLike,
+    ThreadDataLike,
+    ValidItems,
+)
 
-from ._thread_data import _coerce_thread_payload
+from .._core.api.thread_group import BlockGroup, WarpGroup
+from ._thread_data import (
+    CutlassTensorSample,
+    CutlassTensorSSASample,
+    ThreadData,
+    _coerce_thread_payload,
+)
 from ._thread_group import _require_complete_warp_partition
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
 
 _SCOPE = "cuda.coop.cutlass"
 _ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
@@ -35,18 +57,21 @@ def _selector(value, *, name, choices):
 
 
 def scan(
-    group,
-    value,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ItemT,
     /,
     *,
-    mode="exclusive",
-    scan_op=None,
-    initial_value=None,
-    algorithm=None,
-    temp_storage=None,
-    valid_items=None,
-    aggregate_output=None,
-):
+    mode: Literal["exclusive", "inclusive"] = "exclusive",
+    scan_op: ScanOperator | Callable[[object, object], object] | None = None,
+    initial_value: CommonNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[Any] | None = None,
+) -> ThreadData | _ItemT:
     """Scan register values with optional valid-prefix and aggregate controls.
 
     Extends :func:`cuda.coop.scan` with the operand forms and controls below.
@@ -111,6 +136,21 @@ def scan(
         Executable example of a partial logical warp and aggregate output.
     :cpp:struct:`cub::BlockScan`, :cpp:struct:`cub::WarpScan`
         C++ scan, sum, and aggregate overloads.
+
+    Examples
+    --------
+    Compare seeded exclusive sums, inclusive maxima, and the sum helpers.
+    One automatically synchronized scratch descriptor serves all four calls.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
+        :language: python
+        :start-after: # qualified-scan-example-begin
+        :end-before: # qualified-scan-example-end
+        :dedent: 4
     """
     from ._compiler._launch import current_kernel_launch_facts
     from ._operators import normalize_operator
@@ -170,17 +210,20 @@ def scan(
 
 
 def exclusive_scan(
-    group,
-    value,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ItemT,
     /,
     *,
-    scan_op=None,
-    initial_value=None,
-    algorithm=None,
-    temp_storage=None,
-    valid_items=None,
-    aggregate_output=None,
-):
+    scan_op: ScanOperator | Callable[[object, object], object] | None = None,
+    initial_value: CommonNumericScalar | None = None,
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[Any] | None = None,
+) -> ThreadData | _ItemT:
     """Return exclusive prefixes with an optional initial value and aggregate.
 
     Extends :func:`cuda.coop.exclusive_scan` with the parameters and return
@@ -223,16 +266,19 @@ def exclusive_scan(
 
 
 def inclusive_scan(
-    group,
-    value,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ItemT,
     /,
     *,
-    scan_op=None,
-    algorithm=None,
-    temp_storage=None,
-    valid_items=None,
-    aggregate_output=None,
-):
+    scan_op: ScanOperator | Callable[[object, object], object] | None = None,
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[Any] | None = None,
+) -> ThreadData | _ItemT:
     """Return inclusive prefixes with a built-in operator.
 
     Extends :func:`cuda.coop.inclusive_scan` with the parameters and return
@@ -253,6 +299,20 @@ def inclusive_scan(
     cuda.coop.cutlass.exclusive_scan
         Partial-warp example. To include each current item, replace the call
         with ``inclusive_scan`` and remove ``initial_value``.
+
+    Examples
+    --------
+    Compute running maxima alongside seeded and unseeded prefix sums.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
+        :language: python
+        :start-after: # qualified-scan-example-begin
+        :end-before: # qualified-scan-example-end
+        :dedent: 4
     """
     return scan(
         group,
@@ -267,15 +327,18 @@ def inclusive_scan(
 
 
 def exclusive_sum(
-    group,
-    value,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ItemT,
     /,
     *,
-    algorithm=None,
-    temp_storage=None,
-    valid_items=None,
-    aggregate_output=None,
-):
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[Any] | None = None,
+) -> ThreadData | _ItemT:
     """Return exclusive sums starting from zero.
 
     Extends :func:`cuda.coop.exclusive_sum` with the parameters and return
@@ -297,6 +360,21 @@ def exclusive_sum(
         Partial-warp example. For an exclusive sum starting at zero, replace
         the call with ``exclusive_sum`` and omit ``scan_op`` and
         ``initial_value``.
+
+    Examples
+    --------
+    Compute prefixes before each item and compare them with inclusive sums
+    and an exclusive scan starting from seven.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
+        :language: python
+        :start-after: # qualified-scan-example-begin
+        :end-before: # qualified-scan-example-end
+        :dedent: 4
     """
     return scan(
         group,
@@ -310,15 +388,18 @@ def exclusive_sum(
 
 
 def inclusive_sum(
-    group,
-    value,
+    group: BlockGroup | WarpGroup,
+    value: CommonThreadDataLike[_ItemT]
+    | CutlassTensorSample
+    | CutlassTensorSSASample
+    | _ItemT,
     /,
     *,
-    algorithm=None,
-    temp_storage=None,
-    valid_items=None,
-    aggregate_output=None,
-):
+    algorithm: ScanAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+    valid_items: ValidItems | None = None,
+    aggregate_output: ThreadDataLike[Any] | None = None,
+) -> ThreadData | _ItemT:
     """Return inclusive sums, including each current item.
 
     Extends :func:`cuda.coop.inclusive_sum` with the parameters and return
@@ -340,6 +421,21 @@ def inclusive_sum(
     cuda.coop.cutlass.exclusive_scan
         Partial-warp example. For an inclusive sum, replace the call with
         ``inclusive_sum`` and omit ``scan_op`` and ``initial_value``.
+
+    Examples
+    --------
+    Compute prefixes through each item alongside exclusive sums and
+    running maxima.
+
+    The launcher accepts device pointers and a compile-time
+    ``items_per_thread`` value.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/cutlass/runtime/test_qualified_scan_examples.py
+        :language: python
+        :start-after: # qualified-scan-example-begin
+        :end-before: # qualified-scan-example-end
+        :dedent: 4
     """
     return scan(
         group,
