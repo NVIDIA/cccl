@@ -63,8 +63,37 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISNAN ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isnan_storage(double __x) noexcept
+{
+  return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) > __fp_exp_mask_of_v<double>;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isnan(double __x) noexcept
 {
+  // isnan() for fp64 maps to DSETP instruction, which is generally very slow on desktop GPUs, e.g. 64:1 fp32:fp64
+  // throughput. We can optmize isnan() on desktop GPUs by using integer comparison instead
+  // note: we cannot understand if the code will run on desktop or datacenter GPUs for some SM versions, e.g. SM80 is
+  //       binary compatible with SM86
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_DISPATCH_TARGET(
+      NV_IS_EXACTLY_SM_75,
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_IS_EXACTLY_SM_86,
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_IS_EXACTLY_SM_87,
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_IS_EXACTLY_SM_89,
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_HAS_FEATURE_SM_103a, // Datacenter GPUs but slow fp64
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_IS_EXACTLY_SM_110,
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_IS_EXACTLY_SM_120,
+      (return ::cuda::std::__isnan_storage(__x);),
+      NV_IS_EXACTLY_SM_121,
+      (return ::cuda::std::__isnan_storage(__x);))
+  }
 #if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
