@@ -76,23 +76,7 @@ template <class _Tp>
   //       binary compatible with SM86
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_DISPATCH_TARGET(
-      NV_IS_EXACTLY_SM_75,
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_IS_EXACTLY_SM_86,
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_IS_EXACTLY_SM_87,
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_IS_EXACTLY_SM_89,
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_HAS_FEATURE_SM_103a, // Datacenter GPUs but slow fp64
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_IS_EXACTLY_SM_110,
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_IS_EXACTLY_SM_120,
-      (return ::cuda::std::__isnan_storage(__x);),
-      NV_IS_EXACTLY_SM_121,
-      (return ::cuda::std::__isnan_storage(__x);))
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnan_storage(__x);)
   }
 #if defined(_CCCL_BUILTIN_ISNAN)
   return _CCCL_BUILTIN_ISNAN(__x);
