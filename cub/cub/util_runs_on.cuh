@@ -112,7 +112,7 @@ public:
       return ::cudaSuccess;
     }
 
-    ::compute_capability cc{};
+    ::cuda::compute_capability cc{};
 
     if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
     {
