@@ -31,6 +31,7 @@
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__iterator/zip_common.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
@@ -332,3 +333,9 @@ inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class... _Iterators>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::zip_iterator<::cuda::std::tuple<_Iterators...>>> =
+  (__is_synthesizing_iterator_v<_Iterators> && ...);
+_CCCL_END_NAMESPACE_CUDA
