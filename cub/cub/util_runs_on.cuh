@@ -134,7 +134,7 @@ public:
       return error;
     }
 
-    descr = DeviceDescription{cc, sm_count};
+    descr = DeviceDescription{cc, static_cast<::cuda::std::uint32_t>(sm_count)};
     return ::cudaSuccess;
   }
 
