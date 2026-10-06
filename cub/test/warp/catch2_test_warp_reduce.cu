@@ -397,7 +397,7 @@ CUB_TEST(
   constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
   auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
   const unsigned valid_items = GENERATE_COPY(logical_warp_threads, take(2, random(1u, logical_warp_threads)));
-  // sparse inputs exercise any-like operators, dense inputs exercise all-like operators
+  // sparse inputs exercise __any_sync (true is rare), dense inputs exercise __all_sync (false is rare)
   const bool sparse = GENERATE(false, true);
   CAPTURE(c2h::type_name<predefined_op>(), logical_warp_threads, valid_items, sparse);
 
@@ -407,7 +407,7 @@ CUB_TEST(
   c2h::host_vector<bool> h_in(input_size);
   for (unsigned i = 0; i < input_size; ++i)
   {
-    h_in[i] = (h_rand[i] == 0) == sparse;
+    h_in[i] = (h_rand[i] < 82) == sparse; // 1/32 chance of true
   }
   c2h::device_vector<bool> d_in = h_in;
   c2h::device_vector<bool> d_out(output_size);
@@ -422,19 +422,7 @@ CUB_TEST(
   }
 
   c2h::host_vector<bool> h_out(output_size);
-  for (unsigned i = 0; i < total_warps; ++i)
-  {
-    for (unsigned j = 0; j < logical_warps; ++j)
-    {
-      const auto first = (i * warp_size) + (j * logical_warp_threads);
-      bool expected    = h_in[first];
-      for (unsigned k = 1; k < valid_items; ++k)
-      {
-        expected = static_cast<bool>(predefined_op{}(expected, h_in[first + k]));
-      }
-      h_out[i * logical_warps + j] = expected;
-    }
-  }
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
   verify_results(h_out, d_out);
 }
 
