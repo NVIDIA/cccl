@@ -26,6 +26,7 @@
 DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetDifference, set_difference);
 DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetUnion, set_union);
 DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetIntersection, set_intersection);
+DECLARE_LAUNCH_WRAPPER(cub::detail::DeviceSetOps::SetSymmetricDifference, set_symmetric_difference);
 
 // Small key types stress the duplicate handling of the balanced merge path (many equal keys).
 using key_types = c2h::type_list<std::uint8_t, std::int16_t, std::uint32_t, double>;
@@ -104,6 +105,19 @@ void test_all_ops(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op
       },
       [](auto... a) {
         std::set_intersection(a...);
+      },
+      size1,
+      size2,
+      compare_op);
+  }
+  {
+    INFO("operation: set_symmetric_difference");
+    test_keys<Key, Offset>(
+      [](auto&&... a) {
+        set_symmetric_difference(static_cast<decltype(a)>(a)...);
+      },
+      [](auto... a) {
+        std::set_symmetric_difference(a...);
       },
       size1,
       size2,
@@ -245,6 +259,17 @@ try
       num_keys2,
       key_t{0},
       n2);
+  }
+  SECTION("symmetric_difference") // (keys1 \ keys2) ∪ (keys2 \ keys1) == [num_keys2, num_keys1), since keys2 ⊂ keys1
+  {
+    test_op_large<key_t>(
+      [](auto&&... a) {
+        set_symmetric_difference(static_cast<decltype(a)>(a)...);
+      },
+      num_keys1,
+      num_keys2,
+      static_cast<key_t>(num_keys2),
+      n1 - n2);
   }
 }
 catch (const std::bad_alloc&)
