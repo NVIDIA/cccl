@@ -171,7 +171,11 @@ TEST_FUNC constexpr bool test()
   {
     // not no-throw constructible index_type from stride
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
+    using extents_t = cuda::std::dextents<unsigned char, 2>;
     static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<unsigned char, IntType>::value);
+    static_assert(cuda::std::is_constructible<mapping_t, extents_t, cuda::std::span<IntType, 2>>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<mapping_t, extents_t, cuda::std::span<IntType, 2>>::value);
     static_assert(
       !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::span<IntType, 2>>::value);
   }
