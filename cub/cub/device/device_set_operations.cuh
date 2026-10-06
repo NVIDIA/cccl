@@ -227,6 +227,275 @@ public:
       compare_op,
       env);
   }
+
+  //! Computes the set union `keys1 ∪ keys2` of two sorted key sequences, writing the number of emitted keys to
+  //! `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
+  template <typename KeyIteratorIn1,
+            typename KeyIteratorIn2,
+            typename KeyIteratorOut,
+            typename NumSelectedIteratorT,
+            typename NumKeysT,
+            typename CompareOp = ::cuda::std::less<>,
+            typename EnvT      = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyIteratorIn1 d_keys_in1,
+    NumKeysT num_keys1,
+    KeyIteratorIn2 d_keys_in2,
+    NumKeysT num_keys2,
+    KeyIteratorOut d_keys_out,
+    NumSelectedIteratorT d_num_selected_out,
+    CompareOp compare_op = {},
+    const EnvT& env      = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetUnion");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
+    return set_op_keys<detail::set_ops::serial_set_union>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
+  }
+
+  //! @rst
+  //! Environment-based overload of @ref SetUnion that allocates the temporary storage from the memory resource provided
+  //! by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-union-env
+  //!     :end-before: example-end set-union-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename NumKeysT,
+    typename CompareOp                                                            = ::cuda::std::less<>,
+    typename EnvT                                                                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetUnion(
+    KeyIteratorIn1 d_keys_in1,
+    NumKeysT num_keys1,
+    KeyIteratorIn2 d_keys_in2,
+    NumKeysT num_keys2,
+    KeyIteratorOut d_keys_out,
+    NumSelectedIteratorT d_num_selected_out,
+    CompareOp compare_op = {},
+    const EnvT& env      = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetUnion");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
+    return set_op_keys_env<detail::set_ops::serial_set_union>(
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
+  }
+
+  //! Computes the set intersection `keys1 ∩ keys2` of two sorted key sequences, writing the number of emitted keys to
+  //! `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
+  template <typename KeyIteratorIn1,
+            typename KeyIteratorIn2,
+            typename KeyIteratorOut,
+            typename NumSelectedIteratorT,
+            typename NumKeysT,
+            typename CompareOp = ::cuda::std::less<>,
+            typename EnvT      = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyIteratorIn1 d_keys_in1,
+    NumKeysT num_keys1,
+    KeyIteratorIn2 d_keys_in2,
+    NumKeysT num_keys2,
+    KeyIteratorOut d_keys_out,
+    NumSelectedIteratorT d_num_selected_out,
+    CompareOp compare_op = {},
+    const EnvT& env      = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetIntersection");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
+    return set_op_keys<detail::set_ops::serial_set_intersection>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
+  }
+
+  //! @rst
+  //! Environment-based overload of @ref SetIntersection that allocates the temporary storage from the memory resource
+  //! provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also queried from
+  //! ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-intersection-env
+  //!     :end-before: example-end set-intersection-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename NumKeysT,
+    typename CompareOp                                                            = ::cuda::std::less<>,
+    typename EnvT                                                                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetIntersection(
+    KeyIteratorIn1 d_keys_in1,
+    NumKeysT num_keys1,
+    KeyIteratorIn2 d_keys_in2,
+    NumKeysT num_keys2,
+    KeyIteratorOut d_keys_out,
+    NumSelectedIteratorT d_num_selected_out,
+    CompareOp compare_op = {},
+    const EnvT& env      = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetIntersection");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
+    return set_op_keys_env<detail::set_ops::serial_set_intersection>(
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
+  }
+
+  //! Computes the set symmetric difference `keys1 △ keys2` of two sorted key sequences, writing the number of emitted
+  //! keys to `d_num_selected_out`.
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
+  template <typename KeyIteratorIn1,
+            typename KeyIteratorIn2,
+            typename KeyIteratorOut,
+            typename NumSelectedIteratorT,
+            typename NumKeysT,
+            typename CompareOp = ::cuda::std::less<>,
+            typename EnvT      = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeyIteratorIn1 d_keys_in1,
+    NumKeysT num_keys1,
+    KeyIteratorIn2 d_keys_in2,
+    NumKeysT num_keys2,
+    KeyIteratorOut d_keys_out,
+    NumSelectedIteratorT d_num_selected_out,
+    CompareOp compare_op = {},
+    const EnvT& env      = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::detail::DeviceSetOps::SetSymmetricDifference");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
+    return set_op_keys<detail::set_ops::serial_set_symmetric_difference>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
+  }
+
+  //! @rst
+  //! Environment-based overload of @ref SetSymmetricDifference that allocates the temporary storage from the memory
+  //! resource provided by ``env`` (default: ``cuda::mr::device_memory_resource``). The stream and tuning are also
+  //! queried from ``env``.
+  //!
+  //! Snippet
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin set-symmetric-difference-env
+  //!     :end-before: example-end set-symmetric-difference-env
+  //!
+  //! @endrst
+  //!
+  //! @tparam NumKeysT
+  //!   Type of `num_keys1` and `num_keys2`. Their sum (the combined input size) must be representable by this type.
+  template <
+    typename KeyIteratorIn1,
+    typename KeyIteratorIn2,
+    typename KeyIteratorOut,
+    typename NumSelectedIteratorT,
+    typename NumKeysT,
+    typename CompareOp                                                            = ::cuda::std::less<>,
+    typename EnvT                                                                 = ::cuda::std::execution::env<>,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, void*>, int> = 0,
+    ::cuda::std::enable_if_t<!::cuda::std::is_same_v<KeyIteratorIn1, ::cuda::std::nullptr_t>, int> = 0,
+    ::cuda::std::enable_if_t<::cuda::std::indirect_binary_predicate<CompareOp, KeyIteratorIn1, KeyIteratorIn2>, int> = 0>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SetSymmetricDifference(
+    KeyIteratorIn1 d_keys_in1,
+    NumKeysT num_keys1,
+    KeyIteratorIn2 d_keys_in2,
+    NumKeysT num_keys2,
+    KeyIteratorOut d_keys_out,
+    NumSelectedIteratorT d_num_selected_out,
+    CompareOp compare_op = {},
+    const EnvT& env      = {})
+  {
+    _CCCL_NVTX_RANGE_SCOPE("cub::detail::DeviceSetOps::SetSymmetricDifference");
+    using offset_t = detail::choose_offset_t<NumKeysT>;
+    return set_op_keys_env<detail::set_ops::serial_set_symmetric_difference>(
+      d_keys_in1,
+      static_cast<offset_t>(num_keys1),
+      d_keys_in2,
+      static_cast<offset_t>(num_keys2),
+      d_keys_out,
+      d_num_selected_out,
+      compare_op,
+      env);
+  }
 };
 } // namespace detail
 
