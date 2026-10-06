@@ -10,7 +10,7 @@ int main()
 {
   int* ptr{};
 
-  // expected-error {{"An object passed as a DeviceReduce environment must provide a stream or a memory resource."}}
+  // expected-error {{"A non-env object passed to DeviceReduce must provide a stream or a memory resource."}}
   auto error = cub::DeviceReduce::Sum(ptr, ptr, 0, invalid_object{});
   if (error != cudaSuccess)
   {
