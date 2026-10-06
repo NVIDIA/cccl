@@ -40,7 +40,7 @@ struct struct_status
 } // namespace
 
 template <>
-struct cuda::cuda_status_traits<described_status> : cuda::cuda_status_defaults<described_status>
+struct cuda::__cuda_status_traits<described_status> : cuda::__cuda_status_defaults<described_status>
 {
   static const char* text(const described_status status) noexcept
   {
@@ -49,13 +49,13 @@ struct cuda::cuda_status_traits<described_status> : cuda::cuda_status_defaults<d
 };
 
 template <>
-struct cuda::cuda_status_traits<struct_status>
+struct cuda::__cuda_status_traits<struct_status>
 {
   static bool failed(const struct_status status) noexcept
   {
     return status.err != 0;
   }
-  static long long raw_code(const struct_status status) noexcept
+  static cuda::std::int64_t raw_code(const struct_status status) noexcept
   {
     return status.err;
   }
@@ -133,8 +133,8 @@ C2H_TEST("cuda_error: a registered struct status is carried whole", "[cuda_error
   REQUIRE(back.extra == 99);
   REQUIRE(error.status() == cudaErrorUnknown);
   REQUIRE(std::string(error.what()).find("(5): struct failure: disk") != std::string::npos);
-  REQUIRE(cuda::cuda_status_traits<struct_status>::failed(struct_status{5, 0}));
-  REQUIRE(!cuda::cuda_status_traits<struct_status>::failed(struct_status{0, 3}));
+  REQUIRE(cuda::__cuda_status_traits<struct_status>::failed(struct_status{5, 0}));
+  REQUIRE(!cuda::__cuda_status_traits<struct_status>::failed(struct_status{0, 3}));
 }
 
 #if TEST_HAS_EXCEPTIONS()

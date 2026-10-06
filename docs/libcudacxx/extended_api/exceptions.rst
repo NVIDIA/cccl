@@ -34,14 +34,14 @@ way), and ``cudaErrorUnknown`` for any other type. ``status<Status>()`` recovers
     class cuda_error : public std::runtime_error
     {
     public:
-        template <class Status>   // any type with usable cuda_status_traits<Status>; every enumeration is
+        template <class Status>   // any status enumeration
         cuda_error(Status status, const char* msg, const char* api = nullptr,
                    cuda::std::source_location loc = cuda::std::source_location::current());
 
         cudaError_t status() const noexcept;                      // runtime view
         template <class Status> bool holds() const noexcept;      // did the status come from a Status?
         template <class Status> Status status() const noexcept;   // the status object itself; precondition: holds<Status>()
-        long long raw_code() const noexcept;                      // the code as reported
+        cuda::std::int64_t raw_code() const noexcept;             // the code as reported
         cuda::std::string_view status_type_name() const noexcept; // e.g. "CUresult"
         const cuda::std::source_location& location() const noexcept;
     };
@@ -49,44 +49,19 @@ way), and ``cudaErrorUnknown`` for any other type. ``status<Status>()`` recovers
 ``what()`` reads ``file:line api status_type(code): text: msg``, where ``text`` is the library's description of
 the code when one is known.
 
-``cuda::cuda_status_traits<Status>`` is the customization point. Its defaults, ``cuda::cuda_status_defaults``, are
-the rules every CUDA status enumeration follows (zero is success, the value is the code, no text), so an
-enumeration needs no registration. Specializations for the status types of NVIDIA libraries are reserved to
-CCCL, which ships them in opt-in headers as it gains them; a program specializes the trait only for its own
-status types. A composite status decides which field is the code; cuFile's carries a driver status alongside
-its own when the operation status says so:
+Every enumeration is accepted without registration: zero is success and the value is the code. Which other
+status types are accepted, and how a library supplies text for its codes, is an implementation detail for now.
 
 .. code-block:: cpp
 
-    template <> struct cuda::cuda_status_traits<my_status> : cuda::cuda_status_defaults<my_status>
-    {
-        static const char* text(my_status s) noexcept { return my_status_text(s); }
-    };
-
-    template <> struct cuda::cuda_status_traits<CUfileError_t>   // shipped by CCCL, shown for its shape
-    {
-        static bool failed(CUfileError_t s) noexcept { return s.err != CU_FILE_SUCCESS; }
-        static long long raw_code(CUfileError_t s) noexcept
-        { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? static_cast<long long>(s.cu_err) : s.err; }
-        static const char* text(CUfileError_t s) noexcept
-        { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? cuda::cuda_status_traits<CUresult>::text(s.cu_err)
-                                                    : cufileop_status_error(s.err); }
-    };
-
-    int main()
     try
     {
-        CUfileError_t status = cuFileRead(...);
-        if (status.err != CU_FILE_SUCCESS)
-        {
-            throw cuda::cuda_error(status, "cuFileRead failed");
-        }
+        throw cuda::cuda_error(cufftPlan1d(&plan, n, CUFFT_C2C, 1), "cufftPlan1d failed");
     }
     catch (const cuda::cuda_error& e)
     {
-        if (e.holds<CUfileError_t>())
+        if (e.holds<cufftResult>())
         {
-            auto s = e.status<CUfileError_t>(); // both fields available
+            cufftResult r = e.status<cufftResult>(); // the exact value
         }
-        return 1;
     }

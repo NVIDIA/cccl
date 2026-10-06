@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__utility/typeid.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/source_location>
 #include <cuda/std/string_view>
 
@@ -48,20 +49,20 @@ using __cuda_error_t = int;
 #endif
 
 #if _CCCL_HOSTED()
-//! @brief The rules `cuda_error` applies to a status value of type `_Status`. The defaults are the rules
-//! every CUDA library's status enumeration follows: zero is success, the value is the code, and no text is
-//! known. A library whose status is a struct, or that can describe its codes, specializes
-//! @ref cuda_status_traits and may inherit these defaults for the members it keeps.
+// The rules `cuda_error` applies to a status value of type `_Status`. The defaults are the rules every
+// CUDA library's status enumeration follows: zero is success, the value is the code, and no text is known.
+// These traits are internal for now: which status types beyond enumerations are accepted, and how a
+// library describes its codes, is not part of the public interface yet.
 template <class _Status>
-struct cuda_status_defaults
+struct __cuda_status_defaults
 {
   [[nodiscard]] _CCCL_HOST_API static constexpr bool failed(const _Status __status) noexcept
   {
-    return static_cast<long long>(__status) != 0;
+    return static_cast<::cuda::std::int64_t>(__status) != 0;
   }
-  [[nodiscard]] _CCCL_HOST_API static constexpr long long raw_code(const _Status __status) noexcept
+  [[nodiscard]] _CCCL_HOST_API static constexpr ::cuda::std::int64_t raw_code(const _Status __status) noexcept
   {
-    return static_cast<long long>(__status);
+    return static_cast<::cuda::std::int64_t>(__status);
   }
   [[nodiscard]] _CCCL_HOST_API static constexpr const char* text(const _Status) noexcept
   {
@@ -69,37 +70,15 @@ struct cuda_status_defaults
   }
 };
 
-//! @brief Customization point for status types that `cuda_error` can carry. The primary template applies
-//! @ref cuda_status_defaults, so any status enumeration works unchanged. Specialize it to supply text, or
-//! to carry a composite status.
-//!
-//! Specializations for the status types of NVIDIA libraries (cuBLAS, cuSOLVER, cuFFT, cuFile, NCCL, ...)
-//! are reserved to CCCL, which ships them in opt-in headers as it gains them; a program specializes
-//! this trait only for its own status types, so that a later CCCL cannot collide with it.
-//!
-//! A composite status decides which of its fields is the code. cuFile's `CUfileError_t` carries a cuFile
-//! operation status and, when that status is `CU_FILE_CUDA_DRIVER_ERROR`, a driver status as well:
-//!
-//! @code
-//! template <> struct cuda::cuda_status_traits<CUfileError_t>
-//! {
-//!   static bool failed(CUfileError_t s) noexcept { return s.err != CU_FILE_SUCCESS; }
-//!   static long long raw_code(CUfileError_t s) noexcept
-//!   { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? static_cast<long long>(s.cu_err) : s.err; }
-//!   static const char* text(CUfileError_t s) noexcept
-//!   { return s.err == CU_FILE_CUDA_DRIVER_ERROR ? cuda_status_traits<CUresult>::text(s.cu_err)
-//!                                               : cufileop_status_error(s.err); }
-//! };
-//! @endcode
-//!
-//! The whole struct is stored, so a handler can read both fields through `status<CUfileError_t>()`.
+// Per-status-type rules; the primary template applies the defaults, so any enumeration works unchanged.
+// The CUDA Runtime and Driver status types add their error strings.
 template <class _Status>
-struct cuda_status_traits : cuda_status_defaults<_Status>
+struct __cuda_status_traits : __cuda_status_defaults<_Status>
 {};
 
 #  if _CCCL_HAS_CTK()
 template <>
-struct cuda_status_traits<::cudaError_t> : cuda_status_defaults<::cudaError_t>
+struct __cuda_status_traits<::cudaError_t> : __cuda_status_defaults<::cudaError_t>
 {
   [[nodiscard]] _CCCL_HOST_API static const char* text(const ::cudaError_t __status)
   {
@@ -108,7 +87,7 @@ struct cuda_status_traits<::cudaError_t> : cuda_status_defaults<::cudaError_t>
 };
 
 template <>
-struct cuda_status_traits<::CUresult> : cuda_status_defaults<::CUresult>
+struct __cuda_status_traits<::CUresult> : __cuda_status_defaults<::CUresult>
 {
   [[nodiscard]] _CCCL_HOST_API static const char* text(const ::CUresult __status)
   {
@@ -119,7 +98,8 @@ struct cuda_status_traits<::CUresult> : cuda_status_defaults<::CUresult>
 
 namespace __detail
 {
-inline constexpr long long __cuda_error_unknown = 999; // ::cudaErrorUnknown, spelled out so the header needs no CTK
+inline constexpr ::cuda::std::int64_t __cuda_error_unknown = 999; // ::cudaErrorUnknown, spelled out so the header needs
+                                                                  // no CTK
 
 // The CUDA Runtime status family (`cudaError_t`, spelled `int` where the toolkit is not included) is
 // identified by one tag whether or not the translation unit saw the toolkit, so `holds<cudaError_t>()`
@@ -140,7 +120,7 @@ using __canonical_status_t =
   const char* __api,
   const ::cuda::std::string_view __status_type,
   const char* __text,
-  const long long __raw_code,
+  const ::cuda::std::int64_t __raw_code,
   const char* __msg) noexcept
 {
   // file:line api status_type(code): text: msg   -- the `api ` and `text: ` parts appear only when known
@@ -167,13 +147,13 @@ using __canonical_status_t =
 //! The exception carries the failing status object itself (`status<Status>()`, with `holds<Status>()` and
 //! `status_type_name()` to ask what it is), its code as the API reported it (`raw_code()`), and where it was
 //! raised (`location()`). Any status enumeration can be thrown; a struct status up to sixteen trivially
-//! copyable bytes as well, see @ref cuda_status_traits. `status()` keeps its historical meaning: the
+//! copyable bytes as well. `status()` keeps its historical meaning: the
 //! status seen as a CUDA Runtime error code.
 class cuda_error : public ::std::runtime_error
 {
   static constexpr ::cuda::std::size_t __status_capacity = 16;
 
-  long long __raw_code_;
+  ::cuda::std::int64_t __raw_code_;
   ::cuda::std::__type_info_ptr __type_;
   ::cuda::std::string_view __status_type_;
   ::cuda::std::source_location __loc_;
@@ -189,7 +169,7 @@ class cuda_error : public ::std::runtime_error
   }
 
   _CCCL_HOST_API cuda_error(
-    const long long __raw_code,
+    const ::cuda::std::int64_t __raw_code,
     const ::cuda::std::__type_info_ptr __type,
     const ::cuda::std::string_view __status_type,
     const char* __text,
@@ -214,8 +194,7 @@ class cuda_error : public ::std::runtime_error
     }
     else
     {
-      const auto __pretty = ::cuda::std::__pretty_nameof<_Status>();
-      return ::cuda::std::string_view(__pretty.data(), __pretty.size());
+      return ::cuda::std::__pretty_nameof<_Status>();
     }
   }
 
@@ -227,7 +206,7 @@ class cuda_error : public ::std::runtime_error
     const char* __msg,
     const char* __api,
     const ::cuda::std::source_location& __loc)
-      : cuda_error{static_cast<long long>(__status),
+      : cuda_error{static_cast<::cuda::std::int64_t>(__status),
                    &_CCCL_TYPEID(__detail::__canonical_status_t<__cuda_error_t>),
                    __name_of<__cuda_error_t>(),
                    __text,
@@ -239,17 +218,17 @@ class cuda_error : public ::std::runtime_error
   }
 
 public:
-  //! @brief Constructs from a status of any type with usable @ref cuda_status_traits: `cudaError_t`,
+  //! @brief Constructs from a status of any enumeration type, or of a small trivially copyable status struct.
   //! `CUresult`, any other CUDA library's status enumeration, or a struct status with a specialization.
   template <class _Status>
   _CCCL_HOST_API cuda_error(const _Status __status,
                             const char* __msg,
                             const char* __api                         = nullptr,
                             const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
-      : cuda_error{cuda_status_traits<_Status>::raw_code(__status),
+      : cuda_error{__cuda_status_traits<_Status>::raw_code(__status),
                    &_CCCL_TYPEID(__detail::__canonical_status_t<_Status>),
                    __name_of<_Status>(),
-                   cuda_status_traits<_Status>::text(__status),
+                   __cuda_status_traits<_Status>::text(__status),
                    __msg,
                    __api,
                    __loc}
@@ -292,8 +271,8 @@ public:
     return __status;
   }
 
-  //! @brief The status code as the API reported it, through `cuda_status_traits<Status>::raw_code`.
-  [[nodiscard]] _CCCL_HOST_API constexpr long long raw_code() const noexcept
+  //! @brief The status code as the API reported it: the value of the enumeration, widened.
+  [[nodiscard]] _CCCL_HOST_API constexpr ::cuda::std::int64_t raw_code() const noexcept
   {
     return __raw_code_;
   }
