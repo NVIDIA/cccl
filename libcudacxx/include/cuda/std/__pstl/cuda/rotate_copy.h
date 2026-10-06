@@ -30,22 +30,25 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wignored-attributes")
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
+#  include <cub/agent/agent_select_if.cuh>
 #  include <cub/device/device_partition.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/transform_iterator.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/rotate_copy.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__functional/identity.h>
+#  include <cuda/std/__fwd/execution_policy.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
