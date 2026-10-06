@@ -11,25 +11,38 @@ prefix; the function bodies are markers, not Python selection algorithms.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypeVar
 
+import numpy
+
+from ..._typing import (
+    IntegralScalar,
+    PortableNumericScalar,
+    PortableThreadDataLike,
+    ThreadDataLike,
+)
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._temp_storage import TempStorage
+from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
+
+_K = TypeVar("_K", bound=PortableNumericScalar)
+
+_V = TypeVar("_V", bound=PortableNumericScalar)
 
 
 @group_operation(
     "topk_min_keys", family_module="cuda.coop.numba_mlir._compiler._group_topk"
 )
 def topk_min_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_K] | numpy.ndarray,
     /,
     *,
-    k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> ThreadDataLike[_K]:
     """Select the smallest keys in a block.
 
     Parameters
@@ -80,6 +93,18 @@ def topk_min_keys(
 
     This implementation uses the private CUB ``cub::detail::block_topk``
     ``min_keys`` operation in ``cub/block/block_topk.cuh``.
+
+    Examples
+    --------
+    Select both extremes of a partial tile, retaining the original positions
+    for pairs.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-example-begin
+        :end-before: # qualified-topk-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "topk_min_keys",
@@ -95,15 +120,15 @@ def topk_min_keys(
     "topk_min_pairs", family_module="cuda.coop.numba_mlir._compiler._group_topk"
 )
 def topk_min_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_K] | numpy.ndarray,
+    values: PortableThreadDataLike[_V] | numpy.ndarray,
     /,
     *,
-    k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]:
     """Select the smallest key/value pairs in a block.
 
     Parameters
@@ -159,6 +184,18 @@ def topk_min_pairs(
 
     This implementation uses the private CUB ``cub::detail::block_topk``
     ``min_pairs`` operation in ``cub/block/block_topk.cuh``.
+
+    Examples
+    --------
+    Select both extremes of a partial tile, retaining the original positions
+    for pairs.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-example-begin
+        :end-before: # qualified-topk-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "topk_min_pairs",
@@ -175,14 +212,14 @@ def topk_min_pairs(
     "topk_max_keys", family_module="cuda.coop.numba_mlir._compiler._group_topk"
 )
 def topk_max_keys(
-    group: ThreadGroup,
-    keys: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_K] | numpy.ndarray,
     /,
     *,
-    k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> ThreadDataLike[_K]:
     """Select the largest keys in a block.
 
     Parameters
@@ -233,6 +270,18 @@ def topk_max_keys(
 
     This implementation uses the private CUB ``cub::detail::block_topk``
     ``max_keys`` operation in ``cub/block/block_topk.cuh``.
+
+    Examples
+    --------
+    Select both extremes of a partial tile, retaining the original positions
+    for pairs.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-example-begin
+        :end-before: # qualified-topk-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "topk_max_keys",
@@ -248,15 +297,15 @@ def topk_max_keys(
     "topk_max_pairs", family_module="cuda.coop.numba_mlir._compiler._group_topk"
 )
 def topk_max_pairs(
-    group: ThreadGroup,
-    keys: Any,
-    values: Any,
+    group: BlockGroup,
+    keys: PortableThreadDataLike[_K] | numpy.ndarray,
+    values: PortableThreadDataLike[_V] | numpy.ndarray,
     /,
     *,
-    k: Any,
-    valid_items: Any = None,
-    temp_storage: Any = None,
-) -> Any:
+    k: IntegralScalar,
+    valid_items: IntegralScalar | None = None,
+    temp_storage: TempStorage | None = None,
+) -> tuple[ThreadDataLike[_K], ThreadDataLike[_V]]:
     """Select the largest key/value pairs in a block.
 
     Parameters
@@ -312,6 +361,18 @@ def topk_max_pairs(
 
     This implementation uses the private CUB ``cub::detail::block_topk``
     ``max_pairs`` operation in ``cub/block/block_topk.cuh``.
+
+    Examples
+    --------
+    Select both extremes of a partial tile, retaining the original positions
+    for pairs.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_topk_examples.py
+        :language: python
+        :start-after: # qualified-topk-example-begin
+        :end-before: # qualified-topk-example-end
+        :dedent: 4
     """
     return group_primitive_marker(
         "topk_max_pairs",
