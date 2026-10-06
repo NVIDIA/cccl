@@ -14,29 +14,56 @@ To accumulate tiles, add the returned counters yourself.
 
 from __future__ import annotations
 
-from typing import Any
+from cuda.coop._typing import CompilerIntegerLike
 
-from ..thread_group import CoopCompilerContextRequiredError, ThreadGroup
+try:
+    import numpy
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+
+
+from typing import Literal, TypeVar
+
+from cuda.coop._typing import (
+    CommonThreadDataLike,
+    ThreadDataLike,
+)
+
+from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
     _common_group_operation,
 )
 from ._payload import (
     TempStorageLike,
 )
+from .thread_group import BlockGroup
+
+_Counter = TypeVar(
+    "_Counter", "numpy.int32", "numpy.uint32", "numpy.int64", "numpy.uint64"
+)
 
 
 @_common_group_operation("histogram", group_kinds=("block",))
 def histogram(
-    group: ThreadGroup,
-    samples: Any,
+    group: BlockGroup,
+    samples: CommonThreadDataLike[
+        int
+        | numpy.uint8
+        | numpy.int32
+        | numpy.uint32
+        | numpy.int64
+        | numpy.uint64
+        | CompilerIntegerLike
+    ],
     /,
     *,
-    bins: Any,
-    bins_per_thread: Any = 1,
-    counter_dtype: object | None = None,
-    algorithm: str = "atomic",
+    bins: int,
+    bins_per_thread: int = 1,
+    counter_dtype: type[int | _Counter] | numpy.dtype | None = None,
+    algorithm: Literal["atomic", "sort"] = "atomic",
     temp_storage: TempStorageLike | None = None,
-) -> Any:
+) -> ThreadDataLike[numpy.int32] | ThreadDataLike[_Counter]:
     """Return fresh striped bin counts, preserving the input samples.
 
     Parameters
@@ -78,10 +105,29 @@ def histogram(
     choose a dtype wide enough for the accumulated total. No running
     histogram is retained in ``TempStorage``.
 
+    With ``algorithm="atomic"``, CUB needs no algorithm scratch. This
+    operation still uses shared memory for intermediate bin counters before
+    returning the per-thread counts. ``bins`` specifies the number of
+    counters; it does not supply their storage. Omit ``temp_storage`` to
+    allocate that storage automatically.
+
     There is no ``valid_items`` control. Zero-padding an incomplete input
     tile adds counts to bin zero. The input tile size and projected output
     size must fit signed 32-bit integers. The CUB counterpart is
     ``cub::BlockHistogram``.
+
+    Examples
+    --------
+    Accumulate three complete input tiles with Numba-CUDA-MLIR. Each call
+    returns fresh counts, which the kernel adds to int64 totals. The striped
+    Store writes bins in order and omits the extra output slots.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_histogram_examples.py
+        :language: python
+        :start-after: # histogram-accumulation-example-begin
+        :end-before: # histogram-accumulation-example-end
+        :dedent: 4
     """
     raise CoopCompilerContextRequiredError(
         "cuda.coop.histogram must be called from a supported GPU kernel."
