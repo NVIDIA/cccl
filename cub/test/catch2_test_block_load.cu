@@ -6,6 +6,10 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
+#include <thrust/sequence.h>
+
+#include <cuda/iterator>
+
 #include "cub_test_macros.h"
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
@@ -188,6 +192,29 @@ CUB_TEST("Block load works with custom types", "[load][block]", CUB_SMALL, items
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(C2H_SEED(10), d_input);
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, thrust::raw_pointer_cast(d_input.data()));
+}
+
+using transpose_load_algorithm =
+  c2h::enum_type_list<cub::BlockLoadAlgorithm,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
+
+CUB_TEST("Block load of a synthesizing iterator keeps a blocked arrangement for transpose algorithms",
+         "[load][block]",
+         CUB_SMALL,
+         items_per_thread,
+         transpose_load_algorithm)
+{
+  using type                                              = int;
+  constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
+  constexpr int threads_in_block                          = 128;
+  constexpr int tile_size                                 = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
+
+  c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
+  thrust::sequence(d_input.begin(), d_input.end());
+  test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, cuda::counting_iterator<type>{0});
 }
 
 CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
