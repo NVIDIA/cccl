@@ -882,7 +882,8 @@ struct DevicePartition
     using offset_t = typename choose_offset_t::type;
     using default_policy_selector =
       detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
-                                                              detail::three_way_partition::per_partition_offset_t>;
+                                                              detail::three_way_partition::per_partition_offset_t,
+                                                              InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
@@ -1036,7 +1037,8 @@ struct DevicePartition
     using offset_t = typename choose_offset_t::type;
     using default_policy_selector =
       detail::three_way_partition::policy_selector_from_types<detail::it_value_t<InputIteratorT>,
-                                                              detail::three_way_partition::per_partition_offset_t>;
+                                                              detail::three_way_partition::per_partition_offset_t,
+                                                              InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {

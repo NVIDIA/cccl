@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_adjacent_difference.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -66,8 +67,18 @@ struct policy_selector
 {
   int value_type_size;
   bool may_alias;
+  bool input_synthesizing = false;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
+    -> AdjacentDifferencePolicy
+  {
+    auto policy           = get_policy(cc);
+    policy.load_algorithm = load_algorithm_for_input(policy.load_algorithm, input_synthesizing);
+    return policy;
+  }
+
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_policy(::cuda::compute_capability cc) const
     -> AdjacentDifferencePolicy
   {
     // tuning from cub/benchmarks/bench/adjacent_difference/subtract_left.cu; raw measured values
@@ -98,7 +109,10 @@ struct policy_selector_from_types
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> AdjacentDifferencePolicy
   {
-    constexpr auto policies = policy_selector{static_cast<int>(sizeof(it_value_t<InputIteratorT>)), MayAlias};
+    constexpr auto policies = policy_selector{
+      static_cast<int>(sizeof(it_value_t<InputIteratorT>)),
+      MayAlias,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>};
     return policies(cc);
   }
 };

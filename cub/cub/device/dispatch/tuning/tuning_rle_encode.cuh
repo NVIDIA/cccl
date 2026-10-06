@@ -555,6 +555,7 @@ struct policy_selector
   bool lengths_out_contiguous;
   bool num_runs_out_contiguous;
   bool input_matches_unique_type;
+  bool input_synthesizing = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const -> RleLookbackPolicy
   {
@@ -576,7 +577,7 @@ struct policy_selector
         length_size, int{sizeof(int)}, length_is_primitive || length_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_tuned_lookback_policy(::cuda::compute_capability cc) const
     -> RleLookbackPolicy
   {
     // if we don't have a tuning for SM100, fall back to SM90
@@ -733,6 +734,14 @@ struct policy_selector
     return __make_default_policy(LOAD_LDG);
   }
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> RleLookbackPolicy
+  {
+    auto policy           = get_tuned_lookback_policy(cc);
+    policy.load_algorithm = load_algorithm_for_input(policy.load_algorithm, input_synthesizing);
+    return policy;
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookahead_policy(::cuda::compute_capability cc) const
     -> ::cuda::std::optional<RleLookaheadPolicy>
   {
@@ -851,7 +860,8 @@ struct policy_selector_from_types
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<UniqueOutputIteratorT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<LengthsOutputIteratorT>,
       THRUST_NS_QUALIFIER::is_contiguous_iterator_v<NumRunsOutputIteratorT>,
-      ::cuda::std::is_same_v<it_value_t<InputIteratorT>, KeyT>};
+      ::cuda::std::is_same_v<it_value_t<InputIteratorT>, KeyT>,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>};
     return selector(cc);
   }
 };

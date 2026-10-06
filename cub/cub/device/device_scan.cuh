@@ -264,11 +264,13 @@ struct DeviceScan
       ::cuda::std::
         _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>;
 
-    using default_policy_selector_t =
-      detail::scan_by_key::policy_selector_from_types<detail::it_value_t<KeysInputIteratorT>,
-                                                      accum_t,
-                                                      cub::detail::it_value_t<ValuesInputIteratorT>,
-                                                      ScanOpT>;
+    using default_policy_selector_t = detail::scan_by_key::policy_selector_from_types<
+      detail::it_value_t<KeysInputIteratorT>,
+      accum_t,
+      cub::detail::it_value_t<ValuesInputIteratorT>,
+      ScanOpT,
+      KeysInputIteratorT,
+      ValuesInputIteratorT>;
 
     using policy_selector_t =
       ::cuda::std::execution::__query_result_or_t<TuningEnvT, ScanByKeyPolicy, default_policy_selector_t>;

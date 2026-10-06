@@ -872,8 +872,9 @@ struct policy_selector
   int value_size;
   bool primitive_key;
   bool primitive_value;
-  type_t key_type   = type_t::other;
-  type_t value_type = type_t::other;
+  type_t key_type         = type_t::other;
+  type_t value_type       = type_t::other;
+  bool input_synthesizing = false;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_items_per_thread() const -> int
@@ -1575,6 +1576,15 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> UniqueByKeyPolicy
   {
+    auto policy           = get_policy(cc);
+    policy.load_algorithm = load_algorithm_for_input(policy.load_algorithm, input_synthesizing);
+    return policy;
+  }
+
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_policy(::cuda::compute_capability cc) const
+    -> UniqueByKeyPolicy
+  {
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
     {
       if (auto tuning = get_sm107_tuning())
@@ -1617,7 +1627,7 @@ public:
   }
 };
 
-template <typename KeyT, typename ValueT>
+template <typename KeyT, typename ValueT, typename KeyIteratorT = void, typename ValueIteratorT = void>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
@@ -1629,7 +1639,8 @@ struct policy_selector_from_types
       is_primitive<KeyT>::value && sizeof(KeyT) <= 8,
       is_primitive<ValueT>::value && sizeof(ValueT) <= 8,
       classify_type<KeyT>,
-      classify_type<ValueT>}(cc);
+      classify_type<ValueT>,
+      ::cuda::__is_synthesizing_iterator_v<KeyIteratorT> && ::cuda::__is_synthesizing_iterator_v<ValueIteratorT>}(cc);
   }
 };
 

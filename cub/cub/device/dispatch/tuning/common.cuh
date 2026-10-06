@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
@@ -21,6 +22,7 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
@@ -187,6 +189,21 @@ template <class LengthT>
 _CCCL_HOST_DEVICE_API constexpr length_size classify_length_size()
 {
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
+}
+
+// Synthesizing iterators produce their values without accessing memory, so transposing them through shared memory to
+// coalesce memory accesses only costs shared memory and synchronization. Loading them directly yields the same blocked
+// arrangement.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+load_algorithm_for_input(BlockLoadAlgorithm load_algorithm, bool input_synthesizing) noexcept -> BlockLoadAlgorithm
+{
+  if (input_synthesizing
+      && (load_algorithm == BLOCK_LOAD_TRANSPOSE || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+          || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+  {
+    return BLOCK_LOAD_DIRECT;
+  }
+  return load_algorithm;
 }
 } // namespace detail
 

@@ -515,6 +515,7 @@ struct policy_selector
   type_t input_type;
   int input_size;
   int offset_size;
+  bool input_synthesizing = false;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
@@ -825,7 +826,9 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> ThreeWayPartitionPolicy
   {
-    return ThreeWayPartitionPolicy{ThreeWayPartitionAlgorithm::lookback, get_lookback_policy(cc)};
+    auto policy = ThreeWayPartitionPolicy{ThreeWayPartitionAlgorithm::lookback, get_lookback_policy(cc)};
+    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    return policy;
   }
 };
 
@@ -833,13 +836,17 @@ public:
 static_assert(three_way_partition_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename InputT, typename OffsetT>
+template <typename InputT, typename OffsetT, typename InputIteratorT = void>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> ThreeWayPartitionPolicy
   {
-    constexpr auto selector = policy_selector{classify_type<InputT>, int{sizeof(InputT)}, int{sizeof(OffsetT)}};
+    constexpr auto selector = policy_selector{
+      classify_type<InputT>,
+      int{sizeof(InputT)},
+      int{sizeof(OffsetT)},
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>};
     return selector(cc);
   }
 };

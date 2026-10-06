@@ -1789,6 +1789,7 @@ struct policy_selector
   int offset_size_bytes;
   bool distinct_partitions;
   SelectImpl selection_impl;
+  bool input_synthesizing = false;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto default_policy(CacheLoadModifier load_modifier) const
@@ -3116,7 +3117,9 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
   {
-    return SelectPolicy{SelectAlgorithm::lookback, get_lookback_policy(cc)};
+    auto policy                    = SelectPolicy{SelectAlgorithm::lookback, get_lookback_policy(cc)};
+    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    return policy;
   }
 };
 
@@ -3138,7 +3141,10 @@ struct policy_selector_from_types
       ::cuda::std::is_same_v<flag_t, NullType> ? 0 : sizeof(flag_t),
       SelectionOpt == SelectImpl::Partition ? sizeof(OffsetT) : sizeof(::cuda::std::int32_t),
       is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
-      SelectionOpt}(cc);
+      SelectionOpt,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>
+        && (::cuda::std::is_same_v<flag_t, NullType> || ::cuda::__is_synthesizing_iterator_v<FlagsInputIteratorT>) }(
+      cc);
   }
 };
 

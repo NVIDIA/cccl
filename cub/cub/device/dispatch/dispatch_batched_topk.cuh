@@ -152,8 +152,23 @@ struct policy_selector_from_types
   // the matching CC. That also removes the invariant below, since coverage and the returned baseline would then derive
   // from the same cc.
 
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto make_baseline_policy_for_input() -> baseline_topk_policy
+  {
+    auto policy = make_baseline_policy();
+    constexpr bool input_synthesizing =
+      ::cuda::__is_synthesizing_iterator_v<it_value_t<KeyInputItItT>>
+      && (::cuda::std::is_same_v<ValueT, NullType>
+          || ::cuda::__is_synthesizing_iterator_v<it_value_t<ValueInputItItT>>);
+    for (::cuda::std::size_t i = 0; i < policy.worker_per_segment_policies.size(); ++i)
+    {
+      auto& worker          = policy.worker_per_segment_policies[i];
+      worker.load_algorithm = load_algorithm_for_input(worker.load_algorithm, input_synthesizing);
+    }
+    return policy;
+  }
+
   // note: the baseline policy passed to baseline_can_cover_v must be the same as returned from operator(cc) below
-  static constexpr baseline_topk_policy baseline_policy = make_baseline_policy();
+  static constexpr baseline_topk_policy baseline_policy = make_baseline_policy_for_input();
 
   struct policy_getter_17 // TODO(bgruber): remove in C++20 and pass policy by value
   {
