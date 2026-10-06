@@ -34,6 +34,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/construct_at.h>
@@ -342,3 +343,12 @@ make_transform_iterator(Iterator it, AdaptableUnaryFunction fun)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _Fn, class _Iter, class _Reference, class _Value>
+inline constexpr bool
+  __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::transform_iterator<_Fn, _Iter, _Reference, _Value>> =
+    __is_synthesizing_iterator_v<_Iter>;
+_CCCL_END_NAMESPACE_CUDA
+#endif // !_CCCL_DOXYGEN_INVOKED
