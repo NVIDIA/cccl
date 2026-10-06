@@ -22,7 +22,7 @@ struct vector_like
 };
 
 template <class Vector>
-void TestVectorLowerBoundSimple()
+void test_vector_lower_bound_simple()
 {
   Vector vec{0, 2, 5, 7, 8};
 
@@ -60,7 +60,7 @@ void TestVectorLowerBoundSimple()
   //    ASSERT_EQUAL(iterator_output[8] - vec.begin(), 4);
   //    ASSERT_EQUAL(iterator_output[9] - vec.begin(), 5);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorLowerBoundSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_lower_bound_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -102,7 +102,7 @@ TEST_CASE("TestVectorLowerBoundDispatchImplicit", "[binary_search_vector]")
 }
 
 template <class Vector>
-void TestVectorUpperBoundSimple()
+void test_vector_upper_bound_simple()
 {
   Vector vec{0, 2, 5, 7, 8};
 
@@ -138,7 +138,7 @@ void TestVectorUpperBoundSimple()
   //    ASSERT_EQUAL(iterator_output[8] - vec.begin(), 5);
   //    ASSERT_EQUAL(iterator_output[9] - vec.begin(), 5);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorUpperBoundSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_upper_bound_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator
@@ -180,7 +180,7 @@ TEST_CASE("TestVectorUpperBoundDispatchImplicit", "[binary_search_vector]")
 }
 
 template <class Vector>
-void TestVectorBinarySearchSimple()
+void test_vector_binary_search_simple()
 {
   Vector vec{0, 2, 5, 7, 8};
 
@@ -211,7 +211,7 @@ void TestVectorBinarySearchSimple()
   const IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
   REQUIRE(integral_output == int_ref);
 }
-DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchSimple);
+DECLARE_VECTOR_UNITTEST(test_vector_binary_search_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename OutputIterator>
 OutputIterator

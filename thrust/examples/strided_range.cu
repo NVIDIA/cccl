@@ -59,7 +59,7 @@ public:
     return begin() + ((last - first) + (stride - 1)) / stride;
   }
 
-protected:
+private:
   Iterator first;
   Iterator last;
   difference_type stride;
@@ -67,15 +67,7 @@ protected:
 
 int main()
 {
-  thrust::device_vector<int> data(8);
-  data[0] = 10;
-  data[1] = 20;
-  data[2] = 30;
-  data[3] = 40;
-  data[4] = 50;
-  data[5] = 60;
-  data[6] = 70;
-  data[7] = 80;
+  thrust::device_vector<int> data{10, 20, 30, 40, 50, 60, 70, 80};
 
   // print the initial data
   std::cout << "data: ";

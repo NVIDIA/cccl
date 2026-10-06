@@ -29,30 +29,13 @@
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 0
 #endif // ^^^ no cooperative groups ^^^
 
-#include <cuda/__fwd/hierarchy.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
 #if !defined(_CCCL_DOXYGEN_INVOKED)
-
-namespace cuda::experimental
-{
-using __implicit_hierarchy_t =
-  hierarchy<thread_level,
-            hierarchy_level_desc<grid_level, ::cuda::std::dims<3, unsigned>>,
-            hierarchy_level_desc<cluster_level, ::cuda::std::dims<3, unsigned>>,
-            hierarchy_level_desc<block_level, ::cuda::std::dims<3, unsigned>>>;
-
-using __implicit_hierarchy_1d_t =
-  hierarchy<thread_level,
-            hierarchy_level_desc<grid_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
-            hierarchy_level_desc<cluster_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>,
-            hierarchy_level_desc<block_level, ::cuda::std::extents<unsigned, ::cuda::std::dynamic_extent, 1, 1>>>;
-} // namespace cuda::experimental
 
 namespace cuda::experimental::coop
 {
@@ -93,15 +76,15 @@ class group_view;
 template <class _Fn>
 class binary_partition;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent, bool _IsAlwaysExhaustive = true>
+template <::cuda::std::size_t _StaticUnitCount, bool _IsAlwaysExhaustive>
 class group_by;
 
-template <class _Data, bool _IsExahustive>
+template <class _Tag, bool _IsAlwaysExhaustive>
 class group_as;
 
 class identity_mapping;
 
-template <::cuda::std::size_t _UnitCount = ::cuda::std::dynamic_extent>
+template <::cuda::std::size_t _StaticUnitCount = ::cuda::std::dynamic_extent>
 class take;
 
 // synchronizers
@@ -133,10 +116,16 @@ inline constexpr bool __is_this_group_v<this_grid<_Hierarchy>> = true;
 
 template <class _Tp>
 inline constexpr bool __is_group_mapping_v = false;
-template <::cuda::std::size_t _UnitCount, bool _IsAlwaysExhaustive>
-inline constexpr bool __is_group_mapping_v<group_by<_UnitCount, _IsAlwaysExhaustive>> = true;
-template <class _Data, bool _IsAlwaysExhaustive>
-inline constexpr bool __is_group_mapping_v<group_as<_Data, _IsAlwaysExhaustive>> = true;
+template <class _Fn>
+inline constexpr bool __is_group_mapping_v<binary_partition<_Fn>> = true;
+template <::cuda::std::size_t _StaticUnitCount, bool _IsAlwaysExhaustive>
+inline constexpr bool __is_group_mapping_v<group_by<_StaticUnitCount, _IsAlwaysExhaustive>> = true;
+template <class _Tag, bool _IsAlwaysExhaustive>
+inline constexpr bool __is_group_mapping_v<group_as<_Tag, _IsAlwaysExhaustive>> = true;
+template <>
+inline constexpr bool __is_group_mapping_v<identity_mapping> = true;
+template <::cuda::std::size_t _StaticUnitCount>
+inline constexpr bool __is_group_mapping_v<take<_StaticUnitCount>> = true;
 
 // tags
 

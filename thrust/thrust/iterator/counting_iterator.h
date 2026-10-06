@@ -177,6 +177,8 @@ class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
   using super_t =
     typename detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type;
   friend class iterator_core_access;
+  template <typename, typename, typename, typename, typename>
+  friend class counting_iterator;
 
 public:
   using reference       = typename super_t::reference;
@@ -199,6 +201,7 @@ public:
   _CCCL_HOST_DEVICE
   counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference, StrideHolder> const& rhs)
       : super_t(rhs.base())
+      , StrideHolder(static_cast<const StrideHolder&>(rhs))
   {}
 
   //! This \c explicit constructor copies the value of an \c Incrementable into a new \p counting_iterator's \c

@@ -9,7 +9,7 @@ int main()
 
   // obtain raw pointer to device memory
   int* raw_ptr;
-  cudaMalloc((void**) &raw_ptr, N * sizeof(int));
+  cudaMalloc(reinterpret_cast<void**>(&raw_ptr), N * sizeof(int));
 
   // wrap raw pointer with a device_ptr
   const thrust::device_ptr<int> dev_ptr = thrust::device_pointer_cast(raw_ptr);

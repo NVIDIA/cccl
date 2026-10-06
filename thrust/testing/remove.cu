@@ -28,7 +28,7 @@ struct is_true
 };
 
 template <typename Vector>
-void TestRemoveSimple()
+void test_remove_simple()
 {
   using T = typename Vector::value_type;
 
@@ -42,7 +42,7 @@ void TestRemoveSimple()
   Vector ref{1, 1, 3};
   REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveSimple);
+DECLARE_VECTOR_UNITTEST(test_remove_simple);
 
 template <typename ForwardIterator, typename T>
 ForwardIterator remove(my_system& system, ForwardIterator first, ForwardIterator, const T&)
@@ -78,7 +78,7 @@ TEST_CASE("TestRemoveDispatchImplicit", "[remove]")
 }
 
 template <typename Vector>
-void TestRemoveCopySimple()
+void test_remove_copy_simple()
 {
   using T = typename Vector::value_type;
 
@@ -94,7 +94,7 @@ void TestRemoveCopySimple()
   Vector ref{1, 1, 3};
   REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveCopySimple);
+DECLARE_VECTOR_UNITTEST(test_remove_copy_simple);
 
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator remove_copy(my_system& system, InputIterator, InputIterator, OutputIterator result, const T&)
@@ -131,7 +131,7 @@ TEST_CASE("TestRemoveCopyDispatchImplicit", "[remove]")
 }
 
 template <typename Vector>
-void TestRemoveIfSimple()
+void test_remove_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -145,7 +145,7 @@ void TestRemoveIfSimple()
   Vector ref{1, 1, 3};
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestRemoveIfSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_remove_if_simple);
 
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardIterator, Predicate)
@@ -181,7 +181,7 @@ TEST_CASE("TestRemoveIfDispatchImplicit", "[remove]")
 }
 
 template <typename Vector>
-void TestRemoveIfStencilSimple()
+void test_remove_if_stencil_simple()
 {
   Vector data{1, 2, 1, 3, 2};
   Vector stencil{0, 1, 0, 0, 1};
@@ -195,7 +195,7 @@ void TestRemoveIfStencilSimple()
   Vector ref{1, 1, 3};
   REQUIRE(data == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_remove_if_stencil_simple);
 
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(my_system& system, ForwardIterator first, ForwardIterator, InputIterator, Predicate)
@@ -232,7 +232,7 @@ TEST_CASE("TestRemoveIfStencilDispatchImplicit", "[remove]")
 }
 
 template <typename Vector>
-void TestRemoveCopyIfSimple()
+void test_remove_copy_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -248,7 +248,7 @@ void TestRemoveCopyIfSimple()
   Vector ref{1, 1, 3};
   REQUIRE(result == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestRemoveCopyIfSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_remove_copy_if_simple);
 
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 InputIterator remove_copy_if(my_system& system, InputIterator first, InputIterator, OutputIterator, Predicate)
@@ -285,7 +285,7 @@ TEST_CASE("TestRemoveCopyIfDispatchImplicit", "[remove]")
 }
 
 template <typename Vector>
-void TestRemoveCopyIfStencilSimple()
+void test_remove_copy_if_stencil_simple()
 {
   Vector data{1, 2, 1, 3, 2};
   Vector stencil{0, 1, 0, 0, 1};
@@ -301,7 +301,7 @@ void TestRemoveCopyIfStencilSimple()
   Vector ref{1, 1, 3};
   REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestRemoveCopyIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_remove_copy_if_stencil_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
 OutputIterator
@@ -343,7 +343,7 @@ TEST_CASE("TestRemoveCopyIfStencilDispatchImplicit", "[remove]")
 }
 
 template <typename T>
-void TestRemove(const size_t n)
+void test_remove(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -358,10 +358,10 @@ void TestRemove(const size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemove);
+DECLARE_VARIABLE_UNITTEST(test_remove);
 
 template <typename T>
-void TestRemoveIf(const size_t n)
+void test_remove_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -376,10 +376,10 @@ void TestRemoveIf(const size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveIf);
+DECLARE_VARIABLE_UNITTEST(test_remove_if);
 
 template <typename T>
-void TestRemoveIfStencil(const size_t n)
+void test_remove_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -399,10 +399,10 @@ void TestRemoveIfStencil(const size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveIfStencil);
+DECLARE_VARIABLE_UNITTEST(test_remove_if_stencil);
 
 template <typename T>
-void TestRemoveCopy(const size_t n)
+void test_remove_copy(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -420,10 +420,10 @@ void TestRemoveCopy(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopy);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy);
 
 template <typename T>
-void TestRemoveCopyToDiscardIterator(const size_t n)
+void test_remove_copy_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -442,10 +442,10 @@ void TestRemoveCopyToDiscardIterator(const size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_to_discard_iterator);
 
 template <typename T>
-void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
+void test_remove_copy_to_discard_iterator_zipped(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -480,10 +480,10 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
   REQUIRE(reference == cuda::std::get<1>(h_result.get_iterator_tuple()));
   REQUIRE(reference == cuda::std::get<1>(d_result.get_iterator_tuple()));
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyToDiscardIteratorZipped);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_to_discard_iterator_zipped);
 
 template <typename T>
-void TestRemoveCopyIf(const size_t n)
+void test_remove_copy_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -503,10 +503,10 @@ void TestRemoveCopyIf(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIf);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if);
 
 template <typename T>
-void TestRemoveCopyIfToDiscardIterator(const size_t n)
+void test_remove_copy_if_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -524,10 +524,10 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if_to_discard_iterator);
 
 template <typename T>
-void TestRemoveCopyIfStencil(const size_t n)
+void test_remove_copy_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -552,10 +552,10 @@ void TestRemoveCopyIfStencil(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfStencil);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if_stencil);
 
 template <typename T>
-void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
+void test_remove_copy_if_stencil_to_discard_iterator(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -576,4 +576,4 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestRemoveCopyIfStencilToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_remove_copy_if_stencil_to_discard_iterator);

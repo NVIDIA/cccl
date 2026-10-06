@@ -1028,6 +1028,21 @@ def file_exists(value):
     return value
 
 
+def find_meta_bench_csv(files):
+    """Find `cccl_meta_bench.csv` for the given db files, to seed `cccl.bench.Config()` with"""
+    if os.path.isfile("cccl_meta_bench.csv"):
+        return "cccl_meta_bench.csv"
+
+    for file in files:
+        candidate = os.path.join(
+            os.path.dirname(os.path.abspath(file)), "cccl_meta_bench.csv"
+        )
+        if os.path.isfile(candidate):
+            return candidate
+
+    return "cccl_meta_bench.csv"
+
+
 def case_offload(algname, ct_point_name, case_dfs, declared_axes):
     for subbench in case_dfs:
         df = case_dfs[subbench]
@@ -1104,6 +1119,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
+    cccl.bench.Config(find_meta_bench_csv(args.files))
 
     if args.list_benches:
         cccl.bench.list_benches(

@@ -258,7 +258,7 @@ public:
   }
 };
 
-void TestSortWithMagnitude(int magnitude)
+void test_sort_with_magnitude(int magnitude)
 {
   try
   {
@@ -283,13 +283,13 @@ void TestSortWithMagnitude(int magnitude)
 
 TEST_CASE("TestSortWithLargeNumberOfItems", "[sort]")
 {
-  TestSortWithMagnitude(30);
+  test_sort_with_magnitude(30);
   // These still require 64-bit dispatches when magnitude < 32.
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestSortWithMagnitude(31);
-  TestSortWithMagnitude(32);
-  TestSortWithMagnitude(33);
-  TestSortWithMagnitude(39);
+  test_sort_with_magnitude(31);
+  test_sort_with_magnitude(32);
+  test_sort_with_magnitude(33);
+  test_sort_with_magnitude(39);
 #endif
 }
 

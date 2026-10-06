@@ -687,7 +687,7 @@ struct Uninitialized
   static_assert(DATA_SIZE % WORDS == 0);
 
   /// Backing storage
-  DeviceWord storage[WORDS];
+  alignas(T) DeviceWord storage[WORDS];
 
   /// Alias
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& Alias()
@@ -820,7 +820,7 @@ struct BinaryOpHasIdxParam<T,
 /**
  * \brief Basic type traits categories
  */
-enum Category
+enum Category // NOLINT(cppcoreguidelines-use-enum-class)
 {
   NOT_A_NUMBER,
   SIGNED_INTEGER,

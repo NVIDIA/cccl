@@ -37,7 +37,7 @@ CUB_NAMESPACE_BEGIN
 
 //! @brief BlockScanAlgorithm enumerates alternative algorithms for cub::BlockScan to compute a
 //!        parallel prefix scan across a CUDA thread block.
-enum BlockScanAlgorithm
+enum BlockScanAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -271,8 +271,7 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

@@ -94,7 +94,8 @@ private:
 #endif // _CCCL_STD_VER > 2017
 
 protected:
-  _Iter current;
+  // The standard requires protected access.
+  _Iter current; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_type = _Iter;

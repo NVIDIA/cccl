@@ -25,6 +25,7 @@
 
 #  include <cuda/hierarchy>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/type_identity.h>
 
@@ -106,7 +107,11 @@ _CCCL_REQUIRES(__is_or_has_hierarchy_member_v<_HierarchyLike>)
   }
   else if constexpr (_Size < 32 && ::cuda::std::is_same_v<_ParentT, ::cooperative_groups::thread_block>)
   {
-    return generic_group{gpu_thread, this_warp{__hier_like}, group_by<_Size>{}, lane_synchronizer{}};
+    return generic_group{
+      gpu_thread,
+      this_warp{__hier_like},
+      group_by{::cuda::std::integral_constant<::cuda::std::size_t, _Size>{}},
+      lane_synchronizer{}};
   }
   else if constexpr (_Size == 32 && ::cuda::std::is_same_v<_ParentT, ::cooperative_groups::thread_block>)
   {

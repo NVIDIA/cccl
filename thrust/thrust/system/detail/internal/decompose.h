@@ -55,7 +55,7 @@ public:
   using range_type = index_range<index_type>;
 
   _CCCL_HOST_DEVICE uniform_decomposition(index_type N, index_type granularity, index_type max_intervals)
-      : m_N(N)
+      : m_n(N)
       , m_intervals((N + granularity - 1) / granularity)
       , m_threshold(0)
       , m_small_interval(granularity)
@@ -81,7 +81,7 @@ public:
     else
     {
       const index_type begin = m_large_interval * m_threshold + m_small_interval * (i - m_threshold);
-      const index_type end   = (begin + m_small_interval < m_N) ? begin + m_small_interval : m_N;
+      const index_type end   = (begin + m_small_interval < m_n) ? begin + m_small_interval : m_n;
       return range_type(begin, end);
     }
   }
@@ -92,7 +92,7 @@ public:
   }
 
 private:
-  index_type m_N;
+  index_type m_n;
   index_type m_intervals;
   index_type m_threshold;
   index_type m_small_interval;

@@ -17,9 +17,10 @@
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
+#include <cuda/std/utility>
 
+#include "../alloc_constexpr_types.h"
 #include "../alloc_first.h"
-#include "../alloc_last.h"
 #include "allocators.h"
 #include "MoveOnly.h"
 #include "test_macros.h"
@@ -44,7 +45,31 @@ struct D : B
 };
 #endif // !_CCCL_TILE_COMPILATION()
 
-int main(int, char**)
+TEST_FUNC constexpr bool test()
+{
+  A1<int> alloc{5};
+  {
+    cuda::std::pair<int, int> p{8, 9};
+    cuda::std::tuple<constexpr_alloc_arg, constexpr_alloc_arg> t(cuda::std::allocator_arg, alloc, cuda::std::move(p));
+    assert(cuda::std::get<0>(t).value == 8);
+    assert(cuda::std::get<1>(t).value == 9);
+  }
+  {
+    const cuda::std::pair<int, int> p{10, 11};
+    cuda::std::tuple<constexpr_alloc_last, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, cuda::std::move(p));
+    assert(cuda::std::get<0>(t).value == 10);
+    assert(cuda::std::get<1>(t).value == 11);
+  }
+  {
+    cuda::std::pair<int, MoveOnly> p{2, MoveOnly(3)};
+    cuda::std::tuple<constexpr_alloc_arg, MoveOnly> t(cuda::std::allocator_arg, alloc, cuda::std::move(p));
+    assert(cuda::std::get<0>(t).value == 2);
+    assert(cuda::std::get<1>(t) == 3);
+  }
+  return true;
+}
+
+TEST_FUNC void test_runtime()
 {
 #if !_CCCL_TILE_COMPILATION()
   {
@@ -58,16 +83,12 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1)->id_ == 3);
   }
 #endif // !_CCCL_TILE_COMPILATION()
+}
 
-  {
-    using T0 = cuda::std::pair<int, MoveOnly>;
-    using T1 = cuda::std::tuple<alloc_first, MoveOnly>;
-    T0 t0(2, MoveOnly(3));
-    alloc_first::allocator_constructed() = false;
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), cuda::std::move(t0));
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<0>(t1) == 2);
-    assert(cuda::std::get<1>(t1) == 3);
-  }
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+  test_runtime();
   return 0;
 }

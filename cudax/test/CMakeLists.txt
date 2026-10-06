@@ -135,6 +135,10 @@ cudax_add_catch2_test(test_target algorithm
     algorithm/copy.cu
 )
 
+cudax_add_catch2_test(test_target hierarchy.implicit_hierarchy
+    hierarchy/implicit_hierarchy.cu
+)
+
 add_subdirectory(coop)
 add_subdirectory(multi_gpu)
 

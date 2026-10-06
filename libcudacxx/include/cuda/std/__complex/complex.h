@@ -704,20 +704,7 @@ template <class _Tp, class _CharT, class _Traits>
 }
 #endif // _CCCL_HOSTED()
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for both std::complex and cuda::std::complex
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::complex<_Tp>> : integral_constant<size_t, 2>
-{};
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
-{
-  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
-  using type _CCCL_NODEBUG = _Tp;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::complex
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<complex<_Tp>> : integral_constant<size_t, 2>

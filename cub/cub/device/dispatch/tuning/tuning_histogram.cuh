@@ -287,6 +287,7 @@ struct policy_selector
   int num_channels;
   int num_active_channels;
   bool is_even;
+  type_t sample_type;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
@@ -298,6 +299,24 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> HistogramPolicy
   {
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0})
+    {
+      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && !is_even)
+      {
+        if (sample_size == 2)
+        {
+          // ipt_9.tpb_1024.rle_1.ws_0.mem_1.ld_0.laid_2.vec_2 1.035  1.036  1.064  1.051
+          return HistogramPolicy{1024, 9, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+        }
+        if (sample_size == 4 && sample_type != type_t::float32)
+        {
+          // ipt_9.tpb_992.rle_1.ws_0.mem_1.ld_0.laid_1.vec_1 1.684  1.426  1.392  1.170
+          return HistogramPolicy{992, 9, 1 << 1, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, true, SMEM, false, 2048};
+        }
+        // float32, 8-byte and 16-byte samples: no clean sm107 candidate, fall through
+      }
+    }
+
     if (cc >= ::cuda::compute_capability{10, 0})
     {
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
@@ -354,7 +373,8 @@ struct policy_selector_from_types
       int{sizeof(SampleT)},
       NumChannels,
       NumActiveChannels,
-      IsEven};
+      IsEven,
+      classify_type<SampleT>};
     return policies(cc);
   }
 };

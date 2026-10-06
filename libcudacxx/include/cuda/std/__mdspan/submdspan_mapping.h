@@ -104,6 +104,17 @@ _CCCL_REQUIRES(__matching_number_of_slices<typename _LayoutMapping::extents_type
   return ::cuda::std::__submdspan_strides(__filtered_indices, __mapping, __slices...);
 }
 
+#if _CCCL_COMPILER(GCC, <, 11)
+// GCC 10 rejects __submdspan_offset as a constant expression when this pack expansion shares a
+// function with the pack expansion that calls the layout mapping. Keep the two expansions apart.
+template <class _IndexType, size_t... _SliceIndices, class... _Slices>
+[[nodiscard]] _CCCL_API constexpr array<_IndexType, sizeof...(_SliceIndices)>
+__submdspan_slice_offsets(index_sequence<_SliceIndices...>, _Slices... __slices)
+{
+  return {::cuda::std::__first_extent_from_slice<_IndexType, _SliceIndices>(__slices...)...};
+}
+#endif // _CCCL_COMPILER(GCC, <, 11)
+
 // [mdspan.sub.map.common-8]
 template <class _LayoutMapping, class... _Slices, size_t... _SliceIndices>
 [[nodiscard]] _CCCL_API constexpr size_t
@@ -112,8 +123,12 @@ __submdspan_offset(index_sequence<_SliceIndices...>, const _LayoutMapping& __map
   using _Extents   = typename _LayoutMapping::extents_type;
   using _IndexType = typename _Extents::index_type;
   // If first_<index_type, k>(slices...)
-  const array<_IndexType, _Extents::rank()> __offsets = {
-    ::cuda::std::__first_extent_from_slice<_IndexType, _SliceIndices>(__slices...)...};
+  const array<_IndexType, _Extents::rank()> __offsets =
+#if _CCCL_COMPILER(GCC, <, 11)
+    ::cuda::std::__submdspan_slice_offsets<_IndexType>(index_sequence<_SliceIndices...>{}, __slices...);
+#else // ^^^ _CCCL_COMPILER(GCC, <, 11) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 11) vvv
+    {::cuda::std::__first_extent_from_slice<_IndexType, _SliceIndices>(__slices...)...};
+#endif // !_CCCL_COMPILER(GCC, <, 11)
 
   using _SubExtents = __get_subextents_t<_Extents, _Slices...>;
   for (size_t __index = 0; __index != _SubExtents::rank(); ++__index)

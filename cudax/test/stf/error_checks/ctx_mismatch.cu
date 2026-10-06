@@ -17,6 +17,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <csignal>
+#include <random>
 
 using namespace cuda::experimental::stf;
 
@@ -76,8 +77,7 @@ int main()
   }
 
   // We can't run both stream and graph tests because either will abort the program. So choose one at random.
-  srand(static_cast<unsigned>(time(nullptr)));
-  if (rand() % 2 == 0)
+  if (::std::random_device{}() % 2 == 0)
   {
     run<stream_ctx>(X);
   }

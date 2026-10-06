@@ -89,7 +89,10 @@ endif()
 target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC libnvcc)
 
 if (CUDAToolkit_FOUND)
-  target_link_libraries(cccl.c.parallel.v2.hostjit_lib PUBLIC CUDA::cudart)
+  target_link_libraries(
+    cccl.c.parallel.v2.hostjit_lib
+    PRIVATE CUDA::cuda_driver
+  )
 endif()
 
 if (NOT MSVC)

@@ -1,6 +1,13 @@
 # This unit just checks that nv/target can be used with the specified dialects.
 
-set(nvtarget_dialects 11 14 17 20)
+set(
+  nvtarget_dialects
+  11
+  14
+  17
+  20
+  23
+)
 
 # cudafe++ 12.9 has problem compiling some parts of <type_traits> when using libstdc++ 14, so let's just filter out
 # dialect version 11.

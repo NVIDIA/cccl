@@ -11,6 +11,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <chrono>
+#include <string>
 
 using namespace std::chrono;
 using namespace cuda::experimental::stf;
@@ -42,12 +43,12 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    nloops = atol(argv[1]);
+    nloops = ::std::stol(argv[1]);
   }
 
   if (argc > 2)
   {
-    inner_nloops = atol(argv[2]);
+    inner_nloops = ::std::stol(argv[2]);
   }
 
   for (size_t j = 0; j < nloops; j++)
@@ -60,10 +61,10 @@ int main(int argc, char** argv)
       ctx.task(lX.read(), lY.rw())->*[](cudaStream_t, auto, auto) {};
     }
 
-    stop                                   = std::chrono::steady_clock::now();
-    std::chrono::duration<double> duration = stop - start;
+    stop                                         = std::chrono::steady_clock::now();
+    const std::chrono::duration<double> duration = stop - start;
 
-    fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / (inner_nloops));
+    fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / static_cast<double>((inner_nloops)));
   }
 
   ctx.finalize();

@@ -31,7 +31,7 @@ void test(Iterator first, Iterator last)
 }
 
 template <class Vector>
-void TestTrivialSequence()
+void test_trivial_sequence()
 {
   Vector A{0, 2, 1, 0, 1};
   Vector B{11, 11, 13, 10, 12};
@@ -44,4 +44,4 @@ void TestTrivialSequence()
   Vector refB{11, 11, 13, 10, 12};
   REQUIRE(B == refB);
 }
-DECLARE_VECTOR_UNITTEST(TestTrivialSequence);
+DECLARE_VECTOR_UNITTEST(test_trivial_sequence);

@@ -152,7 +152,7 @@ void Test()
   clock_t* d_elapsed = nullptr;
   CubDebugExit(cudaMalloc((void**) &d_in, sizeof(Key) * TILE_SIZE * g_grid_size));
   CubDebugExit(cudaMalloc((void**) &d_out, sizeof(Key) * TILE_SIZE * g_grid_size));
-  CubDebugExit(cudaMalloc((void**) &d_elapsed, sizeof(clock_t) * g_grid_size));
+  CubDebugExit(cudaMalloc(reinterpret_cast<void**>(&d_elapsed), sizeof(clock_t) * g_grid_size));
 
   // Display input problem data
   if (g_verbose)

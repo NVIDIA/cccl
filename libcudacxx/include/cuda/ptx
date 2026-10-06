@@ -69,6 +69,7 @@
  * - Some helper function and types can be found in ptx/ptx_helper_functions.h and ptx/ptx_dot_variants.h.
  */
 
+// IWYU pragma: begin_exports
 #include <cuda/__ptx/instructions/applypriority_async_bulk.h>
 #include <cuda/__ptx/instructions/barrier_cluster.h>
 #include <cuda/__ptx/instructions/bfind.h>
@@ -132,6 +133,7 @@
 #include <cuda/__ptx/instructions/tensormap_replace.h>
 #include <cuda/__ptx/instructions/trap.h>
 #include <cuda/__ptx/pragmas/enable_smem_spilling.h>
+// IWYU pragma: end_exports
 
 #include <cuda/std/__cccl/prologue.h>
 

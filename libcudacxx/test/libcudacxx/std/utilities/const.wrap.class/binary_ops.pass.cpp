@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -263,82 +260,67 @@ template <class L, class R>
 inline constexpr bool
   HasLogicalOr<L, R, cuda::std::void_t<decltype(cuda::std::declval<L&>() || cuda::std::declval<R&>())>> = true;
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasPlus<L, R>>
 inline constexpr bool HasNoexceptPlus = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptPlus<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() + cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptPlus<L, R, true> = noexcept(cuda::std::declval<L&>() + cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasMinus<L, R>>
 inline constexpr bool HasNoexceptMinus = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptMinus<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() - cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptMinus<L, R, true> = noexcept(cuda::std::declval<L&>() - cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasMultiply<L, R>>
 inline constexpr bool HasNoexceptMultiply = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptMultiply<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() * cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptMultiply<L, R, true> = noexcept(cuda::std::declval<L&>() * cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasDivide<L, R>>
 inline constexpr bool HasNoexceptDivide = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptDivide<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() / cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptDivide<L, R, true> = noexcept(cuda::std::declval<L&>() / cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasModulo<L, R>>
 inline constexpr bool HasNoexceptModulo = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptModulo<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() % cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptModulo<L, R, true> = noexcept(cuda::std::declval<L&>() % cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasShiftLeft<L, R>>
 inline constexpr bool HasNoexceptShiftLeft = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptShiftLeft<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() << cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptShiftLeft<L, R, true> = noexcept(cuda::std::declval<L&>() << cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasShiftRight<L, R>>
 inline constexpr bool HasNoexceptShiftRight = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptShiftRight<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() >> cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptShiftRight<L, R, true> =
+  noexcept(cuda::std::declval<L&>() >> cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitAnd<L, R>>
 inline constexpr bool HasNoexceptBitAnd = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitAnd<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() & cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptBitAnd<L, R, true> = noexcept(cuda::std::declval<L&>() & cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitOr<L, R>>
 inline constexpr bool HasNoexceptBitOr = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitOr<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() | cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptBitOr<L, R, true> = noexcept(cuda::std::declval<L&>() | cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasBitXor<L, R>>
 inline constexpr bool HasNoexceptBitXor = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptBitXor<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() ^ cuda::std::declval<R&>())>> = true;
+inline constexpr bool HasNoexceptBitXor<L, R, true> = noexcept(cuda::std::declval<L&>() ^ cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLogicalAnd<L, R>>
 inline constexpr bool HasNoexceptLogicalAnd = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLogicalAnd<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() && cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptLogicalAnd<L, R, true> =
+  noexcept(cuda::std::declval<L&>() && cuda::std::declval<R&>());
 
-template <class L, class R, class = void>
+template <class L, class R, bool = HasLogicalOr<L, R>>
 inline constexpr bool HasNoexceptLogicalOr = false;
 template <class L, class R>
-inline constexpr bool
-  HasNoexceptLogicalOr<L, R, cuda::std::enable_if_t<noexcept(cuda::std::declval<L&>() || cuda::std::declval<R&>())>> =
-    true;
+inline constexpr bool HasNoexceptLogicalOr<L, R, true> = noexcept(cuda::std::declval<L&>() || cuda::std::declval<R&>());
 
 // Concept checks for int + int operations
 static_assert(HasPlus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
@@ -354,8 +336,6 @@ static_assert(HasBitXor<cuda::std::__constant_wrapper<6>, cuda::std::__constant_
 static_assert(HasLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 
-// Old msvc doesn't evaluate noexcept properly.
-#if !TEST_COMPILER(MSVC, <, 19, 30)
 static_assert(HasNoexceptPlus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptMinus<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptMultiply<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
@@ -368,7 +348,6 @@ static_assert(HasNoexceptBitOr<cuda::std::__constant_wrapper<6>, cuda::std::__co
 static_assert(HasNoexceptBitXor<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLogicalAnd<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
 static_assert(HasNoexceptLogicalOr<cuda::std::__constant_wrapper<6>, cuda::std::__constant_wrapper<3>>);
-#endif // !TEST_COMPILER(MSVC, <, 19, 30)
 
 #if TEST_STD_VER >= 2020 && !TEST_COMPILER(NVRTC)
 

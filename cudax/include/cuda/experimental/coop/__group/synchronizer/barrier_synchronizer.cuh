@@ -103,6 +103,11 @@ class __barrier_synchronizer_instance
   _Barrier* __barrier_;
 
 public:
+  [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance invalid() noexcept
+  {
+    return __barrier_synchronizer_instance{nullptr};
+  }
+
   _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier) noexcept
       : __barrier_{__barrier}
   {}

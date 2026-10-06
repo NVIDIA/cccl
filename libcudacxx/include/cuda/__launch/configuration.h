@@ -26,16 +26,15 @@
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__hierarchy/hierarchy_dimensions.h>
 #  include <cuda/__numeric/overflow_cast.h>
-#  include <cuda/__ptx/instructions/get_sreg.h>
+#  include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__type_traits/is_unbounded_array.h>
 #  include <cuda/std/__type_traits/rank.h>
 #  include <cuda/std/span>
-#  include <cuda/std/tuple>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -166,7 +165,8 @@ protected:
   using value_type = _Tp;
   using view_type  = ::cuda::std::span<_Tp>;
 
-  ::cuda::std::size_t __n_;
+  // The derived launch option uses this count to calculate its size and view.
+  ::cuda::std::size_t __n_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   _CCCL_HOST_API constexpr __dyn_smem_option_base(::cuda::std::size_t __n) noexcept
       : __n_{__n}

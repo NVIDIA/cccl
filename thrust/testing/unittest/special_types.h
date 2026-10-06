@@ -164,7 +164,8 @@ struct user_swappable
 class custom_numeric
 {
 public:
-  _CCCL_HOST_DEVICE custom_numeric()
+  // fill() initializes every element.
+  _CCCL_HOST_DEVICE custom_numeric() // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(0);
   }
@@ -179,13 +180,15 @@ public:
 #endif // _CCCL_COMPILER(MSVC2019)
 
   // Allow construction from any integral numeric.
+  // fill() initializes every element.
   template <typename T, typename = typename ::cuda::std::enable_if<::cuda::std::is_integral<T>::value>::type>
-  _CCCL_HOST_DEVICE custom_numeric(const T& i)
+  _CCCL_HOST_DEVICE custom_numeric(const T& i) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(static_cast<int>(i));
   }
 
-  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other)
+  // fill() initializes every element.
+  _CCCL_HOST_DEVICE custom_numeric(const custom_numeric& other) // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     fill(other.value[0]);
   }

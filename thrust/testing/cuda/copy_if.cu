@@ -120,7 +120,7 @@ TEST_CASE("TestCopyIfDeviceNoSync", "[copy_if]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestCopyIfCudaStreams(ExecutionPolicy policy)
+void test_copy_if_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -142,12 +142,12 @@ void TestCopyIfCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestCopyIfCudaStreamsSync", "[copy_if]")
 {
-  TestCopyIfCudaStreams(thrust::cuda::par);
+  test_copy_if_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestCopyIfCudaStreamsNoSync", "[copy_if]")
 {
-  TestCopyIfCudaStreams(thrust::cuda::par_nosync);
+  test_copy_if_cuda_streams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -243,7 +243,7 @@ TEST_CASE("TestCopyIfStencilDeviceNoSync", "[copy_if]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
+void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -271,15 +271,15 @@ void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestCopyIfStencilCudaStreamsSync", "[copy_if]")
 {
-  TestCopyIfStencilCudaStreams(thrust::cuda::par);
+  test_copy_if_stencil_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestCopyIfStencilCudaStreamsNoSync", "[copy_if]")
 {
-  TestCopyIfStencilCudaStreams(thrust::cuda::par_nosync);
+  test_copy_if_stencil_cuda_streams(thrust::cuda::par_nosync);
 }
 
-void TestCopyIfWithMagnitude(int magnitude)
+void test_copy_if_with_magnitude(int magnitude)
 {
   using offset_t = std::size_t;
 
@@ -308,13 +308,13 @@ void TestCopyIfWithMagnitude(int magnitude)
 
 TEST_CASE("TestCopyIfWithLargeNumberOfItems", "[copy_if]")
 {
-  TestCopyIfWithMagnitude(30);
-  TestCopyIfWithMagnitude(31);
-  TestCopyIfWithMagnitude(32);
-  TestCopyIfWithMagnitude(33);
+  test_copy_if_with_magnitude(30);
+  test_copy_if_with_magnitude(31);
+  test_copy_if_with_magnitude(32);
+  test_copy_if_with_magnitude(33);
 }
 
-void TestCopyIfStencilWithMagnitude(int magnitude)
+void test_copy_if_stencil_with_magnitude(int magnitude)
 {
   using offset_t = std::size_t;
 
@@ -344,8 +344,8 @@ void TestCopyIfStencilWithMagnitude(int magnitude)
 
 TEST_CASE("TestCopyIfStencilWithLargeNumberOfItems", "[copy_if]")
 {
-  TestCopyIfStencilWithMagnitude(30);
-  TestCopyIfStencilWithMagnitude(31);
-  TestCopyIfStencilWithMagnitude(32);
-  TestCopyIfStencilWithMagnitude(33);
+  test_copy_if_stencil_with_magnitude(30);
+  test_copy_if_stencil_with_magnitude(31);
+  test_copy_if_stencil_with_magnitude(32);
+  test_copy_if_stencil_with_magnitude(33);
 }

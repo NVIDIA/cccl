@@ -34,7 +34,7 @@ CUB_NAMESPACE_BEGIN
 //! ``cub::WarpLoadAlgorithm`` enumerates alternative algorithms for :cpp:struct:`cub::WarpLoad` to
 //! read a linear segment of data from memory into a CUDA warp.
 //! @endrst
-enum WarpLoadAlgorithm
+enum WarpLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -377,8 +377,7 @@ private:
     struct _TempStorage : WarpExchangeT::TempStorage
     {};
 
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
+    using TempStorage = Uninitialized<_TempStorage>;
 
     _TempStorage& temp_storage;
 
@@ -445,8 +444,7 @@ private:
 
 public:
   /// @smemstorage{WarpLoad}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

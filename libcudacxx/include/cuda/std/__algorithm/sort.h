@@ -164,10 +164,7 @@ inline constexpr bool __use_branchless_sort =
 namespace __detail
 {
 // Size in bits for the bitset in use.
-enum
-{
-  __block_size = sizeof(uint64_t) * 8
-};
+inline constexpr int __block_size = sizeof(uint64_t) * 8;
 } // namespace __detail
 
 // Ensures that __c(*__x, *__y) is true by swapping *__x and *__y if necessary.
