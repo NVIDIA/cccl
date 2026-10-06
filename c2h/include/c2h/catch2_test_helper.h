@@ -7,7 +7,6 @@
 
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/buffer>
-#include <cuda/devices>
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
