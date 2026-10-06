@@ -86,7 +86,7 @@ struct TripleChevronFactory
     return ::cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 
-  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t CooperativeLaunchSupported(bool& supported) const
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t CooperativeLaunchSupported(bool& supported) const noexcept
   {
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
@@ -116,13 +116,14 @@ struct TripleChevronFactory
   template <typename Kernel, typename... Args>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t LaunchCooperative(
     dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, Kernel kernel, Args const&... args)
-    const {NV_IF_ELSE_TARGET(NV_IS_HOST,
-                             ({
-                               void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
-                               return ::cudaLaunchCooperativeKernel(
-                                 reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
-                             }),
-                             ({ return ::cudaErrorNotSupported; }))}
+    const noexcept {NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+        return ::cudaLaunchCooperativeKernel(
+          reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
+      }),
+      ({ return ::cudaErrorNotSupported; }))}
 
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {

@@ -43,6 +43,20 @@ inline CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry
   return ptr;
 }
 
+template <class Kernel>
+CUB_RUNTIME_FUNCTION void require_allowed_kernel(Kernel kernel)
+{
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 auto& kernels = get_stream_registry_factory_state()->m_kernels;
+                 if (!kernels.empty()
+                     && cuda::std::find(kernels.begin(), kernels.end(), reinterpret_cast<void*>(kernel))
+                          == kernels.end())
+                 {
+                   FAIL("Kernel is not allowed: " << c2h::type_name<Kernel>());
+                 }
+               }));
+}
+
 struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
 {
   CUB_RUNTIME_FUNCTION kernel_launcher_t(
@@ -53,17 +67,7 @@ struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
   template <class K, class... Args>
   CUB_RUNTIME_FUNCTION cudaError_t doit(K kernel, Args const&... args) const
   {
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   auto& kernels = get_stream_registry_factory_state()->m_kernels;
-                   if (!kernels.empty())
-                   {
-                     if (cuda::std::find(kernels.begin(), kernels.end(), reinterpret_cast<void*>(kernel))
-                         == kernels.end())
-                     {
-                       FAIL("Kernel is not allowed: " << c2h::type_name<K>());
-                     }
-                   }
-                 }));
+    require_allowed_kernel(kernel);
     return thrust::cuda_cub::detail::triple_chevron::doit(kernel, args...);
   }
 };
@@ -144,6 +148,7 @@ struct stream_registry_factory_t
                         {
                           REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
                         }
+                        require_allowed_kernel(kernel);
                         void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
                         return cudaLaunchCooperativeKernel(
                           reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
