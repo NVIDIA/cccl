@@ -15,12 +15,9 @@ namespace c2h
 {
 inline std::size_t get_override_seed_count()
 {
-  static const std::size_t override_seeds = [] {
-    // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
-    // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-    const auto parsed = ::c2h::detail::get_env_as_integer<long long>("C2H_SEED_COUNT_OVERRIDE");
-    return parsed > 0 ? static_cast<std::size_t>(parsed) : 0;
-  }();
+  // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
+  // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
+  static const auto override_seeds = ::c2h::detail::get_env_as_integer<std::size_t>("C2H_SEED_COUNT_OVERRIDE");
 
   return override_seeds;
 }
