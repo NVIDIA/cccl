@@ -370,7 +370,8 @@ using algorithms =
   c2h::enum_type_list<cub::BlockScanAlgorithm,
                       cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING,
                       cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS,
-                      cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE>;
+                      cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE,
+                      cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_REDUCE_THEN_SCAN>;
 using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm, c2h::get<ALGO_TYPE, algorithms>::value>;
 
 #if TEST_MODE == 0
