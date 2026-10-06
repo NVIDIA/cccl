@@ -20,9 +20,9 @@ import numpy
 import numpy as np
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
 )
 
 from ..._core.api._payload import (
@@ -33,9 +33,9 @@ from .._compiler._operations import group_operation
 from .._thread_group import BlockGroup, WarpGroup
 from ._marker import group_primitive_marker
 
-_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
 
-_KeyT = TypeVar("_KeyT", bound=PortableNumericScalar)
+_KeyT = TypeVar("_KeyT", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -44,12 +44,12 @@ _KeyT = TypeVar("_KeyT", bound=PortableNumericScalar)
 )
 def merge_sort_keys(
     group: BlockGroup | WarpGroup,
-    keys: PortableThreadDataLike[_KeyT] | numpy.ndarray,
+    keys: CommonThreadDataLike[_KeyT] | numpy.ndarray,
     /,
     *,
     descending: bool = False,
     valid_items: IntegerValue | None = None,
-    oob_default: PortableNumericScalar | None = None,
+    oob_default: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
     compare_op: Callable[[_KeyT, _KeyT], bool | np.bool_] | None = None,
 ) -> ThreadDataLike[_KeyT]:
@@ -154,13 +154,13 @@ def merge_sort_keys(
 )
 def merge_sort_pairs(
     group: BlockGroup | WarpGroup,
-    keys: PortableThreadDataLike[_KeyT] | numpy.ndarray,
-    values: PortableThreadDataLike[_ValueT] | numpy.ndarray,
+    keys: CommonThreadDataLike[_KeyT] | numpy.ndarray,
+    values: CommonThreadDataLike[_ValueT] | numpy.ndarray,
     /,
     *,
     descending: bool = False,
     valid_items: IntegerValue | None = None,
-    oob_default: PortableNumericScalar | None = None,
+    oob_default: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
     compare_op: Callable[[_KeyT, _KeyT], bool | np.bool_] | None = None,
 ) -> tuple[ThreadDataLike[_KeyT], ThreadDataLike[_ValueT]]:

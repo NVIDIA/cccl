@@ -12,17 +12,17 @@ import numpy
 
 from ..._core.api._payload import ThreadDataLike
 from ..._typing import (
+    CommonNumericScalar,
+    CommonShuffleMode,
+    CommonThreadDataLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableShuffleMode,
-    PortableThreadDataLike,
     ScalarShuffleMode,
 )
 from .._compiler._operations import group_operation
 from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -31,10 +31,10 @@ _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 )
 def shuffle(
     group: BlockGroup,
-    value: PortableThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
+    value: CommonThreadDataLike[_ItemT] | _ItemT | numpy.ndarray,
     /,
     *,
-    mode: PortableShuffleMode | ScalarShuffleMode = "down",
+    mode: CommonShuffleMode | ScalarShuffleMode = "down",
     distance: Literal[1] | IntegerValue = 1,
 ) -> ThreadDataLike[_ItemT] | _ItemT:
     """Shift arrays or select another thread's scalar within a block.

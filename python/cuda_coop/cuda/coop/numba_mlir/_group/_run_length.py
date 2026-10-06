@@ -18,9 +18,9 @@ from typing import TypeVar
 import numpy
 
 from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegralScalar,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
@@ -30,7 +30,7 @@ from ._marker import group_primitive_marker
 
 _LengthT = TypeVar("_LengthT", bound=IntegralScalar)
 
-_ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -39,8 +39,8 @@ _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 )
 def run_length_decode(
     group: BlockGroup,
-    run_values: PortableThreadDataLike[_ItemT] | numpy.ndarray,
-    run_lengths: PortableThreadDataLike[_LengthT] | numpy.ndarray,
+    run_values: CommonThreadDataLike[_ItemT] | numpy.ndarray,
+    run_lengths: CommonThreadDataLike[_LengthT] | numpy.ndarray,
     /,
     *,
     decoded_items_per_thread: int,
@@ -119,8 +119,8 @@ def run_length_decode(
 )
 def run_length_decode_into(
     group: BlockGroup,
-    run_values: PortableThreadDataLike[_ItemT] | numpy.ndarray,
-    run_lengths: PortableThreadDataLike[_LengthT] | numpy.ndarray,
+    run_values: CommonThreadDataLike[_ItemT] | numpy.ndarray,
+    run_lengths: CommonThreadDataLike[_LengthT] | numpy.ndarray,
     destination: object,
     /,
     *,

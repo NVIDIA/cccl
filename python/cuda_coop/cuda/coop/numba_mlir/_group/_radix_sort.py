@@ -19,11 +19,11 @@ from typing import TypeAlias, TypeVar
 import numpy
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     CompilerIntegerLike,
     CompilerScalarLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     TempStorageLike,
     ThreadDataLike,
 )
@@ -32,7 +32,7 @@ from .._compiler._operations import group_operation
 from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
 
-_ValueT = TypeVar("_ValueT", bound=PortableNumericScalar)
+_ValueT = TypeVar("_ValueT", bound=CommonNumericScalar)
 
 _IntegerKey: TypeAlias = (
     int
@@ -59,7 +59,7 @@ _RankKeyT = TypeVar("_RankKeyT", bound=_IntegerKey)
 )
 def radix_sort_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT] | _KeyT | numpy.ndarray,
+    keys: CommonThreadDataLike[_KeyT] | _KeyT | numpy.ndarray,
     /,
     *,
     begin_bit: IntegerValue = 0,
@@ -139,8 +139,8 @@ def radix_sort_keys(
 )
 def radix_sort_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_KeyT] | _KeyT | numpy.ndarray,
-    values: PortableThreadDataLike[_ValueT] | _ValueT | numpy.ndarray,
+    keys: CommonThreadDataLike[_KeyT] | _KeyT | numpy.ndarray,
+    values: CommonThreadDataLike[_ValueT] | _ValueT | numpy.ndarray,
     /,
     *,
     begin_bit: IntegerValue = 0,
@@ -221,7 +221,7 @@ def radix_sort_pairs(
 )
 def radix_rank_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_RankKeyT] | _RankKeyT | numpy.ndarray,
+    keys: CommonThreadDataLike[_RankKeyT] | _RankKeyT | numpy.ndarray,
     /,
     *,
     begin_bit: int = 0,

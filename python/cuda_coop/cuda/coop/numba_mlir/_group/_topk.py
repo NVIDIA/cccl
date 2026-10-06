@@ -16,9 +16,9 @@ from typing import TypeVar
 import numpy
 
 from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegralScalar,
-    PortableNumericScalar,
-    PortableThreadDataLike,
     ThreadDataLike,
 )
 from .._compiler._operations import group_operation
@@ -26,9 +26,9 @@ from .._temp_storage import TempStorage
 from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
 
-_K = TypeVar("_K", bound=PortableNumericScalar)
+_K = TypeVar("_K", bound=CommonNumericScalar)
 
-_V = TypeVar("_V", bound=PortableNumericScalar)
+_V = TypeVar("_V", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -36,7 +36,7 @@ _V = TypeVar("_V", bound=PortableNumericScalar)
 )
 def topk_min_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K] | numpy.ndarray,
+    keys: CommonThreadDataLike[_K] | numpy.ndarray,
     /,
     *,
     k: IntegralScalar,
@@ -121,8 +121,8 @@ def topk_min_keys(
 )
 def topk_min_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K] | numpy.ndarray,
-    values: PortableThreadDataLike[_V] | numpy.ndarray,
+    keys: CommonThreadDataLike[_K] | numpy.ndarray,
+    values: CommonThreadDataLike[_V] | numpy.ndarray,
     /,
     *,
     k: IntegralScalar,
@@ -213,7 +213,7 @@ def topk_min_pairs(
 )
 def topk_max_keys(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K] | numpy.ndarray,
+    keys: CommonThreadDataLike[_K] | numpy.ndarray,
     /,
     *,
     k: IntegralScalar,
@@ -298,8 +298,8 @@ def topk_max_keys(
 )
 def topk_max_pairs(
     group: BlockGroup,
-    keys: PortableThreadDataLike[_K] | numpy.ndarray,
-    values: PortableThreadDataLike[_V] | numpy.ndarray,
+    keys: CommonThreadDataLike[_K] | numpy.ndarray,
+    values: CommonThreadDataLike[_V] | numpy.ndarray,
     /,
     *,
     k: IntegralScalar,

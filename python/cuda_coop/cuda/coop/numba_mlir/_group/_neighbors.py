@@ -20,9 +20,9 @@ import numpy
 import numpy as np
 
 from cuda.coop._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
     IntegerValue,
-    PortableNumericScalar,
-    PortableThreadDataLike,
 )
 
 from ..._core.api._payload import (
@@ -33,7 +33,7 @@ from .._compiler._operations import group_operation
 from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
 
-_T = TypeVar("_T", bound=PortableNumericScalar)
+_T = TypeVar("_T", bound=CommonNumericScalar)
 
 
 @group_operation(
@@ -42,13 +42,13 @@ _T = TypeVar("_T", bound=PortableNumericScalar)
 )
 def adjacent_difference(
     group: BlockGroup,
-    values: PortableThreadDataLike[_T] | numpy.ndarray,
+    values: CommonThreadDataLike[_T] | numpy.ndarray,
     /,
     *,
     direction: Literal["left", "right"] = "left",
     valid_items: IntegerValue | None = None,
-    tile_predecessor_item: PortableNumericScalar | None = None,
-    tile_successor_item: PortableNumericScalar | None = None,
+    tile_predecessor_item: CommonNumericScalar | None = None,
+    tile_successor_item: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
     difference_op: Callable[[_T, _T], _T] | None = None,
 ) -> ThreadDataLike[_T]:
@@ -107,12 +107,12 @@ def adjacent_difference(
 )
 def discontinuity(
     group: BlockGroup,
-    values: PortableThreadDataLike[_T] | numpy.ndarray,
+    values: CommonThreadDataLike[_T] | numpy.ndarray,
     /,
     *,
     mode: Literal["heads", "tails", "heads_and_tails"] = "heads",
-    tile_predecessor_item: PortableNumericScalar | None = None,
-    tile_successor_item: PortableNumericScalar | None = None,
+    tile_predecessor_item: CommonNumericScalar | None = None,
+    tile_successor_item: CommonNumericScalar | None = None,
     temp_storage: TempStorageLike | None = None,
     flag_op: Callable[[_T, _T], bool | np.bool_] | None = None,
 ) -> (

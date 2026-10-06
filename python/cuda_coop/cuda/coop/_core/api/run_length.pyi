@@ -20,6 +20,7 @@ from typing_extensions import TypeVar
 from ..._typing import (
     CommonNumericScalar,
     CommonThreadDataLike,
+    CompilerIntegerLike,
     IntegralScalar,
     TempStorageLike,
     ThreadDataLike,
@@ -49,4 +50,4 @@ def run_length_decode_into(
     decoded_items_per_thread: int,
     destination_offset: IntegralScalar = 0,
     temp_storage: TempStorageLike | None = None,
-) -> numpy.uint32: ...
+) -> numpy.uint32 | CompilerIntegerLike: ...

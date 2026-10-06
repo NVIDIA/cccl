@@ -11,17 +11,14 @@ without importing an optional GPU compiler.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias, TypeVar
+from typing import Any, Literal, Protocol, TypeAlias, TypeVar
 
-if TYPE_CHECKING:
+try:
     import numpy
-else:
-    try:
-        import numpy
-    except ModuleNotFoundError as exc:
-        if exc.name != "numpy":
-            raise
-        numpy = None
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+    numpy = None
 
 from ._core.api._payload import (
     TempStorageLike,
@@ -112,7 +109,7 @@ BlockExchangeMode: TypeAlias = (
     ]
 )
 
-PortableShuffleMode: TypeAlias = Literal["down", "up"]
+CommonShuffleMode: TypeAlias = Literal["down", "up"]
 
 ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
 
@@ -136,13 +133,13 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
     signed: bool
 
 
-if not TYPE_CHECKING and numpy is None:
-    PortableNumericScalar: TypeAlias = int | float | CompilerScalarLike
+if numpy is None:
+    CommonNumericScalar: TypeAlias = int | float | CompilerScalarLike
     IntegerValue: TypeAlias = int | CompilerIntegerLike
     SignedIntegerScalar: TypeAlias = int | CompilerIntegerLike
     IntegralScalar: TypeAlias = SignedIntegerScalar
 else:
-    PortableNumericScalar: TypeAlias = (
+    CommonNumericScalar: TypeAlias = (
         int
         | float
         | numpy.int8
@@ -168,13 +165,13 @@ else:
 
 ValidItems: TypeAlias = IntegerValue
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
 
-PortableThreadDataLike = _ReadableThreadDataLike
+CommonThreadDataLike = _ReadableThreadDataLike
 
 __all__ = [
-    "PortableThreadDataLike",
+    "CommonThreadDataLike",
     "TempStorageLike",
     "ThreadDataLike",
-    "_PortableNumericT",
+    "_CommonNumericT",
 ]
