@@ -11,27 +11,56 @@ from the samples; calling this body does not compute a Python histogram.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Literal, TypeVar
+
+import numpy
+
+from cuda.coop._typing import (
+    CommonThreadDataLike,
+    CompilerIntegerLike,
+    TempStorageLike,
+    ThreadDataLike,
+)
 
 from .._compiler._operations import group_operation
-from .._thread_group import ThreadGroup
+from .._thread_group import BlockGroup
 from ._marker import group_primitive_marker
+
+_Counter = TypeVar(
+    "_Counter", numpy.int32, numpy.uint32, numpy.int64, numpy.uint64
+)
 
 
 @group_operation(
     "histogram", family_module="cuda.coop.numba_mlir._compiler._group_histogram"
 )
 def histogram(
-    group: ThreadGroup,
-    samples: Any,
+    group: BlockGroup,
+    samples: CommonThreadDataLike[
+        int
+        | numpy.uint8
+        | numpy.int32
+        | numpy.uint32
+        | numpy.int64
+        | numpy.uint64
+        | CompilerIntegerLike
+    ]
+    | int
+    | numpy.uint8
+    | numpy.int32
+    | numpy.uint32
+    | numpy.int64
+    | numpy.uint64
+    | CompilerIntegerLike
+    | numpy.ndarray,
     /,
     *,
-    bins: Any,
-    bins_per_thread: Any = 1,
-    counter_dtype: Any = None,
-    algorithm: str = "atomic",
-    temp_storage: Any = None,
-) -> Any:
+    bins: int,
+    bins_per_thread: int = 1,
+    counter_dtype: type[int | _Counter] | numpy.dtype | None = None,
+    algorithm: Literal["atomic", "sort"] = "atomic",
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[numpy.int32] | ThreadDataLike[_Counter]:
     """Count bins from ThreadData, local-array, or scalar samples.
 
     Shared parameters, participation, supported dtypes, algorithms, striped
@@ -49,6 +78,18 @@ def histogram(
         A fresh payload with ``bins_per_thread`` counters per member, even
         for scalar input. Result ownership and zero output padding follow
         the common operation.
+
+    Examples
+    --------
+    Count local-array samples with both atomic and sort algorithms, then
+    store bins in striped order.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_qualified_histogram_examples.py
+        :language: python
+        :start-after: # qualified-histogram-example-begin
+        :end-before: # qualified-histogram-example-end
+        :dedent: 4
     """
 
     return group_primitive_marker(
