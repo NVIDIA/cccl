@@ -45,6 +45,37 @@ WarpLoadStoreAlgorithm: TypeAlias = Literal[
     "transpose",
 ]
 
+ReduceAlgorithm: TypeAlias = Literal[
+    "raking_commutative_only",
+    "raking",
+    "warp_reductions",
+]
+
+ReduceOperator: TypeAlias = Literal[
+    "+",
+    "sum",
+    "add",
+    "plus",
+    "*",
+    "mul",
+    "multiply",
+    "multiplies",
+    "min",
+    "minimum",
+    "max",
+    "maximum",
+    "&",
+    "bit_and",
+    "|",
+    "bit_or",
+    "^",
+    "bit_xor",
+]
+
+
+
+
+
 
 class CompilerScalarLike(Protocol):
     """Describe a compiler scalar without importing its concrete type."""
@@ -68,6 +99,8 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 if not TYPE_CHECKING and numpy is None:
     CommonNumericScalar: TypeAlias = int | float | CompilerScalarLike
     IntegerValue: TypeAlias = int | CompilerIntegerLike
+    SignedIntegerScalar: TypeAlias = int | CompilerIntegerLike
+    IntegralScalar: TypeAlias = SignedIntegerScalar
 else:
     CommonNumericScalar: TypeAlias = (
         int
@@ -89,6 +122,12 @@ else:
         IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
     else:
         IntegerValue: TypeAlias = int | numpy.integer | CompilerIntegerLike
+
+    SignedIntegerScalar: TypeAlias = (
+        int | numpy.signedinteger[Any] | CompilerIntegerLike
+    )
+
+    IntegralScalar: TypeAlias = SignedIntegerScalar | numpy.unsignedinteger[Any]
 
 ValidItems: TypeAlias = IntegerValue
 
