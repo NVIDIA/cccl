@@ -4,11 +4,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD___THREAD_THREADING_SUPPORT_H
-#define _CUDA_STD___THREAD_THREADING_SUPPORT_H
+#ifndef _CUDA_STD___THREAD_POLL_H
+#define _CUDA_STD___THREAD_POLL_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,39 +23,14 @@
 
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__chrono/high_resolution_clock.h>
-
-#if defined(_CCCL_HAS_THREAD_API_EXTERNAL)
-#  include <cuda/std/__thread/threading_support_external.h>
-#endif // _CCCL_HAS_THREAD_API_EXTERNAL
-
-#if defined(_CCCL_HAS_THREAD_API_CUDA)
-#  include <cuda/std/__thread/threading_support_cuda.h>
-#elif defined(_CCCL_HAS_THREAD_API_PTHREAD)
-#  include <cuda/std/__thread/threading_support_pthread.h>
-#elif defined(_CCCL_HAS_THREAD_API_WIN32)
-#  include <cuda/std/__thread/threading_support_win32.h>
-#else // ^^^ _CCCL_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
-#  error "Unknown Thread API"
-#endif // Unknown Thread API
+#include <cuda/std/__thread/sleep_for.h>
+#include <cuda/std/__thread/yield.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #define _LIBCUDACXX_POLLING_COUNT 16
-
-#if _CCCL_HOST_ARCH(ARM64) && _CCCL_OS(LINUX)
-#  define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :: :);)
-#elif _CCCL_HOST_ARCH(X86_64) && _CCCL_OS(LINUX)
-#  define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :: :);)
-#else // ^^^  _CCCL_HOST_ARCH(X86_64) ^^^ / vvv ! _CCCL_HOST_ARCH(X86_64) vvv
-#  define __LIBCUDACXX_ASM_THREAD_YIELD (;)
-#endif // ! _CCCL_HOST_ARCH(X86_64)
-
-_CCCL_HOST_DEVICE_API inline void __cccl_thread_yield_processor()
-{
-  NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
-}
 
 template <class _Fn>
 _CCCL_HOST_DEVICE_API inline bool __cccl_thread_poll_with_backoff(
@@ -103,4 +79,4 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA_STD___THREAD_THREADING_SUPPORT_H
+#endif // _CUDA_STD___THREAD_POLL_H
