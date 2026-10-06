@@ -2,11 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Run the qualified partial-warp Scan example used in the documentation.
+"""Run the qualified block and partial-warp scan documentation examples.
 
-The marked region supplies the public example verbatim. Host checks outside
-it distinguish seeded prefix results from the unseeded aggregate. They also
-confirm that lanes without a defined Scan result keep their sentinel.
+Host checks distinguish seeded prefixes from the unseeded warp aggregate,
+check block sums and running maxima, and preserve undefined-lane sentinels.
 """
 
 import numpy as np
@@ -86,3 +85,70 @@ def test_partial_warp_scan_example():
         launch(source, destination, totals)
     np.testing.assert_array_equal(observed, expected.reshape(-1))
     np.testing.assert_array_equal(aggregates, expected_aggregates)
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_scan_example(items_per_thread):
+    # qualified-scan-example-begin
+    import cutlass
+    from cutlass import cute
+
+    import cuda.coop.cutlass as coop
+
+    @cute.kernel
+    def prefixes(
+        source: cute.Pointer,
+        seeded: cute.Pointer,
+        maxima: cute.Pointer,
+        exclusive: cute.Pointer,
+        inclusive: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        block = coop.this_block()
+        values = coop.ThreadData(items_per_thread)
+        coop.load(block, source, values)
+        scratch = coop.TempStorage(auto_sync=True)
+        seeded_sums = coop.scan(
+            block, values, initial_value=7, temp_storage=scratch
+        )
+        running_maxima = coop.inclusive_scan(
+            block, values, scan_op="max", temp_storage=scratch
+        )
+        before = coop.exclusive_sum(block, values, temp_storage=scratch)
+        through = coop.inclusive_sum(block, values, temp_storage=scratch)
+        coop.store(block, seeded, seeded_sums)
+        coop.store(block, maxima, running_maxima)
+        coop.store(block, exclusive, before)
+        coop.store(block, inclusive, through)
+
+    @cute.jit
+    def launch(
+        source: cute.Pointer,
+        seeded: cute.Pointer,
+        maxima: cute.Pointer,
+        exclusive: cute.Pointer,
+        inclusive: cute.Pointer,
+        items_per_thread: cutlass.Constexpr,
+    ):
+        prefixes(
+            source, seeded, maxima, exclusive, inclusive, items_per_thread
+        ).launch(grid=1, block=64)
+
+    # qualified-scan-example-end
+    values = (np.arange(64 * items_per_thread, dtype=np.int32) * 13) % 31 - 15
+    seeded, maxima, exclusive, inclusive = (
+        np.zeros_like(values) for _ in range(4)
+    )
+    with (
+        device_array(values) as src,
+        device_array(seeded) as seed,
+        device_array(maxima) as maximum,
+        device_array(exclusive) as before,
+        device_array(inclusive) as through,
+    ):
+        launch(src, seed, maximum, before, through, items_per_thread)
+    expected = values.cumsum(dtype=np.int32)
+    np.testing.assert_array_equal(seeded, expected - values + 7)
+    np.testing.assert_array_equal(maxima, np.maximum.accumulate(values))
+    np.testing.assert_array_equal(exclusive, expected - values)
+    np.testing.assert_array_equal(inclusive, expected)
