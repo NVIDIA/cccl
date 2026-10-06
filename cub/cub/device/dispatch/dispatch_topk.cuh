@@ -53,11 +53,12 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
+          bool NormalizeMinusZero,
           bool CanTwiddle = detail::radix::can_twiddle<T>>
 struct extract_bin_op_t;
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, true>
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using bit_ordered_type              = typename Traits<T>::UnsignedBits;
@@ -75,8 +76,12 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    // Rank -0.0 as +0.0 so that both zeros compare equal, as in DeviceRadixSort and BlockTopK
-    bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(Traits<T>::TwiddleIn(bits));
+    bits      = Traits<T>::TwiddleIn(bits);
+    if constexpr (NormalizeMinusZero)
+    {
+      // Rank -0.0 as +0.0 so that both zeros compare equal, as in DeviceRadixSort and BlockTopK
+      bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(bits);
+    }
     if constexpr (SelectDirection != select::min)
     {
       bits = ~bits;
@@ -86,8 +91,8 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
   }
 };
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, false>
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using radix_traits_t                = detail::radix::traits_t<T>;
@@ -118,11 +123,12 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
+          bool NormalizeMinusZero,
           bool CanTwiddle = detail::radix::can_twiddle<T>>
 struct identify_candidates_op_t;
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, true>
 {
   using unsigned_bits_t = typename Traits<T>::UnsignedBits;
   using key_prefix_t    = key_prefix_storage_t<T>;
@@ -137,8 +143,12 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    // Must match the normalization in extract_bin_op_t, which produced kth_key_bits
-    bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(Traits<T>::TwiddleIn(bits));
+    bits      = Traits<T>::TwiddleIn(bits);
+    if constexpr (NormalizeMinusZero)
+    {
+      // Must match the normalization in extract_bin_op_t, which produced kth_key_bits
+      bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(bits);
+    }
 
     if constexpr (SelectDirection != select::min)
     {
@@ -154,8 +164,8 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   }
 };
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, false>
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using radix_traits_t                = detail::radix::traits_t<T>;
@@ -519,8 +529,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators
-    using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
-    using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
+    // DeviceTopK has no index tie-break, so any set of tied keys is valid and -0.0 may rank below +0.0
+    constexpr bool normalize_minus_zero = false;
+    using identify_candidates_op =
+      identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, normalize_minus_zero>;
+    using extract_bin_op =
+      extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, normalize_minus_zero>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
