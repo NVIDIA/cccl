@@ -5,7 +5,7 @@ kernel DSLs. The first backend targets Numba-CUDA-MLIR. The table below
 lists the available operations.
 
 The distribution is a universal Python wheel containing a coherent bundle of
-CUB, Thrust, libcu++, and CUDAX headers. Installed-wheel compilation uses that
+CUB, Thrust, and libcu++ headers. Installed-wheel compilation uses that
 bundle by default. Development from a CCCL source checkout uses the matching
 checkout headers, and `CUDA_COOP_CCCL_ROOT` can select a different source
 checkout or `cuda-coop` header bundle. None of these modes substitutes CUB
