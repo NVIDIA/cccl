@@ -490,7 +490,6 @@ class CoopSinglePhaseRewrite(
         # require different specializations.
         for match_inst, match in self._matches.items():
             invocable, _ = self._materialize_invocable(match)
-            self._record_invocable_specialization(invocable)
             candidate_dead_factory_kw_vars.update(
                 value_var.name for value_var in match.factory_kw_value_vars
             )

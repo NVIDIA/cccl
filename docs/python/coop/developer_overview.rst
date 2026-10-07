@@ -1403,8 +1403,8 @@ transpose example below takes the backing-allocation branch here.
 Set a breakpoint in the ``_prepare_call_invocables()`` method of
 ``CoopSinglePhaseRewrite`` in
 ``_compiler/_rewrite.py`` on
-``self._record_invocable_specialization(invocable)``. Continue to it.
-The preceding statement has materialized a callable provider for a match.
+``invocable, _ = self._materialize_invocable(match)``. Continue to it, then
+step over the statement to obtain the callable provider for this match.
 Inspect:
 
 .. code-block:: python
