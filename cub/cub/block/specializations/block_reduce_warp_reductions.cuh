@@ -21,9 +21,8 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/warp/specializations/warp_redux.cuh>
+#include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -32,8 +31,6 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
-
-#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -60,8 +57,7 @@ namespace detail
 //!
 //! @tparam WarpAggregateThreshold
 //!   Minimum number of warps required to use the parallel warp-0 reduction path.
-//!   -1 (default): only use parallel path when HW redux is available.
-//!   0: always use sequential path.
+//!   -1 (default) or 0: always use sequential path.
 //!   >0: use parallel path when warps >= threshold.
 //!   Values below -1 are rejected via static_assert.
 template <typename T,
@@ -183,10 +179,8 @@ struct BlockReduceWarpReductions
     __syncthreads();
 
     // Decide whether to reduce warp aggregates in parallel (warp-0) or sequentially (thread-0).
-    // With HW redux the parallel path is a single instruction, so we enable it by default (-1).
-    // Without it, a simple unrolled loop over <=31 values is just as fast.
-    constexpr bool use_warp_redux_path    = (WarpAggregateThreshold == -1) && is_warp_redux_op_supported<ReductionOp, T>
-                                         && ::cuda::has_identity_element_v<ReductionOp, T>;
+    // Sequential by default: a simple unrolled loop over <=31 values is just as fast.
+    // The parallel path is only used when WarpAggregateThreshold is positive and met.
     constexpr int effective_threshold     = WarpAggregateThreshold > 0 ? WarpAggregateThreshold : warps + 1;
     constexpr bool use_parallel_reduction = (warps >= effective_threshold) && (threads_per_block >= warp_threads);
 
