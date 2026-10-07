@@ -5,9 +5,8 @@
 #
 # Runs in the minimal container: nothing here may assume more than Python and
 # the wheel's declared deps (docs/infrastructure/ci/references/ci_scripts.rst).
-# Most of the suite imports cuda.cccl and asserts on get_include_paths(), so this
-# is the lane that most directly tests what the wheel actually ships. The
-# uniqueness test also reads product headers from this checkout.
+# The suite only imports cuda.cccl and asserts on get_include_paths(), so this
+# is the lane that most directly tests what the wheel actually ships.
 
 set -euo pipefail
 
