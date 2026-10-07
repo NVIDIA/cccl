@@ -893,7 +893,7 @@ struct low_byte_of_index
 // Sample i is i % 256, so n samples put n / 256 into each of 256 unit-wide bins when n is a multiple of 256
 static auto low_byte_samples()
 {
-  return cuda::transform_iterator(cuda::counting_iterator<std::uint64_t>{0}, low_byte_of_index{});
+  return cuda::transform_iterator(cuda::counting_iterator<uint64_t>{0}, low_byte_of_index{});
 }
 
 using large_offset_types = c2h::type_list<std::int32_t, std::int64_t>;
@@ -973,9 +973,9 @@ CUB_TEST("DeviceHistogram::MultiHistogram* sample positions exceed INT_MAX", "[h
 // Positions below 2^33 map to bins 0..255 by bits 25..32; anything larger (e.g. a wrapped offset) maps to bin 255
 struct upper_bits_of_index
 {
-  __host__ __device__ unsigned char operator()(std::uint64_t i) const
+  __host__ __device__ unsigned char operator()(uint64_t i) const
   {
-    return static_cast<unsigned char>(cs::min<std::uint64_t>(i >> 25, 255));
+    return static_cast<uint8_t>(cs::min<uint64_t>(i >> 25, 255));
   }
 };
 
@@ -997,7 +997,7 @@ CUB_TEST("DeviceHistogram::Histogram* rows starting beyond INT_MAX", "[histogram
     }
   }
 
-  const auto samples = cuda::transform_iterator(cuda::counting_iterator<std::uint64_t>{0}, upper_bits_of_index{});
+  const auto samples = cuda::transform_iterator(cuda::counting_iterator<uint64_t>{0}, upper_bits_of_index{});
   c2h::device_vector<int> d_histogram(256, thrust::no_init);
   histogram_even(
     samples,

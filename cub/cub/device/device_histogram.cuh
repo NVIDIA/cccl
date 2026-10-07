@@ -29,10 +29,13 @@
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/__execution/require.h>
+#include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -41,33 +44,33 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
-//! Calls `dispatch` with the sizes in the kernels' offset type: `int` if `OffsetT` is 64-bit and all samples fit,
-//! 64-bit if `MayExceedOffsetT` and positions like `num_pixels * NumChannels` overflow `OffsetT`, else `OffsetT`.
+// Calls `dispatch` with `int` sizes, or with 64-bit sizes if the input spans `INT_MAX` bytes or more
 template <typename SampleT, bool MayExceedOffsetT, typename OffsetT, typename DispatchT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-dispatch_with_offset_type(OffsetT num_row_pixels, OffsetT num_rows, size_t row_stride_bytes, DispatchT dispatch)
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_offset_type(
+  OffsetT num_row_pixels, OffsetT num_rows, ::cuda::std::size_t row_stride_bytes, DispatchT dispatch)
 {
+  constexpr auto int_max        = (::cuda::std::numeric_limits<int>::max)();
   const auto row_stride_samples = row_stride_bytes / sizeof(SampleT);
-  if constexpr (sizeof(OffsetT) > sizeof(int))
+  const auto dispatch_as        = [&](auto offset) {
+    using offset_t = decltype(offset);
+    return dispatch(static_cast<offset_t>(num_row_pixels),
+                    static_cast<offset_t>(num_rows),
+                    static_cast<offset_t>(row_stride_samples));
+  };
+  // 64-bit kernels are only instantiated if the sizes can describe more than INT_MAX samples
+  if constexpr (MayExceedOffsetT || ::cuda::std::cmp_greater((::cuda::std::numeric_limits<OffsetT>::max)(), int_max))
   {
-    if (static_cast<::cuda::std::uint64_t>(num_rows) * row_stride_bytes
-        < static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<int>::max)()))
+    const auto num_bytes = ::cuda::mul_overflow<::cuda::std::int64_t>(num_rows, row_stride_bytes);
+    if (num_bytes.overflow)
     {
-      return dispatch(
-        static_cast<int>(num_row_pixels), static_cast<int>(num_rows), static_cast<int>(row_stride_samples));
+      return cudaErrorInvalidValue;
+    }
+    if (::cuda::std::cmp_greater_equal(num_bytes.value, int_max))
+    {
+      return dispatch_as(::cuda::std::int64_t{});
     }
   }
-  else if constexpr (MayExceedOffsetT)
-  {
-    if (static_cast<::cuda::std::uint64_t>(num_rows) * row_stride_samples
-        > static_cast<::cuda::std::uint64_t>((::cuda::std::numeric_limits<OffsetT>::max)()))
-    {
-      return dispatch(static_cast<::cuda::std::int64_t>(num_row_pixels),
-                      static_cast<::cuda::std::int64_t>(num_rows),
-                      static_cast<::cuda::std::int64_t>(row_stride_samples));
-    }
-  }
-  return dispatch(num_row_pixels, num_rows, static_cast<OffsetT>(row_stride_samples));
+  return dispatch_as(int{});
 }
 } // namespace detail::histogram
 
