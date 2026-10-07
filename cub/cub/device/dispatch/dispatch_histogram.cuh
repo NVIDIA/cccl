@@ -1224,7 +1224,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
 
     // Use the scale transform op for converting privatized bins to output bins
-    using OutputDecodeOpT = typename TransformsT::FastScaleTransform;
+    using OutputDecodeOpT = typename TransformsT::ScaleTransform;
 
     using CommonT = typename TransformsT::ScaleTransform::CommonT;
 
@@ -1307,7 +1307,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
 
     // Use the scale transform op for converting samples to privatized bins
-    using PrivatizedDecodeOpT = typename TransformsT::FastScaleTransform;
+    using PrivatizedDecodeOpT = typename TransformsT::ScaleTransform;
 
     // Use the pass-thru transform op for converting privatized bins to output bins
     using OutputDecodeOpT = typename TransformsT::PassThruTransform;

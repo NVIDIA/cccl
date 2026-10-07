@@ -20,7 +20,6 @@
 
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/cmath>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -28,35 +27,42 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
 {
-template <typename LevelT, typename OffsetT, typename InputSampleT>
+template <typename LevelT, typename OffsetT, typename SampleT>
 struct Transforms
 {
   //---------------------------------------------------------------------
   // Transform functors for converting samples to bin-ids
   //---------------------------------------------------------------------
 
-  //! @brief Finds a RANGE bin with binary search.
-  //!
-  //! Uses `UpperBound` without interpolation or per-thread state.
+  // Searches for bin given a list of bin-boundary levels
   template <typename LevelIteratorT>
   struct SearchTransform
   {
     LevelIteratorT d_levels; // Pointer to levels array
     int num_output_levels; // Number of levels in array
 
+    //! @brief Initializer
+    //!
+    //! @param d_levels_ Pointer to levels array
+    //! @param num_output_levels_ Number of levels in array
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
-      d_levels          = d_levels_;
-      num_output_levels = num_output_levels_;
+      this->d_levels          = d_levels_;
+      this->num_output_levels = num_output_levels_;
     }
 
-    template <CacheLoadModifier LoadModifier, typename SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
+    // Method for converting samples to bin-ids
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
+      /// Level iterator wrapper type
+      // Wrap the native input pointer with CacheModifiedInputIterator
+      // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
         ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
                          CacheModifiedInputIterator<LoadModifier, LevelT, OffsetT>,
                          LevelIteratorT>;
+
       const WrappedLevelIteratorT wrapped_levels(d_levels);
 
       const int num_bins = num_output_levels - 1;
@@ -74,12 +80,12 @@ struct Transforms
   // Scales samples to evenly-spaced bins
   struct ScaleTransform
   {
-    using CommonT = ::cuda::std::common_type_t<LevelT, InputSampleT>;
+    using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
     static_assert(::cuda::std::is_convertible_v<CommonT, int>,
-                  "The common type of `LevelT` and `InputSampleT` must be "
+                  "The common type of `LevelT` and `SampleT` must be "
                   "convertible to `int`.");
     static_assert(::cuda::is_trivially_copyable_v<CommonT>,
-                  "The common type of `LevelT` and `InputSampleT` must be "
+                  "The common type of `LevelT` and `SampleT` must be "
                   "trivially copyable.");
 
     // An arithmetic type that's used for bin computation of integral types, guaranteed to not
@@ -89,7 +95,7 @@ struct Transforms
     // multiplication result.
     // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
     using IntArithmeticT = ::cuda::std::_If< //
-      sizeof(InputSampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
+      sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
 #if _CCCL_HAS_INT128()
       ::cuda::std::_If< //
@@ -102,7 +108,7 @@ struct Transforms
 #endif // !_CCCL_HAS_INT128()
       >;
 
-  protected:
+  private:
     // Alias template that excludes __[u]int128 from the integral types
     template <typename T>
     using is_integral_excl_int128 =
@@ -315,64 +321,16 @@ struct Transforms
       m_scale = this->ComputeScale(num_levels, m_max, m_min);
     }
 
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LoadModifier>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(InputSampleT sample, int& bin, bool valid) const
+    // Method for converting samples to bin-ids. The sample type is a template parameter because the
+    // agent also feeds privatized bin indices through this op, which must not round-trip through SampleT.
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 
       if (valid && this->SampleIsValid(common_sample, m_max, m_min))
       {
         bin = this->ComputeBin(common_sample, m_min, m_scale);
-      }
-    }
-  };
-
-  //! @brief Scales integral samples to evenly-spaced bins using a precomputed divisor.
-  //!
-  //! The divisor is initialized on the host and replaces the runtime integer division in the
-  //! privatized histogram kernels with the multiply-high sequence provided by `cuda::fast_mod_div`.
-  //! Floating-point, extended-integer, and custom types retain `ScaleTransform`'s implementation.
-  struct FastScaleTransform : ScaleTransform
-  {
-    using BaseT = ScaleTransform;
-    using FastDivisorValueT =
-      ::cuda::std::_If<BaseT::template is_integral_excl_int128<typename BaseT::CommonT>::value,
-                       typename BaseT::IntArithmeticT,
-                       uint32_t>;
-    using FastDivisorT = ::cuda::fast_mod_div<FastDivisorValueT>;
-
-    FastDivisorT m_range_divisor{FastDivisorValueT{1}};
-
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(int num_levels, LevelT max_level, LevelT min_level)
-    {
-      BaseT::Init(num_levels, max_level, min_level);
-
-      if constexpr (BaseT::template is_integral_excl_int128<typename BaseT::CommonT>::value)
-      {
-        m_range_divisor = FastDivisorT{static_cast<FastDivisorValueT>(BaseT::m_scale.fraction.range)};
-      }
-    }
-
-    template <CacheLoadModifier LoadModifier>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(InputSampleT sample, int& bin, bool valid) const
-    {
-      using CommonT = typename BaseT::CommonT;
-
-      const CommonT common_sample = static_cast<CommonT>(sample);
-      if (valid && BaseT::SampleIsValid(common_sample, BaseT::m_max, BaseT::m_min))
-      {
-        if constexpr (BaseT::template is_integral_excl_int128<CommonT>::value)
-        {
-          const auto offset = BaseT::subtract_as_unsigned(common_sample, BaseT::m_min);
-          const typename BaseT::IntArithmeticT numerator =
-            typename BaseT::IntArithmeticT{offset} * typename BaseT::IntArithmeticT{BaseT::m_scale.fraction.bins};
-          bin = static_cast<int>(numerator / m_range_divisor);
-        }
-        else
-        {
-          bin = BaseT::ComputeBin(common_sample, BaseT::m_min, BaseT::m_scale);
-        }
       }
     }
   };
@@ -397,8 +355,8 @@ struct Transforms
     {}
 
     // Method for converting samples to bin-ids
-    template <CacheLoadModifier LoadModifier, typename SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid) const
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
     {
       if (valid)
       {
