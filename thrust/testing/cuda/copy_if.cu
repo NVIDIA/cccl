@@ -123,7 +123,8 @@ void test_copy_if_cuda_streams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  const Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
+  const Vector::iterator end =
+    thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
   REQUIRE(end - result.begin() == 2);
   result.resize(end - result.begin());

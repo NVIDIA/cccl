@@ -359,7 +359,7 @@ TEST_CASE("TestRemoveIfCudaStreams", "[remove]")
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  const Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), is_even<T>());
+  const Vector::iterator end = thrust::remove_if(thrust::cuda::par.on(s), data.begin(), data.end(), cuda::__is_even{});
 
   REQUIRE(end - data.begin() == 3);
   data.erase(end, data.end());
@@ -406,7 +406,7 @@ TEST_CASE("TestRemoveCopyIfCudaStreams", "[remove]")
   cudaStreamCreate(&s);
 
   const Vector::iterator end =
-    thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), is_even<T>());
+    thrust::remove_copy_if(thrust::cuda::par.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
   REQUIRE(end - result.begin() == 3);
   result.erase(end, result.end());

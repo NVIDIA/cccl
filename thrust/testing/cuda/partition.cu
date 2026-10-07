@@ -674,7 +674,7 @@ void test_partition_cuda_streams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), cuda::__is_even{});
 
   Vector ref(5);
   ref[0] = 2;

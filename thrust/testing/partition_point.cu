@@ -35,9 +35,9 @@ void test_partition_point()
 
   Vector v = unittest::random_integers<T>(n);
 
-  const Iterator ref = thrust::stable_partition(v.begin(), v.end(), is_even<T>());
+  const Iterator ref = thrust::stable_partition(v.begin(), v.end(), cuda::__is_even{});
 
-  REQUIRE(ref - v.begin() == thrust::partition_point(v.begin(), v.end(), is_even<T>()) - v.begin());
+  REQUIRE(ref - v.begin() == thrust::partition_point(v.begin(), v.end(), cuda::__is_even{}) - v.begin());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(test_partition_point);
 

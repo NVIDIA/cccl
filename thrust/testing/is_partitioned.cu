@@ -45,11 +45,11 @@ void test_is_partitioned()
   v[0] = 1;
   v[1] = 0;
 
-  REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  REQUIRE_FALSE(thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even{}));
 
   thrust::partition(v.begin(), v.end(), cuda::__is_even{});
 
-  REQUIRE(thrust::is_partitioned(v.begin(), v.end(), is_even<T>()));
+  REQUIRE(thrust::is_partitioned(v.begin(), v.end(), cuda::__is_even{}));
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(test_is_partitioned);
 
