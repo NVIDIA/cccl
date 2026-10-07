@@ -42,7 +42,7 @@ operations run inside a kernel, where you can combine them with your own
 code and reuse algorithms maintained and tuned for NVIDIA GPUs.
 
 The common Python API has integrations for Numba-CUDA-MLIR and CUTLASS
-CuTe DSL, using CUB and CUDAX underneath. Each programming guide describes
+CuTe DSL, using CUB underneath. Each programming guide describes
 the operations its compiler supports. You keep your compiler's kernel
 syntax and launch conventions for the surrounding code.
 
