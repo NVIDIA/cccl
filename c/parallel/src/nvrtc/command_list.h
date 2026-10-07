@@ -25,6 +25,7 @@
 
 #include <nvrtc/command_list_mixins.h>
 #include <nvrtc/nvjitlink_helper.h>
+#include <nvrtc/user_source_prelude.h>
 #include <util/errors.h>
 
 struct nvrtc_ptx
@@ -315,6 +316,7 @@ struct nvrtc2_top_level
 
     if (!user_program.empty())
     {
+      user_program = with_user_source_prelude(user_program);
       user_program_ltoir =
         begin_linking_nvrtc_program(context.jit.numOpts, context.jit.opts)
           ->add_program(nvrtc_translation_unit{user_program.c_str(), "user_tu"})

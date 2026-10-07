@@ -262,6 +262,67 @@ def test_unary_transform_negate():
     np.testing.assert_array_equal(d_output.copy_to_host(), -h_input)
 
 
+def test_unary_transform_bf16_to_half_with_cpp_op():
+    # Regression test for NVIDIA/cccl#11885. The CUDA 12.4 Update 1 cuda_bf16.h
+    # defines __half::__half(__nv_bfloat16) without `inline` under NVRTC, so an
+    # operator unit that includes it as is collides with the kernel's definition
+    # at link time. This is what a user compiling such an operator has to do:
+    # on NVRTC 12.4, include cuda_fp16.h first, then cuda_bf16.h with
+    # __CUDA_NO_HALF_CONVERSIONS__ defined, which skips just that definition;
+    # __half keeps all its conversions and the call resolves to the kernel's
+    # definition. Only on 12.4: from 12.5 on the kernel's definition is inline
+    # and, unused there, is not emitted, so skipping it here leaves the call
+    # unresolved. The iterator units cuda.compute compiles itself get the same
+    # treatment internally.
+    from cuda.core import Program, ProgramOptions
+
+    from cuda.compute._cpp_compile import _get_include_paths
+
+    source = """
+#include <cuda_fp16.h>
+#if defined(__CUDACC_RTC__) && (__CUDACC_VER_MAJOR__ == 12) && (__CUDACC_VER_MINOR__ == 4)
+#  define __CUDA_NO_HALF_CONVERSIONS__
+#  include <cuda_bf16.h>
+#  undef __CUDA_NO_HALF_CONVERSIONS__
+#else
+#  include <cuda_bf16.h>
+#endif
+extern "C" __device__ void bf16_to_half(const void* in, void* out) {
+  *static_cast<__half*>(out) = __half(*static_cast<const __nv_bfloat16*>(in));
+}
+"""
+    cc_major, cc_minor = get_compute_capability()
+    opts = ProgramOptions(
+        arch=f"sm_{cc_major}{cc_minor}",
+        relocatable_device_code=True,
+        link_time_optimization=True,
+        include_path=_get_include_paths(),
+    )
+    ltoir = Program(source, "c++", options=opts).compile("ltoir").code
+    op = RawOp(ltoir=ltoir, name="bf16_to_half")
+
+    num_items = 1000
+    # Every bfloat16 value with a magnitude in [1, 1000) is a normal half with
+    # room to spare for its 8 significand bits, so the conversion is exact and
+    # NumPy provides the expected values. The first four add negatives, an
+    # exact fraction and a value that only half overflows to infinity.
+    h_input = random_bfloat16(num_items, low=1.0, high=1000.0, seed=11)
+    h_input[1::2] = -h_input[1::2]
+    h_input[:4] = np.array([0.125, -2.5, 3.140625, 65536.0], dtype=BFLOAT16)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(num_items, np.float16)
+
+    cuda.compute.unary_transform(
+        d_in=d_input,
+        d_out=d_output,
+        op=op,
+        num_items=num_items,
+    )
+
+    expected = h_input.astype(np.float32).astype(np.float16)
+    np.testing.assert_array_equal(d_output.copy_to_host(), expected)
+
+
 def test_binary_transform_plus():
     # 0/1 inputs keep every sum exactly representable in bfloat16.
     num_items = 200
