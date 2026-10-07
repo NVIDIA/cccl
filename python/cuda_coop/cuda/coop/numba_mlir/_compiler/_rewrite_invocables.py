@@ -207,7 +207,7 @@ class _InvocableRewrite:
         self._prebundled_specializations = {}
         if not matches:
             return
-        unique_matches: dict[
+        matches_by_specialization: dict[
             tuple[str, tuple[tuple[str, str, str], ...]], _RewriteMatch
         ] = {}
         for match in matches:
@@ -216,22 +216,24 @@ class _InvocableRewrite:
                 match.factory_metadata,
                 match.factory_kwargs,
             )
-            if key not in unique_matches:
-                unique_matches[key] = match
-        if len(unique_matches) < 2:
+            if key not in matches_by_specialization:
+                matches_by_specialization[key] = match
+        # Repeated calls already reuse one invocable; bundling only helps when
+        # there are distinct specializations to compile together.
+        if len(matches_by_specialization) < 2:
             return
         try:
             with collect_specializations() as collected:
-                for match in unique_matches.values():
+                for match in matches_by_specialization.values():
                     _ = match.factory(**match.factory_kwargs)
-            if len(collected) != len(unique_matches):
+            if len(collected) != len(matches_by_specialization):
                 return
             algorithms = []
             threads_by_algo = {}
             block_threads_by_algo = {}
             prebundled = {}
             for key, (algo, threads, block_threads) in zip(
-                unique_matches.keys(), collected
+                matches_by_specialization.keys(), collected
             ):
                 algorithms.append(algo)
                 prebundled[key] = (algo, threads, block_threads)
