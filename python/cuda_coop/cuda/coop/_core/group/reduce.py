@@ -2,12 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Choose a reduction implementation and describe its execution contract.
+"""Plan CUB block and warp reductions with leader-owned results.
 
-Full reductions with recognized built-in operators use CUDAX. Valid prefixes,
-explicit block algorithms, and other operators select CUB. That choice also
-determines whether a result can be broadcast, which group shapes are valid,
-and which arguments remain the caller's responsibility at runtime.
+The planner validates each group's CUB operand and algorithm constraints and
+carries explicit or implementation-owned scratch requirements to the backend.
 """
 
 from __future__ import annotations
@@ -42,8 +40,6 @@ from ._execution_requirements import (
 )
 from ._model import (
     ArgumentPrecondition,
-    CudaxCallDescription,
-    CudaxReturnKind,
     GroupLoweringPlan,
     GroupLoweringTarget,
     GroupOperandKind,
@@ -58,7 +54,7 @@ from ._model import (
     UnsupportedReasonCode,
 )
 
-_CUDAX_BUILTIN_REDUCE_OPERATORS = frozenset(
+_COMMUTATIVE_REDUCE_OPERATORS = frozenset(
     {
         "::cuda::std::plus<>",
         "::cuda::std::multiplies<>",
@@ -77,41 +73,21 @@ def _canonical_operator_cpp(operator: CxxOperator) -> str:
     return operator.cpp.strip().replace("<T>", "<>").removesuffix("{}")
 
 
-def _has_cudax_builtin_operator(operation: GroupReduceSemantics) -> bool:
-    """Check whether the shared planner recognizes a CUDAX built-in operator.
-
-    Sum is built in. Other reductions must name an allowed C++ operator;
-    Python and stateful operator descriptions take the CUB path instead.
-    """
-
-    if operation.operation is ReduceOperation.SUM:
-        return True
-    operator = operation.reduce_operator
-    return isinstance(operator, CxxOperator) and (
-        _canonical_operator_cpp(operator) in _CUDAX_BUILTIN_REDUCE_OPERATORS
-    )
-
-
 @dataclass(frozen=True, eq=False)
 class GroupReduceSemantics:
-    """Add group result visibility and algorithm selection to a reduction.
-
-    ``primitive`` describes each thread's inputs and the reduction operator.
-    ``broadcast`` requests the result for all members; false defines it only
-    for rank zero. ``cub_algorithm`` selects a CUB BlockReduce algorithm.
-    The planner checks whether the chosen implementation can meet these
-    requests after resolving the group's shape.
-    """
+    """Describe a CUB reduction and its scratch allocation policy."""
 
     primitive: ReduceSemantics
-    broadcast: bool = True
     cub_algorithm: BlockReduceAlgorithm | str | None = None
+    storage_ownership: StorageOwnership = StorageOwnership.IMPLEMENTATION
+    storage_sharing: str | None = None
+    storage_size_in_bytes: int | None = None
+    storage_alignment: int | None = None
+    storage_auto_sync: bool = True
 
     def __post_init__(self) -> None:
         if not isinstance(self.primitive, ReduceSemantics):
             raise TypeError("primitive must be ReduceSemantics")
-        if not isinstance(self.broadcast, bool):
-            raise TypeError("broadcast must be a bool")
         if self.cub_algorithm is not None:
             try:
                 algorithm = normalize_block_reduce_algorithm(self.cub_algorithm)
@@ -121,6 +97,37 @@ class GroupReduceSemantics:
                     f"{self.cub_algorithm!r}"
                 ) from exc
             object.__setattr__(self, "cub_algorithm", algorithm)
+        object.__setattr__(
+            self, "storage_ownership", StorageOwnership(self.storage_ownership)
+        )
+        if self.storage_ownership is StorageOwnership.NONE:
+            raise ValueError("CUB reductions require scratch storage")
+        if self.storage_sharing not in {None, "shared", "exclusive"}:
+            raise ValueError("storage_sharing must be shared or exclusive")
+        for name in ("storage_size_in_bytes", "storage_alignment"):
+            value = getattr(self, name)
+            if value is not None and (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value <= 0
+            ):
+                raise ValueError(f"{name} must be a positive integer or None")
+        if not isinstance(self.storage_auto_sync, bool):
+            raise TypeError("storage_auto_sync must be a bool")
+        if self.storage_ownership is StorageOwnership.IMPLEMENTATION:
+            if any(
+                value is not None
+                for value in (
+                    self.storage_sharing,
+                    self.storage_size_in_bytes,
+                    self.storage_alignment,
+                )
+            ):
+                raise ValueError(
+                    "implementation-owned storage cannot carry caller requests"
+                )
+        elif self.storage_sharing is None:
+            raise ValueError("caller-owned storage requires storage_sharing")
 
     @property
     def dtype(self) -> Any:
@@ -149,22 +156,8 @@ class GroupReduceSemantics:
         return self.primitive.reduce_operator
 
     @property
-    def requests_cub(self) -> bool:
-        """Select CUB for controls or operators outside the CUDAX path."""
-
-        return (
-            self.cub_algorithm is not None
-            or self.primitive.has_valid_items
-            or not _has_cudax_builtin_operator(self)
-        )
-
-    @property
     def result_visibility(self) -> ResultVisibility:
-        return (
-            ResultVisibility.ALL_MEMBERS
-            if self.broadcast
-            else ResultVisibility.GROUP_ROOT
-        )
+        return ResultVisibility.GROUP_ROOT
 
     @property
     def returns_value(self) -> bool:
@@ -174,8 +167,12 @@ class GroupReduceSemantics:
     def semantic_key(self) -> tuple[Any, ...]:
         return (
             self.primitive.semantic_key,
-            self.broadcast,
             None if self.cub_algorithm is None else self.cub_algorithm.value,
+            self.storage_ownership.value,
+            self.storage_sharing,
+            self.storage_size_in_bytes,
+            self.storage_alignment,
+            self.storage_auto_sync,
         )
 
     def __eq__(self, other: object) -> bool:
@@ -193,8 +190,7 @@ def _call_classifications(
     """Separate input values from controls used to build the implementation.
 
     The payload is always a runtime input. Operator and count descriptions
-    determine their own binding kinds. Broadcast and algorithm selection
-    remain static controls even when their default values are used.
+    determine their own binding kinds. Algorithm selection remains static.
     """
 
     classifications = [
@@ -224,9 +220,6 @@ def _call_classifications(
     classifications.extend(
         (
             ParameterClassification(
-                "broadcast", ArgumentKind.STATIC, ParameterRole.CONSTANT
-            ),
-            ParameterClassification(
                 "algorithm", ArgumentKind.STATIC, ParameterRole.CONSTANT
             ),
         )
@@ -235,27 +228,18 @@ def _call_classifications(
 
 
 def _result_contract(operation: GroupReduceSemantics) -> ResultContract:
-    """Describe who owns the single reduced value and where it is defined.
+    """Define the reduced scalar only at group rank zero."""
 
-    A broadcast gives each member one scalar result. Otherwise only group
-    rank zero owns a defined result; other members cannot use that value.
-    """
-
-    is_root_only = operation.result_visibility is ResultVisibility.GROUP_ROOT
     return ResultContract(
         (
             LogicalResultContract(
                 name="value",
                 dtype=operation.dtype,
-                visibility=operation.result_visibility,
-                ownership=(
-                    ResultOwnership.GROUP_ROOT
-                    if is_root_only
-                    else ResultOwnership.EACH_MEMBER
-                ),
+                visibility=ResultVisibility.GROUP_ROOT,
+                ownership=ResultOwnership.GROUP_ROOT,
                 operand_kind=GroupOperandKind.SCALAR,
                 items_per_member=1,
-                root_rank=0 if is_root_only else None,
+                root_rank=0,
             ),
         )
     )
@@ -274,74 +258,7 @@ def _has_proven_commutative_reduce_operator(
         return True
     operator = operation.reduce_operator
     return isinstance(operator, CxxOperator) and (
-        _canonical_operator_cpp(operator) in _CUDAX_BUILTIN_REDUCE_OPERATORS
-    )
-
-
-def _plan_cudax_reduce(
-    call: GroupPrimitiveCall,
-    resolved: ThreadGroup,
-    launch: LaunchFacts,
-    operation: GroupReduceSemantics,
-) -> GroupLoweringPlan:
-    """Describe a full-group CUDAX reduction with its result visibility.
-
-    Exact block dimensions are needed to construct the hierarchy. Each
-    per-thread payload item becomes a scalar C++ argument. Root-only calls
-    return an optional result; broadcast calls return a value for every
-    member. No caller-provided scratch operand is part of this call contract.
-    """
-
-    if launch.exact_block_dim is None:
-        return _unsupported(
-            call,
-            resolved,
-            UnsupportedReasonCode.MISSING_EXACT_BLOCK_DIM,
-            "hierarchy Reduce topology requires exact block dimensions",
-        )
-    implementation = CudaxCallDescription(
-        primitive="reduce",
-        header="cuda/experimental/coop/algorithm",
-        namespace="cuda::experimental::coop",
-        overload="broadcasted" if operation.broadcast else "root_only",
-        parameters=tuple(
-            ParameterClassification(
-                f"item{index}",
-                ArgumentKind.RUNTIME,
-                ParameterRole.INPUT,
-            )
-            for index in range(operation.items_per_thread)
-        ),
-        return_kind=(
-            CudaxReturnKind.VALUE
-            if operation.broadcast
-            else CudaxReturnKind.OPTIONAL_VALUE
-        ),
-    )
-    result = _result_contract(operation)
-    requirements = _build_execution_requirements(
-        resolved,
-        launch,
-        storage_ownership=StorageOwnership.NONE,
-        cpp_type=None,
-        auto_sync=False,
-    )
-    return GroupLoweringPlan(
-        target=GroupLoweringTarget.CUDAX_GROUP,
-        call=call,
-        resolved_group=resolved,
-        implementation=implementation,
-        topology=requirements.topology,
-        participation=requirements.participation,
-        result=result,
-        synchronization=requirements.synchronization,
-        temp_storage=requirements.temp_storage,
-        provenance=ImplementationProvenance(
-            library="CUDAX",
-            header=implementation.header,
-            cpp_class=implementation.namespace,
-            method="reduce",
-        ),
+        _canonical_operator_cpp(operator) in _COMMUTATIVE_REDUCE_OPERATORS
     )
 
 
@@ -353,7 +270,7 @@ def _plan_cub_reduce(
 ) -> GroupLoweringPlan:
     """Plan a direct CUB reduction and record its limits for the backend.
 
-    CUB defines the result at the group root, so reject broadcast requests.
+    CUB defines the result at the group root.
     Blocks support scalar or array inputs; physical and logical warps use
     scalar inputs. Reject group shapes, algorithms, and operator combinations
     that this path cannot implement.
@@ -362,7 +279,7 @@ def _plan_cub_reduce(
     the operation and the plan's call, making it part of the semantic key.
 
     Validate static prefix counts here. Runtime counts remain a caller
-    precondition recorded in the core plan. The backend owns CUB scratch.
+    precondition recorded in the core plan. The backend plans CUB scratch.
     Counts must be uniform across the group. Where a backend supports
     stateful callbacks, their runtime state must also be uniform; the core
     descriptor alone does not establish that support.
@@ -377,13 +294,16 @@ def _plan_cub_reduce(
             "supported only for physical block, physical-warp, and "
             "logical-warp groups",
         )
-    if operation.broadcast:
+    if (
+        resolved.kind != "block"
+        and operation.storage_ownership is StorageOwnership.CALLER
+    ):
         return _unsupported(
             call,
             resolved,
-            UnsupportedReasonCode.CUB_BROADCAST,
-            "direct CUB Reduce returns a defined value only at the group root; "
-            "it cannot satisfy broadcast=True",
+            UnsupportedReasonCode.OPERATION_VARIANT,
+            "explicit temp_storage is supported only for block reductions; "
+            "omit temp_storage for warp reductions",
         )
 
     if operation.valid_items.kind is BindingKind.STATIC:
@@ -486,8 +406,12 @@ def _plan_cub_reduce(
     requirements = _build_execution_requirements(
         resolved,
         launch,
-        storage_ownership=StorageOwnership.IMPLEMENTATION,
+        storage_ownership=operation.storage_ownership,
         cpp_type=None,
+        storage_sharing=operation.storage_sharing,
+        requested_size_in_bytes=operation.storage_size_in_bytes,
+        requested_alignment=operation.storage_alignment,
+        auto_sync=operation.storage_auto_sync,
         uniform_arguments=(
             *(
                 ("binary_op",)
@@ -537,36 +461,14 @@ def _plan_cub_reduce(
     )
 
 
-def _plan_reduce(
-    call: GroupPrimitiveCall,
-    resolved: ThreadGroup,
-    launch: LaunchFacts,
-    operation: GroupReduceSemantics,
-) -> GroupLoweringPlan:
-    """Route a resolved reduction to the implementation its controls select."""
-
-    if operation.requests_cub:
-        return _plan_cub_reduce(call, resolved, launch, operation)
-    return _plan_cudax_reduce(call, resolved, launch, operation)
-
-
 _register_group_operation_family(
     GroupReduceSemantics,
     classifications=_call_classifications,
-    planner=_plan_reduce,
-    group_kinds=frozenset(
-        {
-            "thread",
-            "warp",
-            "threads_within_warp",
-            "block",
-            "warps_within_block",
-            "cluster",
-        }
-    ),
+    planner=_plan_cub_reduce,
+    group_kinds=frozenset({"warp", "threads_within_warp", "block"}),
     unsupported_group_message=(
-        "cuda.coop Reduce does not support grid groups because grid reduction "
-        "requires hidden per-launch workspace"
+        "cuda.coop Reduce supports only block, physical-warp, and "
+        "logical-warp groups"
     ),
 )
 

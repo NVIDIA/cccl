@@ -12,7 +12,6 @@
   const threads = 8;
   const choice = (value, label) => ({ value, label });
   const scope_choices = [choice("block", "Block"), choice("warp", "Physical warp"), choice("logical_warp", "Threads within a warp")];
-  const reduce_scopes = [...scope_choices, choice("thread", "One thread"), choice("mapped_warps", "Warps within a block"), choice("cluster", "Two-block cluster")];
   const block_reduce_algorithms = [
     { id: "raking_commutative_only", label: "Raking, commutative", tag: "CUB · root result" },
     { id: "raking", label: "Raking", tag: "CUB · root result" },
@@ -20,8 +19,8 @@
   ];
   function group_width(scope) {
     // Scale physical and logical warps to four and two teaching threads.
-    // Blocks, mapped-warp groups, and clusters span all eight threads.
-    return scope === "thread" ? 1 : scope === "logical_warp" ? 2 : scope === "warp" ? 4 : threads;
+    // Blocks span all eight teaching threads.
+    return scope === "logical_warp" ? 2 : scope === "warp" ? 4 : threads;
   }
 
   function input_values(count, operator) {
@@ -52,20 +51,15 @@
   }
 
   function reduce_algorithms(state) {
-    // Prefixes and callbacks select CUB paths with a root-only result.
-    // Full built-in reductions can use the hierarchy-aware group path.
-    const direct_cub = state.operator === "custom_max" || state.valid === "half";
-    const automatic = { id: "group", label: "Group reduction", tag: "Built-in · hierarchy-aware ownership" };
     if (state.scope !== "block") {
-      return direct_cub ? [{ id: "warp", label: "Warp reduction", tag: "CUB · root result" }] : [automatic];
+      return [{ id: "warp", label: "Warp reduction", tag: "CUB · root result" }];
     }
-    if (state.ownership === "broadcast") return [automatic];
-    return state.operator === "custom_max" ? block_reduce_algorithms.filter(option => option.id !== "raking_commutative_only") : direct_cub ? block_reduce_algorithms : [automatic, ...block_reduce_algorithms];
+    return state.operator === "custom_max" ? block_reduce_algorithms.filter(option => option.id !== "raking_commutative_only") : block_reduce_algorithms;
   }
 
   function build_reduce(state) {
     // Keep every thread visible. A valid prefix limits contributions, not
-    // participation, and result ownership is a separate choice.
+    // participation. Only the group root owns the result.
     const items = Number(state.items);
     const width = group_width(state.scope);
     const valid = state.valid === "half" ? width / 2 : width;
@@ -96,27 +90,25 @@
       }
     }
     const results = partials.map((_, thread) => {
-      const defined = state.ownership === "broadcast" || thread % width === 0;
+      const defined = thread % width === 0;
       const value = defined ? totals[Math.floor(thread / width)] : null;
       return token(`result${thread}`, value, "output", thread,
-        defined ? `T${thread} receives group aggregate ${value}.` : `T${thread}: no defined result with broadcast=False. Do not read this return value.`,
+        defined ? `T${thread} receives group aggregate ${value}.` : `T${thread}: no defined result outside group rank zero. Do not read this return value.`,
         Math.floor(thread / width) * width, { row: "combined", index: Math.floor(thread / width) * width });
     });
     const algorithm = reduce_algorithms(state).find(value => value.id === state.algorithm);
     const notes = [
       "Every member participates, including ranks outside a valid prefix. Only the selected prefix contributes to the aggregate.",
-      state.ownership === "broadcast" ? "The built-in group path broadcasts one aggregate to every member." : "With broadcast=False, only rank zero of each group has a defined return value; ? marks every other return.",
+      "Only rank zero of each group has a defined return value; ? marks every other return.",
       "The partial-combine rows show an illustrative legal reduction tree, not a CUB instruction trace. Floating-point results can depend on combination order.",
     ];
-    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir, with broadcast=False; the common API accepts built-in operator names.");
-    if (state.scope === "cluster") notes.push("Cluster reduction is implemented for compute capability 9.0 or newer and requires a cluster launch. The picture uses two teaching blocks; grid reduction is unsupported.");
-    if (state.scope === "mapped_warps") notes.push("this_block().group_by(2) selects groups of two physical warps (64 threads in executable code); it does not select two individual threads.");
+    if (state.operator === "custom_max") notes.push("Custom max uses a device callback through cuda.coop.numba_mlir; the common API accepts built-in operator names.");
     return {
       detail: `${algorithm.label}: ${state.scope.replaceAll("_", " ")} groups combine ${valid * items} values using ${state.operator === "sum" ? "sum" : "maximum"}.`,
       rows: [
         { id: "input", label: "Input registers · blocked items", count: values.length, groups: groups(items) },
         { id: "local", label: "Local fold · one partial per thread", count: threads, groups: groups(1) },
-        { id: "combined", label: state.scope === "cluster" ? "Combine block partials inside a cluster" : "Cooperative combine · illustrative partials", count: threads },
+        { id: "combined", label: "Cooperative combine · illustrative partials", count: threads },
         { id: "output", label: "Return values · ? is undefined", count: threads, groups: groups(1) },
       ],
       phases: [
@@ -126,8 +118,8 @@
         { label: "Result ownership", description: notes[1], tokens: results },
       ],
       notes,
-      summary: `Group aggregates: [${totals.join(", ")}]. ${state.ownership === "broadcast" ? "Every group member receives its aggregate." : "Only each group's rank zero may use its returned aggregate."}`,
-      caption: "Eight teaching threads represent the ownership pattern. Displayed physical warps have four lanes, logical warps two; CUDA physical warps have 32 lanes. Cluster mode groups two illustrative blocks of four threads. Values and prefixes are mathematical examples, not performance measurements.",
+      summary: `Group aggregates: [${totals.join(", ")}]. Only each group's rank zero may use its returned aggregate.`,
+      caption: "Eight teaching threads represent the ownership pattern. Displayed physical warps have four lanes, logical warps two; CUDA physical warps have 32 lanes. Values and prefixes are mathematical examples, not performance measurements.",
     };
   }
 
@@ -135,11 +127,10 @@
     title: "Follow a cooperative reduction", eyebrow: "Values to an aggregate", defaultAlgorithm: "raking",
     algorithms: reduce_algorithms,
     controls: [
-      { id: "scope", label: "Group", value: "block", choices: reduce_scopes },
-      { id: "operator", label: "Operator", value: "sum", choices: state => [choice("sum", "Sum"), choice("max", "Maximum"), ...(["block", "warp", "logical_warp"].includes(state.scope) ? [choice("custom_max", "Custom maximum callback")] : [])] },
-      { id: "items", label: "Items per thread", value: "2", choices: state => state.operator === "custom_max" && state.scope !== "block" ? ["1"] : ["1", "2", "4"] },
-      { id: "valid", label: "Contributing ranks", value: "full", choices: state => [choice("full", "All group members"), ...(state.items === "1" && ["block", "warp", "logical_warp"].includes(state.scope) ? [choice("half", "First half (valid_items)")] : [])] },
-      { id: "ownership", label: "Return ownership", value: "root", choices: state => [choice("root", "Rank zero only"), ...(state.operator !== "custom_max" && state.valid === "full" ? [choice("broadcast", "All members (broadcast)")] : [])] },
+      { id: "scope", label: "Group", value: "block", choices: scope_choices },
+      { id: "operator", label: "Operator", value: "sum", choices: [choice("sum", "Sum"), choice("max", "Maximum"), choice("custom_max", "Custom maximum callback")] },
+      { id: "items", label: "Items per thread", value: "2", choices: state => state.scope === "block" ? ["1", "2", "4"] : ["1"] },
+      { id: "valid", label: "Contributing ranks", value: "full", choices: state => [choice("full", "All group members"), ...(state.items === "1" ? [choice("half", "First half (valid_items)")] : [])] },
     ],
     build: build_reduce,
   });

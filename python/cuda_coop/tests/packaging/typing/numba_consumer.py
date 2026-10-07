@@ -79,7 +79,6 @@ def check_numba_surface(
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
     mapped_warps = block.group_by(2)
-    cluster = coop.this_cluster()
     byte_values = coop.ThreadData(items_per_thread=1, dtype=np.int8)
     values = coop.ThreadData(items_per_thread=2, dtype=np.uint16, alignment=16)
     ranks = coop.ThreadData(items_per_thread=2, dtype=np.int32)
@@ -253,16 +252,16 @@ def check_numba_surface(
         coop.reduce(logical_warp, np.float32(4), binary_op="max"),
         np.float32,
     )
-    assert_type(coop.sum(mapped_warps, np.uint32(4)), np.uint32)
-    assert_type(coop.reduce(cluster, values, binary_op="min"), np.uint16)
+    assert_type(coop.sum(warp, np.uint32(4)), np.uint32)
+    assert_type(coop.reduce(block, values, binary_op="min"), np.uint16)
     assert_type(
-        coop.reduce(cluster, readonly_values, binary_op="min"),
+        coop.reduce(block, readonly_values, binary_op="min"),
         np.uint16,
     )
-    assert_type(coop.sum(cluster, readonly_values), np.uint16)
-    assert_type(coop.reduce(cluster, values, binary_op=np.maximum), np.uint16)
+    assert_type(coop.sum(block, readonly_values), np.uint16)
+    assert_type(coop.reduce(block, values, binary_op=np.maximum), np.uint16)
     assert_type(
-        coop.reduce(mapped_warps, np.int32(4), binary_op=operator.add),
+        coop.reduce(logical_warp, np.int32(4), binary_op=operator.add),
         np.int32,
     )
     assert_type(
@@ -270,7 +269,6 @@ def check_numba_surface(
             block,
             np.int32(4),
             binary_op="max",
-            broadcast=False,
             algorithm="raking_commutative_only",
         ),
         np.int32,
@@ -280,7 +278,6 @@ def check_numba_surface(
             block,
             np.int32(4),
             binary_op=np.maximum,
-            broadcast=False,
             algorithm="raking_commutative_only",
         ),
         np.int32,
@@ -290,21 +287,20 @@ def check_numba_surface(
             block,
             np.int32(4),
             binary_op=operator.add,
-            broadcast=False,
             algorithm="raking_commutative_only",
         ),
         np.int32,
     )
     assert_type(
-        coop.sum(warp, np.int32(4), broadcast=False, valid_items=np.int32(7)),
+        coop.sum(warp, np.int32(4), valid_items=np.int32(7)),
         np.int32,
     )
     assert_type(
-        coop.sum(block, values, broadcast=False, algorithm="raking"),
+        coop.sum(block, values, algorithm="raking"),
         np.uint16,
     )
     assert_type(
-        coop.sum(block, readonly_values, broadcast=False, algorithm="raking"),
+        coop.sum(block, readonly_values, algorithm="raking"),
         np.uint16,
     )
     assert_type(
@@ -312,7 +308,6 @@ def check_numba_surface(
             warp,
             np.int32(4),
             binary_op=_select_left_int32,
-            broadcast=False,
         ),
         np.int32,
     )
@@ -321,7 +316,6 @@ def check_numba_surface(
             block,
             values,
             binary_op=_select_left_uint16,
-            broadcast=False,
             algorithm="warp_reductions",
         ),
         np.uint16,
@@ -331,7 +325,6 @@ def check_numba_surface(
             block,
             readonly_values,
             binary_op=_select_left_uint16,
-            broadcast=False,
             algorithm="warp_reductions",
         ),
         np.uint16,
@@ -341,8 +334,12 @@ def check_numba_surface(
             block,
             np.int32(4),
             binary_op=_select_left_int32,
-            broadcast=False,
             algorithm="raking",
         ),
+        np.int32,
+    )
+    assert_type(coop.sum(block, values, temp_storage=storage), np.uint16)
+    assert_type(
+        coop.reduce(block, np.int32(4), binary_op="max", temp_storage=storage),
         np.int32,
     )

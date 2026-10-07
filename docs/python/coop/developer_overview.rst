@@ -7,7 +7,7 @@
 ``cuda.coop`` Developer Overview
 ================================
 
-``cuda.coop`` makes CUB and CUDAX cooperative primitives callable inside a
+``cuda.coop`` makes CUB cooperative primitives callable inside a
 Python GPU kernel. The Python compiler compiles the surrounding kernel;
 ``cuda.coop`` generates the C++ device functions for its primitive calls.
 The two are linked together before the kernel runs.
@@ -75,24 +75,23 @@ Positional operands and keyword-only options
 
 Primitive calls take the participating group first, followed by their data
 operands. These arguments are positional-only. Options such as
-``algorithm``, ``valid_items``, and ``broadcast`` are keyword-only:
+``algorithm``, ``valid_items``, and ``temp_storage`` are keyword-only:
 
 .. code-block:: python
 
    total = coop.sum(block, value)
-   leader_total = coop.sum(block, value, broadcast=False)
+   total = coop.sum(block, value, temp_storage=scratch)
    coop.load(block, source, items, algorithm="direct", valid_items=n)
 
 Reduction usually needs just a group and a value. Load and Store add a
 source or destination. This short operand list keeps primitive calls
 compact inside a kernel, while named options make choices such as
-partial-tile handling and result broadcasting explicit. New optional
+partial-tile handling and temporary storage ownership explicit. New optional
 keyword parameters can be added without changing existing calls.
 
 In the API reference, ``/`` marks the end of the positional-only arguments
 and ``*`` introduces keyword-only parameters. For example, pass the group
-and value as ``coop.sum(block, value)``, and select result broadcasting with
-``broadcast=False``. With that option, only group rank zero has a defined
+and value as ``coop.sum(block, value)``. Only group rank zero has a defined
 result; every member must still participate in the call.
 
 ``cuda.compute`` uses keyword-only parameters for all its algorithms, as
@@ -849,7 +848,7 @@ The plan records more than the selected CUB class:
    * - Synchronization
      - Which barrier is required before another call can reuse scratch.
    * - Implementation
-     - The CUB specialization or CUDAX call, along with its source library
+     - The CUB specialization, along with its source library
        and header.
 
 A supported plan must contain its execution requirements. The shared
@@ -873,15 +872,14 @@ parameters without compiler types. Parameter descriptors such as ``Value``,
 ``Pointer``, and ``Array`` describe the method's arguments. For example,
 ``Array`` records a parameter's type and extent; ``ThreadData`` constructs
 the payload passed to that parameter. ``NumbaMlirCoreAdapter`` maps the
-core types and parameter descriptors to the Numba backend's representation. CUDAX group
-calls use a separate call description and generated wrapper.
+core types and parameter descriptors to the Numba backend's representation.
 
-Reduce illustrates why implementation selection belongs in the family
-planner. Full reductions with supported built-in operators use CUDAX's
-hierarchy-aware implementation. Prefix reductions, explicit CUB algorithm
-selection, and qualified custom operators take supported CUB paths. The
-same public operation can therefore have different implementation and
-storage requirements depending on its arguments.
+Reduce uses CUB BlockReduce for blocks and CUB WarpReduce for physical or
+power-of-two logical warps. The family planner checks the operand form and
+records scratch requirements. Block reductions accept scalar or array inputs
+and an optional ``TempStorage`` descriptor; warp reductions accept scalars
+and use compiler-managed scratch. Both return a result defined only at rank
+zero of the group.
 
 Construct ``Algorithm(..., template_arguments={...})`` with the template
 arguments and auxiliary dependency values. Construction validates and
@@ -934,10 +932,8 @@ The result contracts preserve the following public behavior:
   in place. Invalid Load slots are unspecified unless a default is supplied.
 * Exchange and array Shuffle return fresh payloads. Their inputs remain
   available to subsequent kernel code.
-* Reduce returns a scalar. The default ``broadcast=True`` makes the result
-  available throughout the group. With ``broadcast=False``, only group
-  rank zero has a defined result, although every required thread must
-  still participate.
+* Reduce returns a scalar defined only at group rank zero. Every required
+  thread must still participate.
 
 Output ownership is part of lowering. A CUB method that overwrites an
 array does not, by itself, implement a Python operation that promises to
@@ -1084,22 +1080,19 @@ the rewrite rejects user dynamic or runtime-sized shared allocations alongside
 cooperative backing, and user static shared allocations when cooperative
 backing becomes dynamic. It inspects user allocations after helper inlining,
 including aliases and implicit oversized cooperative scratch. Static/static
-combinations remain valid. CUDAX Block, Cluster, and mapped-Warp reductions
-have internal static shared allocations despite having no scratch operand;
-the same guard rejects their coexistence with user dynamic shared arrays or
-dynamic cooperative backing.
-Their internal storage also counts toward the kernel's shared-memory limit.
+combinations remain valid. Reduce scratch participates in the same planner
+as other CUB operations, including when ``temp_storage`` is omitted.
 Diagnostics identify both allocations and suggest keeping them static within
 the device limit, moving the user buffer to global memory, or using separate
 kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
-These controls are operation-specific. Warp Load/Store uses
+These controls are operation-specific. Warp Load/Store and Warp Reduce use
 compiler-owned storage and reject an explicit ``TempStorage``. Exchange
-and Shuffle also manage their own scratch in the current API. CUDAX
-Reduce manages scratch inside its generated C++ implementation, so an
-absence of a leading scratch pointer does not mean the reduction uses no
-shared memory.
+and Shuffle also manage their own scratch in the current API. Block Reduce
+accepts ``temp_storage`` with the same layout and synchronization policy as
+Block Load/Store. Omitting it selects compiler-owned storage with automatic
+synchronization; an explicit descriptor defaults to caller synchronization.
 
 
 .. _coop-numba-compilation-reuse:
@@ -1721,7 +1714,7 @@ Paths below are relative to ``python/cuda_coop/cuda/coop/``:
    * - ``numba_mlir/_compiler/_rewrite.py`` and ``_rewrite_*.py``
      - Materialize payloads, invocables, result handling, and storage.
    * - ``numba_mlir/_lowering/``
-     - Translate core specializations and generate CUB or CUDAX providers.
+     - Translate core specializations and generate CUB providers.
    * - ``numba_mlir/_types.py``
      - Device ABIs, Python operator compilation, source generation, and
        invocable link inputs.

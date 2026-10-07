@@ -31,7 +31,6 @@ _core_this_warp = this_warp
 # These names support explicit imports used by the adjacent typing stubs. They
 # are overload helpers, not additional root-package exports.
 MemoryGroup = ThreadGroup
-ReductionGroup = ThreadGroup
 BlockGroup = ThreadGroup
 WarpGroup = ThreadGroup
 
