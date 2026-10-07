@@ -42,11 +42,20 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
 using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
-static_assert(cub::detail::is_deferred_v<deferred_count_t>);
-static_assert(!cub::detail::is_deferred_v<int32_t>);
-static_assert(cub::detail::is_num_items_v<deferred_count_t>);
-static_assert(cub::detail::is_num_items_v<int32_t>);
+static_assert(cuda::args::__is_deferred_v<deferred_count_t>);
+static_assert(!cuda::args::__is_deferred_v<int32_t>);
+static_assert(cub::detail::is_integral_or_deferred_v<deferred_count_t>);
+static_assert(cub::detail::is_integral_or_deferred_v<int32_t>);
+static_assert(cub::detail::is_integral_or_deferred_v<cuda::args::immediate<int32_t>>);
+static_assert(
+  cub::detail::is_integral_or_deferred_v<cuda::args::immediate<int64_t, cuda::args::static_bounds<0, 1000>>>);
+static_assert(!cub::detail::is_integral_or_deferred_v<cuda::args::immediate<float>>);
+static_assert(!cub::detail::is_integral_or_deferred_v<cuda::args::immediate<int32_t*>>);
+static_assert(!cub::detail::is_integral_or_deferred_v<cuda::std::execution::env<>>);
 static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<int32_t>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<cuda::args::immediate<int32_t>>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<cuda::args::immediate<int64_t>>, unsigned long long>);
 
 using scan_value_t = int32_t;
 using count_t      = int32_t;
@@ -66,25 +75,16 @@ struct small_batch_policy_selector
   }
 };
 
-template <typename InputT, typename OutputT, typename AccumT, typename ScanOpT>
-struct lookahead_preferred_policy_selector
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
-  {
-    auto policy      = small_batch_policy_selector<InputT, OutputT, AccumT, ScanOpT>{}(cc);
-    policy.algorithm = cub::ScanAlgorithm::lookahead;
-    policy.lookahead = cub::ScanLookaheadPolicy{4, 79, 3};
-    return policy;
-  }
-};
+using default_deferred_int_policy = cub::detail::scan::
+  policy_selector_from_types<const scan_value_t*, scan_value_t*, scan_value_t, uint32_t, cuda::std::plus<>, false, true>;
+static_assert(default_deferred_int_policy{}(cuda::compute_capability{10, 0}).algorithm == cub::ScanAlgorithm::lookback);
 
-using lookahead_preferred_int_policy =
-  lookahead_preferred_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>;
-static_assert(lookahead_preferred_int_policy{}(cuda::compute_capability{10, 0}).algorithm
-              == cub::ScanAlgorithm::lookahead);
-static_assert(
-  cub::detail::scan::deferred_policy_selector<lookahead_preferred_int_policy>{}(cuda::compute_capability{10, 0}).algorithm
-  == cub::ScanAlgorithm::lookback);
+using default_stable_deferred_float_policy =
+  cub::detail::scan::policy_selector_from_types<const float*, float*, float, uint32_t, cuda::std::plus<>, true, true>;
+static_assert(default_stable_deferred_float_policy{}(cuda::compute_capability{9, 0}).algorithm
+              == cub::ScanAlgorithm::lookback);
+static_assert(default_stable_deferred_float_policy{}(cuda::compute_capability{10, 0}).algorithm
+              == cub::ScanAlgorithm::lookback);
 
 struct is_even_t
 {
@@ -362,7 +362,7 @@ CUB_TEST("DeviceScan::InclusiveScanInit accepts a deferred num_items", "[device]
   check();
 }
 
-CUB_TEST("DeviceScan with a deferred size forces a lookahead policy to lookback", "[device][scan][deferred]", CUB_SMALL)
+CUB_TEST("DeviceScan with a deferred size accepts a custom lookback policy", "[device][scan][deferred]", CUB_SMALL)
 {
   constexpr count_t capacity  = 10'000;
   constexpr count_t num_items = 1'000;
@@ -372,7 +372,8 @@ CUB_TEST("DeviceScan with a deferred size forces a lookahead policy to lookback"
   c2h::device_vector<scan_value_t> output(capacity, scan_value_t{-1});
 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
-  const auto env   = cuda::execution::tune(lookahead_preferred_int_policy{});
+  const auto env =
+    cuda::execution::tune(small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count, env));
   for (count_t i = 0; i < num_items; ++i)
