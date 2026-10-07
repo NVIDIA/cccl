@@ -125,6 +125,12 @@ copy of each large trace. Their raw current and baseline traces remain available
 as artifacts and can be processed with `prepare_traces.py` after download. The
 wrapper still prepares Perfetto copies by default for interactive runs.
 
+PyTorch uses the CUDA 13.4/GCC 14 environment defined in
+`pytorch-devcontainer.json`: CUDA 13.3 PTXAS fails when reading its largest
+profiling traces. Its CI entry passes `-summary-jobs 1` because individual
+traces can exceed 20 GB. This option controls reporting workers independently
+of build parallelism and applies the configured slices to each trace pair.
+
 CI uploads reports and raw traces from their build locations, avoiding another
 local copy before artifact upload. RAPIDS trace collection assigns nested
 projects, such as `cudf_kafka`, to their own labels instead of duplicating

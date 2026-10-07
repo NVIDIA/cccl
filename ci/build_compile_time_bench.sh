@@ -24,6 +24,7 @@ current_snapshot_ref=""
 current_cccl_commit=""
 max_detail_len=180
 cloc_processes=0
+summary_jobs=""
 
 declare -a build_targets=()
 declare -a event_args=()
@@ -84,6 +85,7 @@ Summary options:
                               (default: <preset-build-dir>/compile_time/perfetto_traces)
   -max-detail-len <n>         Max promoted detail length for Perfetto traces (default: 180)
   -cloc-processes <n>         cloc process count for generated-TU summary CSV
+  -summary-jobs <n>           Worker processes used to summarize trace files
   -ctadvisor                  Print ctadvisor report for raw traces
 
 Event summary args:
@@ -248,10 +250,16 @@ while (($#)); do
     -perfetto-output) perfetto_output_dir="$2"; shift 2 ;;
     -max-detail-len) max_detail_len="$2"; shift 2 ;;
     -cloc-processes) cloc_processes="$2"; shift 2 ;;
+    -summary-jobs) summary_jobs="$2"; shift 2 ;;
     --) shift; event_args+=("$@"); break ;;
     *) common_args+=("$1"); shift ;;
   esac
 done
+
+if [[ -n "${summary_jobs}" && ! "${summary_jobs}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "error: -summary-jobs must be a positive integer" >&2
+  exit 1
+fi
 
 if [[ "${project}" != "cccl" && "${#common_args[@]}" -ne 0 ]]; then
   echo "error: ci/build_common.sh options are only available for cccl" >&2
@@ -597,6 +605,9 @@ fi
 declare -a summary_args=("${event_args[@]}")
 if ((${#summary_args[@]} == 0)); then
   summary_args=(-f file-processing -e -n 15)
+fi
+if [[ -n "${summary_jobs}" ]]; then
+  summary_args+=(--jobs "${summary_jobs}")
 fi
 summary_args+=(
   --repo-root "${trace_repo_root}"

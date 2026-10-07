@@ -52,9 +52,10 @@ compile_time:
       name: PyTorch compile-time bench
       project: pytorch
       runner: linux-amd64-cpu32
-      launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
+      # CUDA 13.3 PTXAS cannot read the largest PyTorch profiling traces.
+      launch_args: "--config ci/compile_time/pytorch-devcontainer.json"
       baseline_ref: origin/main
-      args: &compile_time_third_party_args "-no-prepare-perfetto"
+      args: "-no-prepare-perfetto -summary-jobs 1"
       slices: &compile_time_third_party_slices
         - *compile_time_total_compilation
         - *compile_time_file_processing
@@ -75,7 +76,7 @@ compile_time:
       runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
       baseline_ref: origin/main
-      args: *compile_time_third_party_args
+      args: &compile_time_third_party_args "-no-prepare-perfetto"
       slices: *compile_time_third_party_slices
     - &compile_time_rapids_cudf
       id: rapids-cudf
