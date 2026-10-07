@@ -13,4 +13,4 @@
 #  pragma system_header
 #endif // no system header
 
-// this system has no special per device resource functions
+// tbb system has no special per device resource functions
