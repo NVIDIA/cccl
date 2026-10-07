@@ -193,10 +193,23 @@ struct ReduceByKeyAgent
       {
         return ::cuda::identity_element<ReductionOp, value_type>() == 0;
       }
+#  if _CCCL_HAS_NVFP16()
+      else if constexpr (::cuda::std::is_same_v<value_type, __half>)
+      {
+        // not `== 0`, which is ambiguous for __half
+        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+      }
+#  endif // _CCCL_HAS_NVFP16()
+#  if _CCCL_HAS_NVBF16()
+      else if constexpr (::cuda::std::is_same_v<value_type, __nv_bfloat16>)
+      {
+        // not `== 0`, which is ambiguous for __nv_bfloat16
+        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+      }
+#  endif // _CCCL_HAS_NVBF16()
       else
       {
-        // not `== 0`, which is ambiguous for __half and __nv_bfloat16
-        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+        return false;
       }
     }
     else
