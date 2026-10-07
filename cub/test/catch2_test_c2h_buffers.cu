@@ -177,7 +177,7 @@ CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][
   constexpr std::int32_t expected = 42;
   const auto buffers = c2h::gen_buffers<std::int32_t>(stream, c2h::seed_t{1234}, num_items, expected, expected);
 
-  REQUIRE(buffers.size == num_items);
+  REQUIRE(buffers.size() == num_items);
   REQUIRE(buffers.d_items.size() == num_items);
   REQUIRE(buffers.h_items.size() == num_items);
   REQUIRE(static_cast<std::size_t>(std::count(buffers.h_items.begin(), buffers.h_items.end(), expected)) == num_items);
