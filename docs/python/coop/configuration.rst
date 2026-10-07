@@ -18,7 +18,7 @@ Install ``cuda-coop`` without adding Python package dependencies:
 
 The wheel includes the common API, every shipped DSL integration (including
 ``cuda.coop.numba_mlir``), type declarations, and a matching bundle of CUB,
-Thrust, libcu++, and CUDAX headers. The base install declares no Python
+Thrust, and libcu++ headers. The base install declares no Python
 package dependencies. You can import ``cuda.coop`` without a compiler or GPU;
 using an integration requires its backend dependencies to be installed.
 
