@@ -317,7 +317,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   detail::log_dispatch("DeviceBatchMemcpy", cc, active_policy);
 
-  enum : uint32_t
+  enum class allocation : uint32_t
   {
     // Memory for the source pointers of the buffers that require block-level collaboration
     MEM_BLEV_BUFFER_SRCS = 0,
@@ -354,14 +354,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   using BlevBufferSizesOutItT       = BufferSizeT*;
   using BlevBufferTileOffsetsOutItT = BlockOffsetT*;
 
-  temporary_storage::layout<MEM_NUM_ALLOCATIONS> temporary_storage_layout;
+  temporary_storage::layout<static_cast<uint32_t>(allocation::MEM_NUM_ALLOCATIONS)> temporary_storage_layout;
 
-  auto blev_buffer_srcs_slot       = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_SRCS);
-  auto blev_buffer_dsts_slot       = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_DSTS);
-  auto blev_buffer_sizes_slot      = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_SIZES);
-  auto blev_buffer_block_slot      = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_TBLOCK);
-  auto blev_buffer_scan_slot       = temporary_storage_layout.get_slot(MEM_BLEV_BUFFER_SCAN_STATE);
-  auto blev_buffer_block_scan_slot = temporary_storage_layout.get_slot(MEM_BLEV_BLOCK_SCAN_STATE);
+  auto blev_buffer_srcs_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_SRCS));
+  auto blev_buffer_dsts_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_DSTS));
+  auto blev_buffer_sizes_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_SIZES));
+  auto blev_buffer_block_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_TBLOCK));
+  auto blev_buffer_scan_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BUFFER_SCAN_STATE));
+  auto blev_buffer_block_scan_slot =
+    temporary_storage_layout.get_slot(static_cast<uint32_t>(allocation::MEM_BLEV_BLOCK_SCAN_STATE));
 
   auto blev_buffer_srcs_alloc  = blev_buffer_srcs_slot->template create_alias<BlevBufferSrcsOutT>();
   auto blev_buffer_dsts_alloc  = blev_buffer_dsts_slot->template create_alias<BlevBufferDstOutT>();

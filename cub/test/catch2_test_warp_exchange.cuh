@@ -23,7 +23,7 @@ struct exchange_data_t;
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg>
 struct exchange_data_t<InputT, OutputT, ItemsPerThread, Alg, std::enable_if_t<std::is_same_v<InputT, OutputT>>>
 {
-  InputT input[ItemsPerThread];
+  InputT input[ItemsPerThread]{};
   OutputT (&output)[ItemsPerThread] = input;
 
   template <int LogicalWarpThreads>
@@ -71,7 +71,7 @@ __global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
 
   warp_exchange_t exchange(temp_storage[warp_id]);
 
-  exchange_data_t<InputT, OutputT, ItemsPerThread, Alg> exchange_data;
+  exchange_data_t<InputT, OutputT, ItemsPerThread, Alg> exchange_data{};
 
   // Reverse data
   int ranks[ItemsPerThread];
@@ -133,7 +133,7 @@ __global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT a
 
   warp_exchange_t exchange(temp_storage[warp_id]);
 
-  exchange_data_t<InputT, OutputT, ItemsPerThread, Alg> exchange_data;
+  exchange_data_t<InputT, OutputT, ItemsPerThread, Alg> exchange_data{};
 
   input_data += warp_id * tile_size;
   output_data += warp_id * tile_size;

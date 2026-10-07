@@ -264,6 +264,114 @@ template <typename _Tp, ::cuda::std::size_t _Np>
   return __result_u;
 }
 
+template <typename _Tp, ::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmax_32bit(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+    {
+      __result_u[__i] = ::__viaddmax_u32(__a_u[__i], __b_u[__i], __c_u[__i]);
+    }
+    else
+    {
+      __result_u[__i] = static_cast<unsigned>(
+        ::__viaddmax_s32(static_cast<int>(__a_u[__i]), static_cast<int>(__b_u[__i]), static_cast<int>(__c_u[__i])));
+    }
+  }
+  return __result_u;
+}
+
+template <typename _Tp, ::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmin_32bit(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    if constexpr (::cuda::std::is_unsigned_v<_Tp>)
+    {
+      __result_u[__i] = ::__viaddmin_u32(__a_u[__i], __b_u[__i], __c_u[__i]);
+    }
+    else
+    {
+      __result_u[__i] = static_cast<unsigned>(
+        ::__viaddmin_s32(static_cast<int>(__a_u[__i]), static_cast<int>(__b_u[__i]), static_cast<int>(__c_u[__i])));
+    }
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmax_relu_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::__viaddmax_s16x2_relu(__a_u[__i], __b_u[__i], __c_u[__i]);
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmin_relu_16bit_x2(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = ::__viaddmin_s16x2_relu(__a_u[__i], __b_u[__i], __c_u[__i]);
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmax_relu_32bit(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = static_cast<unsigned>(
+      ::__viaddmax_s32_relu(static_cast<int>(__a_u[__i]), static_cast<int>(__b_u[__i]), static_cast<int>(__c_u[__i])));
+  }
+  return __result_u;
+}
+
+template <::cuda::std::size_t _Np>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::simd::__array_u32_t<_Np> __viaddmin_relu_32bit(
+  const ::cuda::std::simd::__array_u32_t<_Np>& __a_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __b_u,
+  const ::cuda::std::simd::__array_u32_t<_Np>& __c_u) noexcept
+{
+  ::cuda::std::simd::__array_u32_t<_Np> __result_u{};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (::cuda::std::size_t __i = 0; __i < _Np; ++__i)
+  {
+    __result_u[__i] = static_cast<unsigned>(
+      ::__viaddmin_s32_relu(static_cast<int>(__a_u[__i]), static_cast<int>(__b_u[__i]), static_cast<int>(__c_u[__i])));
+  }
+  return __result_u;
+}
+
 #  endif // _CCCL_HAS_SIMD_ADD_MIN_MAX()
 
 #  if _CCCL_HAS_SIMD_MIN_MAX_RELU()

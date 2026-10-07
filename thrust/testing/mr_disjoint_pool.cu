@@ -8,9 +8,9 @@
 
 struct alloc_id
 {
-  std::size_t id;
-  std::size_t size;
-  std::size_t alignment;
+  std::size_t id{};
+  std::size_t size{};
+  std::size_t alignment{};
   std::size_t offset{};
 
   _CCCL_HOST_DEVICE bool operator==(const alloc_id& other) const

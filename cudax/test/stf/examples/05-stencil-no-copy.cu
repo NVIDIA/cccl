@@ -61,7 +61,7 @@ private:
   size_t end;
   size_t block_size;
   size_t ghost_size;
-  int dev_id;
+  int dev_id = 0;
 
   std::vector<T> array;
 

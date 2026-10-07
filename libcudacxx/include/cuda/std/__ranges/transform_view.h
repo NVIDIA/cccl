@@ -43,6 +43,8 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/maybe_const.h>
@@ -524,7 +526,7 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Fn&& __f) noexcept(is_nothrow_constructible_v<decay_t<_Fn>, _Fn>)
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Fn>(__f)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Fn>(__f));
   }
 };
 _CCCL_END_NAMESPACE_CPO

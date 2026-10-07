@@ -60,15 +60,13 @@ struct object_with_non_trivial_ctor
   std::int32_t magic;
 
   __host__ __device__ object_with_non_trivial_ctor()
-  {
-    magic = magic_constant;
-    field = 0;
-  }
+      : field(0)
+      , magic(magic_constant)
+  {}
   __host__ __device__ object_with_non_trivial_ctor(std::int32_t f)
-  {
-    magic = magic_constant;
-    field = f;
-  }
+      : field(f)
+      , magic(magic_constant)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 

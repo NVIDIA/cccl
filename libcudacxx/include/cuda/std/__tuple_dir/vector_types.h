@@ -63,7 +63,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
       return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                                \
     template <size_t _Ip>                                                                                            \
-    _CCCL_API constexpr __base_type&& get(__name&& __val) noexcept                                                   \
+    _CCCL_API constexpr __base_type&& get(                                                                           \
+      __name&& __val /* NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved) */) noexcept                      \
     {                                                                                                                \
       return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
     }                                                                                                                \

@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__cmath/abs_diff.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/fast_modulo_division.h>
@@ -35,5 +36,6 @@
 #include <cuda/__cmath/sincos.h>
 #include <cuda/__cmath/uabs.h>
 #include <cuda/std/cmath>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_CMATH

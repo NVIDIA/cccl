@@ -4,11 +4,14 @@ import argparse
 import csv
 import heapq
 import json
+import multiprocessing
 import os
 import re
 import sys
 from collections import defaultdict
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
@@ -31,7 +34,8 @@ TEMPLATE_INSTANTIATION_FILTER_LABELS = frozenset(
 )
 SYMBOL_SCOPE_EVENT_NAMES = {
     "Scanning Function Body",
-    *TEMPLATE_INSTANTIATION_EVENT_NAMES,
+    "Instantiating Template Class",
+    "Instantiating Template Function",
     "Generating Function IR",
     "OptFunction",
 }
@@ -137,14 +141,6 @@ class ComparisonSide:
 
 
 @dataclass(frozen=True)
-class ReportSide:
-    name: str
-    trace_paths: list[Path]
-    repo_root: Path
-    output_dir: Path
-
-
-@dataclass(frozen=True)
 class SliceRequest:
     config: ReportConfig
     filter_name: str
@@ -152,13 +148,45 @@ class SliceRequest:
 
 
 @dataclass(frozen=True)
-class PreparedSliceStats:
-    current: dict[tuple[str, str], EventStats]
-    baseline: dict[tuple[str, str], EventStats] | None
-    comparison: dict[tuple[str, str], ComparisonStats] | None
-    matched_trace_count: int
-    current_trace_count: int
-    baseline_trace_count: int
+class SliceWork:
+    """Picklable slice description. Filter lambdas are rebuilt in the worker."""
+
+    slice_id: str
+    title: str
+    filter_name: str
+    timing: str
+    exclusive_scope: str
+    sort_by: str
+    top_n: int
+    group_by: str
+    tag: str | None
+    threshold_us: float
+    scope_filter: str
+
+
+@dataclass(frozen=True)
+class TraceTask:
+    rel_path: str
+    baseline_path: str | None
+    current_path: str | None
+    baseline_repo_root: str
+    current_repo_root: str
+    slices: tuple[SliceWork, ...]
+
+
+@dataclass
+class SliceAggregate:
+    baseline_stats: dict[tuple[str, str], EventStats] = field(default_factory=dict)
+    current_stats: dict[tuple[str, str], EventStats] = field(default_factory=dict)
+    comparison_stats: dict[tuple[str, str], ComparisonStats] = field(
+        default_factory=dict
+    )
+
+
+@dataclass
+class SliceTraceResult:
+    sides: dict[str, dict[tuple[str, str], EventStats]]
+    comparison: dict[tuple[str, str], ComparisonStats]
 
 
 def merged_interval_duration(intervals: list[tuple[int, int]]) -> int:
@@ -672,30 +700,6 @@ def event_exclusive_us(event: TraceEvent, config: ReportConfig) -> int:
     return max(0, event.inclusive_us - merged_interval_duration(child_intervals))
 
 
-def collect_stats(
-    trace_paths: list[Path],
-    repo_root: Path,
-    config: ReportConfig,
-) -> dict[tuple[str, str], EventStats]:
-    request = SliceRequest(config=config, filter_name=config.spec.label)
-    return collect_stats_for_requests(trace_paths, repo_root, [request])[
-        config.slice_id
-    ]
-
-
-def flatten_slice_requests(requests: list[SliceRequest]) -> list[SliceRequest]:
-    flattened: list[SliceRequest] = []
-
-    def visit(request: SliceRequest) -> None:
-        flattened.append(request)
-        for child in request.children:
-            visit(child)
-
-    for request in requests:
-        visit(request)
-    return flattened
-
-
 def add_side_stats_for_requests(
     stats_by_slice: dict[str, dict[tuple[str, str], EventStats]],
     requests: list[SliceRequest],
@@ -728,23 +732,6 @@ def add_side_stats_for_requests(
                 trace_path_str,
                 event.root_tu,
             )
-
-
-def collect_stats_for_requests(
-    trace_paths: list[Path],
-    repo_root: Path,
-    requests: list[SliceRequest],
-) -> dict[str, dict[tuple[str, str], EventStats]]:
-    stats_by_slice = {request.config.slice_id: {} for request in requests}
-    for trace_path in trace_paths:
-        add_side_stats_for_requests(
-            stats_by_slice,
-            requests,
-            read_trace_events(trace_path, repo_root),
-            trace_path.as_posix(),
-            repo_root,
-        )
-    return stats_by_slice
 
 
 def collect_trace_stats(
@@ -1130,45 +1117,6 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
         json.dump(payload, f, indent=2, sort_keys=True)
 
 
-def report_side(
-    name: str,
-    trace_dir: Path,
-    repo_root: Path,
-    output_dir: Path,
-) -> ReportSide:
-    trace_paths = iter_trace_paths(trace_dir)
-    if not trace_paths:
-        raise SystemExit(f"no JSON traces found under {trace_dir}")
-    return ReportSide(
-        name=name,
-        trace_paths=trace_paths,
-        repo_root=repo_root,
-        output_dir=output_dir,
-    )
-
-
-def write_side_report_from_stats(
-    output_dir: Path,
-    config: ReportConfig,
-    stats: dict[tuple[str, str], EventStats],
-) -> tuple[Path, int]:
-    rows = sorted_rows(stats, config) if stats else []
-    output_csv = default_output_path(output_dir, config)
-    write_csv(output_csv, rows, config.timing)
-    return output_csv, len(rows)
-
-
-def write_side_report(
-    side: ReportSide,
-    config: ReportConfig,
-) -> tuple[Path, int]:
-    return write_side_report_from_stats(
-        side.output_dir,
-        config,
-        collect_stats(side.trace_paths, side.repo_root, config),
-    )
-
-
 def comparison_rows(
     stats: dict[tuple[str, str], ComparisonStats],
     config: ReportConfig,
@@ -1456,150 +1404,310 @@ def read_slice_requests(
         parser.error(str(e))
 
 
-def merge_extra_side_stats(
-    target_by_slice: dict[str, dict[tuple[str, str], EventStats]],
-    extra_by_slice: dict[str, dict[tuple[str, str], EventStats]],
+def slice_work_from_request(request: SliceRequest) -> SliceWork:
+    config = request.config
+    return SliceWork(
+        slice_id=config.slice_id,
+        title=config.title,
+        filter_name=request.filter_name,
+        timing=config.timing,
+        exclusive_scope=config.exclusive_scope,
+        sort_by=config.sort_by,
+        top_n=config.top_n,
+        group_by=config.group_by,
+        tag=config.tag,
+        threshold_us=config.threshold_us,
+        scope_filter=(
+            config.scope_filter.pattern if config.scope_filter is not None else ""
+        ),
+    )
+
+
+def iter_slice_works(request: SliceRequest) -> list[SliceWork]:
+    works = [slice_work_from_request(request)]
+    for child in request.children:
+        works.extend(iter_slice_works(child))
+    return works
+
+
+@lru_cache(maxsize=128)
+def config_from_slice_work(work: SliceWork) -> ReportConfig:
+    return ReportConfig(
+        slice_id=work.slice_id,
+        title=work.title,
+        spec=resolve_filter(work.filter_name),
+        timing=work.timing,
+        exclusive_scope=work.exclusive_scope,
+        sort_by=work.sort_by,
+        top_n=work.top_n,
+        group_by=work.group_by,
+        tag=work.tag,
+        threshold_us=work.threshold_us,
+        scope_filter=re.compile(work.scope_filter) if work.scope_filter else None,
+    )
+
+
+def process_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
+    parsed: dict[str, tuple[list[TraceEvent], Path, str]] = {}
+    if task.baseline_path is not None:
+        baseline_root = Path(task.baseline_repo_root)
+        parsed["baseline"] = (
+            read_trace_events(Path(task.baseline_path), baseline_root),
+            baseline_root,
+            task.baseline_path,
+        )
+    if task.current_path is not None:
+        current_root = Path(task.current_repo_root)
+        parsed["current"] = (
+            read_trace_events(Path(task.current_path), current_root),
+            current_root,
+            task.current_path,
+        )
+
+    requests = [
+        SliceRequest(config=config_from_slice_work(work), filter_name=work.filter_name)
+        for work in task.slices
+    ]
+    side_stats: dict[str, dict[str, dict[tuple[str, str], EventStats]]] = {}
+    for side_name, (events, repo_root, path) in parsed.items():
+        stats_by_slice = {request.config.slice_id: {} for request in requests}
+        add_side_stats_for_requests(stats_by_slice, requests, events, path, repo_root)
+        side_stats[side_name] = stats_by_slice
+
+    comparisons: dict[str, dict[tuple[str, str], ComparisonStats]] = {
+        request.config.slice_id: {} for request in requests
+    }
+    if "baseline" in parsed and "current" in parsed:
+        sides_by_slice = [
+            comparison_sides_for_requests(side_name, events, repo_root, requests)
+            for side_name, (events, repo_root, _) in parsed.items()
+        ]
+        for request in requests:
+            sides = tuple(side[request.config.slice_id] for side in sides_by_slice)
+            accumulate_matched_trace_comparison(
+                comparisons[request.config.slice_id],
+                sides,
+                task.rel_path,
+                request.config,
+            )
+
+    return {
+        request.config.slice_id: SliceTraceResult(
+            sides={name: side_stats[name][request.config.slice_id] for name in parsed},
+            comparison=comparisons[request.config.slice_id],
+        )
+        for request in requests
+    }
+
+
+def merge_side_stats(
+    target: dict[tuple[str, str], EventStats],
+    source: dict[tuple[str, str], EventStats],
 ) -> None:
-    for slice_id, extra_stats in extra_by_slice.items():
-        target_stats = target_by_slice[slice_id]
-        for identity, extra in extra_stats.items():
-            target = target_stats.get(identity)
-            if target is None:
-                target_stats[identity] = extra
+    for identity, source_stats in source.items():
+        existing = target.get(identity)
+        if existing is None:
+            target[identity] = source_stats
+        else:
+            merge_event_stats(existing, source_stats)
+
+
+def merge_comparison_maps(
+    target: dict[tuple[str, str], ComparisonStats],
+    source: dict[tuple[str, str], ComparisonStats],
+) -> None:
+    for identity, source_comparison in source.items():
+        existing = target.get(identity)
+        if existing is None:
+            target[identity] = source_comparison
+            continue
+        merge_event_stats(existing.baseline, source_comparison.baseline)
+        merge_event_stats(existing.current, source_comparison.current)
+        existing.matched_trace_paths.update(source_comparison.matched_trace_paths)
+
+
+def merge_trace_result(
+    aggregates: dict[str, SliceAggregate],
+    result: dict[str, SliceTraceResult],
+) -> None:
+    for slice_id, slice_result in result.items():
+        aggregate = aggregates[slice_id]
+        for side_name, stats in slice_result.sides.items():
+            if side_name == "baseline":
+                merge_side_stats(aggregate.baseline_stats, stats)
+            elif side_name == "current":
+                merge_side_stats(aggregate.current_stats, stats)
             else:
-                merge_event_stats(target, extra)
+                raise ValueError(f"unknown report side: {side_name}")
+        if slice_result.comparison:
+            merge_comparison_maps(aggregate.comparison_stats, slice_result.comparison)
 
 
-def prepare_all_slice_stats(
-    requests: list[SliceRequest],
-    *,
+def default_worker_count() -> int:
+    cpu = os.cpu_count() or 1
+    # A large NVCC trace expands well beyond its JSON size. Cap the default so
+    # several workers can each hold one trace pair.
+    return max(1, min(cpu, 8))
+
+
+def summarize_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
+    try:
+        return process_trace_task(task)
+    except Exception as e:
+        raise RuntimeError(f"failed to summarize trace {task.rel_path}: {e}") from e
+
+
+def iter_trace_results(
+    tasks: list[TraceTask], jobs: int
+) -> Iterator[dict[str, SliceTraceResult]]:
+    total = len(tasks)
+    slice_count = len(tasks[0].slices) if tasks else 0
+    ctx = None
+    worker_count = 1
+    if jobs > 1 and total > 1:
+        try:
+            ctx = multiprocessing.get_context("fork")
+        except ValueError:
+            print(
+                "parallel trace parsing requires fork; summarizing in-process",
+                file=sys.stderr,
+            )
+        else:
+            worker_count = min(jobs, total)
+
+    print(
+        f"summarizing {total} trace file(s) for {slice_count} slice(s) "
+        f"with {worker_count} worker(s)",
+        flush=True,
+    )
+
+    def emit(results: Any) -> Iterator[dict[str, SliceTraceResult]]:
+        completed = 0
+        for result in results:
+            completed += 1
+            if completed == total or completed % 25 == 0:
+                print(f"summarized {completed}/{total} trace file(s)", flush=True)
+            yield result
+
+    if worker_count == 1 or ctx is None:
+        yield from emit(summarize_trace_task(task) for task in tasks)
+        return
+
+    # max_tasks_per_child cannot be combined with the fork start method on
+    # Python 3.11 and newer.
+    executor = ProcessPoolExecutor(max_workers=worker_count, mp_context=ctx)
+    try:
+        task_iterator = iter(tasks)
+        pending = set()
+        for _ in range(worker_count):
+            task = next(task_iterator, None)
+            if task is not None:
+                pending.add(executor.submit(summarize_trace_task, task))
+
+        def completed_results() -> Iterator[dict[str, SliceTraceResult]]:
+            while pending:
+                completed, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in completed:
+                    pending.remove(future)
+                    yield future.result()
+                    task = next(task_iterator, None)
+                    if task is not None:
+                        pending.add(executor.submit(summarize_trace_task, task))
+
+        # Keep only one task per worker in flight so completed result maps can
+        # be released as the reducer consumes them.
+        yield from emit(completed_results())
+    finally:
+        # Cancel traces that have not started so one bad file does not wait
+        # for the rest of the queue. Running workers finish on their own.
+        executor.shutdown(wait=True, cancel_futures=True)
+
+
+def trace_tasks_for_slices(
     trace_dir: Path,
     baseline_dir: Path | None,
     repo_root: Path,
     baseline_repo_root: Path,
-) -> dict[str, PreparedSliceStats]:
-    flattened = flatten_slice_requests(requests)
+    works: tuple[SliceWork, ...],
+) -> tuple[list[TraceTask], int, int | None]:
     current_paths = trace_paths_by_relative_root(trace_dir)
     if not current_paths:
         raise SystemExit(f"no JSON traces found under {trace_dir}")
 
-    current_by_slice: dict[str, dict[tuple[str, str], EventStats]] = {
-        request.config.slice_id: {} for request in flattened
-    }
-    baseline_by_slice: dict[str, dict[tuple[str, str], EventStats]] | None = None
-    comparison_by_slice: dict[str, dict[tuple[str, str], ComparisonStats]] | None = None
-    matched_trace_count = 0
-    baseline_trace_count = 0
-
-    if baseline_dir is None:
-        current_by_slice = collect_stats_for_requests(
-            list(current_paths.values()), repo_root, flattened
-        )
-    else:
+    baseline_paths: dict[Path, Path] = {}
+    if baseline_dir is not None:
         baseline_paths = trace_paths_by_relative_root(baseline_dir)
         if not baseline_paths:
             raise SystemExit(f"no JSON traces found under {baseline_dir}")
 
-        baseline_by_slice = {request.config.slice_id: {} for request in flattened}
-        comparison_by_slice = {request.config.slice_id: {} for request in flattened}
-        matched_rel_paths = sorted(set(current_paths) & set(baseline_paths))
-        matched_trace_count = len(matched_rel_paths)
-        baseline_trace_count = len(baseline_paths)
-
-        for rel_path in matched_rel_paths:
-            baseline_events = read_trace_events(
-                baseline_paths[rel_path], baseline_repo_root
-            )
-            current_events = read_trace_events(current_paths[rel_path], repo_root)
-            rel_path_str = rel_path.as_posix()
-            add_side_stats_for_requests(
-                baseline_by_slice,
-                flattened,
-                baseline_events,
-                baseline_paths[rel_path].as_posix(),
-                baseline_repo_root,
-            )
-            add_side_stats_for_requests(
-                current_by_slice,
-                flattened,
-                current_events,
-                current_paths[rel_path].as_posix(),
-                repo_root,
-            )
-            loaded_sides = (
-                ("baseline", baseline_repo_root, baseline_events),
-                ("current", repo_root, current_events),
-            )
-            sides_by_slice = [
-                comparison_sides_for_requests(name, events, side_root, flattened)
-                for name, side_root, events in loaded_sides
-            ]
-            for request in flattened:
-                sides = tuple(
-                    side_by_slice[request.config.slice_id]
-                    for side_by_slice in sides_by_slice
-                )
-                accumulate_matched_trace_comparison(
-                    comparison_by_slice[request.config.slice_id],
-                    sides,
-                    rel_path_str,
-                    request.config,
-                )
-
-        unmatched_current = [
-            current_paths[rel_path]
-            for rel_path in current_paths
-            if rel_path not in baseline_paths
-        ]
-        unmatched_baseline = [
-            baseline_paths[rel_path]
-            for rel_path in baseline_paths
-            if rel_path not in current_paths
-        ]
-        if unmatched_current:
-            merge_extra_side_stats(
-                current_by_slice,
-                collect_stats_for_requests(unmatched_current, repo_root, flattened),
-            )
-        if unmatched_baseline:
-            merge_extra_side_stats(
-                baseline_by_slice,
-                collect_stats_for_requests(
-                    unmatched_baseline, baseline_repo_root, flattened
-                ),
-            )
-
-    return {
-        request.config.slice_id: PreparedSliceStats(
-            current=current_by_slice[request.config.slice_id],
-            baseline=(
-                None
-                if baseline_by_slice is None
-                else baseline_by_slice[request.config.slice_id]
+    rel_paths = sorted(
+        set(current_paths) | set(baseline_paths), key=lambda path: path.as_posix()
+    )
+    tasks = [
+        TraceTask(
+            rel_path=rel_path.as_posix(),
+            baseline_path=(
+                baseline_paths[rel_path].as_posix()
+                if rel_path in baseline_paths
+                else None
             ),
-            comparison=(
-                None
-                if comparison_by_slice is None
-                else comparison_by_slice[request.config.slice_id]
+            current_path=(
+                current_paths[rel_path].as_posix()
+                if rel_path in current_paths
+                else None
             ),
-            matched_trace_count=matched_trace_count,
-            current_trace_count=len(current_paths),
-            baseline_trace_count=baseline_trace_count,
+            baseline_repo_root=baseline_repo_root.as_posix(),
+            current_repo_root=repo_root.as_posix(),
+            slices=works,
         )
-        for request in flattened
-    }
+        for rel_path in rel_paths
+    ]
+    matched_trace_count = len(set(current_paths) & set(baseline_paths))
+    baseline_trace_count = len(baseline_paths) if baseline_dir is not None else None
+    return tasks, matched_trace_count, baseline_trace_count
+
+
+def summarize_trace_tasks(
+    tasks: list[TraceTask], jobs: int
+) -> dict[str, SliceAggregate]:
+    if not tasks:
+        return {}
+    aggregates = {work.slice_id: SliceAggregate() for work in tasks[0].slices}
+    for result in iter_trace_results(tasks, jobs):
+        merge_trace_result(aggregates, result)
+    return aggregates
+
+
+def write_stats_report(
+    output_dir: Path,
+    config: ReportConfig,
+    stats: dict[tuple[str, str], EventStats],
+    output_csv: Path | None = None,
+) -> tuple[Path, int]:
+    rows = sorted_rows(stats, config) if stats else []
+    report_csv = (
+        output_csv
+        if output_csv is not None
+        else default_output_path(output_dir, config)
+    )
+    write_csv(report_csv, rows, config.timing)
+    return report_csv, len(rows)
 
 
 def run_slice_report(
     request: SliceRequest,
     *,
-    prepared: dict[str, PreparedSliceStats],
+    aggregates: dict[str, SliceAggregate],
+    matched_trace_count: int,
+    baseline_trace_count: int | None,
+    current_trace_count: int,
+    baseline_dir: Path | None,
     output_dir: Path,
     output_csv: Path | None,
     allow_empty: bool,
 ) -> dict[str, Any]:
     config = request.config
-    stats = prepared[config.slice_id]
+    aggregate = aggregates[config.slice_id]
     slice_output_dir = output_dir
     manifest: dict[str, Any] = {
         "id": config.slice_id,
@@ -1616,22 +1724,21 @@ def run_slice_report(
         "children": [],
     }
 
-    if stats.comparison is not None:
+    if baseline_dir is not None:
         comparison_output_dir = slice_output_dir / "comparison"
         report_csvs = {
-            "baseline": write_side_report_from_stats(
+            "baseline": write_stats_report(
                 slice_output_dir / "baseline",
                 config,
-                stats.baseline or {},
+                aggregate.baseline_stats,
             ),
-            "current": write_side_report_from_stats(
+            "current": write_stats_report(
                 slice_output_dir / "current",
                 config,
-                stats.current,
+                aggregate.current_stats,
             ),
         }
-        comparison_stats = stats.comparison
-        matched_trace_count = stats.matched_trace_count
+        comparison_stats = aggregate.comparison_stats
         warnings: list[str] = []
         for side_name, (_, row_count) in report_csvs.items():
             if row_count == 0:
@@ -1679,9 +1786,10 @@ def run_slice_report(
         manifest["comparison"] = comparison_manifest
         if warnings:
             manifest["warnings"] = warnings
+        assert baseline_trace_count is not None
         trace_counts = (
-            f"{stats.baseline_trace_count} baseline trace(s), "
-            f"{stats.current_trace_count} current trace(s)"
+            f"{baseline_trace_count} baseline trace(s), "
+            f"{current_trace_count} current trace(s)"
         )
         print(
             f"wrote slice '{config.slice_id}' baseline/current reports and "
@@ -1695,30 +1803,29 @@ def run_slice_report(
         for warning in warnings:
             print(f"  warning: {warning}")
     else:
-        current_stats = stats.current
-        if not current_stats and not allow_empty:
+        stats = aggregate.current_stats
+        if not stats and not allow_empty:
             raise SystemExit(
                 f"no events matched filter '{request.filter_name}' "
-                f"in {stats.current_trace_count} trace(s)"
+                f"in {current_trace_count} trace(s)"
             )
 
-        rows = sorted_rows(current_stats, config) if current_stats else []
-        report_csv = (
-            output_csv
-            if output_csv is not None
-            else default_output_path(slice_output_dir, config)
+        report_csv, row_count = write_stats_report(
+            slice_output_dir,
+            config,
+            stats,
+            output_csv,
         )
-        write_csv(report_csv, rows, config.timing)
         manifest["reports"] = {
-            "current": {"csv": report_csv.as_posix(), "row_count": len(rows)}
+            "current": {"csv": report_csv.as_posix(), "row_count": row_count}
         }
-        if not rows:
+        if not row_count:
             manifest["warnings"] = [
                 f"current report matched no events for filter '{request.filter_name}'"
             ]
         print(
-            f"wrote slice '{config.slice_id}' {len(rows)} row(s) "
-            f"from {stats.current_trace_count} trace(s) to {report_csv}"
+            f"wrote slice '{config.slice_id}' {row_count} row(s) "
+            f"from {current_trace_count} trace(s) to {report_csv}"
         )
 
     return manifest
@@ -1727,7 +1834,11 @@ def run_slice_report(
 def run_slice_tree(
     request: SliceRequest,
     *,
-    prepared: dict[str, PreparedSliceStats],
+    aggregates: dict[str, SliceAggregate],
+    matched_trace_count: int,
+    baseline_trace_count: int | None,
+    current_trace_count: int,
+    baseline_dir: Path | None,
     output_dir: Path,
     output_csv: Path | None,
     allow_empty: bool,
@@ -1736,7 +1847,11 @@ def run_slice_tree(
 ) -> None:
     manifest = run_slice_report(
         request,
-        prepared=prepared,
+        aggregates=aggregates,
+        matched_trace_count=matched_trace_count,
+        baseline_trace_count=baseline_trace_count,
+        current_trace_count=current_trace_count,
+        baseline_dir=baseline_dir,
         output_dir=output_dir,
         output_csv=output_csv,
         allow_empty=allow_empty,
@@ -1746,7 +1861,11 @@ def run_slice_tree(
     for child in request.children:
         run_slice_tree(
             child,
-            prepared=prepared,
+            aggregates=aggregates,
+            matched_trace_count=matched_trace_count,
+            baseline_trace_count=baseline_trace_count,
+            current_trace_count=current_trace_count,
+            baseline_dir=baseline_dir,
             output_dir=output_dir / child.config.slice_id,
             output_csv=None,
             allow_empty=allow_empty,
@@ -1888,6 +2007,16 @@ def main() -> None:
         action="store_true",
         help="print built-in filters and exit",
     )
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=default_worker_count(),
+        help=(
+            "worker processes used to parse traces (default: min(cpu count, 8)). "
+            "Each worker parses one trace file, or one baseline/current pair, and "
+            "applies all slices before discarding the events."
+        ),
+    )
     args = parser.parse_args()
 
     if args.list_filters:
@@ -1898,6 +2027,8 @@ def main() -> None:
         parser.error("trace_dir is required unless --list-filters is used")
     if args.top <= 0:
         parser.error("--top must be positive")
+    if args.jobs < 1:
+        parser.error("--jobs must be positive")
     if args.threshold < 0:
         parser.error("--threshold must be non-negative")
     if args.slices is not None:
@@ -1950,12 +2081,11 @@ def main() -> None:
         if args.slices is not None
         else [single_slice_request(args, parser)]
     )
+    works = tuple(work for request in requests for work in iter_slice_works(request))
     manifest = {
         "schema_version": 1,
         "status": "incomplete",
-        "expected_slice_ids": [
-            request.config.slice_id for request in flatten_slice_requests(requests)
-        ],
+        "expected_slice_ids": [work.slice_id for work in works],
         "mode": "comparison" if baseline_dir is not None else "single",
         "trace_dir": trace_dir.as_posix(),
         "baseline_dir": baseline_dir.as_posix() if baseline_dir else None,
@@ -1971,20 +2101,22 @@ def main() -> None:
         write_json(summary_json, manifest)
 
     try:
-        prepared = prepare_all_slice_stats(
-            requests,
-            trace_dir=trace_dir,
-            baseline_dir=baseline_dir,
-            repo_root=repo_root,
-            baseline_repo_root=baseline_repo_root,
+        tasks, matched_trace_count, baseline_trace_count = trace_tasks_for_slices(
+            trace_dir, baseline_dir, repo_root, baseline_repo_root, works
         )
+        aggregates = summarize_trace_tasks(tasks, args.jobs)
+        current_trace_count = sum(task.current_path is not None for task in tasks)
         for request in requests:
             slice_output_dir = (
                 output_dir / request.config.slice_id if multi_slice else output_dir
             )
             run_slice_tree(
                 request,
-                prepared=prepared,
+                aggregates=aggregates,
+                matched_trace_count=matched_trace_count,
+                baseline_trace_count=baseline_trace_count,
+                current_trace_count=current_trace_count,
+                baseline_dir=baseline_dir,
                 output_dir=slice_output_dir,
                 output_csv=output_csv,
                 allow_empty=multi_slice,

@@ -93,6 +93,9 @@ The manifest starts with `status: incomplete`, checkpoints each completed
 slice, and ends with `status: complete`. A failed run records `status: failed`,
 the error, and any completed slices so the CI comment can show partial results
 without presenting them as a successful comparison.
+Trace JSON is parsed once per file and every slice is applied in that pass.
+`--jobs N` parses files in parallel (default `min(cpu count, 8)`; `--jobs 1`
+stays in-process).
 Configured slices that match no events, have no matching trace files, or have no
 comparable event keys record warnings in the manifest so reporting failures are
 not presented as ordinary no-regression results.

@@ -61,10 +61,8 @@ public:
   // Copy constructor
   scalar(const scalar& a)
       : ctx(a.ctx)
+      , handle(ctx->logical_data(make_slice((double*) nullptr)))
   {
-    h_addr = NULL;
-    handle = ctx->logical_data(make_slice((double*) nullptr));
-
     ctx->task(handle.write(), a.handle.read())->*[](cudaStream_t stream, auto dst, auto src) {
       // There are likely much more efficient ways.
       cuda_safe_call(
@@ -98,7 +96,7 @@ public:
 
   Ctx* ctx;
   mutable logical_data<slice<double, 0>> handle;
-  double* h_addr;
+  double* h_addr = nullptr;
 };
 
 template <typename Ctx>

@@ -154,7 +154,7 @@ _CCCL_HOST_DEVICE typename detail::raw_reference<const T>::type raw_reference_ca
 template <typename T, ::cuda::std::enable_if_t<detail::is_proxy_reference_v<::cuda::std::remove_cv_t<T>>, int> = 0>
 _CCCL_HOST_DEVICE typename detail::raw_reference<T>::type raw_reference_cast(T&& t)
 {
-  return t;
+  return ::cuda::std::forward<T>(t);
 }
 
 template <typename... Ts>

@@ -57,7 +57,11 @@ struct ReduceKernel
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
     const cudax::coop::generic_group group{
-      cuda::warp, block, cudax::coop::group_by<nwarps_in_group, false>{}, cudax::coop::barrier_synchronizer{barriers}};
+      cuda::warp,
+      block,
+      cudax::coop::group_by{cudax::coop::non_exhaustive,
+                            cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::barrier_synchronizer{barriers}};
 
     // All threads that are not part of the groups should exit early.
     if (!cuda::gpu_thread.is_part_of(group))
@@ -134,7 +138,11 @@ struct MultiGroupReduceKernel
     auto& barriers = reinterpret_cast<Barriers&>(barriers_storage);
 
     const cudax::coop::generic_group parent{
-      cuda::warp, block, cudax::coop::group_by<nwarps_in_group, false>{}, cudax::coop::barrier_synchronizer{barriers}};
+      cuda::warp,
+      block,
+      cudax::coop::group_by{cudax::coop::non_exhaustive,
+                            cuda::std::integral_constant<cuda::std::size_t, nwarps_in_group>{}},
+      cudax::coop::barrier_synchronizer{barriers}};
 
     if (!cuda::gpu_thread.is_part_of(parent))
     {

@@ -419,6 +419,11 @@ workflows:
     - {jobs: ['test'], project: 'cudax',      ctk: '13.X', std: 20, cxx: ['gcc', 'clang', 'msvc'], gpu: 'l4', args: '-enable-tile'}
       # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub', std: 'max', cxx: 'gcc', gpu: 'rtxpro6000'}
+    # GB300 ARM64 coverage:
+    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
+    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: '20', cxx: 'gcc', gpu: 'gb300', sm: 'gpu'}
+    - {jobs: ['test'],      cpu: 'arm64', project: 'libcudacxx', std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu', cmake_options: '-Dlibcudacxx_LIT_PARALLEL_LEVEL=1'}
+    - {jobs: ['test_lid0'], cpu: 'arm64', project: 'cub',        std: 'max', cxx: 'clang', gpu: 'gb300', sm: 'gpu'}
     # Misc:
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '12.X', std: 'all', cxx: ['gcc14', 'clang19']}
     - {jobs: ['build'], cpu: 'arm64', project: ['libcudacxx', 'cub', 'thrust', 'cudax'], ctk: '13.X', std: ['17', '20'], cxx: 'gcc'}
@@ -725,9 +730,8 @@ ctk_versions:
   '12.0': { stds: [17, 20] }
   '12.9': { stds: [17, 20], alias: ['12.X', 'pybuild', 'clang-cuda', 'clang_preview-cuda'] }
   '13.0': { stds: [17, 20] }
-  '13.1': { stds: [17, 20], alias: ['nvhpc-prev']}
-  '13.2': { stds: [17, 20], alias: ['nvhpc']}
-  '13.3': { stds: [17, 20, 23], alias: ['13.X'] }
+  '13.2': { stds: [17, 20], alias: ['nvhpc-prev']}
+  '13.3': { stds: [17, 20, 23], alias: ['13.X', 'nvhpc'] }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -787,8 +791,9 @@ host_compilers:
     exe: nvc++
     versions:
       # !! Update the ctk_versions 'nvhpc*' aliases when updating NVHPC versions:
-      26.3: { stds: [17, 20, 23], alias: 'prev' }
-      26.5: { stds: [17, 20, 23] }
+      # nvc++ is not supported by nvcc in c++23 mode (as of CTK 13.4)
+      26.5: { stds: [17, 20], alias: 'prev' }
+      26.9: { stds: [17, 20] }
 
 # Jobs support the following properties:
 #
@@ -1005,6 +1010,7 @@ gpus:
   rtx4090:    { name: 'RTX4090',     sm: 89,  runner: 'rtx4090-latest',    gpu_count: 1 } # 24 GB,  10 runners
   h100:       { name: 'H100',        sm: 90,  runner: 'h100-latest',       gpu_count: 1 } # 80 GB,  16 runners
   h100_2gpu:  { name: 'H100 2-GPU',  sm: 90,  runner: 'h100-latest',       gpu_count: 2, runner_id: 'h100' } # 2 x 80 GB
+  gb300:      { name: 'GB300',       sm: 103, runner: 'gb300-latest',      gpu_count: 1 }
   # Very small number of runners on loan from cuda-python while we wait for our order to arrive.
   # Limit jobs on these:
   rtxpro6000: { name: 'RTXPRO6000',  sm: 120, runner: 'rtxpro6000-latest', gpu_count: 1 }

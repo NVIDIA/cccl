@@ -44,7 +44,7 @@ CUB_NAMESPACE_BEGIN
 //! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
 //!        keys from a single tile. Note that different ranking algorithms require different
 //!        initial arrangements of keys to function properly.
-enum RadixRankAlgorithm
+enum RadixRankAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! Ranking using the BlockRadixRank algorithm with `MemoizeOuterScan == false`.
   //! It uses thread-private histograms, and thus uses more shared memory.
@@ -416,7 +416,8 @@ private:
 
 public:
   /// @smemstorage{BlockScan}
-  using TempStorage = Uninitialized<_TempStorage>;
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   //! @name Collective constructors
   //! @{
@@ -632,7 +633,8 @@ private:
 
 public:
   /// @smemstorage{BlockRadixRankMatch}
-  using TempStorage = Uninitialized<_TempStorage>;
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
   //! @name Collective constructors
   //! @{
@@ -896,7 +898,7 @@ public:
   //! @}
 };
 
-enum WarpMatchAlgorithm
+enum WarpMatchAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   WARP_MATCH_ANY,
   WARP_MATCH_ATOMIC_OR

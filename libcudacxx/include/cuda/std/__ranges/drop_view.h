@@ -43,7 +43,9 @@
 #include <cuda/std/__ranges/subrange.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -88,7 +90,7 @@ public:
   {}
 #endif // !_CCCL_HAS_CONCEPTS()
 
-  _CCCL_API constexpr drop_view(_View __base, range_difference_t<_View> __count) //
+  _CCCL_API constexpr explicit drop_view(_View __base, range_difference_t<_View> __count) //
     noexcept(is_nothrow_move_constructible_v<_View>)
       : view_interface<drop_view<_View>>()
       , __base_(::cuda::std::move(__base))
@@ -336,7 +338,11 @@ struct __fn
   _CCCL_STATIC_CALL_OPERATOR(_Range&& __range, _Np&& __n) noexcept(noexcept(::cuda::std::ranges::views::repeat(
     ::cuda::std::forward_like<_Range>(*__range.__value_),
     ::cuda::std::ranges::distance(__range)
-      - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))) -> _RawRange
+      - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n)))))
+    -> decltype(::cuda::std::ranges::views::repeat(
+      ::cuda::std::forward_like<_Range>(*__range.__value_),
+      ::cuda::std::ranges::distance(__range)
+        - ::cuda::std::min<_Dist>(::cuda::std::ranges::distance(__range), ::cuda::std::forward<_Np>(__n))))
   {
     return ::cuda::std::ranges::views::repeat(
       ::cuda::std::forward_like<_Range>(*__range.__value_),
@@ -370,7 +376,7 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Np&& __n) noexcept(is_nothrow_constructible_v<decay_t<_Np>, _Np>)
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Np>(__n)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Np>(__n));
   }
 };
 

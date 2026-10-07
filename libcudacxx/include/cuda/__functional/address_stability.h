@@ -29,7 +29,6 @@
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

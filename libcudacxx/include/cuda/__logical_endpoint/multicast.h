@@ -142,9 +142,9 @@ public:
 
 //! @brief Move-only owning RAII wrapper for a multicast CUDA logical endpoint.
 //!
-//! This type owns endpoint creation and destruction. It can be passed as a kernel argument through `cuda::launch`; CCCL
-//! launch argument transformation converts it to `multicast_logical_endpoint_ref`. Raw `<<<>>>` launches do not perform
-//! that transformation, so they should pass `multicast_logical_endpoint_ref` explicitly.
+//! This type owns endpoint creation/import and destruction. It can be passed as a kernel argument through
+//! `cuda::launch`; CCCL launch argument transformation converts it to `multicast_logical_endpoint_ref`. Raw `<<<>>>`
+//! launches do not perform that transformation, so they should pass `multicast_logical_endpoint_ref` explicitly.
 class multicast_logical_endpoint
     : public ::cuda::__detail::__logical_endpoint_owner_base<multicast_logical_endpoint_ref,
                                                              ::cuda::__detail::__logical_endpoint_type::__multicast>
@@ -175,6 +175,13 @@ public:
       : multicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __spec, __bytes)
   {}
 
+  //! @brief Reserves one ID and imports a multicast logical endpoint.
+  //!
+  //! @param[in] __handle The exported logical endpoint fabric handle.
+  _CCCL_HOST_API explicit multicast_logical_endpoint(const logical_endpoint_fabric_handle& __handle)
+      : multicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __handle)
+  {}
+
   //! @brief Creates a multicast logical endpoint from a caller-managed ID.
   //!
   //! @param[in] __id The caller-managed logical endpoint ID.
@@ -184,6 +191,15 @@ public:
     logical_endpoint_id __id, const multicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
   {
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
+  }
+
+  //! @brief Imports a multicast logical endpoint into a caller-managed ID.
+  //!
+  //! @param[in] __id The caller-managed logical endpoint ID.
+  //! @param[in] __handle The exported logical endpoint fabric handle.
+  _CCCL_HOST_API multicast_logical_endpoint(logical_endpoint_id __id, const logical_endpoint_fabric_handle& __handle)
+  {
+    this->__import_endpoint(__id, __handle);
   }
 
   //! @brief Creates a multicast logical endpoint from an ID in a retained range.
@@ -200,6 +216,21 @@ public:
   {
     const auto __id = __range.at(__index);
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
+    this->__retain_id_range(__range);
+  }
+
+  //! @brief Imports a multicast logical endpoint into an ID in a retained range.
+  //!
+  //! @param[in] __range The logical endpoint ID range to retain.
+  //! @param[in] __index The ID index in the range.
+  //! @param[in] __handle The exported logical endpoint fabric handle.
+  _CCCL_HOST_API multicast_logical_endpoint(
+    const logical_endpoint_id_range& __range,
+    ::cuda::std::uint32_t __index,
+    const logical_endpoint_fabric_handle& __handle)
+  {
+    const auto __id = __range.at(__index);
+    this->__import_endpoint(__id, __handle);
     this->__retain_id_range(__range);
   }
 };

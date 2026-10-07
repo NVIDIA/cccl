@@ -95,7 +95,8 @@ struct warp_reduce_batched_wspro
     }
 
     // Needed in case of outputs aliasing inputs
-    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+    // The reduction tree fills every entry before the output copy.
+    ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
     ::cuda::static_for<0, max_out_per_thread>([&](auto out_idx) {
       constexpr auto first_idx      = out_idx * LogicalWarpThreads;
@@ -117,7 +118,7 @@ struct warp_reduce_batched_wspro
     if constexpr (Batches != 0)
     {
       // Needed in case of outputs aliasing inputs
-      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs;
+      ::cuda::std::array<T, max_out_per_thread> intermediate_outputs; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
       // Can't use the full member mask given SyncPhysicalWarp==true because it affects the result of the reduction.
       const auto reduce_mask = cub::WarpMask<LogicalWarpThreads>(logical_warp_id);

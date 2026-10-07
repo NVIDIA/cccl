@@ -865,6 +865,7 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct policy_selector
 {
   int key_size;
