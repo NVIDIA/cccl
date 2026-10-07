@@ -8,6 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+// TODO: Re-enable once CI drivers can resolve the fabric status decoder device symbols.
+// Older drivers fail to load this test's GPU module before the test can check driver support.
+// UNSUPPORTED: true
+
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: nvcc-12, nvcc-13.0, nvcc-13.1, nvcc-13.2, nvcc-13.3
 // UNSUPPORTED: pre-sm-90
