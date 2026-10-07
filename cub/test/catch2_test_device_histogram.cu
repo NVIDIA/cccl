@@ -180,12 +180,12 @@ auto compute_reference_result(
   }
   for (OffsetT row = 0; row < height; ++row)
   {
-    for (OffsetT pixel = 0; pixel < width; ++pixel)
+    for (OffsetT item = 0; item < width; ++item)
     {
       for (size_t c = 0; c < ActiveChannels; ++c)
       {
         // TODO(bgruber): use an mdspan to access h_samples
-        const auto offset = row * (row_pitch / sizeof(SampleT)) + pixel * Channels + c;
+        const auto offset = row * (row_pitch / sizeof(SampleT)) + item * Channels + c;
         const int bin     = sample_to_bin_index(static_cast<int>(c), h_samples[offset]);
         if (bin >= 0 && bin < static_cast<int>(h_histogram[c].size())) // if bin is valid
         {
