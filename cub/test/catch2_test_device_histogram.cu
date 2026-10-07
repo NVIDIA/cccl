@@ -884,14 +884,14 @@ CUB_TEST_LIST(
 
 struct low_byte_of_index
 {
-  __host__ __device__ unsigned char operator()(std::uint64_t i) const
+  __host__ __device__ unsigned char operator()(uint64_t i) const
   {
-    return static_cast<unsigned char>(i & 255);
+    return static_cast<uint8_t>(i % 256);
   }
 };
 
 // Sample i is i % 256, so n samples put n / 256 into each of 256 unit-wide bins when n is a multiple of 256
-auto low_byte_samples()
+static auto low_byte_samples()
 {
   return cuda::transform_iterator(cuda::counting_iterator<std::uint64_t>{0}, low_byte_of_index{});
 }
