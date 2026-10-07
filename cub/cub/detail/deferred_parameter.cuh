@@ -16,9 +16,7 @@
 #include <cub/detail/choose_offset.cuh>
 
 #include <cuda/__argument/argument.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
@@ -28,20 +26,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename NumItemsT>
-inline constexpr bool is_deferred_v = false;
-
-template <typename ArgT, typename StaticBoundsT>
-inline constexpr bool is_deferred_v<::cuda::args::deferred<ArgT, StaticBoundsT>> = true;
-
-template <typename NumItemsT>
-inline constexpr bool is_num_items_v = ::cuda::std::is_integral_v<NumItemsT> || is_deferred_v<NumItemsT>;
-
-//! Preserve caller-selected immediate offset types; select a concrete offset type for deferred arguments.
-template <typename NumItemsT>
-using num_items_offset_t =
-  ::cuda::std::conditional_t<::cuda::args::__traits<NumItemsT>::is_deferred,
-                             choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>,
-                             typename ::cuda::args::__traits<NumItemsT>::element_type>;
+using num_items_offset_t = choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
 
 #if !_CCCL_COMPILER(NVRTC)
 template <typename NumItemsT>
@@ -49,7 +34,7 @@ template <typename NumItemsT>
 {
   using offset_t = num_items_offset_t<NumItemsT>;
 
-  if constexpr (is_deferred_v<NumItemsT>)
+  if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
   {
     return static_cast<offset_t>(::cuda::args::__highest_(num_items));
   }

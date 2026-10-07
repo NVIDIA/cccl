@@ -468,6 +468,12 @@ public:
   using __deferred_base<_Arg, _StaticBounds>::__deferred_base;
 };
 
+template <class _Tp>
+inline constexpr bool __is_deferred_v = false;
+
+template <class _Arg, class _StaticBounds>
+inline constexpr bool __is_deferred_v<deferred<_Arg, _StaticBounds>> = true;
+
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Arg>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES deferred(_Arg) -> deferred<_Arg>;

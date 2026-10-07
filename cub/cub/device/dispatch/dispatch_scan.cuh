@@ -61,22 +61,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-// Force lookback for deferred scans while preserving the wrapped selector's state and empty type.
-template <typename PolicySelector>
-struct deferred_policy_selector : PolicySelector
-{
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
-  {
-    auto policy      = static_cast<const PolicySelector&>(*this)(cc);
-    policy.algorithm = ScanAlgorithm::lookback;
-    return policy;
-  }
-};
-
-template <typename PolicySelector, bool IsDeferred>
-using deferred_policy_selector_t =
-  ::cuda::std::_If<IsDeferred, deferred_policy_selector<PolicySelector>, PolicySelector>;
-
 template <typename PolicySelector,
           typename UnwrappedInputIteratorT,
           typename UnwrappedOutputIteratorT,
@@ -987,8 +971,8 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  CUB_DETAIL_CONSTEXPR_ISH const ScanLookbackPolicy policy = policy_getter().lookback;
-  auto tile_state                                          = kernel_source.TileState();
+  constexpr ScanLookbackPolicy policy = policy_getter().lookback;
+  auto tile_state                     = kernel_source.TileState();
 
   // Specify temporary storage requirements for the reusable tile states and batch state
   size_t allocation_sizes[2];
@@ -1024,6 +1008,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   // Initialize the tile descriptors and batch state
   constexpr int init_threads = 128;
   constexpr int init_grid    = static_cast<int>(detail::scan::tiles_per_batch) / init_threads;
+  _CUB_LOG_KERNEL_LAUNCH("DeviceScanBatchInitKernel", init_grid, 1, 1, init_threads, 0, stream, "");
   if (const auto error = CubDebug(launcher_factory(init_grid, init_threads, 0, stream, dependent_launch)
                                     .doit(kernel_source.BatchInitKernel(), tile_state, batch_state)))
   {
@@ -1046,6 +1031,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
     (::cuda::std::min) (static_cast<int>(detail::scan::tiles_per_batch), detail::scan::batch_ctas_per_sm * sm_count);
 
   // Invoke the scan kernel; its CTAs dynamically claim tiles until the deferred range is exhausted
+  _CUB_LOG_KERNEL_LAUNCH("DeviceScanBatchKernel", scan_grid_size, 1, 1, policy.threads_per_block, 0, stream, "");
   if (const auto error = CubDebug(
         launcher_factory(scan_grid_size, policy.threads_per_block, 0, stream, dependent_launch)
           .doit(kernel_source.BatchScanKernel(),
@@ -1106,7 +1092,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   const int tile_size  = active_policy.threads_per_block * active_policy.items_per_thread;
   const auto max_tiles = ::cuda::ceil_div(static_cast<::cuda::std::uint64_t>(detail::num_items_upper_bound(num_items)),
                                           static_cast<::cuda::std::uint64_t>(tile_size));
-  if constexpr (detail::is_deferred_v<NumItemsT>)
+  if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
   {
     if (max_tiles > static_cast<::cuda::std::uint64_t>(detail::scan::tiles_per_batch))
     {
@@ -1476,7 +1462,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke(
   KernelLauncherFactory launcher_factory)
 {
   const bool dependent_launch = cc >= ::cuda::compute_capability{9, 0};
-  if constexpr (!detail::is_deferred_v<NumItemsT>)
+  if constexpr (!::cuda::args::__is_deferred_v<NumItemsT>)
   {
     if CUB_DETAIL_CONSTEXPR_ISH (policy_getter().algorithm == ScanAlgorithm::lookahead)
     {
@@ -1551,9 +1537,9 @@ template <
                                                        OffsetT,
                                                        ScanOpT,
                                                        StableReductionOrder,
-                                                       detail::is_deferred_v<NumItemsT>>,
+                                                       ::cuda::args::__is_deferred_v<NumItemsT>>,
   typename KernelSource   = DeviceScanKernelSource<
-    deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
+    PolicySelector,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
     ScanOpT,
@@ -1590,6 +1576,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   }
 
   const auto invoke_with_policy = [&](auto policy_getter) {
+    if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
+    {
+      static_assert(policy_getter().algorithm == ScanAlgorithm::lookback,
+                    "Deferred DeviceScan counts require a tuning policy selecting lookback.");
+    }
     detail::log_dispatch("DeviceScan", cc, policy_getter());
 
     return invoke(
@@ -1607,14 +1598,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
       launcher_factory);
   };
 
-  if constexpr (detail::is_deferred_v<NumItemsT>)
-  {
-    return dispatch_compute_cap(deferred_policy_selector<PolicySelector>{policy_selector}, cc, invoke_with_policy);
-  }
-  else
-  {
-    return dispatch_compute_cap(policy_selector, cc, invoke_with_policy);
-  }
+  return dispatch_compute_cap(policy_selector, cc, invoke_with_policy);
 }
 
 template <
@@ -1633,9 +1617,9 @@ template <
                                                        OffsetT,
                                                        ScanOpT,
                                                        StableReductionOrder,
-                                                       detail::is_deferred_v<NumItemsT>>,
+                                                       ::cuda::args::__is_deferred_v<NumItemsT>>,
   typename KernelSource   = DeviceScanKernelSource<
-    deferred_policy_selector_t<PolicySelector, detail::is_deferred_v<NumItemsT>>,
+    PolicySelector,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<OutputIteratorT>,
     ScanOpT,
