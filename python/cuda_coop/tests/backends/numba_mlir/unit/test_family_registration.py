@@ -598,11 +598,14 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
         metadata={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         while rewrite.match(func_ir, block, state.typemap, state.calltypes):
             block = rewrite.apply()
             func_ir.blocks[label] = block
+    rewrite.finish_rewrite()
 
     calls = _resolved_calls(func_ir)
     invocable_calls = [call for target, call in calls if target is invocable]
@@ -722,11 +725,14 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
         metadata={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         while rewrite.match(func_ir, block, state.typemap, state.calltypes):
             block = rewrite.apply()
             func_ir.blocks[label] = block
+    rewrite.finish_rewrite()
 
     calls = _resolved_calls(func_ir)
     invocable_calls = [call for target, call in calls if target is invocable]

@@ -68,8 +68,8 @@ class _LaunchRewrite:
         _DeferredCoopRewrite
             Internal signal that explicit dimensions need pending launch
             metadata. It propagates through argument validation to
-            ``CoopSinglePhaseRewrite.match``, which preserves the IR for
-            ``_CallRewriting._rewrite_calls`` to request the kernel launch
+            ``CoopSinglePhaseRewrite.prepare_function``, which preserves the IR
+            for ``_CallRewriting._rewrite_calls`` to request the kernel launch
             shape and retry within ``CoopWholeFunctionPlanner``.
         """
 
