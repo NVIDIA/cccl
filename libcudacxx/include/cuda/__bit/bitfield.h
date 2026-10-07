@@ -79,21 +79,15 @@ _CCCL_API constexpr _Tp bitfield_insert(const _Tp __dest, const _Tp __source, in
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#  if defined(_CCCL_BUILTIN_CONSTANT_P)
-    if (!(_CCCL_BUILTIN_CONSTANT_P(__dest) && _CCCL_BUILTIN_CONSTANT_P(__source) && _CCCL_BUILTIN_CONSTANT_P(__start)
-          && _CCCL_BUILTIN_CONSTANT_P(__width))) // inline ptx prevents constant folding
-#  endif // _CCCL_BUILTIN_CONSTANT_P
+    if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
     {
-      if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
-      {
-        // clang-format off
-        NV_DISPATCH_TARGET( // all SM < 70
-          NV_PROVIDES_SM_70, (;),
-          NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
-                              return ::cuda::__bfi(static_cast<_Up>(__dest), static_cast<_Up>(__source),
-                                                   __start, __width);))
-        // clang-format on
-      }
+      // clang-format off
+      NV_DISPATCH_TARGET( // all SM < 70
+        NV_PROVIDES_SM_70, (;),
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                            return ::cuda::__bfi(static_cast<_Up>(__dest), static_cast<_Up>(__source),
+                                                 __start, __width);))
+      // clang-format on
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
@@ -113,19 +107,14 @@ template <typename _Tp>
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#  if defined(_CCCL_BUILTIN_CONSTANT_P)
-    if (!(_CCCL_BUILTIN_CONSTANT_P(__value) && _CCCL_BUILTIN_CONSTANT_P(__start) && _CCCL_BUILTIN_CONSTANT_P(__width)))
-#  endif // _CCCL_BUILTIN_CONSTANT_P
+    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
-      if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
-      {
-        // clang-format off
-        NV_DISPATCH_TARGET( // all SM < 70
-          NV_PROVIDES_SM_70, (;),
-          NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
-                              return ::cuda::__bfe(static_cast<_Up>(__value), __start, __width);))
-        // clang-format on
-      }
+      // clang-format off
+      NV_DISPATCH_TARGET( // all SM < 70
+        NV_PROVIDES_SM_70, (;),
+        NV_IS_DEVICE,      (using _Up = ::cuda::std::_If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
+                            return ::cuda::__bfe(static_cast<_Up>(__value), __start, __width);))
+      // clang-format on
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
