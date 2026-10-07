@@ -197,8 +197,8 @@ def test_gitless_archive_does_not_inherit_enclosing_repository_revision(
     "change,relative_path",
     [
         ("modified", Path("cub/cub/test.cuh")),
-        ("untracked", Path("cudax/include/cuda/experimental/coop/algorithm")),
-        ("ignored", Path("cudax/include/cuda/experimental/coop/group")),
+        ("untracked", Path("libcudacxx/include/cuda/functional")),
+        ("ignored", Path("libcudacxx/include/cuda/hierarchy")),
         ("deleted", Path("cmake/install/cub.cmake")),
         ("modified", Path("python/cuda_coop/CMakeLists.txt")),
     ],

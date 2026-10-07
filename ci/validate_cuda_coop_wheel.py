@@ -45,8 +45,6 @@ _REQUIRED_HEADER_FILES = {
     "cuda/coop/_headers/include/cub/version.cuh",
     "cuda/coop/_headers/include/cub/block/block_load.cuh",
     "cuda/coop/_headers/include/cub/block/block_store.cuh",
-    "cuda/coop/_headers/include/cuda/experimental/coop/algorithm",
-    "cuda/coop/_headers/include/cuda/experimental/coop/group",
     "cuda/coop/_headers/include/thrust/detail/raw_pointer_cast.h",
     "cuda/coop/_headers/include/cuda/std/cstdint",
     "cuda/coop/_headers/include/nv/target",
@@ -55,7 +53,6 @@ _REQUIRED_HEADER_FILES = {
 _REQUIRED_LICENSES = {
     "LICENSE",
     "cub/LICENSE.TXT",
-    "cudax/LICENSE.TXT",
     "libcudacxx/LICENSE.TXT",
     "thrust/LICENSE",
 }

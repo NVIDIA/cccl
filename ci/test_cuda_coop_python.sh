@@ -107,8 +107,6 @@ paths = resolve_include_paths(
     required_headers=(
         "cub/block/block_load.cuh",
         "cub/block/block_store.cuh",
-        "cuda/experimental/coop/algorithm",
-        "cuda/experimental/coop/group",
         "thrust/detail/raw_pointer_cast.h",
         "cuda/std/cstdint",
     ),

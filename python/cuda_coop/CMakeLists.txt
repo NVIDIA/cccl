@@ -24,7 +24,7 @@ set(
 )
 if (CUDA_COOP_INSTALL_HEADER_BUNDLE)
   # cuda-coop owns its bundled CCCL headers. Follow the repository's install
-  # rules so CUB, Thrust, libcu++, and CUDAX stay on one source revision.
+  # rules so CUB, Thrust, and libcu++ stay on one source revision.
   set(CCCL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
   set(
     _cuda_coop_cccl_install_rules
@@ -41,12 +41,12 @@ if (CUDA_COOP_INSTALL_HEADER_BUNDLE)
 
   set(CCCL_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   set(CCCL_TOPLEVEL_PROJECT OFF)
-  set(CCCL_ENABLE_CUDAX ON)
+  set(CCCL_ENABLE_CUDAX OFF)
   set(CCCL_ENABLE_INSTALL_RULES ON)
   set(libcudacxx_ENABLE_INSTALL_RULES ON)
   set(CUB_ENABLE_INSTALL_RULES ON)
   set(Thrust_ENABLE_INSTALL_RULES ON)
-  set(cudax_ENABLE_INSTALL_RULES ON)
+  set(cudax_ENABLE_INSTALL_RULES OFF)
   set(CMAKE_INSTALL_INCLUDEDIR "cuda/coop/_headers/include" CACHE PATH "" FORCE)
   set(CMAKE_INSTALL_LIBDIR "cuda/coop/_headers/lib" CACHE PATH "" FORCE)
   include("${_cuda_coop_cccl_install_rules}")
@@ -72,31 +72,24 @@ if (CUDA_COOP_INSTALL_HEADER_BUNDLE)
   set(_cuda_coop_header_bundle_unverified OFF)
   if (_cuda_coop_source_is_worktree_root)
     # Match the headers and CMake package sources selected by the CCCL install
-    # rules, the rules and package configuration controlling the bundle, and the
-    # additional CUDAX headers installed below. Include ignored files because
-    # CMake's directory install rules do not consult Git ignore rules.
+    # rules and the package configuration controlling the bundle. Include
+    # ignored files because directory install rules do not consult Git ignores.
     set(
       _cuda_coop_bundle_input_pathspecs
       ":(glob)cub/cub/**/*.cuh"
       ":(glob)thrust/thrust/**/*.h"
       ":(glob)thrust/thrust/**/*.inl"
-      ":(glob)cudax/include/cuda/**/*.cuh"
-      ":(glob)cudax/include/cuda/**/*.h"
-      "cudax/include/cuda/experimental/coop/algorithm"
-      "cudax/include/cuda/experimental/coop/group"
       ":(glob)libcudacxx/include/cuda/**"
       ":(glob)libcudacxx/include/nv/**"
       ":(exclude,glob)libcudacxx/include/cuda/**/CMakeLists.txt"
       ":(exclude,glob)libcudacxx/include/nv/**/CMakeLists.txt"
       ":(glob)lib/cmake/cccl/**"
       ":(glob)lib/cmake/cub/**"
-      ":(glob)lib/cmake/cudax/**"
       ":(glob)lib/cmake/libcudacxx/**"
       ":(glob)lib/cmake/thrust/**"
       "cmake/CCCLInstallRules.cmake"
       "cmake/install/cccl.cmake"
       "cmake/install/cub.cmake"
-      "cmake/install/cudax.cmake"
       "cmake/install/libcudacxx.cmake"
       "cmake/install/thrust.cmake"
       "python/cuda_coop/CMakeLists.txt"
@@ -181,20 +174,5 @@ if (CUDA_COOP_INSTALL_HEADER_BUNDLE)
   install(
     FILES "${_cuda_coop_bundle_provenance}"
     DESTINATION cuda/coop/_headers
-  )
-
-  # CUDAX's standard install rule selects public *.cuh headers. Stage the *.h
-  # implementation headers and extensionless cooperative entry points too.
-  install(
-    DIRECTORY "${CCCL_SOURCE_DIR}/cudax/include/cuda"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    FILES_MATCHING
-    PATTERN "*.h"
-  )
-  install(
-    FILES
-      "${CCCL_SOURCE_DIR}/cudax/include/cuda/experimental/coop/algorithm"
-      "${CCCL_SOURCE_DIR}/cudax/include/cuda/experimental/coop/group"
-    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/cuda/experimental/coop"
   )
 endif()
