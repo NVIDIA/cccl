@@ -1,0 +1,31 @@
+name: Verify unique product headers
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-unique-headers:
+    name: Verify product headers are unique
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Check product headers are not byte-identical
+        run: |
+          python -m pip install pytest
+          python -m pytest -q python/cuda_cccl/tests/headers/test_unique_product_headers.py

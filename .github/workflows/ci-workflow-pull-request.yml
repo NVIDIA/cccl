@@ -50,6 +50,7 @@ jobs:
       sass_enabled: ${{ steps.build-sass-matrix.outputs.sass_enabled }}
       sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
+      unique_headers_enabled: ${{ steps.export-flags.outputs.unique_headers_enabled }}
       docs_enabled: ${{ steps.export-flags.outputs.docs_enabled }}
       rapids_enabled: ${{ steps.export-flags.outputs.rapids_enabled }}
       matx_enabled: ${{ steps.export-flags.outputs.matx_enabled }}
@@ -63,9 +64,10 @@ jobs:
         run: |
           output() { echo "$1=$2" | tee -a "${GITHUB_OUTPUT}"; }
 
-          output matrix_enabled  "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-matrix]') }}"
-          output vdc_enabled     "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-vdc]') }}"
-          output docs_enabled    "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-docs]') }}"
+          output matrix_enabled         "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-matrix]') }}"
+          output vdc_enabled             "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-vdc]') }}"
+          output unique_headers_enabled  "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-unique-headers]') }}"
+          output docs_enabled            "${{ !contains(github.event.head_commit.message, '[bench-only]') && !contains(github.event.head_commit.message, '[skip-docs]') }}"
           output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
           output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
           output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
@@ -343,6 +345,18 @@ jobs:
     uses: ./.github/workflows/verify-devcontainers.yml
     with:
       base_sha: ${{ needs.build-workflow.outputs.base_sha }}
+
+  verify-unique-headers:
+    name: Verify Unique Headers
+    needs: build-workflow
+    if: >-
+      ${{
+           needs.build-workflow.outputs.unique_headers_enabled == 'true' &&
+           github.repository == 'NVIDIA/cccl'
+      }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/verify-unique-headers.yml
 
   docs-build:
     name: Build documentation
@@ -707,6 +721,7 @@ jobs:
       - build-workflow
       - verify-workflow
       - verify-devcontainers
+      - verify-unique-headers
       - docs-build
       - test-cpu-import
       - dispatch-bench
@@ -731,9 +746,10 @@ jobs:
             fi
           }
 
-          check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
-          check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
-          check_result "docs-build"           "success" "${{needs.docs-build.result}}"
+          check_result "verify-workflow"       "success" "${{needs.verify-workflow.result}}"
+          check_result "verify-devcontainers"  "success" "${{needs.verify-devcontainers.result}}"
+          check_result "verify-unique-headers" "success" "${{needs.verify-unique-headers.result}}"
+          check_result "docs-build"            "success" "${{needs.docs-build.result}}"
           check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
 
           expected_bench_result="skipped"

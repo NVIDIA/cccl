@@ -26,6 +26,9 @@ Tag reference
    * - ``[skip-vdc]``
      - All "Validate Devcontainer" jobs.
      - Yes
+   * - ``[skip-unique-headers]``
+     - The product-header uniqueness check.
+     - Yes
    * - ``[skip-docs]``
      - The documentation verification build.
      - Yes
@@ -42,7 +45,7 @@ Tag reference
      - PyTorch canary builds only.
      - Yes
    * - ``[bench-only]``
-     - Equivalent to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``.
+     - Equivalent to ``[skip-matrix][skip-vdc][skip-unique-headers][skip-docs][skip-tpt]``.
      - Yes
 
 ``[skip-tpt]`` and ``[skip-third-party-testing]`` are aliases for the same tag.
@@ -50,7 +53,7 @@ Tag reference
 ``[bench-only]`` shorthand
 --------------------------
 
-``[bench-only]`` expands to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``. It skips all
+``[bench-only]`` expands to ``[skip-matrix][skip-vdc][skip-unique-headers][skip-docs][skip-tpt]``. It skips all
 non-benchmark job groups. Benchmarks are triggered separately by modifying ``ci/bench.yaml``
 relative to ``ci/bench.template.yaml``.
 
