@@ -44,16 +44,21 @@ _CCCL_API constexpr uint32_t __bit_log2(_Tp __t) noexcept
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) <= 8)
+#  if defined(_CCCL_BUILTIN_CONSTANT_P)
+    if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
+#  endif // _CCCL_BUILTIN_CONSTANT_P
     {
-      using _Up [[maybe_unused]] = _If<sizeof(_Tp) <= 4, uint32_t, uint64_t>;
-      NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::bfind(static_cast<_Up>(__t));))
-    }
-    else
-    {
-      NV_IF_TARGET(NV_IS_DEVICE,
-                   (auto __high = ::cuda::ptx::bfind(static_cast<uint64_t>(__t >> 64));
-                    return __high == ~uint32_t{0} ? ::cuda::ptx::bfind(static_cast<uint64_t>(__t)) : __high + 64;))
+      if constexpr (sizeof(_Tp) <= 8)
+      {
+        using _Up [[maybe_unused]] = _If<sizeof(_Tp) <= 4, uint32_t, uint64_t>;
+        NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::ptx::bfind(static_cast<_Up>(__t));))
+      }
+      else
+      {
+        NV_IF_TARGET(NV_IS_DEVICE,
+                     (auto __high = ::cuda::ptx::bfind(static_cast<uint64_t>(__t >> 64));
+                      return __high == ~uint32_t{0} ? ::cuda::ptx::bfind(static_cast<uint64_t>(__t)) : __high + 64;))
+      }
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
@@ -81,15 +86,20 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) <= 8)
+#  if defined(_CCCL_BUILTIN_CONSTANT_P)
+    if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
+#  endif // _CCCL_BUILTIN_CONSTANT_P
     {
-      // CUDA right shift (ptx::shr) returns 0 if the right operand is larger than the number of bits of the type
-      // The result is computed as max(1, bit_width(__t - 1)) because it is more efficient than the ternary operator
-      NV_IF_TARGET(NV_IS_DEVICE, //
-                   (auto __shift = ::cuda::ptx::shl(_Up{1}, __width); // 2^(ceil(log2(__t - 1)))
-                    auto __ret   = static_cast<_Tp>(::cuda::std::max(_Up{1}, __shift)); //
-                    _CCCL_ASSUME(__ret >= __t);
-                    return __ret;))
+      if constexpr (sizeof(_Tp) <= 8)
+      {
+        // CUDA right shift (ptx::shr) returns 0 if the right operand is larger than the number of bits of the type
+        // The result is computed as max(1, bit_width(__t - 1)) because it is more efficient than the ternary operator
+        NV_IF_TARGET(NV_IS_DEVICE, //
+                     (auto __shift = ::cuda::ptx::shl(_Up{1}, __width); // 2^(ceil(log2(__t - 1)))
+                      auto __ret   = static_cast<_Tp>(::cuda::std::max(_Up{1}, __shift)); //
+                      _CCCL_ASSUME(__ret >= __t);
+                      return __ret;))
+      }
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
@@ -108,14 +118,19 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    if constexpr (sizeof(_Tp) <= 8)
+#  if defined(_CCCL_BUILTIN_CONSTANT_P)
+    if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
+#  endif // _CCCL_BUILTIN_CONSTANT_P
     {
-      // CUDA left shift (ptx::shl) returns 0 if the right operand is larger than the number of bits of the type
-      // -> the result is 0 if __t == 0
-      NV_IF_TARGET(NV_IS_DEVICE, //
-                   (auto __ret = static_cast<_Tp>(::cuda::ptx::shl(_Up{1}, __log2)); // 2^(log2(t))
-                    _CCCL_ASSUME(__ret >= __t / 2 && __ret <= __t);
-                    return __ret;))
+      if constexpr (sizeof(_Tp) <= 8)
+      {
+        // CUDA left shift (ptx::shl) returns 0 if the right operand is larger than the number of bits of the type
+        // -> the result is 0 if __t == 0
+        NV_IF_TARGET(NV_IS_DEVICE, //
+                     (auto __ret = static_cast<_Tp>(::cuda::ptx::shl(_Up{1}, __log2)); // 2^(log2(t))
+                      _CCCL_ASSUME(__ret >= __t / 2 && __ret <= __t);
+                      return __ret;))
+      }
     }
   }
 #endif // !_CCCL_TILE_COMPILATION()
