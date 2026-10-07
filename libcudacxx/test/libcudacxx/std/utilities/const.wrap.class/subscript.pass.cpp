@@ -151,7 +151,10 @@ inline constexpr bool
 template <class T, class Arg, bool = HasSubscript<T, Arg>>
 inline constexpr bool HasNothrowSubscript = false;
 template <class T, class Arg>
-inline constexpr bool HasNothrowSubscript<T, Arg, true> = noexcept(cuda::std::declval<T&>()[cuda::std::declval<Arg>()]);
+// msvc 19.50 with nvcc 13.3 warns about a nonexistent comma operator in the C++17 subscript expression inside noexcept.
+// Use an explicit member call to check the same exception specification without triggering C4709.
+inline constexpr bool HasNothrowSubscript<T, Arg, true> =
+  noexcept(cuda::std::declval<T&>().operator[](cuda::std::declval<Arg>()));
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 static_assert(!HasSubscript<cuda::std::__constant_wrapper<4>, cuda::std::__constant_wrapper<1>>);
