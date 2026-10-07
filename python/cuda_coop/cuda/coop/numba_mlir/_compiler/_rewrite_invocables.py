@@ -27,7 +27,6 @@ from typing import TYPE_CHECKING, Any, cast
 
 from .._types import (
     _hash_symbol_value,
-    algo_coalesce_key,
     collect_specializations,
     make_invocable_from_specialization,
     prepare_ltoir_bundle,
@@ -179,8 +178,8 @@ class _InvocableRewrite:
         Collect factory specializations without immediately building each
         invocable, deduplicate identical matches, and associate each collected
         algorithm with its thread dimensions. Bundling is attempted only for
-        at least two unique matches and before any specialization has been
-        recorded as materialized in this compiler state.
+        at least two unique matches. Launch deferral happens during call
+        analysis, so a retry reaches bundling before any provider is emitted.
 
         This is an optional compilation optimization. Clear the previous
         bundle lookup first; a collection-count mismatch or an import, OS, or
@@ -205,13 +204,8 @@ class _InvocableRewrite:
             factories directly.
         """
 
-        rewrite = cast("CoopSinglePhaseRewrite", self)
         self._prebundled_specializations = {}
         if not matches:
-            return
-        if rewrite._state.metadata.get(
-            "__cuda_coop_numba_mlir_materialized_specializations__"
-        ):
             return
         unique_matches: dict[
             tuple[str, tuple[tuple[str, str, str], ...]], _RewriteMatch
@@ -322,37 +316,6 @@ class _InvocableRewrite:
         rewrite._invocable_cache[key] = invocable
         compile_cache[key] = invocable
         return (invocable, True)
-
-    def _record_invocable_specialization(self, invocable: object) -> None:
-        """Remember an emitted provider so planner retries do not rebundle it.
-
-        ``apply`` records each invocable after choosing it for an IR call. The
-        compiler-state list survives fresh rewrite objects and prevents a
-        later whole-function scan from preparing another bundle. Providers
-        without a specialization contribute no key.
-
-        Parameters
-        ----------
-        invocable : object
-            Callable provider whose optional ``specialization`` identifies
-            its generated implementation.
-        """
-
-        rewrite = cast("CoopSinglePhaseRewrite", self)
-        specialization = getattr(invocable, "specialization", None)
-        link_key = (
-            algo_coalesce_key(specialization)
-            if specialization is not None
-            else None
-        )
-        materialized_specializations = rewrite._state.metadata.setdefault(
-            "__cuda_coop_numba_mlir_materialized_specializations__", []
-        )
-        if (
-            link_key is not None
-            and link_key not in materialized_specializations
-        ):
-            materialized_specializations.append(link_key)
 
 
 __all__ = ["_InvocableRewrite"]
