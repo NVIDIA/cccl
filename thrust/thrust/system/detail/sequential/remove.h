@@ -34,49 +34,6 @@ remove_if(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, F
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  Predicate pred)
-{
-  return ::cuda::std::remove_copy_if(first, last, result, thrust::detail::wrapped_function<Predicate>{pred});
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  OutputIterator result,
-  Predicate pred)
-{
-  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
-
-  while (first != last)
-  {
-    if (!wrapped_pred(*stencil))
-    {
-      *result = *first;
-      ++result;
-    }
-
-    ++first;
-    ++stencil;
-  }
-
-  return result;
-}
-
-_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator remove_if(
   sequential::execution_policy<DerivedPolicy>&,
@@ -112,6 +69,50 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
       *result = *first;
       ++result;
     }
+    ++first;
+    ++stencil;
+  }
+
+  return result;
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  Predicate pred)
+{
+  return ::cuda::std::remove_copy_if(first, last, result, thrust::detail::wrapped_function<Predicate>{pred});
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+  sequential::execution_policy<DerivedPolicy>&,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred)
+{
+  // wrap pred
+  const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
+
+  while (first != last)
+  {
+    if (!wrapped_pred(*stencil))
+    {
+      *result = *first;
+      ++result;
+    }
+
     ++first;
     ++stencil;
   }
