@@ -224,6 +224,8 @@ name for the ``<`` to parse as a template argument list rather than as less-than
 help. C++20 lifted that, so the unqualified form works there. Qualifying them is therefore what
 keeps code portable across both.
 
+.. _libcudacxx-extended-api-fp-fpmp-conversions:
+
 Construction and conversion
 ---------------------------
 
@@ -269,9 +271,26 @@ disturbed:
      - implicit
 
 So ``fp64mp2 acc = 0;`` and ``fp32mp2 t = some_float;`` compile as expected, while
-``fp32mp2 t = some_double;`` does not. Conversion **out** to ``double`` is widening and always
-implicit. The cast is ``constexpr``, so full-precision coefficient tables can be built at compile
-time.
+``fp32mp2 t = some_double;`` does not. The cast is ``constexpr``, so full-precision coefficient
+tables can be built at compile time.
+
+The same rule governs the way **out**. ``fp32mp2`` converts to ``double`` implicitly, because a
+``double`` holds the whole pair; ``fp64mp2`` does not, because the conversion drops the low limb.
+``float`` and the integer types need the cast from either.
+
+Taken together that is the C++23 rule for extended floating-point types (P1467R9) — implicit
+where the conversion is value-preserving, written out where it is not — arrived at here from the
+IEEE-754 ``float``-to-``double`` analogy rather than from the paper. ``fp32mp2`` stands to
+``fp64mp2`` as ``float`` stands to ``double``, and the conversions behave accordingly.
+
+Conversions are one thing and mixed arithmetic another. A binary operator between an ``fpmp2``
+and a built-in scalar converts the scalar **into** the pair and yields the pair, so
+``some_fp32mp2 + some_double`` compiles rather than being rejected as an expression over two
+types neither of which contains the other. The ``double`` is brought into ``float`` exponent
+range as it goes, so one too large for that arrives as infinity and the addition yields NaN.
+Mixing two accuracy levels, ``fp32mp2`` with ``fp32mp2_low``, matches no overload and falls back
+on built-in ``double`` arithmetic. Where the other operand is a ``double`` whose magnitude is not
+known to fit, convert deliberately — to ``fp64mp2`` if the range is needed.
 
 Quad interchange sits outside that table. ``fp64mp2`` converts both ways with the library's
 128-bit type ``__fpmp_fp128`` — ``__float128`` on x86, IEEE ``long double`` on aarch64. Both

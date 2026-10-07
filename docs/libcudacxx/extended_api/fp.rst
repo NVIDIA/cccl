@@ -146,6 +146,25 @@ The unsuffixed name takes a default that differs between the two: ``mid`` for ``
 ``fp64_custom`` has no levels, since its accuracy is set by the exponent and mantissa widths.
 What each level does, and what it costs, is covered on the sub-component pages.
 
+.. _libcudacxx-extended-api-fp-conversions:
+
+Conversions
+-----------
+
+``fpmp`` follows the C++23 model for extended floating-point types (P1467R9): a conversion every
+value of the source type survives is implicit, and one that can lose information has to be written
+out. ``float`` reaches ``fp32mp2`` on its own and ``double`` does not; ``fp32mp2`` widens to
+``fp64mp2`` implicitly and the way back needs a cast. It is the familiar ``float``-to-``double``
+rule, applied to types whose value sets the language itself does not know about.
+
+``fpemu`` mirrors the conversion rules of the built-in types rather than the extended ones,
+because it is a drop-in for ``double``: the packed form holds exactly what binary64 holds, so it
+converts as permissively as ``double`` itself.
+
+The full tables are on the sub-component pages:
+:ref:`fpmp <libcudacxx-extended-api-fp-fpmp-conversions>` and
+:ref:`fpemu <libcudacxx-extended-api-fp-fpemu-conversions>`.
+
 One source for host and device
 ------------------------------
 

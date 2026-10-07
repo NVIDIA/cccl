@@ -152,6 +152,8 @@ underneath is swapped:
     cudax::fp64emu x = 2.0;   // implicit, as it would be to double
     auto r           = sqrt(x);   // unqualified: ADL finds the fpemu overload
 
+.. _libcudacxx-extended-api-fp-fpemu-conversions:
+
 Construction and conversion
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -180,19 +182,30 @@ Construction and conversion
      - implicit
 
    * - to ``float``
-     - **cast required**
-     - **cast required**
+     - implicit
+     - implicit
 
    * - to a standard integer type
-     - **cast required**, truncating
-     - **cast required**, truncating
+     - implicit, truncating
+     - implicit, truncating
 
 The packed form is deliberately as permissive as ``double`` itself, which is what makes it a
 drop-in — including the integer constructors, which are implicit at 64 bits as well as 32, on the
 same principle that makes ``long`` to ``double`` implicit despite its potential loss. The unpacked
-form asks for the cast everywhere, since entering it is a change of representation rather than
-only of type; the practical consequence is that ``acc += 0.5`` becomes
+form asks for the cast on the way **in**, since entering it is a change of representation rather
+than only of type; the practical consequence is that ``acc += 0.5`` becomes
 ``acc += cudax::fp64emu_unpacked{0.5}``.
+
+Conversions **out** are those of ``double``: ``float`` and the integer types are reachable without
+a cast from either form. The unpacked form rounds to ``double`` as it goes, which is the deferred
+rounding the representation exists for.
+
+``fpemu`` therefore mirrors the conversion rules of the built-in types rather than the C++23 ones
+for extended floating-point types that
+:ref:`fpmp follows <libcudacxx-extended-api-fp-fpmp-conversions>`. The packed form holds what
+binary64 holds, neither more nor less, so a conversion to or from ``double`` loses nothing either
+way. The unpacked form carries more, but as an intermediate representation rather than a storage
+format — which is why it is the one asking for the cast on the way in.
 
 ``__int128`` and ``__uint128`` are ``= delete``\ d in both directions, and ``__float128`` on the way
 in, rather than being absent — so the diagnostic names the rule instead of failing obscurely. Note
