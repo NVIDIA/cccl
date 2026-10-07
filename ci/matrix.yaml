@@ -84,7 +84,11 @@ workflows:
     # cudax.test.stf.*, cudax.example.stf.* and cudax.tests.stf.error.*), plus the
     # C and Python STF bindings that consume the same headers. Linux only.
     # `sm: 'gpu'` cannot be used with project 'target', so the arch is passed explicitly.
-    - {jobs: ['run_gpu'], project: 'target', ctk: ['12.X', '13.X'], cxx: ['gcc', 'clang'], gpu: 't4',
+    # Unversioned `gcc`/`clang` resolve to the newest host compilers (gcc15, clang21), which have
+    # no CTK 12.X devcontainer, so the 12.X row pins the newest compilers that 12.X ships with.
+    - {jobs: ['run_gpu'], project: 'target', ctk: '12.X', cxx: ['gcc14', 'clang19'], gpu: 't4',
+       args: '--preset cudax-cpp20 --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=75" --build-targets "cudax.test.stf cudax.example.stf" --ctest-targets "stf"'}
+    - {jobs: ['run_gpu'], project: 'target', ctk: '13.X', cxx: ['gcc', 'clang'], gpu: 't4',
        args: '--preset cudax-cpp20 --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=75" --build-targets "cudax.test.stf cudax.example.stf" --ctest-targets "stf"'}
     - {jobs: ['run_gpu'], project: 'target', ctk: '13.X', cxx: 'gcc', gpu: 'l4',
        args: '--preset cudax-cpp17 --cmake-options "-DCMAKE_CUDA_ARCHITECTURES=89" --build-targets "cudax.test.stf cudax.example.stf" --ctest-targets "stf"'}
