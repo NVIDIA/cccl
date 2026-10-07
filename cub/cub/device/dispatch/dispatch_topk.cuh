@@ -529,12 +529,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators
-    // DeviceTopK has no index tie-break, so any set of tied keys is valid and -0.0 may rank below +0.0
-    constexpr bool normalize_minus_zero = false;
+    // The trailing `false` skips the -0.0 normalization: DeviceTopK has no index tie-break, so any set of tied keys is
+    // valid and -0.0 may rank below +0.0
     using identify_candidates_op =
-      identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, normalize_minus_zero>;
-    using extract_bin_op =
-      extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, normalize_minus_zero>;
+      identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, false>;
+    using extract_bin_op = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, false>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
