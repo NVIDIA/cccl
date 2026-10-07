@@ -142,7 +142,7 @@ def _rewrite_planned_movement(function, *, arg_types):
         False,
     )
     rewrite._record_invocable_specialization = lambda _invocable: None
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -283,7 +283,7 @@ def _run_single_phase_to_provider_boundary(
         ),
     )
     matched_group_call = False
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     for label in sorted(func_ir.blocks):
         rewrite.match(
             func_ir,
@@ -428,7 +428,7 @@ def test_positional_static_runtime_control_cannot_be_repeated_by_keyword(
         CoopSinglePhaseRewriteError,
         match="duplicate runtime argument 'num_valid_items'",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 def test_provider_memory_parameters_require_contiguous_arrays():
@@ -523,7 +523,7 @@ def test_static_factory_value_across_blocks_preserves_remaining_uses(
     monkeypatch.setattr(
         rewrite, "_record_invocable_specialization", lambda _: None
     )
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -1256,7 +1256,7 @@ def test_storage_free_load_store_accept_temp_storage_without_using_it(
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
     rewrite._record_invocable_specialization = lambda _invocable: None
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -2398,7 +2398,7 @@ def test_single_phase_rewrite_preserves_static_block_movement_bindings(
     )
     rewrite = CoopSinglePhaseRewrite(state)
     matches = []
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         if rewrite.match(func_ir, block, state.typemap, state.calltypes):

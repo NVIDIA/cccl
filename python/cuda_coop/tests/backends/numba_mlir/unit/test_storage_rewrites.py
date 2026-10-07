@@ -86,7 +86,7 @@ def _rewrite(function, *, arg_types=()):
         calltypes={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -648,7 +648,7 @@ def _rewrite_registered_provider(function, *, ssa=False, lifo=False):
         metadata={"targetoptions": {}},
     )
     rewrite = CoopSinglePhaseRewrite(state)
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     items = list(func_ir.blocks.items())
     if not lifo:
@@ -735,7 +735,7 @@ def test_storage_provider_without_plan_requires_block_scope(
             prepared.append(tuple(matches))
         )
 
-        assert rewrite.prepare_function(func_ir)
+        assert rewrite.prepare_calls_and_storage(func_ir)
         assert len(prepared) == 1
         assert len(prepared[0]) == 1
         assert provider.calls == [((), {})]
@@ -751,7 +751,7 @@ def test_storage_provider_without_plan_requires_block_scope(
         CoopSinglePhaseRewriteError,
         match="require block execution and block synchronization scopes",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
     assert provider.calls == []
 
 
@@ -938,7 +938,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
     )
 
     with pytest.raises(CoopSinglePhaseRewriteError, match=message):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
     assert provider.calls == []
 
 
@@ -980,7 +980,7 @@ def test_planned_caller_storage_contract_must_match_the_descriptor(
     rewrite._materialize_invocable = lambda _match: (invocable, False)
 
     if descriptor_auto_sync:
-        assert rewrite.prepare_function(func_ir)
+        assert rewrite.prepare_calls_and_storage(func_ir)
         return
     # The planner parsed auto_sync=True into the plan while the rewrite sees
     # auto_sync=False: neither parser may silently win.
@@ -988,7 +988,7 @@ def test_planned_caller_storage_contract_must_match_the_descriptor(
         CoopSinglePhaseRewriteError,
         match="disagrees between the group lowering plan",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
@@ -1072,7 +1072,7 @@ def _rewrite_with_fake_invocable(
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
     rewrite._record_invocable_specialization = lambda _invocable: None
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -1274,7 +1274,7 @@ def test_temp_storage_phi_rejects_incompatible_contracts_before_compile(
         CoopSinglePhaseRewriteError,
         match="TempStorage aliases have inconsistent contracts",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 def test_group_planning_rejects_mixed_descriptor_phi():
@@ -1340,7 +1340,7 @@ def test_temp_storage_passed_to_a_non_inlined_device_function_is_rejected(
         CoopSinglePhaseRewriteError,
         match="device function that was not inlined",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 @pytest.mark.parametrize(
@@ -1576,7 +1576,7 @@ def test_equivalent_temp_storage_phi_escape_is_rejected_before_compile():
         CoopSinglePhaseRewriteError,
         match="would escape to runtime",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 def test_leading_pointer_provider_stages_one_dynamic_backing(monkeypatch):
@@ -1657,7 +1657,7 @@ def test_mixed_temp_storage_primitive_and_escape_fails_before_compile():
         CoopSinglePhaseRewriteError,
         match="would escape to runtime",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
@@ -1789,7 +1789,7 @@ def test_getitem_temp_storage_syntax_is_not_an_accepted_descriptor_use():
         CoopSinglePhaseRewriteError,
         match="may only be passed as temp_storage=",
     ):
-        rewrite.prepare_function(func_ir)
+        rewrite.prepare_calls_and_storage(func_ir)
 
 
 def _planner_for_storage_policy(specification, use_specifications):

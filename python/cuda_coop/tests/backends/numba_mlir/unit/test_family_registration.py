@@ -598,7 +598,7 @@ def test_registered_rewrite_callbacks_drive_generic_storage_rewrite():
         metadata={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
@@ -725,7 +725,7 @@ def test_storage_free_provider_accepts_unused_temp_storage_descriptor():
         metadata={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
-    assert rewrite.prepare_function(func_ir)
+    assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
