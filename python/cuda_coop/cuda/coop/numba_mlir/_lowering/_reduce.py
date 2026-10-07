@@ -2,30 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Build CUB reduction wrappers and CUDAX group-reduction helpers.
+"""Build CUB block and warp reduction wrappers.
 
-Direct CUB providers use shared-core algorithm descriptions and can supply
-built-in operators, compiled Python callbacks, or valid-prefix controls. CUDAX
-providers emit a C-ABI helper for a resolved group and a built-in operator.
-Their ABI has no TempStorage pointer or wrapper reuse barrier; CUDAX may still
-use internal shared memory and synchronization.
-
-All factories run on the host to create device callables. They do not perform
-the reduction on host data. Group planning determines which provider can
-preserve the public operation's participation and result contract.
+Providers use shared-core algorithm descriptions with built-in operators,
+compiled Python callbacks, and valid-prefix controls. Every call uses planned
+scratch storage and returns a value defined only at group rank zero.
 """
 
 from __future__ import annotations
 
-import hashlib
 import operator
-import re
 from enum import Enum
 from typing import Any
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
 import numpy as np
-from numba_cuda_mlir import cuda
 
 from cuda.coop._core import (
     BindingKind,
@@ -33,15 +24,11 @@ from cuda.coop._core import (
     Dependency,
     PythonOperator,
     SynchronizationScope,
-    ThreadGroup,
     make_block_reduce_specialization,
     make_warp_reduce_specialization,
     normalize_block_reduce_algorithm,
-    render_group_decl_lines,
-    render_hierarchy_decl,
 )
 
-from .._compiler import _nvrtc
 from .._compiler._operations import (
     StorageABI,
     factory_operation,
@@ -54,10 +41,7 @@ from .._compiler._parameters import (
 )
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
 from .._types import (
-    NUMBA_TYPES_TO_CPP,
-    Array,
     BoundedInteger,
-    RawCAbiInvocable,
     make_invocable_from_specialization,
     numba_type_to_wrapper,
 )
@@ -70,15 +54,6 @@ _BUILTIN_REDUCE_OPERATORS = {
     "bit_and": "::cuda::std::bit_and<T>",
     "bit_or": "::cuda::std::bit_or<T>",
     "bit_xor": "::cuda::std::bit_xor<T>",
-}
-_CUDAX_REDUCE_OPERATORS = {
-    "sum": "::cuda::std::plus<>{}",
-    "multiplies": "::cuda::std::multiplies<>{}",
-    "min": "::cuda::minimum<>{}",
-    "max": "::cuda::maximum<>{}",
-    "bit_and": "::cuda::std::bit_and<>{}",
-    "bit_or": "::cuda::std::bit_or<>{}",
-    "bit_xor": "::cuda::std::bit_xor<>{}",
 }
 _REDUCE_OPERATOR_ALIASES = {
     None: "sum",
@@ -116,20 +91,6 @@ _CALLABLE_REDUCE_OPERATOR_ALIASES = {
     np.bitwise_xor: "bit_xor",
 }
 _BITWISE_REDUCE_OPERATORS = frozenset({"bit_and", "bit_or", "bit_xor"})
-_CUDAX_INCLUDE_LINES = (
-    "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX",
-    "#define _CUDAX_DISABLE_CG_INTEROP",
-    "#include <cuda/barrier>",
-    "#include <cuda/devices>",
-    "#include <cuda/functional>",
-    "#include <cuda/hierarchy>",
-    "#include <cuda/experimental/hierarchy.cuh>",
-    "#include <cuda/std/cstdint>",
-    "#include <cuda/std/functional>",
-    "#include <cuda/std/type_traits>",
-    "#include <cuda/experimental/coop/algorithm>",
-    "#include <cuda/experimental/coop/group>",
-)
 
 
 def normalize_reduce_operation(binary_op: Any) -> str:
@@ -530,268 +491,6 @@ def warp_reduce(
     )
 
 
-def _symbol_component(value: Any) -> str:
-    component = re.sub(r"\W+", "_", str(value)).strip("_")
-    return component or "anon"
-
-
-def _group_symbol_component(group: ThreadGroup) -> str:
-    """Hash the full group semantics into a readable native symbol component.
-
-    Group kind alone does not identify hierarchy dimensions or mappings.
-    Including their semantic key separates helpers for distinct groups.
-    """
-
-    digest = hashlib.sha1(repr(group.semantic_key).encode()).hexdigest()[:16]
-    return f"{_symbol_component(group.kind)}_{digest}"
-
-
-def _cpp_type(dtype: Any) -> str:
-    dtype = normalize_dtype_param(dtype)
-    try:
-        return NUMBA_TYPES_TO_CPP[dtype]
-    except KeyError as exc:
-        raise TypeError(
-            "cuda.coop.numba_mlir CUDAX reduce supports built-in numeric "
-            f"dtypes; got {dtype!r}"
-        ) from exc
-
-
-def _group_prelude(group: ThreadGroup) -> list[str]:
-    hierarchy = group.hierarchy
-    if hierarchy.implicit:
-        return render_group_decl_lines(group)
-    return [
-        *render_hierarchy_decl(hierarchy),
-        *render_group_decl_lines(group),
-    ]
-
-
-def render_group_reduce_source(
-    *,
-    group: ThreadGroup,
-    dtype: Any,
-    items_per_thread: int,
-    value_kind: str,
-    operation: str,
-    broadcast: bool,
-    symbol: str,
-) -> str:
-    """Render a CUDAX reduction helper with no TempStorage argument.
-
-    Embed the resolved group declaration and view a scalar as a one-item
-    array, or reinterpret the supplied array pointer at its fixed extent. Emit
-    the built-in reduction with broadcast or root-only visibility. A
-    non-exhaustive mapped group returns zero for excluded threads before
-    calling the collective; a root-only result uses zero for non-root lanes.
-    These fallback values do not extend the public result-validity contract.
-
-    The helper has no caller scratch operand. Its CUDAX implementation may use
-    internal static shared memory, including block, cluster, and mapped warp
-    reductions. Provider rewriting checks that this memory can coexist with
-    other shared allocations in the kernel.
-    """
-
-    cpp_type = _cpp_type(dtype)
-    if value_kind == "scalar":
-        parameter = f"{cpp_type} item"
-        thread_data = f"  {cpp_type} thread_data[1] = {{item}};"
-    else:
-        parameter = "void* raw_items"
-        thread_data = (
-            f"  auto& thread_data = *reinterpret_cast<{cpp_type} "
-            f"(*)[{items_per_thread}]>(raw_items);"
-        )
-    lines = [
-        *_CUDAX_INCLUDE_LINES,
-        "",
-        f'extern "C" __device__ {cpp_type} {symbol}({parameter}) {{',
-        *_group_prelude(group),
-    ]
-    if group.mapping is not None and group.complete_membership is False:
-        lines.extend(
-            (
-                "  if (!::cuda::gpu_thread.is_part_of(group)) {",
-                f"    return {cpp_type}{{}};",
-                "  }",
-            )
-        )
-    lines.append(thread_data)
-    operator_cpp = _CUDAX_REDUCE_OPERATORS[operation]
-    if broadcast:
-        lines.extend(
-            (
-                "  auto reduced = ::cuda::experimental::coop::reduce(",
-                "      ::cuda::experimental::broadcasted, group, thread_data,",
-                f"      {operator_cpp});",
-                f"  {cpp_type} result = reduced;",
-            )
-        )
-    else:
-        lines.extend(
-            (
-                "  auto reduced = ::cuda::experimental::coop::reduce(",
-                f"      group, thread_data, {operator_cpp});",
-                f"  {cpp_type} result = reduced.value_or({cpp_type}{{}});",
-            )
-        )
-    lines.extend(("  return result;", "}", ""))
-    return "\n".join(lines)
-
-
-def _expected_cudax_scope(group: ThreadGroup) -> SynchronizationScope:
-    """Select the execution scope declared by a CUDAX group provider.
-
-    A mapped group containing one physical warp uses warp scope. Larger mapped
-    warp groups and clusters use group scope; this selects the factory
-    contract without adding a wrapper synchronization barrier.
-    """
-
-    return {
-        "thread": SynchronizationScope.NONE,
-        "warp": SynchronizationScope.WARP,
-        "threads_within_warp": SynchronizationScope.WARP,
-        "block": SynchronizationScope.BLOCK,
-        "warps_within_block": (
-            SynchronizationScope.WARP
-            if group.static_size == 32
-            else SynchronizationScope.GROUP
-        ),
-        "cluster": SynchronizationScope.GROUP,
-    }[group.kind]
-
-
-def _group_reduce(
-    provider_factory: Any,
-    dtype: Any,
-    group: ThreadGroup,
-    binary_op: Any = None,
-    items_per_thread: int = 1,
-    value_kind: str | None = None,
-    broadcast: bool = True,
-    _compile_context: _nvrtc.CompileContext | None = None,
-) -> RawCAbiInvocable:
-    """Build and compile one resolved CUDAX reduction helper.
-
-    Require a supported group, fixed payload form, built-in operator, and
-    matching factory scopes. Grid reduction is unavailable because it needs a
-    per-launch workspace. Resolve the compiler context and target, then
-    qualify the symbol with group, operation, dtype, extent, and return mode.
-
-    Compile a ``RawCAbiInvocable`` that passes scalars by value or arrays by
-    pointer. Its ABI requests no TempStorage operand or added reuse barrier;
-    internal CUDAX memory and synchronization remain part of the helper.
-    """
-
-    if not isinstance(group, ThreadGroup):
-        raise TypeError(
-            "cuda.coop.numba_mlir.reduce group must be a ThreadGroup"
-        )
-    if group.kind == "grid":
-        raise NotImplementedError(
-            "cuda.coop.numba_mlir.reduce grid groups require a hidden "
-            "per-launch provider workspace"
-        )
-    if not isinstance(broadcast, bool):
-        raise TypeError("cuda.coop.numba_mlir.reduce broadcast must be a bool")
-    items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
-    if value_kind is None:
-        value_kind = "scalar" if items_per_thread == 1 else "array"
-    if value_kind not in {"array", "scalar"}:
-        raise ValueError("value_kind must be 'array' or 'scalar'")
-    if value_kind == "scalar" and items_per_thread != 1:
-        raise ValueError("scalar reduce requires items_per_thread == 1")
-    operation = normalize_reduce_operation(binary_op)
-    dtype = validate_reduce_operator_dtype(operation, dtype)
-    registered = factory_operation(provider_factory)
-    if registered is None:
-        raise RuntimeError(
-            f"unregistered cuda.coop provider {provider_factory!r}"
-        )
-    expected_scope = _expected_cudax_scope(group)
-    if (
-        registered.storage_abi is not StorageABI.NONE
-        or registered.execution_scope is not expected_scope
-        or registered.synchronization_scope is not SynchronizationScope.NONE
-    ):
-        raise ValueError(
-            "CUDAX reduction provider metadata does not match the group scope"
-        )
-    # The CUDA module reexports this accessor but omits it from its stub.
-    device = (
-        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
-    )
-    cc = int(device.compute_capability[0]) * 10 + int(
-        device.compute_capability[1]
-    )
-    compile_context = (
-        _nvrtc.resolve_compile_context()
-        if _compile_context is None
-        else _compile_context
-    )
-    mode = "broadcast" if broadcast else "root"
-    symbol = (
-        "cuda_coop_numba_mlir_group_reduce_"
-        f"{_group_symbol_component(group)}_{operation}_"
-        f"{_symbol_component(dtype)}_"
-        f"{value_kind}_x{items_per_thread}_{mode}_cc{cc}_ctx_"
-        f"{compile_context.symbol_suffix}"
-    )
-    source = render_group_reduce_source(
-        group=group,
-        dtype=dtype,
-        items_per_thread=items_per_thread,
-        value_kind=value_kind,
-        operation=operation,
-        broadcast=broadcast,
-        symbol=symbol,
-    )
-    parameters: tuple[Any, ...]
-    transforms: tuple[str, ...]
-    if value_kind == "scalar":
-        parameters = (dtype,)
-        transforms = ("value",)
-    else:
-        parameters = (Array(dtype, items_per_thread),)
-        transforms = ("ptr",)
-    return RawCAbiInvocable(
-        source=source,
-        symbol=symbol,
-        return_type=dtype,
-        parameters=parameters,
-        abi_transforms=transforms,
-        cc=cc,
-        compile_context=compile_context,
-        storage_abi=registered.storage_abi,
-        execution_scope=registered.execution_scope,
-        synchronization_scope=registered.synchronization_scope,
-    )
-
-
-def group_reduce_none(**kwargs: Any) -> RawCAbiInvocable:
-    """Build a current-thread CUDAX reduction provider."""
-
-    return _group_reduce(group_reduce_none, **kwargs)
-
-
-def group_reduce_warp(**kwargs: Any) -> RawCAbiInvocable:
-    """Build a physical or logical-warp CUDAX reduction provider."""
-
-    return _group_reduce(group_reduce_warp, **kwargs)
-
-
-def group_reduce_block(**kwargs: Any) -> RawCAbiInvocable:
-    """Build a block CUDAX reduction provider."""
-
-    return _group_reduce(group_reduce_block, **kwargs)
-
-
-def group_reduce_group(**kwargs: Any) -> RawCAbiInvocable:
-    """Build a mapped-warp or cluster CUDAX reduction provider."""
-
-    return _group_reduce(group_reduce_group, **kwargs)
-
-
 for _factory, _operation in (
     (sum, "block_sum"),
     (block_reduce_builtin, "block_reduce_builtin"),
@@ -818,21 +517,7 @@ for _factory, _operation in (
         execution_scope=SynchronizationScope.WARP,
         synchronization_scope=SynchronizationScope.WARP,
     )
-for _factory, _namespace, _scope in (
-    (group_reduce_none, "cudax_none", SynchronizationScope.NONE),
-    (group_reduce_warp, "cudax_warp", SynchronizationScope.WARP),
-    (group_reduce_block, "cudax_block", SynchronizationScope.BLOCK),
-    (group_reduce_group, "cudax_group", SynchronizationScope.GROUP),
-):
-    register_factory(
-        _factory,
-        operation="group_reduce",
-        namespace=_namespace,
-        storage_abi=StorageABI.NONE,
-        execution_scope=_scope,
-        synchronization_scope=SynchronizationScope.NONE,
-    )
-del _factory, _namespace, _operation, _scope
+del _factory, _operation
 
 
 __all__: tuple[str, ...] = ()

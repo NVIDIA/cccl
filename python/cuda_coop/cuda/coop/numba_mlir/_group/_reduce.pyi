@@ -12,9 +12,10 @@ from ..._typing import (
     PortableThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
+    TempStorageLike,
     ValidItems,
 )
-from .._thread_group import BlockGroup, ReductionGroup, WarpGroup
+from .._thread_group import BlockGroup, WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=PortableNumericScalar)
 _ScalarT = TypeVar("_ScalarT", bound=PortableNumericScalar)
@@ -46,45 +47,23 @@ class _NumpyReduceUfunc(Protocol):
 
 # Typeshed exposes ``operator.*`` functions as ``(Any, Any) -> Any``. An
 # object-wide signature accepts those aliases while keeping dtype-specific
-# custom callbacks on the CUB-only, ``broadcast=False`` overloads below.
+# custom callbacks on the custom callback overloads below.
 _OperatorReduceAlias: TypeAlias = Callable[[object, object], object]
-_CudaxReduceOperator: TypeAlias = (
+_BuiltinReduceOperator: TypeAlias = (
     ReduceOperator | _OperatorReduceAlias | _NumpyReduceUfunc
 )
 _CallbackReduceAlgorithm: TypeAlias = Literal["raking", "warp_reductions"]
 
 @overload
 def reduce(
-    group: ReductionGroup,
-    value: PortableThreadDataLike[_ItemT],
-    /,
-    *,
-    binary_op: _CudaxReduceOperator | None = None,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
-) -> _ItemT: ...
-@overload
-def reduce(
-    group: ReductionGroup,
-    value: _ScalarT,
-    /,
-    *,
-    binary_op: _CudaxReduceOperator | None = None,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
-) -> _ScalarT: ...
-@overload
-def reduce(
     group: BlockGroup,
     value: PortableThreadDataLike[_ItemT],
     /,
     *,
-    binary_op: _CudaxReduceOperator | None = None,
-    broadcast: Literal[False],
+    binary_op: _BuiltinReduceOperator | None = None,
     valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT: ...
 @overload
 def reduce(
@@ -93,9 +72,9 @@ def reduce(
     /,
     *,
     binary_op: Callable[[_ItemT, _ItemT], _ItemT],
-    broadcast: Literal[False],
     valid_items: None = None,
     algorithm: _CallbackReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT: ...
 @overload
 def reduce(
@@ -103,10 +82,10 @@ def reduce(
     value: _ScalarT,
     /,
     *,
-    binary_op: _CudaxReduceOperator | None = None,
-    broadcast: Literal[False],
+    binary_op: _BuiltinReduceOperator | None = None,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
 @overload
 def reduce(
@@ -115,9 +94,9 @@ def reduce(
     /,
     *,
     binary_op: Callable[[_ScalarT, _ScalarT], _ScalarT],
-    broadcast: Literal[False],
     valid_items: ValidItems | None = None,
     algorithm: _CallbackReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
 @overload
 def reduce(
@@ -126,31 +105,11 @@ def reduce(
     /,
     *,
     binary_op: (
-        _CudaxReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None
+        _BuiltinReduceOperator | Callable[[_ScalarT, _ScalarT], _ScalarT] | None
     ) = None,
-    broadcast: Literal[False],
     valid_items: ValidItems | None = None,
     algorithm: None = None,
-) -> _ScalarT: ...
-@overload
-def sum(
-    group: ReductionGroup,
-    value: PortableThreadDataLike[_ItemT],
-    /,
-    *,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
-) -> _ItemT: ...
-@overload
-def sum(
-    group: ReductionGroup,
-    value: _ScalarT,
-    /,
-    *,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
+    temp_storage: None = None,
 ) -> _ScalarT: ...
 @overload
 def sum(
@@ -158,9 +117,9 @@ def sum(
     value: PortableThreadDataLike[_ItemT],
     /,
     *,
-    broadcast: Literal[False],
     valid_items: None = None,
-    algorithm: ReduceAlgorithm,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT: ...
 @overload
 def sum(
@@ -168,9 +127,9 @@ def sum(
     value: _ScalarT,
     /,
     *,
-    broadcast: Literal[False],
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
 @overload
 def sum(
@@ -178,7 +137,7 @@ def sum(
     value: _ScalarT,
     /,
     *,
-    broadcast: Literal[False],
-    valid_items: ValidItems,
+    valid_items: ValidItems | None = None,
     algorithm: None = None,
+    temp_storage: None = None,
 ) -> _ScalarT: ...

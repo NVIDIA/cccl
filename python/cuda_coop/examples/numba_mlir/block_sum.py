@@ -24,7 +24,7 @@ def block_sum(source, output, items_per_thread):
     values = coop.ThreadData(items_per_thread)
     for item in range(items_per_thread):
         values[item] = source[thread * items_per_thread + item]
-    total = coop.sum(coop.this_block(), values, broadcast=False)
+    total = coop.sum(coop.this_block(), values)
     if thread == 0:
         output[0] = total
 

@@ -227,10 +227,10 @@ def test_stub_only_group_aliases_exist_at_runtime_without_becoming_exports():
     from cuda.coop._core.api import thread_group as portable_groups
     from cuda.coop.numba_mlir import _thread_group as qualified_groups
 
-    for name in ("MemoryGroup", "ReductionGroup", "BlockGroup", "WarpGroup"):
+    for name in ("MemoryGroup", "BlockGroup", "WarpGroup"):
         assert getattr(portable_groups, name) is portable_groups.ThreadGroup
         assert name not in portable_groups.__all__
-    for name in ("ReductionGroup", "BlockGroup", "WarpGroup"):
+    for name in ("BlockGroup", "WarpGroup"):
         assert getattr(qualified_groups, name) is qualified_groups.ThreadGroup
         assert name not in qualified_groups.__all__
 

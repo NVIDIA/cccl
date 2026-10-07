@@ -12,7 +12,7 @@ resolves the dimensions from ``LaunchFacts``.
 A descriptor is a Python planning value. Constructing one does not launch
 a kernel, synchronize threads, or establish that a primitive supports
 the requested group. Group resolution and operation planning check those
-requirements before a backend uses the CUDAX declaration helpers here.
+requirements before a backend lowers the operation.
 """
 
 from __future__ import annotations
@@ -465,10 +465,9 @@ class ThreadGroup:
     see :ref:`thread groups <coop-thread-groups>` and
     :ref:`participation requirements <coop-participation>`.
 
-    The Numba-CUDA-MLIR implementation uses the C++ ``cuda::experimental::coop``
-    group types from the :github:`group header
-    <cudax/include/cuda/experimental/coop/group>` and the
-    :ref:`CUDA C++ hierarchy queries <cccl-runtime-hierarchy-queries>`.
+    Numba-CUDA-MLIR lowers queries through the
+    :ref:`CUDA C++ hierarchy queries <cccl-runtime-hierarchy-queries>` and
+    synchronization through native CUDA barriers.
 
     Examples
     --------
@@ -795,8 +794,8 @@ class ThreadGroup:
         The enclosing block must contain complete physical warps. Logical
         Warp primitives support widths of 1, 2, 4, 8, 16, or 32. Mapped
         groups may query their constituents and immediate physical parent,
-        but not a higher hierarchy level. Groups of physical warps have
-        limited primitive support and no explicit synchronization methods.
+        but not a higher hierarchy level. Groups of physical warps support
+        queries and have no explicit synchronization methods.
         See :ref:`thread groups <coop-thread-groups>` and
         :ref:`participation requirements <coop-participation>`.
 
@@ -1079,7 +1078,7 @@ def render_hierarchy_decl(
     var_name: str = "hierarchy",
     indent: str = "  ",
 ) -> list[str]:
-    """Generate a CUDAX hierarchy declaration from known dimensions.
+    """Generate a CUDA hierarchy declaration from known dimensions.
 
     An implicit hierarchy needs no declaration and returns an empty list.
     For an explicit hierarchy, emit the known grid and cluster levels before
@@ -1106,144 +1105,8 @@ def render_hierarchy_decl(
     return lines
 
 
-def render_group_decl(
-    group: ThreadGroup,
-    *,
-    var_name: str = "group",
-    hierarchy_var: str = "hierarchy",
-    indent: str = "  ",
-) -> str:
-    """Generate one CUDAX declaration for a physical group.
-
-    Use the supplied ``hierarchy_var`` for an explicit hierarchy, or CUDAX's
-    implicit hierarchy for the current launch. The caller must declare an
-    explicit hierarchy first. Mapped groups need additional declarations;
-    reject them here and use ``render_group_decl_lines``.
-    """
-
-    if group.mapping is not None:
-        raise ValueError(
-            "render_group_decl supports physical groups only; use "
-            "render_group_decl_lines for mapped groups"
-        )
-    assert group.hierarchy is not None
-    if group.hierarchy.implicit:
-        return (
-            f"{indent}::cuda::experimental::coop::this_{group.kind} "
-            f"{var_name}{{::cuda::experimental::implicit_hierarchy()}};"
-        )
-    return (
-        f"{indent}::cuda::experimental::coop::this_{group.kind} "
-        f"{var_name}{{{hierarchy_var}}};"
-    )
-
-
-def render_group_decl_lines(
-    group: ThreadGroup,
-    *,
-    var_name: str = "group",
-    hierarchy_var: str = "hierarchy",
-    indent: str = "  ",
-) -> list[str]:
-    """Generate a CUDAX group and any declarations its mapping needs.
-
-    Physical groups need one declaration. A thread subgroup also needs its
-    physical warp parent and a lane synchronizer. A subgroup of physical
-    warps needs its block parent and shared barrier storage, with one
-    barrier slot per complete subgroup.
-
-    The mapped block's subgroup count must be known to size that storage;
-    otherwise raise ``ValueError``. These lines describe the group and its
-    storage. They do not establish the enclosing launch's capabilities or
-    prove that a primitive supports the group.
-    """
-
-    if group.mapping is None:
-        return [
-            render_group_decl(
-                group,
-                var_name=var_name,
-                hierarchy_var=hierarchy_var,
-                indent=indent,
-            )
-        ]
-
-    assert group.parent is not None
-    mapping = group.mapping
-    exhaustive = "true" if mapping.exhaustive else "false"
-    mapping_args = str(mapping.count)
-    if not mapping.exhaustive:
-        mapping_args = (
-            f"::cuda::experimental::coop::non_exhaustive, {mapping.count}"
-        )
-    parent_name = f"{var_name}_parent"
-    lines = [
-        render_group_decl(
-            group.parent,
-            var_name=parent_name,
-            hierarchy_var=hierarchy_var,
-            indent=indent,
-        )
-    ]
-    if group.kind == "threads_within_warp":
-        lines.extend(
-            [
-                (
-                    f"{indent}::cuda::experimental::coop::generic_group "
-                    f"{var_name}{{"
-                ),
-                f"{indent}    ::cuda::gpu_thread, {parent_name},",
-                (
-                    f"{indent}    ::cuda::experimental::coop::group_by<"
-                    f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
-                ),
-                (
-                    f"{indent}    "
-                    "::cuda::experimental::coop::lane_synchronizer{}};"
-                ),
-            ]
-        )
-        return lines
-
-    groups_per_parent = group.groups_per_parent
-    if groups_per_parent is None:
-        raise ValueError(
-            "mapped warp group requires a static parent group count"
-        )
-    lines.extend(
-        [
-            f"{indent}using {var_name}_barriers_type =",
-            (
-                f"{indent}    ::cuda::barrier<::cuda::thread_scope_block>"
-                f"[{groups_per_parent}];"
-            ),
-            f"{indent}__shared__ ::cuda::std::aligned_storage_t<",
-            f"{indent}    sizeof({var_name}_barriers_type),",
-            (
-                f"{indent}    alignof({var_name}_barriers_type)> "
-                f"{var_name}_barriers_storage;"
-            ),
-            f"{indent}auto& {var_name}_barriers =",
-            f"{indent}    reinterpret_cast<{var_name}_barriers_type&>(",
-            f"{indent}        {var_name}_barriers_storage);",
-            f"{indent}::cuda::experimental::coop::generic_group {var_name}{{",
-            f"{indent}    ::cuda::warp, {parent_name},",
-            (
-                f"{indent}    ::cuda::experimental::coop::group_by<"
-                f"{mapping.count}, {exhaustive}>{{{mapping_args}}},"
-            ),
-            (
-                f"{indent}    "
-                "::cuda::experimental::coop::barrier_synchronizer{"
-                f"{var_name}_barriers}}}};"
-            ),
-        ]
-    )
-    return lines
-
-
 def cpp_level_expr(level: str) -> str:
-    """Translate a hierarchy level to its CUDAX tag expression.
+    """Translate a hierarchy level to its CUDA tag expression.
 
     For example, ``thread`` selects ``::cuda::gpu_thread``. Reuse level
     normalization so the accepted Python spellings stay consistent.
@@ -1307,8 +1170,6 @@ __all__ = [
     "normalize_thread_dim",
     "normalize_thread_group_kind",
     "normalize_thread_level",
-    "render_group_decl",
-    "render_group_decl_lines",
     "render_hierarchy_decl",
     "this_block",
     "this_cluster",

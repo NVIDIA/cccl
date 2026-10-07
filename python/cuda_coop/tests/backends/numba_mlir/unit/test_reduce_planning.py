@@ -152,106 +152,6 @@ def _match_before_inference(func_ir, *, arg_types):
     return rewrite
 
 
-def test_reduce_registers_scalar_result_and_all_provider_abis():
-    from cuda.coop._core import SynchronizationScope
-    from cuda.coop.numba_mlir._compiler import _group_reduce
-    from cuda.coop.numba_mlir._compiler._operations import (
-        GroupResultSource,
-        StorageABI,
-        factory_operation,
-        group_primitive,
-        rewrite_operation,
-    )
-    from cuda.coop.numba_mlir._lowering import _reduce
-
-    del _group_reduce
-    assert group_primitive("reduce").results == (
-        GroupResultSource("value", None),
-    )
-    assert group_primitive("sum").results == (GroupResultSource("value", None),)
-    expected = {
-        _reduce.sum: (
-            "block_sum",
-            "block",
-            StorageABI.LEADING_POINTER,
-            "block",
-        ),
-        _reduce.block_reduce_builtin: (
-            "block_reduce_builtin",
-            "block",
-            StorageABI.LEADING_POINTER,
-            "block",
-        ),
-        _reduce.reduce: (
-            "block_reduce_callback",
-            "block",
-            StorageABI.LEADING_POINTER,
-            "block",
-        ),
-        _reduce.warp_sum: (
-            "warp_sum",
-            "warp",
-            StorageABI.LEADING_POINTER,
-            "warp",
-        ),
-        _reduce.warp_reduce_builtin: (
-            "warp_reduce_builtin",
-            "warp",
-            StorageABI.LEADING_POINTER,
-            "warp",
-        ),
-        _reduce.warp_reduce: (
-            "warp_reduce_callback",
-            "warp",
-            StorageABI.LEADING_POINTER,
-            "warp",
-        ),
-        _reduce.group_reduce_none: (
-            "group_reduce",
-            "cudax_none",
-            StorageABI.NONE,
-            "none",
-        ),
-        _reduce.group_reduce_warp: (
-            "group_reduce",
-            "cudax_warp",
-            StorageABI.NONE,
-            "warp",
-        ),
-        _reduce.group_reduce_block: (
-            "group_reduce",
-            "cudax_block",
-            StorageABI.NONE,
-            "block",
-        ),
-        _reduce.group_reduce_group: (
-            "group_reduce",
-            "cudax_group",
-            StorageABI.NONE,
-            "group",
-        ),
-    }
-    for factory, (operation, namespace, storage_abi, scope) in expected.items():
-        metadata = factory_operation(factory)
-        assert metadata.operation == operation
-        assert metadata.namespace == namespace
-        assert metadata.storage_abi is storage_abi
-        assert metadata.execution_scope is SynchronizationScope(scope)
-        assert metadata.synchronization_scope is (
-            SynchronizationScope(scope)
-            if storage_abi is StorageABI.LEADING_POINTER
-            else SynchronizationScope.NONE
-        )
-
-    assert rewrite_operation("block_sum").runtime_arg_counts == frozenset(
-        {1, 2}
-    )
-    assert rewrite_operation("warp_sum").runtime_arg_counts == frozenset({1, 2})
-    assert rewrite_operation("group_reduce").factory_namespaces == frozenset(
-        {"cudax_block", "cudax_group", "cudax_none", "cudax_warp"}
-    )
-
-
 def test_public_reduce_markers_have_group_first_signatures():
     import cuda.coop.numba_mlir as qualified
     from cuda import coop as portable
@@ -260,11 +160,17 @@ def test_public_reduce_markers_have_group_first_signatures():
         "group",
         "value",
         "binary_op",
-        "broadcast",
         "valid_items",
         "algorithm",
+        "temp_storage",
     )
-    expected_sum = ("group", "value", "broadcast", "valid_items", "algorithm")
+    expected_sum = (
+        "group",
+        "value",
+        "valid_items",
+        "algorithm",
+        "temp_storage",
+    )
     assert tuple(signature(qualified.reduce).parameters) == expected_reduce
     assert tuple(signature(portable.reduce).parameters) == expected_reduce
     assert tuple(signature(qualified.sum).parameters) == expected_sum
@@ -290,7 +196,6 @@ def test_public_reduce_selectors_are_normalized_before_provider(
         return coop.sum(
             coop.this_block(),
             value,
-            broadcast=False,
             algorithm=" RAKING-COMMUTATIVE-ONLY ",
         )
 
@@ -311,7 +216,7 @@ def test_public_reduce_selectors_are_normalized_before_provider(
 
     func_ir, planner = _plan(operator_kernel, arg_types=(types.int32,))
     assert planner.run()
-    call = _provider_call(func_ir, _reduce.group_reduce_block)
+    call = _provider_call(func_ir, _reduce.block_reduce_builtin)
     assert _kwarg_value(func_ir, call, "binary_op") == "max"
 
 
@@ -346,7 +251,6 @@ def test_public_reduce_rejects_non_string_selectors_before_provider(
             return coop.sum(
                 coop.this_block(),
                 value,
-                broadcast=False,
                 algorithm=selector,
             )
 
@@ -397,66 +301,6 @@ def test_portable_reduce_rejects_qualified_callable_extension(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "qualified", [False, True], ids=["portable", "qualified"]
-)
-@pytest.mark.parametrize(
-    ("group", "provider_name", "launch"),
-    [
-        pytest.param("thread", "group_reduce_none", {}, id="thread"),
-        pytest.param("warp", "group_reduce_warp", {}, id="warp"),
-        pytest.param(
-            "logical_warp", "group_reduce_warp", {}, id="logical-warp"
-        ),
-        pytest.param("block", "group_reduce_block", {}, id="block"),
-        pytest.param("mapped_warp", "group_reduce_warp", {}, id="mapped-warp"),
-        pytest.param(
-            "mapped_warps", "group_reduce_group", {}, id="mapped-warps"
-        ),
-        pytest.param(
-            "cluster",
-            "group_reduce_group",
-            {"grid": (2, 1, 1), "cluster": (2, 1, 1)},
-            id="cluster",
-        ),
-    ],
-)
-def test_full_builtin_reduce_selects_fixed_scope_cudax_provider(
-    group,
-    provider_name,
-    launch,
-    qualified,
-):
-    from numba_cuda_mlir import types
-
-    import cuda.coop.numba_mlir as numba_coop
-    from cuda import coop as portable
-    from cuda.coop.numba_mlir._lowering import _reduce
-
-    coop = numba_coop if qualified else portable
-    descriptor = {
-        "thread": coop.this_thread(),
-        "warp": coop.this_warp(),
-        "logical_warp": coop.this_warp().group_by(8),
-        "block": coop.this_block(),
-        "mapped_warp": coop.this_block().group_by(1),
-        "mapped_warps": coop.this_block().group_by(2),
-        "cluster": coop.this_cluster(),
-    }[group]
-
-    def kernel(value):
-        return coop.reduce(descriptor, value, binary_op="max", broadcast=False)
-
-    func_ir, planner = _plan(kernel, arg_types=(types.int32,), **launch)
-    assert planner.run()
-    provider = getattr(_reduce, provider_name)
-    call = _provider_call(func_ir, provider)
-    assert len(call.args) == 1
-    assert _kwarg_value(func_ir, call, "value_kind") == "scalar"
-    assert _kwarg_value(func_ir, call, "binary_op") == "max"
-    assert _kwarg_value(func_ir, call, "broadcast") is False
-
-
-@pytest.mark.parametrize(
     ("binary_op", "canonical"),
     (
         pytest.param(operator.add, "sum", id="operator-add"),
@@ -473,7 +317,7 @@ def test_full_builtin_reduce_selects_fixed_scope_cudax_provider(
         pytest.param(np.bitwise_xor, "bit_xor", id="numpy-bitwise-xor"),
     ),
 )
-def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
+def test_qualified_callable_aliases_plan_as_builtin_cub_operations(
     binary_op,
     canonical,
 ):
@@ -487,9 +331,12 @@ def test_qualified_callable_aliases_plan_as_builtin_cudax_operations(
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
     assert planner.run()
-    call = _provider_call(func_ir, _reduce.group_reduce_block)
-    expected = None if canonical == "sum" else canonical
-    assert _kwarg_value(func_ir, call, "binary_op") == expected
+    provider = (
+        _reduce.sum if canonical == "sum" else _reduce.block_reduce_builtin
+    )
+    call = _provider_call(func_ir, provider)
+    if canonical != "sum":
+        assert _kwarg_value(func_ir, call, "binary_op") == canonical
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
@@ -523,7 +370,6 @@ def test_reduce_infers_untyped_thread_data_symmetrically(
         return module.sum(
             module.this_block(),
             items,
-            broadcast=False,
             algorithm="raking",
         )
 
@@ -559,7 +405,6 @@ def test_extent_one_thread_data_preserves_array_abi_through_factory_boundary(
         return coop.sum(
             coop.this_block(),
             items,
-            broadcast=False,
             algorithm="raking",
         )
 
@@ -630,7 +475,6 @@ def test_direct_cub_reduce_selects_operation_and_scope(
             descriptor,
             value,
             binary_op=binary_op,
-            broadcast=False,
             valid_items=7,
         )
 
@@ -665,7 +509,6 @@ def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
             return coop.sum(
                 descriptor,
                 value,
-                broadcast=False,
                 valid_items=5,
             )
 
@@ -676,7 +519,6 @@ def test_complete_nonexhaustive_logical_warp_materializes_cub_storage(fallback):
                 descriptor,
                 value,
                 binary_op=callback,
-                broadcast=False,
             )
 
     func_ir, planner = _plan(kernel, arg_types=(types.int32,))
@@ -720,7 +562,6 @@ def test_runtime_valid_items_is_checked_before_an_int64_provider_cast():
         return coop.sum(
             coop.this_block(),
             value,
-            broadcast=False,
             valid_items=valid_items,
         )
 
@@ -760,7 +601,6 @@ def test_runtime_valid_items_rejects_invalid_dtype_before_provider(
         return coop.sum(
             coop.this_block(),
             value,
-            broadcast=False,
             valid_items=valid_items,
         )
 
@@ -790,7 +630,6 @@ def test_static_valid_items_rejects_before_provider(valid_items, monkeypatch):
         return coop.sum(
             coop.this_block(),
             value,
-            broadcast=False,
             valid_items=valid_items,
         )
 
@@ -827,7 +666,7 @@ def test_float_bitwise_reduce_rejects_before_provider(monkeypatch):
         planner.run()
 
 
-def test_grid_reduce_has_stable_workspace_diagnostic():
+def test_grid_reduce_rejects_unsupported_group():
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -836,9 +675,7 @@ def test_grid_reduce_has_stable_workspace_diagnostic():
         return coop.sum(coop.this_grid(), value)
 
     _, planner = _plan(kernel, arg_types=(types.int32,))
-    with pytest.raises(
-        NotImplementedError, match="hidden per-launch workspace"
-    ):
+    with pytest.raises(NotImplementedError, match="Reduce supports"):
         planner.run()
 
 
@@ -918,91 +755,7 @@ def test_cub_factories_declare_leading_storage_and_scope(monkeypatch):
     }
 
 
-def test_cudax_source_has_required_macros_and_no_external_barrier():
-    from numba_cuda_mlir import types
-
-    import cuda.coop.numba_mlir as coop
-    from cuda.coop._core import LaunchFacts, resolve_thread_group
-    from cuda.coop.numba_mlir._lowering import _reduce
-
-    group = resolve_thread_group(
-        coop.this_block().group_by(2),
-        LaunchFacts(exact_block_dim=(64, 1, 1)),
-    ).group
-    source = _reduce.render_group_reduce_source(
-        group=group,
-        dtype=types.int32,
-        items_per_thread=1,
-        value_kind="array",
-        operation="sum",
-        broadcast=False,
-        symbol="mapped_reduce",
-    )
-    assert source.index(
-        "_CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX"
-    ) < source.index("#include")
-    assert source.index("_CUDAX_DISABLE_CG_INTEROP") < source.index("#include")
-    assert "::cuda::experimental::coop::generic_group group{" in source
-    assert "reinterpret_cast<::cuda::std::int32_t (*)[1]>" in source
-    assert "value_or" in source
-    assert "group.sync" not in source
-    assert "bar.sync" not in source
-    assert "TempStorage" not in source
-
-
-def test_mapped_cudax_factory_uses_compiler_cache_not_module_cache(monkeypatch):
-    from numba_cuda_mlir import types
-
-    import cuda.coop.numba_mlir as coop
-    from cuda.coop._core import LaunchFacts, resolve_thread_group
-    from cuda.coop.numba_mlir._lowering import _reduce
-
-    group = resolve_thread_group(
-        coop.this_block().group_by(2),
-        LaunchFacts(exact_block_dim=(64, 1, 1)),
-    ).group
-    created = []
-    monkeypatch.setattr(
-        _reduce.cuda,
-        "get_current_device",
-        lambda: SimpleNamespace(compute_capability=(9, 0)),
-    )
-    monkeypatch.setattr(
-        _reduce._nvrtc,
-        "resolve_compile_context",
-        lambda: SimpleNamespace(symbol_suffix="test"),
-    )
-    monkeypatch.setattr(
-        _reduce,
-        "RawCAbiInvocable",
-        lambda **kwargs: created.append(kwargs) or SimpleNamespace(**kwargs),
-    )
-
-    first = _reduce.group_reduce_group(
-        dtype=types.int32,
-        group=group,
-        value_kind="scalar",
-    )
-    second = _reduce.group_reduce_group(
-        dtype=types.int32,
-        group=group,
-        value_kind="scalar",
-    )
-    array = _reduce.group_reduce_group(
-        dtype=types.int32,
-        group=group,
-        value_kind="array",
-    )
-    assert first is not second
-    assert array is not first
-    assert len(created) == 3
-    assert created[0]["symbol"] == created[1]["symbol"]
-    assert created[0]["symbol"] != created[2]["symbol"]
-    assert "warps_within_block" in created[0]["symbol"]
-    assert not hasattr(_reduce, "_GROUP_REDUCE_INVOCABLE_CACHE")
-
-
-def test_planned_cudax_and_cub_calls_match_before_inference():
+def test_planned_full_and_prefix_calls_match_before_inference():
     from numba_cuda_mlir import types
 
     import cuda.coop.numba_mlir as coop
@@ -1014,7 +767,6 @@ def test_planned_cudax_and_cub_calls_match_before_inference():
         return coop.sum(
             coop.this_warp(),
             value,
-            broadcast=False,
             valid_items=valid_items,
         )
 
@@ -1025,3 +777,43 @@ def test_planned_cudax_and_cub_calls_match_before_inference():
         func_ir, planner = _plan(function, arg_types=arg_types)
         assert planner.run()
         _match_before_inference(func_ir, arg_types=arg_types)
+
+
+@pytest.mark.parametrize("qualified", [False, True])
+@pytest.mark.parametrize("operation", ["reduce", "sum"])
+def test_no_broadcast(qualified, operation):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as root_coop
+
+    module = qualified_coop if qualified else root_coop
+    primitive = module.reduce if operation == "reduce" else module.sum
+
+    def kernel(value):
+        return primitive(module.this_block(), value, broadcast=True)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(
+        TypeError, match="unexpected keyword argument 'broadcast'"
+    ):
+        planner.run()
+
+
+@pytest.mark.parametrize("group_kind", ["warp", "logical_warp"])
+def test_warp_reduction_rejects_explicit_storage(group_kind):
+    from numba_cuda_mlir import types
+
+    from cuda import coop
+
+    group = coop.this_warp()
+    if group_kind == "logical_warp":
+        group = group.group_by(8)
+
+    def kernel(value):
+        scratch = coop.TempStorage()
+        return coop.sum(group, value, temp_storage=scratch)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(NotImplementedError, match="temp_storage.*block"):
+        planner.run()

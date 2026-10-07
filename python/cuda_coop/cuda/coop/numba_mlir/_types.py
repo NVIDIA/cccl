@@ -3440,7 +3440,7 @@ class Invocable:
 class RawCAbiInvocable:
     """Expose generated C-ABI device code as a compiler-local callable.
 
-    Group queries and CUDAX reductions already have a concrete
+    Group queries already have a concrete
     C signature; they do not need the CUB ``Algorithm`` wrapper
     machinery. Construction validates that signature, compiles
     the source to LTO IR, and owns a temporary link file until

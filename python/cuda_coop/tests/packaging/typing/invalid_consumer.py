@@ -200,7 +200,6 @@ portable.reduce(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
     binary_op=select_left,
-    broadcast=False,
 )
 portable.reduce(  # expected-error: [call-overload]
     portable_block,
@@ -210,7 +209,6 @@ portable.reduce(  # expected-error: [call-overload]
 portable.sum(  # expected-error: [call-overload]
     portable_block,
     np.int32(1),
-    broadcast=False,
     algorithm=0,
 )
 portable.sum(  # expected-error: [call-overload]
@@ -234,7 +232,6 @@ coop.reduce(  # expected-error: [call-overload]
 coop.sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    broadcast=False,
     algorithm=0,
 )
 complex_values = cast(portable.ThreadDataLike[np.complex64], object())
@@ -245,25 +242,49 @@ coop.sum(  # expected-error: [type-var]
 coop.sum(  # expected-error: [call-overload]
     qualified_block,
     values,
-    broadcast=False,
     valid_items=2,
 )
 coop.sum(  # expected-error: [call-overload]
     coop.this_warp(),
     np.int32(1),
-    broadcast=False,
     algorithm="raking",
 )
-coop.reduce(
+coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    binary_op=select_left,  # expected-error: [arg-type]
+    binary_op=select_left,
     broadcast=True,
 )
 coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     binary_op=select_left,
-    broadcast=False,
     algorithm="raking_commutative_only",
+)
+
+portable.sum(
+    portable.this_cluster(),  # expected-error: [arg-type]
+    np.int32(1),
+)
+coop.sum(
+    qualified_block.group_by(2),  # expected-error: [arg-type]
+    np.int32(1),
+)
+portable.sum(
+    portable.this_thread(),  # expected-error: [arg-type]
+    np.int32(1),
+)
+coop.sum(
+    coop.this_warp(),  # expected-error: [arg-type]
+    values,
+)
+portable.sum(
+    portable.this_warp(),  # expected-error: [arg-type]
+    np.int32(1),
+    temp_storage=portable.TempStorage(),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    temp_storage=0,
 )

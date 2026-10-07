@@ -113,17 +113,18 @@ Groups and thread data
 :func:`cuda.coop.this_block` describes the current CUDA thread block, and
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
-consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store, and
-Exchange support all three forms; Shuffle is block-only. Warp operations
-require an enclosing block with a multiple of 32 threads and no incomplete
-final physical warp. For a multidimensional block, threads are linearized
-in x-major order. Every member of a participating group must reach its
-collective; complete sibling logical groups may take different control-flow
-paths.
+consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
+Exchange, and Reduce support all three forms; Shuffle is block-only. Warp
+operations require an enclosing block with a multiple of 32 threads and no
+incomplete final physical warp. For a multidimensional block, threads are
+linearized in x-major order. Every member of a participating group must reach
+its collective; complete sibling logical groups may take different
+control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, although those are not Load, Store, Exchange, or
-Shuffle targets. ``ThreadGroup`` exposes the C++ hierarchy query surface.
+groups of physical warps. These groups support hierarchy queries; the
+primitives above require block or warp groups. ``ThreadGroup`` exposes the
+hierarchy query surface.
 ``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
 ``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``; mapped groups
 have narrower limits, described below. Results use the unsigned type of the
@@ -392,7 +393,7 @@ release.
 Temporary storage
 -----------------
 
-Block Load and Store accept an optional ``TempStorage`` descriptor.
+Block Load, Store, and Reduce accept an optional ``TempStorage`` descriptor.
 
 Scratch belongs to one block during its kernel execution. A descriptor does
 not carry data between blocks or kernel launches.
@@ -465,11 +466,9 @@ allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
 cooperative backing becomes dynamic, user static shared arrays are also
 unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
-reductions also allocate internal static shared memory, even without a
-``TempStorage`` operand. They cannot coexist with user dynamic shared arrays
-or dynamic cooperative backing in these compiler releases. Storage-free
-Load/Store algorithms do not add this restriction.
+user data out of shared memory. Reduce uses this same cooperative backing,
+including when ``temp_storage`` is omitted. Storage-free Load/Store algorithms
+do not add this restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
