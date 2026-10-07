@@ -49,7 +49,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
 {
   // Cannot delegate to cuda::std::minmax_element because the standard returns
   // the *last* equivalent maximum, while Thrust's parallel backends (and existing
-  // tests) expect the *first* equivalent maximum.
+  // tests) expect the *first* equivalent maximum. Changing this is a breaking change.
+  // TODO(cccl 4.0): align with the standard and delegate to cuda::std::minmax_element.
   thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
 
   ForwardIterator imin = first;
