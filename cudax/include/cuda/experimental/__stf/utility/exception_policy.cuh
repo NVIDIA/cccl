@@ -677,8 +677,8 @@ inline constexpr bool __needs_future_v<__retry_n_t> = true;
  * `retry(3)`, or `retry(forever)` until the action succeeds. `retry` alone is `retry * 1`.
  *
  * Answers `__fn()`'s value for a non-void callable, or `std::ignore` after a successful
- * re-run of a void callable. `&` discards non-final answers, so `retry & subst(0)` is legal
- * (and almost never what you want).
+ * re-run of a void callable. A re-attempt chooses a value, so it cannot stand on the left of
+ * `&`: `retry & subst(0)` is rejected, and `retry | subst(0)` is the fallback after one re-run.
  *
  * On the code channel the re-run's status decides: a success is handled, a failure passes
  * through, carrying the latest status. A past result has no action to re-run, so `retry` on
@@ -1180,6 +1180,13 @@ template <class _V>
 inline constexpr bool __produces_value_v<subst_t<_V>> = true;
 template <>
 inline constexpr bool __produces_value_v<as_expected_t> = true;
+// A re-attempt answers the re-run's result, so it chooses a value too.
+template <>
+inline constexpr bool __produces_value_v<retry_t> = true;
+template <>
+inline constexpr bool __produces_value_v<detail::__retry_n_t> = true;
+template <>
+inline constexpr bool __produces_value_v<backoff_t> = true;
 template <>
 inline constexpr bool __produces_value_v<defer_t> = true;
 template <>
@@ -1979,9 +1986,10 @@ struct __composite_hooks
   }
 };
 
-// The sequencing composite `_L & _R`: on the exception path run `_L` then `_R`; `_R` answers.
-// `&` discards non-final answers -- a non-final `retry` re-runs and discards, legal and almost
-// never what you want.
+// The sequencing composite `_L & _R`: on the exception path run `_L` then `_R`. The last answer
+// given decides: `_R`'s answer if it has one, else `_L`'s. The left side may not choose a value
+// (subst, defer, as_expected, retry, a converter): `&` would discard or override it, which is
+// never what the author meant; the value-producing policy goes on the right, or into a `|`.
 template <class _L, class _R>
 struct __policy_and : __composite_hooks<_L, _R>
 {
@@ -1991,33 +1999,62 @@ struct __policy_and : __composite_hooks<_L, _R>
   // rethrowing) but may handle a status, so the right side is reachable there.
   static_assert(!__answers_nothing<_L> || __selects_returned_v<_L>,
                 "policies after a never-returning policy are unreachable");
-  static_assert(!(__produces_value_v<_L> && __produces_value_v<_R>),
-                "both sides of & produce a value (subst, as_expected, defer, remember, a converter), and & discards "
-                "the "
-                "left one; keep a single value-producing policy");
+  static_assert(!__produces_value_v<_L>,
+                "the left side of & chooses a value (subst, as_expected, defer, retry, a converter) that & would "
+                "discard or override; put the value-producing policy on the right, or use | for a fallback");
 
-  // Present iff either side has a hook. `_L` fires (answer discarded), then `_R` answers; with
-  // no `_R` hook the composite's answer is `void`, which `__interpret_answer` rejects in final
-  // position -- correct, since such a chain cannot answer on its own.
+  // Present iff either side has a hook. `_L` fires, then `_R`; the last answer given decides:
+  // `_R`'s unless `_R` answers `void` (an effect only) or has no hook, in which case `_L`'s
+  // stands (at most the resume tag, since `_L` cannot choose a value). A chain whose answer is
+  // `void` is rejected by `__interpret_answer` in final position, since it cannot answer alone.
   template <class _Fn,
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> || __has_exception_hook<_RR>, int> = 0>
   decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    if constexpr (__has_exception_hook<_L>)
+    if constexpr (!__has_exception_hook<_R>)
     {
-      static_cast<void>(this->__l_(__exception, __loc, __fn)); // non-final answers are discarded
+      return this->__l_(__exception, __loc, __fn);
     }
-    if constexpr (__has_exception_hook<_R>)
+    else if constexpr (::cuda::std::is_void_v<__hook_answer_t<_R, _Fn>>)
     {
+      // The right side only has an effect: the left's answer stands.
+      if constexpr (!__has_exception_hook<_L> || ::cuda::std::is_void_v<__hook_answer_t<_L, _Fn>>)
+      {
+        if constexpr (__has_exception_hook<_L>)
+        {
+          this->__l_(__exception, __loc, __fn);
+        }
+        this->__r_(__exception, __loc, __fn);
+      }
+      else if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<__hook_answer_t<_L, _Fn>>, nullval>)
+      {
+        this->__l_(__exception, __loc, __fn); // never returns (a selector declining this channel)
+        _CCCL_UNREACHABLE();
+      }
+      else
+      {
+        auto __answer = this->__l_(__exception, __loc, __fn); // the resume tag
+        this->__r_(__exception, __loc, __fn);
+        return __answer;
+      }
+    }
+    else
+    {
+      if constexpr (__has_exception_hook<_L>)
+      {
+        static_cast<void>(this->__l_(__exception, __loc, __fn)); // the right decides
+      }
       return this->__r_(__exception, __loc, __fn);
     }
   }
 
   // The code channel, as on the exception channel: `_L` runs first, and a status it passes
   // through leaves the composite without reaching `_R` (which is what makes `when(gate, p)` a
-  // gate); otherwise `_R` answers. A throw from either side ends the matter.
+  // gate); otherwise `_R` answers. Since `_L` cannot choose a value, its handled answer is the
+  // success status, which is also what an effect-only `_R` yields, so "the last answer given
+  // decides" needs no second branch here. A throw from either side ends the matter.
   template <
     class _Status,
     class _Fn,
@@ -5316,7 +5353,7 @@ UNITTEST("re-running policies")
   {
     using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
     int calls     = 0;
-    const auto r  = errsink(as_expected & retry)->*[&]() -> _Result {
+    const auto r  = errsink(retry | as_expected)->*[&]() -> _Result {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -5329,7 +5366,7 @@ UNITTEST("re-running policies")
   }
   {
     int calls     = 0;
-    const auto ep = errsink(defer & retry)->*[&]() -> ::std::exception_ptr {
+    const auto ep = errsink(retry | defer)->*[&]() -> ::std::exception_ptr {
       if (++calls < 2)
       {
         throw ::std::runtime_error("once");
@@ -5337,20 +5374,6 @@ UNITTEST("re-running policies")
       return {};
     };
     EXPECT(!ep); // empty: the re-attempt succeeded and the callable supplied the value
-    EXPECT(calls == 2);
-  }
-
-  // The uniform discard law: & throws away non-final answers, even a re-run's.
-  {
-    int calls   = 0;
-    const int v = errsink(retry & subst(-1))->*[&]() -> int {
-      if (++calls < 2)
-      {
-        throw ::std::runtime_error("once");
-      }
-      return 99; // the re-run succeeds...
-    };
-    EXPECT(v == -1); // ...and & discards its answer; subst answers. Legal, documented, weird.
     EXPECT(calls == 2);
   }
 
@@ -5857,7 +5880,7 @@ UNITTEST("repetition")
   {
     using _Result = ::cuda::std::expected<int, ::std::exception_ptr>;
     int calls     = 0;
-    const auto r  = errsink((as_expected & retry) * 3)->*[&]() -> _Result {
+    const auto r  = errsink(retry * 3 | as_expected)->*[&]() -> _Result {
       if (++calls < 3)
       {
         throw ::std::runtime_error("transient");

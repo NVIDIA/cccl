@@ -10,6 +10,7 @@ set(
   es_shift_unknown_return.cu
   es_subst_int_for_status.cu
   es_two_substs.cu
+  es_and_left_value.cu
   es_unwind_and.cu
   es_notify_or.cu
   es_type_selector_on_code.cu
