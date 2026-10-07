@@ -4,6 +4,7 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/memory_resource>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 #include <algorithm>
@@ -24,6 +25,30 @@
 
 namespace
 {
+struct nontrivial_default_constructible_t
+{
+  constexpr nontrivial_default_constructible_t() noexcept
+      : value(-1)
+  {}
+
+  constexpr explicit nontrivial_default_constructible_t(std::int32_t value_) noexcept
+      : value(value_)
+  {}
+
+  friend constexpr bool operator==(const nontrivial_default_constructible_t& lhs,
+                                   const nontrivial_default_constructible_t& rhs) noexcept
+  {
+    return lhs.value == rhs.value;
+  }
+
+  const std::int32_t value;
+};
+
+static_assert(cuda::std::is_trivially_copyable_v<nontrivial_default_constructible_t>);
+static_assert(!cuda::std::is_trivially_default_constructible_v<nontrivial_default_constructible_t>);
+static_assert(!cuda::std::is_copy_assignable_v<nontrivial_default_constructible_t>);
+static_assert(nontrivial_default_constructible_t{}.value == -1);
+
 [[nodiscard]] std::size_t get_alloc_bytes()
 {
   std::size_t free_bytes{};
@@ -156,6 +181,19 @@ CUB_TEST("c2h checked host memory resource creates writable host buffers", "[c2h
   resource.deallocate_sync(aligned_ptr, aligned_bytes, alignment);
 
   REQUIRE_THROWS_AS(resource.allocate_sync(1, 0), std::bad_alloc);
+}
+
+CUB_TEST("c2h host buffer initializer list constructs elements", "[c2h][buffers][host_resource]", CUB_SMALL)
+{
+  const auto device = c2h::current_device();
+  const cuda::stream stream{device};
+
+  using value_type = nontrivial_default_constructible_t;
+  constexpr std::array<value_type, 4> expected{value_type{1}, value_type{2}, value_type{3}, value_type{4}};
+  const auto initialized =
+    c2h::make_host_buffer<value_type>(stream, {value_type{1}, value_type{2}, value_type{3}, value_type{4}});
+
+  REQUIRE(std::equal(initialized.begin(), initialized.end(), expected.begin(), expected.end()));
 }
 
 CUB_TEST("c2h buffer generator handles zero items", "[c2h][buffers][generators]", CUB_SMALL)

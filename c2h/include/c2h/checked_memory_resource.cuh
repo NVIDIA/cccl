@@ -11,6 +11,7 @@
 #include <cuda/__runtime/api_wrapper.h>
 #include <cuda/buffer>
 #include <cuda/devices>
+#include <cuda/std/__memory/uninitialized_algorithms.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/initializer_list>
 #include <cuda/stream>
@@ -226,12 +227,7 @@ make_host_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda::s
 
   auto result =
     ::cuda::make_buffer<T>(stream, checked_host_buffer_memory_resource{device}, values.size(), ::cuda::no_init);
-  auto output = result.begin();
-  for (const auto& value : values)
-  {
-    *output = value;
-    ++output;
-  }
+  ::cuda::std::uninitialized_copy(values.begin(), values.end(), result.begin());
   return result;
 }
 
