@@ -31,14 +31,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-// Get a driver function pointer, casting to the PFN typedef for type safety.
+// Get a non-throwing driver function result using the PFN typedef for type safety.
 // Uses PFN_ typedefs from cudaTypedefs.h to avoid ABI mismatches caused by
 // #define'd version aliases in cuda.h (e.g. #define cuFoo cuFoo_v2).
 // The ## operator suppresses macro expansion of the function name, so this is
 // safe even for names that are #define'd to versioned variants.
-#  define _CUDAX_GET_DRIVER_FUNCTION(pfn_name, major, minor)    \
-    reinterpret_cast<::PFN_##pfn_name##_v##major##0##minor##0>( \
-      ::cuda::__driver::__get_driver_entry_point(#pfn_name, major, minor))
+#  define _CUDAX_GET_DRIVER_FUNCTION(pfn_name, major, minor) \
+    ::cuda::__driver::__get_driver_function<::PFN_##pfn_name##_v##major##0##minor##0>(#pfn_name, major, minor)
 
 namespace cuda::experimental::__driver
 {
@@ -99,7 +98,7 @@ struct __graphAddMemAllocNodeResult
 struct __graphAddMemFreeNodeResult
 {
   ::CUgraphNode __node;
-  ::cudaError_t __status;
+  ::cuda::__driver::__driver_status __status;
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __graphAddMemFreeNodeResult __graphAddMemFreeNodeNoThrow(
@@ -107,7 +106,7 @@ struct __graphAddMemFreeNodeResult
 {
   static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddMemFreeNode, 11, 4);
   ::CUgraphNode __node{};
-  auto __status = static_cast<::cudaError_t>(__driver_fn(&__node, __graph, __deps, __ndeps, __dptr));
+  auto __status = __driver_fn(&__node, __graph, __deps, __ndeps, __dptr);
   return {__node, __status};
 }
 
@@ -155,10 +154,10 @@ __graphConditionalHandleCreate(::CUgraph __graph, ::CUcontext __ctx, unsigned in
 
 // ── Graph: destroy (no-throw, for use in destructors) ───────────────────────
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __graphDestroyNoThrow(::CUgraph __graph) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__driver::__driver_status __graphDestroyNoThrow(::CUgraph __graph) noexcept
 {
   static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphDestroy, 10, 0);
-  return static_cast<::cudaError_t>(__driver_fn(__graph));
+  return __driver_fn(__graph);
 }
 
 // ── Graph: clone ────────────────────────────────────────────────────────────
@@ -201,10 +200,11 @@ _CCCL_HOST_API inline void __graphLaunch(::CUgraphExec __exec, ::CUstream __stre
 
 // ── Graph exec: destroy (no-throw, for use in destructors) ──────────────────
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __graphExecDestroyNoThrow(::CUgraphExec __exec) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__driver::__driver_status
+__graphExecDestroyNoThrow(::CUgraphExec __exec) noexcept
 {
   static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphExecDestroy, 10, 0);
-  return static_cast<::cudaError_t>(__driver_fn(__exec));
+  return __driver_fn(__exec);
 }
 
 // ── Graph: add empty node ───────────────────────────────────────────────────

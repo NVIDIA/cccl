@@ -31,7 +31,9 @@ namespace
 template <class Fn>
 Fn* driver_fn(const char* name)
 {
-  return reinterpret_cast<Fn*>(::cuda::__driver::__get_driver_entry_point(name));
+  auto result = ::cuda::__driver::__get_driver_function<Fn*>(name);
+  ::cuda::__driver::__throw_if_failed(result.__status_, "Failed to get test driver function");
+  return result.__fn_;
 }
 ::CUresult begin_capture(::CUstream stream, ::CUstreamCaptureMode mode)
 {
