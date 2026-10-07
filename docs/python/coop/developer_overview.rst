@@ -637,12 +637,14 @@ lifetime from these call facts.
 Collect the providers before rewriting calls
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The first ``match()`` visit prepares the whole function. This order lets the
-compiler see calls in all blocks, including inlined helpers, before a block
-rewrite removes their original form. It also gives storage planning the
-C++ size and alignment of each provider's scratch type.
+``prepare_function()`` examines the whole function before any block is
+rewritten. A consumer in a later block can determine an earlier payload's
+dtype or add a requirement to a shared scratch descriptor. Keeping the
+original calls and definitions available lets the compiler collect these
+facts across blocks and inlined helpers. Provider preparation then supplies
+the C++ size and alignment of each scratch type.
 
-#. ``_prepare_function()`` calls ``_collect_function_calls()`` to scan
+#. ``prepare_function()`` calls ``_collect_function_calls()`` to scan
    constructors first, then analyze each provider call once with
    ``_analyze_provider_call()``. Each ``_RewriteMatch`` records the resolved
    factory arguments, runtime operands, and lowering metadata. Planned
@@ -685,7 +687,7 @@ The rewrite needs the provider's symbol name and calling convention.
 It does not need the provider's final device address. ``Algorithm`` uses
 the same qualified name for the generated wrapper and its call descriptor.
 
-#. ``match()`` prepares the provider bundle and creates invocables for
+#. ``prepare_function()`` prepares the provider bundle and creates invocables for
    calls that need scratch storage. Their LTO-IR and scratch layouts are
    already available. ``apply()`` reuses these invocables or creates others.
 #. ``apply()`` binds an ``Invocable`` with ``ir.Global`` and emits an
@@ -702,13 +704,15 @@ the same qualified name for the generated wrapper and its call descriptor.
 #. ``CodeLibrary.get_cufunc()`` loads the linked cubin and obtains the kernel's
    ``CUfunction`` handle. This path does not request a separate provider handle.
 
-Read ``match()`` and ``apply()`` by phase
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Follow the function rewrite lifecycle
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``_CallRewriting._rewrite_calls()`` visits each IR block. It calls
-``match()`` and, when work is present, installs the block returned by
-``apply()``. Function-wide facts and provider caches survive these block
-visits. Block-local matches are reset for each visit.
+``_CallRewriting._rewrite_calls()`` owns preparation, storage staging, block
+replacement, and final cleanup. It calls ``prepare_function()`` and
+``begin_rewrite()`` before visiting blocks. For each block with matches, it
+installs the result of ``apply()``. Only after all replacements are installed
+does it call ``finish_rewrite()``. These are steps within the existing
+whole-function planner, which still runs before type inference.
 
 .. list-table:: Main responsibilities in ``CoopSinglePhaseRewrite``
    :header-rows: 1
@@ -718,42 +722,59 @@ visits. Block-local matches are reset for each visit.
      - Entry points
      - Purpose
    * - Prepare the function
-     - ``match()``: ``_prepare_function()``
+     - ``prepare_function()``
      - Analyze each provider call, reusing planned Load/Store payload facts.
        Validate storage uses, prepare the provider bundle, then collect
        scratch requirements before changing statements.
+   * - Stage shared storage
+     - ``begin_rewrite()``: ``_stage_temp_storage_backing()``
+     - Check shared-memory conflicts and insert the backing allocation in
+       the entry block, so every scratch view can use it.
    * - Match one block
-     - ``_prepare_block()``, ``_match_assignment()``
+     - ``match()``: ``_prepare_block()``, ``_match_assignment()``
      - Select prepared call records by assignment identity. Record this
        block's constructors and payload extents.
    * - Prepare replacements
-     - ``apply()``: ``_stage_temp_storage_backing()``,
-       ``_prepare_call_invocables()``
-     - Plan and stage shared backing storage. Bind each call to its
-       specialization.
+     - ``apply()``: ``_prepare_call_invocables()``
+     - Reuse or materialize each call's provider and bind its specialization
+       before emitting the block's statements.
    * - Emit replacements
      - ``_emit_thread_data_array()``, ``_emit_temp_storage()``,
        ``_emit_provider_call()``
-     - Create payload arrays and scratch views. Emit provider calls, result
-       handling, and the required storage-reuse barriers.
+     - Replace statements in source order with payload arrays, scratch
+       views, provider calls, result handling, and storage-reuse barriers.
+       Refresh the typing context and return the replacement block.
    * - Clean unused bindings
-     - ``_remove_unused_factory_arguments()``,
-       ``_clear_unused_payload_callees()``
+     - ``finish_rewrite()``
      - Remove unused compile-time arguments and constructor references.
-       Check uses in other blocks. Refresh the typing context.
+       Check uses across the completed function so another block's
+       unreplaced call cannot lose a binding it still needs.
 
-``match()`` can compile providers and update caches, but it preserves the
-block's statements. ``apply()`` builds the replacement block. It can also
-stage shared backing storage in the entry block and clear unused constructor
-bindings in other blocks. Their boundary separates collection from IR
-replacement; compilation can occur on either side when an individual
-provider still needs materialization.
+``ThreadData`` holds each thread's payload. Its dtype and extent determine
+the local array emitted by ``apply()``. A standalone payload can obtain its
+dtype from typed indexed writes even when no primitive consumes it; this
+last inference step still runs during array emission. ``TempStorage`` is an
+opaque scratch descriptor whose ownership and reuse policy are checked
+against all consumers. Its concrete size, alignment, and slices depend on
+the compiled providers, so backing allocation follows provider preparation.
+
+Putting shared backing in the entry block makes it dominate every scratch
+view: execution reaches the allocation before any use, regardless of the
+order in which the compiler visits blocks. ``apply()`` builds only its
+replacement block and records cleanup candidates. Original definitions stay
+available during emission; ``finish_rewrite()`` retires eligible bindings
+after checking final uses. The planner registry then repairs IR analysis.
+
+Preparation can compile providers and update caches without changing block
+statements. An incomplete launch-dependent preparation leaves the IR intact
+for a fresh rewriter. Individual provider materialization can still occur in
+``apply()``, before that block's payload allocations and calls are emitted.
 
 To trace these stages, start with :github:`the planner
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_planner.py>` and
 :github:`the block rewrite
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite.py>`.
-``_prepare_function()`` coordinates :github:`storage validation and layout
+``prepare_function()`` coordinates :github:`storage validation and layout
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` with
 :github:`bundle preparation
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_invocables.py>`.
@@ -1348,7 +1369,7 @@ provider's source generation on another run, stop in
 ``Algorithm._source_code()`` in the same file.
 
 The Call Stack at the bundle stop also explains its timing:
-``CoopSinglePhaseRewrite.match()`` enters ``_prepare_function()``, which
+``_CallRewriting._rewrite_calls()`` calls ``prepare_function()``, which
 analyzes calls and validates storage uses before preparing the bundle.
 After compilation supplies the layouts, it collects scratch requirements
 and saves the matches for block emission. This still occurs before
@@ -1369,6 +1390,14 @@ Open that file for a more convenient view of the complete source.
 
 Materialize the payload and device calls
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Set a breakpoint on ``if self._has_temp_storage_requirements():`` in
+``begin_rewrite()`` in ``_compiler/_rewrite.py``. Continue to it and inspect
+``self._func_matches`` and ``self._thread_data_specifications``. Function
+preparation is complete; the original call assignments are still in the IR.
+The direct Load/Store algorithms need no shared backing, so this stop
+proceeds to block matching without allocating scratch. The optional
+transpose example below takes the backing-allocation branch here.
 
 Set a breakpoint in the ``_prepare_call_invocables()`` method of
 ``CoopSinglePhaseRewrite`` in
@@ -1394,9 +1423,17 @@ After seeing both matches, disable that breakpoint and stop on
 ``return new_block`` at the end of ``apply()``. Evaluate
 ``new_block.dump()``. Find the local-array construction for ``items`` and
 the calls through globals holding the ``Invocable`` objects. The local
-array has extent 2 and dtype ``int32``. The group constructors have been
-removed from the executable calls; dead marker references may still
-appear as ``None`` pending later cleanup.
+array has extent 2 and dtype ``int32``. Payload construction and primitive
+calls have been replaced. Constructor aliases and compile-time arguments
+can still be present because cleanup waits for every block replacement.
+
+Before continuing, set a breakpoint on
+``self._remove_unused_factory_arguments()`` in ``finish_rewrite()``. At that
+stop, ``self._func_ir.dump()`` shows all installed replacement blocks. Step
+over both cleanup calls and compare the dump: eligible unused factory
+arguments have been removed and unused payload constructor bindings have
+become ``None``. This is the last rewrite step before the planner registry
+repairs definitions and other IR analysis.
 
 This is the point where the compiler's representation has concrete
 per-thread storage and device calls in place of the public primitive
@@ -1406,7 +1443,7 @@ live in registers.
 Hand the call and link inputs to Numba
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Before continuing from ``apply()``, put a breakpoint in
+Before continuing from ``finish_rewrite()``, put a breakpoint in
 ``Algorithm.codegen_method()`` in ``_types.py`` on
 ``extern_fn = ExternFunction(...)``. At this stop, inspect ``abi_name``,
 ``abi_input_types``, ``arg_transforms``, and ``link_files``.
@@ -1482,14 +1519,15 @@ the temporary-storage size is nonzero. The compiled provider supplies its
 size and alignment; avoid hard-coding the numbers from one toolkit.
 
 The additional stops are in ``_compiler/_rewrite_storage.py``. Set both
-before starting this pass: allocation happens before the invocable stop.
+before starting this pass. ``begin_rewrite()`` stages the allocation after
+function preparation and before any block is matched or emitted.
 
 * In ``_emit_temp_storage_backing()``, stop on
   ``alloc_size = 0 if plan.uses_dynamic_smem else int(plan.total_size)``.
   Inspect ``plan.total_size``, ``plan.max_alignment``, and
   ``plan.uses_dynamic_smem``. The rewrite emits shared storage satisfying
-  the provider requirements. Both uses of ``scratch`` refer to this
-  planned allocation.
+  the provider requirements in the entry block. Both uses of ``scratch``
+  refer to this planned allocation, which precedes every scratch view.
 * In ``_emit_temp_storage_auto_sync()``, stop on ``sync_args = []``.
   Inspect ``synchronization_scope`` and ``sync_attr``. For this block
   example they select a block barrier, emitted as ``syncthreads``.

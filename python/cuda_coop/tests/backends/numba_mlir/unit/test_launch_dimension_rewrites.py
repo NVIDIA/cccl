@@ -67,7 +67,7 @@ def _match(state):
     """Match a provider call without compiling its source bundle."""
     rewrite = CoopSinglePhaseRewrite(state)
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
-    matched = rewrite.match(
+    matched = rewrite.prepare_function(state.func_ir) and rewrite.match(
         state.func_ir,
         _first_block(state),
         state.typemap,
@@ -202,12 +202,7 @@ def test_deferred_rewrite_leaves_device_helper_ir_intact():
     }
     rewrite = CoopSinglePhaseRewrite(state)
 
-    assert not rewrite.match(
-        state.func_ir,
-        _first_block(state),
-        state.typemap,
-        state.calltypes,
-    )
+    assert not rewrite.prepare_function(state.func_ir)
     assert rewrite._deferred_launch_dim_inference
     assert {
         label: tuple(block.body)
@@ -219,6 +214,8 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _rewrite as rewrites
 
     def kernel(source, output):
+        if source[0]:
+            return block_load(source, output, dtype=types.int32)
         return block_load(source, output, dtype=types.int32)
 
     class _FakeInvocable:
@@ -235,6 +232,21 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
     state = _state(kernel, targetoptions={})
     invocable = _FakeInvocable()
     requests = []
+    preparations = []
+    prepare_function = CoopSinglePhaseRewrite.prepare_function
+
+    def prepare(rewrite, func_ir):
+        before = {
+            label: tuple(block.body) for label, block in func_ir.blocks.items()
+        }
+        prepared = prepare_function(rewrite, func_ir)
+        preparations.append((rewrite, prepared))
+        if not prepared:
+            assert {
+                label: tuple(block.body)
+                for label, block in func_ir.blocks.items()
+            } == before
+        return prepared
 
     def require_exact_launch(requested_state):
         launch_config = {
@@ -249,6 +261,7 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
         return launch_config
 
     monkeypatch.setattr(rewrites, "require_launch_config", require_exact_launch)
+    monkeypatch.setattr(CoopSinglePhaseRewrite, "prepare_function", prepare)
     monkeypatch.setattr(
         CoopSinglePhaseRewrite,
         "_prepare_ltoir_bundle_for_matches",
@@ -267,7 +280,9 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
 
     assert CoopWholeFunctionPlanner(state).run()
     assert requests == [state]
-    assert state.typingctx.refresh_count == 1
+    assert [prepared for _, prepared in preparations] == [False, True]
+    assert preparations[0][0] is not preparations[1][0]
+    assert state.typingctx.refresh_count == 2
 
 
 @pytest.mark.parametrize(
