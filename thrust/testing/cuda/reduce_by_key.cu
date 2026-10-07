@@ -10,6 +10,13 @@
 
 #include <cstdint>
 
+#if _CCCL_HAS_NVFP16()
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+#  include <cuda_bf16.h>
+#endif // _CCCL_HAS_NVBF16()
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE

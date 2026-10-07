@@ -16,13 +16,6 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-#  include <cuda_bf16.h>
-#endif // _CCCL_HAS_NVBF16()
-
 #include <cstdlib>
 #include <memory>
 #include <string>
