@@ -42,6 +42,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   InputIterator stencil,
   Predicate pred)
 {
+  // wrap pred
   const thrust::detail::wrapped_function<Predicate> wrapped_pred{pred};
 
   // advance iterators until wrapped_pred(*stencil) is true or we reach the end of input
