@@ -58,9 +58,12 @@ struct __atomic_block_representation<::__nv_bfloat162>
 #  endif // _CCCL_HAS_NVBF16()
 
 //! @brief A 16-byte-aligned, 16-byte staging block for one fabric atomic value.
+//!
 //! @tparam _Tp A trivially copyable 4-, 8-, or 16-byte type, __half2, or __nv_bfloat162, supported by the atomic
 //! operation.
+//!
 //! @note The value occupies the slot at endpoint_offset % 16. Result writes may overwrite the entire block.
+//!
 //! @note Exchange and compare-exchange also support 16-byte aggregate types; _Tp need not be arithmetic.
 template <class _Tp>
 struct alignas(__fabric_block_size) atomic_block
@@ -74,6 +77,7 @@ public:
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8 || sizeof(_Tp) == 16);
 
   //! @brief Store an operand in the slot selected by the endpoint offset.
+  //!
   //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
   //! @param[in] __value The operand value to store.
   _CCCL_DEVICE_API void store(::cuda::std::uint64_t __offset, const _Tp& __value) noexcept
@@ -94,6 +98,7 @@ public:
   }
 
   //! @brief Read the value in the slot selected by the endpoint offset.
+  //!
   //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
   //! @return The value stored in that slot; an atomic result is valid only after completion.
   [[nodiscard]] _CCCL_DEVICE_API _Tp load(::cuda::std::uint64_t __offset) const noexcept
@@ -111,7 +116,9 @@ private:
 };
 
 //! @brief A 32-byte-aligned CAS input containing adjacent compare and desired blocks.
+//!
 //! @tparam _Tp A 4-, 8-, or 16-byte type supported by atomic_block.
+//!
 //! @note Both values use the same endpoint-offset slot within their respective 16-byte blocks.
 template <class _Tp>
 struct alignas(2 * __fabric_block_size) compare_exchange_block

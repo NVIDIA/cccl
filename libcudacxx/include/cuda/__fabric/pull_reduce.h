@@ -35,9 +35,12 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 
 //! @brief Issue a warp-collective addition across the multicast source resources.
+//!
 //! @note Completion contributes __bytes transactions to @p __barrier.
+//!
 //! @pre All 32 warp lanes execute this call with identical arguments; no lane has exited.
 //! @pre The issuing device belongs to the multicast endpoint, which supports pull-reduction.
+//!
 //! @param[in] __src Ready, bound source endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[out] __shared Local CTA shared-memory destination, aligned to 16 bytes.
@@ -65,9 +68,12 @@ _CCCL_DEVICE_API void try_pull_reduce_add(
 }
 
 //! @brief Issue a warp-collective minimum across the multicast source resources.
+//!
 //! @note Completion contributes __bytes transactions to @p __barrier.
+//!
 //! @pre All 32 warp lanes execute this call with identical arguments; no lane has exited.
 //! @pre The issuing device belongs to the multicast endpoint, which supports pull-reduction.
+//!
 //! @param[in] __src Ready, bound source endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[out] __shared Local CTA shared-memory destination, aligned to 16 bytes.
@@ -95,9 +101,12 @@ _CCCL_DEVICE_API void try_pull_reduce_min(
 }
 
 //! @brief Issue a warp-collective maximum across the multicast source resources.
+//!
 //! @note Completion contributes __bytes transactions to @p __barrier.
+//!
 //! @pre All 32 warp lanes execute this call with identical arguments; no lane has exited.
 //! @pre The issuing device belongs to the multicast endpoint, which supports pull-reduction.
+//!
 //! @param[in] __src Ready, bound source endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[out] __shared Local CTA shared-memory destination, aligned to 16 bytes.

@@ -42,6 +42,7 @@ enum class proxy_async_space
 };
 
 //! @brief Execute the PTX fence.proxy.async form selected by @p _Space.
+//!
 //! @tparam _Space Select all spaces, global, shared::cluster, or shared::cta.
 template <proxy_async_space _Space = proxy_async_space::all>
 _CCCL_DEVICE_API void fence_proxy_async() noexcept
@@ -70,6 +71,7 @@ _CCCL_DEVICE_API void fence_proxy_async() noexcept
 }
 
 //! @brief Execute PTX fence.proxy.generic::fabric.alias with system scope.
+//!
 //! @tparam _Order Either memory_order_acquire or memory_order_release.
 template <::cuda::memory_order _Order>
 _CCCL_DEVICE_API void fence_proxy_generic_fabric_alias() noexcept
@@ -90,6 +92,7 @@ _CCCL_DEVICE_API void fence_proxy_generic_fabric_alias() noexcept
 }
 
 //! @brief Execute PTX fence.proxy.fabric::generic.alias with system scope.
+//!
 //! @tparam _Order Either memory_order_acquire or memory_order_release.
 template <::cuda::memory_order _Order>
 _CCCL_DEVICE_API void fence_proxy_fabric_generic_alias() noexcept
@@ -110,6 +113,7 @@ _CCCL_DEVICE_API void fence_proxy_fabric_generic_alias() noexcept
 }
 
 //! @brief Execute PTX fence.proxy.fabric::fabric.alias with system scope.
+//!
 //! @tparam _Order Either memory_order_acquire or memory_order_release.
 template <::cuda::memory_order _Order>
 _CCCL_DEVICE_API void fence_proxy_fabric_fabric_alias() noexcept

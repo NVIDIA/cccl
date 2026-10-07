@@ -30,18 +30,21 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @brief Submit this thread's previously issued fabric requests.
+//!
 //! @note Does not arrive on the barrier or wait for completion.
 _CCCL_DEVICE_API inline void submit() noexcept
 {
   ::cuda::ptx::fabric_submit();
 }
 //! @brief Submit only this thread's previously issued get and pull-reduction requests.
+//!
 //! @note Does not arrive on the barrier or wait for completion.
 _CCCL_DEVICE_API inline void submit_restrict_fetching() noexcept
 {
   ::cuda::ptx::fabric_submit_op_restrict_fetching();
 }
 //! @brief Wait until submitted fabric requests have consumed their local shared-memory inputs.
+//!
 //! @note This permits input reuse; it does not establish remote completion or inspect status.
 _CCCL_DEVICE_API inline void wait_reads() noexcept
 {

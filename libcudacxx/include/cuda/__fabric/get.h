@@ -35,7 +35,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 
 //! @brief Issue a get from the source endpoint into shared memory.
+//!
 //! @note Completion contributes __bytes transactions to @p __barrier.
+//!
 //! @param[in] __src Ready, bound source endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[out] __shared Local CTA shared-memory destination, aligned to 16 bytes.

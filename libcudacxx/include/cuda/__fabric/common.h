@@ -37,6 +37,7 @@
 //! Local operands and the barrier must reside in CTA shared memory, and endpoints must remain
 //! ready and bound until completion. Inputs must remain unchanged until read consumption or
 //! completion; outputs must not be used until completion. Requests must complete before grid exit.
+//!
 //! @see https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#fabric-instructions
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 

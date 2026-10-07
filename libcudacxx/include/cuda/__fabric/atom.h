@@ -38,8 +38,11 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 
 //! @brief Issue an atomic addition and write the previous value to shared memory.
+//!
 //! @tparam _Tp cuda::std::uint32_t, cuda::std::uint64_t, float, double, __half2, or __nv_bfloat162.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -124,8 +127,11 @@ _CCCL_DEVICE_API void try_fetch_add(
 }
 
 //! @brief Issue an atomic minimum and write the previous value to shared memory.
+//!
 //! @tparam _Tp cuda::std::uint32_t, cuda::std::uint64_t, __half2, or __nv_bfloat162.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -194,8 +200,11 @@ _CCCL_DEVICE_API void try_fetch_min(
 }
 
 //! @brief Issue an atomic maximum and write the previous value to shared memory.
+//!
 //! @tparam _Tp cuda::std::uint32_t, cuda::std::uint64_t, __half2, or __nv_bfloat162.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -264,8 +273,11 @@ _CCCL_DEVICE_API void try_fetch_max(
 }
 
 //! @brief Issue an atomic bitwise AND and write the previous value to shared memory.
+//!
 //! @tparam _Tp A 4- or 8-byte type supported by atomic_block.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -314,8 +326,11 @@ _CCCL_DEVICE_API void try_fetch_and(
 }
 
 //! @brief Issue an atomic bitwise OR and write the previous value to shared memory.
+//!
 //! @tparam _Tp A 4- or 8-byte type supported by atomic_block.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -364,8 +379,11 @@ _CCCL_DEVICE_API void try_fetch_or(
 }
 
 //! @brief Issue an atomic bitwise XOR and write the previous value to shared memory.
+//!
 //! @tparam _Tp A 4- or 8-byte type supported by atomic_block.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -414,8 +432,11 @@ _CCCL_DEVICE_API void try_fetch_xor(
 }
 
 //! @brief Issue an atomic exchange and write the previous value to shared memory.
+//!
 //! @tparam _Tp A 4-, 8-, or 16-byte type supported by atomic_block.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.
@@ -472,8 +493,11 @@ _CCCL_DEVICE_API void try_exchange(
 }
 
 //! @brief Issue an atomic compare-exchange and write the previous value to shared memory.
+//!
 //! @tparam _Tp A 4-, 8-, or 16-byte type supported by atomic_block.
+//!
 //! @note Completion contributes one transaction to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, a multiple of sizeof(_Tp).
 //! @param[out] __old_shared Local CTA shared-memory result block.

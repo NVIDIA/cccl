@@ -36,7 +36,9 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 
 //! @brief Issue an element-wise addition into the destination endpoint.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
@@ -64,8 +66,11 @@ _CCCL_DEVICE_API void try_reduce_add(
 }
 
 //! @brief Issue an element-wise addition with a remote byte-completion counter.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The endpoint supports counted completion.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __counter_offset Endpoint byte offset of the 8-byte completion counter, aligned to 256 bytes.
@@ -96,7 +101,9 @@ _CCCL_DEVICE_API void try_reduce_counted_add(
 }
 
 //! @brief Issue an element-wise minimum into the destination endpoint.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
@@ -124,8 +131,11 @@ _CCCL_DEVICE_API void try_reduce_min(
 }
 
 //! @brief Issue an element-wise minimum with a remote byte-completion counter.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The endpoint supports counted completion.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __counter_offset Endpoint byte offset of the 8-byte completion counter, aligned to 256 bytes.
@@ -156,7 +166,9 @@ _CCCL_DEVICE_API void try_reduce_counted_min(
 }
 
 //! @brief Issue an element-wise maximum into the destination endpoint.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
@@ -184,8 +196,11 @@ _CCCL_DEVICE_API void try_reduce_max(
 }
 
 //! @brief Issue an element-wise maximum with a remote byte-completion counter.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The endpoint supports counted completion.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __counter_offset Endpoint byte offset of the 8-byte completion counter, aligned to 256 bytes.
@@ -216,8 +231,11 @@ _CCCL_DEVICE_API void try_reduce_counted_max(
 }
 
 //! @brief Issue an element-wise addition into the destination endpoint.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The issuing device belongs to the multicast endpoint.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
@@ -245,9 +263,12 @@ _CCCL_DEVICE_API void try_reduce_add(
 }
 
 //! @brief Issue an element-wise addition with a remote byte-completion counter.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The endpoint supports counted completion.
 //! @pre The issuing device belongs to the multicast endpoint.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __counter_offset Endpoint byte offset of the 8-byte completion counter, aligned to 256 bytes.
@@ -278,8 +299,11 @@ _CCCL_DEVICE_API void try_reduce_counted_add(
 }
 
 //! @brief Issue an element-wise minimum into the destination endpoint.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The issuing device belongs to the multicast endpoint.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
@@ -307,9 +331,12 @@ _CCCL_DEVICE_API void try_reduce_min(
 }
 
 //! @brief Issue an element-wise minimum with a remote byte-completion counter.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The endpoint supports counted completion.
 //! @pre The issuing device belongs to the multicast endpoint.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __counter_offset Endpoint byte offset of the 8-byte completion counter, aligned to 256 bytes.
@@ -340,8 +367,11 @@ _CCCL_DEVICE_API void try_reduce_counted_min(
 }
 
 //! @brief Issue an element-wise maximum into the destination endpoint.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The issuing device belongs to the multicast endpoint.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
@@ -369,9 +399,12 @@ _CCCL_DEVICE_API void try_reduce_max(
 }
 
 //! @brief Issue an element-wise maximum with a remote byte-completion counter.
+//!
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
+//!
 //! @pre The endpoint supports counted completion.
 //! @pre The issuing device belongs to the multicast endpoint.
+//!
 //! @param[in] __dst Ready, bound destination endpoint.
 //! @param[in] __offset Endpoint byte offset, aligned to 16 bytes.
 //! @param[in] __counter_offset Endpoint byte offset of the 8-byte completion counter, aligned to 256 bytes.
