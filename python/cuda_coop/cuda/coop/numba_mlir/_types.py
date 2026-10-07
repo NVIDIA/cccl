@@ -107,6 +107,11 @@ def collect_specializations() -> Iterator[
     still resolves compiler identity; this context only defers artifact
     creation.
 
+    Batching reduces compiler startup and repeated header processing. For
+    example, eleven distinct uncached providers can share one NVRTC compilation
+    when bundling succeeds. Repeated primitive calls can reuse a provider, and
+    cache hits can avoid compilation entirely.
+
     Each entry creates a fresh context-local list. Exiting restores the previous
     collector even after an exception, so nested collections do not append to
     their parent's list.
