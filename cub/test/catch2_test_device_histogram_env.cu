@@ -1786,9 +1786,6 @@ CUB_TEST("Histogram architecture policies carry their dynamic shared-memory budg
   constexpr auto sm90_policy  = selector_t{}(cuda::compute_capability{9, 0});
   constexpr auto sm100_policy = selector_t{}(cuda::compute_capability{10, 0});
   constexpr auto sm120_policy = selector_t{}(cuda::compute_capability{12, 0});
-  constexpr auto sm90_range_u32_policy =
-    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
-      cuda::compute_capability{9, 0});
   constexpr auto sm100_range_u32_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
       cuda::compute_capability{10, 0});
