@@ -9,6 +9,10 @@ before type inference, when cooperative operations in those helpers are
 visible in the caller's IR. The first phase resolves thread groups and chooses
 backend providers. The second specializes those providers, allocates payload
 and scratch storage, and replaces their calls with compiler-supported IR.
+Its driver prepares the whole function before staging shared backing,
+rewriting individual blocks, and cleaning unused bindings. Later consumers
+can supply an earlier payload's dtype or a descriptor's scratch requirements,
+so preparation needs the original calls from every block.
 
 Keep the phases in this order: provider rewriting needs the decisions made by
 group resolution. When the first phase changes IR, rebuild the definitions and
@@ -53,6 +57,8 @@ class CoopWholeFunctionPlanner(
         inspect definitions and control-flow facts from before the new
         provider calls existed. Numba repairs the final IR after a successful
         change report, ready for later compiler passes and type inference.
+        During call rewriting, keep those original definitions until every
+        block replacement and the final binding cleanup are complete.
 
         Both phases run even when group resolution makes no changes; payload
         constructors and private provider calls can still need rewriting.

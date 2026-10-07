@@ -142,11 +142,14 @@ def _rewrite_planned_movement(function, *, arg_types):
         False,
     )
     rewrite._record_invocable_specialization = lambda _invocable: None
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         while rewrite.match(func_ir, block, state.typemap, state.calltypes):
             block = rewrite.apply()
             func_ir.blocks[label] = block
+    rewrite.finish_rewrite()
     return func_ir, rewrite, tuple(invocables.values())
 
 
@@ -280,6 +283,7 @@ def _run_single_phase_to_provider_boundary(
         ),
     )
     matched_group_call = False
+    assert rewrite.prepare_function(func_ir)
     for label in sorted(func_ir.blocks):
         rewrite.match(
             func_ir,
@@ -424,13 +428,7 @@ def test_positional_static_runtime_control_cannot_be_repeated_by_keyword(
         CoopSinglePhaseRewriteError,
         match="duplicate runtime argument 'num_valid_items'",
     ):
-        for label in sorted(func_ir.blocks):
-            rewrite.match(
-                func_ir,
-                func_ir.blocks[label],
-                state.typemap,
-                state.calltypes,
-            )
+        rewrite.prepare_function(func_ir)
 
 
 def test_provider_memory_parameters_require_contiguous_arrays():
@@ -444,19 +442,22 @@ def test_provider_memory_parameters_require_contiguous_arrays():
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-def test_static_factory_value_used_in_another_block_keeps_its_definition(
+@pytest.mark.parametrize("later_use", ["runtime", "provider"])
+def test_static_factory_value_across_blocks_preserves_remaining_uses(
     monkeypatch,
     items_per_thread,
+    later_use,
 ):
     from numba_cuda_mlir import types
     from numba_cuda_mlir.numba_cuda.compiler import run_frontend
     from numba_cuda_mlir.numbair_transforms import ir
 
     import cuda.coop.numba_mlir as coop
+    from cuda.coop._core import ArgumentBinding
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
     from cuda.coop.numba_mlir._lowering._load_store import load as provider_load
 
-    def kernel(source, flag, items_per_thread):
+    def runtime_use(source, flag, items_per_thread):
         valid_items = 31
         output = coop.ThreadData(items_per_thread, dtype=types.int32)
         provider_load(
@@ -471,6 +472,29 @@ def test_static_factory_value_used_in_another_block_keeps_its_definition(
             return valid_items
         return 0
 
+    def provider_use(source, flag, items_per_thread):
+        valid_items = 31
+        output = coop.ThreadData(items_per_thread, dtype=types.int32)
+        provider_load(
+            source,
+            output,
+            num_valid_items=valid_items,
+            dtype=types.int32,
+            threads_per_block=32,
+            items_per_thread=items_per_thread,
+        )
+        if flag:
+            provider_load(
+                source,
+                output,
+                num_valid_items=valid_items,
+                dtype=types.int32,
+                threads_per_block=32,
+                items_per_thread=items_per_thread,
+            )
+        return 0
+
+    kernel = runtime_use if later_use == "runtime" else provider_use
     func_ir = run_frontend(kernel)
     state = SimpleNamespace(
         func_ir=func_ir,
@@ -486,19 +510,26 @@ def test_static_factory_value_used_in_another_block_keeps_its_definition(
     )
     rewrite = CoopSinglePhaseRewrite(state)
     invocable = SimpleNamespace(files=(), specialization=None)
+    valid_item_bindings = []
+
+    def materialize(match):
+        valid_item_bindings.append(match.factory_kwargs["num_valid_items"])
+        return invocable, False
+
     monkeypatch.setattr(
         rewrite, "_prepare_ltoir_bundle_for_matches", lambda _: None
     )
-    monkeypatch.setattr(
-        rewrite, "_materialize_invocable", lambda _: (invocable, False)
-    )
+    monkeypatch.setattr(rewrite, "_materialize_invocable", materialize)
     monkeypatch.setattr(
         rewrite, "_record_invocable_specialization", lambda _: None
     )
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         if rewrite.match(func_ir, block, state.typemap, state.calltypes):
             func_ir.blocks[label] = rewrite.apply()
+    rewrite.finish_rewrite()
 
     definition_blocks = {
         label
@@ -516,8 +547,22 @@ def test_static_factory_value_used_in_another_block_keeps_its_definition(
             if not isinstance(stmt, ir.Assign) or var.name != stmt.target.name
         )
     }
-    assert len(definition_blocks) == 1
-    assert use_blocks - definition_blocks
+    if later_use == "runtime":
+        assert len(definition_blocks) == 1
+        assert use_blocks - definition_blocks
+        expected_calls = 1
+    else:
+        assert not definition_blocks
+        assert not use_blocks
+        expected_calls = 2
+    assert valid_item_bindings == [ArgumentBinding.static(31)] * expected_calls
+    calls = [
+        call
+        for target, call in _planned_factory_calls(func_ir, ir)
+        if target is invocable
+    ]
+    assert len(calls) == expected_calls
+    assert all(len(call.args) == 2 and not call.kws for call in calls)
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
@@ -1211,11 +1256,14 @@ def test_storage_free_load_store_accept_temp_storage_without_using_it(
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
     rewrite._record_invocable_specialization = lambda _invocable: None
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         while rewrite.match(func_ir, block, state.typemap, state.calltypes):
             block = rewrite.apply()
             func_ir.blocks[label] = block
+    rewrite.finish_rewrite()
 
     calls = _planned_factory_calls(func_ir, ir)
     invocable_calls = [call for factory, call in calls if factory is invocable]
@@ -2350,6 +2398,7 @@ def test_single_phase_rewrite_preserves_static_block_movement_bindings(
     )
     rewrite = CoopSinglePhaseRewrite(state)
     matches = []
+    assert rewrite.prepare_function(func_ir)
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         if rewrite.match(func_ir, block, state.typemap, state.calltypes):

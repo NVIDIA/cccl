@@ -103,6 +103,9 @@ class _ProvenanceRewrite(Rewrite):
         self._block_defs: dict[str, object] = {}
         self._matches: dict[ir.Assign, _RewriteMatch] = {}
         self._func_matches: dict[ir.Assign, _RewriteMatch] = {}
+        self._rewrite_started = False
+        self._factory_argument_cleanup_candidates: set[ir.Assign] = set()
+        self._payload_callee_cleanup_names: set[str] = set()
         self._temp_storage_assigns: set[ir.Assign] = set()
         self._temp_storage_func_vars: set[str] = set()
         self._temp_storage_ctor_specifications: dict[

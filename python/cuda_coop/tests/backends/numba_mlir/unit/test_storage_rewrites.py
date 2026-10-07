@@ -86,6 +86,8 @@ def _rewrite(function, *, arg_types=()):
         calltypes={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         for _ in range(10):
@@ -97,6 +99,7 @@ def _rewrite(function, *, arg_types=()):
             func_ir.blocks[label] = block
         else:
             pytest.fail("payload rewrite did not reach a fixed point")
+    rewrite.finish_rewrite()
     return func_ir, typingctx
 
 
@@ -150,6 +153,18 @@ def test_thread_data_constructor_alias_can_feed_multiple_blocks(module):
     func_ir, _ = _rewrite(kernel)
 
     assert _call_targets(func_ir).count(cuda.local.array) == 2
+    constructor_bindings = {
+        inst.target.name: inst.value
+        for block in func_ir.blocks.values()
+        for inst in block.body
+        if isinstance(inst, ir.Assign)
+        and inst.target.name in {"constructor", "alias"}
+    }
+    assert constructor_bindings.keys() == {"constructor", "alias"}
+    assert all(
+        isinstance(value, ir.Const) and value.value is None
+        for value in constructor_bindings.values()
+    )
 
 
 @pytest.mark.parametrize(
@@ -633,6 +648,8 @@ def _rewrite_registered_provider(function, *, ssa=False, lifo=False):
         metadata={"targetoptions": {}},
     )
     rewrite = CoopSinglePhaseRewrite(state)
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     items = list(func_ir.blocks.items())
     if not lifo:
         items.reverse()
@@ -642,6 +659,7 @@ def _rewrite_registered_provider(function, *, ssa=False, lifo=False):
             new_block = rewrite.apply()
             func_ir.blocks[label] = new_block
             items.append((label, new_block))
+    rewrite.finish_rewrite()
     return func_ir, rewrite, state
 
 
@@ -710,17 +728,14 @@ def test_storage_provider_without_plan_requires_block_scope(
     def kernel(value):
         return provider(value)
 
-    func_ir, state, rewrite = _rewrite_preflight(kernel)
-    entry_block = func_ir.blocks[min(func_ir.blocks)]
+    func_ir, _state, rewrite = _rewrite_preflight(kernel)
     if accepted:
         prepared = []
         rewrite._prepare_ltoir_bundle_for_matches = lambda matches: (
             prepared.append(tuple(matches))
         )
 
-        assert rewrite.match(
-            func_ir, entry_block, state.typemap, state.calltypes
-        )
+        assert rewrite.prepare_function(func_ir)
         assert len(prepared) == 1
         assert len(prepared[0]) == 1
         assert provider.calls == [((), {})]
@@ -736,7 +751,7 @@ def test_storage_provider_without_plan_requires_block_scope(
         CoopSinglePhaseRewriteError,
         match="require block execution and block synchronization scopes",
     ):
-        rewrite.match(func_ir, entry_block, state.typemap, state.calltypes)
+        rewrite.prepare_function(func_ir)
     assert provider.calls == []
 
 
@@ -914,7 +929,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
                 __cuda_coop_group_lowering_plan__=plan,
             )
 
-    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    func_ir, _state, rewrite = _rewrite_preflight(kernel)
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: pytest.fail(
         "invalid planned provider reached bundle preparation"
     )
@@ -923,12 +938,7 @@ def test_planned_storage_guardrails_fail_before_materialization(
     )
 
     with pytest.raises(CoopSinglePhaseRewriteError, match=message):
-        rewrite.match(
-            func_ir,
-            func_ir.blocks[min(func_ir.blocks)],
-            state.typemap,
-            state.calltypes,
-        )
+        rewrite.prepare_function(func_ir)
     assert provider.calls == []
 
 
@@ -965,13 +975,12 @@ def test_planned_caller_storage_contract_must_match_the_descriptor(
             __cuda_coop_group_lowering_plan__=plan,
         )
 
-    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    func_ir, _state, rewrite = _rewrite_preflight(kernel)
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
-    entry = func_ir.blocks[min(func_ir.blocks)]
 
     if descriptor_auto_sync:
-        assert rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+        assert rewrite.prepare_function(func_ir)
         return
     # The planner parsed auto_sync=True into the plan while the rewrite sees
     # auto_sync=False: neither parser may silently win.
@@ -979,7 +988,7 @@ def test_planned_caller_storage_contract_must_match_the_descriptor(
         CoopSinglePhaseRewriteError,
         match="disagrees between the group lowering plan",
     ):
-        rewrite.match(func_ir, entry, state.typemap, state.calltypes)
+        rewrite.prepare_function(func_ir)
 
 
 def test_apply_refuses_a_plan_whose_auto_sync_disagrees_with_implicit_storage():
@@ -1063,11 +1072,14 @@ def _rewrite_with_fake_invocable(
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
     rewrite._record_invocable_specialization = lambda _invocable: None
+    assert rewrite.prepare_function(func_ir)
+    rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
         block = func_ir.blocks[label]
         while rewrite.match(func_ir, block, state.typemap, state.calltypes):
             block = rewrite.apply()
             func_ir.blocks[label] = block
+    rewrite.finish_rewrite()
     return func_ir, rewrite
 
 
@@ -1262,12 +1274,7 @@ def test_temp_storage_phi_rejects_incompatible_contracts_before_compile(
         CoopSinglePhaseRewriteError,
         match="TempStorage aliases have inconsistent contracts",
     ):
-        rewrite.match(
-            func_ir,
-            func_ir.blocks[min(func_ir.blocks)],
-            state.typemap,
-            state.calltypes,
-        )
+        rewrite.prepare_function(func_ir)
 
 
 def test_group_planning_rejects_mixed_descriptor_phi():
@@ -1328,17 +1335,12 @@ def test_temp_storage_passed_to_a_non_inlined_device_function_is_rejected(
         first = helper(value, selected)
         return helper(first, selected)
 
-    func_ir, state, rewrite = _rewrite_preflight(kernel)
+    func_ir, _state, rewrite = _rewrite_preflight(kernel)
     with pytest.raises(
         CoopSinglePhaseRewriteError,
         match="device function that was not inlined",
     ):
-        rewrite.match(
-            func_ir,
-            func_ir.blocks[min(func_ir.blocks)],
-            state.typemap,
-            state.calltypes,
-        )
+        rewrite.prepare_function(func_ir)
 
 
 @pytest.mark.parametrize(
@@ -1574,12 +1576,7 @@ def test_equivalent_temp_storage_phi_escape_is_rejected_before_compile():
         CoopSinglePhaseRewriteError,
         match="would escape to runtime",
     ):
-        rewrite.match(
-            func_ir,
-            func_ir.blocks[min(func_ir.blocks)],
-            state.typemap,
-            state.calltypes,
-        )
+        rewrite.prepare_function(func_ir)
 
 
 def test_leading_pointer_provider_stages_one_dynamic_backing(monkeypatch):
@@ -1660,12 +1657,7 @@ def test_mixed_temp_storage_primitive_and_escape_fails_before_compile():
         CoopSinglePhaseRewriteError,
         match="would escape to runtime",
     ):
-        rewrite.match(
-            func_ir,
-            func_ir.blocks[min(func_ir.blocks)],
-            state.typemap,
-            state.calltypes,
-        )
+        rewrite.prepare_function(func_ir)
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
@@ -1797,12 +1789,7 @@ def test_getitem_temp_storage_syntax_is_not_an_accepted_descriptor_use():
         CoopSinglePhaseRewriteError,
         match="may only be passed as temp_storage=",
     ):
-        rewrite.match(
-            func_ir,
-            func_ir.blocks[min(func_ir.blocks)],
-            state.typemap,
-            state.calltypes,
-        )
+        rewrite.prepare_function(func_ir)
 
 
 def _planner_for_storage_policy(specification, use_specifications):
