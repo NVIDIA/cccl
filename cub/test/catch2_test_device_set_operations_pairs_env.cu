@@ -10,8 +10,10 @@ struct stream_registry_factory_t;
 #include <cub/device/device_set_operations.cuh>
 
 #include <algorithm>
+#include <cstdint>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::detail::DeviceSetOps::SetDifferencePairs, set_difference_pairs);
@@ -222,6 +224,10 @@ CUB_TEST("DeviceSetOps pairs use environment", "[set_ops][device]", CUB_SMALL, k
   check_pairs<op>(keys1, keys2, keys_out, vals_out, num);
 }
 
+// Run each by-key set operation through the explicit-temp-storage API while feeding the stream in via every
+// representation the env accepts (raw cudaStream_t, cuda::stream, cuda::stream_ref, stream-convertible types, execution
+// environments, and the no-stream policies), exercising the stream plumbing far more broadly than a single hand-built
+// stream would.
 CUB_TEST("DeviceSetOps pairs use custom stream", "[set_ops][device]", CUB_SMALL, key_ops)
 {
   using op      = c2h::get<0, TestType>;
@@ -233,8 +239,8 @@ CUB_TEST("DeviceSetOps pairs use custom stream", "[set_ops][device]", CUB_SMALL,
   auto vals_out = c2h::device_vector<int>(keys1.size() + keys2.size(), thrust::default_init);
   auto num      = c2h::device_vector<int>(1, thrust::default_init);
 
-  cudaStream_t custom_stream;
-  REQUIRE(cudaSuccess == cudaStreamCreate(&custom_stream));
+  const auto n1 = static_cast<int>(keys1.size());
+  const auto n2 = static_cast<int>(keys2.size());
 
   size_t expected_bytes_allocated{};
   REQUIRE(
@@ -244,32 +250,57 @@ CUB_TEST("DeviceSetOps pairs use custom stream", "[set_ops][device]", CUB_SMALL,
       expected_bytes_allocated,
       keys1.begin(),
       values1.begin(),
-      static_cast<int>(keys1.size()),
+      n1,
       keys2.begin(),
       values2.begin(),
-      static_cast<int>(keys2.size()),
+      n2,
       keys_out.begin(),
       vals_out.begin(),
       num.begin()));
+  auto d_temp        = c2h::device_vector<std::uint8_t>(expected_bytes_allocated, thrust::no_init);
+  void* temp_storage = thrust::raw_pointer_cast(d_temp.data());
 
-  auto stream_prop = stdexec::prop{::cuda::get_stream_t{}, ::cuda::stream_ref{custom_stream}};
-  auto env         = stdexec::env{stream_prop, expected_allocation_size(expected_bytes_allocated)};
-  op::wrapper(
-    keys1.begin(),
-    values1.begin(),
-    static_cast<int>(keys1.size()),
-    keys2.begin(),
-    values2.begin(),
-    static_cast<int>(keys2.size()),
-    keys_out.begin(),
-    vals_out.begin(),
-    num.begin(),
-    ::cuda::std::less<>{},
-    env);
+  auto run_set_op = [&](const auto& env) {
+    size_t num_bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == op::api(
+        nullptr,
+        num_bytes,
+        keys1.begin(),
+        values1.begin(),
+        n1,
+        keys2.begin(),
+        values2.begin(),
+        n2,
+        keys_out.begin(),
+        vals_out.begin(),
+        num.begin(),
+        ::cuda::std::less<>{},
+        env));
+    REQUIRE(num_bytes == expected_bytes_allocated);
 
-  REQUIRE(cudaSuccess == cudaStreamSynchronize(custom_stream));
-  check_pairs<op>(keys1, keys2, keys_out, vals_out, num);
-  REQUIRE(cudaSuccess == cudaStreamDestroy(custom_stream));
+    REQUIRE(
+      cudaSuccess
+      == op::api(
+        temp_storage,
+        num_bytes,
+        keys1.begin(),
+        values1.begin(),
+        n1,
+        keys2.begin(),
+        values2.begin(),
+        n2,
+        keys_out.begin(),
+        vals_out.begin(),
+        num.begin(),
+        ::cuda::std::less<>{},
+        env));
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    check_pairs<op>(keys1, keys2, keys_out, vals_out, num);
+  };
+
+  test_with_custom_streams(run_set_op);
 }
 
 // See the keys env test for why tuned block sizes must be >= the fixed 256-thread partition kernel.
