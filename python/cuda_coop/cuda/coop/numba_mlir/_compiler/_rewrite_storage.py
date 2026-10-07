@@ -24,7 +24,6 @@ from numba_cuda_mlir.numba_cuda.types import uint8
 
 from cuda.coop._core import (
     GroupLoweringPlan,
-    GroupLoweringTarget,
     StorageOwnership,
     SynchronizationScope,
 )
@@ -772,7 +771,7 @@ class _StorageRewrite:
         return backing
 
     def _reject_conflicting_user_shared_arrays(
-        self, plan: _TempStorageGlobalPlan | None = None
+        self, plan: _TempStorageGlobalPlan
     ) -> None:
         """Keep user shared arrays separate from cooperative scratch memory.
 
@@ -789,16 +788,11 @@ class _StorageRewrite:
         the function after device-helper inlining, regardless of barriers or
         apparent lifetimes. Restore the block lookup state even on failure.
 
-        A dynamic cooperative backing also cannot coexist with a CUDAX
-        reduction's internal static shared memory. With no plan, the caller
-        has found that internal storage and still needs to check user arrays.
-
         Parameters
         ----------
-        plan : _TempStorageGlobalPlan or None, optional
+        plan : _TempStorageGlobalPlan
             Combined cooperative allocation, including its static or dynamic
-            placement and total byte count. None checks user arrays against
-            internal CUDAX static storage without a cooperative backing.
+            placement and total byte count.
 
         Raises
         ------
@@ -839,17 +833,7 @@ class _StorageRewrite:
         check; that version needs no dynamic launch bytes.
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
-
-        uses_dynamic_smem = plan is not None and plan.uses_dynamic_smem
-        if uses_dynamic_smem and self._provider_uses_static_shared_memory:
-            raise CoopSinglePhaseRewriteError(
-                "cuda.coop temporary storage requires a dynamic shared-memory "
-                "backing, but this kernel also calls a CUDAX reduction with "
-                "internal static shared memory. The supported numba-cuda-mlir "
-                "compiler does not separate these allocations; they would "
-                "alias. Keep the cooperative backing within the static "
-                "shared-memory limit."
-            )
+        uses_dynamic_smem = plan.uses_dynamic_smem
         saved_block = self._block
         saved_block_defs = self._block_defs
         conflicts: list[tuple[str, ir.Loc]] = []
@@ -901,9 +885,6 @@ class _StorageRewrite:
         requirement = (
             "cuda.coop temporary storage requires a "
             f"{plan.total_size}-byte {placement} shared-memory backing"
-            if plan is not None
-            else "cuda.coop calls a CUDAX reduction with internal static "
-            "shared memory"
         )
         where = ", ".join(
             f"{kind} cuda.shared.array(...) at {loc}"
@@ -1787,19 +1768,6 @@ class _StorageRewrite:
                     match = matches.get(inst)
                     if match is None:
                         continue
-                    lowering_plan = match.lowering_plan
-                    # These CUDAX providers own static shared scratch even
-                    # though their call ABI takes no TempStorage pointer.
-                    if (
-                        lowering_plan is not None
-                        and lowering_plan.target
-                        is GroupLoweringTarget.CUDAX_GROUP
-                        and lowering_plan.provenance is not None
-                        and lowering_plan.provenance.method == "reduce"
-                        and lowering_plan.resolved_group.kind
-                        in {"block", "cluster", "warps_within_block"}
-                    ):
-                        self._provider_uses_static_shared_memory = True
                     ctor_key = (
                         None
                         if match.runtime_temp_storage_var is None
