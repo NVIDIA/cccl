@@ -17,6 +17,10 @@ from urllib.request import Request, urlopen
 SHA_RE = re.compile(r"[0-9a-f]{40}\Z")
 
 
+class NoPreviousWeeklyRunError(ValueError):
+    pass
+
+
 def timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
@@ -34,7 +38,9 @@ def previous_weekly_run(
         and timestamp(run["created_at"]) < current_time
     ]
     if not candidates:
-        raise ValueError(f"no earlier scheduled weekly run found for {branch}")
+        raise NoPreviousWeeklyRunError(
+            f"no earlier scheduled weekly run found for {branch}"
+        )
     result = max(candidates, key=lambda run: (timestamp(run["created_at"]), run["id"]))
     if not SHA_RE.fullmatch(result.get("head_sha", "")):
         raise ValueError("previous weekly run has no full commit SHA")
@@ -121,11 +127,26 @@ def main() -> None:
 
     repository = args.repository
     current_run = get_json(f"repos/{repository}/actions/runs/{args.run_id}")
-    weekly_runs = get_json(
-        f"repos/{repository}/actions/workflows/ci-workflow-weekly.yml/runs?"
-        + urlencode({"event": "schedule", "per_page": 100})
-    )["workflow_runs"]
-    previous = previous_weekly_run(weekly_runs, current_run, args.branch)
+    # Filter locally: Actions search-filtered listings can omit recent runs.
+    # Workflow history is newest first; paginate past manual runs as needed.
+    page = 1
+    while True:
+        weekly_runs = get_json(
+            f"repos/{repository}/actions/workflows/ci-workflow-weekly.yml/runs?"
+            + urlencode({"per_page": 100, "page": page})
+        )["workflow_runs"]
+        try:
+            previous = previous_weekly_run(weekly_runs, current_run, args.branch)
+            break
+        except NoPreviousWeeklyRunError:
+            if len(weekly_runs) < 100:
+                raise
+        page += 1
+    print(
+        f"Previous weekly baseline: run {previous['id']} "
+        f"({previous['created_at']}), commit {previous['head_sha']}",
+        file=sys.stderr,
+    )
     result = expand_matrix(
         matrix,
         previous["head_sha"],
