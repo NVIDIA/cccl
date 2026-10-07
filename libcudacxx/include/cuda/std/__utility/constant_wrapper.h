@@ -379,27 +379,70 @@ inline constexpr bool __cw_is_constexpr_callable_v<
   _Args...> = true;
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+#if _CCCL_COMPILER(MSVC)
+#  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+template <class _Vp, class... _Args, class = __constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Vp::value[(_Args::value)...])>>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_indexable(int);
+#  else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
+template <class _Vp, class _Arg, class = __constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Vp::value[_Arg::value])>>
+_CCCL_HOST_DEVICE_API true_type __cw_is_constexpr_indexable(int);
+#  endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
+template <class, class...>
+_CCCL_HOST_DEVICE_API false_type __cw_is_constexpr_indexable(...);
+template <class _Vp, class _Void, class... _Args>
+inline constexpr bool __cw_is_constexpr_indexable_v = decltype(__cw_is_constexpr_indexable<_Vp, _Args...>(0))::value;
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_constexpr_indexable_v = false;
-#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+#  if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
 template <class _Vp, class... _Args>
 inline constexpr bool
   __cw_is_constexpr_indexable_v<_Vp,
                                 void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Vp::value[_Args::value...])>>,
                                 _Args...> = true;
-#else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
+#  else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
 template <class _Vp, class _Arg>
 inline constexpr bool
   __cw_is_constexpr_indexable_v<_Vp, void_t<__constant_wrapper<_LIBCUDACXX_AUTO_CAST(_Vp::value[_Arg::value])>>, _Arg> =
     true;
-#endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
+#  endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() && _CCCL_COMPILER(MSVC2022)
+// msvc 2022 treats a runtime pack expansion in brackets as a comma expression. Use an explicit member call for
+// multiple indices, while retaining built-in subscripting and user-defined pointer conversions for a single index.
+template <class _Tp, class _Arg>
+_CCCL_HOST_DEVICE_API constexpr auto __cw_subscript(_Tp&& __value, _Arg&& __arg) noexcept(
+  noexcept(::cuda::std::forward<_Tp>(__value)[::cuda::std::forward<_Arg>(__arg)]))
+  -> decltype(::cuda::std::forward<_Tp>(__value)[::cuda::std::forward<_Arg>(__arg)])
+{
+  return ::cuda::std::forward<_Tp>(__value)[::cuda::std::forward<_Arg>(__arg)];
+}
+
+_CCCL_TEMPLATE(class _Tp, class... _Args)
+_CCCL_REQUIRES((sizeof...(_Args) != 1))
+_CCCL_HOST_DEVICE_API constexpr auto __cw_subscript(_Tp&& __value, _Args&&... __args) noexcept(
+  noexcept(::cuda::std::forward<_Tp>(__value).operator[](::cuda::std::forward<_Args>(__args)...)))
+  -> decltype(::cuda::std::forward<_Tp>(__value).operator[](::cuda::std::forward<_Args>(__args)...))
+{
+  return ::cuda::std::forward<_Tp>(__value).operator[](::cuda::std::forward<_Args>(__args)...);
+}
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() && _CCCL_COMPILER(MSVC2022)
 
 template <class _Vp, class _Void, class... _Args>
 inline constexpr bool __cw_is_indexable_v = false;
 #if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+#  if _CCCL_COMPILER(MSVC2022)
+template <class _Vp, class... _Args>
+inline constexpr bool
+  __cw_is_indexable_v<_Vp,
+                      void_t<decltype(::cuda::std::__cw_subscript(_Vp::value, ::cuda::std::declval<_Args>()...))>,
+                      _Args...> = true;
+#  else // ^^^ _CCCL_COMPILER(MSVC2022) ^^^ / vvv !_CCCL_COMPILER(MSVC2022) vvv
 template <class _Vp, class... _Args>
 inline constexpr bool
   __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda::std::declval<_Args>()...])>, _Args...> = true;
+#  endif // ^^^ !_CCCL_COMPILER(MSVC2022) ^^^
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
 template <class _Vp, class _Arg>
 inline constexpr bool __cw_is_indexable_v<_Vp, void_t<decltype(_Vp::value[::cuda::std::declval<_Arg>()])>, _Arg> = true;
@@ -462,30 +505,33 @@ struct __constant_wrapper : __cw_operators
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>)
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<
-    _LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Args>::value...])>
-  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&...) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&...) noexcept
   {
-    return {};
+    return __constant_wrapper<_LIBCUDACXX_AUTO_CAST(__get()[(remove_cvref_t<_Args>::value)...])>{};
   }
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES((!(__fold_and_v<__is_constexpr_param_v<remove_cvref_t<_Args>>...>
                     && __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Args>...>) )
                    _CCCL_AND __cw_is_indexable_v<__constant_wrapper, void, _Args...>)
-  _CCCL_HOST_DEVICE_API constexpr decltype(auto)
-  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&... __args) noexcept(noexcept(value[::cuda::std::forward<_Args>(__args)...]))
+  _CCCL_HOST_DEVICE_API constexpr decltype(auto) _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Args&&... __args)
+#  if _CCCL_COMPILER(MSVC2022)
+    noexcept(noexcept(::cuda::std::__cw_subscript(value, ::cuda::std::forward<_Args>(__args)...)))
+  {
+    return ::cuda::std::__cw_subscript(__get(), ::cuda::std::forward<_Args>(__args)...);
+  }
+#  else // ^^^ _CCCL_COMPILER(MSVC2022) ^^^ / vvv !_CCCL_COMPILER(MSVC2022) vvv
+    noexcept(noexcept(value[::cuda::std::forward<_Args>(__args)...]))
   {
     return __get()[::cuda::std::forward<_Args>(__args)...];
   }
+#  endif // ^^^ !_CCCL_COMPILER(MSVC2022) ^^^
 #else // ^^^ _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^ / vvv !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() vvv
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES(__is_constexpr_param_v<remove_cvref_t<_Arg>> _CCCL_AND
                    __cw_is_constexpr_indexable_v<__constant_wrapper, void, remove_cvref_t<_Arg>>)
-  [[nodiscard]]
-  _CCCL_HOST_DEVICE_API constexpr __constant_wrapper<_LIBCUDACXX_AUTO_CAST(value[remove_cvref_t<_Arg>::value])>
-  _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Arg&&) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto _CCCL_STATIC_SUBSCRIPT_OPERATOR(_Arg&&) noexcept
   {
-    return {};
+    return __constant_wrapper<_LIBCUDACXX_AUTO_CAST(__get()[remove_cvref_t<_Arg>::value])>{};
   }
   _CCCL_TEMPLATE(class _Arg)
   _CCCL_REQUIRES((!(__is_constexpr_param_v<remove_cvref_t<_Arg>>
