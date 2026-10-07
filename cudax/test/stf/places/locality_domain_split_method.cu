@@ -21,6 +21,8 @@
  * resources, and runs tasks on every place.
  */
 
+#include <cuda/__driver/driver_api.h>
+
 #include <cuda/experimental/stf.cuh>
 
 #include <cstdio>
@@ -41,6 +43,15 @@ __global__ void axpy(double a, slice<const double> x, slice<double> y)
 
 int main()
 {
+#if _CCCL_CTK_AT_LEAST(13, 4)
+  // The locality-domain driver APIs exercised below need a CUDA 13.4+ driver
+  if (::cuda::__driver::__version_below(13, 4))
+  {
+    fprintf(stderr, "Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later): test waived.\n");
+    return 0;
+  }
+#endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   const int dev               = 0;
   const unsigned int ndomains = locality_domain_count(dev);
 

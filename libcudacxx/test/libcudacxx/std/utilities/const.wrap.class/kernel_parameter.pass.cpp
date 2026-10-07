@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // This test requires kernel launch from host.
 // UNSUPPORTED: nvrtc
 

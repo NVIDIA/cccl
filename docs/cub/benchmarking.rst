@@ -174,6 +174,16 @@ to restrict the values for some axes.
     PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare.py \
         -a Elements{io}[pow2]=28 --plot base.json new.json
 
+NVBench also ships ``nvbench_compare_robust.py``, a statistically more rigorous alternative to ``nvbench_compare.py``.
+Instead of a mean/stdev-based diff, it treats each measurement as a timing interval and only reports ``FAST``/``SLOW``
+when the two intervals are clearly separated, reports ``SAME`` when their timing centers are close and their
+intervals overlap strongly, and falls back to ``AMBG`` (ambiguous) when neither result is supported. It otherwise
+accepts the same kind of filters as ``nvbench_compare.py``:
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/python/scripts ./_deps/nvbench-src/python/scripts/nvbench_compare_robust.py base.json new.json
+
 
 Running all benchmarks directly from the command line
 --------------------------------------------------------------------------------

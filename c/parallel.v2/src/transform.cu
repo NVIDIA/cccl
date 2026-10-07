@@ -41,7 +41,7 @@ CUresult cccl_device_unary_transform_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   if (build_ptr == nullptr)
@@ -95,7 +95,7 @@ CUresult cccl_device_binary_transform_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   if (build_ptr == nullptr)

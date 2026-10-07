@@ -37,6 +37,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -46,7 +47,8 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 
 //! @brief Tiled copy kernel for contiguous innermost dimension.
 //!
-//! Uses a 2D grid: blockIdx.x = tile along inner dimension, blockIdx.y = outer index.
+//! Uses a 2D grid: blockIdx.x = tile along inner dimension, blockIdx.y = outer index (grid-stride, since the outer
+//! size can exceed the maximum grid y-dimension).
 //! Threads within a block stride over the tile, reading from the source and writing to the
 //! destination via accessors. The coordinate iterator maps linear indices to multi-dimensional
 //! coordinates, which are then used with per-tensor strides for the actual memory access.
@@ -60,6 +62,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @param[in]  __dst_accessor    Accessor for writing destination elements
 //! @param[in]  __coord_iter      Coordinate iterator for multi-dimensional index mapping
 //! @param[in]  __inner_size      Extent of the contiguous innermost dimension
+//! @param[in]  __outer_size      Product of the remaining extents
 template <typename _Config,
           int _TileSize,
           typename _TpSrc,
@@ -79,7 +82,8 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   _CCCL_GRID_CONSTANT const ::cuda::std::array<_StrideTOut, _Rank> __dst_strides,
   _CCCL_GRID_CONSTANT const _DstAccessor __dst_accessor,
   _CCCL_GRID_CONSTANT const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter,
-  _CCCL_GRID_CONSTANT const _ExtentT __inner_size)
+  _CCCL_GRID_CONSTANT const _ExtentT __inner_size,
+  _CCCL_GRID_CONSTANT const _ExtentT __outer_size)
 {
   using __partial_tensor_src _CCCL_NODEBUG = __partial_tensor<const _TpSrc, _StrideTIn, _Rank, _SrcAccessor>;
   using __partial_tensor_dst _CCCL_NODEBUG = __partial_tensor<_TpDst, _StrideTOut, _Rank, _DstAccessor>;
@@ -90,28 +94,31 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   const __partial_tensor_dst __dst{__dst_ptr, __dst_strides, __dst_accessor};
 
   const auto __tile_offset = __block_idx.x * _TileSize;
-  const auto __outer_idx   = __block_idx.y;
   const auto __remaining   = __inner_size - __tile_offset;
-  const auto __base_idx    = __outer_idx * __inner_size + __tile_offset + __thread_id;
+  const auto __grid_dim_y  = ::cuda::block.dims_as<_ExtentT>(::cuda::grid, __config).y;
 
-  if (__remaining >= _TileSize)
+  for (auto __outer_idx = __block_idx.y; __outer_idx < __outer_size; __outer_idx += __grid_dim_y)
   {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int __i = 0; __i < _TileSize; __i += __block_size)
+    const auto __base_idx = __outer_idx * __inner_size + __tile_offset + __thread_id;
+    if (__remaining >= _TileSize)
     {
-      const auto __coord = __coord_iter(__base_idx + __i);
-      __dst(__coord)     = __src(__coord);
-    }
-  }
-  else
-  {
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int __i = 0; __i < _TileSize; __i += __block_size)
-    {
-      if (__thread_id + __i < __remaining)
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int __i = 0; __i < _TileSize; __i += __block_size)
       {
         const auto __coord = __coord_iter(__base_idx + __i);
         __dst(__coord)     = __src(__coord);
+      }
+    }
+    else
+    {
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int __i = 0; __i < _TileSize; __i += __block_size)
+      {
+        if (__thread_id + __i < __remaining)
+        {
+          const auto __coord = __coord_iter(__base_idx + __i);
+          __dst(__coord)     = __src(__coord);
+        }
       }
     }
   }
@@ -121,7 +128,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 //!
 //! Delegates to CUB's architecture-specific tuning.
 //! @return Bytes-in-flight target (e.g. 12KB for V100, 16KB for A100, 48KB for H200, 64KB for B200)
-[[nodiscard]] _CCCL_HOST_API inline int __bytes_in_flight() noexcept
+[[nodiscard]] _CCCL_HOST_API inline int __bytes_in_flight()
 {
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
   const auto __dev    = ::cuda::devices[__dev_id];
@@ -129,7 +136,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
   return CUB_NS_QUALIFIER::detail::transform::cc_to_min_bytes_in_flight(__cc);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline int __max_threads_per_sm() noexcept
+[[nodiscard]] _CCCL_HOST_API inline int __max_threads_per_sm()
 {
   const auto __dev_id = ::cuda::__driver::__cudevice_to_ordinal(::cuda::__driver::__ctxGetDevice());
   const auto __dev    = ::cuda::devices[__dev_id];
@@ -137,7 +144,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 }
 
 // Compute the number of elements each thread copies for a given vector width.
-[[nodiscard]] _CCCL_HOST_API inline int __elem_per_thread(int __access_bytes, int __bytes_in_flight) noexcept
+[[nodiscard]] _CCCL_HOST_API inline int __elem_per_thread(int __access_bytes, int __bytes_in_flight)
 {
   const auto __threads_per_sm = ::cuda::__max_threads_per_sm();
   return ::cuda::std::max(__bytes_in_flight / (__access_bytes * __threads_per_sm), 1);
@@ -145,7 +152,7 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_contiguous_kernel(
 
 // Dispatch a callable with a compile-time tile size derived from a runtime value.
 template <typename _Op>
-_CCCL_HOST_API void __dispatch_tile_size(int __tile_size, _Op __op) noexcept
+_CCCL_HOST_API void __dispatch_tile_size(int __tile_size, _Op __op)
 {
   if (__tile_size >= 2048)
   {
@@ -203,11 +210,13 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
     const auto __inner_size      = __src.__extents[0];
     const auto __outer_size      = ::cuda::__total_size(__src) / __inner_size;
     const auto __num_inner_tiles = ::cuda::ceil_div(__inner_size, __tile_size);
-    _CCCL_ASSERT(__num_inner_tiles <= _ExtentT(__arch_limits.max_grid_dim_x),
+    _CCCL_ASSERT(::cuda::std::cmp_less_equal(__num_inner_tiles, __arch_limits.max_grid_dim_x),
                  "grid x-dimension exceeds the maximum grid size");
-    _CCCL_ASSERT(__outer_size <= _ExtentT(__arch_limits.max_grid_dim_y),
-                 "grid y-dimension exceeds the maximum grid size");
-    const auto __grid_dims = ::dim3(static_cast<unsigned>(__num_inner_tiles), static_cast<unsigned>(__outer_size));
+    const auto __grid_dim_y =
+      ::cuda::std::cmp_less(__outer_size, __arch_limits.max_grid_dim_y)
+        ? static_cast<unsigned>(__outer_size)
+        : static_cast<unsigned>(__arch_limits.max_grid_dim_y);
+    const auto __grid_dims = ::dim3(static_cast<unsigned>(__num_inner_tiles), __grid_dim_y);
     const auto __config    = ::cuda::make_config(::cuda::block_dims<__block_size>(), ::cuda::grid_dims(__grid_dims));
 
     const __tensor_coord_iterator<_ExtentT, _Rank> __coord_iter{__src.__extents};
@@ -234,7 +243,8 @@ _CCCL_HOST_API void __launch_copy_contiguous_kernel(
       __dst.__strides,
       __dst_accessor,
       __coord_iter,
-      __inner_size);
+      __inner_size,
+      __outer_size);
   });
 }
 

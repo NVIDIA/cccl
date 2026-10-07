@@ -72,14 +72,14 @@ __device__ void test_common_properties(const Hierarchy&, Group& group)
   }
 }
 
-template <class ParentGroup, class MappingResult, class Synchronizer>
+template <cuda::std::size_t StaticN, class ParentGroup, class MappingResult, class Synchronizer>
 __device__ void
 test_queries(const cudax::coop::generic_group<cuda::thread_level, ParentGroup, MappingResult, Synchronizer>& group,
              const ParentGroup& parent_group)
 {
-  // todo(dabayer): These queries end up in `error: expression must have a constant value`, when group is taken by
-  // reference. Can we find a solution that works without copying the group?
-  // static_assert(cuda::gpu_thread.static_count(group) == N);
+  // We need a view, because references can't be used in constant expressions before C++23.
+  const cudax::coop::group_view group_view{group};
+  static_assert(cuda::gpu_thread.static_count(group_view) == StaticN);
 
   using Group = cuda::std::remove_cvref_t<decltype(group)>;
   using Level = typename Group::level_type;
@@ -116,7 +116,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries(group, parent_group);
+    test_queries<N>(group, parent_group);
     group.sync();
   }
   {
@@ -127,7 +127,7 @@ __device__ void test_group_by_group(Unit unit, Level level, Config config)
     cudax::coop::generic_group group{unit, parent_group, mapping, synchronizer};
 
     test_common_properties<Unit, Level>(config.hierarchy(), group);
-    test_queries(group, parent_group);
+    test_queries<cuda::std::dynamic_extent>(group, parent_group);
     group.sync();
   }
 }

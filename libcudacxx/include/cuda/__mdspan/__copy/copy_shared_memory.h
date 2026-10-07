@@ -28,10 +28,14 @@
 #include <cuda/__mdspan/__copy/tensor_iterator.h>
 #include <cuda/__mdspan/__copy/types.h>
 #include <cuda/__stream/stream_ref.h>
+#include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
+#include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/array>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -300,6 +304,14 @@ _CCCL_KERNEL_ATTRIBUTES void __copy_shared_mem_kernel(
 _CCCL_DIAG_POP
 
 #if !_CCCL_COMPILER(NVRTC)
+
+// Elements can be staged in shared memory requires a trivially copyable type assignable from/to the accessor
+// references.
+template <typename _TpIn, typename _SrcAccessor, typename _DstAccessor>
+inline constexpr bool __can_stage_in_shared_mem_v =
+  ::cuda::is_trivially_copyable_v<::cuda::std::remove_cvref_t<_TpIn>>
+  && ::cuda::std::assignable_from<::cuda::std::remove_cvref_t<_TpIn>&, typename _SrcAccessor::reference>
+  && ::cuda::std::is_assignable_v<typename _DstAccessor::reference, ::cuda::std::remove_cvref_t<_TpIn>&>;
 
 //! @brief Launch the shared-memory tiled transpose kernel.
 //!
