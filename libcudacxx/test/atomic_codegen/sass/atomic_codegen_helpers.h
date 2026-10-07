@@ -20,6 +20,7 @@ using f16  = __half;
 using bf16 = __nv_bfloat16;
 
 inline constexpr auto tsb = cuda::thread_scope_block;
+inline constexpr auto tsc = cuda::thread_scope_cluster;
 inline constexpr auto tsd = cuda::thread_scope_device;
 inline constexpr auto tss = cuda::thread_scope_system;
 

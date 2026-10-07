@@ -25,6 +25,8 @@ CUB_NAMESPACE_BEGIN
 namespace detail::segmented_scan
 {
 template <typename ValueT, typename FlagT = bool>
+// Producers supply both fields while preserving triviality.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct augmented_value_t
 {
   ValueT value;

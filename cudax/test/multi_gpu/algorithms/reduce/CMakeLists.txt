@@ -14,7 +14,14 @@ endif()
 
 file(GLOB test_srcs LIST_DIRECTORIES FALSE CONFIGURE_DEPENDS *.cu *.cpp)
 
+cudax_split_multi_gpu_tests(test_srcs test_srcs fail_test_srcs)
+
 foreach (src IN LISTS test_srcs)
   cudax_add_multi_gpu_test("algorithms.reduce" test_target "${src}")
+  target_link_libraries(${test_target} PRIVATE NCCL::nccl)
+endforeach()
+
+foreach (src IN LISTS fail_test_srcs)
+  cudax_add_multi_gpu_fail_test("algorithms.reduce" test_target "${src}")
   target_link_libraries(${test_target} PRIVATE NCCL::nccl)
 endforeach()

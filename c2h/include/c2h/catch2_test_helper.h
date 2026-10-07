@@ -191,6 +191,15 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 {
   return vec;
 }
+
+template <class T, class... Props>
+std::vector<T> to_vec(cuda::buffer<T, Props...> const& buf)
+{
+  const auto host = cuda::make_buffer(buf.stream(), cuda::mr::legacy_pinned_memory_resource{}, buf);
+
+  buf.stream().sync();
+  return std::vector<T>{host.begin(), host.end()};
+}
 } // namespace detail
 
 #define REQUIRE_APPROX_EQ(ref, out)                          \
@@ -224,11 +233,15 @@ class QuietMatchExpr : public Catch::ITransientExpression
   MatcherT const& m_matcher;
 
 public:
-  constexpr QuietMatchExpr(ArgT&& arg, MatcherT const& matcher)
+  // ArgT can be a reference type, so the stored reference must use forward.
+  constexpr QuietMatchExpr(ArgT&& arg, // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+                           MatcherT const& matcher)
       : ITransientExpression{true, matcher.match(arg)}
-      , m_arg(CATCH_FORWARD(arg))
+      , m_arg(cuda::std::forward<ArgT>(arg))
       , m_matcher(matcher)
   {}
+
+  virtual ~QuietMatchExpr() = default;
 
   void streamReconstructedExpression(std::ostream& os) const override
   {
@@ -361,9 +374,9 @@ struct element_compare_result_t
 template <typename T>
 struct vector_compare_result_t
 {
-  size_t actual_size;
-  size_t expected_size;
-  size_t total_mismatches;
+  size_t actual_size{};
+  size_t expected_size{};
+  size_t total_mismatches{};
   std::vector<indexed_value_t<T>> good_values;
   std::vector<element_compare_result_t<T>> first_mismatches;
   std::optional<std::vector<element_compare_result_t<T>>> last_mismatches;

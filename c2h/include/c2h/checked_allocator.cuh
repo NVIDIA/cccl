@@ -54,14 +54,15 @@ public:
 
 struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_delete_resource_base
 {
-  void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
+  void* do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
+                    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
   {
     // Some systems with integrated host/device memory have issues with allocating more memory
     // than is available. Check the amount of free memory before attempting to allocate on
     // integrated systems.
     int device = 0;
     CubDebugExit(cudaGetDevice(&device));
-    cudaDeviceProp prop;
+    cudaDeviceProp prop{};
     CubDebugExit(cudaGetDeviceProperties(&prop, device));
     if (prop.integrated)
     {

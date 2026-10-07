@@ -18,7 +18,7 @@
 
 namespace ex = cuda::experimental::execution;
 
-namespace _dummy
+namespace __dummy
 {
 template <class Domain>
 struct _attrs_t
@@ -70,15 +70,15 @@ struct _sndr_t
     return _attrs_t<Domain>{};
   }
 };
-} // namespace _dummy
+} // namespace __dummy
 
 //! Scheduler that returns a sender that always completes inline (successfully).
 template <class Domain = ex::default_domain>
-struct dummy_scheduler : _dummy::_attrs_t<Domain>
+struct dummy_scheduler : __dummy::_attrs_t<Domain>
 {
   using scheduler_concept = ex::scheduler_t;
 
-  _CCCL_HOST_DEVICE static constexpr auto schedule() noexcept -> _dummy::_sndr_t<Domain>
+  _CCCL_HOST_DEVICE static constexpr auto schedule() noexcept -> __dummy::_sndr_t<Domain>
   {
     return {};
   }
@@ -94,11 +94,11 @@ struct dummy_scheduler : _dummy::_attrs_t<Domain>
   }
 };
 
-namespace _dummy
+namespace __dummy
 {
 template <class Domain>
 _CCCL_HOST_DEVICE constexpr auto _attrs_t<Domain>::query(ex::get_completion_scheduler_t<ex::set_value_t>) const noexcept
 {
   return dummy_scheduler<Domain>{};
 }
-} // namespace _dummy
+} // namespace __dummy

@@ -69,13 +69,23 @@ __device__ __forceinline__ static void sink(T (&values)[Size])
   }
 }
 
-template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T>
+template <int ThreadsPerBlock, int UnrollFactor, typename ActionT, typename T, bool Unroll = true>
 __launch_bounds__(ThreadsPerBlock) __global__ static void benchmark_kernel(const ActionT action)
 {
   auto data = generate_random_data<T>();
-  cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
-    data = action(data);
-  });
+  if constexpr (Unroll)
+  {
+    cuda::static_for<UnrollFactor>([&]([[maybe_unused]] auto _) {
+      data = action(data);
+    });
+  }
+  else
+  {
+    for (int i = 0; i < UnrollFactor; ++i)
+    {
+      data = action(data);
+    }
+  }
   sink(data);
 }
 

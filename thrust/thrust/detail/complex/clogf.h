@@ -106,7 +106,7 @@ _CCCL_HOST_DEVICE inline complex<float> clogf(const complex<float>& z)
     {
       return (complex<float>((ay * 0.5f) * ay, ::cuda::std::atan2(y, x)));
     }
-    return (complex<float>(log1pf(ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
+    return (complex<float>(::cuda::std::log1pf(ay * ay) * 0.5f, ::cuda::std::atan2(y, x)));
   }
 
   /*

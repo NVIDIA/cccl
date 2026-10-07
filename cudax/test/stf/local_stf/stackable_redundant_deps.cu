@@ -43,7 +43,7 @@ int main()
 
   // Read that value on the host
   ctx.host_launch(var_handle.read())->*[](auto da) {
-    int result = *da.data_handle();
+    const int result = *da.data_handle();
     assert(result == 43);
   };
 

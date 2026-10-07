@@ -56,7 +56,7 @@ struct layout_right
 // Layout policy with a unique mapping where strides are arbitrary
 struct layout_stride
 {
-  template <class Extents>
+  template <class _Extents>
   class mapping;
 };
 

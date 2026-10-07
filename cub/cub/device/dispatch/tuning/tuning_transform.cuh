@@ -207,6 +207,7 @@ struct TransformAsyncCopyPolicy
 };
 
 //! The tuning policy for all algorithms in @ref cub::DeviceTransform "DeviceTransform".
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
@@ -333,11 +334,15 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
   if (filling)
   {
     // manually tuned fill on RTX 5090
-    // TODO(bgruber): re-enable this later! It's disabled to avoid SASS changes in PR #6914
-    // if (cc >= ::cuda::compute_capability{12, 0})
-    // {
-    //   return TransformVectorizedPolicy{256, 8, 4};
-    // }
+    if (cc >= ::cuda::compute_capability{12, 0})
+    {
+      if (store_size == 8)
+      {
+        return TransformVectorizedPolicy{256, 8, 4};
+      }
+      // otherwise, the tunings for B200 are good
+    }
+
     // manually tuned fill on B200, same as H200
     if (cc >= ::cuda::compute_capability{9, 0})
     {
@@ -407,6 +412,19 @@ struct policy_selector
         tuned_vectorized_policy(cc, ::cuda::std::max(1, output.value_type_size), no_input_streams);
       auto async           = TransformAsyncCopyPolicy{async_block_size};
       async.store_vec_size = auto_ublkcp_store_vec_size(output.value_type_size);
+
+      // sm107 tuning from cub/benchmarks/bench/transform/babelstream.ublkcp.cu (1-byte value types)
+      bool all_value_types_are_one_byte = output.value_type_size == 1;
+      for (const auto& input : inputs)
+      {
+        all_value_types_are_one_byte &= input.value_type_size == 1;
+      }
+      if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0}
+          && all_value_types_are_one_byte)
+      {
+        // bif_-8.tpb_128.unrl_4.svsp_4  1.017  1.008  1.051  1.082  1.085
+        async.unroll_factor = 4;
+      }
 
       // We cannot use the architecture-specific amount of SMEM here instead of max_smem_per_block, because this is not
       // forward compatible. If a user compiled for sm_xxx and we assume the available SMEM for that architecture, but

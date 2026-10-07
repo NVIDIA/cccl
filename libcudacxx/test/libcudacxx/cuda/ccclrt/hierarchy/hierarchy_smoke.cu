@@ -366,7 +366,7 @@ __global__ void rank_kernel_cg(Hierarchy hierarchy, unsigned int* out)
 C2H_TEST("On device rank calculation", "[hierarchy]")
 {
   unsigned int* ptr;
-  CUDART(cudaMalloc((void**) &ptr, 2 * 1024 * sizeof(unsigned int)));
+  CUDART(cudaMalloc(reinterpret_cast<void**>(&ptr), 2 * 1024 * sizeof(unsigned int)));
 
   const auto hierarchy_static = cuda::make_hierarchy(cuda::block_dims<256>(), cuda::grid_dims(dim3(2, 2, 2)));
   rank_kernel<<<dim3(2, 2, 2), 256>>>(hierarchy_static, ptr);

@@ -21,6 +21,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/detail/segmented_params.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
@@ -75,8 +76,8 @@ namespace detail::batched_topk
 // The selection direction is compile-time only: callers pass `::cuda::args::constant<Dir>`, which maps to a
 // value-less static_discrete_param. Because the direction is fixed at compile time and carries no runtime value, it
 // can never disagree with its only supported option, so dispatch can never silently degrade to a no-op.
-template <detail::topk::select Dir, typename _Tp>
-[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, _Tp>)
+template <detail::topk::select Dir, typename Tp>
+[[nodiscard]] _CCCL_HOST_DEVICE auto wrap_select_direction(::cuda::args::constant<Dir, Tp>)
 {
   return params::static_discrete_param<detail::topk::select, Dir>{};
 }
@@ -1074,16 +1075,7 @@ _CCCL_HOST_API cudaError_t dispatch_select(
 
   return detail::dispatch_compute_cap(policy_selector_t{}, cc, [&](auto policy_getter) -> cudaError_t {
     constexpr topk_policy active_policy = policy_getter();
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceBatchedTopK to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceBatchedTopK", cc, active_policy);
     if constexpr (active_policy.backend == topk_algorithm::baseline)
     {
       // Computed from the template parameters, not a captured function-scope constant: MSVC rejects the latter as

@@ -24,16 +24,16 @@
 #include <cuda/__complex/get_real_imag.h>
 #include <cuda/__complex/traits.h>
 #include <cuda/__fwd/complex.h>
-#include <cuda/std/__complex/complex.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__floating_point/traits.h>
+#include <cuda/std/__fwd/get.h> // IWYU pragma: keep
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
+#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -221,6 +221,34 @@ public:
   {
     __im_ = __im;
   }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr _Tp& get(complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr _Tp&& get(complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr const _Tp& get(const complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  [[nodiscard]] friend _CCCL_API constexpr const _Tp&& get(const complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    return ::cuda::std::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
 };
 
 //! @brief Deduction guide for construction from complex types.
@@ -251,6 +279,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::complex<_Tp>>
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::complex<_Tp>>");
   using type _CCCL_NODEBUG = _Tp;
 };
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp& get(::cuda::complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp&& get(::cuda::complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(::cuda::std::move(__z));
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp& get(const ::cuda::complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp&& get(const ::cuda::complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  return get<_Index>(::cuda::std::move(__z));
+}
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

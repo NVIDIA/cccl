@@ -22,6 +22,8 @@
  * fake domains run correctly.
  */
 
+#include <cuda/__driver/driver_api.h>
+
 #include <cuda/experimental/stf.cuh>
 
 #include <cstdlib>
@@ -31,10 +33,10 @@ using namespace cuda::experimental::stf;
 
 __global__ void add_one(slice<double> x)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
-  size_t n = x.extent(0);
+  const size_t n = x.extent(0);
   for (size_t ind = tid; ind < n; ind += nthreads)
   {
     x(ind) += 1.0;
@@ -58,12 +60,17 @@ int main()
 
   const int dev = 0;
 
-  int ndevs = 0;
-  if (cudaGetDeviceCount(&ndevs) != cudaSuccess || ndevs == 0)
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  // The locality-domain driver APIs exercised below need a CUDA 13.4+ driver
+  if (::cuda::__driver::__version_below(13, 4))
   {
-    fprintf(stderr, "No CUDA device: test waived.\n");
+    fprintf(stderr, "Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later): test waived.\n");
     return 0;
   }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+
+  int ndevs = 0;
+  cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
   // The override must take precedence over the compile-time backend, and it
   // is strict: it reports exactly the requested count, or throws when the
@@ -148,7 +155,7 @@ int main()
   cuda_safe_call(cudaStreamDestroy(stream));
 
   // Grid over the fake domains
-  exec_place grid = make_locality_domain_grid(dev);
+  exec_place grid = exec_place::locality_domains(dev);
   EXPECT(grid.size() == ndomains);
   for (size_t i = 0; i < grid.size(); i++)
   {

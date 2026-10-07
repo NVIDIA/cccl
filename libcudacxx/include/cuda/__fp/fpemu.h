@@ -98,9 +98,9 @@ template <typename _Tp>
 inline constexpr bool __fpemu_is_supported_fp_v =
   ::cuda::std::is_same_v<_Tp, double>
 // nvcc currently doesn't support _Float64 in device code.
-#if __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#if _CCCL_HAS_FLOAT64()
   || ::cuda::std::is_same_v<_Tp, _Float64>
-#endif // __STDCPP_FLOAT64_T__ == 1  && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT64()
   ;
 
 //! @brief Primary emulated double-precision floating-point class template
@@ -482,7 +482,7 @@ public:
 //! emulation builtins use to avoid repeated pack/unpack work in chained operations.
 //!
 //! Precision note: the mantissa field carries 9 guard bits below the 53-bit binary64
-//! significand (EXTRA_BITS in fpemu_impl.h, which places the significand at bits 61..9),
+//! significand (_CCCL_FPEMU_EXTRA_BITS in fpemu_impl.h, which places the significand at bits 61..9),
 //! so arithmetic on values that stay unpacked runs on 62 significand bits and rounds to
 //! the storage format once, when the value is packed, rather than after every operation.
 //! Two consequences follow, and both are intentional:

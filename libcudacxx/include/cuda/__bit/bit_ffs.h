@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/countr.h>
-#include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 

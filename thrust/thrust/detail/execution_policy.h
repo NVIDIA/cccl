@@ -40,6 +40,7 @@ template <typename DerivedPolicy>
 constexpr _CCCL_HOST_DEVICE execution_policy_base<DerivedPolicy>&
 strip_const(const execution_policy_base<DerivedPolicy>& x)
 {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return const_cast<execution_policy_base<DerivedPolicy>&>(x);
 }
 

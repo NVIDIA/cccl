@@ -31,6 +31,7 @@ template <typename _Tp>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from)
 {
   // Cast away cv-qualifiers to allow modifying elements of a range through const iterators.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
   return const_cast<void*>(static_cast<const volatile void*>(::cuda::std::addressof(__from)));
 }
 

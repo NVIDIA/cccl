@@ -36,8 +36,8 @@ class device_reference;
 namespace detail
 {
 /// helper classes [4.3].
-template <typename T, T v>
-using integral_constant = ::cuda::std::integral_constant<T, v>;
+template <typename T, T V>
+using integral_constant = ::cuda::std::integral_constant<T, V>;
 using true_type         = ::cuda::std::true_type;
 using false_type        = ::cuda::std::false_type;
 
@@ -87,11 +87,11 @@ struct lazy_enable_if<true, T>
   using type = typename T::type;
 };
 
-template <bool condition, typename T = void>
-struct disable_if : ::cuda::std::enable_if<!condition, T>
+template <bool Condition, typename T = void>
+struct disable_if : ::cuda::std::enable_if<!Condition, T>
 {};
-template <bool condition, typename T>
-struct lazy_disable_if : lazy_enable_if<!condition, T>
+template <bool Condition, typename T>
+struct lazy_disable_if : lazy_enable_if<!Condition, T>
 {};
 
 template <typename T1, typename T2, typename T = void>

@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/compose.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -49,6 +50,13 @@ template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<
 struct __range_adaptor_closure
 {};
 
+// Tag for constructing a binder directly as the closure, so each bound argument is constructed once.
+struct __bind_back_in_place_t
+{
+  _CCCL_HIDE_FROM_ABI explicit constexpr __bind_back_in_place_t() noexcept = default;
+};
+_CCCL_GLOBAL_CONSTANT __bind_back_in_place_t __bind_back_in_place{};
+
 // Type that wraps an arbitrary function object and makes it into a range adaptor closure,
 // i.e. something that can be called via the `x | f` notation.
 template <class _Fn>
@@ -59,8 +67,39 @@ struct __pipeable
   _CCCL_API constexpr explicit __pipeable(_Fn&& __f)
       : _Fn(::cuda::std::move(__f))
   {}
+
+  _CCCL_TEMPLATE(class _Arg1, class _Arg2)
+  _CCCL_REQUIRES(::cuda::std::constructible_from<_Fn, _Arg1, _Arg2>)
+  _CCCL_API constexpr explicit __pipeable(_Arg1&& __arg1, _Arg2&& __arg2) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Fn, _Arg1, _Arg2>)
+      : _Fn(::cuda::std::forward<_Arg1>(__arg1), ::cuda::std::forward<_Arg2>(__arg2))
+  {}
+
+  _CCCL_TEMPLATE(class... _Args)
+  _CCCL_REQUIRES(::cuda::std::constructible_from<_Fn, _Args...>)
+  _CCCL_API constexpr explicit __pipeable(__bind_back_in_place_t, _Args&&... __args) noexcept(
+    ::cuda::std::is_nothrow_constructible_v<_Fn, _Args...>)
+      : _Fn(::cuda::std::forward<_Args>(__args)...)
+  {}
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
+
+// `__pipeable(__bind_back(...))` materializes the binder and then move-constructs it into the closure.
+// Building the binder in place constructs each bound argument once from the original argument.
+template <class _Fn, class... _Args>
+[[nodiscard]] _CCCL_API constexpr auto __pipeable_bind_back(_Fn&& __f, _Args&&... __args) noexcept(
+  noexcept(::cuda::std::ranges::__pipeable<__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>>(
+    __bind_back_in_place,
+    ::cuda::std::forward<_Fn>(__f),
+    ::cuda::std::forward_as_tuple(::cuda::std::forward<_Args>(__args)...))))
+  -> ::cuda::std::ranges::__pipeable<__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>>
+{
+  using _Binder _CCCL_NODEBUG = __bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>;
+  return ::cuda::std::ranges::__pipeable<_Binder>(
+    __bind_back_in_place,
+    ::cuda::std::forward<_Fn>(__f),
+    ::cuda::std::forward_as_tuple(::cuda::std::forward<_Args>(__args)...));
+}
 
 template <class _Tp>
 _CCCL_API _Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
@@ -96,8 +135,9 @@ _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
   is_nothrow_constructible_v<decay_t<_Closure>, _Closure>
   && is_nothrow_constructible_v<decay_t<_OtherClosure>, _OtherClosure>)
 {
-  return __pipeable(::cuda::std::__compose(
-    ::cuda::std::forward<_OtherClosure>(__other_closure), ::cuda::std::forward<_Closure>(__closure)));
+  using _Composer _CCCL_NODEBUG = __compose_t<decay_t<_OtherClosure>, decay_t<_Closure>>;
+  return __pipeable<_Composer>(
+    ::cuda::std::forward<_OtherClosure>(__other_closure), ::cuda::std::forward<_Closure>(__closure));
 }
 
 template <class _Tp, enable_if_t<is_class_v<_Tp>, int> = 0, enable_if_t<same_as<_Tp, remove_cv_t<_Tp>>, int> = 0>

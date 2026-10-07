@@ -18,19 +18,19 @@ struct plus_mod_10
 };
 
 template <class Vector>
-void TestReduceSimple()
+void test_reduce_simple()
 {
   using T = typename Vector::value_type;
 
   Vector v{1, -2, 3};
 
   // no initializer
-  ASSERT_EQUAL(thrust::reduce(v.begin(), v.end()), 2);
+  REQUIRE(thrust::reduce(v.begin(), v.end()) == 2);
 
   // with initializer
-  ASSERT_EQUAL(thrust::reduce(v.begin(), v.end(), (T) 10), 12);
+  REQUIRE(thrust::reduce(v.begin(), v.end(), (T) 10) == 12);
 }
-DECLARE_VECTOR_UNITTEST(TestReduceSimple);
+DECLARE_VECTOR_UNITTEST(test_reduce_simple);
 
 template <typename InputIterator>
 int reduce(my_system& system, InputIterator, InputIterator)
@@ -39,16 +39,15 @@ int reduce(my_system& system, InputIterator, InputIterator)
   return 13;
 }
 
-void TestReduceDispatchExplicit()
+TEST_CASE("TestReduceDispatchExplicit", "[reduce]")
 {
   thrust::device_vector<int> vec;
 
   my_system sys(0); // NOLINT(misc-const-correctness)
   thrust::reduce(sys, vec.begin(), vec.end());
 
-  ASSERT_EQUAL(true, sys.is_valid());
+  REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestReduceDispatchExplicit);
 
 template <typename InputIterator>
 int reduce(my_tag, InputIterator, InputIterator)
@@ -56,15 +55,14 @@ int reduce(my_tag, InputIterator, InputIterator)
   return 13;
 }
 
-void TestReduceDispatchImplicit()
+TEST_CASE("TestReduceDispatchImplicit", "[reduce]")
 {
   thrust::device_vector<int> vec;
 
   const int result = thrust::reduce(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()));
 
-  ASSERT_EQUAL(13, result);
+  REQUIRE(13 == result);
 }
-DECLARE_UNITTEST(TestReduceDispatchImplicit);
 
 template <typename T>
 struct TestReduce
@@ -79,13 +77,13 @@ struct TestReduce
     T h_result = thrust::reduce(h_data.begin(), h_data.end(), init);
     T d_result = thrust::reduce(d_data.begin(), d_data.end(), init);
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduce, IntegralTypes);
 
 template <class IntVector, class FloatVector>
-void TestReduceMixedTypes()
+void test_reduce_mixed_types()
 {
   // make sure we get types for default args and operators correct
   IntVector int_input{1, 2, 3, 4};
@@ -93,21 +91,19 @@ void TestReduceMixedTypes()
   FloatVector float_input{1.5, 2.5, 3.5, 4.5};
 
   // float -> int should use using plus<int> operator by default
-  ASSERT_EQUAL(thrust::reduce(float_input.begin(), float_input.end(), (int) 0), 10);
+  REQUIRE(thrust::reduce(float_input.begin(), float_input.end(), (int) 0) == 10);
 
   // int -> float should use using plus<float> operator by default
-  ASSERT_EQUAL(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5), 10.5);
+  REQUIRE(thrust::reduce(int_input.begin(), int_input.end(), (float) 0.5) == 10.5);
 }
-void TestReduceMixedTypesHost()
+TEST_CASE("TestReduceMixedTypesHost", "[reduce]")
 {
-  TestReduceMixedTypes<thrust::host_vector<int>, thrust::host_vector<float>>();
+  test_reduce_mixed_types<thrust::host_vector<int>, thrust::host_vector<float>>();
 }
-DECLARE_UNITTEST(TestReduceMixedTypesHost);
-void TestReduceMixedTypesDevice()
+TEST_CASE("TestReduceMixedTypesDevice", "[reduce]")
 {
-  TestReduceMixedTypes<thrust::device_vector<int>, thrust::device_vector<float>>();
+  test_reduce_mixed_types<thrust::device_vector<int>, thrust::device_vector<float>>();
 }
-DECLARE_UNITTEST(TestReduceMixedTypesDevice);
 
 template <typename T>
 struct TestReduceWithOperator
@@ -122,7 +118,7 @@ struct TestReduceWithOperator
     T cpu_result = thrust::reduce(h_data.begin(), h_data.end(), init, plus_mod_10<T>());
     T gpu_result = thrust::reduce(d_data.begin(), d_data.end(), init, plus_mod_10<T>());
 
-    ASSERT_EQUAL(cpu_result, gpu_result);
+    REQUIRE(cpu_result == gpu_result);
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceWithOperator, UnsignedIntegralTypes);
@@ -143,7 +139,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
-void TestReduceWithIndirection()
+void test_reduce_with_indirection()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -154,16 +150,16 @@ void TestReduceWithIndirection()
 
   const T result = thrust::reduce(data.begin(), data.end(), T(0), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
-  ASSERT_EQUAL(result, T(1));
+  REQUIRE(result == T(1));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceWithIndirection);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_reduce_with_indirection);
 
 template <typename T>
-void TestReduceCountingIterator()
+void test_reduce_counting_iterator()
 {
   size_t const n = 15 * sizeof(T);
 
-  ASSERT_LEQUAL(T(n), unittest::truncate_to_max_representable<T>(n));
+  REQUIRE(T(n) <= unittest::truncate_to_max_representable<T>(n));
 
   const thrust::counting_iterator<T, thrust::host_system_tag> h_first   = thrust::make_counting_iterator<T>(0);
   const thrust::counting_iterator<T, thrust::device_system_tag> d_first = thrust::make_counting_iterator<T>(0);
@@ -176,26 +172,25 @@ void TestReduceCountingIterator()
   // we use ASSERT_ALMOST_EQUAL because we're testing floating point types
   ASSERT_ALMOST_EQUAL(h_result, d_result);
 }
-DECLARE_GENERIC_UNITTEST(TestReduceCountingIterator);
+DECLARE_GENERIC_UNITTEST(test_reduce_counting_iterator);
 
-void TestReduceWithBigIndexesHelper(int magnitude)
+void test_reduce_with_big_indexes_helper(int magnitude)
 {
   const cuda::constant_iterator<long long> begin(1);
   const cuda::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const long long result = thrust::reduce(thrust::device, begin, end);
 
-  ASSERT_EQUAL(result, 1ll << magnitude);
+  REQUIRE(result == (1ll << magnitude));
 }
 
-void TestReduceWithBigIndexes()
+TEST_CASE("TestReduceWithBigIndexes", "[reduce]")
 {
-  TestReduceWithBigIndexesHelper(30);
+  test_reduce_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestReduceWithBigIndexesHelper(31);
-  TestReduceWithBigIndexesHelper(32);
-  TestReduceWithBigIndexesHelper(33);
+  test_reduce_with_big_indexes_helper(31);
+  test_reduce_with_big_indexes_helper(32);
+  test_reduce_with_big_indexes_helper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceWithBigIndexes);

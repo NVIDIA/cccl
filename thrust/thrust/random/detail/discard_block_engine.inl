@@ -19,41 +19,41 @@ THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE discard_block_engine<Engine, p, r>::discard_block_engine()
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE discard_block_engine<Engine, P, R>::discard_block_engine()
     : m_e()
     , m_n(0)
 {}
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE discard_block_engine<Engine, p, r>::discard_block_engine(result_type s)
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE discard_block_engine<Engine, P, R>::discard_block_engine(result_type s)
     : m_e(s)
     , m_n(0)
 {}
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE discard_block_engine<Engine, p, r>::discard_block_engine(const base_type& urng)
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE discard_block_engine<Engine, P, R>::discard_block_engine(const base_type& urng)
     : m_e(urng)
     , m_n(0)
 {}
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed()
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE void discard_block_engine<Engine, P, R>::seed()
 {
   m_e.seed();
   m_n = 0;
 }
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::seed(result_type s)
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE void discard_block_engine<Engine, P, R>::seed(result_type s)
 {
   m_e.seed(s);
   m_n = 0;
 }
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE typename discard_block_engine<Engine, p, r>::result_type
-discard_block_engine<Engine, p, r>::operator()()
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE typename discard_block_engine<Engine, P, R>::result_type
+discard_block_engine<Engine, P, R>::operator()()
 {
   if (m_n >= used_block)
   {
@@ -68,8 +68,8 @@ discard_block_engine<Engine, p, r>::operator()()
   return m_e();
 }
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::discard(unsigned long long z)
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE void discard_block_engine<Engine, P, R>::discard(unsigned long long z)
 {
   // XXX this should be accelerated
   for (; z > 0; --z)
@@ -78,17 +78,17 @@ _CCCL_HOST_DEVICE void discard_block_engine<Engine, p, r>::discard(unsigned long
   } // end for
 }
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE const typename discard_block_engine<Engine, p, r>::base_type&
-discard_block_engine<Engine, p, r>::base() const
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE const typename discard_block_engine<Engine, P, R>::base_type&
+discard_block_engine<Engine, P, R>::base() const
 {
   return m_e;
 }
 
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 template <typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-discard_block_engine<Engine, p, r>::stream_out(std::basic_ostream<CharT, Traits>& os) const
+discard_block_engine<Engine, P, R>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
   using ostream_type = std::basic_ostream<CharT, Traits>;
   using ios_base     = typename ostream_type::ios_base;
@@ -111,9 +111,9 @@ discard_block_engine<Engine, p, r>::stream_out(std::basic_ostream<CharT, Traits>
   return os;
 }
 
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 template <typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>& discard_block_engine<Engine, p, r>::stream_in(std::basic_istream<CharT, Traits>& is)
+std::basic_istream<CharT, Traits>& discard_block_engine<Engine, P, R>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
   using istream_type = std::basic_istream<CharT, Traits>;
   using ios_base     = typename istream_type::ios_base;
@@ -131,36 +131,36 @@ std::basic_istream<CharT, Traits>& discard_block_engine<Engine, p, r>::stream_in
   return is;
 }
 
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE bool discard_block_engine<Engine, p, r>::equal(const discard_block_engine<Engine, p, r>& rhs) const
+template <typename Engine, size_t P, size_t R>
+_CCCL_HOST_DEVICE bool discard_block_engine<Engine, P, R>::equal(const discard_block_engine<Engine, P, R>& rhs) const
 {
   return (m_e == rhs.m_e) && (m_n == rhs.m_n);
 }
 
-template <typename Engine, size_t p, size_t r, typename CharT, typename Traits>
+template <typename Engine, size_t P, size_t R, typename CharT, typename Traits>
 std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const discard_block_engine<Engine, p, r>& e)
+operator<<(std::basic_ostream<CharT, Traits>& os, const discard_block_engine<Engine, P, R>& e)
 {
   return thrust::random::detail::random_core_access::stream_out(os, e);
 }
 
-template <typename Engine, size_t p, size_t r, typename CharT, typename Traits>
+template <typename Engine, size_t P, size_t R, typename CharT, typename Traits>
 std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, p, r>& e)
+operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, P, R>& e)
 {
   return thrust::random::detail::random_core_access::stream_in(is, e);
 }
 
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 _CCCL_HOST_DEVICE bool
-operator==(const discard_block_engine<Engine, p, r>& lhs, const discard_block_engine<Engine, p, r>& rhs)
+operator==(const discard_block_engine<Engine, P, R>& lhs, const discard_block_engine<Engine, P, R>& rhs)
 {
   return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
-template <typename Engine, size_t p, size_t r>
+template <typename Engine, size_t P, size_t R>
 _CCCL_HOST_DEVICE bool
-operator!=(const discard_block_engine<Engine, p, r>& lhs, const discard_block_engine<Engine, p, r>& rhs)
+operator!=(const discard_block_engine<Engine, P, R>& lhs, const discard_block_engine<Engine, P, R>& rhs)
 {
   return !(lhs == rhs);
 }

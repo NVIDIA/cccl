@@ -3,8 +3,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 template <typename Tuple>
 struct TuplePlus
 {
@@ -42,8 +40,8 @@ struct TestZipIteratorReduce
       ::cuda::std::make_tuple<T, T>(0, 0),
       TuplePlus<Tuple>());
 
-    ASSERT_EQUAL(cuda::std::get<0>(h_result), cuda::std::get<0>(d_result));
-    ASSERT_EQUAL(cuda::std::get<1>(h_result), cuda::std::get<1>(d_result));
+    REQUIRE(cuda::std::get<0>(h_result) == cuda::std::get<0>(d_result));
+    REQUIRE(cuda::std::get<1>(h_result) == cuda::std::get<1>(d_result));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestZipIteratorReduce, IntegralTypes);

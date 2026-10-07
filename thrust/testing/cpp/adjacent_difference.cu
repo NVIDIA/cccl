@@ -46,11 +46,11 @@ struct detect_wrong_difference
   }
 };
 
-void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
+void test_adjacent_difference_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
+  REQUIRE(::cuda::std::distance(begin, end) == (1ll << magnitude));
 
   const thrust::device_ptr<bool> all_differences_correct = thrust::device_malloc<bool>(1);
   *all_differences_correct                               = true;
@@ -62,14 +62,13 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
   const bool all_differences_correct_h = *all_differences_correct;
   thrust::device_free(all_differences_correct);
 
-  ASSERT_EQUAL(all_differences_correct_h, true);
+  REQUIRE(all_differences_correct_h);
 }
 
-void TestAdjacentDifferenceWithBigIndexes()
+TEST_CASE("TestAdjacentDifferenceWithBigIndexes", "[adjacent_difference]")
 {
-  TestAdjacentDifferenceWithBigIndexesHelper(30);
-  TestAdjacentDifferenceWithBigIndexesHelper(31);
-  TestAdjacentDifferenceWithBigIndexesHelper(32);
-  TestAdjacentDifferenceWithBigIndexesHelper(33);
+  test_adjacent_difference_with_big_indexes_helper(30);
+  test_adjacent_difference_with_big_indexes_helper(31);
+  test_adjacent_difference_with_big_indexes_helper(32);
+  test_adjacent_difference_with_big_indexes_helper(33);
 }
-DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);

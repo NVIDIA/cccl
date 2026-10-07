@@ -21,7 +21,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::warpspeed
 {
-template <typename _Tp>
+template <typename Tp>
 struct SmemPhase
 {
   SmemResourceRaw& mSmemResourceRaw;
@@ -32,12 +32,12 @@ struct SmemPhase
       , mCurPhase(phase)
   {}
 
-  [[nodiscard]] _CCCL_DEVICE_API SmemRef<_Tp> acquireRef()
+  [[nodiscard]] _CCCL_DEVICE_API SmemRef<Tp> acquireRef()
   {
     // Wait on barrier
     mSmemResourceRaw.acquire(mCurPhase);
     // Return ref
-    return SmemRef<_Tp>(mSmemResourceRaw, mCurPhase);
+    return SmemRef<Tp>(mSmemResourceRaw, mCurPhase);
   }
 };
 } // namespace detail::warpspeed

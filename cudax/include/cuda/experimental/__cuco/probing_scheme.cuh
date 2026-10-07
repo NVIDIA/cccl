@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/decay.h>
 
 #include <cuda/experimental/__cuco/detail/probing_scheme_base.cuh>
+#include <cuda/experimental/__cuco/detail/utility/hash_to_index.cuh>
 
 #include <cooperative_groups.h>
 
@@ -70,7 +71,7 @@ public:
   //!
   //! @return Copy of the current probing scheme
   template <class _NewHash>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto rebind_hash_function(const _NewHash& __hash) const
   {
     return linear_probing<cg_size, _NewHash>{__hash};
   }
@@ -86,11 +87,13 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const
   {
-    using __size_type        = typename _Capacity::index_type;
-    using __step_extent      = ::cuda::std::extents<__size_type, _BucketSize>;
-    const __size_type __init = __hash(__probe_key) % (__cap.extent(0) / _BucketSize) * _BucketSize;
+    using __size_type               = typename _Capacity::index_type;
+    using __step_extent             = ::cuda::std::extents<__size_type, _BucketSize>;
+    const __size_type __num_buckets = __cap.extent(0) / _BucketSize;
+    const __size_type __init =
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash(__probe_key), __num_buckets) * _BucketSize;
     return detail::__probing_iterator<_Capacity, __step_extent>{__init, __step_extent{}, __cap};
   }
 
@@ -107,23 +110,23 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                _ProbeKey __probe_key,
-                _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(
+    ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type              = typename _Capacity::index_type;
-    constexpr __size_type __stride = cg_size * _BucketSize;
+    constexpr __size_type __stride = static_cast<__size_type>(cg_size) * _BucketSize;
     using __step_extent            = ::cuda::std::extents<__size_type, __stride>;
+    const __size_type __num_groups = __cap.extent(0) / __stride;
     const __size_type __init =
-      __hash(__probe_key) % (__cap.extent(0) / __stride) * __stride + __size_type{__group.thread_rank() * _BucketSize};
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash(__probe_key), __num_groups) * __stride
+      + static_cast<__size_type>(__group.thread_rank()) * _BucketSize;
     return detail::__probing_iterator<_Capacity, __step_extent>{__init, __step_extent{}, __cap};
   }
 
   //! @brief Gets the function used to hash keys.
   //!
   //! @return The function used to hash keys
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return __hash;
   }
@@ -201,13 +204,18 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(_ProbeKey __probe_key, _Capacity __cap) const
   {
-    using __size_type   = typename _Capacity::index_type;
-    using __step_extent = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+    using __size_type               = typename _Capacity::index_type;
+    using __step_extent             = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+    const __size_type __num_buckets = __cap.extent(0) / _BucketSize;
     return detail::__probing_iterator<_Capacity, __step_extent>{
-      __size_type{__hash1(__probe_key)} % (__cap.extent(0) / _BucketSize) * _BucketSize,
-      __step_extent{__size_type{(__hash2(__probe_key) % (__cap.extent(0) / _BucketSize - 1) + 1) * _BucketSize}},
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash1(__probe_key), __num_buckets) * _BucketSize,
+      __step_extent{static_cast<__size_type>(
+        (::cuda::experimental::cuco::detail::__hash_to_index(
+           __hash2(__probe_key), static_cast<__size_type>(__num_buckets - 1))
+         + 1)
+        * _BucketSize)},
       __cap};
   }
 
@@ -224,26 +232,29 @@ public:
   //!
   //! @return An iterator whose value_type is convertible to the slot index type
   template <int _BucketSize, class _ProbeKey, class _Capacity, class _ParentCG>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  make_iterator(::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group,
-                _ProbeKey __probe_key,
-                _Capacity __cap) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_iterator(
+    ::cooperative_groups::thread_block_tile<cg_size, _ParentCG> __group, _ProbeKey __probe_key, _Capacity __cap) const
   {
     using __size_type              = typename _Capacity::index_type;
-    constexpr __size_type __stride = cg_size * _BucketSize;
+    constexpr __size_type __stride = static_cast<__size_type>(cg_size) * _BucketSize;
     using __step_extent            = ::cuda::std::extents<__size_type, ::cuda::std::dynamic_extent>;
+    const __size_type __num_groups = __cap.extent(0) / __stride;
 
     return detail::__probing_iterator<_Capacity, __step_extent>{
-      __size_type{__hash1(__probe_key)} % (__cap.extent(0) / __stride) * __stride
-        + __size_type{__group.thread_rank() * _BucketSize},
-      __step_extent{__size_type{(__hash2(__probe_key) % (__cap.extent(0) / __stride - 1) + 1) * __stride}},
+      ::cuda::experimental::cuco::detail::__hash_to_index(__hash1(__probe_key), __num_groups) * __stride
+        + static_cast<__size_type>(__group.thread_rank()) * _BucketSize,
+      __step_extent{static_cast<__size_type>(
+        (::cuda::experimental::cuco::detail::__hash_to_index(
+           __hash2(__probe_key), static_cast<__size_type>(__num_groups - 1))
+         + 1)
+        * __stride)},
       __cap};
   }
 
   //! @brief Gets the functions used to hash keys.
   //!
   //! @return The functions used to hash keys
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr hasher hash_function() const
   {
     return {__hash1, __hash2};
   }

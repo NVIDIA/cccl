@@ -30,10 +30,12 @@ def resolve_ctk(matrix: dict[str, Any], ctk: str) -> str:
     `13.X` follows the newest CTK.
     """
     versions = matrix["ctk_versions"]
+    if not all(isinstance(version, str) for version in versions):
+        raise ValueError("CTK version keys in matrix.yaml must be quoted strings")
     for version, spec in versions.items():
-        if str(version) == ctk or ctk in spec.get("alias", []):
-            return str(version)
-    raise KeyError(f"Unknown ctk '{ctk}'. Valid: {sorted(map(str, versions))}")
+        if version == ctk or ctk in spec.get("alias", []):
+            return version
+    raise KeyError(f"Unknown ctk '{ctk}'. Valid: {sorted(versions)}")
 
 
 def resolve_cxx(matrix: dict[str, Any], cxx: str) -> str:

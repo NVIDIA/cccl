@@ -12,6 +12,14 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_contains ${
   test_insert_and_contains.cu
 )
 
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_and_find ${cudax_target}
+  test_insert_and_find.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_or_assign ${cudax_target}
+  test_insert_or_assign.cu
+)
+
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.insert_if ${cudax_target}
   test_insert_if.cu
 )
@@ -30,6 +38,10 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_map.rebind ${cudax_target}
 
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.retrieve_all ${cudax_target}
   test_retrieve_all.cu
+)
+
+cudax_add_catch2_test(test_target cuco.fixed_capacity_map.for_each ${cudax_target}
+  test_for_each.cu
 )
 
 cudax_add_catch2_test(test_target cuco.fixed_capacity_map.capacity ${cudax_target}

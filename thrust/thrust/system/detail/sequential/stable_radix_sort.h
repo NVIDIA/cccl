@@ -22,6 +22,7 @@
 #include <thrust/scatter.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -107,14 +108,9 @@ struct RadixEncoder<float>
 {
   _CCCL_HOST_DEVICE std::uint32_t operator()(float x) const
   {
-    union
-    {
-      float f;
-      std::uint32_t i;
-    } u;
-    u.f                = x;
-    std::uint32_t mask = -static_cast<std::int32_t>(u.i >> 31) | (static_cast<std::uint32_t>(1) << 31);
-    return u.i ^ mask;
+    const auto bits    = ::cuda::std::bit_cast<std::uint32_t>(x);
+    std::uint32_t mask = -static_cast<std::int32_t>(bits >> 31) | (static_cast<std::uint32_t>(1) << 31);
+    return bits ^ mask;
   }
 };
 
@@ -123,14 +119,9 @@ struct RadixEncoder<double>
 {
   _CCCL_HOST_DEVICE std::uint64_t operator()(double x) const
   {
-    union
-    {
-      double f;
-      std::uint64_t i;
-    } u;
-    u.f                = x;
-    std::uint64_t mask = -static_cast<std::int64_t>(u.i >> 63) | (static_cast<std::uint64_t>(1) << 63);
-    return u.i ^ mask;
+    const auto bits    = ::cuda::std::bit_cast<std::uint64_t>(x);
+    std::uint64_t mask = -static_cast<std::int64_t>(bits >> 63) | (static_cast<std::uint64_t>(1) << 63);
+    return bits ^ mask;
   }
 };
 
@@ -138,10 +129,10 @@ struct RadixEncoder<double>
 template <unsigned int RadixBits, typename KeyType>
 struct bucket_functor
 {
-  using Encoder                    = RadixEncoder<KeyType>;
-  using EncodedType                = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
-  using result_type                = size_t;
-  static const EncodedType BitMask = static_cast<EncodedType>((1 << RadixBits) - 1);
+  using Encoder                     = RadixEncoder<KeyType>;
+  using EncodedType                 = decltype(::cuda::std::declval<Encoder>()(::cuda::std::declval<KeyType>()));
+  using result_type                 = size_t;
+  static const EncodedType bit_mask = static_cast<EncodedType>((1 << RadixBits) - 1);
 
   Encoder encode;
   EncodedType bit_shift;
@@ -158,7 +149,7 @@ struct bucket_functor
     const EncodedType x = encode(key);
 
     // note that we mutate the histogram here
-    return histogram[(x >> bit_shift) & BitMask]++;
+    return histogram[(x >> bit_shift) & bit_mask]++;
   }
 };
 

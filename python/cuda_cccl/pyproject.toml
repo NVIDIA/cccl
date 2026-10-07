@@ -73,7 +73,11 @@ cu12 = [
   # has to be validated before it is allowed.  The floor is 0.5.2: earlier
   # releases widen a signed integer on store without its sign and convert an
   # unsigned one to a float as if signed, silently, inside operator bodies.
-  "numba-cuda-mlir[cu12]>=0.5.2,<0.6",
+  # 0.5.3 is excluded: its overload-result memoization (numba-cuda-mlir#275)
+  # makes the second compile of a stateful operator with the same state dtype
+  # and shape in one process fail with `AttributeError: 'list' object has no
+  # attribute 'args'` while typing the wrapper's cuda.carray call.
+  "numba-cuda-mlir[cu12]>=0.5.2,!=0.5.3,<0.6",
 ]
 cu13 = [
   "cuda-cccl[minimal-cu13]",
@@ -84,14 +88,18 @@ cu13 = [
   # has to be validated before it is allowed.  The floor is 0.5.2: earlier
   # releases widen a signed integer on store without its sign and convert an
   # unsigned one to a float as if signed, silently, inside operator bodies.
-  "numba-cuda-mlir[cu13]>=0.5.2,<0.6",
+  # 0.5.3 is excluded: its overload-result memoization (numba-cuda-mlir#275)
+  # makes the second compile of a stateful operator with the same state dtype
+  # and shape in one process fail with `AttributeError: 'list' object has no
+  # attribute 'args'` while typing the wrapper's cuda.carray call.
+  "numba-cuda-mlir[cu13]>=0.5.2,!=0.5.3,<0.6",
 ]
 sysctk12 = [
   "cuda-cccl[minimal-sysctk12]",
   # plain numba-cuda-mlir (no [cu12]) so it relies on the system-provided CUDA
   # toolkit instead of pulling the toolkit from pip -- the whole point of the
   # sysctk extra.
-  "numba-cuda-mlir>=0.5.2,<0.6",
+  "numba-cuda-mlir>=0.5.2,!=0.5.3,<0.6",
   # nvjitlink is the one exception to "use the system toolkit": numba-cuda-mlir
   # calls nvJitLinkVersion, which only exists from CUDA 12.3, so a system CTK
   # 12.0 (which this lane tests) is too old and every JIT dies with
@@ -105,7 +113,7 @@ sysctk13 = [
   # plain numba-cuda-mlir (no [cu13]) so it relies on the system-provided CUDA
   # toolkit instead of pulling the toolkit from pip -- the whole point of the
   # sysctk extra.
-  "numba-cuda-mlir>=0.5.2,<0.6",
+  "numba-cuda-mlir>=0.5.2,!=0.5.3,<0.6",
 ]
 # The test extras do not include CuPy. The cuda.compute examples (run via
 # tests/test_examples.py) require it; install it separately (e.g.

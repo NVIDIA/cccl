@@ -97,7 +97,7 @@ struct bit_negate_reference
 };
 
 template <typename Vector>
-void TestFunctionalPlaceholdersBitNegate()
+void test_functional_placeholders_bit_negate()
 {
   using T           = typename Vector::value_type;
   using bool_vector = typename rebind_vector<Vector, bool>::type;
@@ -110,8 +110,8 @@ void TestFunctionalPlaceholdersBitNegate()
   bool_vector result(input.size());
   thrust::transform(input.begin(), input.end(), result.begin(), ~_1);
 
-  ASSERT_EQUAL(reference, result);
+  REQUIRE(reference == result);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestFunctionalPlaceholdersBitNegate);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_functional_placeholders_bit_negate);
 
 _CCCL_DIAG_POP

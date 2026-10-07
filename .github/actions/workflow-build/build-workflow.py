@@ -344,8 +344,6 @@ def get_job_type_info(job):
         result["name"] = job.capitalize()
     if "gpu" not in result:
         result["gpu"] = False
-    if "cuda_ext" not in result:
-        result["cuda_ext"] = False
     if "force_producer_ctk" in result:
         result["force_producer_ctk"] = canonicalize_ctk_version(
             result["force_producer_ctk"]
@@ -556,6 +554,24 @@ def generate_dispatch_job_host_compiler(matrix_job, job_type):
     return host_compiler["container_tag"] + host_compiler["version"]
 
 
+# Mapping of the job extension types (keys in matrix.yaml) to the actual suffix using in
+# the devcontainer. The order of the keys is important, it determines the order the
+# suffixes are applied.
+#
+# We should probably centralize this somewhere
+JOB_EXTENSION_MAPPING = {"cuda": "ext", "tidy": "tidy"}
+
+
+def get_job_extensions(matrix_job, job_type):
+    project = get_project(matrix_job["project"])
+    extensions = set(get_job_type_info(job_type).get("ext", project.get("ext", [])))
+    if invalid := (extensions - JOB_EXTENSION_MAPPING.keys()):
+        raise ValueError(f"Invalid extensions for job '{job_type}': {invalid}")
+
+    # Normalize the extensions found to the order in the extension mapping
+    return [ext for ext in JOB_EXTENSION_MAPPING if ext in extensions]
+
+
 def generate_dispatch_job_image(matrix_job, job_type):
     devcontainer_version = matrix_yaml["devcontainer_version"]
     image_config = get_devcontainer_image_config()
@@ -567,11 +583,12 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk = matrix_job["ctk"]
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
-    job_info = get_job_type_info(job_type)
-    ctk_suffix = "ext" if job_info["cuda_ext"] else ""
+    ctk_suffix = "".join(
+        JOB_EXTENSION_MAPPING[ext] for ext in get_job_extensions(matrix_job, job_type)
+    )
 
     if is_windows(matrix_job):
-        return f"{image_repo}:{version_prefix}cuda{ctk}{ctk_suffix}-{host_compiler}"
+        return f"{image_repo}:{version_prefix}{host_compiler}-cuda{ctk}{ctk_suffix}"
 
     if is_nvhpc(matrix_job):
         return f"{image_repo}:{version_prefix}cpp-{host_compiler}"
@@ -940,7 +957,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                         file=sys.stderr,
                     )
             for consumer in two_stage_job["consumers"]:
-                if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
+                if remove_dispatch_job_from_container(consumer, unique_standalone_jobs):
                     print(
                         f"Removing standalone job '{consumer['name']}' "
                         + f"as it appears as a consumer in '{group_name}'",
@@ -1461,23 +1478,18 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(workflow_name))
 
-    # Explode jobs to ensure that the cuda_ext tags are correctly handled:
+    # Explode jobs to preserve their image requirements:
     exploded_jobs = []
     for matrix_job in matrix_jobs:
         exploded_jobs.extend(explode_tags(matrix_job, "jobs"))
     matrix_jobs = exploded_jobs
 
-    # Check if the extended cuda images are needed:
+    # Check if specialized images are needed:
     for matrix_job in matrix_jobs:
-        cuda_ext = False
-        job = matrix_job["jobs"]
-        job_info = get_job_type_info(job)
-        if job_info["cuda_ext"]:
-            cuda_ext = True
-        matrix_job["cuda_ext"] = cuda_ext
+        matrix_job["ext"] = get_job_extensions(matrix_job, matrix_job["jobs"])
 
     # Remove all but the following keys from the matrix jobs:
-    keep_keys = ["ctk", "cxx", "cuda_ext"]
+    keep_keys = ["ctk", "cxx", "ext"]
     combinations = [{key: job[key] for key in keep_keys} for job in matrix_jobs]
 
     # Remove duplicates and filter out windows jobs:
@@ -1508,11 +1520,9 @@ def print_devcontainer_info(args):
 
 
 def preprocess_matrix_yaml(matrix):
-    # Make all CTK version keys into strings:
-    new_ctk = {}
-    for version, attrs in matrix["ctk_versions"].items():
-        new_ctk[str(version)] = attrs
-    matrix["ctk_versions"] = new_ctk
+    # Numeric YAML keys lose the spelling of dotted versions.
+    if not all(isinstance(version, str) for version in matrix["ctk_versions"]):
+        raise ValueError("CTK version keys in matrix.yaml must be quoted strings")
 
     # Make all compiler version keys into strings:
     for id, hc_def in matrix["host_compilers"].items():

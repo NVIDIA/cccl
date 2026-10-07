@@ -29,7 +29,6 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
-#  include <cuda/std/__fwd/hash.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 

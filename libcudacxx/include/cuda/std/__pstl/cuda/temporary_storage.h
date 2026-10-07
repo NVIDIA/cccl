@@ -32,16 +32,18 @@
 #  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__type_traits/is_callable.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/integer_sequence.h>
+#  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -133,6 +135,7 @@ class __temporary_storage
                        || __dynamic_accessibility == ::cuda::mr::__memory_accessibility::__host_device,
                      "Memory resources need to provide device accessible memory");
       }
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
       return ::cuda::mr::resource_ref<>{const_cast<__resource_t&>(__resource)};
     }
     else if constexpr (__is_callable_v<::cuda::get_stream_t, const _Policy&>)

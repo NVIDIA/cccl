@@ -157,7 +157,8 @@ C2H_CCCLRT_TEST("can wait on an event from another device", "[event][multi_gpu]"
 
   cuda::host_launch(event_stream, [&gate]() {
     while (gate != 1)
-      ;
+    {
+    }
   });
   const cuda::event ev(event_stream);
 

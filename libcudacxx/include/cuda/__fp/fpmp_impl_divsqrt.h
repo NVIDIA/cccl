@@ -395,9 +395,9 @@ _CCCL_HOST_DEVICE_API inline void __fpmp2_mid_div(
 template <typename _Tp>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_low_div(
   const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
-template <typename T>
-_CCCL_HOST_DEVICE_API inline void
-__fpmp2_high_div(const T __a_hi, const T __a_lo, const T __b_hi, const T __b_lo, T* __res_hi, T* __res_lo) noexcept;
+template <typename _Tp>
+_CCCL_HOST_DEVICE_API inline void __fpmp2_high_div(
+  const _Tp __a_hi, const _Tp __a_lo, const _Tp __b_hi, const _Tp __b_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;
 template <typename _Tp>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_sqrt(const _Tp __a_hi, const _Tp __a_lo, _Tp* __res_hi, _Tp* __res_lo) noexcept;

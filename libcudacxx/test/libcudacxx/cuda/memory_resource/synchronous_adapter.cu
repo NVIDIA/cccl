@@ -34,11 +34,11 @@ constexpr bool same_properties =
 
 struct explicit_dynamic_resource
 {
-  void* allocate_sync(size_t, size_t)
+  void* allocate_sync(std::size_t, std::size_t)
   {
     return nullptr;
   }
-  void deallocate_sync(void*, size_t, size_t) noexcept {}
+  void deallocate_sync(void*, std::size_t, std::size_t) noexcept {}
   friend constexpr void get_property(const explicit_dynamic_resource&, cuda::mr::host_accessible) noexcept {}
   friend constexpr cuda::mr::__memory_accessibility
   get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept

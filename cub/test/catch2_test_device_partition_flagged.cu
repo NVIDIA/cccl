@@ -10,7 +10,6 @@
 #include <thrust/reverse.h>
 
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/std/iterator>
@@ -18,6 +17,7 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -262,47 +262,7 @@ CUB_TEST("DevicePartition::Flagged works with user provided memory and environme
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DevicePartition::Flagged works with cudaStream_t")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_partition_flagged(stream.get());
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_partition_flagged(stream);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::stream_ref")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const cuda::stream_ref stream_ref{stream};
-    test_partition_flagged(stream_ref);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_partition_flagged(env);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_partition_flagged(policy);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_partition_flagged(policy);
-  }
+  test_with_custom_streams(test_partition_flagged);
 }
 #endif // TEST_LAUNCH == 0
 
