@@ -136,6 +136,7 @@ foreach (
   segmented_reduce_backend
   binary_search_backend
   op_code_type
+  type_enum
   serialization
   build_config
 )

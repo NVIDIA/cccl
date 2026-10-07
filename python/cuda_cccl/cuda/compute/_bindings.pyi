@@ -52,6 +52,9 @@ class TypeEnum(IntEnum):
     STORAGE = ...
     BOOLEAN = ...
     BFLOAT16 = ...
+    FP64EMU_HIGH = ...  # v2 backend only
+    FP64EMU_MID = ...  # v2 backend only
+    FP64EMU_LOW = ...  # v2 backend only
 
 class IteratorKind(IntEnum):
     _value_: int

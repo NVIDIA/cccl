@@ -758,6 +758,13 @@ def _convert_type_descriptor_to_numba(td):
             "pre-compiled device code instead."
         )
 
+    if cccl_types.is_fpemu_type_enum(td.info.typenum):
+        raise TypeError(
+            "Emulated floating-point types (fpemu) are not supported with Python "
+            "callable operators. Use a well-known operation (e.g. OpKind.PLUS) or "
+            "a RawOp with C++ source instead."
+        )
+
     # For POD types
     return _mlir.from_numpy_dtype(td.dtype)
 

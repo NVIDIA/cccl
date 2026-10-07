@@ -197,6 +197,11 @@ def cpp_type_from_descriptor(type_desc) -> str | None:
         TypeEnum.BOOLEAN: "bool",
         TypeEnum.STORAGE: None,
     }
+    # Emulated floating-point types exist on the v2 (HostJIT) backend only.
+    for accuracy in ("high", "mid", "low"):
+        type_enum = getattr(TypeEnum, f"FP64EMU_{accuracy.upper()}", None)
+        if type_enum is not None:
+            type_map[type_enum] = f"::cuda::experimental::fp64emu_{accuracy}"
     return type_map[type_desc.info.typenum]
 
 
