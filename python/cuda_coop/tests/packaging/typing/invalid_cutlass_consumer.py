@@ -79,15 +79,27 @@ cutlass_coop.reduce(
     binary_op=callback,  # expected-error: [arg-type]
 )
 cutlass_coop.sum(  # expected-error: [call-overload]
-    block, scalar, valid_items=7
+    block, scalar, broadcast=False
 )
 cutlass_coop.sum(  # expected-error: [call-overload]
-    block, values, broadcast=False, valid_items=7
+    block, values, valid_items=7
 )
 cutlass_coop.sum(  # expected-error: [call-overload]
-    warp, scalar, broadcast=False, algorithm="raking"
+    warp, scalar, algorithm="raking"
 )
 cutlass_coop.sum(cutlass_coop.this_grid(), scalar)  # expected-error: [arg-type]
-cutlass_coop.sum(  # expected-error: [call-overload]
-    block, scalar, temp_storage=cutlass_coop.TempStorage()
+cutlass_coop.sum(
+    cutlass_coop.this_thread(),  # expected-error: [arg-type]
+    scalar,
+)
+cutlass_coop.sum(
+    cutlass_coop.this_cluster(),  # expected-error: [arg-type]
+    scalar,
+)
+cutlass_coop.sum(mapped, scalar)  # expected-error: [arg-type]
+cutlass_coop.sum(warp, values)  # expected-error: [arg-type]
+cutlass_coop.sum(
+    warp,  # expected-error: [arg-type]
+    scalar,
+    temp_storage=cutlass_coop.TempStorage(),
 )

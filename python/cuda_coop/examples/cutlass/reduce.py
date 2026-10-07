@@ -28,8 +28,8 @@ def _check(result):
 def run_example(api="common", items_per_thread=2):
     """Check full block and logical-warp results plus a scalar input prefix.
 
-    The output has one block sum per thread, one maximum per logical-group
-    member, and one prefix sum stored by block rank zero. The expected prefix
+    The output has one block sum, one maximum per logical group, and one
+    prefix sum, each stored by its group leader. The expected prefix
     sum uses each thread's first item; the count is threads, not contiguous
     input elements. The same checks cover common and qualified calls.
     """
@@ -52,21 +52,19 @@ def run_example(api="common", items_per_thread=2):
         lanes = module.this_warp().group_by(8)
         inputs = cute.make_tensor(source, cute.make_layout(tile_size))
         outputs = cute.make_tensor(
-            destination, cute.make_layout(2 * _THREADS + 1)
+            destination, cute.make_layout(_THREADS // 8 + 2)
         )
         payload = module.ThreadData(items_per_thread)
         for item in cutlass.range_constexpr(items_per_thread):
             payload[item] = inputs[thread * items_per_thread + item]
-        # Full reductions broadcast a scalar to every member of the group.
-        outputs[thread] = module.sum(block, payload)
-        outputs[_THREADS + thread] = module.reduce(
-            lanes, payload, binary_op="max"
-        )
-        # A valid prefix counts contributing threads. Every thread calls;
-        # only rank zero consumes the result when broadcast is disabled.
-        prefix = module.sum(block, payload[0], broadcast=False, valid_items=23)
+        total = module.sum(block, payload)
+        maximum = module.reduce(lanes, payload[0], binary_op="max")
+        prefix = module.sum(block, payload[0], valid_items=23)
         if thread == 0:
-            outputs[2 * _THREADS] = prefix
+            outputs[0] = total
+            outputs[_THREADS // 8 + 1] = prefix
+        if lanes.rank() == 0:
+            outputs[1 + thread // 8] = maximum
 
     @cute.jit
     def launch(
@@ -81,7 +79,7 @@ def run_example(api="common", items_per_thread=2):
     # docs: end cutlass-reduce
 
     source = np.arange(tile_size, dtype=np.int32)
-    destination = np.full(2 * _THREADS + 1, -101, dtype=np.int32)
+    destination = np.full(_THREADS // 8 + 2, -101, dtype=np.int32)
     cutlass.cuda.initialize_cuda_context()
     src = _check(driver.cuMemAlloc(source.nbytes))
     try:
@@ -118,8 +116,8 @@ def run_example(api="common", items_per_thread=2):
         _check(driver.cuMemFree(src))
     expected = np.concatenate(
         (
-            np.full(_THREADS, source.sum(dtype=np.int32), dtype=np.int32),
-            np.repeat(source.reshape(-1, 8 * items_per_thread).max(axis=1), 8),
+            np.array([source.sum(dtype=np.int32)], dtype=np.int32),
+            source[::items_per_thread].reshape(-1, 8).max(axis=1),
             np.array(
                 [
                     source[0 : 23 * items_per_thread : items_per_thread].sum(

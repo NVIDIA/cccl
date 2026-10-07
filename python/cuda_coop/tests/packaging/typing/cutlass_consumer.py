@@ -270,25 +270,34 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     assert_type(
         cutlass_coop.reduce(block, values, binary_op=np.maximum), np.int32
     )
+    assert_type(cutlass_coop.sum(block, scalar, valid_items=17), Uint32)
     assert_type(
-        cutlass_coop.sum(block, scalar, broadcast=False, valid_items=17), Uint32
-    )
-    assert_type(
-        cutlass_coop.reduce(block, values, broadcast=False, algorithm="raking"),
+        cutlass_coop.reduce(block, values, algorithm="raking"),
         np.int32,
     )
     assert_type(
         cutlass_coop.sum(
             cutlass_coop.this_warp().group_by(8),
             scalar,
-            broadcast=False,
             valid_items=7,
         ),
         Uint32,
     )
-    assert_type(cutlass_coop.sum(cutlass_coop.this_thread(), scalar), Uint32)
-    assert_type(cutlass_coop.sum(block.group_by(2), values), np.int32)
+    scratch = cutlass_coop.TempStorage(auto_sync=True)
     assert_type(
-        cutlass_coop.sum(cutlass_coop.this_cluster(), values, broadcast=False),
+        cutlass_coop.sum(block, values, temp_storage=scratch),
         np.int32,
+    )
+    assert_type(
+        cutlass_coop.sum(block, scalar, valid_items=17, temp_storage=scratch),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.reduce(
+            block,
+            scalar,
+            binary_op="max",
+            temp_storage=common_coop.TempStorage(),
+        ),
+        Uint32,
     )

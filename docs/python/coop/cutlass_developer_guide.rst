@@ -9,7 +9,7 @@ CUTLASS Developer Guide
 
 CuTe compiles your kernel and its control flow. For each cooperative
 primitive, ``cuda.coop.cutlass`` generates a C++ device function that calls
-CUB or CUDAX. NVRTC compiles those functions to LTO-IR, which CuTe links into
+CUB. NVRTC compiles those functions to LTO-IR, which CuTe links into
 the kernel before it runs. The implementation calls these generated
 functions *providers*.
 
@@ -143,9 +143,11 @@ provider. The plan identifies equivalent requests so they can share one
 generated function and cached artifact.
 
 Other primitive families use the same approach. For Reduce, the planner
-chooses CUDAX for supported full-group reductions. It chooses CUB when the
-call supplies a valid-prefix count or a block algorithm. The Reduce lowering
-then generates the wrapper and adapts CuTe's values to its arguments.
+selects CUB BlockReduce or WarpReduce, checks scalar or per-thread payload
+support, and records scratch requirements. Block reductions accept an explicit
+``TempStorage`` descriptor; warp reductions use compiler-owned storage.
+The Reduce lowering generates the wrapper and adapts CuTe's values to its
+arguments. The returned scalar is defined only at group rank zero.
 
 .. _coop-cutlass-exact-launch-facts:
 
@@ -707,7 +709,7 @@ It requires shared memory and barriers only for transpose. The final-cubin
 checks in ``runtime/test_warp_load_store.py`` and
 ``runtime/test_logical_warp_load_store.py`` reject provider calls and block
 barriers for physical and logical Warp operations. The final-cubin check in
-``runtime/test_reduce.py`` confirms that the CUDAX and CUB Reduce routes leave
+``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave
 no provider calls. It does not check shared memory, registers, or barriers.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Lower group queries and synchronization to CUDAX extern calls.
+"""Lower group queries and synchronization to native CUDA extern calls.
 
 Resolve hierarchy facts before emitting a request. Query wrappers return
 CuTe integer values, membership returns Uint8, and synchronization
@@ -19,7 +19,6 @@ from cutlass.cute.ffi import ffi
 from cuda.coop._core import (
     cpp_level_expr,
     normalize_thread_level,
-    render_group_decl_lines,
     render_hierarchy_decl,
     resolve_thread_group,
     validate_thread_group_query_dtype,
@@ -36,7 +35,7 @@ _SYNC_OPS = frozenset({"sync", "sync_aligned"})
 
 
 @dataclass(frozen=True)
-class _CudaxGroupRequest:
+class _NativeGroupRequest:
     """Identify one group operation and its static query result type.
 
     Symbol names include group topology, operation, level, and dtype so
@@ -47,7 +46,7 @@ class _CudaxGroupRequest:
     op: str
     level: str = "thread"
     result_type: type | None = None
-    kind: str = "cudax_group"
+    kind: str = "native_group"
 
     def __post_init__(self):
         """Validate the operation and any requested integral query type."""
@@ -64,7 +63,7 @@ class _CudaxGroupRequest:
     @property
     def symbol_name(self):
         parts = [
-            "cuda_coop_cutlass_cudax_group",
+            "cuda_coop_cutlass_group",
             self.group.symbol_suffix,
             self.op,
         ]
@@ -78,7 +77,7 @@ class _CudaxGroupRequest:
 def _resolve_method_group(group, op, level="thread"):
     """Resolve the hierarchy needed by a query, membership test, or barrier.
 
-    ThreadGroup method lowerings call this before generating CUDAX code.
+    ThreadGroup method lowerings call this before generating native CUDA code.
     A descriptor can leave launch dimensions unknown; resolving it here
     supplies the compiler facts needed to interpret ranks and group sizes.
 
@@ -157,113 +156,121 @@ def _result_type(group, level, dtype):
     return dtype
 
 
-def _group_prelude(group):
-    """Render group context without adding mapped-warp barrier state."""
+def _native_query_expr(
+    group: ThreadGroup, operation: str, unit: str, level: str
+) -> str:
+    """Query native CUDA levels using the known launch hierarchy."""
 
-    if group.kind == "warps_within_block":
-        return _mapped_warp_query_prelude(group)
-    return [
-        *render_hierarchy_decl(group.hierarchy),
-        *render_group_decl_lines(group),
-    ]
-
-
-def _mapped_warp_query_prelude(group: ThreadGroup) -> list[str]:
-    """Render mapped-warp metadata without constructing a barrier group.
-
-    Queries need only the parent warp rank, the number of warps per group,
-    and the number of warps that belong to complete groups. Avoid barrier
-    allocation and initialization for these arithmetic and membership tests.
-    """
-
-    assert group.kind == "warps_within_block"
-    assert group.parent is not None
-    assert group.mapping is not None
-    hierarchy = group.hierarchy
-    block_threads = hierarchy.block_thread_count
-    assert block_threads is not None and block_threads % 32 == 0
-    parent_warps = block_threads // 32
-    grouped_warps = (parent_warps // group.mapping.count) * group.mapping.count
-    lines = [] if hierarchy.implicit else render_hierarchy_decl(hierarchy)
-    lines.extend(
-        render_group_decl_lines(
-            group.parent,
-            var_name="group_parent",
-        )
+    hierarchy_arg = "" if group.hierarchy.implicit else ", hierarchy"
+    return (
+        f"{cpp_level_expr(unit)}.{operation}("
+        f"{cpp_level_expr(level)}{hierarchy_arg})"
     )
-    lines.extend(
-        (
-            "  auto group_warp_rank = ::cuda::warp.rank(group_parent);",
-            (
-                f"  constexpr ::cuda::std::uint32_t group_warp_count = "
-                f"{group.mapping.count};"
-            ),
-            (
-                "  constexpr ::cuda::std::uint32_t grouped_warp_count = "
-                f"{grouped_warps};"
-            ),
-        )
-    )
-    return lines
 
 
 def _query_expr(group: ThreadGroup, operation: str, level: str) -> str:
-    """Select rank or count arithmetic for the requested hierarchy level.
+    """Query physical levels or the contiguous units of a mapped group."""
 
-    At a level inside the group, return the caller's rank among units of that
-    level, or how many such units the group contains. At a level outside the
-    group, return this group's rank within that level, or how many such groups
-    that level contains. An unmapped group's own level returns rank zero and
-    count one. Mapped warp groups use flat arithmetic. Mapped groups cannot
-    query above their immediate parent.
-    """
-
-    if group.kind == "warps_within_block":
-        assert group.mapping is not None
-        block_threads = group.hierarchy.block_thread_count
-        assert block_threads is not None and block_threads % 32 == 0
-        parent_warps = block_threads // 32
-        if level == "block":
-            if operation == "rank":
-                return "group_warp_rank / group_warp_count"
-            return f"{parent_warps} / group_warp_count"
-        if level == "warp":
-            if operation == "rank":
-                return "group_warp_rank % group_warp_count"
-            return "group_warp_count"
-        if level == "thread":
-            if operation == "rank":
-                return (
-                    "(group_warp_rank % group_warp_count) * 32 + "
-                    "::cuda::gpu_thread.rank(::cuda::warp, "
-                    "group_parent.hierarchy())"
-                )
-            return "group_warp_count * 32"
-        raise NotImplementedError(
-            "mapped ThreadGroup queries above the immediate parent require "
-            "recursive group composition"
-        )
-
-    level_expr = cpp_level_expr(level)
     if group.mapping is not None:
-        parent_level = group.mapping.parent
-        if level == parent_level:
-            return f"group.{operation}(group_parent)"
-        if _LEVEL_ORDER[level] > _LEVEL_ORDER[parent_level]:
+        mapping = group.mapping
+        if _LEVEL_ORDER[level] > _LEVEL_ORDER[mapping.parent]:
             raise NotImplementedError(
-                "mapped ThreadGroup queries above the immediate parent require "
-                "recursive group composition"
+                "mapped ThreadGroup queries above the immediate parent "
+                "require recursive group composition"
             )
-        return f"{level_expr}.{operation}(group)"
+        rank = _native_query_expr(group, "rank", mapping.unit, mapping.parent)
+        if level == mapping.parent:
+            if operation == "rank":
+                return f"({rank}) / {mapping.count}"
+            count = _native_query_expr(
+                group, "count", mapping.unit, mapping.parent
+            )
+            return f"({count}) / {mapping.count}"
+        if level == mapping.unit:
+            return (
+                f"({rank}) % {mapping.count}"
+                if operation == "rank"
+                else str(mapping.count)
+            )
+        assert group.kind == "warps_within_block" and level == "thread"
+        if operation == "rank":
+            lane = _native_query_expr(group, "rank", "thread", "warp")
+            return f"(({rank}) % {mapping.count}) * 32 + {lane}"
+        return str(mapping.count * 32)
 
     if level == group.kind:
         return "0" if operation == "rank" else "1"
     if _LEVEL_ORDER[level] < _LEVEL_ORDER[group.kind]:
-        return f"{level_expr}.{operation}(group)"
-    return f"group.{operation}({level_expr})"
+        return _native_query_expr(group, operation, level, group.kind)
+    return _native_query_expr(group, operation, group.kind, level)
 
 
-def _render_cudax_group(request):
+def _membership_expr(group: ThreadGroup) -> str:
+    """Exclude only units outside the complete mapped prefix."""
+
+    if group.mapping is None or group.mapping.exhaustive:
+        return "true"
+    mapping = group.mapping
+    rank = _native_query_expr(group, "rank", mapping.unit, mapping.parent)
+    count = _native_query_expr(group, "count", mapping.unit, mapping.parent)
+    return f"({rank}) < (({count}) / {mapping.count}) * {mapping.count}"
+
+
+def _sync_lines(group: ThreadGroup, operation: str) -> list[str]:
+    """Emit the CUDA barrier for a supported group without owning scratch."""
+
+    if group.kind == "thread":
+        return []
+    if group.kind == "warp":
+        return ["  ::__syncwarp();"]
+    if group.kind == "threads_within_warp":
+        assert group.mapping is not None
+        width = group.mapping.count
+        lane = _native_query_expr(group, "rank", "thread", "warp")
+        return [
+            f"  if (!({_membership_expr(group)})) {{",
+            "    return;",
+            "  }",
+            f"  const auto group_first_lane = ({lane} / {width}) * {width};",
+            f"  ::__syncwarp({(1 << width) - 1}u << group_first_lane);",
+        ]
+    if group.kind == "block":
+        return [
+            "  ::__syncthreads();"
+            if operation == "sync_aligned"
+            else "  ::__barrier_sync(0);"
+        ]
+    if group.kind == "cluster":
+        aligned = operation == "sync_aligned"
+        barrier = (
+            (
+                (
+                    '    asm volatile("barrier.cluster.arrive.aligned;"'
+                    ' ::: "memory");'
+                ),
+                (
+                    '    asm volatile("barrier.cluster.wait.aligned;"'
+                    ' ::: "memory");'
+                ),
+            )
+            if aligned
+            else (
+                "    ::__cluster_barrier_arrive();",
+                "    ::__cluster_barrier_wait();",
+            )
+        )
+        fallback = "::__syncthreads();" if aligned else "::__barrier_sync(0);"
+        return [
+            "  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, ({",
+            *barrier,
+            f"  }}), ({{ {fallback} }}))",
+        ]
+    raise NotImplementedError(
+        f"cuda.coop.cutlass does not support {group.kind} synchronization"
+    )
+
+
+def _render_native_group(request):
     """Render a typed query, Uint8 membership test, or void barrier call."""
 
     group, op = request.group, request.op
@@ -271,7 +278,7 @@ def _render_cudax_group(request):
         cpp_type = _types.TYPE_SPECIFICATIONS[request.result_type].cpp_type
         return [
             f"{cpp_type} {request.symbol_name}() {{",
-            *_group_prelude(group),
+            *render_hierarchy_decl(group.hierarchy),
             (
                 f"  return static_cast<{cpp_type}>"
                 f"({_query_expr(group, op, request.level)});"
@@ -279,21 +286,17 @@ def _render_cudax_group(request):
             "}",
         ]
     if op == "is_member":
-        expression = (
-            "group_warp_rank < grouped_warp_count"
-            if group.kind == "warps_within_block"
-            else "::cuda::gpu_thread.is_part_of(group)"
-        )
+        expression = _membership_expr(group)
         return [
             f"unsigned char {request.symbol_name}() {{",
-            *_group_prelude(group),
+            *render_hierarchy_decl(group.hierarchy),
             f"  return {expression} ? 1u : 0u;",
             "}",
         ]
     return [
         f"void {request.symbol_name}() {{",
-        *_group_prelude(group),
-        f"  group.{op}();",
+        *render_hierarchy_decl(group.hierarchy),
+        *_sync_lines(group, op),
         "}",
     ]
 
@@ -339,7 +342,7 @@ def provider_group_query(*, group, op, level="thread", result_type=None):
     Returns
     -------
     CuTe scalar
-        Typed result of the generated CUDAX query call.
+        Typed result of the generated native query call.
     """
 
     if op not in _QUERY_OPS:
@@ -349,7 +352,7 @@ def provider_group_query(*, group, op, level="thread", result_type=None):
     )
     group = _resolve_method_group(group, op, level)
     dtype = _result_type(group, level, result_type)
-    return _emit(_CudaxGroupRequest(group, op, level, dtype), dtype)
+    return _emit(_NativeGroupRequest(group, op, level, dtype), dtype)
 
 
 def provider_group_sync(*, group, aligned):
@@ -357,35 +360,24 @@ def provider_group_sync(*, group, aligned):
 
     op = "sync_aligned" if aligned else "sync"
     group = _resolve_method_group(group, op)
-    _emit(_CudaxGroupRequest(group, op), None)
+    _emit(_NativeGroupRequest(group, op), None)
 
 
 def provider_group_membership(*, group):
     """Emit a Uint8 flag for membership in the resolved group."""
 
     group = _resolve_method_group(group, "is_member")
-    return _emit(_CudaxGroupRequest(group, "is_member"), _types.Uint8)
+    return _emit(_NativeGroupRequest(group, "is_member"), _types.Uint8)
 
 
 _rendering.register_bundle_renderer(
-    "cudax_group",
-    render=_render_cudax_group,
+    "native_group",
+    render=_render_native_group,
     include_lines=(
-        "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX",
-        "#define _CUDAX_DISABLE_CG_INTEROP",
-        "#include <cuda/barrier>",
-        "#include <cuda/devices>",
+        "#include <cuda_runtime.h>",
         "#include <cuda/hierarchy>",
-        "#include <cuda/experimental/hierarchy.cuh>",
         "#include <cuda/std/cstdint>",
-        "#include <cuda/std/type_traits>",
-        "#include <cuda/experimental/coop/group>",
+        "#include <nv/target>",
     ),
-    cccl_headers=(
-        (
-            "#include <cuda/experimental/hierarchy.cuh>",
-            "cuda/experimental/hierarchy.cuh",
-        ),
-        ("cuda/experimental/coop/group", "cuda/experimental/coop/group"),
-    ),
+    cccl_headers=(("#include <cuda/hierarchy>", "cuda/hierarchy"),),
 )

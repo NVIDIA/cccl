@@ -4,9 +4,8 @@
 
 """Check reduction width boundaries and nonexhaustive logical groups.
 
-Widths one and 32 cover the smallest group and a full physical warp. Width
-three leaves two nonmembers per warp for the ordinary CUDAX route. Prefix
-cases use supported CUB widths and consume results only at group roots.
+Widths one and 32 cover the smallest group and a full physical warp.
+Full and prefix reductions consume results only at group roots.
 """
 
 import numpy as np
@@ -28,7 +27,7 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 )
 @pytest.mark.parametrize(
     "width,prefix",
-    ((1, False), (3, False), (32, False), (1, True), (32, True)),
+    ((1, False), (32, False), (1, True), (32, True)),
 )
 def test_logical_width(api, width, prefix):
     @cute.kernel
@@ -39,14 +38,12 @@ def test_logical_width(api, width, prefix):
         outputs = cute.make_tensor(observed, cute.make_layout(128))
         group = api.this_warp().group_by(width, exhaustive=False)
         if cutlass.const_expr(prefix):
-            result = api.sum(
-                group, inputs[thread], broadcast=False, valid_items=1
-            )
+            result = api.sum(group, inputs[thread], valid_items=1)
             if thread % width == 0:
                 outputs[thread] = result
         else:
             result = api.sum(group, inputs[thread])
-            if group.is_member():
+            if thread % width == 0:
                 outputs[thread] = result
 
     @cute.jit
@@ -62,9 +59,9 @@ def test_logical_width(api, width, prefix):
             if prefix:
                 expected[start] = source[start]
             else:
-                expected[start : start + width] = source[
-                    start : start + width
-                ].sum(dtype=np.int32)
+                expected[start] = source[start : start + width].sum(
+                    dtype=np.int32
+                )
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out)
     np.testing.assert_array_equal(observed, expected)

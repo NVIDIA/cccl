@@ -50,7 +50,9 @@ def test_mapped_metadata_has_no_storage(monkeypatch, op):
     group = lowering._resolve_method_group(
         this_block().group_by(2, exhaustive=False), op
     )
-    request = lowering._CudaxGroupRequest(group, op, result_type=cutlass.Uint32)
+    request = lowering._NativeGroupRequest(
+        group, op, result_type=cutlass.Uint32
+    )
     source = _rendering.render_bundle_source([request])
     assert "__shared__" not in source
     assert "barriers_storage" not in source
@@ -176,7 +178,7 @@ def test_query_registration_rolls_back(monkeypatch):
         raise ValueError("bad ffi")
 
     monkeypatch.setattr(lowering, "ffi", failure)
-    request = lowering._CudaxGroupRequest(
+    request = lowering._NativeGroupRequest(
         this_thread(), "rank", result_type=cutlass.Uint32
     )
     with pytest.raises(ValueError, match="bad ffi"):

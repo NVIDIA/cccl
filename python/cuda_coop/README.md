@@ -373,7 +373,7 @@ group or parent-group participant must still reach the primitive.
 Numba-CUDA-MLIR accepts an optional caller descriptor for block Load, Store,
 Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference, Discontinuity,
 Histogram, and both Run Length Decode forms. CUTLASS currently accepts one for
-block Load and Store:
+block Load, Store, and Reduce:
 
 ```python
 storage = coop.TempStorage(

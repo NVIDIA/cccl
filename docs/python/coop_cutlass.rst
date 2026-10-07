@@ -11,7 +11,7 @@ CUTLASS Programming Guide
 
 Use ``cuda.coop`` inside a CuTe kernel for the cooperative primitives
 documented below. The CUTLASS backend implements each supported operation with
-CUB or CUDAX; see :ref:`backend operation support
+CUB; see :ref:`backend operation support
 <coop-backend-operation-support>`.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
@@ -137,7 +137,7 @@ CUTLASS environment also needs NumPy, ``cuda-pathfinder>=1.2.3``, and
 alongside a compatible CuTe compiler and its dependencies.
 
 The CuTe compiler must support linking external NVIDIA LTO-IR into a kernel,
-and NVRTC must be available to compile the CUB and CUDAX functions. See the
+and NVRTC must be available to compile the CUB functions. See the
 :ref:`developer guide's compiler requirements <coop-cutlass-compiler-requirements>`
 for the required CuTe integration hooks. Importing :mod:`cuda.coop` alone does
 not load CUTLASS or initialize CUDA bindings.
@@ -322,10 +322,11 @@ alignment; it does not change the logical item layout.
 Block scratch and reuse
 -----------------------
 
-Transpose algorithms allocate scratch implicitly unless passed
-``temp_storage``. Construct one ``TempStorage`` inside the kernel to share
-capacity across calls. An omitted size lets the compiler allocate enough
-storage for all uses; an explicit byte capacity must accommodate them.
+Block transpose algorithms and Block Reduce allocate scratch implicitly
+unless passed ``temp_storage``. Construct one ``TempStorage`` inside the
+kernel to share capacity across calls. An omitted size lets the compiler
+allocate enough storage for all uses; an explicit byte capacity must
+accommodate them.
 ``alignment`` is a minimum: the allocation also satisfies each primitive's
 alignment requirements.
 
@@ -468,17 +469,12 @@ dimensions.
 Built-in Reduce and Sum
 -----------------------
 
-``reduce(group, value, ...)`` and ``sum(group, value, ...)`` accept a scalar
-or fixed per-thread ``ThreadData`` payload. Full-group reductions support
-thread, physical and logical warp, block, mapped groups of physical warps,
-and cluster groups. Grid reductions are unsupported. All members of a
-participating group must call the primitive.
-
-For a mapped group of physical warps, every thread in the enclosing block
-must reach the reduction, including nonmembers of a non-exhaustive partition:
-setting up the reduction synchronizes the parent block. Restrict use of the
-result to participating members; do not guard the reduction itself with
-``is_member()``.
+``reduce(group, value, ...)`` and ``sum(group, value, ...)`` use CUB for block,
+physical-warp, and logical-warp reductions. Blocks accept a scalar or a fixed
+per-thread ``ThreadData`` payload. Warps accept one scalar per lane. Logical
+warp widths are 1, 2, 4, 8, 16, or 32, and the enclosing block must contain
+complete physical warps. All members of a participating group must call the
+primitive.
 
 The built-in operators are sum, product, minimum, maximum, bitwise AND,
 bitwise OR, and bitwise XOR. For example, ``binary_op="max"`` selects maximum,
@@ -487,13 +483,11 @@ sum. Bitwise operators require integer values. The qualified API also accepts
 known ``operator`` and NumPy callable aliases; arbitrary callbacks are
 unsupported.
 
-With the default ``broadcast=True``, every group member may use the scalar
-result. With ``broadcast=False``, only group rank zero may use it; the other
-members must still call the primitive. Nonmembers of a non-exhaustive mapped
-group have no defined result. The input payload remains unchanged.
+Only group rank zero may use the scalar result; the other members must still
+call the primitive. The input payload remains unchanged.
 
-Full-group reductions without algorithm controls use CUDAX. An explicit block
-algorithm or ``valid_items`` selects CUB and requires ``broadcast=False``:
+Block calls can select a CUB algorithm. A scalar call can limit its input to
+a valid prefix:
 
 .. list-table:: Reduction controls
    :header-rows: 1
@@ -501,19 +495,26 @@ algorithm or ``valid_items`` selects CUB and requires ``broadcast=False``:
    * - Group and input
      - Supported controls
    * - Block scalar
-     - ``valid_items`` and any supported block algorithm
+     - ``valid_items``, a block algorithm, and ``temp_storage``
    * - Block multi-item payload
-     - An explicit block algorithm, without ``valid_items``
+     - A block algorithm and ``temp_storage``, without ``valid_items``
    * - Physical or logical warp scalar
      - ``valid_items``, without an algorithm selector
 
 Block algorithm names are ``raking_commutative_only``, ``raking``, and
-``warp_reductions``. A valid prefix contains from one through the group size
-contributing members, counting threads rather than payload elements. The count
-must be uniform within the group. Zero and out-of-range counts are invalid;
-all members still participate even when their values fall outside the prefix.
-Reduction scratch is managed by the implementation, including synchronization
-for repeated reuse; these calls do not accept ``temp_storage``.
+``warp_reductions`` (the default). A valid prefix contains from one through
+the group size contributing members, counting threads rather than payload
+elements. The count must be uniform within the group. Zero and out-of-range
+counts are invalid; all members still participate even when their values fall
+outside the prefix.
+
+Omitting ``temp_storage`` uses compiler-managed scratch with automatic
+synchronization. Block Reduce accepts a ``TempStorage`` descriptor with the
+same sizing, alignment, sharing, and synchronization policy as Block
+Load/Store. An explicit descriptor defaults to ``auto_sync=False``: call
+``storage.sync()`` before reusing it, or construct it with
+``auto_sync=True``. Warp Reduce always uses compiler-managed scratch with
+synchronization scoped to its participating lanes.
 
 This example uses block rank queries, a full block sum, logical-warp maxima,
 and a scalar valid-prefix sum whose result is read only at block rank zero.

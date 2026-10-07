@@ -66,12 +66,9 @@ def test_common_reduce_matrix_and_family_owned_selectors(monkeypatch):
 
     monkeypatch.setattr(api, "_group_primitive_marker", marker)
     groups = (
-        this_thread(),
         this_warp(),
         this_warp().group_by(8),
         this_block(),
-        this_block().group_by(2),
-        this_cluster(),
     )
     with monkeypatch.context() as compiler_context:
         compiler_context.setattr(
@@ -83,9 +80,19 @@ def test_common_reduce_matrix_and_family_owned_selectors(monkeypatch):
             lambda: "test.backend",
         )
         for group in groups:
-            assert api.reduce(group, _ThreadData(), binary_op="+") is delegated
-            assert api.sum(group, np.int32(1), broadcast=False) is delegated
+            assert api.reduce(group, np.int32(1), binary_op="+") is delegated
+            assert api.sum(group, np.int32(1)) is delegated
         assert calls[0][1]["binary_op"] == "sum"
+        assert api.reduce(this_block(), _ThreadData()) is delegated
+        storage = object()
+        assert (
+            api.sum(
+                this_block(), np.int32(1), valid_items=17, temp_storage=storage
+            )
+            is delegated
+        )
+        assert calls[-1][1]["valid_items"] == 17
+        assert calls[-1][1]["temp_storage"] is storage
         assert (
             api.reduce(this_block(), np.int32(1), binary_op=" MAXIMUM ")
             is delegated
@@ -95,7 +102,6 @@ def test_common_reduce_matrix_and_family_owned_selectors(monkeypatch):
             api.sum(
                 this_block(),
                 np.int32(1),
-                broadcast=False,
                 algorithm=" RAKING-COMMUTATIVE-ONLY ",
             )
             is delegated
@@ -133,9 +139,7 @@ def test_common_reduce_algorithm_rejects_non_string_selectors(
             lambda: "test.backend",
         )
         with pytest.raises(TypeError, match="algorithm must be a string"):
-            api.sum(
-                this_block(), np.int32(1), broadcast=False, algorithm=selector
-            )
+            api.sum(this_block(), np.int32(1), algorithm=selector)
     assert calls == []
 
 
@@ -189,16 +193,25 @@ def test_common_cub_controls_fail_closed_before_delegation(
             "_backend_module_name",
             lambda: "test.backend",
         )
-        with pytest.raises(ValueError, match="requires broadcast=False"):
-            function(this_block(), np.int32(1), valid_items=17)
+        for group in (
+            this_thread(),
+            this_block().group_by(2),
+            this_cluster(),
+        ):
+            with pytest.raises(
+                NotImplementedError, match="does not support group kind"
+            ):
+                function(group, np.int32(1))
+        with pytest.raises(TypeError, match="unexpected keyword.*broadcast"):
+            function(this_block(), np.int32(1), broadcast=True)
         with pytest.raises(ValueError, match="scalar values only"):
-            function(
-                this_block(), _ThreadData(), broadcast=False, valid_items=1
-            )
+            function(this_block(), _ThreadData(), valid_items=1)
+        with pytest.raises(ValueError, match="scalar values only"):
+            function(this_warp(), _ThreadData())
         with pytest.raises(ValueError, match="requires a block group"):
-            function(
-                this_warp(), np.int32(1), broadcast=False, algorithm="raking"
-            )
+            function(this_warp(), np.int32(1), temp_storage=object())
+        with pytest.raises(ValueError, match="requires a block group"):
+            function(this_warp(), np.int32(1), algorithm="raking")
         with pytest.raises(ValueError, match="at least 1"):
-            function(this_block(), np.int32(1), broadcast=False, valid_items=0)
+            function(this_block(), np.int32(1), valid_items=0)
     assert calls == []
