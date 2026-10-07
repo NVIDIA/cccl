@@ -580,8 +580,8 @@ void test_reduce_by_key_extended_fp()
 {
   thrust::device_vector<int> keys{0, 0, 1, 1, 1};
   thrust::device_vector<T> values(5, T{1.5f});
-  thrust::device_vector<int> keys_out(2);
-  thrust::device_vector<T> values_out(2);
+  thrust::device_vector<int> keys_out(2, thrust::no_init);
+  thrust::device_vector<T> values_out(2, thrust::no_init);
 
   auto [keys_end, values_end] =
     thrust::reduce_by_key(keys.begin(), keys.end(), values.begin(), keys_out.begin(), values_out.begin());
