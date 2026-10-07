@@ -639,10 +639,12 @@ of the destination unchanged.
 How does Batched Warp Reduction differ from ordinary Reduce?
 ------------------------------------------------------------
 
-Ordinary ``reduce(group, values)`` combines the group's payload items
-into one aggregate. ``reduce_batched(warp, values)`` reduces each local
-slot independently across the warp. Three slots per lane mean three
-independent results, one for each slot.
+Ordinary block ``reduce(block, values)`` combines the threads' payload items
+into one aggregate. Ordinary Warp ``reduce(warp, value)`` accepts one scalar
+per lane. Both define the result only at group rank zero.
+``reduce_batched(warp, values)`` reduces each local slot independently across
+the warp. Three slots per lane mean three independent results, one for each
+slot.
 
 The results are distributed among lanes in blocked or striped order;
 they are not broadcast to every lane. Each returned payload has
