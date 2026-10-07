@@ -44,9 +44,9 @@ TEST_FUNC void final_phase(Gathered gathered, Available available)
 
 TEST_FUNC void impeccable_underground_planning()
 {
-  auto gathered_quantity = middle_phase(initial_phase(cuda::std::__cw<42>, cuda::std::__cw<13>));
+  auto gathered_quantity = middle_phase(initial_phase(cuda::std::cw<42>, cuda::std::cw<13>));
   static_assert(gathered_quantity == 55);
-  auto all_available = cuda::std::__cw<55>;
+  auto all_available = cuda::std::cw<55>;
   final_phase(gathered_quantity, all_available);
 }
 
