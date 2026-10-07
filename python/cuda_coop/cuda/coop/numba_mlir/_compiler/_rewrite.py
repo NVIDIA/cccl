@@ -78,7 +78,7 @@ class CoopSinglePhaseRewrite(
     and provider caches. This lets argument inference and array allocation
     use the same information across calls and control-flow branches.
 
-    The driver calls ``prepare_function`` before any IR changes and
+    The driver calls ``prepare_calls_and_storage`` before any IR changes and
     ``begin_rewrite`` to stage shared backing. It then uses ``match``/``apply``
     for each block and calls ``finish_rewrite`` after installing all results.
     Original call identity and definitions remain available during emission;
@@ -95,14 +95,16 @@ class CoopSinglePhaseRewrite(
     ) -> bool:
         """Select one block's work using the prepared function's call records.
 
-        ``prepare_function`` must succeed before any block is matched or
-        replaced. Provider calls are looked up by original assignment
+        ``prepare_calls_and_storage`` must succeed before any block is matched
+        or replaced. Provider calls are looked up by original assignment
         identity; constructors and extent queries are collected for ``apply``.
         The rewrite-interface maps ``typemap`` and ``calltypes`` are not read.
         """
 
         if self._func_ir_identity != id(func_ir):
-            raise RuntimeError("prepare_function must succeed before match")
+            raise RuntimeError(
+                "prepare_calls_and_storage must succeed before match"
+            )
         self._prepare_block(block)
         for inst in block.body:
             if isinstance(inst, ir.Assign):
@@ -114,9 +116,10 @@ class CoopSinglePhaseRewrite(
             or bool(self._thread_data_extents)
         )
 
-    def prepare_function(self, func_ir: ir.FunctionIR) -> bool:
-        """Prepare original calls and storage requirements before rewriting IR.
+    def prepare_calls_and_storage(self, func_ir: ir.FunctionIR) -> bool:
+        """Prepare all calls and storage across the current function's blocks.
 
+        Device helpers have already been inlined into this one function IR.
         A ``ThreadData`` dtype can come from a consumer in another block, and
         a ``TempStorage`` descriptor's requirements depend on all its consumers.
         Collect their constructors and analyze calls while every original
@@ -188,7 +191,9 @@ class CoopSinglePhaseRewrite(
         """
 
         if self._func_ir_identity != id(self._func_ir):
-            raise RuntimeError("prepare_function must succeed before rewriting")
+            raise RuntimeError(
+                "prepare_calls_and_storage must succeed before rewriting"
+            )
         if self._rewrite_started:
             raise RuntimeError("function rewriting has already started")
         if self._has_temp_storage_requirements():
@@ -963,7 +968,7 @@ class _CallRewriting:
             """Rewrite a prepared function; leave a deferred one intact."""
 
             nonlocal modified
-            if not rewrite.prepare_function(planner.state.func_ir):
+            if not rewrite.prepare_calls_and_storage(planner.state.func_ir):
                 return
             rewrite.begin_rewrite()
             for label in sorted(planner.state.func_ir.blocks):

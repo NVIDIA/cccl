@@ -637,14 +637,14 @@ lifetime from these call facts.
 Collect the providers before rewriting calls
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``prepare_function()`` examines the whole function before any block is
+``prepare_calls_and_storage()`` examines the whole function before any block is
 rewritten. A consumer in a later block can determine an earlier payload's
 dtype or add a requirement to a shared scratch descriptor. Keeping the
 original calls and definitions available lets the compiler collect these
 facts across blocks and inlined helpers. Provider preparation then supplies
 the C++ size and alignment of each scratch type.
 
-#. ``prepare_function()`` calls ``_collect_function_calls()`` to scan
+#. ``prepare_calls_and_storage()`` calls ``_collect_function_calls()`` to scan
    constructors first, then analyze each provider call once with
    ``_analyze_provider_call()``. Each ``_RewriteMatch`` records the resolved
    factory arguments, runtime operands, and lowering metadata. Planned
@@ -687,7 +687,8 @@ The rewrite needs the provider's symbol name and calling convention.
 It does not need the provider's final device address. ``Algorithm`` uses
 the same qualified name for the generated wrapper and its call descriptor.
 
-#. ``prepare_function()`` prepares the provider bundle and creates invocables for
+#. ``prepare_calls_and_storage()`` prepares the provider bundle and creates
+   invocables for
    calls that need scratch storage. Their LTO-IR and scratch layouts are
    already available. ``apply()`` reuses these invocables or creates others.
 #. ``apply()`` binds an ``Invocable`` with ``ir.Global`` and emits an
@@ -708,7 +709,7 @@ Follow the function rewrite lifecycle
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``_CallRewriting._rewrite_calls()`` owns preparation, storage staging, block
-replacement, and final cleanup. It calls ``prepare_function()`` and
+replacement, and final cleanup. It calls ``prepare_calls_and_storage()`` and
 ``begin_rewrite()`` before visiting blocks. For each block with matches, it
 installs the result of ``apply()``. Only after all replacements are installed
 does it call ``finish_rewrite()``. These are steps within the existing
@@ -722,7 +723,7 @@ whole-function planner, which still runs before type inference.
      - Entry points
      - Purpose
    * - Prepare the function
-     - ``prepare_function()``
+     - ``prepare_calls_and_storage()``
      - Analyze each provider call, reusing planned Load/Store payload facts.
        Validate storage uses, prepare the provider bundle, then collect
        scratch requirements before changing statements.
@@ -774,7 +775,7 @@ To trace these stages, start with :github:`the planner
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_planner.py>` and
 :github:`the block rewrite
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite.py>`.
-``prepare_function()`` coordinates :github:`storage validation and layout
+``prepare_calls_and_storage()`` coordinates :github:`storage validation and layout
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_storage.py>` with
 :github:`bundle preparation
 <python/cuda_coop/cuda/coop/numba_mlir/_compiler/_rewrite_invocables.py>`.
@@ -1369,7 +1370,7 @@ provider's source generation on another run, stop in
 ``Algorithm._source_code()`` in the same file.
 
 The Call Stack at the bundle stop also explains its timing:
-``_CallRewriting._rewrite_calls()`` calls ``prepare_function()``, which
+``_CallRewriting._rewrite_calls()`` calls ``prepare_calls_and_storage()``, which
 analyzes calls and validates storage uses before preparing the bundle.
 After compilation supplies the layouts, it collects scratch requirements
 and saves the matches for block emission. This still occurs before

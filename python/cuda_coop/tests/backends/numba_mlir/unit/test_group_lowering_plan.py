@@ -296,7 +296,7 @@ def test_runtime_arithmetic_controls_share_planning_and_rewrite_paths(
         metadata={},
     )
     rewrite = CoopSinglePhaseRewrite(state)
-    assert rewrite.prepare_function(planner.func_ir)
+    assert rewrite.prepare_calls_and_storage(planner.func_ir)
     for label in sorted(planner.func_ir.blocks):
         rewrite.match(
             planner.func_ir,

@@ -68,9 +68,10 @@ class _LaunchRewrite:
         _DeferredCoopRewrite
             Internal signal that explicit dimensions need pending launch
             metadata. It propagates through argument validation to
-            ``CoopSinglePhaseRewrite.prepare_function``, which preserves the IR
-            for ``_CallRewriting._rewrite_calls`` to request the kernel launch
-            shape and retry within ``CoopWholeFunctionPlanner``.
+            ``CoopSinglePhaseRewrite.prepare_calls_and_storage``, which
+            preserves the IR for ``_CallRewriting._rewrite_calls`` to request
+            the kernel launch shape and retry within
+            ``CoopWholeFunctionPlanner``.
         """
 
         if "threads_per_block" not in allowed_factory_kwargs:
