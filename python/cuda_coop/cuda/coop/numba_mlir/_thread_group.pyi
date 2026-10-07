@@ -287,17 +287,6 @@ class ThreadGroup(
     def is_member(self) -> np.uint8:
         """Return a NumPy-compatible ``uint8`` membership flag."""
 
-ReductionGroup: TypeAlias = ThreadGroup[
-    Literal[
-        "thread",
-        "warp",
-        "threads_within_warp",
-        "warps_within_block",
-        "block",
-        "cluster",
-    ]
-]
-
 BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
 
 WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]

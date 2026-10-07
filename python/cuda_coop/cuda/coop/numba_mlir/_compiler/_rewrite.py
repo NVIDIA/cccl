@@ -150,7 +150,6 @@ class CoopSinglePhaseRewrite(
         self._implicit_temp_storage_requirements = (
             _TempStorageRequirementSummary()
         )
-        self._provider_uses_static_shared_memory = False
         self._func_ir = func_ir
         self._thread_data_specifications = {}
         self._thread_data_like_vars = set()
@@ -200,8 +199,6 @@ class CoopSinglePhaseRewrite(
             raise RuntimeError("function rewriting has already started")
         if self._has_temp_storage_requirements():
             self._stage_temp_storage_backing()
-        elif self._provider_uses_static_shared_memory:
-            self._reject_conflicting_user_shared_arrays()
         self._rewrite_started = True
 
     def finish_rewrite(self) -> None:

@@ -122,7 +122,7 @@ def test_reduce():
             valid_items=valid,
             oob_default=0,
         )
-        total = coop.sum(block, items, broadcast=False)
+        total = coop.sum(block, items)
         if block.rank() == 0:
             totals[cuda.blockIdx.x] = total
 

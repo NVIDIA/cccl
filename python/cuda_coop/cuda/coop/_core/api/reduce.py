@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Define the common Reduce and Sum calls that kernels use.
-
-The registration decorator records accepted group kinds and leaves each
-function unwrapped. Shared planning selects CUDAX or CUB and records where
-the result is defined. A backend compiles that plan; callers must respect
-its result visibility. The Python bodies reject host execution.
-"""
+"""Define CUB block and warp reductions with leader-owned results."""
 
 from __future__ import annotations
 
@@ -19,55 +13,41 @@ from cuda.coop._typing import (
     CommonThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
+    TempStorageLike,
     ValidItems,
 )
 
 from ..thread_group import CoopCompilerContextRequiredError
-from ._dispatch import (
-    _common_group_operation,
-)
-from .thread_group import BlockGroup, ReductionGroup, WarpGroup
+from ._dispatch import _common_group_operation
+from .thread_group import BlockGroup, WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_COMMON_REDUCTION_GROUP_KINDS = ("warp", "threads_within_warp", "block")
 
 
-_COMMON_REDUCTION_GROUP_KINDS = (
-    "thread",
-    "warp",
-    "threads_within_warp",
-    "block",
-    "warps_within_block",
-    "cluster",
-)
-
-
-@_common_group_operation(
-    "reduce",
-    group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
-)
+@_common_group_operation("reduce", group_kinds=_COMMON_REDUCTION_GROUP_KINDS)
 def reduce(
-    group: ReductionGroup | BlockGroup | WarpGroup,
+    group: BlockGroup | WarpGroup,
     value: CommonThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
     binary_op: ReduceOperator | None = None,
-    broadcast: bool = True,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
-    """Combine a group's values into one scalar.
+    """Reduce a block or warp to a scalar defined at group rank zero.
 
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`. Supports a
-        single thread, physical or logical warp, block, mapped group of warps,
-        or cluster. Grid reductions are unsupported. Every member must call
-        the primitive, including members excluded by ``valid_items``.
+        A block, physical warp, or logical warp with a power-of-two width
+        dividing 32. Every group member must participate, including members
+        excluded by ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
-        Each thread's contribution. A :ref:`per-thread payload
-        <coop-thread-data>` contributes all its elements to the same scalar
-        reduction; its dtype and fixed extent must agree across the group.
+        Each thread's contribution. Block reductions accept a scalar or a
+        :ref:`per-thread payload <coop-thread-data>` whose elements all
+        contribute to the result. Warp reductions accept scalars only.
         Input values are preserved. Supported dtypes are signed and unsigned
         8-, 16-, 32-, and 64-bit integers, ``float32``, and ``float64``.
     binary_op : str, optional
@@ -75,48 +55,43 @@ def reduce(
         ``"min"``, ``"max"``, ``"bit_and"``, ``"bit_or"``, or ``"bit_xor"``.
         ``None`` selects sum. Bitwise operators require integer values.
         Operator aliases include ``"+"``, ``"*"``, ``"&"``, ``"|"``, and
-        ``"^"``. Use the qualified ``cuda.coop.<backend>`` API for custom
-        operators where supported.
-    broadcast : bool, optional
-        Compile-time flag, default ``True``. Return the result to every group
-        member. With ``False``, only group rank zero has a defined result;
-        other members must not use their return value.
+        ``"^"``. Qualified backend APIs also support custom device operators
+        where documented.
     valid_items : int or integer scalar, optional
-        Reduce only the first ``valid_items`` members by linear group rank.
-        Requires scalar ``value``, ``broadcast=False``, and a block or physical
-        or logical warp. The count must be uniform across the group and lie
-        between one and the group size, inclusive. ``None`` includes all
-        members. An empty reduction is unsupported.
+        Reduce the first ``valid_items`` members by linear group rank.
+        Requires scalar ``value``. The count must be uniform across the group
+        and between one and the group size, inclusive. ``None`` includes all
+        members. Empty reductions are unsupported.
     algorithm : str, optional
         Compile-time block algorithm: ``"raking_commutative_only"``,
-        ``"raking"``, or ``"warp_reductions"``. An explicit choice requires
-        a block and ``broadcast=False``. All common operators support these
-        choices. ``None`` lets the implementation select an algorithm.
+        ``"raking"``, or ``"warp_reductions"``. ``None`` selects
+        ``"warp_reductions"`` for blocks. Warp reductions require ``None``.
+    temp_storage : cuda.coop.TempStorageLike, optional
+        Explicit block scratch descriptor. Size and alignment are inferred
+        from all uses unless requested explicitly. Descriptor options govern
+        scratch sharing and reuse synchronization. When omitted, the compiler
+        allocates scratch and inserts reuse barriers. Warp reductions require
+        omission so the compiler can allocate a separate slice per warp.
 
     Returns
     -------
     numeric scalar
-        Reduced value with the input dtype. ``ThreadData`` input also produces
-        one scalar. Result visibility is controlled by ``broadcast``.
+        Reduced value with the input dtype, defined only at group rank zero.
+        Other members must not use their return value.
 
     Notes
     -----
-    The reduction can regroup operations, so floating-point results can differ
-    from a sequential fold. This call manages any required
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+    Floating-point results can differ from a sequential fold because reduction
+    regroups operations. See :ref:`temporary storage <coop-temp-storage>` for
+    scratch lifetime and synchronization.
 
     See Also
     --------
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
-        C++ counterparts for the block algorithm and valid-prefix variants.
-        Full-group built-in reductions use the CUDAX cooperative group API.
+        Native primitives and their result-ownership contracts.
 
     Examples
     --------
-    Find the maximum of a block and the minimum of its first 93 values.
-    All 128 threads participate in both calls; only thread zero writes the
-    partial reduction's result.
-
     .. literalinclude::
         ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_examples.py
         :language: python
@@ -124,91 +99,52 @@ def reduce(
         :end-before: # reduce-example-end
         :dedent: 4
     """
-
     raise CoopCompilerContextRequiredError(
         "cuda.coop.reduce must be called from a supported GPU kernel."
     )
 
 
-@_common_group_operation(
-    "sum",
-    group_kinds=_COMMON_REDUCTION_GROUP_KINDS,
-)
+@_common_group_operation("sum", group_kinds=_COMMON_REDUCTION_GROUP_KINDS)
 def sum(
-    group: ReductionGroup | BlockGroup | WarpGroup,
+    group: BlockGroup | WarpGroup,
     value: CommonThreadDataLike[_ItemT] | _ItemT,
     /,
     *,
-    broadcast: bool = True,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
-    """Add a group's values and return one scalar.
+    """Sum a block or warp to a scalar defined at group rank zero.
 
-    This is equivalent to :func:`cuda.coop.reduce` with ``binary_op="sum"``.
+    Equivalent to :func:`cuda.coop.reduce` with ``binary_op="sum"``. Its group,
+    operand, valid-prefix, algorithm, and temporary-storage contracts apply.
+    Every group member participates; only rank zero may use the result.
 
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`. Supports a
-        single thread, physical or logical warp, block, mapped group of warps,
-        or cluster. Grid reductions are unsupported. Every member must call
-        the primitive.
+        Block, physical warp, or power-of-two logical warp dividing 32.
     value : numeric scalar or cuda.coop.ThreadDataLike
-        Each thread's contribution. A :ref:`per-thread payload
-        <coop-thread-data>` contributes all its elements; its dtype and fixed
-        extent must agree across the group. Input values are preserved.
-        Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
-        ``float32``, and ``float64``.
-    broadcast : bool, optional
-        Compile-time flag, default ``True``. Return the sum to every member.
-        With ``False``, only group rank zero has a defined result; all other
-        members must still participate but must not use their return value.
+        Per-thread contribution. Block reductions also accept fixed per-thread
+        payloads. Warp reductions accept scalar values only.
     valid_items : int or integer scalar, optional
-        Include only the first ``valid_items`` members by linear group rank.
-        Requires scalar ``value``, ``broadcast=False``, and a block or physical
-        or logical warp. The count must be uniform across the group and lie
-        between one and the group size, inclusive. ``None`` includes all
-        members. For a partial ``ThreadData`` tile, pad unused elements with
-        zero before calling ``sum``.
+        Uniform count of contributing group members, for scalar inputs only.
     algorithm : str, optional
-        Compile-time block algorithm: ``"raking_commutative_only"``,
-        ``"raking"``, or ``"warp_reductions"``. An explicit choice requires
-        a block and ``broadcast=False``. ``None`` lets the implementation
-        select an algorithm.
+        Block algorithm; see :func:`cuda.coop.reduce`. Omit for warp groups.
+    temp_storage : cuda.coop.TempStorageLike, optional
+        Explicit block scratch descriptor. Omission enables compiler-managed
+        scratch and reuse synchronization. Omit for warp groups.
 
     Returns
     -------
     numeric scalar
-        Sum with the input dtype, including when the input is ``ThreadData``.
-        The operation does not promote narrow integer types. Result visibility
-        is controlled by ``broadcast``.
-
-    Notes
-    -----
-    Floating-point addition can be regrouped, so the result can differ from a
-    sequential sum. The implementation manages any required
-    :ref:`temporary storage <coop-temp-storage>` automatically.
+        Sum with the input dtype, defined only at group rank zero.
 
     See Also
     --------
-    :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
-        C++ counterparts for the block algorithm and valid-prefix variants.
-        Full-group built-in reductions use the CUDAX cooperative group API.
-
-    Examples
-    --------
-    Sum an array in tiles of ``128 * items_per_thread`` elements. The last
-    tile is padded with zero; each block writes one partial sum.
-
-    .. literalinclude::
-        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_reduce_examples.py
-        :language: python
-        :start-after: # sum-example-begin
-        :end-before: # sum-example-end
-        :dedent: 4
+    cuda.coop.reduce
+        Reduction contracts and available algorithms.
     """
-
     raise CoopCompilerContextRequiredError(
         "cuda.coop.sum must be called from a supported GPU kernel."
     )
