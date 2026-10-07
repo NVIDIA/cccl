@@ -1139,8 +1139,8 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break treats -0.0 
   constexpr auto determinism   = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
   constexpr bool prefer_larger = tie_break == cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
 
-  constexpr segment_size_t static_max_segment_size = 64 * 1024;
-  constexpr segment_size_t static_max_k            = 64 * 1024;
+  constexpr segment_size_t static_max_segment_size = 896 * 1024;
+  constexpr segment_size_t static_max_k            = 896 * 1024;
   constexpr segment_index_t num_segments           = 2;
   const segment_size_t segment_size =
     GENERATE_COPY(values({segment_size_t{16}, segment_size_t{4096}, segment_size_t{64 * 1024}, segment_size_t{896 * 1024}}));
