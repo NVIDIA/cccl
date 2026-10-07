@@ -3117,8 +3117,9 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> SelectPolicy
   {
-    auto policy                    = SelectPolicy{SelectAlgorithm::lookback, get_lookback_policy(cc)};
-    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    auto policy = SelectPolicy{SelectAlgorithm::lookback, get_lookback_policy(cc)};
+    policy.lookback =
+      block_load_for_synthesized_input(policy.lookback, input_synthesizing, input_size_bytes + flag_size_bytes);
     return policy;
   }
 };

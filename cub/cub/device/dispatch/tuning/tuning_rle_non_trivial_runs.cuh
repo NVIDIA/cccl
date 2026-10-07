@@ -712,9 +712,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
     -> RleNonTrivialRunsLookbackPolicy
   {
-    auto policy           = get_tuned_lookback_policy(cc);
-    policy.load_algorithm = load_algorithm_for_input(policy.load_algorithm, input_synthesizing);
-    return policy;
+    return block_load_for_synthesized_input(get_tuned_lookback_policy(cc), input_synthesizing, key_size);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const

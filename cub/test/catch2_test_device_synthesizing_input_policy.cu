@@ -61,6 +61,38 @@ CUB_TEST("load_algorithm_for_input only replaces transposing loads", "[tuning]",
   STATIC_REQUIRE(load_algorithm_for_input(cub::BLOCK_LOAD_WARP_TRANSPOSE, true) == cub::BLOCK_LOAD_DIRECT);
 }
 
+CUB_TEST("synthesized items_per_thread uses the closest power of two", "[tuning]", CUB_SMALL)
+{
+  using cub::detail::items_per_thread_for_synthesized_input;
+  CHECK(items_per_thread_for_synthesized_input(11, false, 128, 4) == 11);
+  CHECK(items_per_thread_for_synthesized_input(1, true, 128, 4) == 1);
+  CHECK(items_per_thread_for_synthesized_input(8, true, 128, 4) == 8);
+  // 7 is closer to 8 than to 4. 15 is closer to 16 than to 8.
+  CHECK(items_per_thread_for_synthesized_input(7, true, 128, 4) == 8);
+  CHECK(items_per_thread_for_synthesized_input(15, true, 96, 4) == 16);
+  // 9, 11, 20, and 22 are closer to the previous power of two.
+  CHECK(items_per_thread_for_synthesized_input(9, true, 224, 16) == 8);
+  CHECK(items_per_thread_for_synthesized_input(11, true, 448, 16) == 8);
+  CHECK(items_per_thread_for_synthesized_input(20, true, 128, 4) == 16);
+  CHECK(items_per_thread_for_synthesized_input(22, true, 256, 2) == 16);
+  // 15 would round up to 16, but 1024 * 16 * 4 bytes does not fit in 48 KiB.
+  CHECK(items_per_thread_for_synthesized_input(15, true, 1024, 4) == 8);
+  STATIC_REQUIRE(items_per_thread_for_synthesized_input(11, true, 448, 16) == 8);
+  STATIC_REQUIRE(items_per_thread_for_synthesized_input(15, true, 96, 4) == 16);
+}
+
+template <class LoadPolicy>
+void expect_direct_load(LoadPolicy& policy)
+{
+  policy.load_algorithm = cub::detail::load_algorithm_for_input(policy.load_algorithm, true);
+}
+
+template <class LoadPolicy>
+void expect_synthesized_load(LoadPolicy& policy, int bytes_per_item)
+{
+  policy = cub::detail::block_load_for_synthesized_input(policy, true, bytes_per_item);
+}
+
 template <class InputIt>
 cub::AdjacentDifferencePolicy adjacent_difference_policy(cuda::compute_capability cc)
 {
@@ -103,40 +135,35 @@ CUB_TEST("Single-input policies load synthesizing inputs directly", "[tuning]", 
   {
     CAPTURE(cc.get());
 
-    auto adjacent_expected           = adjacent_difference_policy<memory_it_t<counting_it_t>>(cc);
-    adjacent_expected.load_algorithm = cub::detail::load_algorithm_for_input(adjacent_expected.load_algorithm, true);
+    auto adjacent_expected = adjacent_difference_policy<memory_it_t<counting_it_t>>(cc);
+    expect_direct_load(adjacent_expected);
     CHECK(adjacent_difference_policy<counting_it_t>(cc) == adjacent_expected);
     CHECK(adjacent_difference_policy<thrust_counting_it_t>(cc) == adjacent_expected);
     CHECK_FALSE(is_transposing(adjacent_expected.load_algorithm));
 
     auto scan_expected = scan_policy<memory_it_t<counting_it_t>>(cc);
-    scan_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(scan_expected.lookback.load_algorithm, true);
+    expect_direct_load(scan_expected.lookback);
     CHECK(scan_policy<counting_it_t>(cc) == scan_expected);
     CHECK(scan_policy<thrust_counting_it_t>(cc) == scan_expected);
     CHECK_FALSE(is_transposing(scan_expected.lookback.load_algorithm));
 
     auto segmented_expected = segmented_scan_policy<memory_it_t<counting_it_t>>(cc);
-    segmented_expected.block.load_algorithm =
-      cub::detail::load_algorithm_for_input(segmented_expected.block.load_algorithm, true);
+    expect_direct_load(segmented_expected.block);
     CHECK(segmented_scan_policy<counting_it_t>(cc) == segmented_expected);
     CHECK_FALSE(is_transposing(segmented_expected.block.load_algorithm));
 
     auto partition_expected = three_way_partition_policy<memory_it_t<counting_it_t>>(cc);
-    partition_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(partition_expected.lookback.load_algorithm, true);
+    expect_direct_load(partition_expected.lookback);
     CHECK(three_way_partition_policy<counting_it_t>(cc) == partition_expected);
     CHECK_FALSE(is_transposing(partition_expected.lookback.load_algorithm));
 
     auto encode_expected = rle_encode_policy<memory_it_t<counting_it_t>>(cc);
-    encode_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(encode_expected.lookback.load_algorithm, true);
+    expect_direct_load(encode_expected.lookback);
     CHECK(rle_encode_policy<counting_it_t>(cc) == encode_expected);
     CHECK_FALSE(is_transposing(encode_expected.lookback.load_algorithm));
 
     auto non_trivial_expected = rle_non_trivial_runs_policy<memory_it_t<counting_it_t>>(cc);
-    non_trivial_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(non_trivial_expected.lookback.load_algorithm, true);
+    expect_synthesized_load(non_trivial_expected.lookback, sizeof(int));
     CHECK(rle_non_trivial_runs_policy<counting_it_t>(cc) == non_trivial_expected);
     CHECK_FALSE(is_transposing(non_trivial_expected.lookback.load_algorithm));
   }
@@ -175,38 +202,33 @@ CUB_TEST("Shared-load policies require every input to synthesize", "[tuning]", C
 
     using no_flags_it_t           = cub::NullType*;
     auto select_no_flags_expected = select_policy<memory_it_t<counting_it_t>, no_flags_it_t>(cc);
-    select_no_flags_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(select_no_flags_expected.lookback.load_algorithm, true);
+    expect_synthesized_load(select_no_flags_expected.lookback, sizeof(int));
     CHECK(select_policy<counting_it_t, no_flags_it_t>(cc) == select_no_flags_expected);
     CHECK_FALSE(is_transposing(select_no_flags_expected.lookback.load_algorithm));
 
     auto select_expected = select_policy<memory_it_t<counting_it_t>, memory_flags_it_t>(cc);
-    select_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(select_expected.lookback.load_algorithm, true);
+    expect_synthesized_load(select_expected.lookback, sizeof(int) + sizeof(char));
     CHECK(select_policy<counting_it_t, synth_flags_it_t>(cc) == select_expected);
     CHECK_FALSE(is_transposing(select_expected.lookback.load_algorithm));
     CHECK(select_policy<counting_it_t, memory_flags_it_t>(cc)
           == select_policy<memory_it_t<counting_it_t>, memory_flags_it_t>(cc));
 
     auto scan_by_key_expected = scan_by_key_policy<memory_it_t<counting_it_t>, memory_it_t<counting_it_t>>(cc);
-    scan_by_key_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(scan_by_key_expected.lookback.load_algorithm, true);
+    expect_direct_load(scan_by_key_expected.lookback);
     CHECK(scan_by_key_policy<counting_it_t, counting_it_t>(cc) == scan_by_key_expected);
     CHECK_FALSE(is_transposing(scan_by_key_expected.lookback.load_algorithm));
     CHECK(scan_by_key_policy<counting_it_t, memory_it_t<counting_it_t>>(cc)
           == scan_by_key_policy<memory_it_t<counting_it_t>, memory_it_t<counting_it_t>>(cc));
 
     auto reduce_by_key_expected = reduce_by_key_policy<memory_it_t<counting_it_t>, memory_it_t<counting_it_t>>(cc);
-    reduce_by_key_expected.lookback.load_algorithm =
-      cub::detail::load_algorithm_for_input(reduce_by_key_expected.lookback.load_algorithm, true);
+    expect_synthesized_load(reduce_by_key_expected.lookback, sizeof(int) + sizeof(int));
     CHECK(reduce_by_key_policy<counting_it_t, counting_it_t>(cc) == reduce_by_key_expected);
     CHECK_FALSE(is_transposing(reduce_by_key_expected.lookback.load_algorithm));
     CHECK(reduce_by_key_policy<counting_it_t, memory_it_t<counting_it_t>>(cc)
           == reduce_by_key_policy<memory_it_t<counting_it_t>, memory_it_t<counting_it_t>>(cc));
 
     auto unique_by_key_expected = unique_by_key_policy<memory_it_t<counting_it_t>, memory_it_t<counting_it_t>>(cc);
-    unique_by_key_expected.load_algorithm =
-      cub::detail::load_algorithm_for_input(unique_by_key_expected.load_algorithm, true);
+    expect_synthesized_load(unique_by_key_expected, sizeof(int) + sizeof(int));
     CHECK(unique_by_key_policy<counting_it_t, counting_it_t>(cc) == unique_by_key_expected);
     CHECK_FALSE(is_transposing(unique_by_key_expected.load_algorithm));
     CHECK(unique_by_key_policy<counting_it_t, memory_it_t<counting_it_t>>(cc)

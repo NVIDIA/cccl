@@ -1767,8 +1767,8 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> ReduceByKeyPolicy
   {
-    auto policy                    = ReduceByKeyPolicy{ReduceByKeyAlgorithm::lookback, get_lookback_policy(cc)};
-    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    auto policy     = ReduceByKeyPolicy{ReduceByKeyAlgorithm::lookback, get_lookback_policy(cc)};
+    policy.lookback = block_load_for_synthesized_input(policy.lookback, input_synthesizing, key_size + accum_size);
     return policy;
   }
 };

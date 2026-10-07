@@ -805,7 +805,7 @@ struct policy_selector
         && key_size == 1 && length_is_primitive && length_size == 4)
     {
       // ipt_24.tpb_512.trp_0.ld_0.ns_60.dcid_0.l2w_155  1.147  1.204  1.289  1.362
-      return RleEncodePolicy{
+      auto policy = RleEncodePolicy{
         RleAlgorithm::lookback,
         RleLookbackPolicy{
           512,
@@ -815,6 +815,8 @@ struct policy_selector
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 60, 155}},
         RleLookaheadPolicy{}};
+      policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+      return policy;
     }
 
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the lookback impl.

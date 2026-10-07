@@ -1576,9 +1576,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> UniqueByKeyPolicy
   {
-    auto policy           = get_policy(cc);
-    policy.load_algorithm = load_algorithm_for_input(policy.load_algorithm, input_synthesizing);
-    return policy;
+    return block_load_for_synthesized_input(get_policy(cc), input_synthesizing, key_size + value_size);
   }
 
 private:
