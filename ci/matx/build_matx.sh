@@ -110,7 +110,9 @@ rm -rf build
 matx_cuda_flags="-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING"
 declare -a compile_time_cmake_args=()
 if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
-  matx_cuda_flags+=" --fdevice-time-trace=-"
+  # MatX also copies CMAKE_CUDA_FLAGS into a CMake list without splitting it.
+  # Keep it to one argument and inject tracing directly into each nvcc call.
+  export NVCC_APPEND_FLAGS="${NVCC_APPEND_FLAGS:+${NVCC_APPEND_FLAGS} }--fdevice-time-trace=-"
   compile_time_cmake_args=(
     "-DCMAKE_CUDA_COMPILER_LAUNCHER="
     "-DCMAKE_CXX_COMPILER_LAUNCHER="
