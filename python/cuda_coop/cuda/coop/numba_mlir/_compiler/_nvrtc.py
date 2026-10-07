@@ -52,8 +52,6 @@ _REQUIRED_HEADERS = (
     "cub/block/block_store.cuh",
     "cuda/barrier",
     "cuda/devices",
-    "cuda/experimental/coop/algorithm",
-    "cuda/experimental/coop/group",
     "cuda/functional",
     "cuda/hierarchy",
     "cuda/std/cstdint",
