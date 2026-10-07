@@ -96,9 +96,9 @@ class _ArgumentRewrite:
             required inputs remain unavailable when deferral is disabled.
         _DeferredCoopRewrite
             Internal signal that exact launch metadata is still needed.
-            ``CoopSinglePhaseRewrite.prepare_function`` catches it and preserves
-            the call while ``_CallRewriting._rewrite_calls`` obtains the
-            kernel launch shape and retries within
+            ``CoopSinglePhaseRewrite.prepare_calls_and_storage`` catches it and
+            preserves the call while ``_CallRewriting._rewrite_calls`` obtains
+            the kernel launch shape and retries within
             ``CoopWholeFunctionPlanner``.
         """
 
