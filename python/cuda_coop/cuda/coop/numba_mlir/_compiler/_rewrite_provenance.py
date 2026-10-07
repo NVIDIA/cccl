@@ -72,6 +72,7 @@ from ._scalar_provenance import (
 )
 
 if TYPE_CHECKING:
+    from .._types import Algorithm
     from ._rewrite import CoopSinglePhaseRewrite
 
 
@@ -138,7 +139,7 @@ class _ProvenanceRewrite(Rewrite):
         ] = {}
         self._prebundled_specializations: dict[
             tuple[str, tuple[tuple[str, str, str], ...]],
-            tuple[object, int | None, int | tuple[int, ...] | None],
+            Algorithm,
         ] = {}
         self._deferred_launch_dim_inference = False
 
