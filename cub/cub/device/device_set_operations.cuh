@@ -648,7 +648,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_pairs_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin set-difference-pairs-env
@@ -756,7 +756,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_pairs_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin set-intersection-pairs-env
@@ -864,7 +864,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_pairs_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin set-symmetric-difference-pairs-env
@@ -971,7 +971,7 @@ public:
   //!
   //! Snippet
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_set_operations_pairs_api.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin set-union-pairs-env
