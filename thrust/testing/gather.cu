@@ -263,20 +263,10 @@ void test_gather_if_to_discard_iterator(const size_t n)
   thrust::device_vector<unsigned int> d_stencil = h_stencil;
 
   const thrust::discard_iterator<> h_result = thrust::gather_if(
-    h_map.begin(),
-    h_map.end(),
-    h_stencil.begin(),
-    h_source.begin(),
-    thrust::make_discard_iterator(),
-    cuda::__is_even());
+    h_map.begin(), h_map.end(), h_stencil.begin(), h_source.begin(), thrust::make_discard_iterator(), cuda::__is_even());
 
   const thrust::discard_iterator<> d_result = thrust::gather_if(
-    d_map.begin(),
-    d_map.end(),
-    d_stencil.begin(),
-    d_source.begin(),
-    thrust::make_discard_iterator(),
-    cuda::__is_even());
+    d_map.begin(), d_map.end(), d_stencil.begin(), d_source.begin(), thrust::make_discard_iterator(), cuda::__is_even());
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
