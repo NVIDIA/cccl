@@ -205,16 +205,22 @@ class _RewriteMatch:
     """Keep one validated provider call ready for compilation and emission.
 
     ``factory`` and ``factory_metadata`` identify the implementation and
-    declared call contract. ``factory_kwargs`` holds resolved compile-time
-    inputs; ``runtime_args`` keeps device operands without storage, which is
-    tracked separately in ``runtime_temp_storage_var``.
+    declared call contract. ``factory_kwargs`` holds the resolved Python
+    values and binding descriptors passed to the host factory to specialize
+    the provider. ``runtime_args`` keeps device operands without storage,
+    which is tracked separately in ``runtime_temp_storage_var``.
 
-    ``func_var_name``, its optional extra alias, and ``factory_kw_value_vars``
-    identify compile-time assignments that may become unused after
-    replacement. ``family_metadata`` carries a hook's analysis, such as scalar
-    boxing. ``lowering_plan`` keeps the shared group contract after its
-    private keyword is removed from factory inputs. ``op_name`` and ``loc``
-    identify the operation and source site.
+    ``factory_kw_value_vars`` retains original IR variables consumed at
+    compile time so their assignments can be removed if no rewritten block
+    uses them. These are cleanup candidates, not another set of factory
+    inputs. Inferred keywords need no source variable; lowering metadata and
+    omitted controls can leave a cleanup candidate without a factory keyword.
+
+    ``func_var_name`` and its optional extra alias identify callee assignments
+    that may also become unused after replacement. ``family_metadata`` carries
+    a hook's analysis, such as scalar boxing. ``lowering_plan`` keeps the shared
+    group contract after its private keyword is removed from factory inputs.
+    ``op_name`` and ``loc`` identify the operation and source site.
     """
 
     op_name: str
