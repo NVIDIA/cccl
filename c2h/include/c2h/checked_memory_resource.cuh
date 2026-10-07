@@ -121,7 +121,11 @@ make_device_buffer(::cuda::stream_ref stream, ::cuda::device_ref device, ::cuda:
     return result;
   }
 
-  return ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, values);
+  auto result = ::cuda::make_buffer<T>(stream, checked_device_memory_resource{device}, values);
+  // The copy performed by cuda::make_buffer is asynchronous. Complete it before the initializer-list backing storage
+  // can expire at the end of the caller's full expression.
+  stream.sync();
+  return result;
 }
 
 //! @brief Creates a device buffer backed by the checked C2H memory resource associated with @p stream.
