@@ -58,7 +58,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class Kernel, class LauncherFactory>
-  [[nodiscard]] _CCCL_API ::cudaError_t occupancy(
+  [[nodiscard]] _CCCL_API ::cudaError_t __occupancy(
     const Kernel& kernel,
     const LauncherFactory& launcher_factory,
     const void* d_temp_storage,

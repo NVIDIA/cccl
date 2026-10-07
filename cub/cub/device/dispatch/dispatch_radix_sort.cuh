@@ -1760,7 +1760,7 @@ struct dispatch_impl // NOLINT(cppcoreguidelines-pro-type-member-init)
     int histo_blocks_per_sm        = 1;
     auto histogram_kernel          = kernel_source.RadixSortHistogramKernel();
 
-    if (const auto error = CubDebug(device_descr.occupancy(
+    if (const auto error = CubDebug(device_descr.__occupancy(
           histogram_kernel, launcher_factory, d_temp_storage, histo_block_threads, 0, histo_blocks_per_sm)))
     {
       return error;

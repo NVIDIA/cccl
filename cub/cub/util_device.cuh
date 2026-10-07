@@ -781,15 +781,12 @@ struct KernelConfig
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 
-  template <typename AgentPolicyT,
-            typename KernelPtrT,
-            typename LauncherFactory,
-            typename DeviceDescriptionT = experimental::DeviceDescription>
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init(
     KernelPtrT kernel_ptr,
     AgentPolicyT agent_policy,
-    LauncherFactory launcher_factory,
-    const DeviceDescriptionT& device_descr,
+    const LauncherFactory& launcher_factory,
+    const experimental::DeviceDescription& device_descr,
     const void* d_temp_storage)
   {
     threads_per_block = agent_policy.threads_per_block;
