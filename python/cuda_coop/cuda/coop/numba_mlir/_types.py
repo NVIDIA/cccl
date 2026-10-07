@@ -89,23 +89,21 @@ _CompileIdentity = tuple[int, bool, str, tuple[bytes, ...]]
 _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 
 
-_COOP_SPECIALIZATION_COLLECTOR: ContextVar[
-    list[tuple[Algorithm, int | None, _BlockThreads | None]] | None
-] = ContextVar("cuda_coop_numba_mlir_specialization_collector", default=None)
+_COOP_SPECIALIZATION_COLLECTOR: ContextVar[list[Algorithm] | None] = ContextVar(
+    "cuda_coop_numba_mlir_specialization_collector", default=None
+)
 
 
 @contextmanager
-def collect_specializations() -> Iterator[
-    list[tuple[Algorithm, int | None, _BlockThreads | None]]
-]:
+def collect_specializations() -> Iterator[list[Algorithm]]:
     """Collect provider specializations without compiling their wrappers.
 
     Within this context, ``make_invocable_from_specialization`` records each
     qualified ``Algorithm`` and returns it instead of an ``Invocable``. The
-    rewrite uses the collected records to compile several providers in one NVRTC
-    translation unit before creating their callable wrappers. Qualification
-    still resolves compiler identity; this context only defers artifact
-    creation.
+    rewrite uses the collected algorithms, including their stored thread
+    dimensions, to compile several providers in one NVRTC translation unit
+    before creating their callable wrappers. Qualification still resolves
+    compiler identity; this context only defers artifact creation.
 
     Batching reduces compiler startup and repeated header processing. For
     example, eleven distinct uncached providers can share one NVRTC compilation
@@ -118,13 +116,12 @@ def collect_specializations() -> Iterator[
 
     Yields
     ------
-    list of tuple
-        Mutable records ``(algorithm, threads, block_threads)`` in factory-call
-        order. Thread values are the explicit arguments supplied to
-        ``make_invocable_from_specialization``, including ``None``.
+    list of Algorithm
+        Qualified provider specializations in factory-call order, with their
+        logical warp widths and enclosing block configurations stored on them.
     """
 
-    collected: list[tuple[Algorithm, int | None, _BlockThreads | None]] = []
+    collected: list[Algorithm] = []
     token = _COOP_SPECIALIZATION_COLLECTOR.set(collected)
     try:
         yield collected
@@ -2508,8 +2505,6 @@ def prepare_ltoir_bundle(
     algorithms: Sequence[Algorithm],
     *,
     allow_single: bool = False,
-    threads_by_algo: Mapping[int, int | None] | None = None,
-    block_threads_by_algo: Mapping[int, _BlockThreads | None] | None = None,
 ) -> bytes | None:
     """Compile distinct provider specializations into one shared LTO artifact.
 
@@ -2530,15 +2525,10 @@ def prepare_ltoir_bundle(
     Parameters
     ----------
     algorithms : sequence of Algorithm
-        Concrete provider specializations to bundle.
+        Concrete provider specializations to bundle, using each algorithm's
+        stored logical warp width and enclosing block configuration.
     allow_single : bool, optional
         Compile even one distinct representative when true. Defaults to false.
-    threads_by_algo : mapping of int to int or None, optional
-        Logical warp width overrides keyed by ``id(algorithm)``. Missing entries
-        and ``None`` values use the algorithm's stored width.
-    block_threads_by_algo : mapping, optional
-        Exact block configurations (int, tuple of int, or list of int) keyed
-        by ``id(algorithm)``. A ``None`` value uses the stored configuration.
 
     Returns
     -------
@@ -2558,9 +2548,6 @@ def prepare_ltoir_bundle(
 
     if not algorithms:
         return None
-
-    threads_by_algo = threads_by_algo or {}
-    block_threads_by_algo = block_threads_by_algo or {}
 
     deduped_by_id = OrderedDict()
     for algo in algorithms:
@@ -2589,18 +2576,10 @@ def prepare_ltoir_bundle(
     key_to_rep = OrderedDict()
     rep_for_algo_id = {}
     for algo in all_algos:
-        threads = threads_by_algo.get(id(algo), getattr(algo, "threads", None))
-        block_threads = block_threads_by_algo.get(
-            id(algo), getattr(algo, "block_threads", None)
-        )
         algo._qualify_private_symbols(
-            threads=threads,
-            block_threads=block_threads,
             compile_identity=compile_identity,
         )
-        key = algo_coalesce_key(
-            algo, threads=threads, block_threads=block_threads
-        )
+        key = algo_coalesce_key(algo)
         rep = key_to_rep.setdefault(key, algo)
         rep_for_algo_id[id(algo)] = rep
 
@@ -2616,13 +2595,7 @@ def prepare_ltoir_bundle(
     udf_decls = OrderedDict()
 
     for rep in reps:
-        threads = threads_by_algo.get(id(rep), getattr(rep, "threads", None))
-        block_threads = block_threads_by_algo.get(
-            id(rep), getattr(rep, "block_threads", None)
-        )
         src, _support_lto_irs, storage_types, udf = rep._source_code(
-            threads=threads,
-            block_threads=block_threads,
             compile_identity=compile_identity,
         )
         rep_src[id(rep)] = src
@@ -2699,12 +2672,6 @@ def prepare_ltoir_bundle(
             algo._temp_storage_alignment = 1
         algo._precompiled_ltoir_files = (bundle_temp_file,)
         algo.__dict__["_lto_ir_cache_key"] = algo._make_lto_ir_cache_key(
-            threads=threads_by_algo.get(
-                id(algo), getattr(algo, "threads", None)
-            ),
-            block_threads=block_threads_by_algo.get(
-                id(algo), getattr(algo, "block_threads", None)
-            ),
             compile_identity=compile_identity,
         )
         algo.__dict__["_link_input_suffixes"] = [".ltoir"] * len(extras)
@@ -2722,7 +2689,7 @@ def make_invocable_from_specialization(
     """Turn a concrete provider into a callable and retain its link artifacts.
 
     Store explicit topology overrides and qualify the provider's private
-    symbols. During ``collect_specializations``, append a record and return the
+    symbols. During ``collect_specializations``, collect and return the
     algorithm immediately so the caller can bundle providers before compilation.
     Otherwise obtain its link images and scratch ABI, then create an
     ``Invocable`` exposing the files to compiler overloads.
@@ -2745,7 +2712,7 @@ def make_invocable_from_specialization(
     -------
     Invocable or Algorithm
         Callable wrapper outside collection; the same ``specialization`` object
-        inside collection, recorded with the explicit topology arguments.
+        inside collection, retaining its thread configuration.
 
     Raises
     ------
@@ -2766,7 +2733,7 @@ def make_invocable_from_specialization(
 
     collector = _COOP_SPECIALIZATION_COLLECTOR.get()
     if collector is not None:
-        collector.append((specialization, threads, block_threads))
+        collector.append(specialization)
         return specialization
 
     from ._compiler._artifacts import make_binary_tempfile

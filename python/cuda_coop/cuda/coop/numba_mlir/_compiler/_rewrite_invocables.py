@@ -176,8 +176,8 @@ class _InvocableRewrite:
         artifact; this does not combine the kernel's own compilation with it.
 
         Collect factory specializations without immediately building each
-        invocable, deduplicate identical matches, and associate each collected
-        algorithm with its thread dimensions. Bundling is attempted only for
+        invocable and deduplicate identical matches. Each collected algorithm
+        already stores its thread dimensions. Bundling is attempted only for
         at least two unique matches. Launch deferral happens during call
         analysis, so a retry reaches bundling before any provider is emitted.
 
@@ -228,26 +228,10 @@ class _InvocableRewrite:
                     _ = match.factory(**match.factory_kwargs)
             if len(collected) != len(matches_by_specialization):
                 return
-            algorithms = []
-            threads_by_algo = {}
-            block_threads_by_algo = {}
-            prebundled = {}
-            for key, (algo, threads, block_threads) in zip(
-                matches_by_specialization.keys(), collected
-            ):
-                algorithms.append(algo)
-                prebundled[key] = (algo, threads, block_threads)
-                if threads is not None:
-                    threads_by_algo[id(algo)] = int(threads)
-                if block_threads is not None:
-                    block_threads_by_algo[id(algo)] = block_threads
-            prepare_ltoir_bundle(
-                algorithms,
-                allow_single=False,
-                threads_by_algo=threads_by_algo,
-                block_threads_by_algo=block_threads_by_algo,
+            prepare_ltoir_bundle(collected)
+            self._prebundled_specializations = dict(
+                zip(matches_by_specialization, collected)
             )
-            self._prebundled_specializations = prebundled
         except (ImportError, OSError, RuntimeError):
             self._prebundled_specializations = {}
 
@@ -303,10 +287,7 @@ class _InvocableRewrite:
         try:
             prebundled = self._prebundled_specializations.get(key)
             if prebundled is not None:
-                specialization, threads, block_threads = prebundled
-                invocable = make_invocable_from_specialization(
-                    specialization, threads=threads, block_threads=block_threads
-                )
+                invocable = make_invocable_from_specialization(prebundled)
             else:
                 invocable = match.factory(**match.factory_kwargs)
         except Exception as e:
