@@ -169,6 +169,29 @@ CUB_TEST("c2h buffer generator handles zero items", "[c2h][buffers][generators]"
   REQUIRE(d_items.data() == nullptr);
 }
 
+CUB_TEST("c2h buffer generator honors the requested range", "[c2h][buffers][generators]", CUB_SMALL)
+{
+  const auto stream = c2h::make_current_device_stream();
+
+  constexpr std::size_t num_items  = 256;
+  constexpr std::int32_t min_value = -100;
+  constexpr std::int32_t max_value = 100;
+  const auto buffers = c2h::gen_buffers<std::int32_t>(stream, c2h::seed_t{1234}, num_items, min_value, max_value);
+
+  const bool values_are_in_range =
+    std::all_of(buffers.h_items.begin(), buffers.h_items.end(), [min_value, max_value](const std::int32_t value) {
+      return min_value <= value && value <= max_value;
+    });
+  REQUIRE(values_are_in_range);
+
+  const auto first_value = buffers.h_items.front();
+  const bool has_distinct_values =
+    std::any_of(buffers.h_items.begin(), buffers.h_items.end(), [first_value](const std::int32_t value) {
+      return value != first_value;
+    });
+  REQUIRE(has_distinct_values);
+}
+
 CUB_TEST("c2h buffer generators populate checked CUDA buffers", "[c2h][buffers][generators]", CUB_SMALL)
 {
   const auto stream = c2h::make_current_device_stream();
