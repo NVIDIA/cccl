@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <limits>
 #include <new> // bad_alloc
+#include <string>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
@@ -455,14 +456,9 @@ void do_large_offset_test(std::size_t num_items)
 
   CAPTURE(num_items, is_descending);
 
-  const auto report_allocation_failure = [&]([[maybe_unused]] const char* message) {
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const std::size_t num_bytes = num_items * sizeof(KeyT);
-    std::cerr
-      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << message << "\n";
-#endif // DEBUG_CHECKED_ALLOC_FAILURE
-    SUCCEED("allocation failure is not a test failure");
-  };
+  const std::string allocation_failure_message =
+    std::string{"Skipping radix sort test with "} + std::to_string(num_items) + " elements ("
+    + std::to_string(num_items * sizeof(KeyT)) + " bytes): insufficient device memory";
 
   try
   {
@@ -485,9 +481,9 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
   }
-  catch (const std::bad_alloc& e)
+  catch (const std::bad_alloc&)
   {
-    report_allocation_failure(e.what());
+    SKIP(allocation_failure_message);
   }
   catch (const thrust::system_error& e)
   {
@@ -495,7 +491,7 @@ void do_large_offset_test(std::size_t num_items)
     {
       throw;
     }
-    report_allocation_failure(e.what());
+    SKIP(allocation_failure_message);
   }
 }
 
