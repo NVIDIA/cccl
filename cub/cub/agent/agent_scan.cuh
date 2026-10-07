@@ -457,35 +457,18 @@ struct AgentScan
     }
   }
 
-  /**
-   * @brief Process a tile of input as part of a batch of chained scans sharing one reusable tile state
-   *
-   * Like ConsumeTile, but the look-back stays within the current batch: the batch's first tile starts from the prefix
-   * of the preceding batches instead of looking back. Each tile then reports to @p completion_op, which decides
-   * whether to retire the batch and hand the tile state to the next one. See detail::scan::batch_completion_op.
-   *
-   * @tparam IsLastTile
-   *   Whether the current tile is the last tile of the whole problem
-   *
-   * @param num_remaining
-   *   Number of global input items remaining (including this tile)
-   *
-   * @param tile_idx
-   *   Tile index within the whole problem
-   *
-   * @param batch_tile_idx
-   *   Tile index within the current batch, i.e. the index the look-back operates on
-   *
-   * @param preceding_batched_sum
-   *   Inclusive prefix of every tile preceding this batch, or nullptr for the first batch. Only read by the first
-   *   tile of a batch.
-   *
-   * @param tile_state
-   *   Tile state descriptor, indexed by @p batch_tile_idx and reused by every batch
-   *
-   * @param completion_op
-   *   Called by one thread with this tile's inclusive prefix once its look-back is done
-   */
+  //! @brief Scans a tile using batch-local look-back and a reusable tile state.
+  //!
+  //! The batch's first tile uses @c preceding_batched_sum, or @c init_value for the first batch. Subsequent tiles
+  //! look back within the batch. @c completion_op coordinates batch retirement and tile state reuse.
+  //!
+  //! @tparam IsLastTile Whether this is the last tile of the whole problem.
+  //! @param[in] num_remaining Number of input items remaining, including this tile.
+  //! @param[in] tile_idx Global tile index.
+  //! @param[in] batch_tile_idx Tile index within the batch, used for look-back.
+  //! @param[in] preceding_batched_sum Prefix of preceding batches, or @c nullptr for the first batch.
+  //! @param[in,out] tile_state Tile descriptors indexed by @c batch_tile_idx and reused across batches.
+  //! @param[in] completion_op Called by one thread with this tile's inclusive prefix after look-back completes.
   template <bool IsLastTile, typename CompletionOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeBatchTile(
     OffsetT num_remaining,

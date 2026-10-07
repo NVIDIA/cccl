@@ -110,15 +110,9 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
   }
 }
 
-/**
- * @brief Initialization kernel for batched tile status and batch state
- *
- * @param[in] tile_state
- *   Tile status interface
- *
- * @param[out] batch_state
- *   Batched look-back state
- */
+//! @brief Initializes reusable tile status and batch state.
+//! @param[in,out] tile_state Tile descriptors shared by successive batches.
+//! @param[out] batch_state Batched look-back state.
 template <typename ScanTileState, typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(128) void DeviceScanBatchInitKernel(ScanTileState tile_state, scan_batch_state<AccumT>* batch_state)
@@ -317,7 +311,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
     RealInitValueT real_init_value = init_value;
 
-    if constexpr (!::cuda::std::is_same_v<KernelNumItemsT, OffsetT>)
+    static constexpr bool is_deferred_invocation = !::cuda::std::is_same_v<KernelNumItemsT, OffsetT>;
+    if constexpr (is_deferred_invocation)
     {
       constexpr auto tile_items = static_cast<OffsetT>(policy.threads_per_block) * policy.items_per_thread;
       if (static_cast<OffsetT>(start_tile) + blockIdx.x >= ::cuda::ceil_div(num_items, tile_items))

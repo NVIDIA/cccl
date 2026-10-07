@@ -45,10 +45,22 @@
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+template <typename NumItemsT>
+inline constexpr bool is_integral_or_deferred_v =
+  ::cuda::std::is_integral_v<NumItemsT> || ::cuda::args::__is_deferred_v<NumItemsT>;
+
+template <typename ArgT, typename StaticBoundsT>
+inline constexpr bool is_integral_or_deferred_v<::cuda::args::immediate<ArgT, StaticBoundsT>> =
+  ::cuda::std::is_integral_v<ArgT>;
+} // namespace detail
 
 //! @rst
 //! DeviceScan provides device-wide, parallel operations for computing a
@@ -96,7 +108,7 @@ CUB_NAMESPACE_BEGIN
 //! ``ExclusiveSum``, ``ExclusiveScan``, ``InclusiveSum``, ``InclusiveScan``, and ``InclusiveScanInit`` allow
 //! specifying the problem size from a value that resides in device memory through a single-value
 //! ``cuda::args::deferred`` argument. The deferred source may be a device pointer, a one-element span, or a
-//! random-access fancy iterator whose element is a non-``bool`` 32- or 64-bit integer.
+//! random-access fancy iterator whose element is a 32- or 64-bit integer.
 //!
 //! The problem size is read in stream order by the scan kernels. Work that produces the count in the same stream is
 //! ordered automatically; a producer in another stream requires an event or an equivalent dependency. The source and
@@ -107,8 +119,9 @@ CUB_NAMESPACE_BEGIN
 //! Deferred scans are CUDA Graph capturable. The pointed-to count may change between graph replays without updating
 //! or recapturing the graph.
 //!
-//! A deferred problem size always runs the decoupled look-back algorithm. If the selected tuning policy asks for
-//! another algorithm, look-back is used instead.
+//! A deferred problem size always runs the decoupled look-back algorithm. Default tuning selects look-back
+//! automatically. A custom tuning policy must select look-back and provide valid look-back tuning parameters;
+//! selecting lookahead with a deferred problem size is rejected.
 //!
 //! The :ref:`determinism guarantees <cccl-determinism>` below apply unchanged to a deferred problem size. Note that
 //! reproducibility is promised across launches of the *same* configuration: for a non-associative operator such as
@@ -265,7 +278,7 @@ struct DeviceScan
       offset_t,
       ScanOpT,
       stable_reduction_order,
-      detail::is_deferred_v<NumItemsT>>;
+      ::cuda::args::__is_deferred_v<NumItemsT>>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector_t>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
@@ -496,8 +509,8 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
@@ -645,8 +658,8 @@ struct DeviceScan
   //!   @endrst
   template <typename IteratorT,
             typename NumItemsT,
-            typename EnvT                                                = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
+            typename EnvT                                                           = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_integral_or_deferred_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveSum(IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
@@ -866,8 +879,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
@@ -1060,8 +1073,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT                                                = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
+            typename EnvT                                                           = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_integral_or_deferred_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   ExclusiveScan(IteratorT d_data, ScanOpT scan_op, InitValueT init_value, NumItemsT num_items, const EnvT& env = {})
   {
@@ -1393,10 +1406,10 @@ struct DeviceScan
   template <typename IteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT                                      = InitValueT*,
-            typename NumItemsT                                           = int,
-            typename EnvT                                                = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
+            typename InitValueIterT                                                 = InitValueT*,
+            typename NumItemsT                                                      = int,
+            typename EnvT                                                           = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_integral_or_deferred_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     IteratorT d_data,
     ScanOpT scan_op,
@@ -1484,10 +1497,10 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename InitValueIterT                                          = InitValueT*,
-            typename NumItemsT                                               = int,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0,
+            typename InitValueIterT                                                     = InitValueT*,
+            typename NumItemsT                                                          = int,
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<OutputIteratorT, size_t>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     InputIteratorT d_in,
@@ -1743,8 +1756,8 @@ struct DeviceScan
   //!   @endrst
   template <typename IteratorT,
             typename NumItemsT,
-            typename EnvT                                                = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
+            typename EnvT                                                           = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_integral_or_deferred_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(IteratorT d_data, NumItemsT num_items, const EnvT& env = {})
   {
@@ -1808,8 +1821,8 @@ struct DeviceScan
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT num_items, const EnvT& env = {})
   {
@@ -2193,8 +2206,8 @@ struct DeviceScan
   template <typename IteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT                                                = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<!detail::is_num_items_v<EnvT>, int> = 0>
+            typename EnvT                                                           = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<!detail::is_integral_or_deferred_v<EnvT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(IteratorT d_data, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
@@ -2265,8 +2278,8 @@ struct DeviceScan
             typename OutputIteratorT,
             typename ScanOpT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
   InclusiveScan(InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, NumItemsT num_items, const EnvT& env = {})
   {
@@ -2350,8 +2363,8 @@ struct DeviceScan
             typename ScanOpT,
             typename InitValueT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
@@ -2446,8 +2459,8 @@ struct DeviceScan
             typename InitValueIterT,
             typename InitValueBoundsT,
             typename NumItemsT,
-            typename EnvT                                                    = ::cuda::std::execution::env<>,
-            ::cuda::std::enable_if_t<detail::is_num_items_v<NumItemsT>, int> = 0>
+            typename EnvT                                                               = ::cuda::std::execution::env<>,
+            ::cuda::std::enable_if_t<detail::is_integral_or_deferred_v<NumItemsT>, int> = 0>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanInit(
     InputIteratorT d_in,
     OutputIteratorT d_out,
