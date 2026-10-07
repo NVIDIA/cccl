@@ -140,6 +140,7 @@ def _match_before_inference(func_ir, *, arg_types):
 
     rewrite._materialize_invocable = materialize
     matched = False
+    assert rewrite.prepare_calls_and_storage(func_ir)
     for label in sorted(func_ir.blocks):
         matched |= rewrite.match(
             func_ir,
