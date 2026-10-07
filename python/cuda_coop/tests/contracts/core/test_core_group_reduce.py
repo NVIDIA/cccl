@@ -4,9 +4,9 @@
 
 """Check reduction routing, result ownership, and group requirements.
 
-Full builtin reductions use CUDAX. Prefixes, custom operators, and explicit
-CUB algorithms require different result and storage contracts. These tests
-check the core plans before a backend renders or compiles their calls.
+All reductions use CUB and produce a result at group rank zero. Check
+supported operand forms, valid prefixes, and temporary storage requirements
+before a backend renders or compiles the calls.
 """
 
 from importlib import import_module
@@ -18,7 +18,6 @@ from cuda.coop._core import (
     ArgumentBinding,
     ArgumentKind,
     BlockReduceAlgorithm,
-    CudaxReturnKind,
     CxxOperator,
     Dependency,
     GroupLoweringTarget,
@@ -69,8 +68,8 @@ def _reduce(
     items_per_thread=1,
     reduce_operator=None,
     valid_items=_OMITTED_VALID_ITEMS,
-    broadcast=True,
     cub_algorithm=None,
+    **storage,
 ):
     if operation == "reduce" and reduce_operator is None:
         reduce_operator = _builtin_operator()
@@ -83,8 +82,8 @@ def _reduce(
             reduce_operator=reduce_operator,
             valid_items=valid_items,
         ),
-        broadcast=broadcast,
         cub_algorithm=cub_algorithm,
+        **storage,
     )
 
 
@@ -114,111 +113,107 @@ def _cluster_facts():
 
 
 @pytest.mark.parametrize(
-    ("group", "facts", "width", "instances", "execution_scope"),
+    ("group", "target", "instances"),
     [
-        (this_thread(), LaunchFacts(64), 1, 64, SynchronizationScope.NONE),
-        (this_warp(), LaunchFacts(64), 32, 2, SynchronizationScope.WARP),
-        (
-            this_warp().group_by(8),
-            LaunchFacts(64),
-            8,
-            8,
-            SynchronizationScope.WARP,
-        ),
-        (this_block(), LaunchFacts(64), 64, 1, SynchronizationScope.BLOCK),
-        (
-            this_block().group_by(2),
-            LaunchFacts(128),
-            64,
-            2,
-            SynchronizationScope.GROUP,
-        ),
-        (
-            this_cluster(),
-            _cluster_facts(),
-            128,
-            1,
-            SynchronizationScope.GROUP,
-        ),
+        (this_block(), GroupLoweringTarget.CUB_BLOCK, 1),
+        (this_warp(), GroupLoweringTarget.CUB_WARP, 2),
+        (this_warp().group_by(8), GroupLoweringTarget.CUB_WARP, 8),
     ],
 )
-@pytest.mark.parametrize("broadcast", [True, False])
-def test_builtin_full_reduce_uses_storage_free_cudax_across_hierarchy(
-    group,
-    facts,
-    width,
-    instances,
-    execution_scope,
-    broadcast,
+@pytest.mark.parametrize("operation", ["sum", "reduce"])
+def test_full_reduce_uses_cub_and_compiler_managed_scratch(
+    group, target, instances, operation
 ):
-    operation = _reduce(
-        operation="reduce",
-        value_kind="array",
-        items_per_thread=4,
-        broadcast=broadcast,
-    )
-    plan = _plan(group, operation, facts)
+    plan = _plan(group, _reduce(operation=operation))
 
-    assert plan.target is GroupLoweringTarget.CUDAX_GROUP
-    assert plan.implementation.overload == (
-        "broadcasted" if broadcast else "root_only"
-    )
-    assert plan.implementation.return_kind is (
-        CudaxReturnKind.VALUE if broadcast else CudaxReturnKind.OPTIONAL_VALUE
-    )
-    assert [parameter.name for parameter in plan.implementation.parameters] == [
-        "item0",
-        "item1",
-        "item2",
-        "item3",
-    ]
-    assert plan.topology.logical_width == width
-    assert plan.topology.instances == instances
-    assert plan.topology.execution_scope is execution_scope
-    assert plan.temp_storage.ownership is StorageOwnership.NONE
-    assert plan.temp_storage.address_space is None
-    assert plan.temp_storage.instances is None
-    assert not plan.temp_storage.auto_sync
-    assert (
-        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
-    )
-    assert plan.provenance.library == "CUDAX"
+    assert plan.target is target
+    assert plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    assert plan.temp_storage.address_space == "shared"
+    assert plan.temp_storage.instances == instances
+    assert plan.temp_storage.auto_sync
+    assert plan.provenance.library == "CUB"
 
 
 @pytest.mark.parametrize(
     "operator_name",
     ["plus", "multiplies", "min", "max", "bit_and", "bit_or", "bit_xor"],
 )
-def test_every_builtin_operator_remains_on_cudax(operator_name):
-    operation = _reduce(
-        operation="reduce",
-        reduce_operator=_builtin_operator(operator_name),
-    )
-    plan = _plan(this_block(), operation)
-
-    assert not operation.requests_cub
-    assert plan.target is GroupLoweringTarget.CUDAX_GROUP
-
-
-def test_reduce_result_is_always_one_scalar_of_the_payload_dtype():
-    broadcast = _plan(
+def test_every_builtin_operator_uses_cub(operator_name):
+    plan = _plan(
         this_block(),
-        _reduce(dtype="float32", value_kind="array", items_per_thread=3),
-    )
-    root_only = _plan(
-        this_block(),
-        _reduce(dtype="float32", broadcast=False),
+        _reduce(
+            operation="reduce", reduce_operator=_builtin_operator(operator_name)
+        ),
     )
 
-    assert broadcast.result.primary.dtype == "float32"
-    assert broadcast.result.primary.operand_kind is GroupOperandKind.SCALAR
-    assert broadcast.result.primary.items_per_member == 1
-    assert broadcast.result.primary.visibility is ResultVisibility.ALL_MEMBERS
-    assert broadcast.result.primary.ownership is ResultOwnership.EACH_MEMBER
-    assert broadcast.result.primary.root_rank is None
-    assert root_only.result.primary.visibility is ResultVisibility.GROUP_ROOT
-    assert root_only.result.primary.ownership is ResultOwnership.GROUP_ROOT
-    assert root_only.result.primary.root_rank == 0
+    assert plan.target is GroupLoweringTarget.CUB_BLOCK
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_block_array_result_is_one_scalar_defined_at_rank_zero(
+    items_per_thread,
+):
+    plan = _plan(
+        this_block(),
+        _reduce(
+            dtype="float32",
+            value_kind="array",
+            items_per_thread=items_per_thread,
+        ),
+    )
+
+    assert plan.result.primary.dtype == "float32"
+    assert plan.result.primary.operand_kind is GroupOperandKind.SCALAR
+    assert plan.result.primary.items_per_member == 1
+    assert plan.result.primary.visibility is ResultVisibility.GROUP_ROOT
+    assert plan.result.primary.ownership is ResultOwnership.GROUP_ROOT
+    assert plan.result.primary.root_rank == 0
+
+
+@pytest.mark.parametrize("auto_sync", [False, True])
+@pytest.mark.parametrize("sharing", ["shared", "exclusive"])
+def test_explicit_block_storage_preserves_layout_and_reuse_policy(
+    auto_sync, sharing
+):
+    plan = _plan(
+        this_block(),
+        _reduce(
+            storage_ownership=StorageOwnership.CALLER,
+            storage_sharing=sharing,
+            storage_size_in_bytes=512,
+            storage_alignment=16,
+            storage_auto_sync=auto_sync,
+        ),
+    )
+
+    assert plan.target is GroupLoweringTarget.CUB_BLOCK
+    assert plan.temp_storage.ownership is StorageOwnership.CALLER
+    assert plan.temp_storage.exact_layout_required
+    assert plan.temp_storage.sharing == sharing
+    assert plan.temp_storage.requested_size_in_bytes == 512
+    assert plan.temp_storage.requested_alignment == 16
+    assert plan.temp_storage.auto_sync is auto_sync
+    assert plan.synchronization.storage_reuse_barrier is (
+        SynchronizationScope.BLOCK if auto_sync else SynchronizationScope.NONE
+    )
+
+
+@pytest.mark.parametrize("group", [this_warp(), this_warp().group_by(8)])
+def test_warp_rejects_explicit_storage_and_array_inputs(group):
+    explicit_storage = _plan(
+        group,
+        _reduce(
+            storage_ownership=StorageOwnership.CALLER, storage_sharing="shared"
+        ),
+    )
+    array_input = _plan(group, _reduce(value_kind="array", items_per_thread=2))
+
+    assert (
+        explicit_storage.unsupported.code
+        is UnsupportedReasonCode.OPERATION_VARIANT
+    )
+    assert "temp_storage" in explicit_storage.unsupported.message
+    assert array_input.unsupported.code is UnsupportedReasonCode.OPERAND_FORM
 
 
 @pytest.mark.parametrize(
@@ -253,7 +248,6 @@ def test_valid_prefix_selects_root_only_cub_storage(
     plan = _plan(
         group,
         _reduce(
-            broadcast=False,
             valid_items=ArgumentBinding.runtime(),
         ),
     )
@@ -287,12 +281,10 @@ def test_static_warp_prefix_is_bounded_to_one_through_group_width(valid_items):
     if valid_items < 1:
         with pytest.raises(ValueError, match="positive integer"):
             _reduce(
-                broadcast=False,
                 valid_items=ArgumentBinding.static(valid_items),
             )
     else:
         operation = _reduce(
-            broadcast=False,
             valid_items=ArgumentBinding.static(valid_items),
         )
         with pytest.raises(ValueError, match="exceeds group size 32"):
@@ -305,7 +297,6 @@ def test_explicit_block_algorithm_and_array_payload_select_cub():
         _reduce(
             value_kind="array",
             items_per_thread=4,
-            broadcast=False,
             cub_algorithm=BlockReduceAlgorithm.RAKING,
         ),
     )
@@ -318,30 +309,19 @@ def test_explicit_block_algorithm_and_array_payload_select_cub():
     assert plan.result.primary.operand_kind is GroupOperandKind.SCALAR
 
 
-def test_arbitrary_custom_operator_selects_cub_and_requires_root_only():
+@pytest.mark.parametrize("group", [this_block(), this_warp()])
+def test_custom_operator_uses_cub_and_a_root_only_result(group):
     custom = CxxOperator("custom_reduce<T>", Dependency("T"), name="binary_op")
-    broadcast = _plan(
-        this_block(),
-        _reduce(operation="reduce", reduce_operator=custom),
-    )
-    root_only = _plan(
-        this_warp(),
-        _reduce(
-            operation="reduce",
-            reduce_operator=custom,
-            broadcast=False,
-        ),
-    )
+    plan = _plan(group, _reduce(operation="reduce", reduce_operator=custom))
 
-    assert broadcast.unsupported.code is UnsupportedReasonCode.CUB_BROADCAST
-    assert root_only.target is GroupLoweringTarget.CUB_WARP
+    assert plan.provenance.library == "CUB"
+    assert plan.result.primary.visibility is ResultVisibility.GROUP_ROOT
 
 
 def test_block_reduce_algorithms_fail_closed_on_unproven_semantics():
     nondeterministic = _plan(
         this_block(),
         _reduce(
-            broadcast=False,
             cub_algorithm=BlockReduceAlgorithm.WARP_REDUCTIONS_NONDETERMINISTIC,
         ),
     )
@@ -351,14 +331,12 @@ def test_block_reduce_algorithms_fail_closed_on_unproven_semantics():
         _reduce(
             operation="reduce",
             reduce_operator=custom,
-            broadcast=False,
             cub_algorithm=BlockReduceAlgorithm.RAKING_COMMUTATIVE_ONLY,
         ),
     )
     proven_sum = _plan(
         this_block(),
         _reduce(
-            broadcast=False,
             cub_algorithm=BlockReduceAlgorithm.RAKING_COMMUTATIVE_ONLY,
         ),
     )
@@ -367,7 +345,6 @@ def test_block_reduce_algorithms_fail_closed_on_unproven_semantics():
         _reduce(
             operation="reduce",
             reduce_operator=_builtin_operator("max"),
-            broadcast=False,
             cub_algorithm=BlockReduceAlgorithm.RAKING_COMMUTATIVE_ONLY,
         ),
     )
@@ -393,13 +370,12 @@ def test_default_cub_algorithm_is_canonical_in_plan_identity():
     )
     omitted = _plan(
         this_block(),
-        GroupReduceSemantics(primitive, broadcast=False),
+        GroupReduceSemantics(primitive),
     )
     explicit = _plan(
         this_block(),
         GroupReduceSemantics(
             primitive,
-            broadcast=False,
             cub_algorithm=BlockReduceAlgorithm.WARP_REDUCTIONS,
         ),
     )
@@ -422,7 +398,6 @@ def test_custom_operator_and_prefix_are_declared_in_call_metadata():
     operation = _reduce(
         operation="reduce",
         reduce_operator=stateful,
-        broadcast=False,
         valid_items=ArgumentBinding.static(7),
     )
     call = make_group_primitive_call(this_block(), operation)
@@ -431,12 +406,10 @@ def test_custom_operator_and_prefix_are_declared_in_call_metadata():
         "value",
         "binary_op",
         "valid_items",
-        "broadcast",
         "algorithm",
     ]
     assert [item.kind for item in call.argument_classifications] == [
         ArgumentKind.RUNTIME,
-        ArgumentKind.STATIC,
         ArgumentKind.STATIC,
         ArgumentKind.STATIC,
         ArgumentKind.STATIC,
@@ -445,40 +418,31 @@ def test_custom_operator_and_prefix_are_declared_in_call_metadata():
     assert call.argument_classifications[2].role is ParameterRole.CONSTANT
 
 
-def test_nonexhaustive_mapped_topology_respects_physical_parent_boundaries():
-    threads = _plan(
-        this_warp().group_by(12, exhaustive=False),
-        _reduce(),
-        64,
-    )
-    warps = _plan(
-        this_block().group_by(3, exhaustive=False),
-        _reduce(),
-        128,
-    )
+@pytest.mark.parametrize(
+    ("group", "facts"),
+    [
+        (this_thread(), LaunchFacts(64)),
+        (this_block().group_by(2), LaunchFacts(128)),
+        (this_cluster(), _cluster_facts()),
+        (this_grid(), LaunchFacts()),
+    ],
+)
+def test_reduction_rejects_groups_without_a_cub_implementation(group, facts):
+    plan = _plan(group, _reduce(), facts)
 
-    assert threads.target is GroupLoweringTarget.CUDAX_GROUP
-    assert threads.topology.instances == 4
-    assert threads.topology.instance_index == (
-        "(linear_thread_rank / 32) * 2 + ((linear_thread_rank % 32) / 12)"
-    )
-    assert threads.topology.thread_rank == "(linear_thread_rank % 32) % 12"
-    assert not threads.participation.complete_parent_partition
-    assert warps.target is GroupLoweringTarget.CUDAX_GROUP
-    assert warps.topology.instances == 1
-    assert warps.topology.instance_index == "(linear_thread_rank / 32) / 3"
-    assert warps.topology.thread_rank == (
-        "((linear_thread_rank / 32) % 3) * 32 + (linear_thread_rank % 32)"
-    )
-    assert not warps.participation.complete_parent_partition
-    assert warps.temp_storage.ownership is StorageOwnership.NONE
+    assert plan.unsupported.code is UnsupportedReasonCode.GROUP_KIND
+
+
+def test_logical_warp_rejects_non_power_of_two_width():
+    plan = _plan(this_warp().group_by(12, exhaustive=False), _reduce(), 64)
+
+    assert plan.target is GroupLoweringTarget.UNSUPPORTED
 
 
 def test_complete_nonexhaustive_logical_warp_uses_canonical_cub_topology():
     plan = _plan(
         this_warp().group_by(8, exhaustive=False),
         _reduce(
-            broadcast=False,
             valid_items=ArgumentBinding.runtime(),
         ),
         64,
@@ -491,16 +455,6 @@ def test_complete_nonexhaustive_logical_warp_uses_canonical_cub_topology():
     assert plan.topology.thread_rank == "linear_thread_rank % 8"
     assert plan.temp_storage.instances == 8
     assert plan.temp_storage.instance_index == "linear_thread_rank / 8"
-
-
-def test_grid_reduce_has_a_stable_hidden_workspace_rejection():
-    plan = _plan(this_grid(), _reduce(), LaunchFacts())
-
-    assert plan.unsupported.code is UnsupportedReasonCode.GROUP_KIND
-    assert plan.unsupported.message == (
-        "cuda.coop Reduce does not support grid groups because grid reduction "
-        "requires hidden per-launch workspace"
-    )
 
 
 def test_common_root_exports_reduce_and_sum():

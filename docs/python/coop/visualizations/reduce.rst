@@ -7,14 +7,12 @@ Reduce
 ======
 
 :func:`cuda.coop.reduce` combines a group's values into one aggregate.
-:func:`cuda.coop.sum` is the sum specialization. Each thread can contribute a
-scalar or several items, but the return value is a scalar. ``broadcast``
-determines which threads may use it.
+:func:`cuda.coop.sum` is the sum specialization. Blocks accept one scalar or
+several items per thread; warps accept one scalar per lane. The scalar result
+is defined only at group rank zero.
 
 The explorer uses eight teaching threads. It shows four lanes per physical
-warp and two per logical warp; **physical CUDA warps have 32 lanes**. Group
-choices also cover a single thread, groups of warps within a block, and a
-cluster containing two illustrative blocks.
+warp and two per logical warp; **physical CUDA warps have 32 lanes**.
 
 .. coop-visualization:: reduce
 
@@ -26,7 +24,7 @@ cluster containing two illustrative blocks.
                are undefined.
          :width: 100%
 
-         Block sum with two items per thread and ``broadcast=False``.
+         Block sum with two items per thread.
 
    Each thread first adds its own pair. The group combines those partials;
    only thread zero has a defined return value in this example.
@@ -42,13 +40,12 @@ Reading the stages
 ------------------
 
 The local fold produces one contribution per thread. The combine row shows
-partial aggregates within each selected group. The final row distinguishes
-an aggregate available to every member from a return defined only at group
-rank zero. ``?`` means that the program must not read that return value.
+partial aggregates within each selected group. The final row shows the
+aggregate at group rank zero. ``?`` marks return values that the program must
+not read.
 
-The default group implementation supports built-in operators across the
-thread hierarchy. With ``broadcast=False``, a block can instead select
-``raking_commutative_only``, ``raking``, or ``warp_reductions``. The first
+All reductions use CUB. A block can select ``raking_commutative_only``,
+``raking``, or ``warp_reductions`` (the default). The first
 requires a commutative operator; the explorer's sum and maximum satisfy that
 requirement. Custom callbacks cannot select ``raking_commutative_only``
 because the planner cannot establish their commutativity. Raking combines
@@ -58,8 +55,8 @@ combinations; they do not show exact instruction schedules. Floating-point
 rounding can change when the combination order changes.
 
 ``valid_items`` counts contributing group members, starting at rank zero.
-It is available for scalar block, physical-warp, and logical-warp reductions
-with ``broadcast=False``. The count must be uniform within the group and
+It is available for scalar block, physical-warp, and logical-warp reductions.
+The count must be uniform within the group and
 between one and the group size, inclusive. Every group member still
 participates. The explorer offers this choice only for one item per thread.
 
@@ -75,7 +72,7 @@ Using Reduce in a kernel
 
 This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
 ``items_per_thread``. Import ``cuda`` from
-``numba_cuda_mlir``, ``numpy as np``, and ``cuda.coop as coop``. Launch with
+``numba_cuda_mlir``, and import ``coop`` from ``cuda``. Launch with
 128 threads and supply at least ``128 * items_per_thread`` input elements
 for each block.
 
@@ -84,24 +81,21 @@ for each block.
    block = coop.this_block()
    values = coop.ThreadData(items_per_thread)
    coop.load(block, source, values, offset=cuda.blockIdx.x * 128 * items_per_thread)
-   total = coop.sum(block, values, broadcast=False, algorithm="raking")
+   total = coop.sum(block, values, algorithm="raking")
    if cuda.threadIdx.x == 0:
        output[cuda.blockIdx.x] = total
 
-The input ``values`` is unchanged. Omit ``algorithm`` and use the default
-``broadcast=True`` when every group member needs the aggregate. For one
-128-thread block, this fragment gives every member of each two-warp group
-the same sum:
+The input ``values`` is unchanged. A logical warp uses
+``coop.this_warp().group_by(8)``, yielding four groups of eight lanes inside
+each physical warp. Each group has a separate aggregate, consumed by its
+rank-zero lane:
 
 .. code-block:: python
 
-   group = coop.this_block().group_by(2)
+   group = coop.this_warp().group_by(8)
    total = coop.sum(group, source[cuda.threadIdx.x])
-   output[cuda.threadIdx.x] = total
-
-With 128 threads, this creates two groups of 64 threads. A logical warp uses
-``coop.this_warp().group_by(8)`` instead, yielding four groups of eight lanes
-inside each physical warp. All these groups have separate aggregates.
+   if group.rank() == 0:
+       output[cuda.threadIdx.x // 8] = total
 
 For the explorer's custom-maximum choice, use a device callback and the
 qualified API. Launch this kernel with one block whose size matches the
@@ -123,30 +117,15 @@ input:
            coop.this_block(),
            source[thread],
            binary_op=maximum,
-           broadcast=False,
        )
        if thread == 0:
            output[0] = result
 
-Cluster reduction requires compute capability 9.0 or newer and a cluster
-launch. The following kernel and launch use two blocks of 32 threads; all
-64 output elements receive the same sum. ``source`` and ``output`` are device
-arrays with at least 64 elements.
+Block reductions accept ``temp_storage=coop.TempStorage(...)``. An explicit
+descriptor defaults to caller-managed synchronization; use
+``coop.TempStorage(auto_sync=True)`` for automatic synchronization before
+reuse. Omitting ``temp_storage`` uses compiler-managed scratch with automatic
+synchronization. Warp reductions always use compiler-managed scratch.
 
-.. code-block:: python
-
-   from numba_cuda_mlir import cuda
-   import cuda.coop as coop
-
-   @cuda.jit
-   def cluster_sum(source, output):
-       thread = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-       output[thread] = coop.sum(coop.this_cluster(), source[thread])
-
-   cluster_sum.configure(
-       (2, 1, 1), (32, 1, 1), cluster=(2, 1, 1)
-   )(source, output)
-
-Grid reduction is not supported in this backend. See
-:func:`cuda.coop.reduce` and the :doc:`../programming_guide` for the full
+See :func:`cuda.coop.reduce` and the :doc:`../programming_guide` for the full
 operation and group contracts.

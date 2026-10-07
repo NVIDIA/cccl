@@ -5,7 +5,7 @@
 """Plan Reduce and Sum calls before ordinary Numba type inference.
 
 Recover the payload form, operator, valid prefix, and static selectors from
-the public call. The shared group planner chooses a supported CUB or CUDAX
+the public call. The shared group planner chooses a supported CUB
 implementation and its result contract. This module selects the matching
 private factory and builds replacement IR. Every reduction returns a scalar;
 its registered result policy inherits dtype from the value argument.
@@ -28,7 +28,7 @@ from cuda.coop._core import (
     GroupLoweringTarget,
     GroupReduceSemantics,
     PythonOperator,
-    SynchronizationScope,
+    StorageOwnership,
     ThreadGroup,
     make_group_primitive_call,
     make_reduce_semantics,
@@ -36,6 +36,7 @@ from cuda.coop._core import (
 )
 
 from .._semantic import _normalize_numba_callable, _numba_semantic_token
+from ._group_errors import NonConstantTempStorageError
 from ._group_planner_support import GroupRewriteError, ir
 from ._group_planning import GroupPlanningContext
 from ._operations import (
@@ -192,7 +193,7 @@ class _ReducePlanning:
         """Match reduction provenance to a registered provider factory.
 
         CUB block and warp targets select sum, built-in, or callback
-        factories. CUDAX group targets select a factory by execution scope.
+        factories.
         Require the expected library and native entry point so unrelated plans
         cannot be interpreted through a reduction ABI.
         """
@@ -203,19 +204,6 @@ class _ReducePlanning:
                 "provider provenance and topology"
             )
         provenance = plan.provenance
-        if (
-            plan.target is GroupLoweringTarget.CUDAX_GROUP
-            and provenance.library == "CUDAX"
-            and provenance.header == "cuda/experimental/coop/algorithm"
-        ):
-            from .._lowering import _reduce
-
-            return {
-                SynchronizationScope.NONE: _reduce.group_reduce_none,
-                SynchronizationScope.WARP: _reduce.group_reduce_warp,
-                SynchronizationScope.BLOCK: _reduce.group_reduce_block,
-                SynchronizationScope.GROUP: _reduce.group_reduce_group,
-            }[plan.topology.execution_scope]
         if (
             plan.target is GroupLoweringTarget.CUB_BLOCK
             and provenance.library == "CUB"
@@ -257,7 +245,7 @@ class _ReducePlanning:
     ) -> tuple[GroupLoweringPlan, str, Any, bool]:
         """Resolve reduction operands and request a supported core plan.
 
-        Require a constant broadcast flag, operator, and algorithm. Infer the
+        Require a constant operator and algorithm. Infer the
         numeric dtype and any fixed array extent; common calls accept only a
         scalar or ThreadData array. Preserve a valid-prefix control as an
         omitted, static, or runtime binding. A runtime count must have an
@@ -272,13 +260,6 @@ class _ReducePlanning:
             raise GroupRewriteError(
                 f"Reduce planner received unexpected operation {operation!r}"
             )
-        broadcast = self._context.constant(bound.arguments["broadcast"])
-        if not isinstance(broadcast, bool):
-            raise TypeError(
-                f"cuda.coop.numba_mlir.{operation} broadcast must be a "
-                "compile-time bool"
-            )
-
         value = bound.arguments["value"]
         is_array = self._context.is_array(operation, value)
         if (
@@ -349,6 +330,20 @@ class _ReducePlanning:
         from .._lowering._core import NumbaMlirCoreAdapter
 
         adapter = NumbaMlirCoreAdapter()
+        storage_options: dict[str, Any] = {}
+        temp_storage_value = bound.arguments["temp_storage"]
+        if not self._context.is_none(temp_storage_value):
+            descriptor = self._context.temp_storage(temp_storage_value)
+            if descriptor is None:
+                raise NonConstantTempStorageError(operation)
+            size_in_bytes, alignment, auto_sync, sharing = descriptor
+            storage_options = {
+                "storage_ownership": StorageOwnership.CALLER,
+                "storage_sharing": sharing,
+                "storage_size_in_bytes": size_in_bytes,
+                "storage_alignment": alignment,
+                "storage_auto_sync": auto_sync,
+            }
         semantics = GroupReduceSemantics(
             make_reduce_semantics(
                 dtype=adapter.core_dtype(dtype),
@@ -358,7 +353,7 @@ class _ReducePlanning:
                 reduce_operator=reduce_operator,
                 valid_items=valid_items,
             ),
-            broadcast=broadcast,
+            **storage_options,
             cub_algorithm=algorithm,
         )
         plan = plan_group_primitive(
@@ -413,9 +408,8 @@ class _ReducePlanning:
     ) -> list[Any]:
         """Build the selected reduction call with its validated plan attached.
 
-        CUDAX receives a resolved group, built-in operator, payload form, and
-        broadcast choice. CUB receives exact block or warp dimensions and any
-        valid-prefix control using that provider's keyword. Custom callbacks
+        CUB receives exact block or warp dimensions and any valid-prefix
+        control using that provider's keyword. Custom callbacks
         remain specialization inputs rather than runtime callable operands.
 
         Return ordered conversion and call statements. The provider's scalar
@@ -442,19 +436,7 @@ class _ReducePlanning:
         factory_kwargs: dict[str, Any] = {
             "dtype": adapter.normalize_dtype(primitive.dtype)
         }
-        if plan.target is GroupLoweringTarget.CUDAX_GROUP:
-            factory_kwargs.update(
-                {
-                    "group": plan.resolved_group,
-                    "binary_op": None
-                    if operator_kind == "sum"
-                    else operator_kind,
-                    "broadcast": semantics.broadcast,
-                    "items_per_thread": primitive.items_per_thread,
-                    "value_kind": primitive.value_kind.value,
-                }
-            )
-        elif plan.target is GroupLoweringTarget.CUB_BLOCK:
+        if plan.target is GroupLoweringTarget.CUB_BLOCK:
             factory_kwargs.update(
                 {
                     "threads_per_block": block_dim,
@@ -464,7 +446,9 @@ class _ReducePlanning:
                 }
             )
             if operator_kind != "sum":
-                factory_kwargs["binary_op"] = binary_op
+                factory_kwargs["binary_op"] = (
+                    binary_op if operator_kind == "callback" else operator_kind
+                )
             if primitive.valid_items.kind is not BindingKind.OMITTED:
                 factory_kwargs["num_valid"] = self._runtime_valid_items(
                     statements,
@@ -481,7 +465,9 @@ class _ReducePlanning:
                 }
             )
             if operator_kind != "sum":
-                factory_kwargs["binary_op"] = binary_op
+                factory_kwargs["binary_op"] = (
+                    binary_op if operator_kind == "callback" else operator_kind
+                )
             if primitive.valid_items.kind is not BindingKind.OMITTED:
                 factory_kwargs["valid_items"] = self._runtime_valid_items(
                     statements,
@@ -489,6 +475,9 @@ class _ReducePlanning:
                     primitive.valid_items,
                     bound.arguments["valid_items"],
                 )
+
+        if not self._context.is_none(bound.arguments["temp_storage"]):
+            factory_kwargs["temp_storage"] = bound.arguments["temp_storage"]
 
         statements.extend(
             self._context.rewrite_call(
@@ -553,7 +542,7 @@ for _operation in (
             runtime_factory_kw_prerequisites=(),
             allowed_factory_kwargs=_BLOCK_REWRITE_KWARGS,
             required_factory_kwargs=frozenset({"dtype", "threads_per_block"}),
-            accepts_temp_storage=False,
+            accepts_temp_storage=True,
             scalar_binding_kwargs=frozenset({"num_valid"}),
             runtime_offset_kwarg=None,
             infer_payload=infer_reduce_payload,
@@ -592,37 +581,5 @@ for _operation in ("warp_sum", "warp_reduce_builtin", "warp_reduce_callback"):
         ),
     )
 del _operation
-
-register_rewrite_operation(
-    "group_reduce",
-    RewriteOperationSpecification(
-        factory_namespaces=frozenset(
-            {"cudax_block", "cudax_group", "cudax_none", "cudax_warp"}
-        ),
-        dtype_factory_kwargs=frozenset({"dtype"}),
-        runtime_arg_counts=frozenset({1}),
-        runtime_factory_kwargs=(),
-        runtime_factory_kw_prerequisites=(),
-        allowed_factory_kwargs=frozenset(
-            {
-                "_compile_context",
-                "binary_op",
-                "broadcast",
-                "dtype",
-                "group",
-                "items_per_thread",
-                "value_kind",
-            }
-        ),
-        required_factory_kwargs=frozenset(
-            {"broadcast", "dtype", "group", "items_per_thread", "value_kind"}
-        ),
-        accepts_temp_storage=False,
-        scalar_binding_kwargs=frozenset(),
-        runtime_offset_kwarg=None,
-        infer_payload=infer_reduce_payload,
-    ),
-)
-
 
 __all__: tuple[str, ...] = ()

@@ -34,7 +34,7 @@ def test_qualified_reduce_example():
         block = coop.this_block()
         items = coop.ThreadData(items_per_thread)
         coop.load(block, source, items)
-        result = coop.reduce(block, items, binary_op=maximum, broadcast=False)
+        result = coop.reduce(block, items, binary_op=maximum)
         # Custom reductions define the result at group rank zero.
         if block.rank() == 0:
             output[0] = result
@@ -60,12 +60,13 @@ def test_qualified_sum_example():
     def warp_totals(source, destination):
         group = coop.this_warp().group_by(8)
         thread = cuda.threadIdx.x
-        # The default broadcasts each logical warp's total to all its lanes.
-        destination[thread] = coop.sum(group, source[thread])
+        total = coop.sum(group, source[thread])
+        if group.rank() == 0:
+            destination[thread // 8] = total
 
     values = np.arange(64, dtype=np.int32) % 7
-    destination = cuda.device_array_like(values)
+    destination = cuda.device_array(8, dtype=np.int32)
     warp_totals[1, 64](cuda.to_device(values), destination)
-    expected = np.repeat(values.reshape(8, 8).sum(axis=1), 8)
+    expected = values.reshape(8, 8).sum(axis=1)
     np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # qualified-sum-example-end

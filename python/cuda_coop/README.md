@@ -300,7 +300,7 @@ participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load and Store accept an optional caller descriptor:
+Block Load, Store, and Reduce accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
@@ -312,20 +312,21 @@ storage = coop.TempStorage(
 coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
-For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free: they default-construct CUB primitives without
-shared-memory allocation, pointer arguments, or barriers. For block calls,
-an explicit descriptor is validated but does not change their code
-generation. Construct `TempStorage` inside the kernel; module-global storage
-descriptors cannot be resolved. A descriptor may be passed to a device
+For Load and Store on block, physical Warp, and logical Warp groups, `direct`,
+`striped`, and `vectorize` are storage-free: they default-construct CUB
+primitives without shared-memory allocation, pointer arguments, or barriers.
+For block calls, an explicit descriptor is validated but does not change their
+code generation. Construct `TempStorage` inside the kernel; module-global
+storage descriptors cannot be resolved. A descriptor may be passed to a device
 helper that Numba-CUDA-MLIR inlines into the kernel, which is the default.
 
-The three block transpose algorithms use CUB temporary storage. Without a
-descriptor, the compiler allocates the specialization's exact storage and
-inserts a block reuse barrier. A caller descriptor selects shared or
-exclusive slices and may request capacity and alignment. Both explicit and
-omitted storage participate in the shared-memory plan and launch accounting.
-The provider determines the required byte count and alignment.
+The three block transpose Load/Store algorithms and Block Reduce use CUB
+temporary storage. Without a descriptor, the compiler allocates the
+specialization's exact storage and inserts a block reuse barrier. A caller
+descriptor selects shared or exclusive slices and may request capacity and
+alignment. Both explicit and omitted storage participate in the shared-memory
+plan and launch accounting. The provider determines the required byte count
+and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while
@@ -360,10 +361,8 @@ allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized `cuda.shared.array`. When
 cooperative backing becomes dynamic, user static shared arrays are also
 unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. CUDAX Block, Cluster, and mapped-Warp
-reductions also allocate internal static shared memory, even without a
-`TempStorage` operand. They cannot coexist with user dynamic shared arrays
-or dynamic cooperative backing in these compiler releases.
+user data out of shared memory. Reduce uses the same cooperative backing,
+including when `temp_storage` is omitted.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
@@ -387,23 +386,17 @@ every Warp Load and Store algorithm, including the storage-free modes.
 ## Reduce and Sum
 
 `sum(group, value, ...)` and `reduce(group, value, binary_op=..., ...)` return
-one scalar with the payload element dtype. The common API accepts a numeric
-scalar or fixed-size `ThreadData`; reducing a `ThreadData` payload combines all
-items contributed by every participating member. The qualified
-`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+one scalar with the payload element dtype. Block reductions accept a numeric
+scalar or fixed-size `ThreadData`; every item in every thread contributes.
+The qualified `cuda.coop.numba_mlir` API also accepts fixed-size
+`cuda.local.array` payloads for block reductions. Physical and logical Warp
+reductions accept one scalar per lane. Logical Warp widths must be 1, 2, 4,
+8, 16, or 32, and the block must contain complete physical Warps.
 
-A full built-in reduction has no `valid_items` or explicit `algorithm`. It
-uses the CUDAX implementation for the current thread, a physical Warp, a
-logical Warp from `this_warp().group_by(width)`, a block, a mapped group of
-physical Warps from `this_block().group_by(warps_per_group)`, or a cluster.
-Cluster reductions require matching cluster launch facts. Every member of the
-selected group must participate.
-
-By default, `broadcast=True` gives every group member the reduced scalar. With
-`broadcast=False`, only rank zero of each selected group has a defined result;
-other members must still execute the call and must not consume their returned
-value. For example, this full block reduction combines `items_per_thread`
-values per thread but writes only from the block root:
+Every reduction uses CUB. Only rank zero of each selected group has a defined
+result; other members must still execute the call and must not consume their
+returned value. For example, this full block reduction combines
+`items_per_thread` values per thread but writes only from the block root:
 
 ```python
 from numba_cuda_mlir import cuda, types
@@ -417,7 +410,7 @@ def block_sum(source, output, items_per_thread):
     values = coop.ThreadData(items_per_thread)
     for item in range(items_per_thread):
         values[item] = source[items_per_thread * thread + item]
-    total = coop.sum(coop.this_block(), values, broadcast=False)
+    total = coop.sum(coop.this_block(), values)
     if thread == 0:
         output[0] = total
 ```
@@ -433,32 +426,35 @@ functions and NumPy ufuncs. Built-in operator and algorithm selectors are
 normalized to canonical lowercase strings. Enum-like and other non-string
 selector objects are rejected.
 
-Three controls select a direct CUB reduction instead:
+The following controls select the reduction form:
 
 - `valid_items` reduces the first N scalar values by linear group rank. It is
-  available for block, physical-Warp, and logical-Warp groups and requires
-  `broadcast=False`. N must be uniform within the group and satisfy
+  available for block, physical-Warp, and logical-Warp groups. N must be
+  uniform within the group and satisfy
   `1 <= N <= group_size`. Static violations are rejected during compilation;
   runtime violations execute a deterministic device trap before CUB's 32-bit
   parameter is formed, invalidating the current CUDA context.
 - `algorithm` selects block-only `raking_commutative_only`, `raking`, or
-  `warp_reductions`, also with `broadcast=False`. Scalar and fixed-array
+  `warp_reductions` (the default). Scalar and fixed-array
   payloads are supported. `raking_commutative_only` is restricted to Sum and
   recognized commutative built-ins. The addition-specific nondeterministic CUB
   variant is intentionally not exposed.
 - A custom Python device callback is available only through
-  `cuda.coop.numba_mlir.reduce`. It must be associative and stateless and
-  requires `broadcast=False`. It uses CUB for block, physical-Warp, or
+  `cuda.coop.numba_mlir.reduce`. It must be associative and stateless. It
+  supports block, physical-Warp, or
   logical-Warp groups. Warp callbacks accept scalar payloads; block callbacks
   may also reduce fixed arrays. Stateful callbacks are unsupported.
 
-Full CUDAX reductions need no caller scratch operand, compiler-owned backing
-allocation, or compiler-inserted post-call barrier. Block, Cluster, and
-mapped-Warp reductions allocate shared memory inside CUDAX. Every required
-member must participate in converged control flow. Direct CUB reductions use
-compiler-owned shared storage. Block paths append a block reuse barrier, while
-physical and logical Warp paths append `syncwarp` for the exact participating
-mask. Reduce and Sum do not currently accept caller `TempStorage` descriptors.
+Every required member must participate in converged control flow. Omitting
+`temp_storage` uses compiler-owned shared storage with automatic
+synchronization: a block barrier for Block Reduce and `syncwarp` with the
+participating mask for Warp Reduce.
+
+Block Reduce also accepts `temp_storage=scratch`, where `scratch` is a
+`coop.TempStorage()` descriptor. It follows the same sizing, alignment,
+sharing, and synchronization policy as Block Load/Store. An explicit descriptor
+defaults to `auto_sync=False`; insert a block barrier between uses, or choose
+`coop.TempStorage(auto_sync=True)`. Warp Reduce uses compiler-owned storage.
 
 Grid Reduce and Sum are unsupported because a grid reduction requires hidden
 per-launch workspace; use a separate kernel or explicitly managed multi-stage

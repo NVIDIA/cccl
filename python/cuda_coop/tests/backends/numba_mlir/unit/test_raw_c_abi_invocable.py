@@ -196,7 +196,7 @@ def test_raw_c_abi_invocable_metadata_is_checked_by_generic_rewrite(
     artifact = Path(invocable.files[0])
     metadata = FactoryOperation(
         operation="raw",
-        namespace="cudax",
+        namespace="group",
         storage_abi=StorageABI.NONE,
         execution_scope=SynchronizationScope.GROUP,
         synchronization_scope=SynchronizationScope.NONE,

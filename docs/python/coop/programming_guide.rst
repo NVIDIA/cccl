@@ -201,7 +201,7 @@ parts of the API.
      - Current use
    * - ``coop.this_thread()``
      - One thread
-     - Hierarchy queries and full built-in Reduce
+     - Hierarchy queries
    * - ``coop.this_warp()``
      - One physical warp
      - Load, Store, Exchange, Reduce
@@ -213,10 +213,10 @@ parts of the API.
      - Load, Store, Exchange, Shuffle, Reduce
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
-     - Hierarchy queries and full built-in Reduce
+     - Hierarchy queries
    * - ``coop.this_cluster()``
      - Blocks in the launch's cluster
-     - Full built-in Reduce with supported hardware and cluster launch facts
+     - Hierarchy queries with supported hardware and cluster launch facts
    * - ``coop.this_grid()``
      - The kernel grid
      - Hierarchy queries; grid primitives and grid synchronization
@@ -237,10 +237,10 @@ pairs of warps leaves the last warp outside a complete group.
 membership for excluded threads, and check the primitive's participation
 requirements before using that guard around an operation.
 
-Mapped groups of physical warps support full built-in reductions.
-``valid_items``, explicit ``algorithm`` selection, custom callbacks, and
-explicit group barriers are unavailable.
-Use the block and logical-warp forms for the examples in this guide.
+Mapped groups of physical warps support hierarchy queries through their
+immediate parent block. Primitives and group barriers are unavailable for
+these groups. Use the block and logical-warp forms for the examples in this
+guide.
 
 .. _coop-group-queries:
 
@@ -635,15 +635,12 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store
+   * - Block transpose-family Load/Store; Block Reduce
      - Automatic scratch, or an explicit ``TempStorage``
-   * - Warp transpose Load/Store
+   * - Warp transpose Load/Store; Warp Reduce
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
-
-Reduce has its own group-dependent implementation and does not accept
-``temp_storage`` in the public signature.
 
 Capacity, alignment, and lifetime
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -707,10 +704,8 @@ User static shared arrays may coexist with static cooperative backing, but are
 rejected when the cooperative backing becomes dynamic, including an implicit
 oversized allocation. These checks apply after helper inlining. Keep both
 allocations static within the device limit, use global memory for the user
-buffer, or separate the work into kernels. CUDAX Block, Cluster, and
-mapped-Warp reductions allocate internal static shared memory without a
-``TempStorage`` operand, so they also cannot coexist with user dynamic shared
-arrays or dynamic cooperative backing. The compatibility restrictions remain
+buffer, or separate the work into kernels. Reduce uses the same cooperative
+backing, including when ``temp_storage`` is omitted. The compatibility restrictions remain
 until a released compiler with the shared-memory fix has passed the coexistence
 tests.
 
@@ -726,9 +721,9 @@ Reduction and result ownership
 ------------------------------
 
 ``coop.sum`` and ``coop.reduce`` combine the group's inputs into a scalar.
-For a ``ThreadData`` input, every item in every thread contributes.
-The default ``broadcast=True`` makes the result available to every group
-member. With ``broadcast=False``, consume it only on group rank zero.
+Block reductions accept a scalar or ``ThreadData`` input; every item in every
+thread contributes. Physical-warp and power-of-two logical-warp reductions
+accept one scalar per lane. Consume the result only on group rank zero.
 All required members still execute the reduction.
 
 The :doc:`Reduce visualization <visualizations/reduce>` shows which values
@@ -749,14 +744,21 @@ into that branch would leave required participants out of the call.
 For another built-in operator, use ``coop.reduce`` with ``binary_op`` set
 to ``"min"``, ``"max"``, ``"multiplies"``, ``"bit_and"``,
 ``"bit_or"``, or ``"bit_xor"``. Choose the padding value accordingly.
-Qualified custom Reduce callbacks have narrower group and result contracts;
-check their overloads before replacing a built-in operation.
+Qualified custom Reduce callbacks follow the same group and result contracts;
+they must be associative.
 
 Partial scalar Reduce also accepts ``valid_items`` on block and warp
-groups with ``broadcast=False``. There it counts contributing threads,
-must be at least one, and requires a scalar input. The example instead
+groups. It counts contributing threads from rank zero, must be between one
+and the group size, and requires a scalar input. The example instead
 pads a multi-item Load and reduces the full payload. These two techniques
 have different valid-count contracts.
+
+Block Reduce accepts ``temp_storage=scratch`` to share a ``coop.TempStorage``
+descriptor with other block operations. Omitting the argument uses
+compiler-managed scratch with automatic synchronization. An explicit
+``coop.TempStorage()`` defaults to ``auto_sync=False``: insert a block barrier
+between uses, or construct it with ``auto_sync=True``. Warp Reduce uses
+compiler-managed scratch.
 
 
 Checking and tuning a kernel

@@ -198,7 +198,6 @@ common.reduce(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
     binary_op=select_left,
-    broadcast=False,
 )
 common.reduce(  # expected-error: [call-overload]
     common_block,
@@ -208,7 +207,6 @@ common.reduce(  # expected-error: [call-overload]
 common.sum(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
-    broadcast=False,
     algorithm=0,
 )
 common.sum(  # expected-error: [call-overload]
@@ -232,7 +230,6 @@ coop.reduce(  # expected-error: [call-overload]
 coop.sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    broadcast=False,
     algorithm=0,
 )
 complex_values = cast(common.ThreadDataLike[np.complex64], object())
@@ -243,25 +240,49 @@ coop.sum(  # expected-error: [type-var]
 coop.sum(  # expected-error: [call-overload]
     qualified_block,
     values,
-    broadcast=False,
     valid_items=2,
 )
 coop.sum(  # expected-error: [call-overload]
     coop.this_warp(),
     np.int32(1),
-    broadcast=False,
     algorithm="raking",
 )
-coop.reduce(
+coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    binary_op=select_left,  # expected-error: [arg-type]
+    binary_op=select_left,
     broadcast=True,
 )
 coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     binary_op=select_left,
-    broadcast=False,
     algorithm="raking_commutative_only",
+)
+
+common.sum(
+    common.this_cluster(),  # expected-error: [arg-type]
+    np.int32(1),
+)
+coop.sum(
+    qualified_block.group_by(2),  # expected-error: [arg-type]
+    np.int32(1),
+)
+common.sum(
+    common.this_thread(),  # expected-error: [arg-type]
+    np.int32(1),
+)
+coop.sum(
+    coop.this_warp(),  # expected-error: [arg-type]
+    values,
+)
+common.sum(
+    common.this_warp(),  # expected-error: [arg-type]
+    np.int32(1),
+    temp_storage=common.TempStorage(),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    temp_storage=0,
 )
