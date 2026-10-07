@@ -276,12 +276,6 @@ def test_kernel_planner_retries_with_an_exact_launch(monkeypatch):
         "_materialize_invocable",
         lambda self, match: (invocable, False),
     )
-    monkeypatch.setattr(
-        CoopSinglePhaseRewrite,
-        "_record_invocable_specialization",
-        lambda self, value: None,
-    )
-
     assert CoopWholeFunctionPlanner(state).run()
     assert requests == [state]
     assert [prepared for _, prepared in preparations] == [False, True]
