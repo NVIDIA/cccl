@@ -91,8 +91,8 @@ void test_pairs(LaunchT launch, StdOp std_op, bool values_from_first_input_only,
 
   c2h::host_vector<KeyT> keys1_h = keys1_d;
   c2h::host_vector<KeyT> keys2_h = keys2_d;
-  c2h::host_vector<ValueT> values1_h(size1);
-  c2h::host_vector<ValueT> values2_h(size2);
+  c2h::host_vector<ValueT> values1_h(size1, thrust::default_init);
+  c2h::host_vector<ValueT> values2_h(size2, thrust::default_init);
   for (int i = 0; i < size1; ++i)
   {
     values1_h[i] = make_tagged_value<ValueT>(keys1_h[i], 0); // source bit 0
@@ -203,17 +203,13 @@ using pair_types =
                  type_pair<std::int32_t, // custom value type -> vsmem
                            c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<16>::type>>>;
 
-CUB_TEST("DeviceSetOps pairs across key and value types", "[set_ops][device]", CUB_SMALL, pair_types)
+// Run every key/value combination across a range of input-size regimes: both empty, one side empty, single element,
+// very asymmetric, small, medium (a few tiles), and large (many tiles). The sizes are a runtime GENERATE sweep, so they
+// cost nothing extra to compile but exercise each type against every regime.
+CUB_TEST("DeviceSetOps pairs across key and value types and input sizes", "[set_ops][device]", CUB_SMALL, pair_types)
 {
-  using key_t   = typename c2h::get<0, TestType>::key_t;
-  using value_t = typename c2h::get<0, TestType>::value_t;
-  test_all_pairs<key_t, value_t>();
-}
-
-// Cover a range of input-size regimes for every key-value operation: both empty, one side empty, single element, very
-// asymmetric, small, medium (a few tiles), and large (many tiles).
-CUB_TEST_CASE("DeviceSetOps pairs cover a range of input sizes", "[set_ops][device]", CUB_SMALL)
-{
+  using key_t               = typename c2h::get<0, TestType>::key_t;
+  using value_t             = typename c2h::get<0, TestType>::value_t;
   const auto [size1, size2] = GENERATE(table<int, int>({
     {0, 0}, // both empty
     {0, 137}, // first empty
@@ -225,5 +221,5 @@ CUB_TEST_CASE("DeviceSetOps pairs cover a range of input sizes", "[set_ops][devi
     {3623, 6346}, // medium
     {40000, 55000}, // large: spans many tiles
   }));
-  test_all_pairs<std::int16_t, std::int32_t>(size1, size2);
+  test_all_pairs<key_t, value_t>(size1, size2);
 }
