@@ -1,2 +1,2 @@
 FULL_BUILD=cudax tidy
-LITE_BUILD=cccl_c_stf python cuda_coop_python packaging
+LITE_BUILD=cccl_c_stf python packaging
