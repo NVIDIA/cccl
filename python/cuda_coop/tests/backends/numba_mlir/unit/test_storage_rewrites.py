@@ -1071,7 +1071,6 @@ def _rewrite_with_fake_invocable(
     rewrite = CoopSinglePhaseRewrite(state)
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
-    rewrite._record_invocable_specialization = lambda _invocable: None
     assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):

@@ -141,7 +141,6 @@ def _rewrite_planned_movement(function, *, arg_types):
         invocables[match.op_name],
         False,
     )
-    rewrite._record_invocable_specialization = lambda _invocable: None
     assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
@@ -520,9 +519,6 @@ def test_static_factory_value_across_blocks_preserves_remaining_uses(
         rewrite, "_prepare_ltoir_bundle_for_matches", lambda _: None
     )
     monkeypatch.setattr(rewrite, "_materialize_invocable", materialize)
-    monkeypatch.setattr(
-        rewrite, "_record_invocable_specialization", lambda _: None
-    )
     assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
@@ -1255,7 +1251,6 @@ def test_storage_free_load_store_accept_temp_storage_without_using_it(
     invocable = FakeInvocable()
     rewrite._prepare_ltoir_bundle_for_matches = lambda _matches: None
     rewrite._materialize_invocable = lambda _match: (invocable, False)
-    rewrite._record_invocable_specialization = lambda _invocable: None
     assert rewrite.prepare_calls_and_storage(func_ir)
     rewrite.begin_rewrite()
     for label in sorted(func_ir.blocks):
