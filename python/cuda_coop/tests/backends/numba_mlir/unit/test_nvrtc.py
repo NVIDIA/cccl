@@ -91,7 +91,7 @@ def test_required_headers_reject_a_partial_configured_bundle(
     tmp_path: Path,
 ) -> None:
     bundle = tmp_path / "partial-bundle"
-    missing = "cuda/experimental/coop/group"
+    missing = "cuda/hierarchy"
     present_headers = (set(_nvrtc._REQUIRED_HEADERS) - {missing}) | {
         "cub/version.cuh"
     }
