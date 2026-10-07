@@ -92,7 +92,6 @@ def _source_checkout_paths(root: Path) -> tuple[Path, ...]:
     candidates = (
         root / "thrust",
         root / "cub",
-        root / "cudax" / "include",
         root / "libcudacxx" / "include",
     )
     missing = tuple(

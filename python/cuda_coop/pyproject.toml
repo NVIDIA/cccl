@@ -88,7 +88,6 @@ reproducible = true
 [tool.scikit-build.wheel.force-include]
 "../../LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/LICENSE"
 "../../cub/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/cub/LICENSE.TXT"
-"../../cudax/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/cudax/LICENSE.TXT"
 "../../libcudacxx/LICENSE.TXT" = "${SKBUILD_METADATA_DIR}/licenses/libcudacxx/LICENSE.TXT"
 "../../thrust/LICENSE" = "${SKBUILD_METADATA_DIR}/licenses/thrust/LICENSE"
 

@@ -27,7 +27,6 @@ def _write_source_checkout(checkout: Path) -> None:
     for path in (
         checkout / "thrust",
         checkout / "cub" / "cub",
-        checkout / "cudax" / "include",
         checkout / "libcudacxx" / "include",
     ):
         path.mkdir(parents=True)
@@ -76,7 +75,7 @@ def test_source_resolution_uses_one_coherent_header_set() -> None:
         required_headers=(
             "cub/block/block_load.cuh",
             "thrust/detail/raw_pointer_cast.h",
-            "cuda/experimental/coop/algorithm",
+            "cuda/hierarchy",
             "cuda/std/cstdint",
         ),
     )
@@ -84,7 +83,6 @@ def test_source_resolution_uses_one_coherent_header_set() -> None:
     assert paths.cccl == (
         checkout / "thrust",
         checkout / "cub",
-        checkout / "cudax" / "include",
         checkout / "libcudacxx" / "include",
     )
 
