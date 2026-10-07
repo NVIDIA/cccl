@@ -194,14 +194,14 @@ void test_all_pairs(int size1 = 3623, int size2 = 6346)
 
 // A spread of key/value width combinations, including a non-trivial custom value type. The agent stages a whole tile of
 // values in shared memory, so any value larger than ~5 bytes pushes the per-block storage past the static shared-memory
-// limit and forces the dispatch onto virtual shared memory; the 16-byte custom type exercises that fallback. Keys are
-// kept to integer types so the value tag (key * 2 + source) stays exact.
+// limit and forces the dispatch onto virtual shared memory; the custom type exercises that fallback. Keys are kept to
+// integer types so the value tag (key * 2 + source) stays exact.
 using pair_types =
   c2h::type_list<type_pair<std::int16_t, std::int32_t>, // baseline
                  type_pair<std::int64_t, std::int32_t>, // wide key
                  type_pair<std::int16_t, std::int64_t>, // wide value
                  type_pair<std::int32_t, // custom value type -> vsmem
-                           c2h::custom_type_t<c2h::equal_comparable_t>>>;
+                           c2h::custom_type_t<c2h::equal_comparable_t, c2h::huge_data<16>::type>>>;
 
 CUB_TEST("DeviceSetOps pairs across key and value types", "[set_ops][device]", CUB_SMALL, pair_types)
 {
