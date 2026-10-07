@@ -189,8 +189,15 @@ struct ReduceByKeyAgent
   static constexpr bool has_identity_zero = []() constexpr {
     if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
     {
-      // not `== 0`, which is ambiguous for __half and __nv_bfloat16
-      return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+      if constexpr (::cuda::std::is_arithmetic_v<value_type>)
+      {
+        return ::cuda::identity_element<ReductionOp, value_type>() == 0;
+      }
+      else
+      {
+        // not `== 0`, which is ambiguous for __half and __nv_bfloat16
+        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+      }
     }
     else
     {
@@ -225,7 +232,7 @@ struct ReduceByKeyAgent
       if constexpr (has_identity_zero)
       {
         size_value_pair_t identity;
-        identity.value = 0;
+        identity.value = value_type{};
         identity.key   = 0;
         BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
       }
