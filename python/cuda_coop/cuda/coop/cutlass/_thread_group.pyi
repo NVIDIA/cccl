@@ -295,17 +295,6 @@ class ThreadGroup(
     def is_member(self) -> Uint8:
         """Return a CuTe ``Uint8`` membership flag."""
 
-ReductionGroup: TypeAlias = ThreadGroup[
-    Literal[
-        "thread",
-        "warp",
-        "threads_within_warp",
-        "warps_within_block",
-        "block",
-        "cluster",
-    ]
-]
-
 BlockGroup: TypeAlias = ThreadGroup[Literal["block"]]
 
 WarpGroup: TypeAlias = ThreadGroup[Literal["warp", "threads_within_warp"]]

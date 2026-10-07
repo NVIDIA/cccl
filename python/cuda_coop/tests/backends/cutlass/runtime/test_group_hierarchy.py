@@ -24,9 +24,11 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import DumpDir, KeepCUBIN
 
 from cuda import coop
+from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 from tests.backends.cutlass.support import (
     NUMPY_DTYPES,
+    check_cuda,
     cutlass_dtype,
     device_array,
 )
@@ -251,6 +253,65 @@ def test_nonpower_mapping(api):
         )
     )
     np.testing.assert_array_equal(observed.reshape(4, 64), expected)
+
+
+@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
+def test_cluster_queries_and_sync(api):
+    """Synchronize real clusters and compare their hierarchy coordinates.
+
+    Two two-block clusters distinguish thread ranks within a cluster, blocks
+    within a cluster, and clusters within the grid. Both barrier forms run
+    before every participating thread records its coordinates.
+    """
+
+    cutlass.cuda.initialize_cuda_context()
+    device = check_cuda(driver.cuCtxGetDevice())
+    supported = check_cuda(
+        driver.cuDeviceGetAttribute(
+            driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_CLUSTER_LAUNCH, device
+        )
+    )
+    if not supported:
+        pytest.skip("device does not support thread-block cluster launch")
+    threads = 128
+    fields = 6
+
+    @cute.kernel
+    def kernel(observed: cute.Pointer):
+        x, y, _ = cute.arch.thread_idx()
+        index = cute.arch.block_idx()[0] * 32 + x + 8 * y
+        outputs = cute.make_tensor(observed, cute.make_layout(fields * threads))
+        cluster = api.this_cluster()
+        cluster.sync()
+        cluster.sync_aligned()
+        outputs[index] = cluster.rank()
+        outputs[threads + index] = cluster.count()
+        outputs[2 * threads + index] = api.this_block().rank("cluster")
+        outputs[3 * threads + index] = cluster.rank("grid")
+        outputs[4 * threads + index] = api.this_grid().count("cluster")
+        outputs[5 * threads + index] = api.this_grid().count("block")
+
+    @cute.jit
+    def launch(observed: cute.Pointer):
+        kernel(observed).launch(
+            grid=(4, 1, 1), block=(8, 4, 1), cluster=(2, 1, 1)
+        )
+
+    observed = np.zeros(fields * threads, dtype=np.int64)
+    with device_array(observed) as out:
+        launch(out)
+    indices = np.arange(threads)
+    expected = np.stack(
+        (
+            indices % 64,
+            np.full(threads, 64),
+            (indices // 32) % 2,
+            indices // 64,
+            np.full(threads, 2),
+            np.full(threads, 4),
+        )
+    )
+    np.testing.assert_array_equal(observed.reshape(fields, threads), expected)
 
 
 def test_mapped_query_cubin(tmp_path):

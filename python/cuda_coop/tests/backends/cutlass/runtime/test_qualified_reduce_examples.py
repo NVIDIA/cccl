@@ -33,11 +33,11 @@ def test_reduce_example(items_per_thread):
         values = coop.ThreadData(items_per_thread)
         coop.load(block, source, values)
         total = coop.sum(block, values)
-        maximum = coop.reduce(block, values, binary_op="max", broadcast=False)
-        total_output = cute.make_tensor(totals, cute.make_layout(64))
+        maximum = coop.reduce(block, values, binary_op="max")
+        total_output = cute.make_tensor(totals, cute.make_layout(1))
         maximum_output = cute.make_tensor(maxima, cute.make_layout(1))
-        total_output[block.rank()] = total
         if block.rank() == 0:
+            total_output[0] = total
             maximum_output[0] = maximum
 
     @cute.jit
@@ -53,7 +53,7 @@ def test_reduce_example(items_per_thread):
 
     # qualified-reduce-example-end
     values = np.arange(64 * items_per_thread, dtype=np.int32) - 50
-    totals = np.zeros(64, dtype=np.int32)
+    totals = np.zeros(1, dtype=np.int32)
     maxima = np.zeros(1, dtype=np.int32)
     with (
         device_array(values) as src,

@@ -5,9 +5,8 @@
 """Check Reduce values, result ownership, input preservation, and reuse.
 
 Host folds use the input dtype to match the collective's scalar arithmetic.
-Broadcast and root-only cases write only results that their contract makes
-valid. Separate tests exercise cluster launch, repeated prefix reductions,
-device range-check traps, and call elimination in the final linked kernel.
+Only group roots consume results. Tests cover repeated prefixes, range-check
+traps, and call elimination in the final linked kernel.
 """
 
 import importlib.util
@@ -30,7 +29,6 @@ from cuda.bindings import driver
 from cuda.coop import cutlass as cutlass_coop
 from tests.backends.cutlass.support import (
     NUMPY_DTYPES,
-    check_cuda,
     cutlass_dtype,
     device_array,
     values_for,
@@ -43,25 +41,19 @@ _APIS = (coop, cutlass_coop)
 _BLOCK = (8, 4, 4)
 _THREADS = 128
 _WIDTHS = {
-    "thread": 1,
     "warp": 32,
     "logical": 8,
     "block": _THREADS,
-    "mapped": 64,
 }
 _OPS = ("sum", "multiplies", "min", "max", "bit_and", "bit_or", "bit_xor")
 _ALGORITHMS = ("raking_commutative_only", "raking", "warp_reductions")
 
 
 def _group(api, kind):
-    if kind == "thread":
-        return api.this_thread()
     if kind == "warp":
         return api.this_warp()
     if kind == "logical":
         return api.this_warp().group_by(8)
-    if kind == "mapped":
-        return api.this_block().group_by(2)
     return api.this_block()
 
 
@@ -92,8 +84,8 @@ def _fold(values, operation):
 def test_sum_types(api, dtype, items_per_thread):
     """Check result type and input preservation for scalar and payload sums.
 
-    Every member records the broadcast result. A second output records the
-    original scalar or payload after reduction, so a correct sum cannot hide
+    The block root records the result. A second output records the original
+    scalar or payload after reduction, so a correct sum cannot hide
     mutation of the caller's input.
     """
 
@@ -114,7 +106,7 @@ def test_sum_types(api, dtype, items_per_thread):
             cute.make_tensor(source, cute.make_layout(size)), value_type
         )
         outputs = cute.recast_tensor(
-            cute.make_tensor(observed, cute.make_layout(_THREADS)), value_type
+            cute.make_tensor(observed, cute.make_layout(1)), value_type
         )
         checks = cute.recast_tensor(
             cute.make_tensor(preserved, cute.make_layout(size)), value_type
@@ -131,7 +123,8 @@ def test_sum_types(api, dtype, items_per_thread):
             for item in cutlass.range_constexpr(items_per_thread):
                 checks[thread * items_per_thread + item] = payload[item]
         assert isinstance(result, value_type)
-        outputs[thread] = result
+        if thread == 0:
+            outputs[0] = result
 
     @cute.jit
     def launch(
@@ -148,7 +141,7 @@ def test_sum_types(api, dtype, items_per_thread):
     if np.dtype(dtype).kind != "u":
         base -= 1
     source = base.astype(dtype)
-    observed = np.zeros(_THREADS, dtype=dtype)
+    observed = np.zeros(1, dtype=dtype)
     preserved = np.zeros_like(source)
     with (
         device_array(source) as src,
@@ -165,17 +158,15 @@ def test_sum_types(api, dtype, items_per_thread):
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("kind", tuple(_WIDTHS))
 @pytest.mark.parametrize("operation", _OPS)
-@pytest.mark.parametrize("broadcast", (False, True), ids=("root", "members"))
-def test_group_builtins(api, kind, operation, broadcast):
+def test_group_builtins(api, kind, operation):
     """Observe built-in reductions only where their results are defined.
 
-    Broadcast mode writes every group member's result. Root-only mode writes
-    one result per group and leaves other output sentinels intact. Products
-    use only 1 and -1, so the group product cannot overflow Int32.
+    Each group root writes one result and leaves other output sentinels
+    intact. Products use only 1 and -1, so they cannot overflow Int32.
     """
 
     width = _WIDTHS[kind]
-    items_per_thread = 2
+    items_per_thread = 2 if kind == "block" else 1
 
     @cute.kernel
     def kernel(
@@ -189,13 +180,14 @@ def test_group_builtins(api, kind, operation, broadcast):
             source, cute.make_layout(_THREADS * items_per_thread)
         )
         outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
-        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
-        for item in cutlass.range_constexpr(items_per_thread):
-            payload[item] = inputs[thread * items_per_thread + item]
-        result = api.reduce(
-            _group(api, kind), payload, binary_op=operation, broadcast=broadcast
-        )
-        if broadcast or thread % width == 0:
+        if cutlass.const_expr(kind == "block"):
+            value = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+            for item in cutlass.range_constexpr(items_per_thread):
+                value[item] = inputs[thread * items_per_thread + item]
+        else:
+            value = inputs[thread]
+        result = api.reduce(_group(api, kind), value, binary_op=operation)
+        if thread % width == 0:
             outputs[thread] = result
 
     @cute.jit
@@ -219,7 +211,7 @@ def test_group_builtins(api, kind, operation, broadcast):
             ],
             operation,
         )
-        expected[start : start + width if broadcast else start + 1] = result
+        expected[start] = result
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out, items_per_thread)
     np.testing.assert_array_equal(observed, expected)
@@ -249,15 +241,19 @@ def test_unsigned_result(api, dtype):
             cute.make_tensor(source, cute.make_layout(_THREADS)), value_type
         )
         outputs = cute.recast_tensor(
-            cute.make_tensor(observed, cute.make_layout(_THREADS)), value_type
+            cute.make_tensor(observed, cute.make_layout(1)), value_type
         )
         first = api.reduce(api.this_warp(), inputs[thread], binary_op="max")
         assert isinstance(first, value_type)
-        second = api.reduce(api.this_block(), first, binary_op="max")
+        contribution = value_type(0)
+        if thread % 32 == 0:
+            contribution = first
+        second = api.reduce(api.this_block(), contribution, binary_op="max")
         assert isinstance(second, value_type)
-        payload = api.ThreadData(items_per_thread, dtype=value_type)
-        payload[0] = second
-        outputs[thread] = payload[0]
+        if thread == 0:
+            payload = api.ThreadData(items_per_thread, dtype=value_type)
+            payload[0] = second
+            outputs[0] = payload[0]
 
     @cute.jit
     def launch(
@@ -268,10 +264,10 @@ def test_unsigned_result(api, dtype):
         kernel(source, observed, items_per_thread).launch(grid=1, block=_BLOCK)
 
     source = values_for(dtype, _THREADS, shift=17)
-    observed = np.zeros_like(source)
+    observed = np.zeros(1, dtype=dtype)
     with device_array(source) as src, device_array(observed) as out:
         launch(src, out, 1)
-    np.testing.assert_array_equal(observed, np.full_like(source, source.max()))
+    assert observed[0] == source.max()
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
@@ -304,7 +300,6 @@ def test_prefix(api, kind, runtime, prefix):
                 _group(api, kind),
                 inputs[thread],
                 binary_op="max",
-                broadcast=False,
                 valid_items=count,
             )
         else:
@@ -312,7 +307,6 @@ def test_prefix(api, kind, runtime, prefix):
                 _group(api, kind),
                 inputs[thread],
                 binary_op="max",
-                broadcast=False,
                 valid_items=prefix,
             )
         if thread % width == 0:
@@ -368,9 +362,7 @@ def test_block_algorithm(api, algorithm, items_per_thread):
                 value[item] = inputs[thread * items_per_thread + item]
         else:
             value = inputs[thread]
-        result = api.sum(
-            api.this_block(), value, broadcast=False, algorithm=algorithm
-        )
+        result = api.sum(api.this_block(), value, algorithm=algorithm)
         if thread == 0:
             outputs[0] = result
         if cutlass.const_expr(items_per_thread):
@@ -404,141 +396,6 @@ def test_block_algorithm(api, algorithm, items_per_thread):
 
 
 @pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-def test_nonmembers(api):
-    """Let excluded threads continue after a mapped-group reduction.
-
-    Three of the block's four warps belong to the mapped group. Only members
-    consume the reduction result, while every thread writes a later value.
-    This checks that excluding the final warp does not end its kernel work.
-    """
-
-    @cute.kernel
-    def kernel(
-        source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer
-    ):
-        thread = cute.arch.thread_idx()[0]
-        inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
-        outputs = cute.make_tensor(observed, cute.make_layout(_THREADS))
-        checks = cute.make_tensor(continued, cute.make_layout(_THREADS))
-        group = api.this_block().group_by(3, exhaustive=False)
-        result = api.sum(group, inputs[thread])
-        if thread < 96:
-            outputs[thread] = result
-        checks[thread] = inputs[thread] + 1
-
-    @cute.jit
-    def launch(
-        source: cute.Pointer, observed: cute.Pointer, continued: cute.Pointer
-    ):
-        kernel(source, observed, continued).launch(grid=1, block=_THREADS)
-
-    source = values_for(np.int32, _THREADS, shift=37)
-    observed = np.full_like(source, -101)
-    continued = np.zeros_like(source)
-    expected = observed.copy()
-    expected[:96] = source[:96].sum(dtype=np.int32)
-    with (
-        device_array(source) as src,
-        device_array(observed) as out,
-        device_array(continued) as check,
-    ):
-        launch(src, out, check)
-    np.testing.assert_array_equal(observed, expected)
-    np.testing.assert_array_equal(continued, source + 1)
-
-
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
-def test_cluster(api):
-    """Reduce across real two-block clusters and check their hierarchy fields.
-
-    The device capability check gates an actual cluster launch. Two clusters
-    produce independent sums and maxima. Their rank and count fields must also
-    distinguish blocks within a cluster from clusters within the grid.
-    """
-
-    cutlass.cuda.initialize_cuda_context()
-    device = check_cuda(driver.cuCtxGetDevice())
-    supported = check_cuda(
-        driver.cuDeviceGetAttribute(
-            driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_CLUSTER_LAUNCH, device
-        )
-    )
-    if not supported:
-        pytest.skip("device does not support thread-block cluster launch")
-    block_threads = 32
-    cluster_threads = 64
-    total_threads = 128
-    fields = 8
-
-    @cute.kernel
-    def kernel(
-        source: cute.Pointer,
-        observed: cute.Pointer,
-        items_per_thread: cutlass.Constexpr,
-    ):
-        x, y, _ = cute.arch.thread_idx()
-        block_index = cute.arch.block_idx()[0]
-        thread = x + 8 * y
-        index = block_index * block_threads + thread
-        inputs = cute.make_tensor(source, cute.make_layout(total_threads))
-        outputs = cute.make_tensor(
-            observed, cute.make_layout(fields * total_threads)
-        )
-        cluster = api.this_cluster()
-        cluster.sync()
-        cluster.sync_aligned()
-        outputs[index] = api.sum(cluster, inputs[index])
-        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
-        payload[0] = inputs[index]
-        payload[1] = inputs[index] + 3
-        outputs[total_threads + index] = api.reduce(
-            cluster, payload, binary_op="max"
-        )
-        outputs[2 * total_threads + index] = cluster.rank()
-        outputs[3 * total_threads + index] = cluster.count()
-        outputs[4 * total_threads + index] = api.this_block().rank("cluster")
-        outputs[5 * total_threads + index] = cluster.rank("grid")
-        outputs[6 * total_threads + index] = api.this_grid().count("cluster")
-        outputs[7 * total_threads + index] = api.this_grid().count("block")
-
-    @cute.jit
-    def launch(
-        source: cute.Pointer,
-        observed: cute.Pointer,
-        items_per_thread: cutlass.Constexpr,
-    ):
-        kernel(source, observed, items_per_thread).launch(
-            grid=(4, 1, 1), block=(8, 4, 1), cluster=(2, 1, 1)
-        )
-
-    source = values_for(np.int32, total_threads, shift=71)
-    observed = np.zeros(fields * total_threads, dtype=np.int64)
-    with device_array(source) as src, device_array(observed) as out:
-        launch(src, out, 2)
-    indices = np.arange(total_threads)
-    expected = np.stack(
-        (
-            np.repeat(
-                source.reshape(-1, cluster_threads).sum(axis=1), cluster_threads
-            ),
-            np.repeat(
-                source.reshape(-1, cluster_threads).max(axis=1) + 3,
-                cluster_threads,
-            ),
-            indices % cluster_threads,
-            np.full(total_threads, cluster_threads),
-            (indices // block_threads) % 2,
-            indices // cluster_threads,
-            np.full(total_threads, 2),
-            np.full(total_threads, 4),
-        )
-    )
-    np.testing.assert_array_equal(
-        observed.reshape(fields, total_threads), expected
-    )
-
-
-@pytest.mark.parametrize("api", _APIS, ids=("common", "qualified"))
 @pytest.mark.parametrize("kind", ("block", "warp", "logical"))
 def test_reuse_loop(api, kind):
     """Reuse prefix-reduction scratch across eight runtime iterations.
@@ -566,7 +423,6 @@ def test_reuse_loop(api, kind):
             result = api.sum(
                 _group(api, kind),
                 inputs[thread] + iteration,
-                broadcast=False,
                 valid_items=count,
             )
             if thread % width == 0:
@@ -614,7 +470,9 @@ def test_bad_prefix(tmp_path, kind, value):
     """
 
     path = tmp_path / "invalid_prefix.py"
-    path.write_text(f"""import numpy as np
+    path.write_text(f"""import sys
+sys.path[:] = {sys.path!r}
+import numpy as np
 import cutlass
 from cutlass import cute
 from cuda import coop
@@ -630,7 +488,7 @@ def kernel(source: cute.Pointer, destination: cute.Pointer, count: cutlass.Int64
     inputs = cute.make_tensor(source, cute.make_layout({_THREADS}))
     outputs = cute.make_tensor(destination, cute.make_layout(1))
     group = {"coop.this_block()" if kind == "block" else "coop.this_warp()" if kind == "warp" else "coop.this_warp().group_by(8)"}
-    result = coop.sum(group, inputs[thread], broadcast=False, valid_items=count)
+    result = coop.sum(group, inputs[thread], valid_items=count)
     if thread == 0:
         outputs[0] = result
 
@@ -649,7 +507,7 @@ raise AssertionError("invalid Reduce prefix did not trap")
         filter(None, (str(PACKAGE_ROOT), environment.get("PYTHONPATH")))
     )
     result = subprocess.run(
-        [sys.executable, str(path)],
+        [sys.executable, "-S", str(path)],
         env=environment,
         capture_output=True,
         text=True,
@@ -667,9 +525,9 @@ raise AssertionError("invalid Reduce prefix did not trap")
     ), output
 
 
-@pytest.mark.parametrize("route", ("cudax", "cub"))
-def test_final_cubin(tmp_path, route):
-    """Check that both provider routes inline into the final linked kernel.
+@pytest.mark.parametrize("algorithm", (None, "raking"))
+def test_final_cubin(tmp_path, algorithm):
+    """Check that default and explicit CUB algorithms inline into the kernel.
 
     First verify the root's sum, then reject residual provider symbols or CALL
     instructions in the retained cubin. This test checks call elimination; it
@@ -687,17 +545,9 @@ def test_final_cubin(tmp_path, route):
         thread = cute.arch.thread_idx()[0]
         inputs = cute.make_tensor(source, cute.make_layout(_THREADS))
         outputs = cute.make_tensor(observed, cute.make_layout(1))
-        if cutlass.const_expr(route == "cub"):
-            result = cutlass_coop.sum(
-                cutlass_coop.this_block(),
-                inputs[thread],
-                broadcast=False,
-                algorithm="raking",
-            )
-        else:
-            result = cutlass_coop.sum(
-                cutlass_coop.this_block(), inputs[thread], broadcast=False
-            )
+        result = cutlass_coop.sum(
+            cutlass_coop.this_block(), inputs[thread], algorithm=algorithm
+        )
         if thread == 0:
             outputs[0] = result
 

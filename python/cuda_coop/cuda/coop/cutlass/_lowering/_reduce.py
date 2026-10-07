@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Emit CuTe extern calls for shared CUDAX or CUB reduction plans.
+"""Emit CuTe extern calls for CUB reduction plans.
 
 Requests bind generated definitions to plan identities and extern signatures.
-Full-group built-ins use CUDAX. A valid prefix or explicit block algorithm
-uses CUB, whose result is defined only at group rank zero. Finalization
-compiles the queued C++ definitions into a device LTO-IR bundle.
+Results are defined only at group rank zero. Finalization compiles the
+queued C++ definitions and resolves their shared-memory layouts before
+materializing the deferred scratch operands.
 """
 
 from __future__ import annotations
@@ -16,15 +16,13 @@ import dataclasses
 import hashlib
 from typing import Any
 
-from cutlass.base_dsl.typing import Int32
+from cutlass.base_dsl.typing import Int32, Uint32
 from cutlass.cute.ffi import ffi
 
 from cuda.coop._core import (
     Algorithm,
     ArgumentBinding,
     BindingKind,
-    CudaxCallDescription,
-    CudaxReturnKind,
     CxxOperator,
     Dependency,
     GroupLoweringPlan,
@@ -33,12 +31,11 @@ from cuda.coop._core import (
     LaunchFacts,
     ReduceOperation,
     ReduceValueKind,
+    StorageOwnership,
     SynchronizationScope,
     make_group_primitive_call,
     make_reduce_semantics,
     plan_group_primitive,
-    render_group_decl_lines,
-    render_hierarchy_decl,
 )
 from cuda.coop._core.block import BlockReduceAlgorithm
 from cuda.coop._core.thread_group import ThreadGroup
@@ -58,7 +55,6 @@ _provider_state = _state
 _provider_types = _types
 
 _ROOT_SCOPE = "cuda.coop.cutlass"
-_GRID_REDUCE_UNAVAILABLE = f"{_ROOT_SCOPE}.reduce does not support grid groups"
 _REDUCE_OPERATOR_CPP = OPERATOR_CPP
 
 
@@ -70,9 +66,9 @@ def _make_group_reduce_plan(
     value_kind: ReduceValueKind,
     items_per_thread: int,
     op: str,
-    broadcast: bool,
     valid_items: ArgumentBinding | None = None,
     algorithm: Any = None,
+    temp_storage: Any = None,
 ) -> GroupLoweringPlan:
     """Build shared reduction semantics and select a lowering route.
 
@@ -110,8 +106,24 @@ def _make_group_reduce_plan(
         group,
         GroupReduceSemantics(
             primitive=primitive,
-            broadcast=broadcast,
             cub_algorithm=algorithm,
+            storage_ownership=(
+                StorageOwnership.IMPLEMENTATION
+                if temp_storage is None
+                else StorageOwnership.CALLER
+            ),
+            storage_sharing=None
+            if temp_storage is None
+            else temp_storage.sharing,
+            storage_size_in_bytes=None
+            if temp_storage is None
+            else temp_storage.size_in_bytes,
+            storage_alignment=None
+            if temp_storage is None
+            else temp_storage.alignment,
+            storage_auto_sync=True
+            if temp_storage is None
+            else temp_storage.auto_sync,
         ),
     )
     return plan_group_primitive(call, launch)
@@ -176,117 +188,12 @@ def _validate_reduce_request_plan(
     return operation
 
 
-@dataclasses.dataclass(frozen=True, eq=False)
-class _CudaxReduceRequest:
-    """Describe one CUDAX reduction and its result contract.
-
-    The plan artifact key controls deduplication. Before rendering, check that
-    the dtype, operator, and CUDAX overload match the plan. With broadcast,
-    every member gets the value. Without broadcast, CUDAX returns an optional
-    value that only rank zero holds.
-    """
-
-    plan: GroupLoweringPlan
-    op: str
-    value_type: type
-    kind: str = "cudax_reduce"
-
-    def __post_init__(self) -> None:
-        """Require a non-grid CUDAX plan with the expected result mode."""
-
-        self.plan.require_supported()
-        if self.plan.target is not GroupLoweringTarget.CUDAX_GROUP:
-            raise ValueError("cudax reduce request requires a CUDAX_GROUP plan")
-        if self.plan.resolved_group.kind == "grid":
-            raise NotImplementedError(_GRID_REDUCE_UNAVAILABLE)
-        if not isinstance(self.plan.implementation, CudaxCallDescription):
-            raise TypeError(
-                "cudax reduce request requires a CUDAX call description"
-            )
-        operation = _validate_reduce_request_plan(
-            self.plan,
-            op=self.op,
-            value_type=self.value_type,
-        )
-        expected_overload = (
-            "broadcasted" if operation.broadcast else "root_only"
-        )
-        expected_return = (
-            CudaxReturnKind.VALUE
-            if operation.broadcast
-            else CudaxReturnKind.OPTIONAL_VALUE
-        )
-        if (
-            self.plan.implementation.overload != expected_overload
-            or self.plan.implementation.return_kind is not expected_return
-        ):
-            raise ValueError(
-                "cudax reduce request result mode does not match its plan"
-            )
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        assert self.plan.artifact_key is not None
-        return self.plan.artifact_key
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, _CudaxReduceRequest):
-            return NotImplemented
-        return self.semantic_key == other.semantic_key
-
-    def __hash__(self) -> int:
-        return hash(self.semantic_key)
-
-    @property
-    def group(self) -> ThreadGroup:
-        return self.plan.resolved_group
-
-    @property
-    def items_per_thread(self) -> int:
-        return self.plan.call.operation.items_per_thread
-
-    @property
-    def broadcast(self) -> bool:
-        return self.plan.call.operation.broadcast
-
-    @property
-    def _arity_suffix(self) -> str:
-        if (
-            self.plan.call.operation.primitive.value_kind
-            is ReduceValueKind.ARRAY
-        ):
-            return f"_x{self.items_per_thread}"
-        return ""
-
-    @property
-    def _block_suffix(self) -> str:
-        return self.group.symbol_suffix
-
-    @property
-    def _result_mode_suffix(self) -> str:
-        return "" if self.broadcast else "_root"
-
-    @property
-    def symbol_name(self) -> str:
-        """Combine readable call details with a short artifact-key hash."""
-
-        signature = hashlib.sha256(
-            repr(self.semantic_key).encode("utf-8", errors="backslashreplace")
-        ).hexdigest()[:12]
-        return (
-            "cuda_coop_cutlass_cudax_reduce_"
-            f"{self._block_suffix}_{self.op}_"
-            f"{TYPE_SPECIFICATIONS[self.value_type].token}{self._arity_suffix}"
-            f"{self._result_mode_suffix}_{signature}"
-        )
-
-
 def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
     """Render a barrier before wrapper-owned scratch is reused, or no line.
 
     CUB plans get a block barrier or a warp barrier. The warp mask covers only
-    the logical group's lanes. NONE means the wrapper owns no scratch, which
-    is always true for CUDAX plans, so no barrier is added.
+    the logical group's lanes. NONE means the caller selected manual
+    synchronization for explicit block scratch.
     """
 
     synchronization = plan.synchronization
@@ -295,19 +202,7 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
     if synchronization.storage_reuse_barrier is SynchronizationScope.BLOCK:
         return "  __syncthreads();"
     if synchronization.storage_reuse_barrier is SynchronizationScope.WARP:
-        if plan.target is GroupLoweringTarget.CUB_WARP:
-            _, logical_width = _warp_instances(plan)
-        else:
-            group = plan.resolved_group
-            logical_width = 32 if group.kind == "warp" else group.static_size
-            if group.kind not in {
-                "warp",
-                "threads_within_warp",
-            } or not isinstance(
-                logical_width,
-                int,
-            ):
-                raise ValueError("Reduce plan requires a static warp group")
+        _, logical_width = _warp_instances(plan)
         mask = "0xffffffffu"
         if logical_width < 32:
             mask = (
@@ -316,121 +211,9 @@ def _storage_reuse_barrier_line(plan: GroupLoweringPlan) -> str:
                 f"{logical_width}u * {logical_width}u)"
             )
         return f"  __syncwarp({mask});"
-    if synchronization.storage_reuse_barrier is SynchronizationScope.GROUP:
-        return "  group.sync_aligned();"
     if synchronization.storage_reuse_barrier is SynchronizationScope.NONE:
         return ""
     raise ValueError("Reduce plan requires a storage reuse barrier")
-
-
-def _render_group_prelude(group: ThreadGroup) -> list[str]:
-    """Construct the planned group and its explicit or implicit hierarchy.
-
-    Mapped groups use the shared-core declaration helper. A mapped group of
-    warps also declares ``__shared__`` barrier storage. A lane group inside
-    one warp uses a lane synchronizer instead. This setup runs before the
-    wrapper filters out threads that are not members.
-    """
-
-    if group.hierarchy.implicit:
-        assert group.mapping is None
-        hierarchy = "::cuda::experimental::implicit_hierarchy()"
-        return [
-            (
-                f"  ::cuda::experimental::coop::this_{group.kind} "
-                f"group{{{hierarchy}}};"
-            )
-        ]
-    return [
-        *render_hierarchy_decl(group.hierarchy),
-        *render_group_decl_lines(group),
-    ]
-
-
-def _render_cudax_reduce(request: _CudaxReduceRequest) -> list[str]:
-    """Render scalar arguments and the selected CUDAX result form.
-
-    Collect item arguments into a local array. Construct mapped groups before
-    excluded threads return so parent participation requirements remain
-    intact. Root-only optional results are unwrapped with a placeholder value
-    elsewhere; that placeholder does not make non-root results valid.
-    """
-
-    if request.items_per_thread <= 0:
-        raise ValueError("cudax reduce items_per_thread must be positive")
-    implementation = request.plan.implementation
-    assert isinstance(implementation, CudaxCallDescription)
-    runtime_parameters = tuple(
-        parameter.name
-        for parameter in implementation.parameters
-        if parameter.kind.value == "runtime"
-    )
-    expected_parameters = tuple(
-        f"item{index}" for index in range(request.items_per_thread)
-    )
-    if runtime_parameters != expected_parameters:
-        raise ValueError(
-            "cudax reduce runtime ABI does not match the shared lowering plan"
-        )
-
-    type_specification = TYPE_SPECIFICATIONS[request.value_type]
-    params = [
-        f"{type_specification.cpp_type} item{idx}"
-        for idx in range(request.items_per_thread)
-    ]
-    values = ", ".join(f"item{idx}" for idx in range(request.items_per_thread))
-    lines = [
-        (
-            f"{type_specification.cpp_type} "
-            f"{request.symbol_name}({', '.join(params)}) {{"
-        ),
-        *_render_group_prelude(request.group),
-        *(
-            [
-                "  if (!::cuda::gpu_thread.is_part_of(group)) {",
-                f"    return {type_specification.cpp_type}{{}};",
-                "  }",
-            ]
-            if request.group.mapping is not None
-            and request.group.complete_membership is False
-            else []
-        ),
-        (
-            f"  {type_specification.cpp_type} "
-            f"thread_data[{request.items_per_thread}] "
-            f"= {{{values}}};"
-        ),
-    ]
-    barrier_line = _storage_reuse_barrier_line(request.plan)
-    if request.broadcast:
-        lines.extend(
-            [
-                "  auto reduced = ::cuda::experimental::coop::reduce(",
-                "      ::cuda::experimental::broadcasted, group, thread_data,",
-                f"      {operator_expression(request.op)});",
-                f"  {type_specification.cpp_type} result = reduced;",
-                *([barrier_line] if barrier_line else []),
-                "  return result;",
-            ]
-        )
-    else:
-        lines.extend(
-            [
-                "  auto reduced = ::cuda::experimental::coop::reduce(",
-                (
-                    "      group, thread_data, "
-                    f"{operator_expression(request.op)});"
-                ),
-                (
-                    f"  {type_specification.cpp_type} result = "
-                    f"reduced.value_or({type_specification.cpp_type}{{}});"
-                ),
-                *([barrier_line] if barrier_line else []),
-                "  return result;",
-            ]
-        )
-    lines.append("}")
-    return lines
 
 
 _BLOCK_ALGORITHM_TOKENS = {
@@ -520,6 +303,34 @@ class _CubReduceRequest:
         return _BLOCK_ALGORITHM_TOKENS[algorithm]
 
     @property
+    def group_instances(self) -> int:
+        return (
+            _warp_instances(self.plan)[0]
+            if self.plan.target is GroupLoweringTarget.CUB_WARP
+            else 1
+        )
+
+    @property
+    def cpp_type(self) -> str:
+        implementation = self.plan.implementation
+        assert isinstance(implementation, Algorithm)
+        arguments = ", ".join(
+            _render_cub_template_argument(self, name, value)
+            for name, value in implementation.ordered_template_arguments
+        )
+        return f"::cub::{implementation.struct_name}<{arguments}>"
+
+    @property
+    def scratch_requirement_key(self) -> tuple[Any, ...]:
+        implementation = self.plan.implementation
+        assert isinstance(implementation, Algorithm)
+        return (
+            "cub_reduce_layout",
+            implementation.semantic_key,
+            self.group_instances,
+        )
+
+    @property
     def symbol_name(self) -> str:
         """Name the CUB call and include a short artifact-key hash."""
 
@@ -586,13 +397,13 @@ def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
 
 
 def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
-    """Render a CUB call with owned scratch and root-only results.
+    """Render a CUB call with deferred scratch and root-only results.
 
     Item scalars come before an optional runtime count in the extern ABI. If
     a runtime count is outside 1 through the group size, the wrapper traps;
-    the planner already checked static counts. Allocate one scratch object
-    per block or logical warp, and emit the planned barrier before that
-    scratch can be reused.
+    the planner already checked static counts. Select one scratch object per
+    block or logical warp from the deferred region, and emit the planned
+    barrier before that scratch can be reused.
     """
 
     implementation = request.plan.implementation
@@ -611,6 +422,9 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
             for index in range(request.items_per_thread)
         ),
         *(["int valid_items"] if runtime_valid_items else []),
+        "unsigned int temp_storage_smem_addr",
+        "int temp_storage_bytes",
+        "int temp_storage_auto_sync",
     ]
     input_name = "item0"
     input_lines: list[str] = []
@@ -633,25 +447,39 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
     elif request.operation.valid_items.kind is BindingKind.STATIC:
         call_arguments.append(str(request.operation.valid_items.value))
 
-    storage = "storage"
     storage_lines = [
-        "  __shared__ typename implementation_type::TempStorage storage;"
+        "  using storage_type = typename implementation_type::TempStorage;",
+        (
+            f"  if (temp_storage_bytes < {request.group_instances}u "
+            "* sizeof(storage_type) ||"
+        ),
+        "      (temp_storage_smem_addr & (alignof(storage_type) - 1)) != 0) {",
+        '    asm volatile("trap;");',
+        "  }",
+        "  unsigned long long generic_addr;",
+        (
+            '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
+            '"l"(static_cast<unsigned long long>(temp_storage_smem_addr)));'
+        ),
     ]
+    instance = "0"
     if request.plan.target is GroupLoweringTarget.CUB_WARP:
-        instances, logical_width = _warp_instances(request.plan)
-        storage_lines = [
-            (
-                "  __shared__ typename implementation_type::TempStorage "
-                f"storage[{instances}];"
-            ),
-            "  unsigned int storage_instance =",
-            (
-                "      (threadIdx.x + blockDim.x * "
-                "(threadIdx.y + blockDim.y * threadIdx.z)) / "
-                f"{logical_width}u;"
-            ),
-        ]
-        storage = "storage[storage_instance]"
+        _, logical_width = _warp_instances(request.plan)
+        storage_lines.extend(
+            [
+                "  unsigned int storage_instance =",
+                (
+                    "      (threadIdx.x + blockDim.x * "
+                    "(threadIdx.y + blockDim.y * threadIdx.z)) / "
+                    f"{logical_width}u;"
+                ),
+            ]
+        )
+        instance = "storage_instance"
+    storage_lines.append(
+        "  auto& storage = reinterpret_cast<storage_type*>(generic_addr)"
+        f"[{instance}];"
+    )
 
     barrier_line = _storage_reuse_barrier_line(request.plan)
 
@@ -681,56 +509,55 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         *input_lines,
         (
             f"  {type_specification.cpp_type} result "
-            f"= implementation_type({storage})."
+            f"= implementation_type(storage)."
             f"{implementation.method_name}({', '.join(call_arguments)});"
         ),
-        barrier_line,
+        *(
+            [f"  if (temp_storage_auto_sync != 0) {{ {barrier_line.strip()} }}"]
+            if barrier_line
+            else []
+        ),
         "  return result;",
         "}",
     ]
 
 
-def _register_renderer() -> None:
-    """Register both reduction routes and their header prerequisites.
+def _scratch_layout_probe(request: _CubReduceRequest):
+    """Resolve CUB size and alignment for every independent group instance."""
 
-    CUDAX feature macros must precede includes in the generated bundle. The
-    CUB route contributes only its own required headers.
-    """
-
-    _provider_rendering.register_bundle_renderer(
-        "cudax_reduce",
-        render=_render_cudax_reduce,
-        include_lines=(
-            "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX",
-            "#define _CUDAX_DISABLE_CG_INTEROP",
-            "#include <cuda/barrier>",
-            "#include <cuda/devices>",
-            "#include <cuda/functional>",
-            "#include <cuda/hierarchy>",
-            "#include <cuda/experimental/hierarchy.cuh>",
-            "#include <cuda/std/functional>",
-            "#include <cuda/std/type_traits>",
-            "#include <cuda/experimental/coop/algorithm>",
-            "#include <cuda/experimental/coop/group>",
-        ),
-        cccl_headers=(
-            (
-                "#include <cuda/experimental/hierarchy.cuh>",
-                "cuda/experimental/hierarchy.cuh",
-            ),
-            (
-                "#include <cuda/experimental/coop/algorithm>",
-                "cuda/experimental/coop/algorithm",
-            ),
-            (
-                "#include <cuda/experimental/coop/group>",
-                "cuda/experimental/coop/group",
-            ),
-        ),
+    return _provider_rendering.make_scratch_layout_probe(
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage[{request.group_instances}]",
     )
+
+
+def _scratch_arguments(request: _CubReduceRequest, temp_storage):
+    """Record this call's scratch use and return deferred ABI operands."""
+
+    from .._compiler._storage import register_deferred_temp_storage_event
+    from .._temp_storage import TempStorage
+
+    if temp_storage is None:
+        temp_storage = TempStorage(auto_sync=True)
+    elif not isinstance(temp_storage, TempStorage):
+        raise TypeError(
+            "cuda.coop.cutlass Reduce scratch must be CUTLASS TempStorage"
+        )
+    arguments = register_deferred_temp_storage_event(
+        temp_storage,
+        primitive_name="reduce",
+        requirement_key=request.scratch_requirement_key,
+    )
+    return (Uint32, Int32, Int32), arguments
+
+
+def _register_renderer() -> None:
+    """Register CUB reductions and their deferred scratch layouts."""
+
     _provider_rendering.register_bundle_renderer(
         "cub_group_reduce",
         render=_render_cub_reduce,
+        scratch_layout_probe=_scratch_layout_probe,
         include_lines=(
             "#include <cuda/functional>",
             "#include <cuda/std/functional>",
@@ -762,10 +589,10 @@ def provider_reduce(
     launch: LaunchFacts,
     value: Any,
     op: str = "sum",
-    broadcast: bool = True,
     valid_items: Any = None,
     valid_items_binding: ArgumentBinding | None = None,
     algorithm: Any = None,
+    temp_storage: Any = None,
 ) -> Any:
     """Plan a reduction and emit its typed CuTe extern call.
 
@@ -777,8 +604,6 @@ def provider_reduce(
 
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_ROOT_SCOPE}.reduce group must be a ThreadGroup")
-    if not isinstance(broadcast, bool):
-        raise TypeError(f"{_ROOT_SCOPE}.reduce broadcast must be a bool")
     if not isinstance(launch, LaunchFacts):
         raise TypeError("group reduce provider requires exact launch facts")
     if valid_items_binding is None:
@@ -805,31 +630,11 @@ def provider_reduce(
             value_kind=value_kind,
             items_per_thread=len(values),
             op=op,
-            broadcast=broadcast,
             valid_items=valid_items_binding,
             algorithm=algorithm,
+            temp_storage=temp_storage,
         ).require_supported()
-        if plan.target is GroupLoweringTarget.CUDAX_GROUP:
-            request: _CudaxReduceRequest | _CubReduceRequest = (
-                _CudaxReduceRequest(
-                    plan=plan,
-                    op=op,
-                    value_type=value_type,
-                )
-            )
-        elif plan.target in {
-            GroupLoweringTarget.CUB_BLOCK,
-            GroupLoweringTarget.CUB_WARP,
-        }:
-            request = _CubReduceRequest(
-                plan=plan,
-                op=op,
-                value_type=value_type,
-            )
-        else:
-            raise AssertionError(
-                "supported group Reduce plan has no provider target"
-            )
+        request = _CubReduceRequest(plan=plan, op=op, value_type=value_type)
 
         runtime_valid_items = valid_items_binding.kind is BindingKind.RUNTIME
         runtime_valid_args = (
@@ -854,14 +659,18 @@ def provider_reduce(
         snapshot = _provider_state.snapshot_active_session_state()
         try:
             _provider_state.register_request(request)
+            scratch_types, scratch_args = _scratch_arguments(
+                request, temp_storage
+            )
             result = ffi(
                 name=request.symbol_name,
                 params_types=[
                     *([value_type] * len(values)),
                     *([Int32] if runtime_valid_items else []),
+                    *scratch_types,
                 ],
                 return_type=value_type,
-            )(*typed_values, *runtime_valid_args)
+            )(*typed_values, *runtime_valid_args, *scratch_args)
             return value_type(result)
         except BaseException:
             _provider_state.restore_active_session_state(snapshot)
@@ -897,6 +706,5 @@ def provider_reduce(
 
 __all__ = [
     "_CubReduceRequest",
-    "_CudaxReduceRequest",
     "provider_reduce",
 ]

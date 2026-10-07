@@ -19,13 +19,13 @@ from cuda.coop._typing import (
     CommonThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
+    TempStorageLike,
     ValidItems,
 )
 
-from .._core.api.thread_group import BlockGroup, ReductionGroup, WarpGroup
+from .._core.api.thread_group import BlockGroup, WarpGroup
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
-_ScalarValueT = TypeVar("_ScalarValueT", bound=CommonNumericScalar)
 
 _NumpyReduceUfuncName: TypeAlias = Literal[
     "add",
@@ -56,150 +56,75 @@ _BuiltinReduceOperator: TypeAlias = (
 
 @overload
 def reduce(
-    group: ReductionGroup,
+    group: BlockGroup,
     value: CommonThreadDataLike[_ItemT],
     /,
     *,
     binary_op: _BuiltinReduceOperator | None = None,
-    broadcast: bool = True,
     valid_items: None = None,
-    algorithm: None = None,
-) -> _ItemT:
-    """Reduce a full-group payload and return one item of its element type."""
-
-@overload
-def reduce(
-    group: ReductionGroup,
-    value: _ScalarValueT,
-    /,
-    *,
-    binary_op: _BuiltinReduceOperator | None = None,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
-) -> _ScalarValueT:
-    """Reduce full-group scalar values while preserving their static type."""
-
-@overload
-def reduce(
-    group: BlockGroup,
-    value: _ScalarValueT,
-    /,
-    *,
-    binary_op: _BuiltinReduceOperator | None = None,
-    broadcast: Literal[False],
-    valid_items: ValidItems,
     algorithm: ReduceAlgorithm | None = None,
-) -> _ScalarValueT:
-    """Reduce a valid scalar prefix through direct CUB BlockReduce."""
-
-@overload
-def reduce(
-    group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
-    /,
-    *,
-    binary_op: _BuiltinReduceOperator | None = None,
-    broadcast: Literal[False],
-    valid_items: None = None,
-    algorithm: ReduceAlgorithm,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
-    """Reduce an array payload with an explicit CUB BlockReduce algorithm."""
+    """Return a reduced scalar defined only at group rank zero."""
 
 @overload
 def reduce(
     group: BlockGroup,
-    value: _ScalarValueT,
+    value: _ItemT,
     /,
     *,
     binary_op: _BuiltinReduceOperator | None = None,
-    broadcast: Literal[False],
-    valid_items: None = None,
-    algorithm: ReduceAlgorithm,
-) -> _ScalarValueT:
-    """Reduce a scalar with an explicit CUB BlockReduce algorithm."""
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> _ItemT:
+    """Return a reduced scalar defined only at group rank zero."""
 
 @overload
 def reduce(
     group: WarpGroup,
-    value: _ScalarValueT,
+    value: _ItemT,
     /,
     *,
     binary_op: _BuiltinReduceOperator | None = None,
-    broadcast: Literal[False],
-    valid_items: ValidItems,
+    valid_items: ValidItems | None = None,
     algorithm: None = None,
-) -> _ScalarValueT:
-    """Reduce a valid scalar prefix through direct CUB WarpReduce."""
-
-@overload
-def sum(
-    group: ReductionGroup,
-    value: CommonThreadDataLike[_ItemT],
-    /,
-    *,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
+    temp_storage: None = None,
 ) -> _ItemT:
-    """Sum a full-group payload and return one item of its element type."""
-
-@overload
-def sum(
-    group: ReductionGroup,
-    value: _ScalarValueT,
-    /,
-    *,
-    broadcast: bool = True,
-    valid_items: None = None,
-    algorithm: None = None,
-) -> _ScalarValueT:
-    """Sum full-group scalar values while preserving their static type."""
+    """Return a reduced scalar defined only at group rank zero."""
 
 @overload
 def sum(
     group: BlockGroup,
-    value: _ScalarValueT,
+    value: CommonThreadDataLike[_ItemT],
     /,
     *,
-    broadcast: Literal[False],
-    valid_items: ValidItems,
+    valid_items: None = None,
     algorithm: ReduceAlgorithm | None = None,
-) -> _ScalarValueT:
-    """Sum a valid scalar prefix through direct CUB BlockReduce."""
-
-@overload
-def sum(
-    group: BlockGroup,
-    value: CommonThreadDataLike[_ItemT],
-    /,
-    *,
-    broadcast: Literal[False],
-    valid_items: None = None,
-    algorithm: ReduceAlgorithm,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
-    """Sum an array payload with an explicit CUB BlockReduce algorithm."""
+    """Return a reduced scalar defined only at group rank zero."""
 
 @overload
 def sum(
     group: BlockGroup,
-    value: _ScalarValueT,
+    value: _ItemT,
     /,
     *,
-    broadcast: Literal[False],
-    valid_items: None = None,
-    algorithm: ReduceAlgorithm,
-) -> _ScalarValueT:
-    """Sum a scalar with an explicit CUB BlockReduce algorithm."""
+    valid_items: ValidItems | None = None,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> _ItemT:
+    """Return a reduced scalar defined only at group rank zero."""
 
 @overload
 def sum(
     group: WarpGroup,
-    value: _ScalarValueT,
+    value: _ItemT,
     /,
     *,
-    broadcast: Literal[False],
-    valid_items: ValidItems,
+    valid_items: ValidItems | None = None,
     algorithm: None = None,
-) -> _ScalarValueT:
-    """Sum a valid scalar prefix through direct CUB WarpReduce."""
+    temp_storage: None = None,
+) -> _ItemT:
+    """Return a reduced scalar defined only at group rank zero."""

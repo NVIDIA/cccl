@@ -4,8 +4,8 @@
 
 """Combine group queries, Load, Reduce, and Store in one compiled kernel.
 
-Transpose Load and Store share explicit scratch. A full payload reduction
-uses CUDAX, while a scalar prefix reduction selects CUB. The checks expose
+Transpose Load, Store, and full/prefix CUB reductions share explicit scratch.
+The checks expose
 missing provider registration or interference between operations that
 share one compilation. The final Store also checks that both reductions
 leave the original payload unchanged.
@@ -32,8 +32,8 @@ pytestmark = [pytest.mark.backend_cutlass, pytest.mark.runtime, pytest.mark.gpu]
 def test_mixed_primitives(api, items_per_thread):
     """Check both reductions and the later Store from the same loaded payload.
 
-    Every member records the full reduction. Only the block root records the
-    prefix result, using the first item from each of the first 45 threads.
+    The block root records both results. The prefix result uses the first
+    item from each of the first 45 threads.
     The final copy verifies that the intervening reductions preserve payloads.
     """
 
@@ -46,16 +46,19 @@ def test_mixed_primitives(api, items_per_thread):
     ):
         group = api.this_block()
         thread = group.rank()
-        outputs = cute.make_tensor(observed, cute.make_layout(65))
+        outputs = cute.make_tensor(observed, cute.make_layout(2))
         payload = api.ThreadData(items_per_thread)
         storage = api.TempStorage(sharing="shared", auto_sync=True)
         api.load(
             group, source, payload, algorithm="transpose", temp_storage=storage
         )
-        outputs[thread] = api.sum(group, payload)
-        prefix = api.sum(group, payload[0], broadcast=False, valid_items=45)
+        total = api.sum(group, payload, temp_storage=storage)
+        prefix = api.sum(
+            group, payload[0], valid_items=45, temp_storage=storage
+        )
         if thread == 0:
-            outputs[64] = prefix
+            outputs[0] = total
+            outputs[1] = prefix
         api.store(
             group, copied, payload, algorithm="transpose", temp_storage=storage
         )
@@ -73,7 +76,7 @@ def test_mixed_primitives(api, items_per_thread):
 
     source = values_for(np.int32, 64 * items_per_thread, shift=83)
     copied = np.zeros_like(source)
-    observed = np.zeros(65, dtype=np.int32)
+    observed = np.zeros(2, dtype=np.int32)
     with (
         device_array(source) as src,
         device_array(copied) as dst,
@@ -81,9 +84,7 @@ def test_mixed_primitives(api, items_per_thread):
     ):
         launch(src, dst, out, items_per_thread)
     np.testing.assert_array_equal(copied, source)
-    np.testing.assert_array_equal(
-        observed[:64], np.full(64, source.sum(dtype=np.int32))
-    )
-    assert observed[64] == source[
+    assert observed[0] == source.sum(dtype=np.int32)
+    assert observed[1] == source[
         : 45 * items_per_thread : items_per_thread
     ].sum(dtype=np.int32)

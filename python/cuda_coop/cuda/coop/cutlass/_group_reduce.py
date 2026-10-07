@@ -8,8 +8,8 @@ This module implements ``cuda.coop.cutlass.reduce`` and ``sum``. It also
 serves ``cuda.coop.reduce`` and ``sum`` when CUTLASS is the active compiler.
 Qualified calls convert register tensors and TensorSSA values to ThreadData
 automatically. Common API calls accept only scalars or ThreadData. The shared
-planner selects CUDAX for full-group built-in reductions. It selects CUB when
-the call has ``valid_items`` or an explicit block algorithm.
+planner selects CUB block or warp reductions and records root-only results
+and the scratch allocation policy.
 """
 
 from __future__ import annotations
@@ -26,10 +26,12 @@ from cuda.coop._typing import (
     CommonThreadDataLike,
     ReduceAlgorithm,
     ReduceOperator,
+    TempStorageLike,
     ValidItems,
 )
 
-from .._core.api.thread_group import BlockGroup, ReductionGroup, WarpGroup
+from .._core.api._payload import _validate_common_temp_storage
+from .._core.api.thread_group import BlockGroup, WarpGroup
 from ._compiler._launch import current_kernel_launch_facts
 from ._group_load_store import _is_boolean
 from ._thread_data import (
@@ -91,7 +93,7 @@ def _normalize_algorithm(algorithm):
 
 
 def reduce(
-    group: ReductionGroup | BlockGroup | WarpGroup,
+    group: BlockGroup | WarpGroup,
     value: CommonThreadDataLike[_ItemT]
     | _ItemT
     | CutlassTensorSample
@@ -101,9 +103,9 @@ def reduce(
     binary_op: ReduceOperator
     | Callable[[object, object], object]
     | None = None,
-    broadcast: bool = True,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
     """Reduce scalars or per-thread register payloads with a built-in operator.
 
@@ -129,18 +131,16 @@ def reduce(
     Returns
     -------
     CuTe numeric scalar
-        Reduced value with the input dtype, defined at every member when
-        ``broadcast=True`` and only at group rank zero otherwise. A NumPy
-        dtype selector still produces a CuTe scalar inside the kernel.
+        Reduced value with the input dtype, defined only at group rank zero.
+        A NumPy dtype selector still produces a CuTe scalar inside the kernel.
 
     Notes
     -----
-    Full-group built-in reductions use CUDAX. A ``valid_items`` prefix or an
-    explicit block ``algorithm`` selects CUB and requires ``broadcast=False``.
-    A prefix counts contributing members, requires scalar input, and does not
-    reduce the required participation. For a mapped group of warps, every
-    parent block thread must reach the call, including threads excluded by
-    a non-exhaustive mapping.
+    Every reduction uses CUB. Blocks accept scalars or per-thread payloads;
+    warps accept one scalar per lane. A ``valid_items`` prefix counts
+    contributing members, requires scalar input, and does not reduce required
+    participation. Block reductions accept ``temp_storage`` with the same
+    sharing, capacity, alignment, and synchronization policies as Load/Store.
 
     See Also
     --------
@@ -149,12 +149,12 @@ def reduce(
     cuda.coop.cutlass.sum
         Sum with the same operand and result behavior.
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
-        C++ primitives used for valid prefixes and explicit block algorithms.
+        C++ primitives used for block and warp reductions.
 
     Examples
     --------
-    Compute a broadcast sum and a root-only maximum over the same tile.
-    Only the root reads the result when ``broadcast=False``.
+    Compute a sum and a maximum over the same tile. Only the block root
+    reads either result.
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
@@ -171,8 +171,18 @@ def reduce(
 
     if not isinstance(group, ThreadGroup):
         raise TypeError(f"{_SCOPE}.reduce group must be a ThreadGroup")
-    if not isinstance(broadcast, bool):
-        raise TypeError(f"{_SCOPE}.reduce broadcast must be a bool")
+    if group.kind not in {"block", "warp", "threads_within_warp"}:
+        raise NotImplementedError(
+            f"{_SCOPE}.reduce requires a block, physical warp, "
+            "or logical warp group"
+        )
+    if temp_storage is not None:
+        if group.kind != "block":
+            raise NotImplementedError(
+                f"{_SCOPE}.reduce explicit TempStorage is supported only "
+                "for block groups"
+            )
+        _validate_common_temp_storage("reduce", temp_storage)
     op = normalize_operator(binary_op)
     algorithm = _normalize_algorithm(algorithm)
     valid_binding = _classify_valid_items(valid_items)
@@ -194,7 +204,7 @@ def reduce(
         launch=launch,
         value=value,
         op=op,
-        broadcast=broadcast,
+        temp_storage=temp_storage,
         valid_items=valid_items,
         valid_items_binding=valid_binding,
         algorithm=algorithm,
@@ -202,16 +212,16 @@ def reduce(
 
 
 def sum(
-    group: ReductionGroup | BlockGroup | WarpGroup,
+    group: BlockGroup | WarpGroup,
     value: CommonThreadDataLike[_ItemT]
     | _ItemT
     | CutlassTensorSample
     | CutlassTensorSSASample,
     /,
     *,
-    broadcast: bool = True,
     valid_items: ValidItems | None = None,
     algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
 ) -> _ItemT:
     """Sum scalars or per-thread register payloads with CUTLASS.
 
@@ -224,20 +234,18 @@ def sum(
     Returns
     -------
     CuTe numeric scalar
-        Sum with the input dtype, defined at every member when
-        ``broadcast=True`` and only at group rank zero otherwise.
+        Sum with the input dtype, defined only at group rank zero.
 
     See Also
     --------
     cuda.coop.cutlass.reduce
         Built-in operators, register payloads, and result ownership.
     :cpp:struct:`cub::BlockReduce`, :cpp:struct:`cub::WarpReduce`
-        C++ primitives used for valid prefixes and explicit block algorithms.
-        Full-group built-in reductions use CUDAX.
+        C++ primitives used for block and warp reductions.
 
     Examples
     --------
-    Broadcast a tile sum to every thread, alongside a root-only maximum.
+    Write a tile sum and maximum from the block root.
 
     The launcher accepts device pointers and a compile-time
     ``items_per_thread`` value.
@@ -252,7 +260,7 @@ def sum(
     return reduce(
         group,
         value,
-        broadcast=broadcast,
+        temp_storage=temp_storage,
         valid_items=valid_items,
         algorithm=algorithm,
     )

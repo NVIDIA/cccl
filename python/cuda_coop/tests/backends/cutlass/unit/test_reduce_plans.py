@@ -4,14 +4,11 @@
 
 """Check Reduce provider selection, result ownership, and failure recovery.
 
-Plans choose CUDAX group operations for ordinary reductions and CUB for
-prefix or explicit block-algorithm requests. Their visibility rules tell
-callers which members may consume the result. Rendered guards and session
-rollback are checked here without a GPU launch.
+Plans choose CUB block or warp reductions with root-only results and planned
+scratch. Rendered guards and session rollback are checked without a GPU launch.
 """
 
 import operator
-from dataclasses import replace
 
 import pytest
 
@@ -60,7 +57,6 @@ def _plan(group=None, **options):
         "value_kind": "scalar",
         "items_per_thread": 1,
         "op": "sum",
-        "broadcast": True,
     }
     kwargs.update(options)
     return _reduce._make_group_reduce_plan(**kwargs).require_supported()
@@ -68,49 +64,23 @@ def _plan(group=None, **options):
 
 @pytest.mark.parametrize(
     "group",
-    (
-        this_thread(),
-        this_warp(),
-        this_warp().group_by(8),
-        this_block(),
-        this_block().group_by(1),
-        this_cluster(),
-    ),
-    ids=("thread", "warp", "logical", "block", "mapped", "cluster"),
+    (this_warp(), this_warp().group_by(8), this_block()),
+    ids=("warp", "logical", "block"),
 )
 @pytest.mark.parametrize(
     "op", ("sum", "multiplies", "min", "max", "bit_and", "bit_or", "bit_xor")
 )
-@pytest.mark.parametrize("broadcast", (True, False))
-def test_cudax_route_and_visibility(group, op, broadcast):
-    """Keep the requested visibility on the CUDAX group route.
-
-    These plans have no caller scratch operand or separate storage-reuse
-    barrier. That does not imply that the CUDAX implementation uses no shared
-    memory internally. Broadcast results belong to every member; root-only
-    results belong to the group root.
-    """
-
-    plan = _plan(
-        group,
-        op=op,
-        broadcast=broadcast,
-        value_kind="array",
-        items_per_thread=3,
-    )
-    request = _reduce._CudaxReduceRequest(plan, op, cutlass.Int32)
-    assert plan.target is GroupLoweringTarget.CUDAX_GROUP
-    assert plan.temp_storage.ownership is StorageOwnership.NONE
-    assert (
-        plan.synchronization.storage_reuse_barrier is SynchronizationScope.NONE
-    )
+def test_full_reduce_uses_cub_and_root_owned_results(group, op):
+    plan = _plan(group, op=op)
+    _reduce._CubReduceRequest(plan, op, cutlass.Int32)
     expected = (
-        ResultVisibility.ALL_MEMBERS
-        if broadcast
-        else ResultVisibility.GROUP_ROOT
+        GroupLoweringTarget.CUB_BLOCK
+        if group.kind == "block"
+        else GroupLoweringTarget.CUB_WARP
     )
-    assert plan.result.visibility is expected
-    assert request.items_per_thread == 3
+    assert plan.target is expected
+    assert plan.temp_storage.ownership is StorageOwnership.IMPLEMENTATION
+    assert plan.result.visibility is ResultVisibility.GROUP_ROOT
 
 
 @pytest.mark.parametrize(
@@ -119,7 +89,6 @@ def test_cudax_route_and_visibility(group, op, broadcast):
 def test_block_algorithm_selects_cub(algorithm):
     plan = _plan(
         algorithm=algorithm,
-        broadcast=False,
         value_kind="array",
         items_per_thread=2,
     )
@@ -137,7 +106,6 @@ def test_partial_warp_plan(width):
     plan = _plan(
         this_warp().group_by(width),
         valid_items=ArgumentBinding.runtime(),
-        broadcast=False,
     )
     assert plan.target is GroupLoweringTarget.CUB_WARP
     assert _reduce._warp_instances(plan) == (64 // width, width)
@@ -154,7 +122,7 @@ def test_builtin_dtype_profile(dtype):
     else:
         with pytest.raises(TypeError, match="integer dtype"):
             validate_operator_dtype("bit_xor", dtype)
-    _reduce._CudaxReduceRequest(_plan(dtype=dtype), "sum", dtype)
+    _reduce._CubReduceRequest(_plan(dtype=dtype), "sum", dtype)
 
 
 @pytest.mark.parametrize(
@@ -198,39 +166,32 @@ def test_callback_rejected():
 @pytest.mark.parametrize("valid", (0, -1, 65))
 def test_static_prefix_range(valid):
     with pytest.raises(ValueError, match="valid_items"):
-        _plan(valid_items=ArgumentBinding.static(valid), broadcast=False)
+        _plan(valid_items=ArgumentBinding.static(valid))
 
 
 def test_request_rejects_mismatched_plan():
     """Reject a provider request that disagrees with its resolved plan.
 
-    The request and plan must agree on scalar type, operator, and result mode.
+    The request and plan must agree on scalar type and operator.
     The test changes each field separately and expects rejection before the
     provider renders source or starts compilation.
     """
 
     plan = _plan()
     with pytest.raises(ValueError, match="dtype"):
-        _reduce._CudaxReduceRequest(plan, "sum", cutlass.Uint32)
+        _reduce._CubReduceRequest(plan, "sum", cutlass.Uint32)
     with pytest.raises(ValueError, match="operator"):
-        _reduce._CudaxReduceRequest(plan, "max", cutlass.Int32)
-    with pytest.raises(ValueError, match="result mode"):
-        _reduce._CudaxReduceRequest(
-            replace(
-                plan,
-                implementation=replace(
-                    plan.implementation, overload="root_only"
-                ),
-            ),
-            "sum",
-            cutlass.Int32,
-        )
+        _reduce._CubReduceRequest(plan, "max", cutlass.Int32)
 
 
-def test_grid_reduction_rejected():
-    with pytest.raises(NotImplementedError, match="workspace"):
+@pytest.mark.parametrize(
+    "group",
+    (this_thread(), this_block().group_by(2), this_cluster(), this_grid()),
+)
+def test_unsupported_reduction_group_rejected(group):
+    with pytest.raises(NotImplementedError, match="Reduce supports"):
         _plan(
-            this_grid(),
+            group,
             launch=LaunchFacts(
                 exact_block_dim=(64, 1, 1),
                 exact_grid_dim=(2, 1, 1),
@@ -247,7 +208,7 @@ def test_runtime_count_guard():
     must precede the collective so invalid values never enter its overload.
     """
 
-    plan = _plan(valid_items=ArgumentBinding.runtime(), broadcast=False)
+    plan = _plan(valid_items=ArgumentBinding.runtime())
     request = _reduce._CubReduceRequest(plan, "sum", cutlass.Int32)
     source = _rendering.render_bundle_source([request])
     assert 'asm volatile("trap;"' in source
@@ -274,6 +235,13 @@ def test_failed_ffi_restores_session(monkeypatch):
     def fail_ffi(**kwargs):
         raise RuntimeError("reduction FFI failed")
 
+    from cuda.coop.cutlass._compiler import _storage
+
+    monkeypatch.setattr(
+        _storage,
+        "register_deferred_temp_storage_event",
+        lambda *args, **kwargs: (0, 128, 1),
+    )
     monkeypatch.setattr(_reduce, "ffi", fail_ffi)
     with pytest.raises(RuntimeError, match="reduction FFI failed"):
         _reduce.provider_reduce(
