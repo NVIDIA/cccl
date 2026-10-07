@@ -33,6 +33,7 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
+
 //! @brief Issue a warp-collective addition across the multicast source resources.
 //! @note Completion contributes __bytes transactions to @p __barrier.
 //! @pre All 32 warp lanes execute this call with identical arguments; no lane has exited.
@@ -43,7 +44,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_pull_reduce_add(
+_CCCL_DEVICE_API void try_pull_reduce_add(
   ::cuda::multicast_logical_endpoint_ref __src,
   ::cuda::std::uint64_t __offset,
   _Tp* __shared,
@@ -73,7 +74,7 @@ _CCCL_DEVICE_API inline void try_pull_reduce_add(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_pull_reduce_min(
+_CCCL_DEVICE_API void try_pull_reduce_min(
   ::cuda::multicast_logical_endpoint_ref __src,
   ::cuda::std::uint64_t __offset,
   _Tp* __shared,
@@ -103,7 +104,7 @@ _CCCL_DEVICE_API inline void try_pull_reduce_min(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_pull_reduce_max(
+_CCCL_DEVICE_API void try_pull_reduce_max(
   ::cuda::multicast_logical_endpoint_ref __src,
   ::cuda::std::uint64_t __offset,
   _Tp* __shared,

@@ -34,6 +34,7 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
+
 //! @brief Issue a put from shared memory to the destination endpoint.
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
 //! @param[in] __dst Ready, bound destination endpoint.
@@ -42,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 try_put(::cuda::unicast_logical_endpoint_ref __dst,
         ::cuda::std::uint64_t __offset,
         const _Tp* __shared,
@@ -71,7 +72,7 @@ try_put(::cuda::unicast_logical_endpoint_ref __dst,
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_put_counted(
+_CCCL_DEVICE_API void try_put_counted(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -101,7 +102,7 @@ _CCCL_DEVICE_API inline void try_put_counted(
 //! @param[in] __mask Bit mask selecting the bytes written within each 16-byte chunk.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_put_masked(
+_CCCL_DEVICE_API void try_put_masked(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -131,7 +132,7 @@ _CCCL_DEVICE_API inline void try_put_masked(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 try_put(::cuda::multicast_logical_endpoint_ref __dst,
         ::cuda::std::uint64_t __offset,
         const _Tp* __shared,
@@ -161,7 +162,7 @@ try_put(::cuda::multicast_logical_endpoint_ref __dst,
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_put_counted(
+_CCCL_DEVICE_API void try_put_counted(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -192,7 +193,7 @@ _CCCL_DEVICE_API inline void try_put_counted(
 //! @param[in] __mask Bit mask selecting the bytes written within each 16-byte chunk.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_put_masked(
+_CCCL_DEVICE_API void try_put_masked(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,

@@ -23,9 +23,10 @@
 
 #if _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__memory/address_space.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/limits>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -36,16 +37,23 @@
 //! Local operands and the barrier must reside in CTA shared memory, and endpoints must remain
 //! ready and bound until completion. Inputs must remain unchanged until read consumption or
 //! completion; outputs must not be used until completion. Requests must complete before grid exit.
+//! @see https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#fabric-instructions
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
+
+inline constexpr ::cuda::std::size_t __fabric_block_size = 16;
+
 template <class _Tp>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 __check_transfer(::cuda::std::uint64_t __offset, const _Tp* __shared, ::cuda::std::size_t __bytes) noexcept
 {
-  _CCCL_ASSERT(__bytes != 0 && __bytes % 16 == 0, "fabric transfer size must be a nonzero multiple of 16");
+  _CCCL_ASSERT(__bytes != 0 && __bytes % __fabric_block_size == 0,
+               "fabric transfer size must be a nonzero multiple of 16");
   _CCCL_ASSERT(__bytes <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max(), "fabric size exceeds PTX operand");
-  _CCCL_ASSERT(__offset % 16 == 0 && reinterpret_cast<::cuda::std::uintptr_t>(__shared) % 16 == 0,
-               "fabric transfer operands must be 16B aligned");
-  _CCCL_ASSERT(::__isShared(__shared), "fabric local operand must be CTA shared memory");
+  _CCCL_ASSERT(__offset % __fabric_block_size == 0, "fabric endpoint offset must be 16B aligned");
+  _CCCL_ASSERT(reinterpret_cast<::cuda::std::uintptr_t>(__shared) % __fabric_block_size == 0,
+               "fabric shared-memory operand must be 16B aligned");
+  _CCCL_ASSERT(::cuda::device::is_address_from(__shared, ::cuda::device::address_space::shared),
+               "fabric local operand must be CTA shared memory");
 }
 _CCCL_END_NAMESPACE_CUDA_FABRIC
 

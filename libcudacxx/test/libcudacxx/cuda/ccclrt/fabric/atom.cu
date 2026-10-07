@@ -38,22 +38,33 @@ constexpr int desired_value                      = 60;
 
 struct alignas(16) wide_value
 {
-  uint64_t low;
-  uint64_t high;
+  cuda::std::uint64_t low;
+  cuda::std::uint64_t high;
+
+  // Block load/store must obtain the real address even when operator& is overloaded.
+  TEST_FUNC wide_value* operator&()
+  {
+    return nullptr;
+  }
+
+  TEST_FUNC const wide_value* operator&() const
+  {
+    return nullptr;
+  }
 
   TEST_FUNC friend bool operator==(wide_value lhs, wide_value rhs)
   {
     return lhs.low == rhs.low && lhs.high == rhs.high;
   }
 };
-static_assert(sizeof(cuda::fabric::atomic_block<uint32_t>) == 16);
-static_assert(sizeof(cuda::fabric::atomic_block<uint64_t>) == 16);
+static_assert(sizeof(cuda::fabric::atomic_block<cuda::std::uint32_t>) == 16);
+static_assert(sizeof(cuda::fabric::atomic_block<cuda::std::uint64_t>) == 16);
 static_assert(sizeof(cuda::fabric::atomic_block<wide_value>) == 16);
-static_assert(alignof(cuda::fabric::atomic_block<uint32_t>) == 16);
-static_assert(sizeof(cuda::fabric::compare_exchange_block<uint32_t>) == 32);
-static_assert(sizeof(cuda::fabric::compare_exchange_block<uint64_t>) == 32);
-static_assert(offsetof(cuda::fabric::compare_exchange_block<uint32_t>, desired) == 16);
-static_assert(offsetof(cuda::fabric::compare_exchange_block<uint64_t>, desired) == 16);
+static_assert(alignof(cuda::fabric::atomic_block<cuda::std::uint32_t>) == 16);
+static_assert(sizeof(cuda::fabric::compare_exchange_block<cuda::std::uint32_t>) == 32);
+static_assert(sizeof(cuda::fabric::compare_exchange_block<cuda::std::uint64_t>) == 32);
+static_assert(offsetof(cuda::fabric::compare_exchange_block<cuda::std::uint32_t>, desired) == 16);
+static_assert(offsetof(cuda::fabric::compare_exchange_block<cuda::std::uint64_t>, desired) == 16);
 static_assert(offsetof(cuda::fabric::compare_exchange_block<wide_value>, desired) == 16);
 
 template <class T, bool AllSlots = true>
@@ -82,18 +93,18 @@ struct atom_kernel : fabric_case<T>
       __shared__ cuda::fabric::atomic_block<T> old_value;
       __shared__ cuda::fabric::compare_exchange_block<T> cas;
       auto& bar = make_barrier();
-      for (uint64_t slot = 0; slot < (AllSlots ? 16 : 64); slot += (AllSlots ? sizeof(T) : 16))
+      for (cuda::std::uint64_t slot = 0; slot < (AllSlots ? 16 : 64); slot += (AllSlots ? sizeof(T) : 16))
       {
-        const uint64_t offset = data_offset + slot;
-        T start               = T(initial_atomic_value + slot / (AllSlots ? sizeof(T) : 16));
+        const cuda::std::uint64_t offset = data_offset + slot;
+        T start                          = T(initial_atomic_value + slot / (AllSlots ? sizeof(T) : 16));
         operand.store(offset, T{addend});
         cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
         // Add 3: return start and store start + 3.
         cuda::fabric::try_fetch_add(endpoint, offset, &old_value, &operand, bar);
         cuda::fabric::submit();
         wait_success(bar, 1);
-        CCCLRT_CHECK_DEVICE(old_value.load(offset) == start);
-        CCCLRT_CHECK_DEVICE(operand.load(offset) == T{addend});
+        CHECK(old_value.load(offset) == start);
+        CHECK(operand.load(offset) == T{addend});
 
         if constexpr (cuda::std::is_integral_v<T>)
         {
@@ -103,7 +114,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_fetch_min(endpoint, offset, &old_value, &operand, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == start + T{addend});
+          CHECK(old_value.load(offset) == start + T{addend});
 
           operand.store(offset, T{max_operand});
           cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
@@ -111,7 +122,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_fetch_max(endpoint, offset, &old_value, &operand, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{min_operand});
+          CHECK(old_value.load(offset) == T{min_operand});
 
           operand.store(offset, T{and_operand});
           cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
@@ -119,7 +130,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_fetch_and(endpoint, offset, &old_value, &operand, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{max_operand});
+          CHECK(old_value.load(offset) == T{max_operand});
 
           operand.store(offset, T{or_operand});
           cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
@@ -127,7 +138,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_fetch_or(endpoint, offset, &old_value, &operand, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{and_result});
+          CHECK(old_value.load(offset) == T{and_result});
 
           operand.store(offset, T{xor_operand});
           cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
@@ -135,7 +146,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_fetch_xor(endpoint, offset, &old_value, &operand, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{or_result});
+          CHECK(old_value.load(offset) == T{or_result});
 
           operand.store(offset, T{exchange_value});
           cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
@@ -143,7 +154,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_exchange(endpoint, offset, &old_value, &operand, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{xor_result});
+          CHECK(old_value.load(offset) == T{xor_result});
 
           cas.compare.store(offset, T{exchange_value});
           cas.desired.store(offset, T{desired_value});
@@ -152,9 +163,9 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_compare_exchange(endpoint, offset, &old_value, &cas, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{exchange_value});
-          CCCLRT_CHECK_DEVICE(cas.compare.load(offset) == T{exchange_value});
-          CCCLRT_CHECK_DEVICE(cas.desired.load(offset) == T{desired_value});
+          CHECK(old_value.load(offset) == T{exchange_value});
+          CHECK(cas.compare.load(offset) == T{exchange_value});
+          CHECK(cas.desired.load(offset) == T{desired_value});
 
           cas.compare.store(offset, T{mismatching_value});
           cas.desired.store(offset, T{unused_desired});
@@ -163,7 +174,7 @@ struct atom_kernel : fabric_case<T>
           cuda::fabric::try_compare_exchange(endpoint, offset, &old_value, &cas, bar);
           cuda::fabric::submit();
           wait_success(bar, 1);
-          CCCLRT_CHECK_DEVICE(old_value.load(offset) == T{desired_value});
+          CHECK(old_value.load(offset) == T{desired_value});
         }
       }
     })
@@ -173,22 +184,22 @@ struct atom_kernel : fabric_case<T>
 template <class T>
 struct guarded_atomic_block
 {
-  uint64_t before[2];
+  cuda::std::uint64_t before[2];
   cuda::fabric::atomic_block<T> value;
-  uint64_t after[2];
+  cuda::std::uint64_t after[2];
 };
 
-struct multiple_atom_kernel : fabric_case<uint32_t>
+struct multiple_atom_kernel : fabric_case<cuda::std::uint32_t>
 {
-  static constexpr cuda::std::size_t words_per_block = 16 / sizeof(uint32_t);
+  static constexpr cuda::std::size_t words_per_block = 16 / sizeof(cuda::std::uint32_t);
 
-  TEST_DEVICE_FUNC static uint32_t initial_value(cuda::std::size_t i, int = 0)
+  TEST_DEVICE_FUNC static cuda::std::uint32_t initial_value(cuda::std::size_t i, int = 0)
   {
     // Each 16-byte block contains four equal words, starting with 10, 11, 12, and 13.
     return initial_atomic_value + i / words_per_block;
   }
 
-  TEST_DEVICE_FUNC static uint32_t expected_value(cuda::std::size_t i, int = 0)
+  TEST_DEVICE_FUNC static cuda::std::uint32_t expected_value(cuda::std::size_t i, int = 0)
   {
     return initial_value(i) + (i % words_per_block == 0 ? addend : 0);
   }
@@ -197,10 +208,10 @@ struct multiple_atom_kernel : fabric_case<uint32_t>
   TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, {
-      __shared__ cuda::fabric::atomic_block<uint32_t> operands[4];
-      __shared__ guarded_atomic_block<uint32_t> old_values[4];
-      auto& bar                   = make_barrier();
-      constexpr uint64_t sentinel = 0x123456789abcdef0ull;
+      __shared__ cuda::fabric::atomic_block<cuda::std::uint32_t> operands[4];
+      __shared__ guarded_atomic_block<cuda::std::uint32_t> old_values[4];
+      auto& bar                              = make_barrier();
+      constexpr cuda::std::uint64_t sentinel = 0x123456789abcdef0ull;
       for (int i = 0; i < 4; ++i)
       {
         operands[i].store(data_offset + i * 16, addend);
@@ -219,12 +230,12 @@ struct multiple_atom_kernel : fabric_case<uint32_t>
       wait_success(bar, 4);
       for (int i = 0; i < 4; ++i)
       {
-        CCCLRT_CHECK_DEVICE(old_values[i].value.load(data_offset + i * 16) == uint32_t(initial_atomic_value + i));
-        CCCLRT_CHECK_DEVICE(operands[i].load(data_offset + i * 16) == uint32_t(addend));
+        CHECK(old_values[i].value.load(data_offset + i * 16) == cuda::std::uint32_t(initial_atomic_value + i));
+        CHECK(operands[i].load(data_offset + i * 16) == cuda::std::uint32_t(addend));
         for (int guard = 0; guard < 2; ++guard)
         {
-          CCCLRT_CHECK_DEVICE(old_values[i].before[guard] == sentinel);
-          CCCLRT_CHECK_DEVICE(old_values[i].after[guard] == sentinel);
+          CHECK(old_values[i].before[guard] == sentinel);
+          CHECK(old_values[i].after[guard] == sentinel);
         }
       }
     })
@@ -259,6 +270,7 @@ struct wide_atom_kernel : fabric_case<wide_value>
       constexpr auto exchanged      = (wide_value{30, 40});
       constexpr auto mismatching    = (wide_value{50, 99});
       constexpr auto unused_desired = (wide_value{70, 80});
+      const auto desired            = expected_value(0);
       __shared__ cuda::fabric::atomic_block<wide_value> operand;
       __shared__ cuda::fabric::atomic_block<wide_value> old_value;
       __shared__ cuda::fabric::compare_exchange_block<wide_value> cas;
@@ -269,8 +281,8 @@ struct wide_atom_kernel : fabric_case<wide_value>
       cuda::fabric::try_exchange(endpoint, data_offset, &old_value, &operand, bar);
       cuda::fabric::submit();
       wait_success(bar, 1);
-      CCCLRT_CHECK_DEVICE(old_value.load(data_offset) == initial);
-      CCCLRT_CHECK_DEVICE(operand.load(data_offset) == exchanged);
+      CHECK(old_value.load(data_offset) == initial);
+      CHECK(operand.load(data_offset) == exchanged);
 
       cas.compare.store(data_offset, exchanged);
       cas.desired.store(data_offset, desired);
@@ -279,9 +291,9 @@ struct wide_atom_kernel : fabric_case<wide_value>
       cuda::fabric::try_compare_exchange(endpoint, data_offset, &old_value, &cas, bar);
       cuda::fabric::submit();
       wait_success(bar, 1);
-      CCCLRT_CHECK_DEVICE(old_value.load(data_offset) == exchanged);
-      CCCLRT_CHECK_DEVICE(cas.compare.load(data_offset) == exchanged);
-      CCCLRT_CHECK_DEVICE(cas.desired.load(data_offset) == desired);
+      CHECK(old_value.load(data_offset) == exchanged);
+      CHECK(cas.compare.load(data_offset) == exchanged);
+      CHECK(cas.desired.load(data_offset) == desired);
 
       cas.compare.store(data_offset, mismatching);
       cas.desired.store(data_offset, unused_desired);
@@ -290,7 +302,78 @@ struct wide_atom_kernel : fabric_case<wide_value>
       cuda::fabric::try_compare_exchange(endpoint, data_offset, &old_value, &cas, bar);
       cuda::fabric::submit();
       wait_success(bar, 1);
-      CCCLRT_CHECK_DEVICE(old_value.load(data_offset) == desired);
+      CHECK(old_value.load(data_offset) == desired);
+    })
+  }
+};
+
+template <class T>
+TEST_DEVICE_FUNC T make_pair(float low, float high);
+
+#  if _CCCL_HAS_NVFP16()
+template <>
+TEST_DEVICE_FUNC __half2 make_pair(float low, float high)
+{
+  return __floats2half2_rn(low, high);
+}
+#  endif
+
+#  if _CCCL_HAS_NVBF16()
+template <>
+TEST_DEVICE_FUNC __nv_bfloat162 make_pair(float low, float high)
+{
+  return __floats2bfloat162_rn(low, high);
+}
+#  endif
+
+template <class T>
+struct packed_atom_kernel : fabric_case<T>
+{
+  TEST_DEVICE_FUNC static T initial_value(cuda::std::size_t, int = 0)
+  {
+    // Distinct lanes detect accidental scalar handling; untargeted pairs retain this pattern.
+    return make_pair<T>(8, 4);
+  }
+
+  TEST_DEVICE_FUNC static T expected_value(cuda::std::size_t i, int = 0)
+  {
+    return i == 0 ? make_pair<T>(12, 7) : initial_value(i);
+  }
+
+  template <class Config>
+  TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, {
+      __shared__ cuda::fabric::atomic_block<T> operand;
+      __shared__ cuda::fabric::atomic_block<T> old_value;
+      auto& bar = make_barrier();
+
+      operand.store(data_offset, make_pair<T>(2, 3));
+      cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
+      // Lane-wise add: (8, 4) + (2, 3) = (10, 7); return (8, 4).
+      cuda::fabric::try_fetch_add(endpoint, data_offset, &old_value, &operand, bar);
+      cuda::fabric::submit();
+      wait_success(bar, 1);
+      CHECK(old_value.load(data_offset) == make_pair<T>(8, 4));
+      CHECK(operand.load(data_offset) == make_pair<T>(2, 3));
+
+      operand.store(data_offset, make_pair<T>(6, 9));
+      cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
+      // Lane-wise min: min((10, 7), (6, 9)) = (6, 7); return (10, 7).
+      cuda::fabric::try_fetch_min(endpoint, data_offset, &old_value, &operand, bar);
+      cuda::fabric::submit();
+      wait_success(bar, 1);
+      CHECK(old_value.load(data_offset) == make_pair<T>(10, 7));
+      CHECK(operand.load(data_offset) == make_pair<T>(6, 9));
+
+      operand.store(data_offset, make_pair<T>(12, 5));
+      cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
+      // Lane-wise max: max((6, 7), (12, 5)) = (12, 7); return (6, 7).
+      cuda::fabric::try_fetch_max(endpoint, data_offset, &old_value, &operand, bar);
+      cuda::fabric::submit();
+      wait_success(bar, 1);
+      CHECK(old_value.load(data_offset) == make_pair<T>(6, 7));
+      CHECK(operand.load(data_offset) == make_pair<T>(12, 5));
     })
   }
 };
@@ -305,8 +388,8 @@ void test_atom()
 
 C2H_CCCLRT_TEST("direct fabric atom staging blocks at 16-byte-aligned endpoint offsets", "[fabric]")
 {
-  test_atom<uint32_t, false>();
-  test_atom<uint64_t, false>();
+  test_atom<cuda::std::uint32_t, false>();
+  test_atom<cuda::std::uint64_t, false>();
   test_atom<float, false>();
   test_atom<double, false>();
 }
@@ -321,12 +404,26 @@ C2H_CCCLRT_TEST("direct fabric multiple atoms share one barrier phase and preser
 
 C2H_CCCLRT_TEST("direct fabric 128-bit exchange and compare-exchange", "[fabric]")
 {
+  wide_value value{};
+  const auto& const_value = value;
+  CHECK(&value == nullptr);
+  CHECK(&const_value == nullptr);
   run_unicast(wide_atom_kernel{});
+}
+
+C2H_CCCLRT_TEST("direct fabric packed half and bfloat16 atomic operations", "[fabric]")
+{
+#  if _CCCL_HAS_NVFP16()
+  run_unicast(packed_atom_kernel<__half2>{});
+#  endif
+#  if _CCCL_HAS_NVBF16()
+  run_unicast(packed_atom_kernel<__nv_bfloat162>{});
+#  endif
 }
 
 #else
 C2H_TEST("direct fabric atom runtime tests require CUDA 13.4", "[fabric]")
 {
-  SKIP("fabric operations and shared_barrier require CUDA 13.4");
+  SUCCEED("fabric operations and shared_barrier require CUDA 13.4");
 }
 #endif

@@ -34,6 +34,7 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
+
 //! @brief Issue an element-wise addition into the destination endpoint.
 //! @note Completion contributes __bytes / 16 transactions to @p __barrier.
 //! @param[in] __dst Ready, bound destination endpoint.
@@ -42,7 +43,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_add(
+_CCCL_DEVICE_API void try_reduce_add(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -72,7 +73,7 @@ _CCCL_DEVICE_API inline void try_reduce_add(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_counted_add(
+_CCCL_DEVICE_API void try_reduce_counted_add(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -102,7 +103,7 @@ _CCCL_DEVICE_API inline void try_reduce_counted_add(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_min(
+_CCCL_DEVICE_API void try_reduce_min(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -132,7 +133,7 @@ _CCCL_DEVICE_API inline void try_reduce_min(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_counted_min(
+_CCCL_DEVICE_API void try_reduce_counted_min(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -162,7 +163,7 @@ _CCCL_DEVICE_API inline void try_reduce_counted_min(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_max(
+_CCCL_DEVICE_API void try_reduce_max(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -192,7 +193,7 @@ _CCCL_DEVICE_API inline void try_reduce_max(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_counted_max(
+_CCCL_DEVICE_API void try_reduce_counted_max(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -223,7 +224,7 @@ _CCCL_DEVICE_API inline void try_reduce_counted_max(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_add(
+_CCCL_DEVICE_API void try_reduce_add(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -254,7 +255,7 @@ _CCCL_DEVICE_API inline void try_reduce_add(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_counted_add(
+_CCCL_DEVICE_API void try_reduce_counted_add(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -285,7 +286,7 @@ _CCCL_DEVICE_API inline void try_reduce_counted_add(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_min(
+_CCCL_DEVICE_API void try_reduce_min(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -316,7 +317,7 @@ _CCCL_DEVICE_API inline void try_reduce_min(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_counted_min(
+_CCCL_DEVICE_API void try_reduce_counted_min(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
@@ -347,7 +348,7 @@ _CCCL_DEVICE_API inline void try_reduce_counted_min(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_max(
+_CCCL_DEVICE_API void try_reduce_max(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
@@ -378,7 +379,7 @@ _CCCL_DEVICE_API inline void try_reduce_max(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void try_reduce_counted_max(
+_CCCL_DEVICE_API void try_reduce_counted_max(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,

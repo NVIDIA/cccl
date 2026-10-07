@@ -20,13 +20,13 @@ using namespace fabric_test;
 
 // Transfer the first eight words as 3..10; values straddle the initial 8 to exercise both min/max outcomes.
 // Remaining payload words retain their initial values, detecting writes beyond the requested range.
-constexpr cuda::std::size_t transfer_elements = transfer_bytes / sizeof(uint32_t);
-constexpr uint32_t source_base_value          = 3;
-constexpr uint32_t peer_initial_value         = 12;
+constexpr cuda::std::size_t transfer_elements    = transfer_bytes / sizeof(cuda::std::uint32_t);
+constexpr cuda::std::uint32_t source_base_value  = 3;
+constexpr cuda::std::uint32_t peer_initial_value = 12;
 // Both the data and flag requests in the ordering test transfer four words (16 bytes).
 constexpr cuda::std::size_t data_flag_elements = 4;
 // Repeat a byte mask that copies four bytes and skips four: only even-indexed words are updated.
-[[maybe_unused]] constexpr uint16_t alternating_word_mask = 0x0f0f;
+[[maybe_unused]] constexpr cuda::std::uint16_t alternating_word_mask = 0x0f0f;
 
 enum class transfer_kind
 {
@@ -41,11 +41,11 @@ enum class transfer_kind
 };
 
 template <transfer_kind Kind>
-struct transfer_kernel : fabric_case<uint32_t>
+struct transfer_kernel : fabric_case<cuda::std::uint32_t>
 {
   static constexpr bool counted = Kind == transfer_kind::counted_put || Kind == transfer_kind::counted_reduce;
 
-  TEST_DEVICE_FUNC static uint32_t expected_value(cuda::std::size_t i, int = 0)
+  TEST_DEVICE_FUNC static cuda::std::uint32_t expected_value(cuda::std::size_t i, int = 0)
   {
     auto old_value = initial_value(i);
     // Get only reads the endpoint; other requests leave words beyond the transfer unchanged.
@@ -53,7 +53,7 @@ struct transfer_kernel : fabric_case<uint32_t>
     {
       return old_value;
     }
-    uint32_t source_value = source_base_value + i;
+    cuda::std::uint32_t source_value = source_base_value + i;
     if constexpr (Kind == transfer_kind::reduce_add || Kind == transfer_kind::counted_reduce)
     {
       return old_value + source_value;
@@ -81,7 +81,7 @@ struct transfer_kernel : fabric_case<uint32_t>
   TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, {
-      __shared__ alignas(16) uint32_t staging[transfer_elements];
+      __shared__ alignas(16) cuda::std::uint32_t staging[transfer_elements];
       auto& bar = make_barrier();
       for (cuda::std::size_t i = 0; i < transfer_elements; ++i)
       {
@@ -151,29 +151,29 @@ struct transfer_kernel : fabric_case<uint32_t>
       {
         for (auto value : staging)
         {
-          CCCLRT_CHECK_DEVICE(value == initial_payload_value);
+          CHECK(value == initial_payload_value);
         }
       }
     })
   }
 };
 
-struct data_flag_kernel : fabric_case<uint32_t>
+struct data_flag_kernel : fabric_case<cuda::std::uint32_t>
 {
   static constexpr bool signaled = true;
 
-  TEST_DEVICE_FUNC static uint32_t expected_value(cuda::std::size_t i, int = 0)
+  TEST_DEVICE_FUNC static cuda::std::uint32_t expected_value(cuda::std::size_t i, int = 0)
   {
     // Only the first four payload words are written; the flag lives in a separate region.
-    return i < data_flag_elements ? uint32_t(source_base_value + i) : initial_value(i);
+    return i < data_flag_elements ? cuda::std::uint32_t(source_base_value + i) : initial_value(i);
   }
 
   template <class Config>
   TEST_DEVICE_FUNC void operator()(Config, cuda::unicast_logical_endpoint_ref endpoint) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_100, {
-      __shared__ alignas(16) uint32_t data[data_flag_elements];
-      __shared__ alignas(16) uint32_t flag[data_flag_elements];
+      __shared__ alignas(16) cuda::std::uint32_t data[data_flag_elements];
+      __shared__ alignas(16) cuda::std::uint32_t flag[data_flag_elements];
       auto& bar = make_barrier();
       for (cuda::std::size_t i = 0; i < data_flag_elements; ++i)
       {
@@ -216,24 +216,24 @@ enum class multicast_kind
 };
 
 template <multicast_kind Kind>
-struct multicast_kernel : fabric_case<uint32_t>
+struct multicast_kernel : fabric_case<cuda::std::uint32_t>
 {
-  TEST_DEVICE_FUNC static uint32_t initial_value(cuda::std::size_t, int device_index = 0)
+  TEST_DEVICE_FUNC static cuda::std::uint32_t initial_value(cuda::std::size_t, int device_index = 0)
   {
     // Distinct per-device values make pull-add/min/max distinguishable: 20, 8, and 12.
     return device_index == 0 ? initial_payload_value : peer_initial_value;
   }
 
-  TEST_DEVICE_FUNC static uint32_t expected_value(cuda::std::size_t i, int device_index = 0)
+  TEST_DEVICE_FUNC static cuda::std::uint32_t expected_value(cuda::std::size_t i, int device_index = 0)
   {
-    uint32_t old_value = initial_value(i, device_index);
+    cuda::std::uint32_t old_value = initial_value(i, device_index);
     // Pull reductions read both endpoints without changing either one's payload.
     if (i >= transfer_elements || Kind == multicast_kind::pull_add || Kind == multicast_kind::pull_min
         || Kind == multicast_kind::pull_max)
     {
       return old_value;
     }
-    uint32_t source_value = source_base_value + i;
+    cuda::std::uint32_t source_value = source_base_value + i;
     if constexpr (Kind == multicast_kind::add || Kind == multicast_kind::counted_add)
     {
       return old_value + source_value;
@@ -265,7 +265,7 @@ struct multicast_kernel : fabric_case<uint32_t>
         Kind == multicast_kind::pull_add || Kind == multicast_kind::pull_min || Kind == multicast_kind::pull_max;
       static_assert(cuda::gpu_thread.count(cuda::block, config) == 32);
       const auto rank = cuda::gpu_thread.rank(cuda::block, config);
-      __shared__ alignas(16) uint32_t staging[transfer_elements];
+      __shared__ alignas(16) cuda::std::uint32_t staging[transfer_elements];
       auto& bar = make_barrier(rank);
       if (rank < transfer_elements)
       {
@@ -340,13 +340,13 @@ struct multicast_kernel : fabric_case<uint32_t>
         wait_success(bar, pull ? sizeof(staging) : sizeof(staging) / 16);
         if constexpr (pull)
         {
-          constexpr uint32_t expected =
+          constexpr cuda::std::uint32_t expected =
             Kind == multicast_kind::pull_add
               ? initial_payload_value + peer_initial_value
               : (Kind == multicast_kind::pull_min ? initial_payload_value : peer_initial_value);
           for (auto value : staging)
           {
-            CCCLRT_CHECK_DEVICE(value == expected);
+            CHECK(value == expected);
           }
         }
       }
@@ -373,8 +373,8 @@ void test_multicast()
   cuda::stream peer_stream{peer};
   endpoint_storage storage{stream, device, limits};
   endpoint_storage peer_storage{peer_stream, peer, limits};
-  auto payload      = make_payload<uint32_t>(storage);
-  auto peer_payload = make_payload<uint32_t>(peer_storage);
+  auto payload      = make_payload<cuda::std::uint32_t>(storage);
+  auto peer_payload = make_payload<cuda::std::uint32_t>(peer_storage);
   cuda::multicast_logical_endpoint endpoint{spec, storage.bound.size()};
   endpoint.add_device(device);
   endpoint.add_device(peer);
@@ -392,7 +392,7 @@ void test_multicast()
   cuda::launch(stream, warp_config, kernel{}, endpoint);
   stream.sync();
 
-  constexpr uint64_t expected_counter = counted ? transfer_bytes : 0;
+  constexpr cuda::std::uint64_t expected_counter = counted ? transfer_bytes : 0;
   cuda::launch(stream, config, validate_payload<kernel>{expected_counter, false, 0}, payload);
   cuda::launch(peer_stream, config, validate_payload<kernel>{expected_counter, false, 1}, peer_payload);
   stream.sync();
@@ -436,6 +436,6 @@ C2H_CCCLRT_TEST("direct fabric data completion then alias fence then flag", "[fa
 #else
 C2H_TEST("direct fabric transfers runtime tests require CUDA 13.4", "[fabric]")
 {
-  SKIP("fabric operations and shared_barrier require CUDA 13.4");
+  SUCCEED("fabric operations and shared_barrier require CUDA 13.4");
 }
 #endif

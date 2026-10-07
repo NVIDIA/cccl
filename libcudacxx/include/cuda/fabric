@@ -21,13 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fabric/atom.h> // IWYU pragma: export
-#include <cuda/__fabric/atomic_block.h> // IWYU pragma: export
-#include <cuda/__fabric/fence.h> // IWYU pragma: export
-#include <cuda/__fabric/get.h> // IWYU pragma: export
-#include <cuda/__fabric/pull_reduce.h> // IWYU pragma: export
-#include <cuda/__fabric/put.h> // IWYU pragma: export
-#include <cuda/__fabric/reduce.h> // IWYU pragma: export
-#include <cuda/__fabric/submit.h> // IWYU pragma: export
+// IWYU pragma: begin_exports
+#include <cuda/__fabric/atom.h>
+#include <cuda/__fabric/atomic_block.h>
+#include <cuda/__fabric/fence.h>
+#include <cuda/__fabric/get.h>
+#include <cuda/__fabric/pull_reduce.h>
+#include <cuda/__fabric/put.h>
+#include <cuda/__fabric/reduce.h>
+#include <cuda/__fabric/submit.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_FABRIC

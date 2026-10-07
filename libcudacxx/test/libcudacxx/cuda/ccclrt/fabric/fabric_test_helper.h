@@ -34,18 +34,13 @@
 
 namespace fabric_test
 {
-using cuda::std::uint16_t;
-using cuda::std::uint32_t;
-using cuda::std::uint64_t;
-using cuda::std::uint8_t;
-
-constexpr cuda::std::size_t test_region_bytes = 512;
-constexpr uint64_t data_offset                = 32;
-constexpr uint64_t data_bytes                 = 64;
-constexpr uint64_t transfer_bytes             = 32;
-constexpr uint64_t flag_offset                = data_offset + data_bytes;
-constexpr uint64_t counter_offset             = 256;
-constexpr uint32_t initial_payload_value      = 8;
+constexpr cuda::std::size_t test_region_bytes       = 512;
+constexpr cuda::std::uint64_t data_offset           = 32;
+constexpr cuda::std::uint64_t data_bytes            = 64;
+constexpr cuda::std::uint64_t transfer_bytes        = 32;
+constexpr cuda::std::uint64_t flag_offset           = data_offset + data_bytes;
+constexpr cuda::std::uint64_t counter_offset        = 256;
+constexpr cuda::std::uint32_t initial_payload_value = 8;
 
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 // Collective callers must synchronize before using the initialized barrier.
@@ -64,11 +59,11 @@ TEST_DEVICE_FUNC inline void wait_success(cuda::shared_barrier& bar, int count)
 {
   const auto token = bar.arrive_tx(1, count);
   auto status      = bar.try_wait_for(token, cuda::std::chrono::seconds{1}, cuda::return_status);
-  CCCLRT_REQUIRE_DEVICE(status.complete());
+  REQUIRE(status.complete());
   if (status.has_report())
   {
     printf("fabric completion reported %u errors\n", status.get_error_count(cuda::status_source::generic_fabric));
-    CCCLRT_REQUIRE_DEVICE(false);
+    REQUIRE(false);
   }
 }
 
@@ -110,15 +105,15 @@ cuda::logical_endpoint_limits require_fabric_support(const Spec& spec, cuda::dev
 // TODO: Remove endpoint_storage once cuda::buffer is better integrated with logical endpoint binding.
 struct endpoint_storage
 {
-  cuda::device_buffer<uint8_t> allocation;
-  cuda::std::span<uint8_t> bound;
+  cuda::device_buffer<cuda::std::uint8_t> allocation;
+  cuda::std::span<cuda::std::uint8_t> bound;
 
   endpoint_storage(cuda::stream_ref stream,
                    cuda::device_ref device,
                    cuda::logical_endpoint_limits limits,
                    cuda::std::size_t minimum_bytes = logical_endpoint_test::minimum_bytes)
-      : allocation(
-          cuda::make_device_buffer<uint8_t>(stream, device, allocation_size(limits, minimum_bytes), cuda::no_init))
+      : allocation(cuda::make_device_buffer<cuda::std::uint8_t>(
+          stream, device, allocation_size(limits, minimum_bytes), cuda::no_init))
   {
     // Pool allocation is stream ordered; complete it before binding on the host.
     stream.sync();
@@ -126,7 +121,7 @@ struct endpoint_storage
     auto address =
       logical_endpoint_test::align_up(reinterpret_cast<cuda::std::uintptr_t>(allocation.data()), limits.bind_alignment);
     REQUIRE(address + bytes <= reinterpret_cast<cuda::std::uintptr_t>(allocation.data()) + allocation.size());
-    bound = {reinterpret_cast<uint8_t*>(address), bytes};
+    bound = {reinterpret_cast<cuda::std::uint8_t*>(address), bytes};
   }
 
 private:
@@ -142,10 +137,10 @@ private:
 template <class T>
 struct fabric_payload
 {
-  cuda::std::span<uint8_t> bytes;
+  cuda::std::span<cuda::std::uint8_t> bytes;
   cuda::std::span<T> values;
-  cuda::std::span<uint32_t> flag;
-  cuda::std::span<uint64_t> counter;
+  cuda::std::span<cuda::std::uint32_t> flag;
+  cuda::std::span<cuda::std::uint64_t> counter;
 };
 
 template <class T>
@@ -154,8 +149,8 @@ fabric_payload<T> make_payload(endpoint_storage& storage)
   auto bytes = storage.bound.first(test_region_bytes);
   return {bytes,
           {reinterpret_cast<T*>(bytes.data() + data_offset), data_bytes / sizeof(T)},
-          {reinterpret_cast<uint32_t*>(bytes.data() + flag_offset), 4},
-          {reinterpret_cast<uint64_t*>(bytes.data() + counter_offset), 1}};
+          {reinterpret_cast<cuda::std::uint32_t*>(bytes.data() + flag_offset), 4},
+          {reinterpret_cast<cuda::std::uint64_t*>(bytes.data() + counter_offset), 1}};
 }
 
 template <class T>
@@ -198,32 +193,32 @@ struct initialize_payload
 template <class Case>
 struct validate_payload
 {
-  uint64_t expected_counter = 0;
-  bool signaled             = false;
-  int device_index          = 0;
+  cuda::std::uint64_t expected_counter = 0;
+  bool signaled                        = false;
+  int device_index                     = 0;
 
   template <class Config>
   TEST_DEVICE_FUNC void operator()(Config, fabric_payload<typename Case::value_type> payload) const
   {
     for (cuda::std::size_t i = 0; i < payload.values.size(); ++i)
     {
-      CCCLRT_CHECK_DEVICE(payload.values[i] == Case::expected_value(i, device_index));
+      CHECK(payload.values[i] == Case::expected_value(i, device_index));
     }
-    CCCLRT_CHECK_DEVICE(payload.counter[0] == expected_counter);
+    CHECK(payload.counter[0] == expected_counter);
     for (cuda::std::size_t i = 0; i < payload.flag.size(); ++i)
     {
-      CCCLRT_CHECK_DEVICE(payload.flag[i] == uint32_t(signaled && i == 0));
+      CHECK(payload.flag[i] == cuda::std::uint32_t(signaled && i == 0));
     }
     // Also catch writes outside the payload, flag and counter.
     for (cuda::std::size_t offset = 0; offset < payload.bytes.size(); ++offset)
     {
       if ((offset >= data_offset && offset < data_offset + payload.values.size_bytes())
           || (offset >= flag_offset && offset < flag_offset + payload.flag.size_bytes())
-          || (offset >= counter_offset && offset < counter_offset + sizeof(uint64_t)))
+          || (offset >= counter_offset && offset < counter_offset + sizeof(cuda::std::uint64_t)))
       {
         continue;
       }
-      CCCLRT_CHECK_DEVICE(payload.bytes[offset] == 0xa5);
+      CHECK(payload.bytes[offset] == 0xa5);
     }
   }
 };
@@ -257,7 +252,7 @@ void run_unicast(Kernel kernel)
 
   cuda::launch(target_stream,
                config,
-               validate_payload<Kernel>{Kernel::counted ? transfer_bytes : uint64_t{0}, Kernel::signaled},
+               validate_payload<Kernel>{Kernel::counted ? transfer_bytes : cuda::std::uint64_t{0}, Kernel::signaled},
                payload);
   target_stream.sync();
   endpoint.unbind(target_device, 0, storage.bound.size());

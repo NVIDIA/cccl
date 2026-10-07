@@ -33,6 +33,7 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
+
 //! @brief Issue a get from the source endpoint into shared memory.
 //! @note Completion contributes __bytes transactions to @p __barrier.
 //! @param[in] __src Ready, bound source endpoint.
@@ -41,7 +42,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
 template <class _Tp>
-_CCCL_DEVICE_API inline void
+_CCCL_DEVICE_API void
 try_get(::cuda::unicast_logical_endpoint_ref __src,
         ::cuda::std::uint64_t __offset,
         _Tp* __shared,

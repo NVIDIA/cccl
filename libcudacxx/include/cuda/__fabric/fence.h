@@ -25,6 +25,8 @@
 
 #  include <cuda/__ptx/instructions/fence.h>
 #  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -42,7 +44,7 @@ enum class proxy_async_space
 //! @brief Execute the PTX fence.proxy.async form selected by @p _Space.
 //! @tparam _Space Select all spaces, global, shared::cluster, or shared::cta.
 template <proxy_async_space _Space = proxy_async_space::all>
-_CCCL_DEVICE_API inline void fence_proxy_async() noexcept
+_CCCL_DEVICE_API void fence_proxy_async() noexcept
 {
   if constexpr (_Space == proxy_async_space::all)
   {
@@ -56,58 +58,74 @@ _CCCL_DEVICE_API inline void fence_proxy_async() noexcept
   {
     ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_cluster);
   }
+  else if constexpr (_Space == proxy_async_space::shared_cta)
+  {
+    ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
+  }
   else
   {
-    static_assert(_Space == proxy_async_space::shared_cta);
-    ::cuda::ptx::fence_proxy_async(::cuda::ptx::space_shared);
+    static_assert(::cuda::std::__always_false_v<::cuda::std::integral_constant<proxy_async_space, _Space>>,
+                  "unsupported proxy-async address space");
   }
 }
 
 //! @brief Execute PTX fence.proxy.generic::fabric.alias with system scope.
 //! @tparam _Order Either memory_order_acquire or memory_order_release.
 template <::cuda::memory_order _Order>
-_CCCL_DEVICE_API inline void fence_proxy_generic_fabric_alias() noexcept
+_CCCL_DEVICE_API void fence_proxy_generic_fabric_alias() noexcept
 {
-  static_assert(_Order == ::cuda::memory_order_acquire || _Order == ::cuda::memory_order_release);
   if constexpr (_Order == ::cuda::memory_order_acquire)
   {
     ::cuda::ptx::fence_proxy_generic_fabric_alias(::cuda::ptx::sem_acquire);
   }
-  else
+  else if constexpr (_Order == ::cuda::memory_order_release)
   {
     ::cuda::ptx::fence_proxy_generic_fabric_alias(::cuda::ptx::sem_release);
+  }
+  else
+  {
+    static_assert(::cuda::std::__always_false_v<::cuda::std::integral_constant<::cuda::memory_order, _Order>>,
+                  "fabric alias fences require acquire or release ordering");
   }
 }
 
 //! @brief Execute PTX fence.proxy.fabric::generic.alias with system scope.
 //! @tparam _Order Either memory_order_acquire or memory_order_release.
 template <::cuda::memory_order _Order>
-_CCCL_DEVICE_API inline void fence_proxy_fabric_generic_alias() noexcept
+_CCCL_DEVICE_API void fence_proxy_fabric_generic_alias() noexcept
 {
-  static_assert(_Order == ::cuda::memory_order_acquire || _Order == ::cuda::memory_order_release);
   if constexpr (_Order == ::cuda::memory_order_acquire)
   {
     ::cuda::ptx::fence_proxy_fabric_generic_alias(::cuda::ptx::sem_acquire);
   }
-  else
+  else if constexpr (_Order == ::cuda::memory_order_release)
   {
     ::cuda::ptx::fence_proxy_fabric_generic_alias(::cuda::ptx::sem_release);
+  }
+  else
+  {
+    static_assert(::cuda::std::__always_false_v<::cuda::std::integral_constant<::cuda::memory_order, _Order>>,
+                  "fabric alias fences require acquire or release ordering");
   }
 }
 
 //! @brief Execute PTX fence.proxy.fabric::fabric.alias with system scope.
 //! @tparam _Order Either memory_order_acquire or memory_order_release.
 template <::cuda::memory_order _Order>
-_CCCL_DEVICE_API inline void fence_proxy_fabric_fabric_alias() noexcept
+_CCCL_DEVICE_API void fence_proxy_fabric_fabric_alias() noexcept
 {
-  static_assert(_Order == ::cuda::memory_order_acquire || _Order == ::cuda::memory_order_release);
   if constexpr (_Order == ::cuda::memory_order_acquire)
   {
     ::cuda::ptx::fence_proxy_fabric_fabric_alias(::cuda::ptx::sem_acquire);
   }
-  else
+  else if constexpr (_Order == ::cuda::memory_order_release)
   {
     ::cuda::ptx::fence_proxy_fabric_fabric_alias(::cuda::ptx::sem_release);
+  }
+  else
+  {
+    static_assert(::cuda::std::__always_false_v<::cuda::std::integral_constant<::cuda::memory_order, _Order>>,
+                  "fabric alias fences require acquire or release ordering");
   }
 }
 
