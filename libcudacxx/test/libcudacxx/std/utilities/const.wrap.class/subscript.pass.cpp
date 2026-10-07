@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable for msvc. It has problems selecting the constexpr path.
-// UNSUPPORTED: msvc
-
 // todo(dabayer): nvrtc doesn't support non-trivial types as static data members without -default-device, fails with:
 //   A class static data member with non-const type is considered a host variable, and host variables are not allowed in
 //   JIT mode. Consider using -default-device flag to process such data members as __device__ variables in JIT mode
@@ -71,6 +68,13 @@ struct OverloadSet
 
 struct ReturnNonStructural
 {
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+  TEST_FUNC constexpr NonStructural operator[]() const
+  {
+    return NonStructural{0};
+  }
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+
   TEST_FUNC constexpr NonStructural operator[](int i) const
   {
     return NonStructural{i};
@@ -103,6 +107,24 @@ struct NothrowSubscript
 
 constexpr int arr[] = {1, 2, 3, 4};
 
+struct PointerConversion
+{
+  TEST_FUNC constexpr operator const int*() const noexcept
+  {
+    return arr;
+  }
+};
+
+#if _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+struct NothrowNary
+{
+  TEST_FUNC constexpr int operator[](int i, int j) const noexcept
+  {
+    return i + j;
+  }
+};
+#endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+
 // Let subscr-expr be constant_wrapper<value[remove_cvref_t<Args>::value...]>{} if all types in remove_cvref_t<Args>...
 // satisfy constexpr-param and constant_wrapper<value[remove_cvref_t<Args>::value...]> is a valid type, otherwise let
 // subscr-expr be value[cuda::std::forward<Args>(args)...].
@@ -129,13 +151,17 @@ inline constexpr bool
 template <class T, class Arg, bool = HasSubscript<T, Arg>>
 inline constexpr bool HasNothrowSubscript = false;
 template <class T, class Arg>
-inline constexpr bool HasNothrowSubscript<T, Arg, true> = noexcept(cuda::std::declval<T&>()[cuda::std::declval<Arg>()]);
+// msvc 19.50 with nvcc 13.3 warns about a nonexistent comma operator in the C++17 subscript expression inside noexcept.
+// Use an explicit member call to check the same exception specification without triggering C4709.
+inline constexpr bool HasNothrowSubscript<T, Arg, true> =
+  noexcept(cuda::std::declval<T&>().operator[](cuda::std::declval<Arg>()));
 #endif // ^^^ !_CCCL_HAS_MULTIARG_OPERATOR_BRACKETS() ^^^
 
 static_assert(!HasSubscript<cuda::std::__constant_wrapper<4>, cuda::std::__constant_wrapper<1>>);
 
 static_assert(HasSubscript<cuda::std::__constant_wrapper<arr>, int>);
 static_assert(HasSubscript<cuda::std::__constant_wrapper<arr>, cuda::std::__constant_wrapper<1>>);
+static_assert(!HasSubscript<cuda::std::__constant_wrapper<arr>, MoveOnly>);
 
 static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<arr>, int>);
 static_assert(HasNothrowSubscript<cuda::std::__constant_wrapper<arr>, cuda::std::__constant_wrapper<1>>);
@@ -159,7 +185,7 @@ struct MustBeInt
 struct Poison
 {
   template <class T>
-  __host__ __device__ constexpr auto operator[](T) const noexcept -> MustBeInt<T>
+  TEST_FUNC constexpr auto operator[](T) const noexcept -> MustBeInt<T>
   {
     return {};
   }
@@ -204,6 +230,7 @@ TEST_FUNC constexpr bool test()
     cuda::std::same_as<cuda::std::__constant_wrapper<3>> decltype(auto) result =
       TEST_SUBSCRIPT(T, cuda::std::__cw<1>, cuda::std::__cw<2>, cuda::std::__cw<3>);
     static_assert(result == 3);
+    static_assert(noexcept(TEST_SUBSCRIPT(T, cuda::std::__cw<1>, cuda::std::__cw<2>, cuda::std::__cw<3>)));
   }
 
   {
@@ -211,8 +238,37 @@ TEST_FUNC constexpr bool test()
     using T                                       = cuda::std::__constant_wrapper<Nary{}>;
     cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<1>, 2, cuda::std::__cw<3>);
     assert(result == 3);
+    static_assert(!noexcept(TEST_SUBSCRIPT(T, cuda::std::__cw<1>, 2, cuda::std::__cw<3>)));
+  }
+
+  {
+    using T                                       = cuda::std::__constant_wrapper<NothrowNary{}>;
+    cuda::std::same_as<int> decltype(auto) result = TEST_SUBSCRIPT(T, cuda::std::__cw<2>, 3);
+    assert(result == 5);
+    static_assert(noexcept(TEST_SUBSCRIPT(T, cuda::std::__cw<2>, 3)));
+  }
+
+  {
+    // null-ary runtime fallback when the result is non-structural
+    using T                                                 = cuda::std::__constant_wrapper<ReturnNonStructural{}>;
+    cuda::std::same_as<NonStructural> decltype(auto) result = TEST_SUBSCRIPT(T, );
+    assert(result.get() == 0);
+    static_assert(!noexcept(TEST_SUBSCRIPT(T, )));
   }
 #  endif // _CCCL_HAS_MULTIARG_OPERATOR_BRACKETS()
+
+  {
+    // built-in subscripting through a class's pointer conversion
+    using T               = cuda::std::__constant_wrapper<PointerConversion{}>;
+    decltype(auto) result = TEST_SUBSCRIPT(T, 1);
+    static_assert(cuda::std::same_as<const int&, decltype(result)>);
+    assert(result == 2);
+    static_assert(noexcept(TEST_SUBSCRIPT(T, 1)));
+
+    decltype(auto) constant_result = TEST_SUBSCRIPT(T, cuda::std::__cw<1>);
+    static_assert(cuda::std::same_as<cuda::std::__constant_wrapper<2>, decltype(constant_result)>);
+    static_assert(constant_result == 2);
+  }
 
   {
     // move only
