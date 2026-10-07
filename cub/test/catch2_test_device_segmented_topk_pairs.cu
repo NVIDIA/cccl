@@ -1143,7 +1143,7 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break treats -0.0 
   constexpr segment_size_t static_max_k            = 64 * 1024;
   constexpr segment_index_t num_segments           = 2;
   const segment_size_t segment_size =
-    GENERATE_COPY(values({segment_size_t{16}, segment_size_t{4096}, segment_size_t{64 * 1024}}));
+    GENERATE_COPY(values({segment_size_t{16}, segment_size_t{4096}, segment_size_t{64 * 1024}, segment_size_t{896 * 1024}}));
   // About a quarter of the keys are 1, a quarter are -1, and half are zeros. For this pattern, each k below puts the
   // k-th boundary strictly inside the zeros of every segment, for max and for min.
   const segment_size_t k = GENERATE_COPY(values({segment_size * 3 / 8, segment_size / 2, segment_size * 5 / 8}));
