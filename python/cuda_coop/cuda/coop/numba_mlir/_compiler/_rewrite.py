@@ -356,6 +356,8 @@ class CoopSinglePhaseRewrite(
         if target is None:
             return None
         op_name = target.operation
+        # factory_kwargs drives specialization; factory_kw_value_vars tracks
+        # original IR bindings for cleanup after all calls are rewritten.
         (
             runtime_args,
             runtime_temp_storage_var,
