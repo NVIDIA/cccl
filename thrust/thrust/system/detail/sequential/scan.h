@@ -20,6 +20,7 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__numeric/inclusive_scan.h>
 
@@ -56,10 +57,11 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   InitialValueType init,
   BinaryFunction binary_op)
 {
-  using ValueType = InitialValueType;
+  using ValueType =
+    typename ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>, InitialValueType>;
 
   return ::cuda::std::inclusive_scan(
-    first, last, result, thrust::detail::wrapped_function<BinaryFunction, ValueType>{binary_op}, init);
+    first, last, result, thrust::detail::wrapped_function<BinaryFunction, ValueType>{binary_op}, ValueType(init));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
