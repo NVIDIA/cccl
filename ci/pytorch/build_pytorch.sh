@@ -96,8 +96,12 @@ declare -a cmake_args=(
   "-DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_HOME}"
 )
 if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+  # PyTorch forwards launcher environment variables into CMake with FORCE.
+  unset CMAKE_CUDA_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_C_COMPILER_LAUNCHER
+  export USE_CCACHE=OFF
   cmake_args+=(
     "-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-"
+    "-DUSE_CCACHE=OFF"
     "-DCMAKE_CUDA_COMPILER_LAUNCHER="
     "-DCMAKE_CXX_COMPILER_LAUNCHER="
   )
