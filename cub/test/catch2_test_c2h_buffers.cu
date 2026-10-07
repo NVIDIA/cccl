@@ -179,7 +179,7 @@ CUB_TEST("c2h buffer generator honors the requested range", "[c2h][buffers][gene
   const auto buffers = c2h::gen_buffers<std::int32_t>(stream, c2h::seed_t{1234}, num_items, min_value, max_value);
 
   const bool values_are_in_range =
-    std::all_of(buffers.h_items.begin(), buffers.h_items.end(), [min_value, max_value](const std::int32_t value) {
+    std::all_of(buffers.h_items.begin(), buffers.h_items.end(), [](const std::int32_t value) {
       return min_value <= value && value <= max_value;
     });
   REQUIRE(values_are_in_range);
