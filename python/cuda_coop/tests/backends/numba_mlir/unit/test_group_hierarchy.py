@@ -208,25 +208,6 @@ def test_planner_deduplicates_canonical_group_query_dtypes(monkeypatch):
     assert [item["dtype"] for item in captured] == [types.uint32, types.int32]
 
 
-def test_mapped_parent_queries_render_the_parent_group():
-    thread_group_lowering = _thread_group_lowering_module()
-    mapped = resolve_thread_group(
-        coop.this_warp().group_by(8),
-        LaunchFacts(exact_block_dim=64),
-        through_level="warp",
-    ).require_supported()
-
-    assert thread_group_lowering._query_expr(mapped, "rank", "warp") == (
-        "group.rank(group_parent)"
-    )
-    assert thread_group_lowering._query_expr(mapped, "count", "warp") == (
-        "group.count(group_parent)"
-    )
-    assert thread_group_lowering._query_expr(mapped, "rank", "thread") == (
-        "::cuda::gpu_thread.rank(group)"
-    )
-
-
 def test_mapped_queries_above_the_immediate_parent_fail_during_planning():
     def query():
         return coop.this_warp().group_by(8).count("block")
@@ -510,23 +491,12 @@ def test_mapped_warp_queries_and_membership_do_not_construct_barrier_group(
     )
 
     assert len(created) == 3
-    assert (
-        "constexpr ::cuda::std::uint32_t group_warp_count = 3;" in rank.source
-    )
-    assert (
-        "constexpr ::cuda::std::uint32_t grouped_warp_count = 3;" in rank.source
-    )
-    assert "(group_warp_rank % group_warp_count) * 32" in rank.source
-    assert "4 / group_warp_count" in count.source
-    assert "group_warp_rank < grouped_warp_count ? 1u : 0u" in membership.source
     assert membership.return_type is types.uint8
     for source in (rank.source, count.source, membership.source):
-        assert (
-            "::cuda::experimental::coop::this_block group_parent{hierarchy};"
-            in source
-        )
-        assert "barrier_synchronizer" not in source
-        assert "::cuda::experimental::coop::generic_group group{" not in source
+        assert "::cuda::warp." in source
+        assert "__shared__" not in source
+        assert "cuda::experimental" not in source
+        assert "_CUDAX" not in source
 
 
 @pytest.mark.parametrize("operation", ("sync", "sync_aligned"))

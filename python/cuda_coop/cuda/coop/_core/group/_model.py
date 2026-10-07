@@ -44,7 +44,6 @@ class GroupLoweringTarget(str, Enum):
     A backend still selects and validates a provider for that target.
     """
 
-    CUDAX_GROUP = "cudax_group"
     CUB_BLOCK = "cub_block"
     CUB_WARP = "cub_warp"
     UNSUPPORTED = "unsupported"
@@ -200,16 +199,8 @@ class UnsupportedReasonCode(str, Enum):
     PARTIAL_PHYSICAL_WARP = "partial_physical_warp"
     GROUP_KIND = "group_kind"
     OPERAND_FORM = "operand_form"
-    CUB_BROADCAST = "cub_broadcast"
     OPERATION_VARIANT = "operation_variant"
     LAUNCH_CAPABILITY = "launch_capability"
-
-
-class CudaxReturnKind(str, Enum):
-    """Distinguish an ordinary value from CUDAX's optional root-only result."""
-
-    VALUE = "value"
-    OPTIONAL_VALUE = "optional_value"
 
 
 class GroupOperationSemantics(Protocol):
@@ -329,57 +320,6 @@ class GroupPrimitiveCall:
 
     def __hash__(self) -> int:
         return hash(self.semantic_key)
-
-
-@dataclass(frozen=True)
-class CudaxCallDescription:
-    """Describe a CUDAX call whose group is supplied by backend-generated code.
-
-    ``header``, ``namespace``, and ``primitive`` identify the C++ operation.
-    ``overload`` selects a variant, such as broadcast or root-only Reduce,
-    while ``return_kind`` tells the backend how that variant returns a value.
-
-    ``parameters`` classifies the operation's arguments. It must not contain
-    group or launch descriptors: those are compile-time planning inputs. The
-    backend builds the C++ group from the resolved topology in the enclosing
-    ``GroupLoweringPlan``. All fields contribute to the call's semantic key.
-    """
-
-    primitive: str
-    header: str
-    namespace: str
-    overload: str | None = None
-    parameters: tuple[ParameterClassification, ...] = ()
-    return_kind: CudaxReturnKind = CudaxReturnKind.VALUE
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "parameters", tuple(self.parameters))
-        object.__setattr__(
-            self, "return_kind", CudaxReturnKind(self.return_kind)
-        )
-        if any(
-            not isinstance(parameter, ParameterClassification)
-            for parameter in self.parameters
-        ):
-            raise TypeError(
-                "CUDAX parameters must be ParameterClassification records"
-            )
-        forbidden = {"group", "launch", "launch_facts"}
-        if any(parameter.name in forbidden for parameter in self.parameters):
-            raise ValueError(
-                "CUDAX runtime ABI cannot contain group or launch markers"
-            )
-
-    @property
-    def semantic_key(self) -> tuple[Any, ...]:
-        return (
-            self.primitive,
-            self.header,
-            self.namespace,
-            self.overload,
-            self.parameters,
-            self.return_kind.value,
-        )
 
 
 @dataclass(frozen=True)
@@ -947,7 +887,7 @@ class GroupLoweringPlan:
         Original request, retained alongside the resolved group.
     resolved_group : ThreadGroup
         Group after applying launch facts, or the group retained on failure.
-    implementation : CudaxCallDescription or Algorithm or None
+    implementation : Algorithm or None
         Specialized primitive description; ``None`` for an unsupported plan.
     topology : GroupTopologyRequirements or None
         Group instances and rank rules used for indexing and execution.
@@ -977,7 +917,7 @@ class GroupLoweringPlan:
     target: GroupLoweringTarget
     call: GroupPrimitiveCall
     resolved_group: ThreadGroup
-    implementation: CudaxCallDescription | Algorithm | None
+    implementation: Algorithm | None
     topology: GroupTopologyRequirements | None
     participation: ParticipationRequirements | None
     result: ResultContract | None
@@ -1159,8 +1099,6 @@ class GroupLoweringPlan:
 
 __all__ = [
     "ArgumentPrecondition",
-    "CudaxCallDescription",
-    "CudaxReturnKind",
     "GroupExecutionRequirements",
     "GroupLoweringPlan",
     "GroupLoweringTarget",

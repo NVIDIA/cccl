@@ -2,12 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile CUDAX and CUB reductions, including Python callbacks.
+"""Compile CUB reductions, including Python callbacks.
 
-CUDAX providers have no external scratch operand; some group constructions
-still use internal shared state. CUB providers expose scratch storage and
-reuse barriers. Fixed device queries allow both paths to compile and link
-with CUDA devices hidden.
+Fixed device queries allow providers to compile and link with devices hidden.
+Checks cover scratch storage, reuse barriers, and callback linkage.
 """
 
 from __future__ import annotations
@@ -24,13 +22,6 @@ import numba_cuda_mlir.tools as numba_mlir_tools
 from numba_cuda_mlir import cuda, types
 
 from cuda.coop._core import ArgumentBinding, SynchronizationScope
-from cuda.coop._core.thread_group import (
-    ThreadHierarchy,
-    this_block,
-    this_cluster,
-    this_thread,
-    this_warp,
-)
 from cuda.coop.numba_mlir import _types
 from cuda.coop.numba_mlir._compiler import _nvrtc
 from cuda.coop.numba_mlir._compiler._operations import StorageABI
@@ -77,215 +68,6 @@ def compile_context() -> _nvrtc.CompileContext:
     """Resolve one header and compiler-library identity for this module."""
 
     return _nvrtc.resolve_compile_context()
-
-
-def _resolved_group(kind: str):
-    """Attach exact hierarchy dimensions needed to render each group.
-
-    The mapped cases use four physical warps. This gives multiple instances
-    for groups of one or two warps. The cluster case records both grid and
-    cluster sizes.
-    """
-
-    if kind in ("mapped_warp", "mapped_warps"):
-        hierarchy = ThreadHierarchy._resolved(block_dim=128)
-        count = 1 if kind == "mapped_warp" else 2
-        return this_block().group_by(count).with_hierarchy(hierarchy)
-    if kind == "cluster":
-        hierarchy = ThreadHierarchy._resolved(
-            block_dim=_BLOCK_THREADS,
-            grid_dim=2,
-            cluster_dim=2,
-        )
-        return this_cluster().with_hierarchy(hierarchy)
-
-    hierarchy = ThreadHierarchy._resolved(block_dim=_BLOCK_THREADS)
-    group = {
-        "thread": this_thread(),
-        "warp": this_warp(),
-        "logical_warp": this_warp().group_by(8),
-        "block": this_block(),
-    }[kind]
-    return group.with_hierarchy(hierarchy)
-
-
-def _group_factory(scope: SynchronizationScope):
-    return {
-        SynchronizationScope.NONE: _reduce.group_reduce_none,
-        SynchronizationScope.WARP: _reduce.group_reduce_warp,
-        SynchronizationScope.BLOCK: _reduce.group_reduce_block,
-        SynchronizationScope.GROUP: _reduce.group_reduce_group,
-    }[scope]
-
-
-_CUDAX_CASES = (
-    pytest.param(
-        "thread",
-        SynchronizationScope.NONE,
-        types.int32,
-        1,
-        "scalar",
-        None,
-        True,
-        id="thread-scalar-broadcast-sum",
-    ),
-    pytest.param(
-        "warp",
-        SynchronizationScope.WARP,
-        types.float32,
-        1,
-        "array",
-        "max",
-        False,
-        id="warp-array-one-root-max",
-    ),
-    pytest.param(
-        "logical_warp",
-        SynchronizationScope.WARP,
-        types.uint32,
-        3,
-        "array",
-        "bit_xor",
-        True,
-        id="logical-warp-array-broadcast-xor",
-    ),
-    pytest.param(
-        "block",
-        SynchronizationScope.BLOCK,
-        types.int64,
-        1,
-        "scalar",
-        "multiplies",
-        False,
-        id="block-scalar-root-multiplies",
-    ),
-    pytest.param(
-        "mapped_warp",
-        SynchronizationScope.WARP,
-        types.int32,
-        1,
-        "scalar",
-        "sum",
-        True,
-        id="mapped-warp-scalar-broadcast-sum",
-    ),
-    pytest.param(
-        "mapped_warps",
-        SynchronizationScope.GROUP,
-        types.float64,
-        2,
-        "array",
-        "min",
-        True,
-        id="mapped-warps-array-broadcast-min",
-    ),
-    pytest.param(
-        "cluster",
-        SynchronizationScope.GROUP,
-        types.int16,
-        1,
-        "scalar",
-        "sum",
-        False,
-        id="cluster-scalar-root-sum",
-    ),
-)
-
-
-@pytest.mark.parametrize(
-    (
-        "group_kind",
-        "scope",
-        "dtype",
-        "items_per_thread",
-        "value_kind",
-        "binary_op",
-        "broadcast",
-    ),
-    _CUDAX_CASES,
-)
-def test_cudax_hierarchy_reduce_compiles_without_external_storage(
-    compile_context: _nvrtc.CompileContext,
-    _fixed_compiler_target: list[tuple[int, int]],
-    group_kind: str,
-    scope: SynchronizationScope,
-    dtype,
-    items_per_thread: int,
-    value_kind: str,
-    binary_op,
-    broadcast: bool,
-) -> None:
-    group = _resolved_group(group_kind)
-    invocable = _group_factory(scope)(
-        dtype=dtype,
-        group=group,
-        binary_op=binary_op,
-        items_per_thread=items_per_thread,
-        value_kind=value_kind,
-        broadcast=broadcast,
-        _compile_context=compile_context,
-    )
-    source = invocable.source
-
-    first_include = source.index("#include")
-    enable_macro = source.index(
-        "#define _CUDAX_ENABLE_GROUP_FEATURES_IN_LIBCUDACXX"
-    )
-    disable_macro = source.index("#define _CUDAX_DISABLE_CG_INTEROP")
-    assert enable_macro < disable_macro < first_include
-    assert invocable.storage_abi is StorageABI.NONE
-    assert invocable.execution_scope is scope
-    assert invocable.synchronization_scope is SynchronizationScope.NONE
-    assert invocable.temp_storage_bytes == 0
-    assert invocable.temp_storage_alignment == 1
-    assert "TempStorage" not in source
-    assert "temp_storage" not in source
-    assert "__syncthreads" not in source
-    assert "__syncwarp" not in source
-    assert "bar.sync" not in source
-    assert ("::cuda::experimental::broadcasted" in source) is broadcast
-    assert (".value_or(" in source) is (not broadcast)
-
-    if value_kind == "scalar":
-        assert invocable.abi_transforms == ("value",)
-        assert " item)" in source
-        assert "raw_items" not in source
-    else:
-        assert invocable.abi_transforms == ("ptr",)
-        assert isinstance(invocable.parameters[0], _types.Array)
-        assert invocable.parameters[0].size == items_per_thread
-        assert "void* raw_items" in source
-        assert f"(*)[{items_per_thread}]>(raw_items)" in source
-
-    if group_kind == "logical_warp":
-        assert "::cuda::experimental::coop::this_warp group_parent" in source
-        assert "::cuda::experimental::coop::group_by<8, true>" in source
-        assert "::cuda::experimental::coop::lane_synchronizer" in source
-    elif group_kind in ("mapped_warp", "mapped_warps"):
-        count = 1 if group_kind == "mapped_warp" else 2
-        assert "::cuda::experimental::coop::this_block group_parent" in source
-        assert f"::cuda::experimental::coop::group_by<{count}, true>" in source
-        assert "::cuda::experimental::coop::barrier_synchronizer" in source
-        # This shared state belongs to construction of the mapped CUDAX group;
-        # it is not a provider TempStorage operand or a rewrite-owned barrier.
-        assert "group_barriers_storage" in source
-    elif group_kind == "cluster":
-        assert "::cuda::cluster_dims<2>()" in source
-        assert "::cuda::experimental::coop::this_cluster group" in source
-    else:
-        assert "group_barriers_storage" not in source
-
-    assert len(invocable.files) == 1
-    artifact = Path(invocable.files[0])
-    assert artifact.suffix == ".ltoir"
-    assert artifact.stat().st_size > 0
-    ptx = _types._ltoir_to_ptx(
-        artifact.read_bytes(),
-        name=invocable.symbol,
-        cc=_FIXED_CC,
-    )
-    assert ".version" in ptx
-    assert _fixed_compiler_target
 
 
 def _collect_cub(

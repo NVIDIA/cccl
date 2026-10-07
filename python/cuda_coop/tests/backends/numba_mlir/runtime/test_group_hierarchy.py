@@ -5,8 +5,8 @@
 """Compare group queries with host coordinates across physical boundaries.
 
 The output rows distinguish block, physical-warp, and mapped-group ranks.
-A separate child process enables C++ assertions to detect synchronization
-by nonmembers without risking the test worker's CUDA context.
+A separate child process traps synchronization by excluded lanes without
+risking the test worker's CUDA context.
 """
 
 from __future__ import annotations
@@ -44,9 +44,11 @@ _QUERY_FIELDS = 19
 
 @pytest.mark.parametrize("operation", ("sync", "sync_aligned"))
 def test_partial_mapped_group_sync_excludes_nonmembers(operation):
-    # Assertions make a nonmember synchronization fail deterministically.
+    # Trap a nonmember synchronization deterministically.
     # Run in a child because a regression would poison its CUDA context.
     script = f"""
+import sys
+sys.path[:] = {sys.path!r}
 import numpy as np
 from pathlib import Path
 from numba_cuda_mlir import cuda
@@ -57,13 +59,17 @@ assert Path(coop.__file__).resolve() == Path({str(Path(common_coop.__file__).res
 compile_provider = _nvrtc.compile
 injected = []
 
-def with_assertions(**kwargs):
-    if "group.{operation}();" in kwargs.get("cpp", ""):
-        kwargs["cpp"] = "#define CCCL_ENABLE_ASSERTIONS\\n" + kwargs["cpp"]
+def with_membership_check(**kwargs):
+    if "group_first_lane" in kwargs.get("cpp", ""):
+        kwargs["cpp"] = kwargs["cpp"].replace(
+            "  ::__syncwarp(",
+            "  if (::cuda::gpu_thread.rank(::cuda::warp) >= 30) "
+            '{{ asm volatile("trap;"); }}\\n  ::__syncwarp(',
+        )
         injected.append(True)
     return compile_provider(**kwargs)
 
-_nvrtc.compile = with_assertions
+_nvrtc.compile = with_membership_check
 
 @cuda.jit
 def kernel(output):
@@ -74,11 +80,11 @@ def kernel(output):
 output = np.full(32, -1, dtype=np.int32)
 kernel[1, 32](output)
 cuda.synchronize()
-assert injected, "group synchronization assertions were not enabled"
+assert injected, "group synchronization membership check was not enabled"
 np.testing.assert_array_equal(output, np.array([1] * 30 + [0, 0]))
 """  # noqa: E501 - Preserve embedded source bytes.
     result = subprocess.run(
-        [sys.executable, "-c", script],
+        [sys.executable, "-S", "-c", script],
         check=False,
         capture_output=True,
         text=True,

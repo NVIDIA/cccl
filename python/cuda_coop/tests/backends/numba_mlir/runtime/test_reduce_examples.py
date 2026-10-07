@@ -4,8 +4,8 @@
 
 """Execute reduction examples included in the common API reference.
 
-The examples separate broadcast results from values read only by group
-roots. Array sums pad a partial tile during Load, then reduce the complete
+The examples read reduced values only at group roots. Array sums pad a
+partial tile during Load, then reduce the complete
 payload; a scalar prefix instead limits which group members contribute.
 """
 
@@ -37,26 +37,24 @@ def test_reduce_example():
     def extrema(source, maxima, prefix_minimum, valid):
         block = coop.this_block()
         value = source[cuda.threadIdx.x]
-        maxima[cuda.threadIdx.x] = coop.reduce(block, value, binary_op="max")
+        maximum = coop.reduce(block, value, binary_op="max")
         minimum = coop.reduce(
             block,
             value,
             binary_op="min",
-            broadcast=False,
             valid_items=valid,
             algorithm="warp_reductions",
         )
         if cuda.threadIdx.x == 0:
+            maxima[0] = maximum
             prefix_minimum[0] = minimum
 
     values = np.arange(128, 0, -1, dtype=np.int32)
     source = cuda.to_device(values)
-    maxima = cuda.device_array_like(source)
+    maxima = cuda.device_array(1, dtype=np.int32)
     prefix_minimum = cuda.device_array(1, dtype=np.int32)
     extrema[1, 128](source, maxima, prefix_minimum, 93)
-    np.testing.assert_array_equal(
-        maxima.copy_to_host(), np.full_like(values, values.max())
-    )
+    np.testing.assert_array_equal(maxima.copy_to_host(), [values.max()])
     assert prefix_minimum.copy_to_host()[0] == values[:93].min()
     # reduce-example-end
 
@@ -84,7 +82,7 @@ def test_sum_example():
             valid_items=valid,
             oob_default=0,
         )
-        total = coop.sum(block, items, broadcast=False, algorithm="raking")
+        total = coop.sum(block, items, algorithm="raking")
         if cuda.threadIdx.x == 0:
             totals[cuda.blockIdx.x] = total
 

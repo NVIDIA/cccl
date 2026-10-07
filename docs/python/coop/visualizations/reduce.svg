@@ -81,6 +81,6 @@
 <text x="884" y="270" text-anchor="middle" font-size="12">T7</text>
 <rect x="835" y="278" width="98" height="34" rx="6" fill="#dde5ea" stroke="#9facba"/>
 <text x="884" y="300" text-anchor="middle" font-size="15">?</text>
-<text x="22" y="343" font-size="13">broadcast=False: ? marks an undefined return value.</text>
+<text x="22" y="343" font-size="13">Only rank zero has a defined result; ? marks an undefined return value.</text>
 </g>
 </svg>

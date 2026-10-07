@@ -429,15 +429,10 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
         _compile(kernel, types.int32[::1], types.int32[::1], block=(1024, 1, 1))
 
 
-@pytest.mark.parametrize("kind", ["block", "mapped_warps", "cluster"])
+@pytest.mark.parametrize("kind", ["block", "warp", "logical_warp"])
 @pytest.mark.parametrize("shape", [0, 128], ids=["dynamic", "static"])
-def test_cudax_reduce_shared_memory_coexistence(kind, shape):
-    """Check shared-memory compatibility after inlining a user allocation.
-
-    CUDAX may use internal static shared state without an external scratch
-    operand. A dynamic user array would alias that state in this compiler;
-    separate static user allocations remain supported.
-    """
+def test_reduce_shared_memory_coexistence(kind, shape):
+    """CUB scratch follows the common backing allocation's alias checks."""
 
     @cuda.jit(device=True)
     def allocate():
@@ -450,30 +445,30 @@ def test_cudax_reduce_shared_memory_coexistence(kind, shape):
         tile[thread] = source[thread]
         cuda.syncthreads()
         if kind == "block":
-            total = coop.sum(coop.this_block(), source[thread])
-        elif kind == "mapped_warps":
-            total = coop.sum(coop.this_block().group_by(2), source[thread])
+            group = coop.this_block()
+        elif kind == "warp":
+            group = coop.this_warp()
         else:
-            total = coop.sum(coop.this_cluster(), source[thread])
-        destination[thread] = tile[thread] + total
+            group = coop.this_warp().group_by(8)
+        total = coop.sum(group, source[thread])
+        if group.rank() == 0:
+            destination[thread] = tile[thread] + total
 
-    launch = {"block": (128, 1, 1)}
-    if kind == "cluster":
-        launch["cluster"] = (2, 1, 1)
     if shape:
         assert _compile(
-            kernel, types.int32[::1], types.int32[::1], **launch
+            kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
         ).metadata["ltoir"]
     else:
         with pytest.raises(
             CoopSinglePhaseRewriteError,
-            match="CUDAX reduction.*static shared memory.*would alias",
+            match="shared-memory backing.*dynamic/runtime-sized.*would alias",
         ):
-            _compile(kernel, types.int32[::1], types.int32[::1], **launch)
+            _compile(
+                kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+            )
 
 
-@pytest.mark.parametrize("kind", ["block", "mapped_warps"])
-def test_cudax_reduce_rejects_dynamic_cooperative_backing(monkeypatch, kind):
+def test_reduce_uses_dynamic_cooperative_backing(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
     monkeypatch.setattr(
@@ -496,33 +491,23 @@ def test_cudax_reduce_rejects_dynamic_cooperative_backing(monkeypatch, kind):
             algorithm="transpose",
             temp_storage=scratch,
         )
-        if source[0] >= 0:
-            if kind == "block":
-                total = coop.sum(coop.this_block(), items[0])
-            else:
-                total = coop.sum(coop.this_block().group_by(2), items[0])
-            destination[cuda.threadIdx.x] = total
+        total = coop.sum(coop.this_block(), items, temp_storage=scratch)
+        if cuda.threadIdx.x == 0:
+            destination[0] = total
 
-    with pytest.raises(
-        CoopSinglePhaseRewriteError,
-        match="dynamic shared-memory backing.*CUDAX reduction.*would alias",
-    ):
-        _compile(kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1))
+    compiled = _compile(
+        kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+    )
+    assert compiled.metadata["required_dynamic_shared_memory"] == 64 * 1024
 
 
-@pytest.mark.parametrize("kind", ["warp", "logical_warp", "mapped_query"])
-def test_shared_memory_free_group_providers_allow_user_dynamic_arrays(kind):
+def test_group_query_allows_user_dynamic_arrays():
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         tile = cuda.shared.array(0, types.int32)
         thread = cuda.threadIdx.x
         tile[thread] = source[thread]
-        if kind == "mapped_query":
-            result = coop.this_block().group_by(2).rank()
-        elif kind == "logical_warp":
-            result = coop.sum(coop.this_warp().group_by(8), source[thread])
-        else:
-            result = coop.sum(coop.this_warp(), source[thread])
+        result = coop.this_block().group_by(2).rank()
         destination[thread] = tile[thread] + result
 
     assert _compile(
