@@ -62,9 +62,9 @@ class _ArgumentRewrite:
         metadata, validate runtime controls, and normalize the ``dim`` alias.
         The private plan is also carried in the factory dictionary for the
         caller to remove before invoking the provider. Record the variables
-        that supplied compile-time inputs so ``apply`` can remove their
-        assignments if unused. The call expression itself is not rewritten
-        here.
+        that supplied compile-time inputs so ``finish_rewrite`` can remove
+        their unused assignments after all blocks have been rewritten. The
+        call expression itself is not rewritten here.
 
         Parameters
         ----------
@@ -84,10 +84,16 @@ class _ArgumentRewrite:
         runtime_temp_storage : ir.Var or None
             Caller scratch operand, or None for implementation-owned storage.
         factory_kwargs : dict
-            Resolved specialization values, bindings, and optional
-            lowering plan.
+            Resolved Python specialization values and ``ArgumentBinding``
+            descriptors, plus the private lowering plan until the caller
+            extracts it.
         factory_kw_value_vars : tuple of ir.Var
-            Compile-time input variables that can be considered for cleanup.
+            Original IR variables whose assignments may become unused after
+            rewriting. These are cleanup candidates, never factory inputs.
+            They do not correspond one-to-one with ``factory_kwargs``:
+            inferred keywords have no source variable, while omitted controls
+            and lowering metadata can leave a variable without a keyword.
+            Runtime controls keep their variables in ``runtime_args``.
 
         Raises
         ------
