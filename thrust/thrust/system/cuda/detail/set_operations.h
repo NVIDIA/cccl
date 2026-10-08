@@ -61,8 +61,7 @@ THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(cub_set_union_pairs, SetUnionPairs)
 #  undef THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER
 
 // Runs the cub::detail::DeviceSetOps algorithm selected by @p cub_device_api and returns the past-the-end output
-// iterators. Owns the shared temp-storage allocation, output-count read-back, and iterator advancement. The offset type
-// is chosen dynamically (32 vs 64 bit) from the input sizes via THRUST_DOUBLE_INDEX_TYPE_DISPATCH.
+// iterators. Owns the shared temp-storage allocation, output-count read-back, and iterator advancement.
 template <typename Derived,
           typename KeysIt1,
           typename KeysIt2,
