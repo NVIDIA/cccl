@@ -612,8 +612,9 @@ coop.merge_sort_pairs(  # expected-error: [call-overload]
 )
 
 
-# Common radix calls require block groups and integral keys. Striped output
-# and digit-prefix arrays belong to the qualified API; order stays boolean.
+# Common radix calls require block groups and 32- or 64-bit integer keys.
+# Striped output and digit-prefix arrays belong to the qualified API;
+# descending must be a bool.
 radix_keys = common.ThreadData(items_per_thread=2, dtype=np.int32)
 radix_float = common.ThreadData(items_per_thread=2, dtype=np.float32)
 common.radix_sort_keys(
@@ -633,6 +634,31 @@ common.radix_sort_keys(
     common.this_block(),
     radix_keys,
     descending="yes",  # expected-error: [arg-type]
+)
+
+
+common.topk_min_keys(
+    common.this_warp(),  # expected-error: [arg-type]
+    common_values,
+    k=3,
+)
+common.topk_max_pairs(
+    common_block,
+    common_values,
+    common_values,
+    k="3",  # expected-error: [arg-type]
+)
+coop.topk_min_pairs(
+    coop.this_grid(),  # expected-error: [arg-type]
+    values,
+    values,
+    k=3,
+)
+coop.topk_max_keys(
+    qualified_block,
+    values,
+    k=3,
+    valid_items=1.5,  # expected-error: [arg-type]
 )
 
 common.sum(
