@@ -41,9 +41,14 @@ Support matrix
      - ``run_to_run``
      - ``gpu_to_gpu``
      - Default
-   * - ``cub::DeviceReduce`` (``Reduce``, ``Sum``, ``Min``, ``Max``, ``TransformReduce``, ...)
+   * - ``cub::DeviceReduce`` (``Reduce``, ``Sum``, ``Min``, ``Max``, ``TransformReduce``, ...; excluding ``ReduceByKey``)
      - Yes
      - Yes
+     - Yes (partial)
+     - ``run_to_run``
+   * - ``cub::DeviceReduce::ReduceByKey``
+     - Yes
+     - Yes (partial)
      - Yes (partial)
      - ``run_to_run``
    * - ``cub::DeviceScan`` (``ExclusiveSum``, ``ExclusiveScan``, ``InclusiveSum``, ``InclusiveScan``, ...)
