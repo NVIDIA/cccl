@@ -151,6 +151,8 @@ def check_portable_surface(
         np.float32,
     )
     assert_type(coop.sum(warp, np.uint32(4)), np.uint32)
+    assert_type(coop.sum(warp, values), np.int16)
+    assert_type(coop.reduce(logical_warp, values, binary_op="max"), np.int16)
     assert_type(coop.reduce(block, values, binary_op="min"), np.int16)
     assert_type(
         coop.sum(warp, np.int32(4), valid_items=np.int32(7)),

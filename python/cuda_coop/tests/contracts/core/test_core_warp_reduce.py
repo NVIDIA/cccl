@@ -137,9 +137,9 @@ def test_warp_reduce_validates_operator_and_builtin_prefix_contracts():
         )
 
 
-@pytest.mark.parametrize("threads_in_warp", [True, 0, 3, 33])
+@pytest.mark.parametrize("threads_in_warp", [True, 0, 33])
 def test_warp_reduce_rejects_invalid_logical_warp_width(threads_in_warp):
-    with pytest.raises(ValueError, match="power of two"):
+    with pytest.raises(ValueError, match="integer between 1 and 32"):
         make_warp_reduce_specialization(
             dtype="int",
             threads_in_warp=threads_in_warp,

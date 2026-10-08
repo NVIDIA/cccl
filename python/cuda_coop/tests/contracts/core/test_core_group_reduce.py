@@ -199,21 +199,19 @@ def test_explicit_block_storage_preserves_layout_and_reuse_policy(
 
 
 @pytest.mark.parametrize("group", [this_warp(), this_warp().group_by(8)])
-def test_warp_rejects_explicit_storage_and_array_inputs(group):
+def test_warp_rejects_explicit_storage(group):
     explicit_storage = _plan(
         group,
         _reduce(
             storage_ownership=StorageOwnership.CALLER, storage_sharing="shared"
         ),
     )
-    array_input = _plan(group, _reduce(value_kind="array", items_per_thread=2))
 
     assert (
         explicit_storage.unsupported.code
         is UnsupportedReasonCode.OPERATION_VARIANT
     )
     assert "temp_storage" in explicit_storage.unsupported.message
-    assert array_input.unsupported.code is UnsupportedReasonCode.OPERAND_FORM
 
 
 @pytest.mark.parametrize(
@@ -433,10 +431,19 @@ def test_reduction_rejects_groups_without_a_cub_implementation(group, facts):
     assert plan.unsupported.code is UnsupportedReasonCode.GROUP_KIND
 
 
-def test_logical_warp_rejects_non_power_of_two_width():
+@pytest.mark.parametrize("width", [17, 31])
+def test_nonexhaustive_logical_warp_resets_scratch_instances_per_warp(width):
+    plan = _plan(this_warp().group_by(width, exhaustive=False), _reduce(), 64)
+
+    assert plan.target is GroupLoweringTarget.CUB_WARP
+    assert plan.topology.instances == 2
+
+
+def test_nonexhaustive_warp_rejects_multiple_non_power_of_two_groups():
     plan = _plan(this_warp().group_by(12, exhaustive=False), _reduce(), 64)
 
-    assert plan.target is GroupLoweringTarget.UNSUPPORTED
+    assert plan.unsupported.code is UnsupportedReasonCode.GROUP_KIND
+    assert "only one non-power-of-two group" in plan.unsupported.message
 
 
 def test_complete_nonexhaustive_logical_warp_uses_canonical_cub_topology():

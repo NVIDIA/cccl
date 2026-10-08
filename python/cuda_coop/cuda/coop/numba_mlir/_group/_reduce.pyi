@@ -101,6 +101,19 @@ def reduce(
 @overload
 def reduce(
     group: WarpGroup,
+    value: PortableThreadDataLike[_ItemT],
+    /,
+    *,
+    binary_op: (
+        _BuiltinReduceOperator | Callable[[_ItemT, _ItemT], _ItemT] | None
+    ) = None,
+    valid_items: None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+) -> _ItemT: ...
+@overload
+def reduce(
+    group: WarpGroup,
     value: _ScalarT,
     /,
     *,
@@ -131,6 +144,16 @@ def sum(
     algorithm: ReduceAlgorithm | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> _ScalarT: ...
+@overload
+def sum(
+    group: WarpGroup,
+    value: PortableThreadDataLike[_ItemT],
+    /,
+    *,
+    valid_items: None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+) -> _ItemT: ...
 @overload
 def sum(
     group: WarpGroup,
