@@ -194,7 +194,7 @@ template <bool V, class A, size_t S>
 struct has_enough_shmem_impl<V, A, S, typelist<>>
 {
   static constexpr bool value = V;
-  using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
+  using type                  = ::cuda::std::conditional_t<value, ::cuda::std::true_type, ::cuda::std::false_type>;
 };
 
 template <class Agent, size_t MaxShmem>

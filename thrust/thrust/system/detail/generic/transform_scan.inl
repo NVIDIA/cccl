@@ -17,6 +17,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/transform_scan.h>
 
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -37,7 +38,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
 {
   // Use the input iterator's value type per https://wg21.link/P0571
   using InputType  = thrust::detail::it_value_t<InputIterator>;
-  using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
+  using ResultType = ::cuda::std::invoke_result_t<UnaryFunction, InputType>;
   using ValueType  = ::cuda::std::remove_cvref_t<ResultType>;
 
   const thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
@@ -62,7 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   BinaryFunction binary_op)
 {
   using InputType  = thrust::detail::it_value_t<InputIterator>;
-  using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
+  using ResultType = ::cuda::std::invoke_result_t<UnaryFunction, InputType>;
   using ValueType  = ::cuda::std::remove_cvref_t<ResultType>;
 
   const thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);

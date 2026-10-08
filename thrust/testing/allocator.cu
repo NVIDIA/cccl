@@ -3,6 +3,8 @@
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/system/cpp/vector.h>
 
+#include <cuda/std/type_traits>
+
 #include <nv/target>
 
 #include <memory>
@@ -113,7 +115,7 @@ struct my_allocator_with_custom_destroy
     return !(*this == other);
   }
 
-  using is_always_equal = thrust::detail::true_type;
+  using is_always_equal = ::cuda::std::true_type;
 
   // use composition rather than inheritance
   // to avoid inheriting std::allocator's member

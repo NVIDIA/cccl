@@ -3,6 +3,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <cuda/std/type_traits>
+
 #include <unittest/unittest.h>
 
 template <typename BaseAlloc, bool PropagateOnSwap>
@@ -92,10 +94,10 @@ public:
     return os;
   }
 
-  using is_always_equal                        = thrust::detail::false_type;
-  using propagate_on_container_copy_assignment = thrust::detail::true_type;
-  using propagate_on_container_move_assignment = thrust::detail::true_type;
-  using propagate_on_container_swap            = thrust::detail::integral_constant<bool, PropagateOnSwap>;
+  using is_always_equal                        = ::cuda::std::false_type;
+  using propagate_on_container_copy_assignment = ::cuda::std::true_type;
+  using propagate_on_container_move_assignment = ::cuda::std::true_type;
+  using propagate_on_container_swap            = cuda::std::integral_constant<bool, PropagateOnSwap>;
 
 private:
   int state;

@@ -24,7 +24,6 @@
 #include <thrust/detail/type_deduction.h>
 
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
@@ -59,13 +58,10 @@ struct actor : Eval
   }
 };
 
-template <typename T>
-struct is_actor : ::cuda::std::false_type
-{};
-
-template <typename T>
-struct is_actor<actor<T>> : ::cuda::std::true_type
-{};
+template <class Eval>
+inline constexpr bool is_actor_v = false;
+template <class Eval>
+inline constexpr bool is_actor_v<actor<Eval>> = true;
 
 // a node selecting and returning one of the arguments to the entire expression template
 template <unsigned int Pos>

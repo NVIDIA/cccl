@@ -20,6 +20,8 @@
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
+#include <cuda/std/__functional/invoke.h>
+
 THRUST_NAMESPACE_BEGIN
 
 template <typename InputFunction, typename OutputFunction, typename Iterator>
@@ -33,7 +35,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
 class transform_input_output_iterator_proxy
 {
   using iterator_value_type = it_value_t<Iterator>;
-  using Value               = invoke_result_t<InputFunction, iterator_value_type>;
+  using Value               = ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
   _CCCL_HOST_DEVICE transform_input_output_iterator_proxy(
@@ -87,7 +89,7 @@ public:
   using type =
     iterator_adaptor<transform_input_output_iterator<InputFunction, OutputFunction, Iterator>,
                      Iterator,
-                     invoke_result_t<InputFunction, iterator_value_type>,
+                     ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>,
                      use_default,
                      use_default,
                      transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>>;

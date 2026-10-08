@@ -36,6 +36,7 @@
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_complete.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -57,19 +58,11 @@
 
 #  if _CCCL_STD_VER >= 2020
 #    include <cuda/std/__cccl/prologue.h>
-template <class _Tp, class = void>
-struct __cccl_type_is_defined : ::cuda::std::false_type
-{};
-
-template <class _Tp>
-struct __cccl_type_is_defined<_Tp, ::cuda::std::void_t<decltype(sizeof(_Tp))>> : ::cuda::std::true_type
-{};
-
 // detect whether the used STL has contiguous_iterator_tag defined
 namespace std
 {
-struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct contiguous_iterator_tag>
-{};
+inline constexpr bool __cccl_std_contiguous_iterator_tag_exists_v =
+  ::cuda::std::__is_complete_v<struct contiguous_iterator_tag>;
 } // namespace std
 
 #    include <cuda/std/__cccl/epilogue.h>
@@ -132,7 +125,7 @@ using random_access_iterator_tag = ::std::random_access_iterator_tag;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
 {};
 using contiguous_iterator_tag =
-  _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
+  _If<::std::__cccl_std_contiguous_iterator_tag_exists_v,
       ::std::contiguous_iterator_tag,
       __contiguous_iterator_tag_backfill>;
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv

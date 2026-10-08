@@ -13,8 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/has_member_function.h>
+
+#include <cuda/std/__type_traits/copy_cv.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 
 // inspired by Roman Perepelitsa's presentation from comp.lang.c++.moderated
 // based on the implementation here: http://www.rsdn.ru/forum/cpp/2759773.1.aspx
@@ -31,18 +33,6 @@ U const& operator,(U const&, void_exp_result<T>);
 
 template <typename T, typename U>
 U& operator,(U&, void_exp_result<T>);
-
-template <typename SrcType, typename DestType>
-struct clone_constness
-{
-  using type = DestType;
-};
-
-template <typename SrcType, typename DestType>
-struct clone_constness<const SrcType, DestType>
-{
-  using type = const DestType;
-};
 } // namespace detail::is_call_possible_detail
 THRUST_NAMESPACE_END
 
@@ -65,7 +55,7 @@ THRUST_NAMESPACE_END
       no member_function_name(...) const;                                                                              \
     };                                                                                                                 \
                                                                                                                        \
-    using derived_type = typename thrust::detail::is_call_possible_detail::clone_constness<T, derived>::type;          \
+    using derived_type = ::cuda::std::__copy_cv_t<T, derived>;                                                         \
                                                                                                                        \
     template <typename U, typename Result>                                                                             \
     struct return_value_check                                                                                          \
@@ -145,5 +135,5 @@ THRUST_NAMESPACE_END
                                                                                                                        \
   public:                                                                                                              \
     static const bool value = impl<trait_name##_has_member<T, Signature>::value, Signature>::value;                    \
-    using type              = thrust::detail::integral_constant<bool, value>;                                          \
+    using type              = ::cuda::std::integral_constant<bool, value>;                                             \
   };
