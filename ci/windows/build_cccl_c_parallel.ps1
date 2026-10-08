@@ -29,8 +29,10 @@ Import-Module $PSScriptRoot/build_common.psm1 -ArgumentList @($CXX_STANDARD, $CU
 $PRESET = "cccl-c-parallel"
 $LOCAL_CMAKE_OPTIONS = ""
 
-configure_and_build_preset "CCCL C Parallel" $PRESET $LOCAL_CMAKE_OPTIONS
-
-If($CURRENT_PATH -ne "ci") {
-    popd
+try {
+    configure_and_build_preset "CCCL C Parallel" $PRESET $LOCAL_CMAKE_OPTIONS
+} finally {
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }

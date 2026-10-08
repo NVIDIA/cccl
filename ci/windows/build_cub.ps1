@@ -59,17 +59,19 @@ if ($CL_VERSION -lt [version]"19.20") {
     $LOCAL_CMAKE_OPTIONS = "$LOCAL_CMAKE_OPTIONS -DCCCL_IGNORE_DEPRECATED_COMPILER=ON"
 }
 
-configure_and_build_preset "CUB" $PRESET $LOCAL_CMAKE_OPTIONS
-
-if ($env:GITHUB_ACTIONS) {
-    Write-Host "Packaging test artifacts..."
-    if ($artifactTags.Count -gt 0) {
-        & bash "./upload_cub_test_artifacts.sh" @artifactTags
-    } else {
-        & bash "./upload_cub_test_artifacts.sh"
+try {
+    configure_and_build_preset "CUB" $PRESET $LOCAL_CMAKE_OPTIONS
+} finally {
+    if ($env:GITHUB_ACTIONS) {
+        Write-Host "Packaging test artifacts..."
+        if ($artifactTags.Count -gt 0) {
+            & bash "./upload_cub_test_artifacts.sh" @artifactTags
+        } else {
+            & bash "./upload_cub_test_artifacts.sh"
+        }
     }
-}
 
-If($CURRENT_PATH -ne "ci") {
-    popd
+    If($CURRENT_PATH -ne "ci") {
+        popd
+    }
 }
