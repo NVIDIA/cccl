@@ -481,10 +481,11 @@ no algorithm selector.
 Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
 accept the same built-in string aliases as Reduce. The qualified API also
 recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
-accepts stateless device callbacks. Callbacks must be associative and return
-the input dtype. A non-sum exclusive scan requires an `initial_value` with
-the payload dtype. Ordinary Python literals are checked and converted in
-that context. Inclusive scans reject an initial value.
+accepts stateless binary device callbacks. Binary callbacks must be
+associative and return the input dtype. A non-sum exclusive scan requires an
+`initial_value` with the payload dtype. Ordinary Python literals are checked
+and converted in that context. A block-prefix callback can supply that prefix
+instead. Inclusive scans reject an initial value.
 
 The qualified API also accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate on every
@@ -496,14 +497,77 @@ uniform within the group. At runtime, an invalid `valid_items` count triggers
 a deterministic device trap before CUB's 32-bit parameter is formed. The trap
 invalidates the current CUDA context.
 
+All five qualified Block Scan spellings accept a block-prefix callback through
+the `prefix_op` keyword. A stateless callback receives the block aggregate and
+returns the prefix:
+
+```python
+from numba_cuda_mlir import cuda, types
+
+import cuda.coop.numba_mlir as coop
+
+
+@cuda.jit(device=True)
+def prefix_after_aggregate(block_aggregate):
+    return block_aggregate + 7
+
+
+# Inside a kernel:
+scanned = coop.exclusive_sum(
+    coop.this_block(),
+    value,
+    prefix_op=prefix_after_aggregate,
+)
+```
+
+For a running prefix, wrap a two-argument device callback in
+`StatefulFunction`. Its first argument is a one-item state payload and its
+second is the block aggregate. Pass the state as the third positional
+argument:
+
+```python
+@cuda.jit(device=True)
+def carry_prefix(state, block_aggregate):
+    previous = state[0]
+    state[0] = previous + block_aggregate
+    return previous
+
+
+running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
+
+# Inside a kernel, before a loop over tiles:
+state = coop.ThreadData(1)
+state[0] = types.int64(0)
+scanned = coop.exclusive_sum(
+    coop.this_block(),
+    value,
+    state,
+    prefix_op=running_prefix,
+)
+```
+
+The state may be a numeric one-item `ThreadData` or local array. Its dtype must
+exactly match the `StatefulFunction` descriptor, but may differ from the scan
+payload dtype. Keep the same state object alive across repeated calls and give
+every participating thread the same initial contents. CUB may invoke the
+callback in every lane of the block's first warp, but only lane 0's returned
+prefix is applied; only thread 0's state is authoritative after the calls.
+
+Prefix callbacks are available only through qualified Block Scan. They are
+mutually exclusive with `initial_value` and `aggregate_output`, are not
+stateful binary `scan_op` values, and do not support Warp Scan, `valid_items`,
+or structured state.
+
 All Scan providers use CUB temporary storage. Block calls use compiler-owned
 scratch or an explicit `TempStorage` descriptor. Backing may use static or
 dynamic shared memory. Compiler-owned scratch and explicit descriptors with
 `auto_sync=True` append a block reuse barrier. Explicit descriptors default to
 `auto_sync=False`, so the caller must synchronize before reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callbacks and running-prefix state
-are unsupported.
+for the exact participating mask. Prefix callbacks keep these storage rules.
+When repeated calls reuse an explicit descriptor, set `auto_sync=True` or
+issue `cuda.syncthreads()` before reuse. The prefix state is a per-thread
+payload that persists across calls; it is not CUB temporary storage.
 
 This common example loads a block tile, computes its exclusive sum, and
 stores the out-of-place result:

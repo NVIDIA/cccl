@@ -22,6 +22,7 @@ from cuda.coop._core import (
     Reference,
     ScanMode,
     ScanValueKind,
+    StatefulOperator,
     classify_parameter,
     make_block_scan_specialization,
     make_scan_semantics,
@@ -42,6 +43,61 @@ def test_scan_semantics_are_out_of_place_shape_and_operator_neutral():
     assert operation.items_per_thread == 4
     assert operation.aggregate
     assert operation.scan_operator is None
+    assert operation.prefix_callback is None
+
+
+def test_scan_semantic_identity_includes_prefix_callback():
+    def identity(value):
+        return value
+
+    def increment(value):
+        return value + 1
+
+    prefix = PythonOperator(
+        Dependency("T"),
+        (Dependency("T"),),
+        identity,
+        name="prefix_op",
+    )
+    different_prefix = PythonOperator(
+        Dependency("T"),
+        (Dependency("T"),),
+        increment,
+        name="prefix_op",
+    )
+    with_prefix = make_scan_semantics(
+        dtype="int32",
+        mode="exclusive",
+        value_kind="scalar",
+        items_per_thread=1,
+        prefix_callback=prefix,
+    )
+    equivalent = make_scan_semantics(
+        dtype="int32",
+        mode="exclusive",
+        value_kind="scalar",
+        items_per_thread=1,
+        prefix_callback=prefix,
+    )
+    without_prefix = make_scan_semantics(
+        dtype="int32",
+        mode="exclusive",
+        value_kind="scalar",
+        items_per_thread=1,
+    )
+    with_different_prefix = make_scan_semantics(
+        dtype="int32",
+        mode="exclusive",
+        value_kind="scalar",
+        items_per_thread=1,
+        prefix_callback=different_prefix,
+    )
+
+    assert with_prefix.prefix_callback is prefix
+    assert with_prefix == equivalent
+    assert hash(with_prefix) == hash(equivalent)
+    assert with_prefix != without_prefix
+    assert with_prefix != with_different_prefix
 
 
 def test_scan_semantics_require_exact_initial_value_dtype():
@@ -95,6 +151,56 @@ def test_scan_semantics_validate_invalid_forms():
             value_kind="scalar",
             items_per_thread=1,
             scan_operator=object(),
+        )
+    with pytest.raises(TypeError, match="unsupported scan prefix callback"):
+        make_scan_semantics(
+            dtype="int32",
+            mode="exclusive",
+            value_kind="scalar",
+            items_per_thread=1,
+            prefix_callback=object(),
+        )
+
+
+def test_scan_semantics_reject_prefix_callback_with_aggregate():
+    prefix = PythonOperator(
+        Dependency("T"),
+        (Dependency("T"),),
+        lambda value: value,
+        name="prefix_op",
+    )
+
+    with pytest.raises(ValueError, match="aggregate and prefix callback"):
+        make_scan_semantics(
+            dtype="int32",
+            mode="exclusive",
+            value_kind="scalar",
+            items_per_thread=1,
+            aggregate=True,
+            prefix_callback=prefix,
+        )
+
+
+def test_scan_semantics_reject_prefix_callback_with_initial_value():
+    prefix = PythonOperator(
+        Dependency("T"),
+        (Dependency("T"),),
+        lambda aggregate: aggregate,
+        name="prefix_op",
+    )
+
+    with pytest.raises(ValueError, match="initial value and prefix callback"):
+        make_scan_semantics(
+            dtype="int32",
+            mode="exclusive",
+            value_kind="scalar",
+            items_per_thread=1,
+            initial_value=CxxFunction(
+                "0",
+                Dependency("T"),
+                name="initial_value",
+            ),
+            prefix_callback=prefix,
         )
 
 
@@ -181,6 +287,110 @@ def test_block_scan_accepts_stateless_python_operator():
     assert operator.role is ParameterRole.OPERATOR
 
 
+def test_block_scan_sum_accepts_stateless_prefix_callback():
+    prefix = PythonOperator(
+        Dependency("T"),
+        (Dependency("T"),),
+        lambda value: value,
+        name="prefix_op",
+    )
+    specialization = make_block_scan_specialization(
+        dtype="int32",
+        block_dim=(32, 1, 1),
+        items_per_thread=1,
+        mode="inclusive",
+        algorithm="raking",
+        value_kind="scalar",
+        prefix_operator=prefix,
+    )
+
+    assert specialization.method_name == "InclusiveSum"
+    assert specialization.call.prefix_callback is not None
+    assert [
+        item.name for item in specialization.specialization.parameters[0]
+    ] == [
+        "temp_storage",
+        "input",
+        "output",
+        "prefix_op",
+    ]
+    classification = classify_parameter(
+        specialization.specialization.parameters[0][-1]
+    )
+    assert classification.kind is ArgumentKind.STATIC
+    assert classification.role is ParameterRole.OPERATOR
+
+
+def test_block_scan_prefix_callback_follows_scan_operator_in_cub_signature():
+    """Preserve CUB argument order with a runtime state parameter.
+
+    Use a custom binary operator plus a stateful prefix so both appear in
+    the same ExclusiveScan signature. The binary operator is static; the
+    prefix parameter consumes the caller's state array. Neither an explicit
+    seed nor an aggregate output belongs to this overload.
+    """
+
+    def maximum(left, right):
+        return max(right, left)
+
+    def running_prefix(state, aggregate):
+        previous = state[0]
+        state[0] = maximum(previous, aggregate)
+        return previous
+
+    prefix = StatefulOperator(
+        running_prefix,
+        state_dtype="int64",
+        ret_dtype=Dependency("T"),
+        arg_dtypes=(Dependency("T"),),
+        name="prefix_op",
+    )
+    specialization = make_block_scan_specialization(
+        dtype="int32",
+        block_dim=(32, 1, 1),
+        items_per_thread=2,
+        mode="exclusive",
+        algorithm="raking",
+        value_kind="array",
+        scan_operator=PythonOperator(
+            Dependency("T"),
+            (Dependency("T"), Dependency("T")),
+            maximum,
+            name="scan_op",
+        ),
+        prefix_operator=prefix,
+    )
+
+    assert specialization.method_name == "ExclusiveScan"
+    assert specialization.call.prefix_callback is not None
+    assert specialization.call.initial_value is None
+    assert not specialization.call.aggregate
+    method = specialization.specialization.parameters[0]
+    assert [item.name for item in method] == [
+        "temp_storage",
+        "input",
+        "output",
+        "scan_op",
+        "prefix_op",
+    ]
+    assert [
+        (item.kind, item.role)
+        for item in map(
+            classify_parameter, specialization.specialization.parameters[0]
+        )
+    ] == [
+        (ArgumentKind.RUNTIME, ParameterRole.TEMP_STORAGE),
+        (ArgumentKind.RUNTIME, ParameterRole.INPUT),
+        (ArgumentKind.RUNTIME, ParameterRole.OUTPUT),
+        (ArgumentKind.STATIC, ParameterRole.OPERATOR),
+        (ArgumentKind.RUNTIME, ParameterRole.STATE),
+    ]
+    assert (
+        specialization.specialization.metadata["prefix_callback"]
+        == "StatefulOperator"
+    )
+
+
 def test_block_scan_aggregate_is_an_explicit_side_output():
     specialization = make_block_scan_specialization(
         dtype="int32",
@@ -228,4 +438,34 @@ def test_block_scan_rejects_noncanonical_sum_initial_and_bad_algorithm():
             mode="inclusive",
             algorithm="warp_scans",
             value_kind="scalar",
+        )
+
+
+def test_block_scan_rejects_prefix_callback_with_initial_value():
+    prefix = PythonOperator(
+        Dependency("T"),
+        (Dependency("T"),),
+        lambda value: value,
+        name="prefix_op",
+    )
+
+    with pytest.raises(ValueError, match="initial value and prefix callback"):
+        make_block_scan_specialization(
+            dtype="int32",
+            block_dim=(32, 1, 1),
+            items_per_thread=1,
+            mode="exclusive",
+            algorithm="raking",
+            value_kind="scalar",
+            scan_operator=CxxOperator(
+                "::cuda::std::plus<T>",
+                Dependency("T"),
+                name="scan_op",
+            ),
+            initial_value=CxxFunction(
+                "0",
+                Dependency("T"),
+                name="initial_value",
+            ),
+            prefix_operator=prefix,
         )
