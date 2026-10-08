@@ -71,17 +71,17 @@ struct policy_selector
       // final values: threads = 1 << tpb, items already scaled by Nominal4BItemsToItems
       if (input_type_size == 2)
       {
-        // ld_1.ipt_64.tpb_8  0.961  1.040  1.112  1.246
+        // lm_1.ipt_64.tpb_8  0.961  1.040  1.112  1.246
         return FindIfPolicy{256, 64, 4, LOAD_LDG};
       }
       if (input_type_size == 8)
       {
-        // ld_2.ipt_33.tpb_7  0.962  1.022  1.166  1.331
+        // lm_2.ipt_33.tpb_7  0.962  1.022  1.166  1.331
         return FindIfPolicy{128, 16, 4, LOAD_CA};
       }
       if (input_type_size == 16)
       {
-        // ld_1.ipt_32.tpb_6  0.955  1.085  1.185  1.286
+        // lm_1.ipt_32.tpb_6  0.955  1.085  1.185  1.286
         return FindIfPolicy{64, 8, 4, LOAD_LDG};
       }
       // 1-byte and 4-byte inputs: intentionally left untuned

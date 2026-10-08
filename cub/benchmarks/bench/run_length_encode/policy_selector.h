@@ -29,7 +29,7 @@ struct bench_encode_policy_selector
       {TUNE_THREADS,
        TUNE_ITEMS,
        TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-       TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+       TUNE_LOAD_MODIFIER == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
        cub::BLOCK_SCAN_WARP_SCANS,
        lookback_delay_policy},
       {},

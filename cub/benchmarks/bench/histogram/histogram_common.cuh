@@ -9,13 +9,13 @@
 
 #if !TUNE_BASE
 
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#  if TUNE_LOAD_MODIFIER == 0
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#  elif TUNE_LOAD_MODIFIER == 1
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_LDG
+#  else // TUNE_LOAD_MODIFIER == 2
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_CA
+#  endif // TUNE_LOAD_MODIFIER
 
 #  define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
 
@@ -49,7 +49,7 @@ struct bench_policy_selector
             TUNE_ITEMS,
             TUNE_VEC_SIZE,
             load_algorithm,
-            TUNE_LOAD_MODIFIER,
+            TUNE_LOAD_MODIFIER_ENUMERATOR,
             TUNE_RLE_COMPRESS,
             MEM_PREFERENCE,
             TUNE_WORK_STEALING,

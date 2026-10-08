@@ -788,7 +788,7 @@ struct sm100_tuning;
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_1, primitive_accum::yes>
 {
-  // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.ld_0 1.030222  0.998162  1.027506  1.068348
+  // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.lm_0 1.030222  0.998162  1.027506  1.068348
   static constexpr int items                           = 13;
   static constexpr int threads                         = 288;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -800,7 +800,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_1,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_2, primitive_accum::yes>
 {
-  // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
+  // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.lm_0 1.228612   1.0  1.216841  1.416167
   static constexpr int items                           = 13;
   static constexpr int threads                         = 288;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -812,7 +812,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_2,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_4, primitive_accum::yes>
 {
-  // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
+  // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.lm_1 1.163440   1.0  1.146400  1.260684
   static constexpr int items                           = 19;
   static constexpr int threads                         = 224;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -824,7 +824,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_4,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8, primitive_accum::yes>
 {
-  // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
+  // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.lm_1 1.177638  0.985417  1.157164  1.296477
   static constexpr int items                           = 18;
   static constexpr int threads                         = 192;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -837,7 +837,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_8,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_1, primitive_accum::yes>
 {
-  // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.ld_0 1.010828  0.985782  1.007993  1.048859
+  // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.lm_0 1.010828  0.985782  1.007993  1.048859
   static constexpr int items                           = 12;
   static constexpr int threads                         = 384;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -849,7 +849,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_1,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_2, primitive_accum::yes>
 {
-  // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
+  // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.lm_0 1.095207  1.065061  1.100302  1.142857
   static constexpr int items                           = 14;
   static constexpr int threads                         = 160;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -861,7 +861,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_2,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_2, val_size::_4, primitive_accum::yes>
 {
-  // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
+  // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.lm_0 1.119313  1.095238  1.122013  1.148681
   static constexpr int items                           = 14;
   static constexpr int threads                         = 160;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -886,7 +886,7 @@ template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_1, primitive_accum::yes>
 {
   // todo(gonidlelis): Significant regression. Search more workloads.
-  // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.ld_1 1.135878  0.866667  1.106600  1.339708
+  // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.lm_1 1.135878  0.866667  1.106600  1.339708
   static constexpr int items                           = 20;
   static constexpr int threads                         = 224;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -898,7 +898,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_1,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_2, primitive_accum::yes>
 {
-  // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
+  // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.lm_2 1.050929  1.000000  1.047178  1.115809
   static constexpr int items                           = 13;
   static constexpr int threads                         = 288;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -910,7 +910,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_2,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_4, primitive_accum::yes>
 {
-  // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
+  // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.lm_1 1.247248  1.000000  1.220196  1.446328
   static constexpr int items                           = 20;
   static constexpr int threads                         = 224;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -922,7 +922,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_4,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8, primitive_accum::yes>
 {
-  // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
+  // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.lm_1 1.070831  1.002088  1.064736  1.105437
   static constexpr int items                           = 14;
   static constexpr int threads                         = 224;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -935,7 +935,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_4, val_size::_8,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_1, primitive_accum::yes>
 {
-  // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.ld_0 1.041966  1.000000  1.037010  1.078399
+  // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.lm_0 1.041966  1.000000  1.037010  1.078399
   static constexpr int items                           = 12;
   static constexpr int threads                         = 160;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -948,7 +948,7 @@ template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_2, primitive_accum::yes>
 {
   // todo(gonidlelis): Significant regression. Search more workloads.
-  // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
+  // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.lm_0 1.064413  0.866667  1.045946  1.116803
   static constexpr int items                           = 15;
   static constexpr int threads                         = 288;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -960,7 +960,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_2,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_4, primitive_accum::yes>
 {
-  // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
+  // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.lm_2 1.184805  1.000000  1.164843  1.338536
   static constexpr int items                           = 22;
   static constexpr int threads                         = 160;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -972,7 +972,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_4,
 template <class KeyT, class ValueT>
 struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8, primitive_accum::yes>
 {
-  // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
+  // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.lm_0 1.067631  1.000000  1.059607  1.135646
   static constexpr int items                           = 23;
   static constexpr int threads                         = 256;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1173,7 +1173,7 @@ private:
             switch (value_size)
             {
               case 2:
-                // ipt_20.tpb_224.ns_460.dcid_0.l2w_1195.trp_1.ld_0  1.307715  1.206044  1.337792  1.636066
+                // ipt_20.tpb_224.ns_460.dcid_0.l2w_1195.trp_1.lm_0  1.307715  1.206044  1.337792  1.636066
                 return {224,
                         20,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1182,7 +1182,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<no_delay_constructor_t<1195>>};
               case 4:
-                // ipt_20.tpb_288.ns_552.dcid_7.l2w_595.trp_1.ld_1  1.229061  1.108666  1.244334  1.371951
+                // ipt_20.tpb_288.ns_552.dcid_7.l2w_595.trp_1.lm_1  1.229061  1.108666  1.244334  1.371951
                 return {288,
                         20,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1191,7 +1191,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_constructor_t<552, 595>>};
               case 8:
-                // ipt_19.tpb_128.ns_104.dcid_1.l2w_985.trp_1.ld_1  1.228535  1.098424  1.255085  1.476489
+                // ipt_19.tpb_128.ns_104.dcid_1.l2w_985.trp_1.lm_1  1.228535  1.098424  1.255085  1.476489
                 return {128,
                         19,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1207,7 +1207,7 @@ private:
             switch (value_size)
             {
               case 1:
-                // ipt_13.tpb_320.ns_16.dcid_2.l2w_520.trp_1.ld_0  1.137893  1.009494  1.124837  1.226726
+                // ipt_13.tpb_320.ns_16.dcid_2.l2w_520.trp_1.lm_0  1.137893  1.009494  1.124837  1.226726
                 return {320,
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1216,7 +1216,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backoff_constructor_t<16, 520>>};
               case 8:
-                // ipt_17.tpb_160.ns_92.dcid_5.l2w_515.trp_1.ld_1  1.133580  1.023188  1.150020  1.300613
+                // ipt_17.tpb_160.ns_92.dcid_5.l2w_515.trp_1.lm_1  1.133580  1.023188  1.150020  1.300613
                 return {160,
                         17,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1243,7 +1243,7 @@ private:
             switch (value_size)
             {
               case 1:
-                // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.ld_0 1.030222  0.998162  1.027506  1.068348
+                // ipt_13.tpb_288.ns_420.dcid_0.l2w_745.trp_1.lm_0 1.030222  0.998162  1.027506  1.068348
                 return {288,
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1252,7 +1252,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<no_delay_constructor_t<745>>};
               case 2:
-                // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.ld_0 1.228612   1.0  1.216841  1.416167
+                // ipt_13.tpb_288.ns_388.dcid_1.l2w_570.trp_1.lm_0 1.228612   1.0  1.216841  1.416167
                 return {288,
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1261,7 +1261,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<fixed_delay_constructor_t<388, 570>>};
               case 4:
-                // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.ld_1 1.163440   1.0  1.146400  1.260684
+                // ipt_19.tpb_224.ns_1028.dcid_5.l2w_910.trp_1.lm_1 1.163440   1.0  1.146400  1.260684
                 return {224,
                         19,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1270,7 +1270,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<1028, 910>>};
               case 8:
-                // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.ld_1 1.177638  0.985417  1.157164  1.296477
+                // ipt_18.tpb_192.ns_432.dcid_1.l2w_1035.trp_1.lm_1 1.177638  0.985417  1.157164  1.296477
                 return {192,
                         18,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1286,7 +1286,7 @@ private:
             switch (value_size)
             {
               case 1:
-                // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.ld_0 1.010828  0.985782  1.007993  1.048859
+                // ipt_12.tpb_384.ns_1900.dcid_0.l2w_840.trp_1.lm_0 1.010828  0.985782  1.007993  1.048859
                 return {384,
                         12,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1295,7 +1295,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<no_delay_constructor_t<1900>>};
               case 2:
-                // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.ld_0 1.095207  1.065061  1.100302  1.142857
+                // ipt_14.tpb_160.ns_1736.dcid_7.l2w_170.trp_1.lm_0 1.095207  1.065061  1.100302  1.142857
                 return {160,
                         14,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1304,7 +1304,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_constructor_t<1736, 170>>};
               case 4:
-                // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.ld_0 1.119313  1.095238  1.122013  1.148681
+                // ipt_14.tpb_160.ns_336.dcid_1.l2w_805.trp_1.lm_0 1.119313  1.095238  1.122013  1.148681
                 return {160,
                         14,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1329,7 +1329,7 @@ private:
             {
               case 1:
                 // todo(gonidlelis): Significant regression. Search more workloads.
-                // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.ld_1 1.135878  0.866667  1.106600  1.339708
+                // ipt_20.tpb_224.ns_1436.dcid_7.l2w_155.trp_1.lm_1 1.135878  0.866667  1.106600  1.339708
                 return {224,
                         20,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1338,7 +1338,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_constructor_t<1436, 155>>};
               case 2:
-                // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.ld_2 1.050929  1.000000  1.047178  1.115809
+                // ipt_13.tpb_288.ns_620.dcid_7.l2w_925.trp_1.lm_2 1.050929  1.000000  1.047178  1.115809
                 return {288,
                         13,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1347,7 +1347,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_constructor_t<620, 925>>};
               case 4:
-                // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.ld_1 1.247248  1.000000  1.220196  1.446328
+                // ipt_20.tpb_224.ns_1856.dcid_5.l2w_280.trp_1.lm_1 1.247248  1.000000  1.220196  1.446328
                 return {224,
                         20,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1356,7 +1356,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<1856, 280>>};
               case 8:
-                // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.ld_1 1.070831  1.002088  1.064736  1.105437
+                // ipt_14.tpb_224.ns_464.dcid_2.l2w_680.trp_1.lm_1 1.070831  1.002088  1.064736  1.105437
                 return {224,
                         14,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1372,7 +1372,7 @@ private:
             switch (value_size)
             {
               case 1:
-                // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.ld_0 1.041966  1.000000  1.037010  1.078399
+                // ipt_12.tpb_160.ns_532.dcid_0.l2w_850.trp_1.lm_0 1.041966  1.000000  1.037010  1.078399
                 return {160,
                         12,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1382,7 +1382,7 @@ private:
                         lookback_delay_policy_from_type<no_delay_constructor_t<532>>};
               case 2:
                 // todo(gonidlelis): Significant regression. Search more workloads.
-                // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.ld_0 1.064413  0.866667  1.045946  1.116803
+                // ipt_15.tpb_288.ns_988.dcid_7.l2w_335.trp_1.lm_0 1.064413  0.866667  1.045946  1.116803
                 return {288,
                         15,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1391,7 +1391,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_constructor_t<988, 335>>};
               case 4:
-                // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.ld_2 1.184805  1.000000  1.164843  1.338536
+                // ipt_22.tpb_160.ns_1032.dcid_5.l2w_505.trp_1.lm_2 1.184805  1.000000  1.164843  1.338536
                 return {160,
                         22,
                         BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1400,7 +1400,7 @@ private:
                         BLOCK_SCAN_WARP_SCANS,
                         lookback_delay_policy_from_type<exponential_backon_jitter_window_constructor_t<1032, 505>>};
               case 8:
-                // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.ld_0 1.067631  1.000000  1.059607  1.135646
+                // ipt_23.tpb_256.ns_1232.dcid_0.l2w_810.trp_1.lm_0 1.067631  1.000000  1.059607  1.135646
                 return {256,
                         23,
                         BLOCK_LOAD_WARP_TRANSPOSE,

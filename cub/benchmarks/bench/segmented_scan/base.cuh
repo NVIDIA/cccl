@@ -21,11 +21,11 @@
 #    define TUNE_BLOCK_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
 #  endif // TUNE_TRANSPOSE
 
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#  if TUNE_LOAD_MODIFIER == 0
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#  elif TUNE_LOAD_MODIFIER == 1
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_CA
+#  endif // TUNE_LOAD_MODIFIER
 
 template <int ThreadsPerBlock, int ItemsPerThread, int MaxSegmentsPerBlock>
 struct policy_selector_t
@@ -36,7 +36,7 @@ struct policy_selector_t
       ThreadsPerBlock,
       ItemsPerThread,
       TUNE_BLOCK_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
+      TUNE_LOAD_MODIFIER_ENUMERATOR,
       TUNE_BLOCK_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
       MaxSegmentsPerBlock}};

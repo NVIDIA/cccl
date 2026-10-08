@@ -322,7 +322,7 @@ struct sm75_tuning;
 template <class ValueT, class AccumT, class OffsetT>
 struct sm75_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_8, value_size::_4>
 {
-  // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
+  // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.lm_0
   static constexpr int threads                         = 128;
   static constexpr int items                           = 7;
   using delay_constructor                              = fixed_delay_constructor_t<628, 520>;
@@ -468,7 +468,7 @@ struct sm100_tuning;
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_4, value_size::_1>
 {
-  // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
+  // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.lm_0 1.188818  1.005682  1.173041  1.305288
   static constexpr int items                           = 18;
   static constexpr int threads                         = 512;
   using delay_constructor                              = exponential_backon_constructor_t<768, 820>;
@@ -480,7 +480,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_8, value_size::_1>
 {
-  // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
+  // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.lm_1 1.107210  1.000000  1.100637  1.307692
   static constexpr int items                           = 14;
   static constexpr int threads                         = 384;
   using delay_constructor                              = exponential_backon_constructor_t<228, 775>;
@@ -492,7 +492,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_4, value_size::_2>
 {
-  // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
+  // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.lm_0 1.128443  1.002841  1.119688  1.307692
   static constexpr int items                           = 13;
   static constexpr int threads                         = 512;
   using delay_constructor                              = exponential_backon_constructor_t<1384, 720>;
@@ -512,7 +512,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 //                     offset_size::_8,
 //                     value_size::_2>
 // {
-//   // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
+//   // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.lm_1 1.080934  0.983509  1.077724  1.305288
 //   static constexpr int items                           = 13;
 //   static constexpr int threads                         = 288;
 //   using delay_constructor                              = exponential_backon_jitter_window_constructor_t<1520, 895>;
@@ -524,7 +524,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_4, value_size::_4>
 {
-  // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
+  // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.lm_0 1.148442  0.997167  1.139902  1.462651
   static constexpr int items                           = 22;
   static constexpr int threads                         = 384;
   using delay_constructor                              = exponential_backon_jitter_constructor_t<1904, 830>;
@@ -536,7 +536,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_8, value_size::_4>
 {
-  // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
+  // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.lm_1 1.146142  0.994350  1.137459  1.455636
   static constexpr int items                           = 19;
   static constexpr int threads                         = 416;
   using delay_constructor                              = exponential_backon_constructor_t<956, 550>;
@@ -548,7 +548,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_4, value_size::_8>
 {
-  // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
+  // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.lm_0 1.089468  1.015581  1.085630  1.264583
   static constexpr int items                           = 23;
   static constexpr int threads                         = 416;
   using delay_constructor                              = exponential_backon_jitter_window_constructor_t<772, 710>;
@@ -560,7 +560,7 @@ struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::y
 template <class ValueT, class AccumT, class OffsetT>
 struct sm100_tuning<ValueT, AccumT, OffsetT, op_kind_t::plus, primitive_accum::yes, offset_size::_8, value_size::_8>
 {
-  // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
+  // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.lm_0 1.080133  1.000000  1.075577  1.248963
   static constexpr int items                           = 22;
   static constexpr int threads                         = 320;
   using delay_constructor                              = exponential_backoff_constructor_t<328, 965>;
@@ -1145,7 +1145,7 @@ struct policy_selector
           switch (input_value_size)
           {
             case 1:
-              // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.ld_0 1.188818  1.005682  1.173041  1.305288
+              // ipt_18.tpb_512.ns_768.dcid_7.l2w_820.trp_1.lm_0 1.188818  1.005682  1.173041  1.305288
               return make_mem_scaled_lookback_scan_policy(
                 512,
                 18,
@@ -1156,7 +1156,7 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 768, 820});
             case 2:
-              // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.ld_0 1.128443  1.002841  1.119688  1.307692
+              // ipt_13.tpb_512.ns_1384.dcid_7.l2w_720.trp_1.lm_0 1.128443  1.002841  1.119688  1.307692
               return make_mem_scaled_lookback_scan_policy(
                 512,
                 13,
@@ -1167,7 +1167,7 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 1384, 720});
             case 4:
-              // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.ld_0 1.148442  0.997167  1.139902  1.462651
+              // ipt_22.tpb_384.ns_1904.dcid_6.l2w_830.trp_1.lm_0 1.148442  0.997167  1.139902  1.462651
               return make_mem_scaled_lookback_scan_policy(
                 384,
                 22,
@@ -1178,7 +1178,7 @@ struct policy_selector
                 BLOCK_SCAN_WARP_SCANS,
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 1904, 830});
             case 8:
-              // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.ld_0 1.089468  1.015581  1.085630  1.264583
+              // ipt_23.tpb_416.ns_772.dcid_5.l2w_710.trp_1.lm_0 1.089468  1.015581  1.085630  1.264583
               return make_mem_scaled_lookback_scan_policy(
                 416,
                 23,
@@ -1197,7 +1197,7 @@ struct policy_selector
           switch (input_value_size)
           {
             case 1:
-              // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.ld_1 1.107210  1.000000  1.100637  1.307692
+              // ipt_14.tpb_384.ns_228.dcid_7.l2w_775.trp_1.lm_1 1.107210  1.000000  1.100637  1.307692
               return make_mem_scaled_lookback_scan_policy(
                 384,
                 14,
@@ -1209,10 +1209,10 @@ struct policy_selector
                 LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 228, 775});
             case 2:
               // todo(gonidelis): Regresses for large inputs. Find better tuning.
-              // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.ld_1 1.080934  0.983509  1.077724  1.305288
+              // ipt_13.tpb_288.ns_1520.dcid_5.l2w_895.trp_1.lm_1 1.080934  0.983509  1.077724  1.305288
               break;
             case 4:
-              // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.ld_1 1.146142  0.994350  1.137459  1.455636
+              // ipt_19.tpb_416.ns_956.dcid_7.l2w_550.trp_1.lm_1 1.146142  0.994350  1.137459  1.455636
               return make_mem_scaled_lookback_scan_policy(
                 416,
                 19,
@@ -1227,7 +1227,7 @@ struct policy_selector
               {
                 break;
               }
-              // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.ld_0 1.080133  1.000000  1.075577  1.248963
+              // ipt_22.tpb_320.ns_328.dcid_2.l2w_965.trp_1.lm_0 1.080133  1.000000  1.075577  1.248963
               return make_mem_scaled_lookback_scan_policy(
                 320,
                 22,
@@ -1453,7 +1453,7 @@ struct policy_selector
       if (benchmark_match && operation_t == op_kind_t::plus && primitive_accum_t == primitive_accum::yes
           && offset_size == 8 && input_value_size == 4)
       {
-        // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.ld_0
+        // ipt_7.tpb_128.ns_628.dcid_1.l2w_520.trp_1.lm_0
         return make_mem_scaled_lookback_scan_policy(
           128,
           7,

@@ -722,7 +722,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     DistinctPartitions>
 {
-  // trp_0.ld_0.ipt_22.tpb_384.ns_0.dcid_2.l2w_915 1.099232  0.980183  1.096778  1.545455
+  // trp_0.lm_0.ipt_22.tpb_384.ns_0.dcid_2.l2w_915 1.099232  0.980183  1.096778  1.545455
   static constexpr int threads                       = 384;
   static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -740,7 +740,7 @@ struct sm100_tuning<Input,
                     may_alias::yes,
                     DistinctPartitions>
 {
-  // trp_1.ld_0.ipt_20.tpb_448.ns_596.dcid_6.l2w_295  1.214635  1.001421  1.207023  1.307692
+  // trp_1.lm_0.ipt_20.tpb_448.ns_596.dcid_6.l2w_295  1.214635  1.001421  1.207023  1.307692
   static constexpr int threads                       = 448;
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -760,7 +760,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     DistinctPartitions>
 // {
-//   // trp_1.ld_0.ipt_20.tpb_256.ns_516.dcid_7.l2w_685 1.065598  0.937984  1.067343  1.452153
+//   // trp_1.lm_0.ipt_20.tpb_256.ns_516.dcid_7.l2w_685 1.065598  0.937984  1.067343  1.452153
 //   static constexpr int threads                       = 256;
 //   static constexpr int nominal_4b_items              = 20;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -778,7 +778,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     DistinctPartitions>
 // {
-//   // trp_1.ld_0.ipt_20.tpb_384.ns_1060.dcid_5.l2w_375 1.109871  0.973142  1.105415  1.459135
+//   // trp_1.lm_0.ipt_20.tpb_384.ns_1060.dcid_5.l2w_375 1.109871  0.973142  1.105415  1.459135
 //   static constexpr int threads                       = 384;
 //   static constexpr int nominal_4b_items              = 20;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -796,7 +796,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     DistinctPartitions>
 {
-  // trp_1.ld_0.ipt_15.tpb_384.ns_1508.dcid_5.l2w_585 1.201993  0.920103  1.185134  1.441805
+  // trp_1.lm_0.ipt_15.tpb_384.ns_1508.dcid_5.l2w_585 1.201993  0.920103  1.185134  1.441805
   static constexpr int threads                       = 384;
   static constexpr int nominal_4b_items              = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -816,7 +816,7 @@ struct sm100_tuning<Input,
 //                     may_alias::yes,
 //                     DistinctPartitions>
 // {
-//   // trp_1.ld_0.ipt_19.tpb_512.ns_928.dcid_7.l2w_770 1.258815  1.000000  1.235251  1.444884
+//   // trp_1.lm_0.ipt_19.tpb_512.ns_928.dcid_7.l2w_770 1.258815  1.000000  1.235251  1.444884
 //   static constexpr int threads                       = 512;
 //   static constexpr int nominal_4b_items              = 19;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -835,7 +835,7 @@ struct sm100_tuning<Input,
 //                     MayAlias,
 //                     DistinctPartitions>
 // {
-//   // trp_1.ld_0.ipt_23.tpb_384.ns_1140.dcid_7.l2w_520 1.081506  0.955298  1.088848  1.248971
+//   // trp_1.lm_0.ipt_23.tpb_384.ns_1140.dcid_7.l2w_520 1.081506  0.955298  1.088848  1.248971
 //   static constexpr int threads                       = 384;
 //   static constexpr int nominal_4b_items              = 23;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -879,7 +879,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     DistinctPartitions>
 {
-  // trp_0.ld_0.ipt_20.tpb_896.ns_84.dcid_7.l2w_480 1.254262  0.846154  1.222437  1.462665
+  // trp_0.lm_0.ipt_20.tpb_896.ns_84.dcid_7.l2w_480 1.254262  0.846154  1.222437  1.462665
   static constexpr int threads                       = 896;
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -897,7 +897,7 @@ struct sm100_tuning<Input,
                     may_alias::yes,
                     DistinctPartitions>
 {
-  // trp_0.ld_0.ipt_20.tpb_1024.ns_360.dcid_6.l2w_380 1.274174  0.748441  1.227123  1.610039
+  // trp_0.lm_0.ipt_20.tpb_1024.ns_360.dcid_6.l2w_380 1.274174  0.748441  1.227123  1.610039
   static constexpr int threads                       = 1024;
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -915,7 +915,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     DistinctPartitions>
 {
-  // trp_0.ld_0.ipt_22.tpb_256.ns_1292.dcid_5.l2w_750 1.283400  1.002841  1.267822  1.445913
+  // trp_0.lm_0.ipt_22.tpb_256.ns_1292.dcid_5.l2w_750 1.283400  1.002841  1.267822  1.445913
   static constexpr int threads                       = 256;
   static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -933,7 +933,7 @@ struct sm100_tuning<Input,
                     may_alias::yes,
                     DistinctPartitions>
 {
-  // trp_1.ld_0.ipt_20.tpb_448.ns_136.dcid_2.l2w_760 1.318819  0.994090  1.289173  1.551415
+  // trp_1.lm_0.ipt_20.tpb_448.ns_136.dcid_2.l2w_760 1.318819  0.994090  1.289173  1.551415
   static constexpr int threads                       = 448;
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -951,7 +951,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     DistinctPartitions>
 {
-  // trp_0.ld_0.ipt_14.tpb_512.ns_844.dcid_6.l2w_675 1.207911  1.068001  1.208890  1.455636
+  // trp_0.lm_0.ipt_14.tpb_512.ns_844.dcid_6.l2w_675 1.207911  1.068001  1.208890  1.455636
   static constexpr int threads                       = 512;
   static constexpr int nominal_4b_items              = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -969,7 +969,7 @@ struct sm100_tuning<Input,
                     may_alias::yes,
                     DistinctPartitions>
 {
-  // trp_1.ld_0.ipt_14.tpb_384.ns_524.dcid_7.l2w_635 1.256212  1.004808  1.241086  1.373337
+  // trp_1.lm_0.ipt_14.tpb_384.ns_524.dcid_7.l2w_635 1.256212  1.004808  1.241086  1.373337
   static constexpr int threads                       = 384;
   static constexpr int nominal_4b_items              = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -987,7 +987,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     DistinctPartitions>
 {
-  // trp_0.ld_1.ipt_22.tpb_320.ns_660.dcid_7.l2w_1030 1.162087  0.997167  1.154955  1.395010
+  // trp_0.lm_1.ipt_22.tpb_320.ns_660.dcid_7.l2w_1030 1.162087  0.997167  1.154955  1.395010
   static constexpr int threads                       = 320;
   static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1005,7 +1005,7 @@ struct sm100_tuning<Input,
                     may_alias::yes,
                     DistinctPartitions>
 {
-  // trp_1.ld_1.ipt_21.tpb_384.ns_1316.dcid_5.l2w_990 1.221365  1.019231  1.213141  1.372951
+  // trp_1.lm_1.ipt_21.tpb_384.ns_1316.dcid_5.l2w_990 1.221365  1.019231  1.213141  1.372951
   static constexpr int threads                       = 384;
   static constexpr int nominal_4b_items              = 21;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1049,7 +1049,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_15.tpb_608.ns_676.dcid_7.l2w_500 1.171303  1.042818  1.175890  1.456731
+  // trp_0.lm_0.ipt_15.tpb_608.ns_676.dcid_7.l2w_500 1.171303  1.042818  1.175890  1.456731
   static constexpr int nominal_4b_items              = 15;
   static constexpr int threads                       = 608;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1067,7 +1067,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_22.tpb_320.ns_1756.dcid_6.l2w_615 1.206387  1.079118  1.202408  1.307692
+  // trp_0.lm_0.ipt_22.tpb_320.ns_1756.dcid_6.l2w_615 1.206387  1.079118  1.202408  1.307692
   static constexpr int nominal_4b_items              = 22;
   static constexpr int threads                       = 320;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1085,7 +1085,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_1.ld_0.ipt_19.tpb_320.ns_716.dcid_5.l2w_570 1.177521  1.123348  1.177703  1.307692
+  // trp_1.lm_0.ipt_19.tpb_320.ns_716.dcid_5.l2w_570 1.177521  1.123348  1.177703  1.307692
   static constexpr int nominal_4b_items              = 19;
   static constexpr int threads                       = 320;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1104,7 +1104,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     distinct_partitions::yes>
 // {
-//   // trp_1.ld_0.ipt_20.tpb_416.ns_1672.dcid_7.l2w_1050 1.086221  0.977775  1.090731  1.257618
+//   // trp_1.lm_0.ipt_20.tpb_416.ns_1672.dcid_7.l2w_1050 1.086221  0.977775  1.090731  1.257618
 //   static constexpr int nominal_4b_items              = 20;
 //   static constexpr int threads                       = 416;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1122,7 +1122,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_22.tpb_576.ns_368.dcid_7.l2w_680 1.191750  0.990521  1.175654  1.433174
+  // trp_0.lm_0.ipt_22.tpb_576.ns_368.dcid_7.l2w_680 1.191750  0.990521  1.175654  1.433174
   static constexpr int nominal_4b_items              = 22;
   static constexpr int threads                       = 576;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1140,7 +1140,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_1.ld_0.ipt_20.tpb_608.ns_516.dcid_7.l2w_635 1.244961  0.848558  1.212567  1.461538
+  // trp_1.lm_0.ipt_20.tpb_608.ns_516.dcid_7.l2w_635 1.244961  0.848558  1.212567  1.461538
   static constexpr int nominal_4b_items              = 20;
   static constexpr int threads                       = 608;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1158,7 +1158,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_1.ld_0.ipt_18.tpb_608.ns_1712.dcid_5.l2w_825 1.255078  0.990588  1.231055  1.421176
+  // trp_1.lm_0.ipt_18.tpb_608.ns_1712.dcid_5.l2w_825 1.255078  0.990588  1.231055  1.421176
   static constexpr int nominal_4b_items              = 18;
   static constexpr int threads                       = 608;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1177,7 +1177,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     distinct_partitions::yes>
 // {
-//   // trp_1.ld_0.ipt_14.tpb_512.ns_1468.dcid_7.l2w_820 1.111830  1.011070  1.119481  1.245868
+//   // trp_1.lm_0.ipt_14.tpb_512.ns_1468.dcid_7.l2w_820 1.111830  1.011070  1.119481  1.245868
 //   static constexpr int nominal_4b_items              = 14;
 //   static constexpr int threads                       = 512;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1195,7 +1195,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_22.tpb_224.ns_68.dcid_2.l2w_990 1.151989  1.064433  1.146707  1.305288
+  // trp_0.lm_0.ipt_22.tpb_224.ns_68.dcid_2.l2w_990 1.151989  1.064433  1.146707  1.305288
   static constexpr int nominal_4b_items              = 22;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1213,7 +1213,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_22.tpb_320.ns_560.dcid_5.l2w_640 1.205538  1.080520  1.201709  1.307692
+  // trp_0.lm_0.ipt_22.tpb_320.ns_560.dcid_5.l2w_640 1.205538  1.080520  1.201709  1.307692
   static constexpr int nominal_4b_items              = 22;
   static constexpr int threads                       = 320;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1231,7 +1231,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_1.ld_0.ipt_19.tpb_608.ns_724.dcid_5.l2w_970 1.196592  0.982227  1.177984  1.310843
+  // trp_1.lm_0.ipt_19.tpb_608.ns_724.dcid_5.l2w_970 1.196592  0.982227  1.177984  1.310843
   static constexpr int nominal_4b_items              = 19;
   static constexpr int threads                       = 608;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1249,7 +1249,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     distinct_partitions::no>
 // {
-//   // trp_1.ld_0.ipt_23.tpb_416.ns_1608.dcid_2.l2w_560 1.099752  0.977393  1.106477  1.259336
+//   // trp_1.lm_0.ipt_23.tpb_416.ns_1608.dcid_2.l2w_560 1.099752  0.977393  1.106477  1.259336
 //   static constexpr int nominal_4b_items              = 23;
 //   static constexpr int threads                       = 416;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1267,7 +1267,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_20.tpb_608.ns_1016.dcid_6.l2w_545 1.239144  1.002404  1.225460  1.444711
+  // trp_0.lm_0.ipt_20.tpb_608.ns_1016.dcid_6.l2w_545 1.239144  1.002404  1.225460  1.444711
   static constexpr int nominal_4b_items              = 20;
   static constexpr int threads                       = 608;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1285,7 +1285,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_1.ld_0.ipt_22.tpb_288.ns_124.dcid_2.l2w_690 1.202783  1.000000  1.183737  1.311755
+  // trp_1.lm_0.ipt_22.tpb_288.ns_124.dcid_2.l2w_690 1.202783  1.000000  1.183737  1.311755
   static constexpr int nominal_4b_items              = 22;
   static constexpr int threads                       = 288;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1303,7 +1303,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_1.ld_0.ipt_19.tpb_608.ns_1884.dcid_6.l2w_950 1.250302  0.988124  1.225191  1.392931
+  // trp_1.lm_0.ipt_19.tpb_608.ns_1884.dcid_6.l2w_950 1.250302  0.988124  1.225191  1.392931
   static constexpr int nominal_4b_items              = 19;
   static constexpr int threads                       = 608;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1321,7 +1321,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_1.ld_0.ipt_23.tpb_416.ns_0.dcid_2.l2w_1200 1.156864  1.011990  1.152368  1.266667
+  // trp_1.lm_0.ipt_23.tpb_416.ns_0.dcid_2.l2w_1200 1.156864  1.011990  1.152368  1.266667
   static constexpr int nominal_4b_items              = 23;
   static constexpr int threads                       = 416;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1340,7 +1340,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_20.tpb_448.ns_964.dcid_7.l2w_385 1.111204  1.036205  1.111986  1.275210
+  // trp_0.lm_0.ipt_20.tpb_448.ns_964.dcid_7.l2w_385 1.111204  1.036205  1.111986  1.275210
   static constexpr int nominal_4b_items              = 20;
   static constexpr int threads                       = 448;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1359,7 +1359,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     distinct_partitions::yes>
 // {
-//   // trp_0.ld_0.ipt_18.tpb_256.ns_300.dcid_6.l2w_820 1.107466  0.923750  1.126995  1.346591
+//   // trp_0.lm_0.ipt_18.tpb_256.ns_300.dcid_6.l2w_820 1.107466  0.923750  1.126995  1.346591
 //   static constexpr int nominal_4b_items              = 18;
 //   static constexpr int threads                       = 256;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1377,7 +1377,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     distinct_partitions::yes>
 // {
-//   // trp_0.ld_0.ipt_19.tpb_256.ns_1608.dcid_7.l2w_675 1.097548  0.964114  1.109189  1.283333
+//   // trp_0.lm_0.ipt_19.tpb_256.ns_1608.dcid_7.l2w_675 1.097548  0.964114  1.109189  1.283333
 //   static constexpr int nominal_4b_items              = 19;
 //   static constexpr int threads                       = 256;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1395,7 +1395,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_21.tpb_384.ns_300.dcid_7.l2w_580 1.239128  1.019324  1.238373  1.347458
+  // trp_0.lm_0.ipt_21.tpb_384.ns_300.dcid_7.l2w_580 1.239128  1.019324  1.238373  1.347458
   static constexpr int nominal_4b_items              = 21;
   static constexpr int threads                       = 384;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1413,7 +1413,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_1.ipt_20.tpb_448.ns_240.dcid_6.l2w_845 1.097180  0.990453  1.091667  1.452153
+  // trp_0.lm_1.ipt_20.tpb_448.ns_240.dcid_6.l2w_845 1.097180  0.990453  1.091667  1.452153
   static constexpr int nominal_4b_items              = 20;
   static constexpr int threads                       = 448;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1431,7 +1431,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_14.tpb_320.ns_1428.dcid_7.l2w_830 1.380164  1.133333  1.367514  1.628793
+  // trp_0.lm_0.ipt_14.tpb_320.ns_1428.dcid_7.l2w_830 1.380164  1.133333  1.367514  1.628793
   static constexpr int nominal_4b_items              = 14;
   static constexpr int threads                       = 320;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1449,7 +1449,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_14.tpb_640.ns_1204.dcid_5.l2w_635 1.155209  1.000000  1.143742  1.380659
+  // trp_0.lm_0.ipt_14.tpb_640.ns_1204.dcid_5.l2w_635 1.155209  1.000000  1.143742  1.380659
   static constexpr int nominal_4b_items              = 14;
   static constexpr int threads                       = 640;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1467,7 +1467,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::yes>
 {
-  // trp_0.ld_0.ipt_19.tpb_384.ns_1016.dcid_7.l2w_875 1.227540  1.181818  1.223936  1.261954
+  // trp_0.lm_0.ipt_19.tpb_384.ns_1016.dcid_7.l2w_875 1.227540  1.181818  1.223936  1.261954
   static constexpr int nominal_4b_items              = 19;
   static constexpr int threads                       = 384;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1485,7 +1485,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_24.tpb_256.ns_2024.dcid_5.l2w_835 1.146782  1.001841  1.149438  1.439904
+  // trp_0.lm_0.ipt_24.tpb_256.ns_2024.dcid_5.l2w_835 1.146782  1.001841  1.149438  1.439904
   static constexpr int nominal_4b_items              = 24;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1504,7 +1504,7 @@ struct sm100_tuning<Input,
 //                     may_alias::no,
 //                     distinct_partitions::no>
 // {
-//   // trp_0.ld_0.ipt_18.tpb_256.ns_1832.dcid_5.l2w_590 1.128674  0.984403  1.150806  1.355932
+//   // trp_0.lm_0.ipt_18.tpb_256.ns_1832.dcid_5.l2w_590 1.128674  0.984403  1.150806  1.355932
 //   static constexpr int nominal_4b_items              = 18;
 //   static constexpr int threads                       = 256;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1522,7 +1522,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_11.tpb_448.ns_476.dcid_7.l2w_665 1.173664  1.035556  1.186114  1.393153
+  // trp_0.lm_0.ipt_11.tpb_448.ns_476.dcid_7.l2w_665 1.173664  1.035556  1.186114  1.393153
   static constexpr int nominal_4b_items              = 11;
   static constexpr int threads                       = 448;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1540,7 +1540,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_20.tpb_384.ns_1420.dcid_5.l2w_525 (39_new/2.db)  1.157326  1.110920  1.162458  1.259336
+  // trp_0.lm_0.ipt_20.tpb_384.ns_1420.dcid_5.l2w_525 (39_new/2.db)  1.157326  1.110920  1.162458  1.259336
   static constexpr int nominal_4b_items              = 20;
   static constexpr int threads                       = 384;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1558,7 +1558,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_12.tpb_256.ns_0.dcid_5.l2w_850 1.150864  1.005760  1.157687  1.395833
+  // trp_0.lm_0.ipt_12.tpb_256.ns_0.dcid_5.l2w_850 1.150864  1.005760  1.157687  1.395833
   static constexpr int nominal_4b_items              = 12;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1576,7 +1576,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_12.tpb_256.ns_1552.dcid_7.l2w_730 1.374892  1.171831  1.360076  1.513390
+  // trp_0.lm_0.ipt_12.tpb_256.ns_1552.dcid_7.l2w_730 1.374892  1.171831  1.360076  1.513390
   static constexpr int nominal_4b_items              = 12;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1594,7 +1594,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_14.tpb_352.ns_1444.dcid_5.l2w_655 1.183452  1.000000  1.177224  1.402083
+  // trp_0.lm_0.ipt_14.tpb_352.ns_1444.dcid_5.l2w_655 1.183452  1.000000  1.177224  1.402083
   static constexpr int nominal_4b_items              = 14;
   static constexpr int threads                       = 352;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -1612,7 +1612,7 @@ struct sm100_tuning<Input,
                     may_alias::no,
                     distinct_partitions::no>
 {
-  // trp_0.ld_0.ipt_11.tpb_512.ns_536.dcid_2.l2w_845 1.248969  1.184659  1.251631  1.360795
+  // trp_0.lm_0.ipt_11.tpb_512.ns_536.dcid_2.l2w_845 1.248969  1.184659  1.251631  1.360795
   static constexpr int nominal_4b_items              = 11;
   static constexpr int threads                       = 512;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -2265,7 +2265,7 @@ private:
     {
       if (input_size_bytes == 1 && not may_alias)
       {
-        // trp_0.ld_0.ipt_22.tpb_384.ns_0.dcid_2.l2w_915 1.099232  0.980183  1.096778  1.545455
+        // trp_0.lm_0.ipt_22.tpb_384.ns_0.dcid_2.l2w_915 1.099232  0.980183  1.096778  1.545455
         return make_scaled_policy(
           384,
           22,
@@ -2275,7 +2275,7 @@ private:
       }
       if (input_size_bytes == 1 && may_alias)
       {
-        // trp_1.ld_0.ipt_20.tpb_448.ns_596.dcid_6.l2w_295  1.214635  1.001421  1.207023  1.307692
+        // trp_1.lm_0.ipt_20.tpb_448.ns_596.dcid_6.l2w_295  1.214635  1.001421  1.207023  1.307692
         return make_scaled_policy(
           448,
           20,
@@ -2285,7 +2285,7 @@ private:
       }
       if (input_size_bytes == 4 && not may_alias)
       {
-        // trp_1.ld_0.ipt_15.tpb_384.ns_1508.dcid_5.l2w_585 1.201993  0.920103  1.185134  1.441805
+        // trp_1.lm_0.ipt_15.tpb_384.ns_1508.dcid_5.l2w_585 1.201993  0.920103  1.185134  1.441805
         return make_scaled_policy(
           384,
           15,
@@ -2300,7 +2300,7 @@ private:
     {
       if (input_size_bytes == 1 && not may_alias)
       {
-        // trp_0.ld_0.ipt_20.tpb_896.ns_84.dcid_7.l2w_480 1.254262  0.846154  1.222437  1.462665
+        // trp_0.lm_0.ipt_20.tpb_896.ns_84.dcid_7.l2w_480 1.254262  0.846154  1.222437  1.462665
         return make_scaled_policy(
           896,
           20,
@@ -2310,7 +2310,7 @@ private:
       }
       if (input_size_bytes == 1 && may_alias)
       {
-        // trp_0.ld_0.ipt_20.tpb_1024.ns_360.dcid_6.l2w_380 1.274174  0.748441  1.227123  1.610039
+        // trp_0.lm_0.ipt_20.tpb_1024.ns_360.dcid_6.l2w_380 1.274174  0.748441  1.227123  1.610039
         return make_scaled_policy(
           1024,
           20,
@@ -2320,7 +2320,7 @@ private:
       }
       if (input_size_bytes == 2 && not may_alias)
       {
-        // trp_0.ld_0.ipt_22.tpb_256.ns_1292.dcid_5.l2w_750 1.283400  1.002841  1.267822  1.445913
+        // trp_0.lm_0.ipt_22.tpb_256.ns_1292.dcid_5.l2w_750 1.283400  1.002841  1.267822  1.445913
         return make_scaled_policy(
           256,
           22,
@@ -2330,7 +2330,7 @@ private:
       }
       if (input_size_bytes == 2 && may_alias)
       {
-        // trp_1.ld_0.ipt_20.tpb_448.ns_136.dcid_2.l2w_760 1.318819  0.994090  1.289173  1.551415
+        // trp_1.lm_0.ipt_20.tpb_448.ns_136.dcid_2.l2w_760 1.318819  0.994090  1.289173  1.551415
         return make_scaled_policy(
           448,
           20,
@@ -2340,7 +2340,7 @@ private:
       }
       if (input_size_bytes == 4 && not may_alias)
       {
-        // trp_0.ld_0.ipt_14.tpb_512.ns_844.dcid_6.l2w_675 1.207911  1.068001  1.208890  1.455636
+        // trp_0.lm_0.ipt_14.tpb_512.ns_844.dcid_6.l2w_675 1.207911  1.068001  1.208890  1.455636
         return make_scaled_policy(
           512,
           14,
@@ -2350,7 +2350,7 @@ private:
       }
       if (input_size_bytes == 4 && may_alias)
       {
-        // trp_1.ld_0.ipt_14.tpb_384.ns_524.dcid_7.l2w_635 1.256212  1.004808  1.241086  1.373337
+        // trp_1.lm_0.ipt_14.tpb_384.ns_524.dcid_7.l2w_635 1.256212  1.004808  1.241086  1.373337
         return make_scaled_policy(
           384,
           14,
@@ -2360,7 +2360,7 @@ private:
       }
       if (input_size_bytes == 8 && not may_alias)
       {
-        // trp_0.ld_1.ipt_22.tpb_320.ns_660.dcid_7.l2w_1030 1.162087  0.997167  1.154955  1.395010
+        // trp_0.lm_1.ipt_22.tpb_320.ns_660.dcid_7.l2w_1030 1.162087  0.997167  1.154955  1.395010
         return make_scaled_policy(
           320,
           22,
@@ -2370,7 +2370,7 @@ private:
       }
       if (input_size_bytes == 8 && may_alias)
       {
-        // trp_1.ld_1.ipt_21.tpb_384.ns_1316.dcid_5.l2w_990 1.221365  1.019231  1.213141  1.372951
+        // trp_1.lm_1.ipt_21.tpb_384.ns_1316.dcid_5.l2w_990 1.221365  1.019231  1.213141  1.372951
         return make_scaled_policy(
           384,
           21,
@@ -2388,7 +2388,7 @@ private:
       {
         if (offset_size_bytes == 4 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_15.tpb_608.ns_676.dcid_7.l2w_500 1.171303  1.042818  1.175890  1.456731
+          // trp_0.lm_0.ipt_15.tpb_608.ns_676.dcid_7.l2w_500 1.171303  1.042818  1.175890  1.456731
           return make_scaled_policy(
             608,
             15,
@@ -2398,7 +2398,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 2)
         {
-          // trp_0.ld_0.ipt_22.tpb_320.ns_1756.dcid_6.l2w_615 1.206387  1.079118  1.202408  1.307692
+          // trp_0.lm_0.ipt_22.tpb_320.ns_1756.dcid_6.l2w_615 1.206387  1.079118  1.202408  1.307692
           return make_scaled_policy(
             320,
             22,
@@ -2408,7 +2408,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 4)
         {
-          // trp_1.ld_0.ipt_19.tpb_320.ns_716.dcid_5.l2w_570 1.177521  1.123348  1.177703  1.307692
+          // trp_1.lm_0.ipt_19.tpb_320.ns_716.dcid_5.l2w_570 1.177521  1.123348  1.177703  1.307692
           return make_scaled_policy(
             320,
             19,
@@ -2418,7 +2418,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_22.tpb_576.ns_368.dcid_7.l2w_680 1.191750  0.990521  1.175654  1.433174
+          // trp_0.lm_0.ipt_22.tpb_576.ns_368.dcid_7.l2w_680 1.191750  0.990521  1.175654  1.433174
           return make_scaled_policy(
             576,
             22,
@@ -2428,7 +2428,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
-          // trp_1.ld_0.ipt_20.tpb_608.ns_516.dcid_7.l2w_635 1.244961  0.848558  1.212567  1.461538
+          // trp_1.lm_0.ipt_20.tpb_608.ns_516.dcid_7.l2w_635 1.244961  0.848558  1.212567  1.461538
           return make_scaled_policy(
             608,
             20,
@@ -2438,7 +2438,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
-          // trp_1.ld_0.ipt_18.tpb_608.ns_1712.dcid_5.l2w_825 1.255078  0.990588  1.231055  1.421176
+          // trp_1.lm_0.ipt_18.tpb_608.ns_1712.dcid_5.l2w_825 1.255078  0.990588  1.231055  1.421176
           return make_scaled_policy(
             608,
             18,
@@ -2451,7 +2451,7 @@ private:
       {
         if (offset_size_bytes == 4 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_22.tpb_224.ns_68.dcid_2.l2w_990 1.151989  1.064433  1.146707  1.305288
+          // trp_0.lm_0.ipt_22.tpb_224.ns_68.dcid_2.l2w_990 1.151989  1.064433  1.146707  1.305288
           return make_scaled_policy(
             224,
             22,
@@ -2461,7 +2461,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 2)
         {
-          // trp_0.ld_0.ipt_22.tpb_320.ns_560.dcid_5.l2w_640 1.205538  1.080520  1.201709  1.307692
+          // trp_0.lm_0.ipt_22.tpb_320.ns_560.dcid_5.l2w_640 1.205538  1.080520  1.201709  1.307692
           return make_scaled_policy(
             320,
             22,
@@ -2471,7 +2471,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 4)
         {
-          // trp_1.ld_0.ipt_19.tpb_608.ns_724.dcid_5.l2w_970 1.196592  0.982227  1.177984  1.310843
+          // trp_1.lm_0.ipt_19.tpb_608.ns_724.dcid_5.l2w_970 1.196592  0.982227  1.177984  1.310843
           return make_scaled_policy(
             608,
             19,
@@ -2481,7 +2481,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_20.tpb_608.ns_1016.dcid_6.l2w_545 1.239144  1.002404  1.225460  1.444711
+          // trp_0.lm_0.ipt_20.tpb_608.ns_1016.dcid_6.l2w_545 1.239144  1.002404  1.225460  1.444711
           return make_scaled_policy(
             608,
             20,
@@ -2491,7 +2491,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
-          // trp_1.ld_0.ipt_22.tpb_288.ns_124.dcid_2.l2w_690 1.202783  1.000000  1.183737  1.311755
+          // trp_1.lm_0.ipt_22.tpb_288.ns_124.dcid_2.l2w_690 1.202783  1.000000  1.183737  1.311755
           return make_scaled_policy(
             288,
             22,
@@ -2501,7 +2501,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
-          // trp_1.ld_0.ipt_19.tpb_608.ns_1884.dcid_6.l2w_950 1.250302  0.988124  1.225191  1.392931
+          // trp_1.lm_0.ipt_19.tpb_608.ns_1884.dcid_6.l2w_950 1.250302  0.988124  1.225191  1.392931
           return make_scaled_policy(
             608,
             19,
@@ -2511,7 +2511,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 8)
         {
-          // trp_1.ld_0.ipt_23.tpb_416.ns_0.dcid_2.l2w_1200 1.156864  1.011990  1.152368  1.266667
+          // trp_1.lm_0.ipt_23.tpb_416.ns_0.dcid_2.l2w_1200 1.156864  1.011990  1.152368  1.266667
           return make_scaled_policy(
             416,
             23,
@@ -2529,7 +2529,7 @@ private:
       {
         if (offset_size_bytes == 4 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_20.tpb_448.ns_964.dcid_7.l2w_385 1.111204  1.036205  1.111986  1.275210
+          // trp_0.lm_0.ipt_20.tpb_448.ns_964.dcid_7.l2w_385 1.111204  1.036205  1.111986  1.275210
           return make_scaled_policy(
             448,
             20,
@@ -2539,7 +2539,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 8)
         {
-          // trp_0.ld_0.ipt_21.tpb_384.ns_300.dcid_7.l2w_580 1.239128  1.019324  1.238373  1.347458
+          // trp_0.lm_0.ipt_21.tpb_384.ns_300.dcid_7.l2w_580 1.239128  1.019324  1.238373  1.347458
           return make_scaled_policy(
             384,
             21,
@@ -2549,7 +2549,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
-          // trp_0.ld_1.ipt_20.tpb_448.ns_240.dcid_6.l2w_845 1.097180  0.990453  1.091667  1.452153
+          // trp_0.lm_1.ipt_20.tpb_448.ns_240.dcid_6.l2w_845 1.097180  0.990453  1.091667  1.452153
           return make_scaled_policy(
             448,
             20,
@@ -2559,7 +2559,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
-          // trp_0.ld_0.ipt_14.tpb_320.ns_1428.dcid_7.l2w_830 1.380164  1.133333  1.367514  1.628793
+          // trp_0.lm_0.ipt_14.tpb_320.ns_1428.dcid_7.l2w_830 1.380164  1.133333  1.367514  1.628793
           return make_scaled_policy(
             320,
             14,
@@ -2569,7 +2569,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
-          // trp_0.ld_0.ipt_14.tpb_640.ns_1204.dcid_5.l2w_635 1.155209  1.000000  1.143742  1.380659
+          // trp_0.lm_0.ipt_14.tpb_640.ns_1204.dcid_5.l2w_635 1.155209  1.000000  1.143742  1.380659
           return make_scaled_policy(
             640,
             14,
@@ -2579,7 +2579,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 8)
         {
-          // trp_0.ld_0.ipt_19.tpb_384.ns_1016.dcid_7.l2w_875 1.227540  1.181818  1.223936  1.261954
+          // trp_0.lm_0.ipt_19.tpb_384.ns_1016.dcid_7.l2w_875 1.227540  1.181818  1.223936  1.261954
           return make_scaled_policy(
             384,
             19,
@@ -2592,7 +2592,7 @@ private:
       {
         if (offset_size_bytes == 4 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_24.tpb_256.ns_2024.dcid_5.l2w_835 1.146782  1.001841  1.149438  1.439904
+          // trp_0.lm_0.ipt_24.tpb_256.ns_2024.dcid_5.l2w_835 1.146782  1.001841  1.149438  1.439904
           return make_scaled_policy(
             256,
             24,
@@ -2602,7 +2602,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 4)
         {
-          // trp_0.ld_0.ipt_11.tpb_448.ns_476.dcid_7.l2w_665 1.173664  1.035556  1.186114  1.393153
+          // trp_0.lm_0.ipt_11.tpb_448.ns_476.dcid_7.l2w_665 1.173664  1.035556  1.186114  1.393153
           return make_scaled_policy(
             448,
             11,
@@ -2612,7 +2612,7 @@ private:
         }
         if (offset_size_bytes == 4 && input_size_bytes == 8)
         {
-          // trp_0.ld_0.ipt_20.tpb_384.ns_1420.dcid_5.l2w_525 (39_new/2.db)  1.157326  1.110920  1.162458  1.259336
+          // trp_0.lm_0.ipt_20.tpb_384.ns_1420.dcid_5.l2w_525 (39_new/2.db)  1.157326  1.110920  1.162458  1.259336
           return make_scaled_policy(
             384,
             20,
@@ -2622,7 +2622,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 1)
         {
-          // trp_0.ld_0.ipt_12.tpb_256.ns_0.dcid_5.l2w_850 1.150864  1.005760  1.157687  1.395833
+          // trp_0.lm_0.ipt_12.tpb_256.ns_0.dcid_5.l2w_850 1.150864  1.005760  1.157687  1.395833
           return make_scaled_policy(
             256,
             12,
@@ -2632,7 +2632,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 2)
         {
-          // trp_0.ld_0.ipt_12.tpb_256.ns_1552.dcid_7.l2w_730 1.374892  1.171831  1.360076  1.513390
+          // trp_0.lm_0.ipt_12.tpb_256.ns_1552.dcid_7.l2w_730 1.374892  1.171831  1.360076  1.513390
           return make_scaled_policy(
             256,
             12,
@@ -2642,7 +2642,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 4)
         {
-          // trp_0.ld_0.ipt_14.tpb_352.ns_1444.dcid_5.l2w_655 1.183452  1.000000  1.177224  1.402083
+          // trp_0.lm_0.ipt_14.tpb_352.ns_1444.dcid_5.l2w_655 1.183452  1.000000  1.177224  1.402083
           return make_scaled_policy(
             352,
             14,
@@ -2652,7 +2652,7 @@ private:
         }
         if (offset_size_bytes == 8 && input_size_bytes == 8)
         {
-          // trp_0.ld_0.ipt_11.tpb_512.ns_536.dcid_2.l2w_845 1.248969  1.184659  1.251631  1.360795
+          // trp_0.lm_0.ipt_11.tpb_512.ns_536.dcid_2.l2w_845 1.248969  1.184659  1.251631  1.360795
           return make_scaled_policy(
             512,
             11,
@@ -2685,7 +2685,7 @@ private:
 
     if (input_size_bytes == 1)
     {
-      // trp_0.ld_0.ipt_20.tpb_512.ns_76.dcid_5.l2w_475  if 2^28 1.132, unique 2^28 1.147
+      // trp_0.lm_0.ipt_20.tpb_512.ns_76.dcid_5.l2w_475  if 2^28 1.132, unique 2^28 1.147
       return SelectLookbackPolicy{
         512,
         20,
@@ -2696,7 +2696,7 @@ private:
     }
     if (input_size_bytes == 2)
     {
-      // trp_1.ld_0.ipt_22.tpb_512.ns_456.dcid_0.l2w_525  if 2^28 1.174, unique 2^28 1.188
+      // trp_1.lm_0.ipt_22.tpb_512.ns_456.dcid_0.l2w_525  if 2^28 1.174, unique 2^28 1.188
       return SelectLookbackPolicy{
         512,
         22,
@@ -2709,7 +2709,7 @@ private:
     {
       if (input_type == type_t::float32)
       {
-        // trp_1.ld_1.ipt_19.tpb_512.ns_20.dcid_5.l2w_555  if 2^28 1.477, unique 2^28 1.471
+        // trp_1.lm_1.ipt_19.tpb_512.ns_20.dcid_5.l2w_555  if 2^28 1.477, unique 2^28 1.471
         return SelectLookbackPolicy{
           512,
           19,
@@ -2718,7 +2718,7 @@ private:
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter_window, 20, 555}};
       }
-      // trp_1.ld_0.ipt_23.tpb_448.ns_872.dcid_0.l2w_560  if 2^28 1.461, unique 2^28 1.513
+      // trp_1.lm_0.ipt_23.tpb_448.ns_872.dcid_0.l2w_560  if 2^28 1.461, unique 2^28 1.513
       return SelectLookbackPolicy{
         448,
         23,
@@ -2731,7 +2731,7 @@ private:
     {
       if (input_type == type_t::float64)
       {
-        // trp_1.ld_0.ipt_19.tpb_160.ns_0.dcid_1.l2w_555  if 2^28 1.445, unique 2^28 1.298
+        // trp_1.lm_0.ipt_19.tpb_160.ns_0.dcid_1.l2w_555  if 2^28 1.445, unique 2^28 1.298
         return SelectLookbackPolicy{
           160,
           19,
@@ -2740,7 +2740,7 @@ private:
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 0, 555}};
       }
-      // trp_1.ld_1.ipt_17.tpb_256.ns_680.dcid_6.l2w_625  if 2^28 1.330, unique 2^28 1.527
+      // trp_1.lm_1.ipt_17.tpb_256.ns_680.dcid_6.l2w_625  if 2^28 1.330, unique 2^28 1.527
       return SelectLookbackPolicy{
         256,
         17,
@@ -2751,7 +2751,7 @@ private:
     }
     if (input_size_bytes == 16)
     {
-      // trp_1.ld_0.ipt_19.tpb_128.ns_1136.dcid_0.l2w_780  if 2^28 1.398, unique 2^28 1.552
+      // trp_1.lm_0.ipt_19.tpb_128.ns_1136.dcid_0.l2w_780  if 2^28 1.398, unique 2^28 1.552
       return SelectLookbackPolicy{
         128,
         19,
@@ -2782,7 +2782,7 @@ private:
 
     if (input_size_bytes == 1)
     {
-      // trp_0.ld_0.ipt_22.tpb_512.ns_152.dcid_1.l2w_955  2^24 1.356  2^28 1.607
+      // trp_0.lm_0.ipt_22.tpb_512.ns_152.dcid_1.l2w_955  2^24 1.356  2^28 1.607
       return SelectLookbackPolicy{
         512,
         22,
@@ -2793,7 +2793,7 @@ private:
     }
     if (input_size_bytes == 2)
     {
-      // trp_1.ld_1.ipt_22.tpb_256.ns_12.dcid_7.l2w_885  2^24 1.192  2^28 1.337
+      // trp_1.lm_1.ipt_22.tpb_256.ns_12.dcid_7.l2w_885  2^24 1.192  2^28 1.337
       return SelectLookbackPolicy{
         256,
         22,
@@ -2806,7 +2806,7 @@ private:
     {
       if (input_type == type_t::float32)
       {
-        // trp_1.ld_1.ipt_23.tpb_512.ns_644.dcid_0.l2w_765  2^24 1.325  2^28 1.511
+        // trp_1.lm_1.ipt_23.tpb_512.ns_644.dcid_0.l2w_765  2^24 1.325  2^28 1.511
         return SelectLookbackPolicy{
           512,
           23,
@@ -2815,7 +2815,7 @@ private:
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 644, 765}};
       }
-      // trp_1.ld_0.ipt_23.tpb_512.ns_1356.dcid_0.l2w_830  2^24 1.327  2^28 1.516
+      // trp_1.lm_0.ipt_23.tpb_512.ns_1356.dcid_0.l2w_830  2^24 1.327  2^28 1.516
       return SelectLookbackPolicy{
         512,
         23,
@@ -2828,7 +2828,7 @@ private:
     {
       if (input_type == type_t::float64)
       {
-        // trp_1.ld_0.ipt_13.tpb_320.ns_168.dcid_6.l2w_630  2^24 1.193  2^28 1.230
+        // trp_1.lm_0.ipt_13.tpb_320.ns_168.dcid_6.l2w_630  2^24 1.193  2^28 1.230
         return SelectLookbackPolicy{
           320,
           13,
@@ -2837,7 +2837,7 @@ private:
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 168, 630}};
       }
-      // trp_1.ld_1.ipt_23.tpb_192.ns_360.dcid_0.l2w_1035  2^24 1.220  2^28 1.334
+      // trp_1.lm_1.ipt_23.tpb_192.ns_360.dcid_0.l2w_1035  2^24 1.220  2^28 1.334
       return SelectLookbackPolicy{
         192,
         23,
@@ -2848,7 +2848,7 @@ private:
     }
     if (input_size_bytes == 16)
     {
-      // trp_1.ld_0.ipt_19.tpb_128.ns_12.dcid_3.l2w_1165  2^24 1.437  2^28 1.559
+      // trp_1.lm_0.ipt_19.tpb_128.ns_12.dcid_3.l2w_1165  2^24 1.437  2^28 1.559
       return SelectLookbackPolicy{
         128,
         19,
@@ -2879,7 +2879,7 @@ private:
 
     if (input_size_bytes == 1)
     {
-      // trp_0.ld_1.ipt_20.tpb_416.ns_20.dcid_5.l2w_555.pf_2  1.037  1.039  1.077  1.050
+      // trp_0.lm_1.ipt_20.tpb_416.ns_20.dcid_5.l2w_555.pf_2  1.037  1.039  1.077  1.050
       return SelectLookbackPolicy{
         416,
         20,
@@ -2891,7 +2891,7 @@ private:
     }
     if (input_size_bytes == 2)
     {
-      // trp_1.ld_0.ipt_22.tpb_448.ns_436.dcid_0.l2w_695.pf_3  1.003  0.968  1.287  1.435
+      // trp_1.lm_0.ipt_22.tpb_448.ns_436.dcid_0.l2w_695.pf_3  1.003  0.968  1.287  1.435
       return SelectLookbackPolicy{
         448,
         22,
@@ -2905,7 +2905,7 @@ private:
     {
       if (input_type == type_t::float32)
       {
-        // trp_1.ld_0.ipt_20.tpb_448.ns_20.dcid_7.l2w_965.pf_3  0.933  0.956  1.115  1.161
+        // trp_1.lm_0.ipt_20.tpb_448.ns_20.dcid_7.l2w_965.pf_3  0.933  0.956  1.115  1.161
         return SelectLookbackPolicy{
           448,
           20,
@@ -2915,7 +2915,7 @@ private:
           LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 20, 965},
           LoadPrefetch::bulk_l2};
       }
-      // trp_0.ld_0.ipt_19.tpb_448.ns_1988.dcid_0.l2w_640.pf_2  1.016  0.985  1.084  1.111
+      // trp_0.lm_0.ipt_19.tpb_448.ns_1988.dcid_0.l2w_640.pf_2  1.016  0.985  1.084  1.111
       return SelectLookbackPolicy{
         448,
         19,
@@ -2929,7 +2929,7 @@ private:
     {
       if (input_type == type_t::float64)
       {
-        // trp_0.ld_0.ipt_11.tpb_512.ns_808.dcid_7.l2w_585.pf_1  1.012  1.169  1.096  1.088
+        // trp_0.lm_0.ipt_11.tpb_512.ns_808.dcid_7.l2w_585.pf_1  1.012  1.169  1.096  1.088
         return SelectLookbackPolicy{
           512,
           11,
@@ -2939,7 +2939,7 @@ private:
           LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon, 808, 585},
           LoadPrefetch::l2};
       }
-      // trp_1.ld_0.ipt_18.tpb_320.ns_492.dcid_5.l2w_750.pf_3  1.135  1.158  1.083  1.054
+      // trp_1.lm_0.ipt_18.tpb_320.ns_492.dcid_5.l2w_750.pf_3  1.135  1.158  1.083  1.054
       return SelectLookbackPolicy{
         320,
         18,
@@ -2951,7 +2951,7 @@ private:
     }
     if (input_size_bytes == 16)
     {
-      // trp_0.ld_1.ipt_19.tpb_128.ns_1236.dcid_0.l2w_675.pf_1  0.938  1.188  1.704  1.830
+      // trp_0.lm_1.ipt_19.tpb_128.ns_1236.dcid_0.l2w_675.pf_1  0.938  1.188  1.704  1.830
       return SelectLookbackPolicy{
         128,
         19,
@@ -2981,7 +2981,7 @@ private:
 
     if (input_size_bytes == 1)
     {
-      // trp_0.ld_0.ipt_22.tpb_512.ns_500.dcid_7.l2w_325  0.972  0.983  1.247  1.341
+      // trp_0.lm_0.ipt_22.tpb_512.ns_500.dcid_7.l2w_325  0.972  0.983  1.247  1.341
       return SelectLookbackPolicy{
         512,
         22,
@@ -2995,7 +2995,7 @@ private:
     {
       if (input_type == type_t::float32)
       {
-        // trp_0.ld_1.ipt_14.tpb_320.ns_140.dcid_1.l2w_805  1.267  0.987  1.299  1.617
+        // trp_0.lm_1.ipt_14.tpb_320.ns_140.dcid_1.l2w_805  1.267  0.987  1.299  1.617
         return SelectLookbackPolicy{
           320,
           14,
@@ -3004,7 +3004,7 @@ private:
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::fixed_delay, 140, 805}};
       }
-      // trp_1.ld_1.ipt_20.tpb_224.ns_60.dcid_0.l2w_640  0.966  0.967  1.148  1.227
+      // trp_1.lm_1.ipt_20.tpb_224.ns_60.dcid_0.l2w_640  0.966  0.967  1.148  1.227
       return SelectLookbackPolicy{
         224,
         20,
@@ -3017,7 +3017,7 @@ private:
     {
       if (input_type == type_t::float64)
       {
-        // trp_1.ld_0.ipt_18.tpb_256.ns_28.dcid_0.l2w_745  0.967  1.008  1.148  1.222
+        // trp_1.lm_0.ipt_18.tpb_256.ns_28.dcid_0.l2w_745  0.967  1.008  1.148  1.222
         return SelectLookbackPolicy{
           256,
           18,
@@ -3026,7 +3026,7 @@ private:
           BLOCK_SCAN_WARP_SCANS,
           LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 28, 745}};
       }
-      // trp_1.ld_1.ipt_19.tpb_256.ns_20.dcid_1.l2w_1120  0.994  0.960  1.172  1.303
+      // trp_1.lm_1.ipt_19.tpb_256.ns_20.dcid_1.l2w_1120  0.994  0.960  1.172  1.303
       return SelectLookbackPolicy{
         256,
         19,
@@ -3037,7 +3037,7 @@ private:
     }
     if (input_size_bytes == 16)
     {
-      // trp_1.ld_0.ipt_19.tpb_128.ns_52.dcid_1.l2w_1200  0.963  0.982  1.300  1.403
+      // trp_1.lm_0.ipt_19.tpb_128.ns_52.dcid_1.l2w_1200  0.963  0.982  1.300  1.403
       return SelectLookbackPolicy{
         128,
         19,

@@ -705,7 +705,7 @@ struct sm100_tuning;
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_1>
 {
-  // ipt_13.tpb_576.trp_0.ld_1.ns_2044.dcid_5.l2w_240 1.161888  0.848558  1.134941  1.299109
+  // ipt_13.tpb_576.trp_0.lm_1.ns_2044.dcid_5.l2w_240 1.161888  0.848558  1.134941  1.299109
   static constexpr int items                         = 13;
   static constexpr int threads                       = 576;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -716,7 +716,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_2>
 {
-  // ipt_10.tpb_224.trp_0.ld_0.ns_244.dcid_4.l2w_390 1.313932  1.260540  1.319588  1.427374
+  // ipt_10.tpb_224.trp_0.lm_0.ns_244.dcid_4.l2w_390 1.313932  1.260540  1.319588  1.427374
   static constexpr int items                         = 10;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -727,7 +727,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_4>
 {
-  // ipt_14.tpb_128.trp_0.ld_0.ns_248.dcid_2.l2w_285  1.118109  1.051534  1.134336  1.326788
+  // ipt_14.tpb_128.trp_0.lm_0.ns_248.dcid_2.l2w_285  1.118109  1.051534  1.134336  1.326788
   static constexpr int items                         = 14;
   static constexpr int threads                       = 128;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -738,7 +738,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_8>
 {
-  // ipt_19.tpb_128.trp_1.ld_0.ns_132.dcid_1.l2w_540 1.113820  1.002404  1.105014  1.202296
+  // ipt_19.tpb_128.trp_1.lm_0.ns_132.dcid_1.l2w_540 1.113820  1.002404  1.105014  1.202296
   static constexpr int items                         = 19;
   static constexpr int threads                       = 128;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -761,7 +761,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_1>
 {
-  // ipt_14.tpb_128.trp_1.ld_0.ns_164.dcid_2.l2w_290 1.239579  1.119705  1.239111  1.313112
+  // ipt_14.tpb_128.trp_1.lm_0.ns_164.dcid_2.l2w_290 1.239579  1.119705  1.239111  1.313112
   static constexpr int items                         = 14;
   static constexpr int threads                       = 128;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -772,7 +772,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_2>
 {
-  // ipt_14.tpb_256.trp_1.ld_0.ns_180.dcid_2.l2w_975 1.145635  1.012658  1.139956  1.251546
+  // ipt_14.tpb_256.trp_1.lm_0.ns_180.dcid_2.l2w_975 1.145635  1.012658  1.139956  1.251546
   static constexpr int items                         = 14;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -783,7 +783,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_4>
 {
-  // ipt_11.tpb_256.trp_0.ld_0.ns_224.dcid_2.l2w_550 1.066293  1.000109  1.073092  1.181818
+  // ipt_11.tpb_256.trp_0.lm_0.ns_224.dcid_2.l2w_550 1.066293  1.000109  1.073092  1.181818
   static constexpr int items                         = 11;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -794,7 +794,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_8>
 {
-  // ipt_10.tpb_160.trp_1.ld_0.ns_156.dcid_1.l2w_725 1.045007  1.002105  1.049690  1.141827
+  // ipt_10.tpb_160.trp_1.lm_0.ns_156.dcid_1.l2w_725 1.045007  1.002105  1.049690  1.141827
   static constexpr int items                         = 10;
   static constexpr int threads                       = 160;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -822,7 +822,7 @@ struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitiv
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_1>
 {
-  // ipt_10.tpb_224.trp_0.ld_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
+  // ipt_10.tpb_224.trp_0.lm_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
   static constexpr int items                         = 10;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -833,7 +833,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_2>
 {
-  // ipt_11.tpb_256.trp_0.ld_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
+  // ipt_11.tpb_256.trp_0.lm_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
   static constexpr int items                         = 11;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -844,7 +844,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_4>
 {
-  // ipt_14.tpb_224.trp_1.ld_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
+  // ipt_14.tpb_224.trp_1.lm_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
   static constexpr int items                         = 14;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -855,7 +855,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_8>
 {
-  // ipt_10.tpb_256.trp_1.ld_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
+  // ipt_10.tpb_256.trp_1.lm_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
   static constexpr int items                         = 10;
   static constexpr int threads                       = 256;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -878,7 +878,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_1>
 {
-  // ipt_9.tpb_224.trp_1.ld_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
+  // ipt_9.tpb_224.trp_1.lm_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
   static constexpr int items                         = 9;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -889,7 +889,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_2>
 {
-  // ipt_11.tpb_224.trp_1.ld_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
+  // ipt_11.tpb_224.trp_1.lm_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
   static constexpr int items                         = 11;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -900,7 +900,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_4>
 {
-  // ipt_9.tpb_224.trp_1.ld_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
+  // ipt_9.tpb_224.trp_1.lm_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
   static constexpr int items                         = 9;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -911,7 +911,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 template <class KeyT, class AccumT>
 struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_8>
 {
-  // ipt_9.tpb_224.trp_1.ld_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
+  // ipt_9.tpb_224.trp_1.lm_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
   static constexpr int items                         = 9;
   static constexpr int threads                       = 224;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -1086,7 +1086,7 @@ private:
     {
       if (key_size == 1 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
       {
-        // ipt_13.tpb_256.trp_0.ld_1.ns_824.dcid_7.l2w_380 1.203  1.206  1.190  1.190
+        // ipt_13.tpb_256.trp_0.lm_1.ns_824.dcid_7.l2w_380 1.203  1.206  1.190  1.190
         return {256,
                 13,
                 BLOCK_LOAD_DIRECT,
@@ -1096,12 +1096,12 @@ private:
       }
       if (key_size == 2 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
       {
-        // ipt_14.tpb_224.trp_0.ld_1.ns_336.dcid_0.l2w_515 1.121  1.112  1.153  1.155
+        // ipt_14.tpb_224.trp_0.lm_1.ns_336.dcid_0.l2w_515 1.121  1.112  1.153  1.155
         return {224, 14, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_SCAN_WARP_SCANS, {LookbackDelayAlgorithm::no_delay, 0, 515}};
       }
       if (key_size == 4 && accum_size == 4 && accum_t == type_t::float32)
       {
-        // ipt_23.tpb_192.trp_1.ld_0.ns_1176.dcid_0.l2w_740 1.015  1.051  1.143  1.141
+        // ipt_23.tpb_192.trp_1.lm_0.ns_1176.dcid_0.l2w_740 1.015  1.051  1.143  1.141
         return {192,
                 23,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1111,8 +1111,8 @@ private:
       }
       if (key_size == 4 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
       {
-        // ipt_22.tpb_128.trp_1.ld_0.ns_24.dcid_0.l2w_875 1.034  1.005  1.080  1.100
-        // ipt_22.tpb_128.trp_1.ld_0.ns_952.dcid_0.l2w_955 0.984  0.986  1.251  1.330
+        // ipt_22.tpb_128.trp_1.lm_0.ns_24.dcid_0.l2w_875 1.034  1.005  1.080  1.100
+        // ipt_22.tpb_128.trp_1.lm_0.ns_952.dcid_0.l2w_955 0.984  0.986  1.251  1.330
         return {128,
                 22,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1122,7 +1122,7 @@ private:
       }
       if (key_size == 4 && accum_size == 8 && (accum_t == type_t::int64 || accum_t == type_t::uint64))
       {
-        // ipt_22.tpb_128.trp_1.ld_1.ns_144.dcid_5.l2w_795 0.982  1.004  1.212  1.259
+        // ipt_22.tpb_128.trp_1.lm_1.ns_144.dcid_5.l2w_795 0.982  1.004  1.212  1.259
         return {128,
                 22,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1132,7 +1132,7 @@ private:
       }
       if (key_size == 8 && accum_size == 4 && (accum_t == type_t::int32 || accum_t == type_t::uint32))
       {
-        // ipt_23.tpb_128.trp_1.ld_0.ns_132.dcid_0.l2w_960 0.970  1.040  1.245  1.316
+        // ipt_23.tpb_128.trp_1.lm_0.ns_132.dcid_0.l2w_960 0.970  1.040  1.245  1.316
         return {128,
                 23,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1142,7 +1142,7 @@ private:
       }
       if (key_size == 8 && accum_size == 8 && accum_t == type_t::float64)
       {
-        // ipt_15.tpb_192.trp_1.ld_1.ns_1996.dcid_0.l2w_645 0.994  1.068  1.083  1.118
+        // ipt_15.tpb_192.trp_1.lm_1.ns_1996.dcid_0.l2w_645 0.994  1.068  1.083  1.118
         return {192,
                 15,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1152,7 +1152,7 @@ private:
       }
       if (key_size == 8 && accum_size == 8 && (accum_t == type_t::int64 || accum_t == type_t::uint64))
       {
-        // ipt_21.tpb_128.trp_1.ld_0.ns_528.dcid_0.l2w_895 0.964  1.053  1.199  1.255
+        // ipt_21.tpb_128.trp_1.lm_0.ns_528.dcid_0.l2w_895 0.964  1.053  1.199  1.255
         return {128,
                 21,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1167,7 +1167,7 @@ private:
     {
       if (key_size == 1 && accum_size == 1)
       {
-        // ipt_13.tpb_576.trp_0.ld_1.ns_2044.dcid_5.l2w_240 1.161888  0.848558  1.134941  1.299109
+        // ipt_13.tpb_576.trp_0.lm_1.ns_2044.dcid_5.l2w_240 1.161888  0.848558  1.134941  1.299109
         return {576,
                 13,
                 BLOCK_LOAD_DIRECT,
@@ -1177,7 +1177,7 @@ private:
       }
       if (key_size == 1 && accum_size == 2)
       {
-        // ipt_10.tpb_224.trp_0.ld_0.ns_244.dcid_4.l2w_390 1.313932  1.260540  1.319588  1.427374
+        // ipt_10.tpb_224.trp_0.lm_0.ns_244.dcid_4.l2w_390 1.313932  1.260540  1.319588  1.427374
         return {224,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1187,7 +1187,7 @@ private:
       }
       if (key_size == 1 && accum_size == 4)
       {
-        // ipt_14.tpb_128.trp_0.ld_0.ns_248.dcid_2.l2w_285  1.118109  1.051534  1.134336  1.326788
+        // ipt_14.tpb_128.trp_0.lm_0.ns_248.dcid_2.l2w_285  1.118109  1.051534  1.134336  1.326788
         return {128,
                 14,
                 BLOCK_LOAD_DIRECT,
@@ -1197,7 +1197,7 @@ private:
       }
       if (key_size == 1 && accum_size == 8)
       {
-        // ipt_19.tpb_128.trp_1.ld_0.ns_132.dcid_1.l2w_540 1.113820  1.002404  1.105014  1.202296
+        // ipt_19.tpb_128.trp_1.lm_0.ns_132.dcid_1.l2w_540 1.113820  1.002404  1.105014  1.202296
         return {128,
                 19,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1207,7 +1207,7 @@ private:
       }
       if (key_size == 2 && accum_size == 1)
       {
-        // ipt_14.tpb_128.trp_1.ld_0.ns_164.dcid_2.l2w_290 1.239579  1.119705  1.239111  1.313112
+        // ipt_14.tpb_128.trp_1.lm_0.ns_164.dcid_2.l2w_290 1.239579  1.119705  1.239111  1.313112
         return {128,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1217,7 +1217,7 @@ private:
       }
       if (key_size == 2 && accum_size == 2)
       {
-        // ipt_14.tpb_256.trp_1.ld_0.ns_180.dcid_2.l2w_975 1.145635  1.012658  1.139956  1.251546
+        // ipt_14.tpb_256.trp_1.lm_0.ns_180.dcid_2.l2w_975 1.145635  1.012658  1.139956  1.251546
         return {256,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1227,7 +1227,7 @@ private:
       }
       if (key_size == 2 && accum_size == 4 && accum_t != type_t::float32) // I16, F32, I32 regressed, fall back to SM90
       {
-        // ipt_11.tpb_256.trp_0.ld_0.ns_224.dcid_2.l2w_550 1.066293  1.000109  1.073092  1.181818
+        // ipt_11.tpb_256.trp_0.lm_0.ns_224.dcid_2.l2w_550 1.066293  1.000109  1.073092  1.181818
         return {256,
                 11,
                 BLOCK_LOAD_DIRECT,
@@ -1237,7 +1237,7 @@ private:
       }
       if (key_size == 2 && accum_size == 8)
       {
-        // ipt_10.tpb_160.trp_1.ld_0.ns_156.dcid_1.l2w_725 1.045007  1.002105  1.049690  1.141827
+        // ipt_10.tpb_160.trp_1.lm_0.ns_156.dcid_1.l2w_725 1.045007  1.002105  1.049690  1.141827
         return {160,
                 10,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1247,7 +1247,7 @@ private:
       }
       if (key_size == 4 && accum_size == 1)
       {
-        // ipt_10.tpb_224.trp_0.ld_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
+        // ipt_10.tpb_224.trp_0.lm_0.ns_324.dcid_2.l2w_285 1.157217  1.073724  1.166510  1.356940
         return {224,
                 10,
                 BLOCK_LOAD_DIRECT,
@@ -1257,7 +1257,7 @@ private:
       }
       if (key_size == 4 && accum_size == 2)
       {
-        // ipt_11.tpb_256.trp_0.ld_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
+        // ipt_11.tpb_256.trp_0.lm_0.ns_1984.dcid_5.l2w_115 1.214155  1.128842  1.214093  1.364476
         return {256,
                 11,
                 BLOCK_LOAD_DIRECT,
@@ -1267,7 +1267,7 @@ private:
       }
       if (key_size == 4 && accum_size == 4)
       {
-        // ipt_14.tpb_224.trp_1.ld_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
+        // ipt_14.tpb_224.trp_1.lm_0.ns_476.dcid_5.l2w_1005 1.187378  1.119705  1.185397  1.258420
         return {224,
                 14,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1277,7 +1277,7 @@ private:
       }
       if (key_size == 4 && accum_size == 8)
       {
-        // ipt_10.tpb_256.trp_1.ld_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
+        // ipt_10.tpb_256.trp_1.lm_0.ns_1868.dcid_7.l2w_145 1.142915  1.020581  1.137459  1.237913
         return {256,
                 10,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1287,7 +1287,7 @@ private:
       }
       if (key_size == 8 && accum_size == 1)
       {
-        // ipt_9.tpb_224.trp_1.ld_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
+        // ipt_9.tpb_224.trp_1.lm_0.ns_1940.dcid_5.l2w_460 1.157294  1.075650  1.153566  1.250729
         return {224,
                 9,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1297,7 +1297,7 @@ private:
       }
       if (key_size == 8 && accum_size == 2)
       {
-        // ipt_11.tpb_224.trp_1.ld_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
+        // ipt_11.tpb_224.trp_1.lm_1.ns_392.dcid_2.l2w_550 1.104034  1.007212  1.099543  1.220401
         return {224,
                 11,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1307,7 +1307,7 @@ private:
       }
       if (key_size == 8 && accum_size == 4)
       {
-        // ipt_9.tpb_224.trp_1.ld_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
+        // ipt_9.tpb_224.trp_1.lm_0.ns_244.dcid_2.l2w_475 1.130098  1.000000  1.130661  1.215722
         return {224,
                 9,
                 BLOCK_LOAD_WARP_TRANSPOSE,
@@ -1317,7 +1317,7 @@ private:
       }
       if (key_size == 8 && accum_size == 8)
       {
-        // ipt_9.tpb_224.trp_1.ld_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
+        // ipt_9.tpb_224.trp_1.lm_0.ns_196.dcid_2.l2w_340 1.272056  1.142857  1.262499  1.352941
         return {224,
                 9,
                 BLOCK_LOAD_WARP_TRANSPOSE,

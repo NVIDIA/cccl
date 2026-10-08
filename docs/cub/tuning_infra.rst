@@ -328,8 +328,8 @@ so it is run from the CCCL source root:
   ...
   ctk:  12.6.85
   cccl:  v2.7.0
-  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858 (gpu 0)
-  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677 (gpu 0)
+  cub.bench.merge_sort.pairs.trp_0.lm_1.ipt_13.tpb_6 0.6805093269929858 (gpu 0)
+  cub.bench.merge_sort.pairs.trp_0.lm_1.ipt_11.tpb_10 1.0774560502969677 (gpu 0)
   ...
 
 This will search the space of merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
@@ -339,8 +339,8 @@ For the axis option :code:`-a`, you can also specify a range of values like :cod
 Any axis values not supported by a selected benchmark will be ignored.
 If necessary, :code:`-D` can be used to pass additional options to CMake.
 
-The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than the baseline,
-whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
+The first variant :code:`cub.bench.merge_sort.pairs.trp_0.lm_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than the baseline,
+whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.lm_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
 
 .. warning::
   Notice there is currently a limitation in :code:`search.py`
@@ -375,7 +375,7 @@ you can add the :code:`-l` option:
   #### cub / merge_sort
     * `cub.bench.merge_sort.pairs`: 540 variants
       * `trp`: (0, 2, 1)
-      * `ld`: (0, 3, 1)
+      * `lm`: (0, 3, 1)
       * `ipt`: (7, 25, 1)
       * `tpb`: (6, 11, 1)
 

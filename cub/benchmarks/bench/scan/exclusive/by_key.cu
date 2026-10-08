@@ -12,7 +12,7 @@
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_LOAD ld 0:1:1
+// %RANGE% TUNE_LOAD_MODIFIER lm 0:1:1
 
 #if !TUNE_BASE
 struct bench_scan_by_key_policy_selector
@@ -23,7 +23,7 @@ struct bench_scan_by_key_policy_selector
             {TUNE_THREADS,
              TUNE_ITEMS,
              TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-             TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
+             TUNE_LOAD_MODIFIER == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA,
              TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
              cub::BLOCK_SCAN_WARP_SCANS,
              lookback_delay_policy}};

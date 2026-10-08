@@ -12,7 +12,7 @@
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_LOAD ld 0:1:1
+// %RANGE% TUNE_LOAD_MODIFIER lm 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
@@ -26,11 +26,11 @@
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
 #  endif // TUNE_TRANSPOSE
 
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#  if TUNE_LOAD_MODIFIER == 0
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#  else // TUNE_LOAD_MODIFIER == 1
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_CA
+#  endif // TUNE_LOAD_MODIFIER
 
 template <typename InputT>
 struct policy_selector
@@ -41,7 +41,7 @@ struct policy_selector
             {TUNE_THREADS_PER_BLOCK,
              TUNE_ITEMS_PER_THREAD,
              TUNE_LOAD_ALGORITHM,
-             TUNE_LOAD_MODIFIER,
+             TUNE_LOAD_MODIFIER_ENUMERATOR,
              cub::BLOCK_SCAN_WARP_SCANS,
              lookback_delay_policy}};
   }

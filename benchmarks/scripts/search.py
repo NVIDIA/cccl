@@ -80,7 +80,7 @@ def build_search_space(parameter_space):
 
 
 def variant_label(algname, parameter_space, config):
-    """The canonical `algname.trp_0.ld_1...` name the benchmarks are known by."""
+    """The canonical `algname.trp_0.lm_1...` name the benchmarks are known by."""
     range_points = [
         bench.RangePoint(
             search_range.definition, search_range.label, int(config[search_range.label])

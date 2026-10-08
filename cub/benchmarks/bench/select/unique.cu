@@ -11,7 +11,7 @@
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_LOAD ld 0:1:1
+// %RANGE% TUNE_LOAD_MODIFIER lm 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
@@ -28,7 +28,7 @@ struct bench_policy_selector
             {TUNE_THREADS_PER_BLOCK,
              TUNE_ITEMS_PER_THREAD,
              (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
-             (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
+             (TUNE_LOAD_MODIFIER == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
              cub::BLOCK_SCAN_WARP_SCANS,
              lookback_delay_policy}};
   }

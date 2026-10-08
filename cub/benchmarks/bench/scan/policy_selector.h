@@ -19,11 +19,11 @@
 #      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
 #    endif // TUNE_TRANSPOSE
 
-#    if TUNE_LOAD == 0
-#      define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#    else // TUNE_LOAD == 1
-#      define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#    endif // TUNE_LOAD
+#    if TUNE_LOAD_MODIFIER == 0
+#      define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#    else // TUNE_LOAD_MODIFIER == 1
+#      define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_CA
+#    endif // TUNE_LOAD_MODIFIER
 #  endif // !USES_LOOKAHEAD()
 
 template <typename AccumT>
@@ -42,7 +42,7 @@ struct policy_selector
       TUNE_ITEMS,
       int{sizeof(AccumT)},
       TUNE_LOAD_ALGORITHM,
-      TUNE_LOAD_MODIFIER,
+      TUNE_LOAD_MODIFIER_ENUMERATOR,
       TUNE_STORE_ALGORITHM,
       cub::BLOCK_SCAN_WARP_SCANS,
       lookback_delay_policy);

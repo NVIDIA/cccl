@@ -386,7 +386,7 @@ struct sm100_tuning;
 template <class LengthT, class KeyT>
 struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
 {
-  // ipt_14.tpb_256.trp_0.ld_1.ns_468.dcid_7.l2w_300 1.202228  1.126160  1.197973  1.307692
+  // ipt_14.tpb_256.trp_0.lm_1.ns_468.dcid_7.l2w_300 1.202228  1.126160  1.197973  1.307692
   static constexpr int threads                       = 256;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -397,7 +397,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 template <class LengthT, class KeyT>
 struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
 {
-  // ipt_14.tpb_224.trp_0.ld_0.ns_376.dcid_7.l2w_420 1.123754  1.002404  1.113839  1.274882
+  // ipt_14.tpb_224.trp_0.lm_0.ns_376.dcid_7.l2w_420 1.123754  1.002404  1.113839  1.274882
   static constexpr int threads                       = 224;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -408,7 +408,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 template <class LengthT, class KeyT>
 struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
 {
-  // ipt_14.tpb_256.trp_0.ld_1.ns_956.dcid_7.l2w_70 1.134395  1.071951  1.137008  1.169419
+  // ipt_14.tpb_256.trp_0.lm_1.ns_956.dcid_7.l2w_70 1.134395  1.071951  1.137008  1.169419
   static constexpr int threads                       = 256;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -419,7 +419,7 @@ struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, le
 template <class LengthT, class KeyT>
 struct sm100_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
 {
-  // ipt_9.tpb_224.trp_1.ld_0.ns_188.dcid_2.l2w_765 1.100140  1.020069  1.116462  1.345506
+  // ipt_9.tpb_224.trp_1.lm_0.ns_188.dcid_2.l2w_765 1.100140  1.020069  1.116462  1.345506
   static constexpr int threads                       = 224;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
@@ -795,7 +795,7 @@ struct policy_selector
     if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && key_is_primitive
         && key_size == 1 && length_is_primitive && length_size == 4)
     {
-      // ipt_24.tpb_512.trp_0.ld_0.ns_60.dcid_0.l2w_155  1.147  1.204  1.289  1.362
+      // ipt_24.tpb_512.trp_0.lm_0.ns_60.dcid_0.l2w_155  1.147  1.204  1.289  1.362
       return RleEncodePolicy{
         RleAlgorithm::lookback,
         RleLookbackPolicy{

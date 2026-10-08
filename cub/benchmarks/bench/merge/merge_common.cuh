@@ -13,19 +13,19 @@
 #include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#    define TUNE_USE_BL2SH     false
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#    define TUNE_USE_BL2SH     false
-#  elif TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#    define TUNE_USE_BL2SH     false
-#  else // TUNE_LOAD == 3
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#    define TUNE_USE_BL2SH     true
-#  endif // TUNE_LOAD
+#  if TUNE_LOAD_MODIFIER == 0
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#    define TUNE_USE_BL2SH                false
+#  elif TUNE_LOAD_MODIFIER == 1
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_LDG
+#    define TUNE_USE_BL2SH                false
+#  elif TUNE_LOAD_MODIFIER == 2
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_CA
+#    define TUNE_USE_BL2SH                false
+#  else // TUNE_LOAD_MODIFIER == 3
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#    define TUNE_USE_BL2SH                true
+#  endif // TUNE_LOAD_MODIFIER
 
 template <typename KeyT>
 struct bench_policy_selector
@@ -35,7 +35,7 @@ struct bench_policy_selector
     return cub::MergePolicy{
       (1 << TUNE_THREADS_PER_BLOCK_POW2),
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
-      TUNE_LOAD_MODIFIER,
+      TUNE_LOAD_MODIFIER_ENUMERATOR,
       TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
       TUNE_USE_BL2SH};
   }

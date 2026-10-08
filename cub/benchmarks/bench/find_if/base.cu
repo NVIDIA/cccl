@@ -9,18 +9,18 @@
 
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_LOAD_MODIFIER lm 0:2:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
 #if !TUNE_BASE
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#  if TUNE_LOAD_MODIFIER == 0
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_DEFAULT
+#  elif TUNE_LOAD_MODIFIER == 1
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_LDG
+#  else // TUNE_LOAD_MODIFIER == 2
+#    define TUNE_LOAD_MODIFIER_ENUMERATOR cub::LOAD_CA
+#  endif // TUNE_LOAD_MODIFIER
 
 template <typename T>
 struct bench_policy_selector
@@ -28,7 +28,10 @@ struct bench_policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(::cuda::compute_capability) const -> cub::FindIfPolicy
   {
     return cub::FindIfPolicy{
-      (1 << TUNE_THREADS_PER_BLOCK_POW2), cub::Nominal4BItemsToItems<T>(TUNE_ITEMS_PER_THREAD), 4, TUNE_LOAD_MODIFIER};
+      (1 << TUNE_THREADS_PER_BLOCK_POW2),
+      cub::Nominal4BItemsToItems<T>(TUNE_ITEMS_PER_THREAD),
+      4,
+      TUNE_LOAD_MODIFIER_ENUMERATOR};
   }
 };
 #endif // !TUNE_BASE

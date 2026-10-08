@@ -14,11 +14,11 @@
 // %RANGE% TUNE_RADIX_BITS bits 4:8:1
 // %RANGE% TUNE_PARTITIONING_THRESHOLD pt 100:800:50
 // %RANGE% TUNE_RANK_ALGORITHM ra 0:4:1
-// %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_LOAD_MODIFIER lm 0:2:1
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_S_LOAD sld 0:2:1
+// %RANGE% TUNE_S_LOAD_MODIFIER slm 0:2:1
 // %RANGE% TUNE_S_TRANSPOSE strp 0:1:1
-// %RANGE% TUNE_M_LOAD mld 0:2:1
+// %RANGE% TUNE_M_LOAD_MODIFIER mlm 0:2:1
 // %RANGE% TUNE_M_TRANSPOSE mtrp 0:1:1
 
 #if !TUNE_BASE
@@ -41,9 +41,9 @@ struct policy_selector
         TUNE_THREADS,
         TUNE_L_ITEMS,
         (TUNE_TRANSPOSE == 0) ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE,
-        (TUNE_LOAD == 0)   ? cub::LOAD_DEFAULT
-        : (TUNE_LOAD == 1) ? cub::LOAD_LDG
-                           : cub::LOAD_CA,
+        (TUNE_LOAD_MODIFIER == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_LOAD_MODIFIER == 1) ? cub::LOAD_LDG
+                                    : cub::LOAD_CA,
         static_cast<cub::RadixRankAlgorithm>(TUNE_RANK_ALGORITHM),
         cub::BLOCK_SCAN_WARP_SCANS,
         TUNE_RADIX_BITS,
@@ -53,9 +53,9 @@ struct policy_selector
         tune_mw_threads,
         TUNE_M_ITEMS,
         (TUNE_M_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
-        (TUNE_M_LOAD == 0)   ? cub::LOAD_DEFAULT
-        : (TUNE_M_LOAD == 1) ? cub::LOAD_LDG
-                             : cub::LOAD_CA,
+        (TUNE_M_LOAD_MODIFIER == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_M_LOAD_MODIFIER == 1) ? cub::LOAD_LDG
+                                      : cub::LOAD_CA,
         cub::WARP_STORE_DIRECT,
       },
       cub::SegmentedSortSubWarpMergeSortPolicy{
@@ -63,9 +63,9 @@ struct policy_selector
         tune_sw_threads,
         TUNE_S_ITEMS,
         (TUNE_S_TRANSPOSE == 0) ? cub::WarpLoadAlgorithm::WARP_LOAD_DIRECT : cub::WarpLoadAlgorithm::WARP_LOAD_TRANSPOSE,
-        (TUNE_S_LOAD == 0)   ? cub::LOAD_DEFAULT
-        : (TUNE_S_LOAD == 1) ? cub::LOAD_LDG
-                             : cub::LOAD_CA,
+        (TUNE_S_LOAD_MODIFIER == 0)   ? cub::LOAD_DEFAULT
+        : (TUNE_S_LOAD_MODIFIER == 1) ? cub::LOAD_LDG
+                                      : cub::LOAD_CA,
         cub::WARP_STORE_DIRECT,
       },
       TUNE_PARTITIONING_THRESHOLD,

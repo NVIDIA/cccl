@@ -7,7 +7,7 @@
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_LOAD_MODIFIER lm 0:2:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
@@ -25,7 +25,7 @@ struct policy_selector
       TUNE_THREADS_PER_BLOCK,
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
       (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
-      (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : (TUNE_LOAD == 1 ? cub::LOAD_LDG : cub::LOAD_CA)),
+      (TUNE_LOAD_MODIFIER == 0 ? cub::LOAD_DEFAULT : (TUNE_LOAD_MODIFIER == 1 ? cub::LOAD_LDG : cub::LOAD_CA)),
       (TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE)};
   }
 };
