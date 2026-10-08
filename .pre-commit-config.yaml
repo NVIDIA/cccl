@@ -134,6 +134,13 @@ repos:
         files: ^(cub/test/.*\.(cu|cuh|h)|ci/util/pre-commit/check_cub_test_macros\.py)$
         types: [file]
 
+      - id: check-ptx-umbrella
+        name: require <cuda/ptx> to export every PTX instruction header
+        entry: ci/util/pre-commit/check_ptx_umbrella.py
+        language: python
+        pass_filenames: false
+        files: ^(libcudacxx/include/cuda/(ptx|ptxs/.*|__ptx/.*)|ci/util/pre-commit/check_ptx_umbrella\.py)$
+
       - id: unprintable-unicode
         name: unprintable-unicode
         entry: ci/util/pre-commit/strip_unprintable.py
