@@ -227,9 +227,9 @@ struct DeviceHistogramKernelSource
   }
 };
 
-template <int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          int PRIVATIZED_SMEM_BINS,
+template <int NumChannels,
+          int NumActiveChannels,
+          int PrivatizedSmemBins,
           bool IsDeviceInit,
           bool IsEven,
           bool IsByteSample,
@@ -248,9 +248,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   SampleIteratorT d_samples,
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histograms,
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels,
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels,
+  ::cuda::std::array<CounterT*, NumActiveChannels> d_output_histograms,
+  ::cuda::std::array<int, NumActiveChannels> num_privatized_levels,
+  ::cuda::std::array<int, NumActiveChannels> num_output_levels,
   FirstLevelArrayT first_level_array,
   SecondLevelArrayT second_level_array,
   int max_num_output_bins,
@@ -280,7 +280,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     {
       return kernel_source.template HistogramSweepKernelDeviceInit<
         PolicySelector,
-        PRIVATIZED_SMEM_BINS,
+        PrivatizedSmemBins,
         FirstLevelArrayT,
         SecondLevelArrayT,
         IsEven,
@@ -291,7 +291,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       using output_decode_op_t     = typename FirstLevelArrayT::value_type;
       using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
       return kernel_source
-        .template HistogramSweepKernel<PolicySelector, PRIVATIZED_SMEM_BINS, privatized_decode_op_t, output_decode_op_t>();
+        .template HistogramSweepKernel<PolicySelector, PrivatizedSmemBins, privatized_decode_op_t, output_decode_op_t>();
     }
   }();
 
@@ -316,11 +316,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   // Get device occupancy for sweep_kernel
-  int histogram_sweep_occupancy                            = histogram_sweep_sm_occupancy * sm_count;
+  int histogram_sweep_occupancy = histogram_sweep_sm_occupancy * sm_count; // NOLINT(misc-const-correctness)
   [[maybe_unused]] const int privatized_storage_grid_limit = histogram_sweep_occupancy;
-  bool use_histocache                                      = false;
-  [[maybe_unused]] int histocache_smem_bytes               = 0;
-  [[maybe_unused]] int histocache_cache_slots_per_channel  = 0;
+  bool use_histocache                                      = false; // NOLINT(misc-const-correctness)
+  [[maybe_unused]] int histocache_smem_bytes               = 0; // NOLINT(misc-const-correctness)
+  [[maybe_unused]] int histocache_cache_slots_per_channel  = 0; // NOLINT(misc-const-correctness)
 
 #if _CCCL_HOSTED()
   NV_IF_TARGET(
@@ -328,10 +328,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       // Byte-sample dispatch first privatizes by raw byte value, then applies a
       // separate output transform. The HistoCache kernel writes decoded bins
       // directly, so it is only valid for the ordinary one-stage decode path.
-      if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0 && !IsByteSample)
+      if constexpr (!IsDeviceInit && PrivatizedSmemBins == 0 && !IsByteSample)
       {
         const size_t output_histogram_bytes =
-          static_cast<size_t>(max_num_output_bins) * NUM_ACTIVE_CHANNELS * sizeof(LocalCounterT);
+          static_cast<size_t>(max_num_output_bins) * NumActiveChannels * sizeof(LocalCounterT);
         if (active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::histocache
             && output_histogram_bytes > static_cast<size_t>(histocache_policy.min_histogram_bytes))
         {
@@ -347,7 +347,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
             const int cache_bytes_per_channel_slot =
               int{sizeof(::cuda::std::uint32_t)} + histocache_policy.cache_count_replicas * int{sizeof(LocalCounterT)};
-            const int cache_bytes_per_slot = NUM_ACTIVE_CHANNELS * cache_bytes_per_channel_slot;
+            const int cache_bytes_per_slot = NumActiveChannels * cache_bytes_per_channel_slot;
 
             int max_dynamic_smem_bytes = 0;
             if (const auto error =
@@ -409,12 +409,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     }))
 #endif // _CCCL_HOSTED()
 
-  if (num_row_pixels * NUM_CHANNELS == row_stride_samples)
+  if (num_row_pixels * NumChannels == row_stride_samples)
   {
     // Treat as a single linear array of samples
     num_row_pixels *= num_rows;
     num_rows           = 1;
-    row_stride_samples = num_row_pixels * NUM_CHANNELS;
+    row_stride_samples = num_row_pixels * NumChannels;
   }
 
   // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
@@ -442,11 +442,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   sweep_grid_dims.z = 1;
 
   // Temporary storage allocation requirements
-  constexpr int NUM_ALLOCATIONS      = NUM_ACTIVE_CHANNELS + 1;
+  constexpr int NUM_ALLOCATIONS      = NumActiveChannels + 1;
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
 
-  for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
+  for (int CHANNEL = 0; CHANNEL < NumActiveChannels; ++CHANNEL)
   {
     const bool needs_privatized_storage =
       !use_histocache || histocache_policy.spill == HistogramSpillAlgorithm::global_memory_privatized;
@@ -480,16 +480,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   const GridQueue<int> tile_queue(allocations[NUM_ALLOCATIONS - 1]);
 
   // Wrap arrays so we can pass them by-value to the kernel
-  ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_privatized_histograms_wrapper;
-  ::cuda::std::array<LocalCounterT*, NUM_ACTIVE_CHANNELS> d_histocache_privatized_histograms_wrapper;
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper;
-  ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper;
+  ::cuda::std::array<CounterT*, NumActiveChannels> d_privatized_histograms_wrapper{};
+  ::cuda::std::array<LocalCounterT*, NumActiveChannels> d_histocache_privatized_histograms_wrapper{};
+  ::cuda::std::array<int, NumActiveChannels> num_privatized_bins_wrapper{};
+  ::cuda::std::array<int, NumActiveChannels> num_output_bins_wrapper{};
 
   auto* const typed_allocations = reinterpret_cast<CounterT**>(allocations);
-  ::cuda::std::copy(typed_allocations, typed_allocations + NUM_ACTIVE_CHANNELS, d_privatized_histograms_wrapper.begin());
+  ::cuda::std::copy(typed_allocations, typed_allocations + NumActiveChannels, d_privatized_histograms_wrapper.begin());
   auto* const local_typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
   ::cuda::std::copy(local_typed_allocations,
-                    local_typed_allocations + NUM_ACTIVE_CHANNELS,
+                    local_typed_allocations + NumActiveChannels,
                     d_histocache_privatized_histograms_wrapper.begin());
 
   auto minus_one = ::cuda::proclaim_return_type<int>([](int levels) {
@@ -499,9 +499,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     num_privatized_levels.begin(), num_privatized_levels.end(), num_privatized_bins_wrapper.begin(), minus_one);
   ::cuda::std::transform(num_output_levels.begin(), num_output_levels.end(), num_output_bins_wrapper.begin(), minus_one);
 
-  bool launched_histocache = false;
+  bool launched_histocache = false; // NOLINT(misc-const-correctness)
 #if _CCCL_HOSTED()
-  if constexpr (!IsDeviceInit && PRIVATIZED_SMEM_BINS == 0)
+  if constexpr (!IsDeviceInit && PrivatizedSmemBins == 0)
   {
     if (use_histocache && blocks_per_row > 0 && blocks_per_col > 0)
     {
@@ -543,12 +543,12 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     _CubLog("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
             histogram_init_grid_dims,
             histogram_init_threads_per_block,
-            (long long) stream);
+            reinterpret_cast<long long>(stream));
 #else // CUB_DEBUG_LOG
     log("Invoking DeviceHistogramInitKernel<<<%d, %d, 0, %lld>>>()\n",
         histogram_init_grid_dims,
         histogram_init_threads_per_block,
-        (long long) stream);
+        reinterpret_cast<long long>(stream));
 #endif // CUB_DEBUG_LOG
 
     // Invoke histogram_init_kernel
@@ -577,7 +577,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             sweep_grid_dims.y,
             sweep_grid_dims.z,
             threads_per_block,
-            (long long) stream,
+            reinterpret_cast<long long>(stream),
             items_per_thread,
             histogram_sweep_sm_occupancy);
 #else // CUB_DEBUG_LOG
@@ -587,7 +587,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
         sweep_grid_dims.y,
         sweep_grid_dims.z,
         threads_per_block,
-        (long long) stream,
+        reinterpret_cast<long long>(stream),
         items_per_thread,
         histogram_sweep_sm_occupancy);
 #endif // CUB_DEBUG_LOG
