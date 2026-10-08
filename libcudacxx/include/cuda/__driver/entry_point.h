@@ -76,9 +76,34 @@ struct __driver_function_result
   _FnPtr __fn_;
   __driver_status __status_;
 
-  template <class... _Args>
-  [[nodiscard]] _CCCL_HOST_API __driver_status operator()(_Args... __args) const noexcept;
+  _CCCL_HOST_API constexpr __driver_function_result(_FnPtr __fn, __driver_status __status) noexcept
+      : __fn_(__fn)
+      , __status_(__status)
+  {}
+
+  _CCCL_HOST_API explicit __driver_function_result(__driver_entry_point_result __result) noexcept
+      : __fn_(reinterpret_cast<_FnPtr>(__result.__fn_))
+      , __status_(__result.__status_)
+  {}
 };
+
+// _FN must be a stable cached result: it is referenced more than once. Arguments are evaluated only on success.
+#  define _CCCLRT_CALL_DRIVER_FUNCTION(_FN, ...)                                                                      \
+    ((_FN).__status_.__ok() ? ::cuda::__driver::__driver_api_status((_FN).__fn_(__VA_ARGS__), (_FN).__status_.__api_) \
+                            : (_FN).__status_)
+
+// Only the function-pointer cast is typed; lookup and its diagnostics remain non-template implementations.
+#  define _CCCLRT_GET_DRIVER_FUNCTION_TYPED(_FnPtr, ...)      \
+    ::cuda::__driver::__driver_function_result<_FnPtr>        \
+    {                                                         \
+      ::cuda::__driver::__get_driver_entry_point(__VA_ARGS__) \
+    }
+
+#  define _CCCLRT_GET_DRIVER_FUNCTION_TYPED_NO_INIT(_FnPtr, ...)      \
+    ::cuda::__driver::__driver_function_result<_FnPtr>                \
+    {                                                                 \
+      ::cuda::__driver::__get_driver_entry_point_no_init(__VA_ARGS__) \
+    }
 
 [[nodiscard]] _CCCL_HOST_API constexpr __driver_status __driver_success(const char* __api) noexcept
 {
@@ -102,6 +127,7 @@ __driver_api_status(__driver_status __status, const char*) noexcept
 //! @brief Gets the cuGetProcAddress function pointer without throwing.
 //!
 //! @return The function pointer and driver-loading status.
+//! @note Library and symbol loading failures are cached and are not retried.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline __driver_function_result<decltype(&cuGetProcAddress)>
 __getProcAddressFn() noexcept
 {
@@ -227,23 +253,15 @@ __getProcAddressFn(decltype(cuGetProcAddress)* __ptr = nullptr, bool __set = fal
           {::CUDA_ERROR_UNKNOWN, __driver_error_source::__entry_point_lookup, __name, "Failed to access driver API"}};
 }
 
-template <class _FnPtr>
-[[nodiscard]] _CCCL_HOST_API inline __driver_function_result<_FnPtr>
-__get_driver_function_no_init(const char* __name, int __major = 12, int __minor = 0) noexcept
-{
-  const auto __result = ::cuda::__driver::__get_driver_entry_point_no_init(__name, __major, __minor);
-  return {reinterpret_cast<_FnPtr>(__result.__fn_), __result.__status_};
-}
-
 [[nodiscard]] _CCCL_HOST_API inline const char* __getErrorString(::cudaError_t __error) noexcept
 {
   // cuGetErrorString doesn't require the driver to be initialized.
   static const auto __driver_fn =
-    ::cuda::__driver::__get_driver_function_no_init<decltype(&::cuGetErrorString)>("cuGetErrorString");
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED_NO_INIT(decltype(&::cuGetErrorString), "cuGetErrorString");
 
   // Error formatting must not replace the original error if lookup or cuGetErrorString fails.
   const char* __ret{};
-  (void) __driver_fn(static_cast<::CUresult>(__error), &__ret);
+  (void) _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, static_cast<::CUresult>(__error), &__ret);
   return (__ret != nullptr) ? __ret : "unrecognized error code";
 }
 
@@ -253,7 +271,7 @@ __get_driver_function_no_init(const char* __name, int __major = 12, int __minor 
 [[nodiscard]] _CCCL_HOST_API inline __driver_status __init() noexcept // NOLINT(bugprone-exception-escape)
 {
   constexpr auto __symbol_name = "cuInit";
-  const auto __driver_fn       = ::cuda::__driver::__get_driver_function_no_init<decltype(&::cuInit)>(__symbol_name);
+  const auto __driver_fn       = _CCCLRT_GET_DRIVER_FUNCTION_TYPED_NO_INIT(decltype(&::cuInit), __symbol_name);
   if (!__driver_fn.__status_.__ok())
   {
     return __driver_fn.__status_;
@@ -272,6 +290,7 @@ __get_driver_function_no_init(const char* __name, int __major = 12, int __minor 
 //! @param[in] __major The major CTK version to get the symbol version for. Defaults to 12.
 //! @param[in] __minor The minor CTK version to get the symbol version for. Defaults to 0.
 //! @return The address of the symbol and initialization or lookup status.
+//! @note Driver initialization status is cached, including failures; initialization is not retried.
 [[nodiscard]] _CCCL_PUBLIC_HOST_API inline __driver_entry_point_result
 __get_driver_entry_point(const char* __name, int __major = 12, int __minor = 0) noexcept
 {
@@ -283,39 +302,12 @@ __get_driver_entry_point(const char* __name, int __major = 12, int __minor = 0) 
   return ::cuda::__driver::__get_driver_entry_point_no_init(__name, __major, __minor);
 }
 
-template <class _FnPtr>
-[[nodiscard]] _CCCL_HOST_API inline __driver_function_result<_FnPtr>
-__get_driver_function(const char* __name, int __major = 12, int __minor = 0) noexcept
-{
-  const auto __result = ::cuda::__driver::__get_driver_entry_point(__name, __major, __minor);
-  return {reinterpret_cast<_FnPtr>(__result.__fn_), __result.__status_};
-}
-
-template <class _FnPtr, class... _Args>
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__call_driver_fn(const __driver_function_result<_FnPtr>& __driver_fn,
-                 _Args... __args) noexcept // NOLINT(bugprone-exception-escape)
-{
-  if (!__driver_fn.__status_.__ok())
-  {
-    return __driver_fn.__status_;
-  }
-  return ::cuda::__driver::__driver_api_status(__driver_fn.__fn_(__args...), __driver_fn.__status_.__api_);
-}
-
-template <class _FnPtr>
-template <class... _Args>
-[[nodiscard]] _CCCL_HOST_API __driver_status __driver_function_result<_FnPtr>::operator()(_Args... __args) const noexcept
-{
-  return ::cuda::__driver::__call_driver_fn(*this, __args...);
-}
-
 // Lookup and invocation both return status; throwing is the wrapper's responsibility.
 #  define _CCCLRT_GET_DRIVER_FUNCTION(function_name) \
-    ::cuda::__driver::__get_driver_function<decltype(&::function_name)>(#function_name)
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::function_name), #function_name)
 
 #  define _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, major, minor) \
-    ::cuda::__driver::__get_driver_function<decltype(&::versioned_fn_name)>(#function_name, major, minor)
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&::versioned_fn_name), #function_name, major, minor)
 
 _CCCL_END_NAMESPACE_CUDA_DRIVER
 

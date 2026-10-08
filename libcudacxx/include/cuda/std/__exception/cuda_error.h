@@ -35,6 +35,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+#if !_CCCL_COMPILER(NVRTC)
 // Bootstrap errors cannot depend on cuGetErrorString being available.
 template <int _Error>
 [[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
@@ -47,6 +48,8 @@ template <int _Error>
   const char* __msg,
   const char* __api                         = nullptr,
   const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_CTK()
 using __cuda_error_t = ::cudaError_t;

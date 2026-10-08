@@ -31,7 +31,7 @@ namespace
 template <class Fn>
 Fn* driver_fn(const char* name)
 {
-  auto result = ::cuda::__driver::__get_driver_function<Fn*>(name);
+  const auto result = _CCCLRT_GET_DRIVER_FUNCTION_TYPED(Fn*, name);
   ::cuda::__driver::__throw_if_failed(result.__status_, "Failed to get test driver function");
   return result.__fn_;
 }
