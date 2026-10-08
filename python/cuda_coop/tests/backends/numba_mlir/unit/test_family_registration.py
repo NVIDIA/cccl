@@ -309,7 +309,7 @@ def test_generated_synchronization_uses_metadata_not_struct_names(
         template_arguments={},
     )
     if scope is SynchronizationScope.WARP:
-        algorithm.threads = 32
+        algorithm.logical_warp_threads = 32
         algorithm.block_threads = 64
 
     source = algorithm._source_code(

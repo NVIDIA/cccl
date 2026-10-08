@@ -2712,7 +2712,7 @@ def test_warp_algorithms_use_their_declared_provider(
         SynchronizationScope.NONE if storage_free else SynchronizationScope.WARP
     )
     assert invocation_kwargs == {
-        "threads": threads_in_warp,
+        "logical_warp_threads": threads_in_warp,
         "block_threads": (64, 1, 1),
     }
 
