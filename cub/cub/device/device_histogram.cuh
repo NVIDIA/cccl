@@ -122,7 +122,7 @@ private:
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t multi_histogram_even_impl(
     void* d_temp_storage,
-    size_t& temp_storage_bytes,
+    ::cuda::std::size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
     ::cuda::std::array<int, NumActiveChannels> num_levels,
@@ -142,14 +142,15 @@ private:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
+
+    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
       env,
       [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        return detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
+        return CUB_NS_QUALIFIER::detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
           num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
-            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+            return CUB_NS_QUALIFIER::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
               storage,
               bytes,
               d_samples,

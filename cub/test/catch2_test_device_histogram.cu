@@ -896,7 +896,7 @@ static auto low_byte_samples()
   return cuda::transform_iterator(cuda::counting_iterator<uint64_t>{0}, low_byte_of_index{});
 }
 
-using large_offset_types = c2h::type_list<std::int32_t, std::int64_t>;
+using large_offset_types = c2h::type_list<int32_t, int64_t>;
 
 // 64-bit sizes this small are down-converted to int, so both offset types run the int kernel here
 CUB_TEST(

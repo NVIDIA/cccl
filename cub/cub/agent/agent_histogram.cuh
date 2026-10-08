@@ -563,6 +563,7 @@ struct AgentHistogram
 
     for (int row = static_cast<int>(blockIdx.y); row < num_rows; row += static_cast<int>(gridDim.y))
     {
+      // no conversion needed. We make sure that every row start fits in OffsetT before launching the kernel
       const step_offset_t row_begin = row * row_stride_samples;
       const step_offset_t row_end   = row_begin + (num_row_pixels * NumChannels);
       step_offset_t tile_offset     = row_begin + (static_cast<step_offset_t>(blockIdx.x) * tile_samples);
@@ -580,6 +581,7 @@ struct AgentHistogram
 
         // Consume full tile
         ConsumeTile<IsAligned, true>(static_cast<OffsetT>(tile_offset), tile_samples);
+        // gridDim.x refers to the number of resident blocks, so the multiplication cannot overflow
         tile_offset += static_cast<step_offset_t>(gridDim.x) * tile_samples;
       }
     }
