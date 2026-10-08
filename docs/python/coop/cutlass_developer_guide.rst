@@ -225,10 +225,10 @@ Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both
 sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
 ``auto_sync=True`` to insert automatic trailing synchronization.
-Compiler-managed scratch synchronizes automatically. Physical warp primitives
-use independent per-group storage and the appropriate warp mask rather than a
-block barrier. See the programming guide for each family's explicit-storage
-support and participation rules.
+Compiler-managed scratch synchronizes automatically. Physical and logical
+warp primitives use independent per-group storage and the appropriate warp
+mask rather than a block barrier. See the programming guide for each family's
+explicit-storage support and participation rules.
 
 Finding the implementation
 ---------------------------
@@ -697,7 +697,10 @@ For generated-code claims, inspect the final linked cubin with ``cuobjdump``.
 ``runtime/test_block_load_store.py`` checks that direct Load/Store leave no
 provider calls, shared accesses, or barriers. The final-cubin check in
 ``runtime/test_block_algorithms.py`` tests striped, vectorize, and transpose.
-It requires shared memory and barriers only for transpose.
+It requires shared memory and barriers only for transpose. The final-cubin
+checks in ``runtime/test_warp_load_store.py`` and
+``runtime/test_logical_warp_load_store.py`` reject provider calls and block
+barriers for physical and logical Warp operations.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use
 Compute Sanitizer race checks for changes to scratch allocation or

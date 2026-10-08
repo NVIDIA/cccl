@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Validate block and physical-warp Load/Store calls for CuTe lowering.
+"""Validate block and warp Load/Store calls for CuTe lowering.
 
 Exact launch facts and shared group planning determine participation and
 algorithm support. Binding records separate embedded constants from runtime
-arguments. Block calls can use explicit scratch descriptors; physical warps
-use compiler-managed scratch when their selected algorithm needs it.
+arguments. Block calls can use explicit scratch descriptors; physical and
+logical warps use compiler-managed scratch when their algorithm needs it.
 """
 
 from __future__ import annotations
@@ -42,20 +42,23 @@ _MAX_STATIC_OFFSET = (1 << 63) - 1
 
 
 def _resolve_group(group, algorithm, temp_storage, operation):
-    """Resolve launch dimensions and reject unsupported group/storage pairs.
+    """Resolve block or warp groups against exact launch dimensions.
 
-    Physical warps need complete 32-thread membership. Their scratch is
-    compiler-owned; only block calls can use a caller's descriptor. Return the
-    resolved group, exact launch facts and normalized algorithm for planning.
+    Physical and logical warps require a block made only of complete 32-thread
+    warps, and they reject explicit scratch descriptors. Normalize the
+    algorithm and validate any explicit block scratch descriptor. Shared
+    planning checks the logical width and algorithm support. Return the group,
+    launch facts, and normalized algorithm for lowering.
     """
 
     if not isinstance(group, CommonThreadGroup):
         raise TypeError(f"{_SCOPE}.{operation} group must be a ThreadGroup")
-    if group.kind not in {"block", "warp"}:
+    if group.kind not in {"block", "warp", "threads_within_warp"}:
         raise NotImplementedError(
-            f"{_SCOPE}.{operation} requires a block or physical warp group"
+            f"{_SCOPE}.{operation} requires a block, physical warp, "
+            "or logical warp group"
         )
-    if group.kind == "warp" and temp_storage is not None:
+    if group.kind != "block" and temp_storage is not None:
         raise NotImplementedError(
             f"{_SCOPE}.{operation} explicit TempStorage is supported only "
             "for block groups"
@@ -90,9 +93,9 @@ def load(
     """Load a contiguous group tile into a writable per-thread payload.
 
     Shared parameters and participation follow :func:`cuda.coop.load`. This
-    implementation accepts block groups and physical warps. The output must be
-    CUTLASS ThreadData; its dtype is inferred from the source, or must agree
-    with it when already declared.
+    implementation accepts blocks and physical or logical warps. The output
+    must be CUTLASS ThreadData; its dtype is inferred from the source, or must
+    agree with it when already declared.
 
     Load populates the payload in the selected algorithm's layout. Beyond
     ``valid_items``, slots have unspecified values unless ``oob_default`` is
@@ -101,10 +104,15 @@ def load(
 
     The count ranges from zero through the group's full tile size. ``offset``
     is a nonnegative element offset. Counts, offsets, and supplied defaults
-    must agree within the group. For a physical warp, the compiler also adds
-    that warp's tile origin within the block. Different warps can use
-    different controls. The caller must provide enough accessible memory for
-    the selected prefix at the resulting offset.
+    must agree within the group. Physical and logical warps receive
+    consecutive tiles in linear block-thread order; the compiler adds that
+    group's tile origin to the offset. Different groups can use different
+    controls. The caller must provide enough accessible memory for the
+    selected prefix at the resulting offset.
+
+    For ``this_warp().group_by(width)``, ``width`` must be 1, 2, 4, 8, 16, or
+    32. Each logical tile contains ``width * items_per_thread`` elements. The
+    enclosing block must contain complete 32-thread physical warps.
 
     The source must expose a raw pointer and a provably compact layout. A bare
     pointer object with no shape or stride metadata is also accepted, but its
@@ -117,8 +125,9 @@ def load(
     compiler allocates it and inserts a trailing reuse barrier. An explicit
     :class:`cuda.coop.cutlass.TempStorage` is supported only for block calls.
     It sets sharing and synchronization policy; its default
-    ``auto_sync=False`` requires a barrier before reuse. Physical warps use
-    independent scratch slices and a warp barrier.
+    ``auto_sync=False`` requires a barrier before reuse. Each physical or
+    logical warp uses an independent scratch slice and a reuse barrier that
+    covers only its own lanes.
 
     Examples
     --------
@@ -175,25 +184,26 @@ def store(
     """Store per-thread values into a contiguous group tile.
 
     Shared parameters and participation follow :func:`cuda.coop.store`. This
-    implementation accepts block groups and physical warps. Each thread
+    implementation accepts blocks and physical or logical warps. Each thread
     supplies a scalar or an initialized CUTLASS ThreadData payload whose dtype
     matches the destination. As with :func:`cuda.coop.store`, do not rely on
     the payload's contents after a transpose Store; copy values needed later.
 
     ``valid_items`` selects a prefix from zero through the group's full tile
     size. ``offset`` is a nonnegative element offset. Both must agree within
-    the group. For a physical warp, the compiler also adds that warp's tile
-    origin within the block. Different warps can use different controls. The
-    caller must provide enough accessible destination memory for the prefix
-    at the resulting offset. Items outside it are not written. The destination
-    has the same raw-pointer and compact-layout requirements as :func:`load`.
+    the group. Physical and logical warp widths, tile origins, and prefix
+    bounds follow :func:`load`. Different groups can use different controls.
+    The caller must provide enough accessible destination memory for the
+    prefix at the resulting offset. Items outside it are not written. The
+    destination has the same pointer and layout requirements as :func:`load`.
 
     Transpose algorithms use shared scratch. With no ``temp_storage``, the
     compiler allocates it and inserts a trailing reuse barrier. An explicit
     descriptor is supported only for block calls and controls allocation and
     reuse. The caller must synchronize before reuse unless ``auto_sync=True``.
-    Physical warps use independent scratch slices and a warp barrier. DIRECT,
-    STRIPED, and VECTORIZE need no scratch or reuse barrier.
+    Physical and logical warps use independent scratch slices and a barrier
+    that covers only the group's lanes. DIRECT, STRIPED, and VECTORIZE need no
+    scratch or reuse barrier.
 
     Examples
     --------

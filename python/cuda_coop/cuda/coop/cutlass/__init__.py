@@ -4,11 +4,11 @@
 
 """Cooperative primitives for the CUTLASS CuTe DSL compiler.
 
-Importing this namespace validates the optional runtime and registers its
-active compiler environment with the common API. Calls inside that environment
-use these implementations. The namespace provides block and physical-warp
-Load/Store, thread groups, and per-thread register payloads. TempStorage
-descriptors control scratch for block transpose algorithms.
+Importing this namespace validates the optional runtime and lets the common
+API recognize the active CuTe DSL compiler environment. Calls inside that
+environment use these implementations. The namespace provides block and warp
+Load/Store, thread groups, and per-thread register payloads.
+TempStorage descriptors control scratch for block transpose algorithms.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike

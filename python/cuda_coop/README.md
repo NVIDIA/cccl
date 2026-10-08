@@ -216,10 +216,10 @@ For the two Boolean runtime switches, values are case-insensitive; `0`,
 
 ## Block and Warp Load and Store
 
-The common and qualified Load/Store APIs share tile controls and in-place Load
-behavior. The following complete Load/Store vocabulary describes Numba; check
-the CUTLASS guide for its currently supported groups and algorithms. The
-following Numba kernel body clamps a grid tile tail, where `source`,
+The common and qualified Load/Store APIs share algorithm names, tile
+controls, and in-place Load behavior. Numba-CUDA-MLIR and CUTLASS support the
+same block, physical Warp, and logical Warp forms; the CUTLASS guide describes
+CuTe operands. This Numba kernel body clamps a grid tile tail, where `source`,
 `destination`, `count`, and `items_per_thread` are kernel arguments:
 
 ```python
@@ -383,8 +383,8 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For Load and Store on block, physical Warp, and logical Warp groups,
-`direct`, `striped`, and `vectorize` are storage-free where implemented: they
-need no shared-memory allocation, storage pointer arguments, or reuse
+`direct`, `striped`, and `vectorize` are storage-free in both integrations:
+they need no shared-memory allocation, storage pointer arguments, or reuse
 barriers. An explicit block descriptor is validated but does not change that
 code generation.
 
@@ -453,12 +453,11 @@ compiler-owned allocation, see the
 [CUTLASS Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
 and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
 
-Numba-CUDA-MLIR supports physical and logical Warp Load/Store. CUTLASS
-supports physical Warp Load/Store; logical Warp groups are not yet supported.
-Warp `transpose` uses compiler-owned storage with one disjoint slice per
-supported group and masked synchronization for reuse. Both integrations
-reject explicit `TempStorage` for every supported Warp Load and Store
-algorithm, including the storage-free modes.
+Both Numba-CUDA-MLIR and CUTLASS support physical and logical Warp
+Load/Store. Warp `transpose` uses compiler-owned storage with one disjoint
+slice per supported group and masked synchronization for reuse. Both
+integrations reject explicit `TempStorage` for every supported Warp Load and
+Store algorithm, including the storage-free modes.
 
 ## Reduce and Sum
 
