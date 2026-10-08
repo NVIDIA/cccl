@@ -164,11 +164,15 @@ def bundle_scratch_layout_probes(requests):
 
 
 def render_bundle_source(requests):
-    """Render canonical requests with shared type definitions and C linkage.
+    """Render the complete C++ bundle: preamble, shared types, wrappers.
 
-    Merge compatible type definitions by name before emitting the wrappers.
-    Deterministic ordering stabilizes the source identity; C linkage keeps
-    symbol names aligned with CuTe extern calls.
+    Visit requests in canonical symbol order, then retain the first occurrence
+    of each named definition. Keep each specialization's definition order: the
+    checked Merge Sort base must precede its block and warp aliases. Reject
+    conflicting definitions with the same name before rendering calls.
+    Canonical request order keeps the source deterministic. ``extern "C"``
+    prevents C++ name mangling, so each wrapper symbol matches the name used
+    by its CuTe ffi call.
     """
 
     requests = canonical_bundle_requests(requests)
@@ -184,7 +188,7 @@ def render_bundle_source(requests):
             definitions[definition.name] = definition.code
     lines = [
         *bundle_include_lines(requests),
-        *(definitions[name] for name in sorted(definitions)),
+        *definitions.values(),
         'extern "C" {',
     ]
     for request in requests:

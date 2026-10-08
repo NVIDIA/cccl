@@ -8,7 +8,9 @@ The runner compares each marked line and error code with mypy output. These
 calls are static inputs, not kernels to execute. They cover query levels and
 dtypes, synchronization, payload forms, and primitive groups and controls.
 Exchange distinguishes value, rank, and flag types; Shuffle separates
-payload shifts from scalar offset and rotate calls.
+payload shifts from scalar offset and rotate calls. Merge Sort checks
+paired partial-tile controls and rejects backend-specific input forms from
+common calls.
 """
 
 from __future__ import annotations
@@ -256,3 +258,58 @@ cutlass_coop.shuffle(  # expected-error: [call-overload]
     block, values, temp_storage=cutlass_coop.TempStorage()
 )
 common.shuffle(block, scalar, mode="rotate")  # expected-error: [arg-type]
+
+cutlass_coop.merge_sort_keys(mapped, values)  # expected-error: [arg-type]
+cutlass_coop.merge_sort_pairs(
+    cutlass_coop.this_cluster(),  # expected-error: [arg-type]
+    values,
+    values,
+)
+cutlass_coop.merge_sort_keys(block, scalar)  # expected-error: [call-overload]
+cutlass_coop.merge_sort_pairs(  # expected-error: [call-overload]
+    block, values, scalar
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
+    block, values, True
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
+    group=block, keys=values
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
+    block, values, compare_op=callback
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
+    block, values, algorithm="merge"
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
+    block, values, valid_items=3
+)
+cutlass_coop.merge_sort_pairs(  # expected-error: [call-overload]
+    block, values, values, oob_default=1000
+)
+cutlass_coop.merge_sort_keys(
+    warp,  # expected-error: [arg-type]
+    values,
+    temp_storage=cutlass_coop.TempStorage(),
+)
+cutlass_coop.merge_sort_pairs(
+    logical,  # expected-error: [arg-type]
+    values,
+    values,
+    temp_storage=cutlass_coop.TempStorage(),
+)
+cutlass_coop.merge_sort_keys(
+    block,
+    values,
+    valid_items=np.uint64(3),  # expected-error: [arg-type]
+    oob_default=1000,
+)
+cutlass_coop.merge_sort_keys(  # expected-error: [call-overload]
+    block, values, valid_items=Float32(3), oob_default=1000
+)
+common.merge_sort_keys(  # expected-error: [call-overload]
+    block, values.to_register_tensor()
+)
+common.merge_sort_pairs(  # expected-error: [call-overload]
+    block, values, values.to_tensor_ssa()
+)

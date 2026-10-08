@@ -2,11 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose common Merge Sort calls with separate result payloads.
+"""Provide common Merge Sort calls that return new result payloads.
 
-These functions define the common key and key/value contracts. A compiler
-backend replaces each call with a CUB block or warp Merge Sort that runs on
-copies of the inputs. A host Python call raises a context error.
+Numba-CUDA-MLIR recognizes the registered function objects without running
+these bodies. CuTe tracing executes them in Python and validates common
+payloads and scratch descriptors before dispatching to its implementation.
+Qualified APIs add CuTe register or local-array inputs, and Numba-CUDA-MLIR
+adds custom comparison predicates, without changing the shared result
+contract. Calls require an active compiler backend.
 """
 
 from __future__ import annotations
@@ -19,13 +22,16 @@ from cuda.coop._typing import (
     IntegerValue,
 )
 
-from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
+    _validate_common_numeric_value,
+    _validate_common_temp_storage,
 )
 from .thread_group import BlockGroup, WarpGroup
 
@@ -80,11 +86,9 @@ def merge_sort_keys(
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
         descending order. Typed runtime values and NumPy scalar constants
-        must match the key dtype exactly. An ordinary Python int constant
-        can convert to any key dtype within range. A Python float constant
-        requires a floating key dtype and must be within its finite range;
-        float-to-integer conversion is rejected. Floating keys also accept
-        positive or negative infinity as a sentinel.
+        must match the key dtype exactly. An ordinary Python int can convert
+        to a numeric key dtype within range. A Python float requires a
+        floating key dtype; float-to-integer conversion is rejected.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -103,15 +107,20 @@ def merge_sort_keys(
 
     Notes
     -----
-    The Numba backend uses ``cub::BlockMergeSort::Sort`` or
-    ``cub::WarpMergeSort::Sort`` on copies of the input payloads.
-    Floating-point keys must obey the comparison's ordering requirements.
-    Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
-    a custom comparison predicate.
+    Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
+    ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
+    keys must obey the comparison's ordering requirements.
+    The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
+    and custom comparison predicates. The qualified CUTLASS API accepts CuTe
+    register payloads and supports built-in ascending or descending ordering.
 
     See Also
     --------
     merge_sort_pairs
+    cuda.coop.numba_mlir.merge_sort_keys
+        Local-array inputs and custom comparison predicates.
+    cuda.coop.cutlass.merge_sort_keys
+        CuTe register inputs with built-in ordering.
 
     Examples
     --------
@@ -126,8 +135,30 @@ def merge_sort_keys(
         :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.merge_sort_keys must be called from a supported GPU kernel."
+    if not isinstance(descending, bool):
+        raise TypeError("descending must be a compile-time bool")
+    if (valid_items is None) != (oob_default is None):
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "merge_sort_keys",
+            "keys",
+            keys,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        if temp_storage is not None:
+            _validate_common_temp_storage("merge_sort_keys", temp_storage)
+    return _group_primitive_marker(
+        "merge_sort_keys",
+        group,
+        keys,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
     )
 
 
@@ -181,11 +212,9 @@ def merge_sort_pairs(
         Key sentinel for a partial tile. Choose a value that sorts after the
         valid keys: an upper bound for ascending order or a lower bound for
         descending order. Typed runtime values and NumPy scalar constants
-        must match the key dtype exactly. An ordinary Python int constant
-        can convert to any key dtype within range. A Python float constant
-        requires a floating key dtype and must be within its finite range;
-        float-to-integer conversion is rejected. Floating keys also accept
-        positive or negative infinity as a sentinel.
+        must match the key dtype exactly. An ordinary Python int can convert
+        to a numeric key dtype within range. A Python float requires a
+        floating key dtype; float-to-integer conversion is rejected.
         ``valid_items`` and ``oob_default`` must be uniform within the group.
     temp_storage : TempStorageLike, optional
         Caller-provided scratch for a block group. Omit it to let the compiler
@@ -205,15 +234,20 @@ def merge_sort_pairs(
 
     Notes
     -----
-    The Numba backend uses ``cub::BlockMergeSort::Sort`` or
-    ``cub::WarpMergeSort::Sort`` on copies of the input payloads.
-    Floating-point keys must obey the comparison's ordering requirements.
-    Use ``cuda.coop.numba_mlir`` for fixed-size Numba local-array inputs or
-    a custom comparison predicate.
+    Numba-CUDA-MLIR and CUTLASS use ``cub::BlockMergeSort::Sort`` or
+    ``cub::WarpMergeSort::Sort`` on copies of the input payloads. Floating-point
+    keys must obey the comparison's ordering requirements.
+    The qualified Numba-CUDA-MLIR API accepts fixed-size local-array inputs
+    and custom comparison predicates. The qualified CUTLASS API accepts CuTe
+    register payloads and supports built-in ascending or descending ordering.
 
     See Also
     --------
     merge_sort_keys
+    cuda.coop.numba_mlir.merge_sort_pairs
+        Local-array inputs and custom comparison predicates.
+    cuda.coop.cutlass.merge_sort_pairs
+        CuTe register inputs with built-in ordering.
 
     Examples
     --------
@@ -228,8 +262,38 @@ def merge_sort_pairs(
         :dedent: 4
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.merge_sort_pairs must be called from a supported GPU kernel."
+    if not isinstance(descending, bool):
+        raise TypeError("descending must be a compile-time bool")
+    if (valid_items is None) != (oob_default is None):
+        raise ValueError(
+            "valid_items and oob_default must be provided together"
+        )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "merge_sort_pairs",
+            "keys",
+            keys,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "merge_sort_pairs",
+            "values",
+            values,
+            require_thread_data=True,
+            allow_readonly_thread_data=True,
+        )
+        if temp_storage is not None:
+            _validate_common_temp_storage("merge_sort_pairs", temp_storage)
+    return _group_primitive_marker(
+        "merge_sort_pairs",
+        group,
+        keys,
+        values,
+        descending=descending,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        temp_storage=temp_storage,
     )
 
 
