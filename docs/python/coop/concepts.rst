@@ -7,79 +7,12 @@
 Programming concepts
 ====================
 
-Cooperative operations let a group of threads work on data together.
-This page explains the participating threads, their payloads and
-layouts, and the rules for results and temporary storage.
-
-See the :doc:`Numba-CUDA-MLIR Programming Guide <programming_guide>`
-for complete kernels and launch examples.
-
-The :doc:`CUTLASS Programming Guide <../coop_cutlass>` covers CuTe kernels.
-
-.. _coop-backend-operation-support:
-
-Backend operation support
--------------------------
-
-The common API defines shared contracts for groups, dtypes, and result
-ownership. The table records which families each integration implements.
-Their qualified APIs add compiler-specific payloads and controls, described
-in the programming guides.
-
-.. list-table:: Current primitive families
-   :header-rows: 1
-   :widths: 48 26 26
-
-   * - Family
-     - Numba-CUDA-MLIR
-     - CUTLASS
-   * - Group queries and supported synchronization
-     - Available
-     - Available
-   * - Block and warp Load/Store
-     - Available
-     - Available
-   * - Built-in Reduce/Sum and Scan
-     - Available
-     - Available
-   * - Block and warp Exchange; block Shuffle
-     - Available
-     - Available
-   * - Merge Sort, keys and pairs
-     - Available
-     - Available
-   * - Radix Sort, keys and pairs; Radix Rank
-     - Available
-     - Available
-   * - TopK, minimum and maximum keys or pairs
-     - Available
-     - Available
-   * - Adjacent Difference and Discontinuity
-     - Available
-     - Available
-   * - Histogram
-     - Available
-     - Available
-   * - Run Length Decode, windowed and bulk
-     - Available
-     - Available
-   * - Batched Warp Reduction
-     - Available
-     - Not implemented
-
-.. _block-prefix-callbacks:
-
-Numba-CUDA-MLIR additionally supports qualified device operators and
-:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. CUTLASS accepts only
-built-in operators and rejects custom device callbacks, including Scan prefix
-callbacks. CUTLASS support targets Linux with CUDA 13. No public CUTLASS
-package version has been qualified yet; see the
-:doc:`CUTLASS Programming Guide <../coop_cutlass>` before choosing a runtime.
-
-.. raw:: html
-
-   <span id="coop-common-api"></span>
-
+Cooperative operations let a group of threads work on data together. This
+page explains the rules shared by the Numba-CUDA-MLIR and CUTLASS APIs:
+how threads divide a tile, which threads must participate, and how to use
+results and temporary storage. For complete kernels and launch examples,
+see the :doc:`Numba-CUDA-MLIR <programming_guide>` or
+:doc:`CUTLASS <../coop_cutlass>` programming guide.
 
 .. _coop-api-namespaces:
 .. _kernel-api:
@@ -95,7 +28,7 @@ supported DSLs. Calls inside a kernel are compiler markers; they are not
 host-side implementations of those operations.
 
 The qualified namespaces, ``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``,
-expose their implemented common operations and backend-specific extensions. A
+each include all common kernel operations and their backend's extensions. A
 program using one compiler can use its qualified namespace alone. CUTLASS-only
 code can use ``import cuda.coop.cutlass as coop``. Use ``numba_coop`` and
 ``cutlass_coop`` when a module contains both DSLs. Common and qualified calls
@@ -108,6 +41,12 @@ a kernel still requires adapting launch syntax, array arguments, control
 flow, and other DSL code. Compiler-owned payloads cannot be passed between
 Numba and CuTe traces.
 
+.. _block-prefix-callbacks:
+
+Numba-CUDA-MLIR supports qualified device operators and
+:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. CUTLASS supports
+built-in operators; custom operators and stateful Scan callbacks are
+currently unsupported.
 
 .. _coop-common-calling-conventions:
 
@@ -127,7 +66,6 @@ operands or controls; check the :doc:`API reference <../coop_api>` rather than
 passing a backend extension to the common namespace. Load fills its output
 in place and returns ``None``; an operation that returns a new value leaves
 its input payload unchanged unless its contract says otherwise.
-
 
 .. _coop-backend-registration:
 
@@ -187,7 +125,6 @@ or ``cutlass_coop`` for qualified calls. See the
 :ref:`CUTLASS <coop-cutlass-api-choice>` API comparisons. Both backends can be
 registered in one process; the compiler tracing a kernel selects the
 implementation.
-
 
 Shared execution model
 ----------------------
@@ -318,9 +255,8 @@ contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does not
 sort a whole array. TopK defines an unordered selected prefix; the remaining
-payload positions are not output. For the available sorting and selection
-families, see :ref:`backend operation support
-<coop-backend-operation-support>`.
+payload positions are not output. See the :doc:`API reference <../coop_api>`
+for sorting and selection operations.
 
 .. _coop-common-storage:
 .. _temporary-storage:

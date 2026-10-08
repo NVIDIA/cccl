@@ -49,11 +49,12 @@ def _decode(
     bulk,
     temp_storage,
 ):
-    """Validate the group and snapshot matching run payloads.
+    """Validate the block group and copy both run payloads.
 
-    Keep input run extent independent of decoded output extent. The provider
-    resolves value/length types, the offset ABI, and the destination contract
-    before selecting the shared window or bulk specialization.
+    Values and lengths must have the same per-thread extent. The decoded
+    extent is a separate compile-time control. The provider resolves the
+    value and length types, the static or runtime offset type, and the
+    destination checks. It then selects the window or bulk C++ wrapper.
     """
 
     if not isinstance(group, ThreadGroup):
@@ -141,6 +142,11 @@ def run_length_decode(
         Neither input is modified. The decoded total must fit uint32; negative
         lengths, misplaced zero padding, and overflow trap before decoding.
 
+    Notes
+    -----
+    See the :doc:`Run Length Decode visualization
+    <coop/visualizations/run-length-decode>` for windows and zero-filled tails.
+
     Examples
     --------
     Decode a 64-item window starting inside a run, then write the full
@@ -217,6 +223,11 @@ def run_length_decode_into(
         nothing. Insufficient capacity traps before any output write; elements
         outside the decoded interval remain unchanged. The total must fit
         uint32.
+
+    Notes
+    -----
+    See the :doc:`Run Length Decode visualization
+    <coop/visualizations/run-length-decode>` for bulk output and run ordering.
 
     Examples
     --------

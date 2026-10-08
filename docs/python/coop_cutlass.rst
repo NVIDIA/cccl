@@ -9,10 +9,9 @@
 CUTLASS Programming Guide
 =========================
 
-Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
-values, rearrange, sort, or select items, compare neighboring items, and store
-the result. The CUTLASS backend implements each supported operation with CUB; see :ref:`backend operation support
-<coop-backend-operation-support>`.
+Use ``cuda.coop`` inside a CuTe kernel to move data, reduce or scan values,
+rearrange payloads, sort or select keys, compare neighbors, count samples,
+and decode runs. The CUTLASS backend implements these operations with CUB. The :doc:`API reference <coop_api>` lists common and qualified calls.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
 object and returns ``None``; ``store`` writes its items to memory. The examples
@@ -912,6 +911,41 @@ payload conversion.
    :language: python
    :start-after: docs: start cutlass-topk
    :end-before: docs: end cutlass-topk
+
+.. _coop-cutlass-reduce-batched:
+
+Batched Warp Reduction
+-----------------------
+
+``reduce_batched(warp, values)`` reduces each per-thread payload slot across
+the warp independently. A payload with three features produces three
+aggregates, rather than combining all features into one sum. Physical warps
+and logical widths of 1, 2, 4, 8, 16, and 32 are supported. Every member of the
+selected warp participates; other logical warps may take another branch.
+
+The batch count ``B`` is the positive compile-time extent of each lane's input
+payload. For ``B`` batches and ``W`` lanes, each returned ``ThreadData`` has
+``ceil(B / W)`` slots. With ``output_layout="striped"``, slot ``i`` in lane
+``r`` holds batch ``r + i * W``. With ``"blocked"``, it holds batch
+``r * ceil(B / W) + i``. Guard reads and stores when the batch index reaches
+``B``. Inputs remain unchanged, and the result retains their element type.
+
+The common form accepts readable ``ThreadData`` payloads and built-in
+operator strings. The qualified form additionally accepts CuTe register
+payloads and the built-in aliases supported by qualified Reduce. There is
+no ``temp_storage`` argument: the CUB provider uses register exchanges and
+needs no shared scratch or trailing storage-reuse barrier.
+
+:download:`Download the feature-sum example
+<../../python/cuda_coop/examples/cutlass/reduce_batched.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/reduce_batched.py
+   :language: python
+   :start-after: docs: start cutlass-reduce-batched
+   :end-before: docs: end cutlass-reduce-batched
+
+See the :doc:`Batched Warp Reduction visualization
+<coop/visualizations/reduce-batched>` for the batch-to-lane mapping.
 
 .. _coop-cutlass-register-payloads:
 
