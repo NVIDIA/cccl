@@ -36,9 +36,9 @@ Each guideline is a section of the form:
 - `<scope>` — which files/diffs the rule applies to.
 - The provenance comment is optional and lists where the rule comes from: a historical regression
   (introducing PR → fixing PR), review feedback that prevented a defect from shipping (link to the
-  review comment), or a third-party source the rule was adapted from (name + link; paraphrase
-  sources whose license does not permit copying). It is metadata for maintainers, not part of the
-  rule. Omit the comment entirely for a rule that was not derived from such a case.
+  review comment), or a third-party source the rule was adapted from (name + link). It is metadata
+  for maintainers, not part of the rule. Omit the comment entirely for a rule that was not derived
+  from such a case.
 - Rules are grouped by area, in the order `build`, `correctness`, `api`, `abi`, `perf`,
   `test`, `infra`, `docs`.
 
