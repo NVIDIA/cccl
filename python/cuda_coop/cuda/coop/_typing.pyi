@@ -192,6 +192,7 @@ class TempStorageLike(Protocol):
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "CommonShuffleMode",
     "ExchangeMode",
     "LoadStoreAlgorithm",
     "ReduceAlgorithm",
@@ -207,5 +208,4 @@ __all__ = [
     "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "_CommonNumericT",
-    'CommonShuffleMode',
 ]
