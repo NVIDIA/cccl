@@ -97,7 +97,9 @@ cutlass_coop.sum(
     scalar,
 )
 cutlass_coop.sum(mapped, scalar)  # expected-error: [arg-type]
-cutlass_coop.sum(warp, values)  # expected-error: [arg-type]
+cutlass_coop.sum(  # expected-error: [call-overload]
+    warp, values, valid_items=7
+)
 cutlass_coop.sum(
     warp,  # expected-error: [arg-type]
     scalar,
