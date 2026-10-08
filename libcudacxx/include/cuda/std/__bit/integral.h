@@ -86,11 +86,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#  if defined(_CCCL_BUILTIN_CONSTANT_P)
-    if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
-#  endif // _CCCL_BUILTIN_CONSTANT_P
+    if constexpr (sizeof(_Tp) <= 8)
     {
-      if constexpr (sizeof(_Tp) <= 8)
+#  if defined(_CCCL_BUILTIN_CONSTANT_P)
+      if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
+#  endif // _CCCL_BUILTIN_CONSTANT_P
       {
         // CUDA right shift (ptx::shr) returns 0 if the right operand is larger than the number of bits of the type
         // The result is computed as max(1, bit_width(__t - 1)) because it is more efficient than the ternary operator
@@ -118,11 +118,11 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#  if defined(_CCCL_BUILTIN_CONSTANT_P)
-    if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
-#  endif // _CCCL_BUILTIN_CONSTANT_P
+    if constexpr (sizeof(_Tp) <= 8)
     {
-      if constexpr (sizeof(_Tp) <= 8)
+#  if defined(_CCCL_BUILTIN_CONSTANT_P)
+      if (!_CCCL_BUILTIN_CONSTANT_P(__t)) // inline ptx prevents constant folding
+#  endif // _CCCL_BUILTIN_CONSTANT_P
       {
         // CUDA left shift (ptx::shl) returns 0 if the right operand is larger than the number of bits of the type
         // -> the result is 0 if __t == 0

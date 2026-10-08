@@ -44,12 +44,12 @@ template <typename _Tp = uint32_t>
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-#  if defined(_CCCL_BUILTIN_CONSTANT_P)
-    // inline ptx prevents constant folding
-    if (!(_CCCL_BUILTIN_CONSTANT_P(__start) && _CCCL_BUILTIN_CONSTANT_P(__width)))
-#  endif // _CCCL_BUILTIN_CONSTANT_P
+    if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
     {
-      if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+#  if defined(_CCCL_BUILTIN_CONSTANT_P)
+      // inline ptx prevents constant folding
+      if (!(_CCCL_BUILTIN_CONSTANT_P(__start) && _CCCL_BUILTIN_CONSTANT_P(__width)))
+#  endif // _CCCL_BUILTIN_CONSTANT_P
       {
         NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::ptx::bmsk_clamp(__start, __width);))
       }
