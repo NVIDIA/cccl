@@ -478,7 +478,7 @@ public:
   }
 
   template <typename Tuple>
-  __host__ __device__::cuda::std::tuple<int, int> operator()(Tuple&&) const
+  __host__ __device__ ::cuda::std::tuple<int, int> operator()(Tuple&&) const
   {
     return {-1, -1}; // wrong on purpose; only reached if not unwrapped
   }

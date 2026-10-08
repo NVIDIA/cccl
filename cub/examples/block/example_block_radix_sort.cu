@@ -51,10 +51,10 @@ bool g_uniform_keys;
 template <typename Key,
           int BlockThreads,
           int ItemsPerThread>
-__launch_bounds__(BlockThreads) __global__
-  void BlockSortKernel(Key* d_in, // Tile of input
-                       Key* d_out, // Tile of output
-                       clock_t* d_elapsed) // Elapsed cycle count of block scan
+__launch_bounds__(BlockThreads)
+  __global__ void BlockSortKernel(Key* d_in, // Tile of input
+                                  Key* d_out, // Tile of output
+                                  clock_t* d_elapsed) // Elapsed cycle count of block scan
 {
   static constexpr int TILE_SIZE = BlockThreads * ItemsPerThread;
 

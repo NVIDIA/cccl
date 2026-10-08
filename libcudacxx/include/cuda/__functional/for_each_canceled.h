@@ -99,7 +99,7 @@ template <int _Index>
 template <int _ThreadBlockRank = 3, typename _UnaryFunction = void>
 _CCCL_DEVICE_API void __for_each_canceled_block_sm100(::dim3 __block_idx, bool __is_leader, _UnaryFunction __uf)
 {
-  __shared__::cuda::std::uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
+  __shared__ ::cuda::std::uint64_t __barrier; // TODO: use 2 barriers and 2 results to avoid last sync threads
   __shared__ _QueryCancelResult __result;
   bool __phase = false;
 

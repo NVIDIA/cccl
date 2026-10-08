@@ -74,7 +74,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
 
   // Base address of dynamic shared memory is guaranteed to be aligned to at least 16 bytes which is
   // sufficient for this purpose
-  extern __shared__::cuda::std::byte __local_sketch[];
+  extern __shared__ ::cuda::std::byte __local_sketch[];
 
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();
@@ -129,7 +129,7 @@ _CCCL_KERNEL_ATTRIBUTES void __add_shmem(_InputIt __first, ::cuda::std::int64_t 
   using __local_ref_type = typename _RefType::template __rebind_scope<::cuda::std::thread_scope_block>;
 
   // TODO assert alignment
-  extern __shared__::cuda::std::byte __local_sketch[];
+  extern __shared__ ::cuda::std::byte __local_sketch[];
 
   const auto __loop_stride = __grid_stride();
   auto __idx               = __global_thread_id();

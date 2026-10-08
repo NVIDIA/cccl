@@ -16,8 +16,8 @@ template <cub::BlockReduceAlgorithm Algorithm,
           int BlockDimZ,
           class T,
           class ActionT>
-__launch_bounds__(BlockDimX * BlockDimY * BlockDimZ) __global__
-  void block_reduce_kernel(T* in, T* out, int valid_items, T poison, ActionT action)
+__launch_bounds__(BlockDimX * BlockDimY * BlockDimZ)
+  __global__ void block_reduce_kernel(T* in, T* out, int valid_items, T poison, ActionT action)
 {
   using block_reduce_t = cub::BlockReduce<T, BlockDimX, Algorithm, BlockDimY, BlockDimZ>;
   using storage_t      = typename block_reduce_t::TempStorage;
