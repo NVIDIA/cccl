@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/__ptx/instructions/get_sreg.h>
+// IWYU pragma: begin_exports
 #include <cuda/__ptx/ptx_dot_variants.h>
+// IWYU pragma: end_exports
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/cstdint>
 

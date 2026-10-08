@@ -14,10 +14,9 @@
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: clang && !nvcc
 
-// <cuda/ptx>
+// <cuda/ptxs/shfl_sync.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/shfl_sync.h>
 
 #include "test_macros.h"
 

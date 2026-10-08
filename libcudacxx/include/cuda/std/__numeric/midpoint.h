@@ -20,18 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_object.h>
-#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 
