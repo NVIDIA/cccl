@@ -2,21 +2,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose decoded windows and complete stream writes for compiled kernels.
+"""Define common block run-length decoding calls for compiled kernels.
 
-The window form returns a fixed-size payload per thread. The into form writes
-the entire decoded stream to a caller's array and returns its total size. Both
-preserve the compressed inputs. Registration decorators let compiler frontends
-recognize these calls; the Python bodies reject host execution.
+Each input run is a value and a length. Decoding repeats each value by its
+length to make one stream. ``run_length_decode`` returns a blocked window as
+one fixed-size payload per thread. ``run_length_decode_into`` writes the
+complete stream to an array and returns its total size. Neither call changes
+its run inputs.
+
+Numba-CUDA-MLIR replaces these registered calls during compilation. CuTe
+tracing runs the Python bodies. They require fixed-size ThreadData run
+payloads with a numeric value dtype and an integer length dtype, then
+dispatch to the active backend. Device code checks run lengths and, for bulk
+writes, destination capacity at runtime, and traps on failure.
 """
 
 from __future__ import annotations
 
-from ..thread_group import CoopCompilerContextRequiredError
+from ..dtype_policy import validate_common_integer_value_dtype_name
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
-from ._payload import TempStorageLike
+from ._payload import TempStorageLike, _validate_common_numeric_value
 
 try:
     import numpy
@@ -51,9 +60,6 @@ def run_length_decode(
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadDataLike[_ItemT]:
     """Return a fresh blocked window of the decoded run stream.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -102,7 +108,9 @@ def run_length_decode(
     :func:`cuda.coop.run_length_decode_into` to write a full stream while
     preparing that table once, or :func:`cuda.coop.numba_mlir.run_length_decode`
     for total-size and relative run-offset outputs. The qualified Numba
-    operation also accepts local-array run inputs.
+    operation also accepts local-array run inputs. The CUTLASS-qualified form
+    :func:`cuda.coop.cutlass.run_length_decode` also accepts CuTe register
+    payloads.
 
     Examples
     --------
@@ -118,9 +126,32 @@ def run_length_decode(
         :end-before: # common-run-length-window-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.run_length_decode must be called from a supported "
-        "GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "run_length_decode",
+            "run_values",
+            run_values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        length_dtype = _validate_common_numeric_value(
+            "run_length_decode",
+            "run_lengths",
+            run_lengths,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        validate_common_integer_value_dtype_name(
+            length_dtype, operation="run_length_decode", parameter="run_lengths"
+        )
+    return _group_primitive_marker(
+        "run_length_decode",
+        group,
+        run_values,
+        run_lengths,
+        decoded_items_per_thread=decoded_items_per_thread,
+        decoded_window_offset=decoded_window_offset,
+        temp_storage=temp_storage,
     )
 
 
@@ -137,9 +168,6 @@ def run_length_decode_into(
     temp_storage: TempStorageLike | None = None,
 ) -> numpy.uint32 | CompilerIntegerLike:
     """Decode a complete run stream into an array and return its total size.
-
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
 
     Parameters
     ----------
@@ -186,6 +214,8 @@ def run_length_decode_into(
 
     :func:`cuda.coop.numba_mlir.run_length_decode_into` also accepts local-array
     run inputs and can write relative run offsets to a separate output array.
+    :func:`cuda.coop.cutlass.run_length_decode_into` takes a contiguous CuTe
+    global-memory tensor as its destination and returns a CuTe ``Uint32``.
 
     Examples
     --------
@@ -201,9 +231,35 @@ def run_length_decode_into(
         :end-before: # run-length-bulk-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.run_length_decode_into must be called from a supported "
-        "GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "run_length_decode_into",
+            "run_values",
+            run_values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        length_dtype = _validate_common_numeric_value(
+            "run_length_decode_into",
+            "run_lengths",
+            run_lengths,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        validate_common_integer_value_dtype_name(
+            length_dtype,
+            operation="run_length_decode_into",
+            parameter="run_lengths",
+        )
+    return _group_primitive_marker(
+        "run_length_decode_into",
+        group,
+        run_values,
+        run_lengths,
+        destination,
+        decoded_items_per_thread=decoded_items_per_thread,
+        destination_offset=destination_offset,
+        temp_storage=temp_storage,
     )
 
 

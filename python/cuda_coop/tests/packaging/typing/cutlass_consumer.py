@@ -35,6 +35,7 @@ from typing_extensions import assert_type
 
 import cuda.coop.cutlass as cutlass_coop
 from cuda import coop as common_coop
+from cuda.coop.cutlass._thread_data import CutlassTensorSample
 
 
 def register_cutlass() -> None:
@@ -136,7 +137,7 @@ def check_cutlass_surface(source: object, destination: object) -> None:
 def check_cutlass_dynamic_memory_controls(
     signed: Int32, unsigned: Uint32
 ) -> None:
-    """Accept CuTe integer controls with a typed payload."""
+    """Check CuTe counts, offsets and sentinels, plus scalar Store."""
 
     block = cutlass_coop.this_block()
     values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
@@ -435,8 +436,8 @@ def check_cutlass_scan_surface(scalar: Uint32) -> None:
 def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
     """Accept matching initial-value types without changing the result dtype.
 
-    NumPy and CuTe spellings can describe the same numeric dtype. Python
-    numbers use the input's type context. These declarations check accepted
+    NumPy and CuTe spellings can describe the same numeric dtype. Python int
+    and float seeds take the input's dtype. These declarations check accepted
     type combinations; representability of a particular literal is a compiler
     validation, not a mypy assertion here.
     """
@@ -1131,4 +1132,50 @@ def check_cutlass_histogram() -> None:
             algorithm="sort",
         ),
         cutlass_coop.ThreadData[Int32],
+    )
+
+
+def check_cutlass_run_length_surface(destination: CutlassTensorSample) -> None:
+    """Distinguish a value-typed decoded window from the bulk Uint32 total.
+
+    Run lengths and offsets have independent integer types. Bulk decoding
+    writes the destination tensor and returns a count; it does not return a
+    payload. Register run values give a ThreadData[Any] window result;
+    register run lengths do not change either result type.
+    """
+
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Int32)
+    lengths = cutlass_coop.ThreadData(items_per_thread=2, dtype=Uint64)
+    storage = cutlass_coop.TempStorage()
+    assert_type(
+        cutlass_coop.run_length_decode(
+            block,
+            values,
+            lengths,
+            decoded_items_per_thread=3,
+            decoded_window_offset=Uint64(1),
+            temp_storage=storage,
+        ),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.run_length_decode(
+            block,
+            values.to_tensor_ssa(),
+            lengths,
+            decoded_items_per_thread=3,
+        ),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.run_length_decode_into(
+            block,
+            values,
+            lengths.to_register_tensor(),
+            destination,
+            decoded_items_per_thread=3,
+            destination_offset=Int64(0),
+        ),
+        Uint32,
     )
