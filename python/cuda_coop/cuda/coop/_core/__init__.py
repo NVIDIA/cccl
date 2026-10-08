@@ -127,6 +127,7 @@ from .group.merge_sort import (
     GroupMergeSortSemantics,
 )
 from .group.neighbors import GroupNeighborSemantics
+from .group.reduce_batched import GroupReduceBatchedSemantics
 from .launch import (
     Dim3,
     LaunchFactConflict,
@@ -183,6 +184,11 @@ from .warp.merge_sort import (
     WarpMergeSortSpecialization,
     WarpMergeSortTilePolicy,
     make_warp_merge_sort_specialization,
+)
+from .warp.reduce_batched import (
+    WarpReduceBatchedSemantics,
+    WarpReduceBatchedSpecialization,
+    make_warp_reduce_batched_specialization,
 )
 
 __all__ = [
@@ -252,6 +258,7 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupReduceBatchedSemantics",
     "GroupReduceSemantics",
     "GroupRunLengthDecodeSemantics",
     "GroupScanMode",
@@ -304,6 +311,8 @@ __all__ = [
     "WarpMergeSortPayload",
     "WarpMergeSortSpecialization",
     "WarpMergeSortTilePolicy",
+    "WarpReduceBatchedSemantics",
+    "WarpReduceBatchedSpecialization",
     "WarpReduceOperation",
     "WarpReduceSpecialization",
     "WarpScanMode",
@@ -331,6 +340,7 @@ __all__ = [
     "make_thread_group",
     "make_warp_exchange_specialization",
     "make_warp_merge_sort_specialization",
+    "make_warp_reduce_batched_specialization",
     "make_warp_reduce_specialization",
     "make_warp_scan_specialization",
     "merge_launch_facts",

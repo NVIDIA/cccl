@@ -57,7 +57,7 @@ only the backend namespace, you can import it as ``coop`` instead. See the
 Kernel API
 ----------
 
-The common root and qualified backend expose matching entry points:
+The common and qualified APIs expose matching entry points:
 
 .. code-block:: python
 
@@ -91,11 +91,6 @@ The common root and qualified backend expose matching entry points:
        offset=tile_offset,
    )
 
-For a complete copy kernel, including allocation, launch, tail handling, and
-an output check, see the example in :func:`cuda.coop.load`. The API reference
-also includes tested examples for :func:`cuda.coop.store`,
-:func:`cuda.coop.ThreadData`, and :func:`cuda.coop.TempStorage`.
-
 Use the qualified namespace when backend-specific types or controls are
 required:
 
@@ -114,12 +109,14 @@ Groups and thread data
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
 consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
-Exchange, Reduce, and Scan support block, physical-Warp, and logical-Warp forms;
-Shuffle is block-only. Warp operations require an enclosing block with a
-multiple of 32 threads and no incomplete final physical warp. For a
-multidimensional block, threads are linearized in x-major order. Every
-member of a participating group must reach its collective; complete sibling
-logical groups may take different control-flow paths.
+Exchange, Reduce, Scan, and Merge Sort support block, physical-Warp, and logical-Warp
+forms. Shuffle, Radix Sort, Radix Rank, TopK, Adjacent Difference,
+Discontinuity, Histogram, and Run Length Decode are block-only. Batched
+Reduction supports physical and logical warps. For Warp primitives, the
+enclosing block must contain a multiple of 32 threads, with no incomplete
+final physical warp. For a multidimensional block, threads are linearized in
+x-major order. Every member of a participating group must reach its primitive;
+complete sibling logical groups may take different control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
 groups of physical warps. These groups support hierarchy queries; the
@@ -147,32 +144,9 @@ support queries and ``is_member()`` but not ``sync()`` or
 ``sync_aligned()``; the planner does not manage the lifetime of their block
 barriers. For a non-exhaustive partition, use ``is_member()`` to guard
 rank-dependent work for excluded threads. Do not use that branch to skip a
-collective unless the collective's participation contract explicitly permits
+primitive unless the primitive's participation contract explicitly permits
 it; every required group or parent-group participant must still reach the
-collective.
-
-
-Participation and synchronization
----------------------------------
-
-Every member of a participating group must reach the same cooperative call.
-A branch around a block operation must be uniform across the block; a branch
-around a logical-warp operation must be uniform within that logical warp.
-Complete sibling logical groups may follow different paths.
-
-Do not put a block Load or Store inside a per-element ``if index < count``
-condition. Use ``valid_items`` to describe the valid prefix while all block
-threads participate. An early return by some threads also violates
-participation if the remaining threads later execute a block operation.
-
-A scratch-reuse barrier protects temporary storage. Its presence depends on
-the algorithm and storage policy; arrange explicit synchronization wherever
-application-owned shared memory requires it. A barrier does not make
-divergent participation safe.
-
-
-Per-thread payloads
--------------------
+primitive.
 
 ``coop.ThreadData(items_per_thread)`` gives each participating thread a
 fixed-size payload with that many items. Pass ``items_per_thread`` as a
@@ -189,13 +163,6 @@ payload storage; ``None`` lets the compiler choose. For example,
 16-byte alignment. The backend may use stronger alignment, including for
 requests smaller than its minimum allocation alignment. This option does not
 assert alignment of source or destination arrays passed to Load or Store.
-
-Payload slots start uninitialized. Write every slot before reading it. A
-partial Load leaves invalid slots unspecified unless you pass
-``oob_default``. Initialize those slots after the Load or supply a default
-before reading them. :class:`cuda.coop.ThreadDataLike` names the shared
-payload interface in type signatures. Protocol compatibility alone does not
-make an arbitrary Python object a supported kernel value.
 
 The payload's ``items_per_thread`` attribute is a compile-time integer and
 can be used as a loop bound inside a kernel, including through payload
@@ -288,10 +255,6 @@ value explicitly before storing it:
    value = types.int32(source[cuda.threadIdx.x] + 1)
    coop.store(block, destination, value, algorithm="direct")
 
-
-Data layouts and algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Both common and qualified entry points use the same string algorithm
 vocabulary: ``direct``, ``striped``, ``vectorize``, ``transpose``,
 ``warp_transpose``, and ``warp_transpose_timesliced``. All six work with the
@@ -299,9 +262,9 @@ Numba-CUDA-MLIR backend. ``direct`` and ``vectorize`` use blocked ordering, so
 each thread owns a contiguous segment of the tile. ``striped`` exposes striped
 ordering, where item ``i`` for a thread is separated from its next item by the
 block size. The three transpose algorithms use striped memory transactions but
-present blocked ``ThreadData`` to the caller. The two warp-transpose variants
-perform that reordering within each warp and require a block size divisible by
-32.
+present :term:`blocked` ``ThreadData`` to the caller. The two warp-transpose
+variants perform that reordering within each warp and require a block size
+divisible by 32.
 
 Physical and logical Warp Load and Store support ``direct``, ``striped``,
 ``vectorize``, and ``transpose``. Their layouts follow the same rules at the
@@ -311,11 +274,6 @@ transactions while exposing a blocked payload. Common and qualified calls
 use the same lowercase string selectors. Selectors are normalized to lowercase
 underscore-delimited strings. Enum and integer selectors, including ``0``, are
 rejected.
-
-For group size ``G``, items per thread ``K``, thread rank ``t``, and item
-index ``i``, blocked order uses tile position ``t * K + i``; striped order
-uses ``t + i * G``. The payload has no runtime layout tag that corrects a
-mismatched Load/Store pair.
 
 Store consumes the arrangement associated with its selected algorithm.
 Transpose Store algorithms may rearrange the input payload in place, following
@@ -479,7 +437,7 @@ The state must be a numeric one-item ``ThreadData`` or local array. Its dtype
 must exactly match ``StatefulFunction.dtype``, but may differ from the scanned
 payload dtype. Keep the same state payload alive across repeated scans to
 carry the prefix between tiles. Every participating thread must initialize
-its state cell to the same contents before the first collective.
+its state cell to the same contents before the first primitive.
 
 CUB may invoke the prefix callback in every lane of the block's first warp,
 but only lane 0's returned prefix is applied to the scan. Other per-thread
@@ -509,13 +467,9 @@ state in its per-thread payload, separate from CUB temporary storage.
 Temporary storage
 -----------------
 
-Block Load, Store, Reduce, and Scan accept an optional ``TempStorage``
-descriptor.
-
-Scratch belongs to one block during its kernel execution. A descriptor does
-not carry data between blocks or kernel launches.
-
-For example:
+Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
+Difference, Discontinuity, Histogram, and both Run Length Decode forms accept
+an optional ``TempStorage`` descriptor:
 
 .. code-block:: python
 
@@ -573,19 +527,19 @@ descriptor, and a call site inside a loop counts as a reuse on every
 iteration. Compiler-owned storage always synchronizes.
 
 The compiler stages descriptors and compiler-managed CUB scratch into one
-shared-memory backing. Up to 48 KiB, it uses a conservative static limit
+shared-memory backing. Up to 48 KiB, the compiler uses static shared memory
 without querying the device. Larger requests, from explicit ``size_in_bytes``
 or implicit requirements, trigger a query of the device's default and opt-in
 limits. Backing above the default limit uses dynamic shared memory, and the
-launch reserves its exact byte count within the opt-in limit.
-Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
-allocations reliably. A kernel using cooperative temporary storage must not
-also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
-cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Reduce uses this same cooperative backing,
-including when ``temp_storage`` is omitted. Storage-free Load/Store algorithms
-do not add this restriction.
+launch reserves its exact byte count within the opt-in limit. Supported
+Numba-CUDA-MLIR releases do not separate static and dynamic shared allocations
+reliably. A kernel using cooperative temporary storage must not also declare a
+zero-sized or runtime-sized ``cuda.shared.array``. When cooperative backing
+becomes dynamic, user static shared arrays are also unsupported. Keep both user
+arrays and cooperative backing static, or move the user data out of shared
+memory. Reduce uses the same cooperative backing, including when
+``temp_storage`` is omitted. Storage-free Load/Store algorithms do not add this
+restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
@@ -594,7 +548,7 @@ merged region, even when a particular program supplies sufficient barriers.
 
 Cooperative calls in device helpers must be inlined into the kernel; use
 ``@cuda.jit(device=True, inline="always")`` when selecting the helper's
-policy explicitly. Standalone collective helpers and collectives inside
+policy explicitly. Standalone primitive helpers and primitives inside
 standalone callbacks are unsupported. Values from ``literal_unroll`` cannot
 determine cooperative payload extents, group dimensions, selectors, or
 descriptor constructor arguments. Use separate calls with explicit constants,
@@ -608,4 +562,8 @@ and Shuffle always use compiler-owned storage and append a group-scoped reuse
 barrier. Block Scan uses compiler-owned storage unless the caller passes a
 ``TempStorage`` descriptor. Both the common and qualified APIs reject explicit
 ``TempStorage`` for every Warp Load and Store algorithm, including the
-storage-free modes, and for Warp Reduce and Scan.
+storage-free modes, and for Warp Reduce and Scan. Batched Reduction also uses
+compiler-owned storage per warp and has no ``temp_storage`` argument. Adjacent
+Difference, Discontinuity, Histogram, and both Run Length Decode forms accept
+explicit block scratch. Prepared Run Length Decode tables live only for the
+duration of each call.
