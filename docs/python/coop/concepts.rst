@@ -44,7 +44,7 @@ in the programming guides.
      - Available
    * - Block and warp Exchange; block Shuffle
      - Available
-     - Not implemented
+     - Available
    * - Merge Sort, keys and pairs
      - Available
      - Not implemented

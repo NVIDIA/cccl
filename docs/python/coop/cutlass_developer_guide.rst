@@ -261,8 +261,8 @@ provider emission belong under ``cutlass``.
        ``cutlass/_temp_storage.py``, and their ``.pyi`` files
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
-       ``cutlass/_lowering/_load_store.py``; Reduce and Scan
-       follow the same organization
+       ``cutlass/_lowering/_load_store.py``; Reduce, Scan, Exchange and
+       Shuffle follow the same organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
        ``cutlass/_compiler/_finalize.py``
@@ -712,12 +712,22 @@ provider calls, shared accesses, or barriers. The final-cubin check in
 It requires shared memory and barriers only for transpose. The final-cubin
 checks in ``runtime/test_warp_load_store.py`` and
 ``runtime/test_logical_warp_load_store.py`` reject provider calls and block
-barriers for physical and logical Warp operations. The final-cubin check in
-``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave
-no provider calls. It does not check shared memory, registers, or barriers.
+barriers for physical and logical Warp operations. They forbid shared memory
+and warp synchronization for storage-free algorithms. Transpose must use
+shared memory, except that the width-one test leaves allocation unconstrained.
+
+The final-cubin check in ``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave no provider calls. It does not check shared
+memory, registers, or barriers.
 The final-cubin check in ``runtime/test_scan.py`` rejects provider calls for
 block and logical-Warp Scan, and block barriers for the logical-Warp path.
 It saves resource reports but does not check them.
+
+The final-cubin checks in ``runtime/test_exchange.py`` and
+``runtime/test_shuffle.py`` reject provider calls for block and logical-Warp
+Exchange and for array and scalar Shuffle. The Exchange check also rejects
+block barriers on the logical-Warp path. Neither check examines shared
+memory. ``runtime/test_group_hierarchy.py`` checks that mapped-group queries
+leave no calls, barriers, warp synchronization, or shared memory.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use
 Compute Sanitizer race checks for changes to scratch allocation or

@@ -6,9 +6,10 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover group query types, Reduce and Scan results,
-Load/Store returns, descriptor attributes, and calls across namespaces.
-Payload constructors and conversions must preserve the scalar dtype.
+declarations. Checks cover group query types, primitive results, descriptor
+attributes, and calls across namespaces. Payload constructors, conversions,
+and rearrangements must preserve the value dtype independently of ranks
+and flags.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -165,9 +166,10 @@ def check_cutlass_dynamic_memory_controls(
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     """Check Warp Load/Store types across both API namespaces.
 
-    All four physical Warp algorithms accept ``valid_items``,
-    ``oob_default``, and ``offset``. Groups from either namespace must work
-    with common and qualified calls.
+    With each of the four physical Warp algorithms, Load accepts
+    ``valid_items``, ``oob_default``, and ``offset``, and Store accepts
+    ``valid_items``. Groups from either namespace must work with common and
+    qualified calls.
     """
 
     warp = cutlass_coop.this_warp()
@@ -560,4 +562,140 @@ def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
             warp, Float32(4), initial_value=floating_seed
         ),
         Float32,
+    )
+
+
+def check_cutlass_exchange_surface() -> None:
+    """Keep the value dtype separate from scatter rank and flag dtypes.
+
+    Layout changes and scatters keep the value dtype. Exchange of a register
+    tensor or ``TensorSSA`` value returns ``ThreadData[Any]`` because the
+    stubs cannot see its CuTe element type; the compiler resolves the dtype
+    while tracing.
+    """
+
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
+    ranks = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
+    flags = cutlass_coop.ThreadData(items_per_thread=3, dtype=Uint64)
+    for mode in (
+        "striped_to_blocked",
+        "blocked_to_striped",
+        "warp_striped_to_blocked",
+        "blocked_to_warp_striped",
+    ):
+        assert_type(
+            cutlass_coop.exchange(block, values, mode=mode),
+            cutlass_coop.ThreadData[np.float32],
+        )
+        assert_type(
+            cutlass_coop.exchange(
+                block, values, mode=mode, warp_time_slicing=True
+            ),
+            cutlass_coop.ThreadData[np.float32],
+        )
+    for scatter_mode in ("scatter_to_blocked", "scatter_to_striped"):
+        assert_type(
+            cutlass_coop.exchange(
+                block,
+                values,
+                mode=scatter_mode,
+                ranks=ranks,
+                warp_time_slicing=True,
+            ),
+            cutlass_coop.ThreadData[np.float32],
+        )
+    assert_type(
+        cutlass_coop.exchange(
+            block, values, mode="scatter_to_striped_guarded", ranks=ranks
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    assert_type(
+        cutlass_coop.exchange(
+            block,
+            values,
+            mode="scatter_to_striped_flagged",
+            ranks=ranks,
+            valid_flags=flags,
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    assert_type(
+        cutlass_coop.exchange(cutlass_coop.this_warp(), values),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    for width in (1, 2, 4, 8, 16, 32):
+        logical = cutlass_coop.this_warp().group_by(width)
+        assert_type(
+            cutlass_coop.exchange(logical, values),
+            cutlass_coop.ThreadData[np.float32],
+        )
+    assert_type(
+        cutlass_coop.exchange(common_coop.this_block(), values),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    common_coop.exchange(block, values)
+    assert_type(
+        cutlass_coop.exchange(block, values.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exchange(
+            block,
+            values.to_register_tensor(),
+            mode="scatter_to_striped_flagged",
+            ranks=ranks.to_tensor_ssa(),
+            valid_flags=flags.to_register_tensor(),
+        ),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exchange(
+            block,
+            values,
+            mode="scatter_to_blocked",
+            ranks=cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int8),
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+
+
+def check_cutlass_shuffle_surface(scalar: Uint32) -> None:
+    """Keep payload and scalar Shuffle result types distinct."""
+
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    assert_type(
+        cutlass_coop.shuffle(block, values), cutlass_coop.ThreadData[np.int32]
+    )
+    assert_type(
+        cutlass_coop.shuffle(block, values, mode="up"),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.shuffle(block, scalar, mode="offset", distance=-2), Uint32
+    )
+    assert_type(
+        cutlass_coop.shuffle(block, scalar, mode="rotate", distance=Int16(2)),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.shuffle(
+            block, scalar, mode="rotate", distance=np.uint32(2)
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.shuffle(common_coop.this_block(), values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    common_coop.shuffle(block, values)
+    assert_type(
+        cutlass_coop.shuffle(block, values.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.shuffle(block, values.to_tensor_ssa(), mode="up"),
+        cutlass_coop.ThreadData[Any],
     )

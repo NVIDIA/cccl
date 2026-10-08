@@ -4,9 +4,14 @@
 
 """Define the common Exchange call for blocked and striped layouts.
 
-Exchange converts a group payload between blocked and striped order. The
-decorator registers the function so a compiler can recognize calls to it. A
-host Python call raises an error.
+The decorator registers this function so compilers can recognize calls to it.
+Numba-CUDA-MLIR replaces each call during compilation; this body does not run.
+A tracing compiler, such as the CuTe DSL, runs the body in Python. It checks
+the group kind, payload, and layout mode, then calls the active backend.
+A call outside a compiler environment raises an error.
+
+Ranked scatter, block warp-striped layouts, and warp time slicing are
+available only through the qualified APIs.
 """
 
 from __future__ import annotations
@@ -19,16 +24,27 @@ from cuda.coop._typing import (
     ExchangeMode,
 )
 
-from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
 )
 from ._payload import (
     ThreadDataLike,
+    _validate_common_numeric_value,
 )
 from .thread_group import MemoryGroup
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
+
+_COMMON_EXCHANGE_MODES = frozenset(
+    {
+        "striped_to_blocked",
+        "blocked_to_striped",
+    }
+)
 
 
 @_common_group_operation(
@@ -47,12 +63,12 @@ def exchange(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating :ref:`thread group <coop-thread-groups>`: a complete
+        Participating :ref:`thread group <coop-common-groups>`: a complete
         block, physical warp, or logical warp. Logical warp widths must be
         powers of two between 1 and 32. Every member must call the primitive;
         warp operations require an enclosing block size divisible by 32.
     value : cuda.coop.ThreadDataLike
-        Readable :ref:`per-thread payload <coop-thread-data>` with a fixed
+        Readable :ref:`per-thread payload <coop-common-payloads>` with a fixed
         number of items. All members must use the same dtype and extent.
         Supports signed and unsigned 8-, 16-, 32-, and 64-bit integers,
         ``float32``, and ``float64``. Scalar inputs are unsupported.
@@ -76,9 +92,11 @@ def exchange(
     -----
     The call rearranges values already held by the group; it does not load or
     store a memory tile. The implementation manages
-    :ref:`temporary storage <coop-temp-storage>` automatically. For ranked
-    scatter and other backend-specific modes, use a qualified
-    ``cuda.coop.<backend>`` API where supported.
+    :ref:`temporary storage <coop-common-storage>` automatically. For ranked
+    scatter and block warp-striped layouts, use
+    :func:`cuda.coop.numba_mlir.exchange` or :func:`cuda.coop.cutlass.exchange`.
+    Their qualified payloads are Numba local arrays and CuTe register values,
+    respectively.
 
     See Also
     --------
@@ -97,10 +115,32 @@ def exchange(
         :start-after: # exchange-example-begin
         :end-before: # exchange-example-end
         :dedent: 4
+
+    For the same layout conversion in CuTe, see
+    :ref:`CUTLASS Exchange <coop-cutlass-exchange>`. Qualified scatter forms
+    are documented by :func:`cuda.coop.numba_mlir.exchange` and
+    :func:`cuda.coop.cutlass.exchange`.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.exchange must be called from a supported GPU kernel."
+    mode = _common_selector(
+        "exchange",
+        "mode",
+        mode,
+        _COMMON_EXCHANGE_MODES,
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "exchange",
+            "value",
+            value,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "exchange",
+        group,
+        value,
+        mode=mode,
     )
 
 
