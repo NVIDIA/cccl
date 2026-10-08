@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__host_stdlib/math.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/promote.h>
