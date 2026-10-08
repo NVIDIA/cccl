@@ -71,11 +71,6 @@ struct policy_selector
     // a ceiling division, whereas nominal_4B_items_to_items rounds down.
     if (cc >= ::cuda::compute_capability{8, 0})
     {
-      // Same as the sm_60 policy below but with a key-size-dependent block size. Measured on A100 (sm_80) across all
-      // eight Thrust set-operation benchmarks: a 256-thread block is substantially faster than 512 for 2- and 4-byte
-      // keys (the smaller block lowers this register-heavy agent's per-block register/occupancy pressure), but for 1-
-      // and 8-byte keys a 256-thread block regresses some ops (I8 symmetric_difference/union, I64 by-key), so those
-      // keep the 512-thread block. This avoids the regressions while keeping the large wins for 2-/4-byte keys.
       constexpr int nominal_items_per_thread = 19;
       return SetOpsPolicy{
         (key_size == 2 || key_size == 4) ? 256 : 512,
