@@ -65,7 +65,13 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr bool __isnan_storage(double __x) noexcept
 {
-  return (::cuda::std::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) > __fp_exp_mask_of_v<double>;
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  // On SM100+ (new NVVM), the compiler recognizes the pattern (storage & 0xFF...FF) as fabs(), reintroducing double
+  // instructions. The workaround is to shift both operands by 1. This generates the same number of instructions on all
+  // gpu archs with 64-bit integer ops (roughtly SM107+)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                    (return (__storage << 1) > (__fp_exp_mask_of_v<double> << 1);),
+                    (return (__storage & __fp_exp_mant_mask_of_v<double>) > __fp_exp_mask_of_v<double>;))
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isnan(double __x) noexcept
