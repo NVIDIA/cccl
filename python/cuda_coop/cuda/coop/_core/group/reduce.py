@@ -36,7 +36,6 @@ from ._dispatch import _register_group_operation_family
 from ._execution_requirements import (
     _build_execution_requirements,
     _unsupported,
-    _unsupported_cub_warp_width,
 )
 from ._model import (
     ArgumentPrecondition,
@@ -271,8 +270,8 @@ def _plan_cub_reduce(
     """Plan a direct CUB reduction and record its limits for the backend.
 
     CUB defines the result at the group root.
-    Blocks support scalar or array inputs; physical and logical warps use
-    scalar inputs. Reject group shapes, algorithms, and operator combinations
+    Blocks and physical or logical warps support scalar or array inputs.
+    Reject group shapes, algorithms, and operator combinations
     that this path cannot implement.
 
     A block request without an algorithm records ``WARP_REDUCTIONS`` in both
@@ -374,17 +373,17 @@ def _plan_cub_reduce(
                 "CUB algorithm selection applies to BlockReduce, "
                 "not WarpReduce",
             )
-        if operation.operand_kind is GroupOperandKind.ARRAY:
+        warp_width = resolved.static_size
+        assert warp_width is not None
+        if warp_width < 17 and warp_width & (warp_width - 1):
             return _unsupported(
                 call,
                 resolved,
-                UnsupportedReasonCode.OPERAND_FORM,
-                "direct CUB WarpReduce planning supports scalar operands only",
+                UnsupportedReasonCode.GROUP_KIND,
+                "CUB WarpReduce supports only one non-power-of-two group per "
+                "physical warp; group_by widths below 17 would create "
+                "multiple groups with an incompatible CUB synchronization mask",
             )
-        warp_width, width_error = _unsupported_cub_warp_width(call, resolved)
-        if width_error is not None:
-            return width_error
-        assert warp_width is not None
         operation_name = (
             WarpReduceOperation.SUM
             if operation.operation is ReduceOperation.SUM
@@ -394,6 +393,8 @@ def _plan_cub_reduce(
             dtype=operation.dtype,
             threads_in_warp=warp_width,
             operation=operation_name,
+            items_per_thread=operation.items_per_thread,
+            value_kind=ReduceValueKind(operation.operand_kind.value),
             reduce_operator=reduce_operator,
             valid_items=operation.valid_items,
             include_full_warp=False,
