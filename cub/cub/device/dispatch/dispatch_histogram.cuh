@@ -262,15 +262,19 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   const int items_per_thread  = sweep.items_per_thread;
 
   const int dynamic_smem_bytes = [&] {
-    int result = 0;
     if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
     {
+      int result = 0;
       for (int channel = 0; channel < NumActiveChannels; ++channel)
       {
         result += (num_privatized_levels[channel] - 1) * static_cast<int>(kernel_source.CounterSize());
       }
+      return result;
     }
-    return result;
+    else
+    {
+      return 0;
+    }
   }();
   if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
   {
