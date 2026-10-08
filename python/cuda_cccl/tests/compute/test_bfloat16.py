@@ -262,6 +262,18 @@ def test_unary_transform_negate():
     np.testing.assert_array_equal(d_output.copy_to_host(), -h_input)
 
 
+def _nvrtc_version() -> tuple[int, int]:
+    from cuda.bindings import nvrtc
+
+    err, major, minor = nvrtc.nvrtcVersion()
+    assert err == nvrtc.nvrtcResult.NVRTC_SUCCESS
+    return major, minor
+
+
+@pytest.mark.skipif(
+    _nvrtc_version() < (12, 2),
+    reason="__half::__half(__nv_bfloat16) exists since CUDA 12.2",
+)
 def test_unary_transform_bf16_to_half_with_cpp_op():
     # Regression test for NVIDIA/cccl#11885. The CUDA 12.4 Update 1 cuda_bf16.h
     # defines __half::__half(__nv_bfloat16) without `inline` under NVRTC, so an
@@ -308,7 +320,7 @@ extern "C" __device__ void bf16_to_half(const void* in, void* out) {
     # exact fraction and a value that only half overflows to infinity.
     h_input = random_bfloat16(num_items, low=1.0, high=1000.0, seed=11)
     h_input[1::2] = -h_input[1::2]
-    h_input[:4] = np.array([0.125, -2.5, 3.140625, 65536.0], dtype=BFLOAT16)
+    h_input[:4] = np.array([0.125, -2.5, 2.75, 65536.0], dtype=BFLOAT16)
     d_input = DeviceArray.from_numpy(h_input)
     d_output = DeviceArray.empty(num_items, np.float16)
 

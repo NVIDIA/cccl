@@ -850,7 +850,8 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 
-#if _CCCL_HAS_NVBF16()
+// __half::__half(__nv_bfloat16) exists since CUDA 12.2.
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 // Regression test for NVIDIA/cccl#11885: the CUDA 12.4 Update 1 headers define __half::__half(__nv_bfloat16) in
 // cuda_bf16.h without `inline` under NVRTC, so linking the kernel with a C++ source operation (a second translation
 // unit including cuda_bf16.h) fails unless the operation's unit leaves the constructor to the kernel
@@ -869,7 +870,7 @@ C2H_TEST("Transform works with a C++ source operation converting bfloat16 to hal
 
   // Values exactly representable in both formats, plus one that only half overflows to infinity.
   const std::vector<__nv_bfloat16> input{
-    __nv_bfloat16{1.0f}, __nv_bfloat16{-2.5f}, __nv_bfloat16{0.125f}, __nv_bfloat16{3.140625f}, __nv_bfloat16{65536.0f}};
+    __nv_bfloat16{1.0f}, __nv_bfloat16{-2.5f}, __nv_bfloat16{0.125f}, __nv_bfloat16{2.75f}, __nv_bfloat16{65536.0f}};
   pointer_t<__nv_bfloat16> input_ptr(input);
   pointer_t<__half> output_ptr(input.size());
   std::optional<transform_build_cache_t> no_cache = std::nullopt;
@@ -938,7 +939,7 @@ C2H_TEST("Transform honors __CUDA_NO_HALF_CONVERSIONS__ from the build config", 
 
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
-#endif // _CCCL_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
 
 struct transform_stateful_counter_state_t
 {
