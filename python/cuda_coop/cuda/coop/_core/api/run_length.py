@@ -1,0 +1,200 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Expose decoded windows and complete stream writes for compiled kernels.
+
+The window form returns a fixed-size payload per thread. The into form writes
+the entire decoded stream to a caller's array and returns its total size. Both
+preserve the compressed inputs. Registration decorators let compiler frontends
+recognize these calls; the Python bodies reject host execution.
+"""
+
+from __future__ import annotations
+
+from ..thread_group import CoopCompilerContextRequiredError
+from ._dispatch import (
+    _common_group_operation,
+)
+from ._payload import TempStorageLike
+
+try:
+    import numpy
+except ModuleNotFoundError as exc:
+    if exc.name != "numpy":
+        raise
+from typing import TypeVar
+
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    CompilerIntegerLike,
+    IntegralScalar,
+    ThreadDataLike,
+)
+from .thread_group import BlockGroup
+
+_LengthT = TypeVar("_LengthT", bound=IntegralScalar)
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+
+
+@_common_group_operation("run_length_decode", group_kinds=("block",))
+def run_length_decode(
+    group: BlockGroup,
+    run_values: CommonThreadDataLike[_ItemT],
+    run_lengths: CommonThreadDataLike[_LengthT],
+    /,
+    *,
+    decoded_items_per_thread: int,
+    decoded_window_offset: IntegralScalar = 0,
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadDataLike[_ItemT]:
+    """Return a fresh blocked window of the decoded run stream.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete one-dimensional ``this_block()`` group. Every member must
+        participate in the same call.
+    run_values : ThreadDataLike
+        Readable fixed-size per-thread run values in blocked order. Thread
+        ``t`` owns runs ``t * runs_per_thread + i``. Values may use signed or
+        unsigned 8-, 16-, 32-, or 64-bit integers, float32, or float64.
+    run_lengths : ThreadDataLike
+        Readable integer lengths with the same per-thread extent as
+        ``run_values``. Signed and unsigned integer dtypes up to 64 bits are
+        supported. Across the block, positive lengths must precede all zero
+        lengths; zeros pad the end of the run tile. An all-zero tile is empty.
+    decoded_items_per_thread : int
+        Positive compile-time extent of each returned per-thread payload.
+        It is independent of the number of input runs per thread.
+    decoded_window_offset : integer, optional
+        Block-uniform nonnegative index of the first decoded item in the
+        window, default zero. Thread ``t`` receives items beginning at
+        ``decoded_window_offset + t * decoded_items_per_thread``. Offsets at
+        or beyond the total decoded size produce an all-zero window.
+        Integer controls retain their width through validation, up to uint64.
+    temp_storage : TempStorageLike, optional
+        Explicit block scratch descriptor. Omit it to allocate scratch
+        automatically. With ``auto_sync=False``, synchronize the block before
+        reusing that descriptor in a later collective.
+
+    Returns
+    -------
+    ThreadDataLike
+        A new payload with the value dtype and ``decoded_items_per_thread``
+        items per member. Slots beyond the decoded stream contain zero. Both
+        input payloads are preserved.
+
+    Notes
+    -----
+    The decoded total must fit uint32. Negative lengths, a positive length
+    after zero padding, and overflow trap before CUB decoding. Invalid
+    static controls are rejected during compilation; negative runtime offsets
+    trap before writing outputs. Both run and window tile extents must fit
+    signed 32-bit integers.
+
+    Each call prepares its own CUB run table. Use
+    :func:`cuda.coop.run_length_decode_into` to write a full stream while
+    preparing that table once, or the qualified operation for total-size and
+    relative run-offset outputs.
+
+    Examples
+    --------
+    Decode a window beginning partway through a run with Numba-CUDA-MLIR.
+    The output window contains the remaining decoded values followed by
+    zeros. The number of decoded items per thread is independent of the
+    input runs per thread.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
+        :language: python
+        :start-after: # common-run-length-window-example-begin
+        :end-before: # common-run-length-window-example-end
+        :dedent: 4
+    """
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.run_length_decode must be called from a supported "
+        "GPU kernel."
+    )
+
+
+@_common_group_operation("run_length_decode_into", group_kinds=("block",))
+def run_length_decode_into(
+    group: BlockGroup,
+    run_values: CommonThreadDataLike[_ItemT],
+    run_lengths: CommonThreadDataLike[_LengthT],
+    destination: object,
+    /,
+    *,
+    decoded_items_per_thread: int,
+    destination_offset: IntegralScalar = 0,
+    temp_storage: TempStorageLike | None = None,
+) -> numpy.uint32 | CompilerIntegerLike:
+    """Decode a complete run stream into an array and return its total size.
+
+    Parameters
+    ----------
+    group : ThreadGroup
+        A complete one-dimensional ``this_block()`` group. Every member must
+        participate in the same call.
+    run_values, run_lengths : ThreadDataLike
+        Matching readable per-thread run payloads in blocked order. Dtypes,
+        positive-prefix lengths, trailing zero padding, empty input, and
+        total-size limits follow :func:`cuda.coop.run_length_decode`.
+    destination : array
+        Writable contiguous one-dimensional global array with the run-value
+        dtype. All block members must supply the same destination. Its
+        remaining capacity after ``destination_offset`` must hold the entire
+        decoded stream. It must not overlap either run input.
+    decoded_items_per_thread : int
+        Positive compile-time number of items per member in each internal
+        window. The provider prepares the CUB run table once, then decodes
+        windows of ``block_threads * decoded_items_per_thread`` items.
+    destination_offset : integer, optional
+        Block-uniform nonnegative destination index for the first decoded
+        item, default zero. This is an output offset, not an input window
+        offset. The full stream is decoded. Integer controls up to uint64 are
+        checked before narrowing or pointer arithmetic.
+    temp_storage : TempStorageLike, optional
+        Explicit scratch for the entire operation. The prepared table remains
+        live through all internal windows. The descriptor can be reused after
+        the call; with ``auto_sync=False``, first synchronize the block.
+
+    Returns
+    -------
+    uint32
+        Total decoded size, with the same value available to every member.
+        Empty input returns zero and leaves the destination unchanged.
+
+    Notes
+    -----
+    Capacity and offset checks complete before any output write. Invalid
+    runtime controls or insufficient capacity trap. Only the interval
+    beginning at ``destination_offset`` and containing the returned number of
+    items is written; the remaining destination elements are preserved. The
+    last internal window is masked when the stream is not a whole number of
+    windows. Both run inputs are preserved.
+
+    Examples
+    --------
+    Decode a complete stream into a destination interval with
+    Numba-CUDA-MLIR. The stream spans three internal windows, and the kernel
+    reports its total size. Values outside the destination interval remain
+    unchanged.
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_run_length_examples.py
+        :language: python
+        :start-after: # run-length-bulk-example-begin
+        :end-before: # run-length-bulk-example-end
+        :dedent: 4
+    """
+    raise CoopCompilerContextRequiredError(
+        "cuda.coop.run_length_decode_into must be called from a supported "
+        "GPU kernel."
+    )
+
+
+__all__ = ["run_length_decode", "run_length_decode_into"]

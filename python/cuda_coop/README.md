@@ -129,13 +129,15 @@ explains terms and concepts, including blocked and striped layouts.
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
 | Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 | Counting | `histogram` |
+| Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
 Interactive diagrams and tested kernel examples explain these contracts in
 the [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html).
 Histogram returns fresh counters that callers can accumulate in ordinary
-payloads.
+payloads. Bulk Run Length Decode prepares and consumes its run table within
+one call; neither API requires a persistent parent object.
 
 ## Configuration
 
@@ -309,7 +311,8 @@ group or parent-group participant must still reach the collective.
 ## Temporary storage
 
 Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
-Difference, Discontinuity, and Histogram accept an optional caller descriptor:
+Difference, Discontinuity, Histogram, and both Run Length Decode forms accept
+an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
