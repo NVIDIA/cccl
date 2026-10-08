@@ -129,7 +129,7 @@
     controls: [
       { id: "scope", label: "Group", value: "block", choices: scope_choices },
       { id: "operator", label: "Operator", value: "sum", choices: [choice("sum", "Sum"), choice("max", "Maximum"), choice("custom_max", "Custom maximum callback")] },
-      { id: "items", label: "Items per thread", value: "2", choices: state => state.scope === "block" ? ["1", "2", "4"] : ["1"] },
+      { id: "items", label: "Items per thread", value: "2", choices: ["1", "2", "4"] },
       { id: "valid", label: "Contributing ranks", value: "full", choices: state => [choice("full", "All group members"), ...(state.items === "1" ? [choice("half", "First half (valid_items)")] : [])] },
     ],
     build: build_reduce,
