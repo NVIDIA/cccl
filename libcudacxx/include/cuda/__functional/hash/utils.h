@@ -25,9 +25,7 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/array>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,54 +44,24 @@ template <typename _Tp, typename _Extent>
 
   const auto __ptr = __bytes + __index * sizeof(_Tp);
 
-  _Tp __chunk;
-#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
-  // NVCC and NVRTC can propagate guarded alignment assumptions to the unaligned path,
-  // causing misaligned device loads. Plain memcpy avoids these alignment assumptions.
-  // TODO: Revert to the alignment-aware loader below once nvbug 6898681 is resolved.
+  if (::cuda::is_aligned(__ptr, alignof(_Tp)))
+  {
+    _Tp __chunk;
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<alignof(_Tp)>(__ptr), sizeof(_Tp));
+    return __chunk;
+  }
+
+  // NVCC/NVRTC can propagate guarded alignment assumptions into unaligned memcpy loads.
+  // Copy individual bytes here to avoid misaligned device accesses.
+  // TODO: Revert to the original 8/4/2-byte alignment dispatch once nvbug 6898681 is resolved.
   // https://nvbugspro.nvidia.com/bug/6898681
-  ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
-#else // use the optimized loader on other compilation paths
-  if constexpr (alignof(_Tp) == 8)
+  ::cuda::std::array<::cuda::std::byte, sizeof(_Tp)> __bytes_copy{};
+  for (::cuda::std::size_t __i = 0; __i < sizeof(_Tp); ++__i)
   {
-    if (::cuda::is_aligned(__ptr, 8))
-    {
-      ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
-      return __chunk;
-    }
+    __bytes_copy[__i] = __ptr[__i];
   }
-
-  if (::cuda::is_aligned(__ptr, 4))
-  {
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<4>(__ptr), sizeof(_Tp));
-  }
-  else if (::cuda::is_aligned(__ptr, 2))
-  {
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<2>(__ptr), sizeof(_Tp));
-  }
-  else
-  {
-    ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
-  }
-#endif // (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
-  return __chunk;
+  return ::cuda::std::bit_cast<_Tp>(__bytes_copy);
 }
-
-//! @brief Stores a hash block without imposing alignment on the containing holder.
-//! @tparam _BlockT The type of the hash block
-//!
-//! Keeping the block representation byte-aligned makes the holder the same size
-//! as the key.
-template <typename _BlockT>
-struct __hash_unaligned_block
-{
-  ::cuda::std::array<::cuda::std::byte, sizeof(_BlockT)> __bytes_;
-
-  _CCCL_HOST_DEVICE_API constexpr operator _BlockT() const noexcept
-  {
-    return ::cuda::std::bit_cast<_BlockT>(__bytes_);
-  }
-};
 
 //! @brief Type erased holder of all the bytes
 //!
@@ -129,11 +97,7 @@ struct __byte_holder
   static constexpr ::cuda::std::size_t __num_blocks =
     _UseTailBlock ? _KeySize / _BlockSize : __num_chunks * __blocks_per_chunk;
 
-  // Preserve native blocks when their alignment does not add padding to the
-  // holder.
-  using _BlockStorage _CCCL_NODEBUG =
-    ::cuda::std::conditional_t<_KeySize % alignof(_BlockT) == 0, _BlockT, __hash_unaligned_block<_BlockT>>;
-  _BlockStorage __blocks_[__num_blocks];
+  _BlockT __blocks_[__num_blocks];
   ::cuda::std::byte __bytes_[__tail_size];
 };
 
