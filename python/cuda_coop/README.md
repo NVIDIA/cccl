@@ -336,7 +336,7 @@ in the block; static offsets are checked during planning. `valid_items` is
 relative to each group's own tile, not the entire block, and must be uniform
 within that group.
 
-In Numba-CUDA-MLIR, `ThreadGroup` follows the C++ hierarchy query surface.
+`ThreadGroup` follows the C++ hierarchy query surface in both integrations.
 `rank(level="thread")` and `count(level="thread")` accept `thread` (or
 `gpu_thread`), `warp`, `block`, `cluster`, and `grid`; logical and mapped
 `group_by` groups have narrower limits, described below. Results use the
@@ -346,12 +346,15 @@ unsigned type of the matching C++ hierarchy query: normally `uint32`, and
 select an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
+These widths apply to both integrations. CuTe queries return `Uint32` or
+`Uint64`, and `is_member()` returns `Uint8`; Numba queries return the matching
+Numba integer types.
 
-`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
-participating members must reach `sync()`. `sync_aligned()` additionally
-requires the caller to keep the group aligned and converged. Numba-CUDA-MLIR
-does not support grid synchronization because it cannot request a cooperative
-grid launch. CUTLASS does not yet implement group queries or synchronization.
+`sync()` and `sync_aligned()` expose non-grid barriers in both integrations.
+All participating members must reach `sync()`. `sync_aligned()` additionally
+requires the caller to keep the group aligned and converged. Neither
+integration supports grid synchronization. Numba-CUDA-MLIR cannot request a
+cooperative grid launch.
 
 The `count` and `exhaustive` arguments of `group_by` must be compile-time
 constants. A logical threads-within-warp group can query its threads and
@@ -370,7 +373,7 @@ group or parent-group participant must still reach the primitive.
 Numba-CUDA-MLIR accepts an optional caller descriptor for block Load, Store,
 Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference, Discontinuity,
 Histogram, and both Run Length Decode forms. CUTLASS currently accepts one for
-block Load and Store:
+block Load, Store, and Reduce:
 
 ```python
 storage = coop.TempStorage(
@@ -465,7 +468,8 @@ Store algorithm, including the storage-free modes.
 one scalar with the payload element dtype. Block, physical-Warp, and
 logical-Warp reductions accept a numeric scalar or fixed-size `ThreadData`;
 every item in every participating thread contributes. The qualified
-`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+`numba_coop` API also accepts fixed-size `cuda.local.array` payloads;
+`cutlass_coop` accepts CuTe register tensors and `TensorSSA` values.
 Logical Warp widths may be powers of two from 1 through 32 or any width from
 17 through 31. CUB supports only one non-power-of-two group per physical Warp.
 The block must contain complete physical Warps. For a non-power-of-two width,
@@ -494,16 +498,18 @@ def block_sum(source, output, items_per_thread):
         output[0] = total
 ```
 
-The complete runnable form is in `examples/numba_mlir/block_sum.py`.
+The complete Numba example is [block_sum.py](examples/numba_mlir/block_sum.py).
+The [CuTe reduction example](examples/cutlass/reduce.py) also demonstrates
+payload sums, logical-warp reductions, and root-only prefix results.
 
 `sum` selects addition. `reduce` accepts the aliases `+`, `sum`, `add`, and
 `plus`; `*`, `mul`, `multiply`, and `multiplies`; `min` and `minimum`; `max`
 and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
 `^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
-qualified API additionally recognizes the corresponding Python `operator`
-functions and NumPy ufuncs. Built-in operator and algorithm selectors are
-normalized to canonical lowercase strings. Enum-like and other non-string
-selector objects are rejected.
+qualified APIs in both integrations additionally recognize the corresponding
+Python `operator` functions and NumPy ufuncs. Built-in operator and algorithm
+selectors are normalized to canonical lowercase strings. Enum-like and other
+non-string selector objects are rejected.
 
 The following controls select the reduction form:
 
@@ -521,7 +527,8 @@ The following controls select the reduction form:
 - A custom Python device callback is available only through
   `cuda.coop.numba_mlir.reduce`. It must be associative and stateless. It
   supports scalar or fixed-array payloads for block, physical-Warp, and
-  logical-Warp groups. Stateful callbacks are unsupported.
+  logical-Warp groups. CUTLASS supports built-in reductions only.
+  Stateful reduction callbacks are unsupported in both integrations.
 
 Every required member must participate in converged control flow. Omitting
 `temp_storage` uses compiler-owned shared storage with automatic

@@ -6,9 +6,6 @@
 Reduce
 ======
 
-This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
-
 :func:`cuda.coop.reduce` combines a group's values into one aggregate.
 :func:`cuda.coop.sum` is the sum specialization. Blocks and warps accept one
 scalar or several items per thread. Every input item contributes, and the
@@ -66,27 +63,25 @@ participates. The explorer offers this choice only for one item per thread.
 A custom operator uses the qualified ``cuda.coop.numba_mlir`` namespace.
 It must be associative and is supported through the CUB block or warp path,
 with scalar or fixed-array inputs and a result defined only at the group
-root. The common namespace accepts
-built-in names such as ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
-and the integer bitwise operators.
+root. CUTLASS currently supports built-in operators only. The common
+namespace accepts built-in names such as ``"sum"``, ``"max"``, ``"min"``,
+``"multiplies"``, and the integer bitwise operators.
 
 Using Reduce in a kernel
 ------------------------
 
-This fragment runs inside a Numba-CUDA-MLIR kernel that accepts
-``items_per_thread``. Import ``cuda`` from
-``numba_cuda_mlir``, and import ``coop`` from ``cuda``. Launch with
-128 threads and supply at least ``128 * items_per_thread`` input elements
-for each block.
+This common-API fragment works in either DSL with the :ref:`kernel-fragment
+setup <coop-visualization-kernels>`. Launch with 128 threads and supply at
+least ``128 * items_per_thread`` input elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
    values = coop.ThreadData(items_per_thread)
-   coop.load(block, source, values, offset=cuda.blockIdx.x * 128 * items_per_thread)
+   coop.load(block, source, values, offset=block_index * 128 * items_per_thread)
    total = coop.sum(block, values, algorithm="raking")
-   if cuda.threadIdx.x == 0:
-       output[cuda.blockIdx.x] = total
+   if thread_rank == 0:
+       output[block_index] = total
 
 The input ``values`` is unchanged. A logical warp uses
 ``coop.this_warp().group_by(8)``, yielding four groups of eight lanes inside
@@ -94,23 +89,26 @@ each physical warp. Each group has a separate aggregate, consumed by its
 rank-zero lane. Logical widths may be powers of two from 1 through 32 or any
 width from 17 through 31. CUB supports only one non-power-of-two group per
 physical warp. For those widths, use ``group_by(width, exhaustive=False)`` and
-guard the reduction with ``group.is_member()`` so trailing lanes do not participate:
+guard the reduction with ``group.is_member()`` so trailing lanes do not participate.
+This fragment writes one sum for each eight-lane logical warp:
 
 .. code-block:: python
 
    group = coop.this_warp().group_by(8)
-   total = coop.sum(group, source[cuda.threadIdx.x])
+   total = coop.sum(group, source[thread_rank])
    if group.rank() == 0:
-       output[cuda.threadIdx.x // 8] = total
+       output[thread_rank // 8] = total
+
 
 For the explorer's custom-maximum choice, use a device callback and the
-qualified API. Launch this kernel with one block whose size matches the
-input:
+Numba-qualified API. CuTe can select the built-in ``binary_op="max"`` for
+the same maximum operation. Launch this Numba kernel with one block whose
+size matches the input:
 
 .. code-block:: python
 
    from numba_cuda_mlir import cuda
-   import cuda.coop.numba_mlir as coop
+   import cuda.coop.numba_mlir as numba_coop
 
    @cuda.jit(device=True)
    def maximum(left, right):
@@ -119,8 +117,8 @@ input:
    @cuda.jit
    def block_maximum(source, output):
        thread = cuda.threadIdx.x
-       result = coop.reduce(
-           coop.this_block(),
+       result = numba_coop.reduce(
+           numba_coop.this_block(),
            source[thread],
            binary_op=maximum,
        )
@@ -133,5 +131,6 @@ descriptor defaults to caller-managed synchronization; use
 reuse. Omitting ``temp_storage`` uses compiler-managed scratch with automatic
 synchronization. Warp reductions always use compiler-managed scratch.
 
-See :func:`cuda.coop.reduce` and the :doc:`../programming_guide` for the full
-operation and group contracts.
+Grid reduction is unsupported in both backends. See
+:func:`cuda.coop.reduce` and the :ref:`Numba <coop-reductions>` and
+:ref:`CUTLASS <coop-cutlass-reduce>` guides for supported groups and controls.

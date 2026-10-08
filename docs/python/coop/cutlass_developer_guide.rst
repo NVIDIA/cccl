@@ -9,7 +9,7 @@ CUTLASS Developer Guide
 
 CuTe compiles your kernel and its control flow. For each cooperative
 primitive, ``cuda.coop.cutlass`` generates a C++ device function that calls
-CUB or CUDAX. NVRTC compiles those functions to LTO-IR, which CuTe links into
+CUB. NVRTC compiles those functions to LTO-IR, which CuTe links into
 the kernel before it runs. The implementation calls these generated
 functions *providers*.
 
@@ -142,6 +142,12 @@ call is successfully emitted. Store passes the existing items to its
 provider. The plan identifies equivalent requests so they can share one
 generated function and cached artifact.
 
+Other primitive families use the same approach. For Reduce, the planner
+selects CUB BlockReduce or WarpReduce, checks scalar or per-thread payload
+support, and records scratch requirements. Block reductions accept an explicit
+``TempStorage`` descriptor; warp reductions use compiler-owned storage.
+The Reduce lowering generates the wrapper and adapts CuTe's values to its
+arguments. The returned scalar is defined only at group rank zero.
 
 .. _coop-cutlass-exact-launch-facts:
 
@@ -157,7 +163,8 @@ fails if the primitive needs the missing value.
 For the tile copy, block dimensions determine both the CUB specialization
 and linear rank: ``x + block_x * (y + block_y * z)``. Warp primitives also
 need the exact block size to establish complete physical warps and allocate
-one scratch slice per group.
+one scratch slice per group. Cluster primitives need consistent cluster
+dimensions and launch mode.
 
 Do not substitute ``maxntid`` for exact dimensions: an upper bound does not
 prove the number of participating threads. The adapter does not infer
@@ -251,7 +258,8 @@ provider emission belong under ``cutlass``.
        ``cutlass/_temp_storage.py``, and their ``.pyi`` files
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
-       ``cutlass/_lowering/_load_store.py``
+       ``cutlass/_lowering/_load_store.py``; the Reduce
+       files follow the same organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
        ``cutlass/_compiler/_finalize.py``
@@ -700,7 +708,9 @@ provider calls, shared accesses, or barriers. The final-cubin check in
 It requires shared memory and barriers only for transpose. The final-cubin
 checks in ``runtime/test_warp_load_store.py`` and
 ``runtime/test_logical_warp_load_store.py`` reject provider calls and block
-barriers for physical and logical Warp operations.
+barriers for physical and logical Warp operations. The final-cubin check in
+``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave
+no provider calls. It does not check shared memory, registers, or barriers.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use
 Compute Sanitizer race checks for changes to scratch allocation or

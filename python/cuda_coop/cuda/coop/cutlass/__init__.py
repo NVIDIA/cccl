@@ -6,14 +6,17 @@
 
 Importing this namespace validates the optional runtime and lets the common
 API recognize the active CuTe DSL compiler environment. Calls inside that
-environment use these implementations. The namespace provides block and warp
-Load/Store, thread groups, and per-thread register payloads.
-TempStorage descriptors control scratch for block transpose algorithms.
+environment use these implementations. The namespace provides Load/Store,
+built-in Reduce and Sum, and supported group queries and synchronization.
+Qualified calls also accept the CuTe payload forms documented by each
+operation. TempStorage descriptors control scratch for block transpose
+Load/Store.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import register_trace_context
 from ._group_load_store import load, store
+from ._group_reduce import reduce, sum
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
 from ._thread_group import (
@@ -21,6 +24,9 @@ from ._thread_group import (
     ThreadGroup,
     ThreadHierarchy,
     this_block,
+    this_cluster,
+    this_grid,
+    this_thread,
     this_warp,
 )
 
@@ -33,8 +39,13 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "load",
+    "reduce",
     "store",
+    "sum",
     "this_block",
+    "this_cluster",
+    "this_grid",
+    "this_thread",
     "this_warp",
 ]
 

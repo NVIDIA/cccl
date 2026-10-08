@@ -6,18 +6,20 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover block and warp group kinds, Load/Store returns,
-descriptor attributes and calls across namespaces, and dtype-preserving
-payload constructors and conversions.
+declarations. Checks cover group query types, Reduce results, Load/Store
+returns, descriptor attributes, and calls across namespaces. Payload
+constructors and conversions must preserve the scalar dtype.
 
 The test neither imports this file nor traces or launches a kernel.
 """
 
 from __future__ import annotations
 
+import operator
 from typing import Literal
 
 import numpy as np
+from cutlass import Float64, Int16, Int32, Uint8, Uint16, Uint32, Uint64
 from typing_extensions import assert_type
 
 import cuda.coop.cutlass as cutlass_coop
@@ -56,6 +58,9 @@ def check_cutlass_surface(source: object, destination: object) -> None:
     cutlass_coop.store(block, destination, values, valid_items=31, offset=4)
     common_coop.load(common_coop.this_block(), source, values)
     common_coop.store(common_coop.this_block(), destination, values)
+    common_values = common_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    assert_type(cutlass_coop.load(block, source, common_values), None)
+    assert_type(cutlass_coop.store(block, destination, common_values), None)
 
     storage = cutlass_coop.TempStorage(alignment=1, sharing="exclusive")
     assert_type(storage, cutlass_coop.TempStorage)
@@ -115,6 +120,37 @@ def check_cutlass_surface(source: object, destination: object) -> None:
         vector, dtype=np.int32
     )
     assert_type(restored_vector, cutlass_coop.ThreadData[np.int32])
+
+
+def check_cutlass_dynamic_memory_controls(
+    signed: Int32, unsigned: Uint32
+) -> None:
+    """Accept CuTe integer controls with a typed payload."""
+
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
+    assert_type(
+        cutlass_coop.load(
+            block,
+            object(),
+            values,
+            valid_items=signed,
+            oob_default=Float64(0),
+            offset=unsigned,
+        ),
+        None,
+    )
+    assert_type(
+        cutlass_coop.store(
+            block,
+            object(),
+            values,
+            valid_items=unsigned,
+            offset=signed,
+        ),
+        None,
+    )
+    assert_type(cutlass_coop.store(block, object(), Uint64(1)), None)
 
 
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
@@ -181,7 +217,93 @@ def check_cutlass_logical_warp_surface(
     cutlass_coop.load(common_coop.this_warp().group_by(8), source, values)
     cutlass_coop.store(common_coop.this_warp().group_by(8), destination, values)
 
-    # Block partitions keep their mapped group kind, although Load/Store
-    # reject them during tracing.
+    # Block partitions keep their mapped group kind. Load/Store stubs and
+    # tracing both reject this kind, so it is checked only as a group.
     mapped = cutlass_coop.this_block().group_by(2, exhaustive=False)
     assert_type(mapped, cutlass_coop.ThreadGroup[Literal["warps_within_block"]])
+
+
+def check_cutlass_hierarchy_surface() -> None:
+    """Check group kinds, query dtypes and synchronization."""
+
+    thread = cutlass_coop.this_thread()
+    block = cutlass_coop.this_block()
+    cluster = cutlass_coop.this_cluster()
+    grid = cutlass_coop.this_grid()
+    assert_type(thread, cutlass_coop.ThreadGroup[Literal["thread"]])
+    assert_type(cluster, cutlass_coop.ThreadGroup[Literal["cluster"]])
+    assert_type(grid, cutlass_coop.ThreadGroup[Literal["grid"]])
+    assert_type(block.rank(), Uint32 | Uint64)
+    assert_type(block.count("warp"), Uint32 | Uint64)
+    assert_type(grid.rank(), Uint32 | Uint64)
+    assert_type(block.rank_as(np.int64), np.int64)
+    assert_type(block.count_as(int), int)
+    assert_type(block.rank_as(Int16), Int16)
+    assert_type(block.count_as(Uint16), Uint16)
+    assert_type(block.rank_as(), Uint32 | Uint64)
+    assert_type(block.is_member(), Uint8)
+    assert_type(thread.sync(), None)
+    assert_type(block.sync_aligned(), None)
+    logical = cutlass_coop.this_warp().group_by(8)
+    assert_type(logical.rank("warp"), Uint32 | Uint64)
+    assert_type(logical.count_as(Uint32, "thread"), Uint32)
+    assert_type(logical.sync(), None)
+    mapped = block.group_by(2, exhaustive=False)
+    assert_type(mapped.rank_as(Int32, "block"), Int32)
+    assert_type(mapped.is_member(), Uint8)
+
+
+def check_cutlass_reduce_surface(scalar: Uint32) -> None:
+    """Preserve scalar dtype through Reduce and operator aliases."""
+
+    block = cutlass_coop.this_block()
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    assert_type(cutlass_coop.reduce(block, values), np.int32)
+    assert_type(cutlass_coop.sum(block, values), np.int32)
+    warp = cutlass_coop.this_warp()
+    logical_warp = warp.group_by(8)
+    assert_type(cutlass_coop.sum(warp, values), np.int32)
+    assert_type(cutlass_coop.reduce(logical_warp, values), np.int32)
+    assert_type(common_coop.sum(warp, values), np.int32)
+    assert_type(common_coop.reduce(logical_warp, values), np.int32)
+    assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)
+    assert_type(cutlass_coop.sum(block, scalar), Uint32)
+    assert_type(common_coop.sum(block, scalar), Uint32)
+    assert_type(cutlass_coop.sum(common_coop.this_block(), scalar), Uint32)
+    assert_type(
+        cutlass_coop.reduce(block, scalar, binary_op=operator.add), Uint32
+    )
+    assert_type(
+        cutlass_coop.reduce(block, values, binary_op=np.maximum), np.int32
+    )
+    assert_type(cutlass_coop.sum(block, scalar, valid_items=17), Uint32)
+    assert_type(
+        cutlass_coop.reduce(block, values, algorithm="raking"),
+        np.int32,
+    )
+    assert_type(
+        cutlass_coop.sum(
+            cutlass_coop.this_warp().group_by(8),
+            scalar,
+            valid_items=7,
+        ),
+        Uint32,
+    )
+    scratch = cutlass_coop.TempStorage(auto_sync=True)
+    assert_type(
+        cutlass_coop.sum(block, values, temp_storage=scratch),
+        np.int32,
+    )
+    assert_type(
+        cutlass_coop.sum(block, scalar, valid_items=17, temp_storage=scratch),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.reduce(
+            block,
+            scalar,
+            binary_op="max",
+            temp_storage=common_coop.TempStorage(),
+        ),
+        Uint32,
+    )

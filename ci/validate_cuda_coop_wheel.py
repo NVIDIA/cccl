@@ -91,7 +91,11 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/cutlass/_compiler/_storage.py",
     "cuda/coop/cutlass/_group_load_store.py",
     "cuda/coop/cutlass/_group_load_store.pyi",
+    "cuda/coop/cutlass/_group_reduce.py",
+    "cuda/coop/cutlass/_group_reduce.pyi",
     "cuda/coop/cutlass/_lowering/_load_store.py",
+    "cuda/coop/cutlass/_lowering/_reduce.py",
+    "cuda/coop/cutlass/_lowering/_thread_group.py",
     "cuda/coop/cutlass/_temp_storage.py",
     "cuda/coop/cutlass/_temp_storage.pyi",
     "cuda/coop/cutlass/_thread_data.py",
@@ -292,8 +296,9 @@ def _validate_provenance(archive: zipfile.ZipFile) -> None:
 def validate(wheel: str | Path) -> None:
     """Check a wheel and stop on a packaging contract violation.
 
-    Require the shared API and its header bundle, reject native binaries and
-    excluded implementations, and preserve the shared ``cuda`` namespace.
+    Require the common API, both compiler integrations, the header bundle,
+    and license files. Reject native binaries, excluded or obsolete modules,
+    and ``cuda/__init__.py``, which would break the shared namespace.
     Explicit contract checks raise ``SystemExit`` with a packaging diagnostic.
     Unexpected file, archive, or record-shape errors propagate to the caller.
     """

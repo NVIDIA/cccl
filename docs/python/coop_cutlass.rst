@@ -11,7 +11,7 @@ CUTLASS Programming Guide
 
 Use ``cuda.coop`` inside a CuTe kernel for the cooperative primitives
 documented below. The CUTLASS backend implements each supported operation with
-CUB or CUDAX; see :ref:`backend operation support
+CUB; see :ref:`backend operation support
 <coop-backend-operation-support>`.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
@@ -62,6 +62,10 @@ qualified imports perform that registration directly.
      - Fixed per-thread ``ThreadData``; Load fills it in place.
      - Adds CuTe register-tensor and vector conversions, described in
        :ref:`coop-cutlass-register-payloads`.
+   * - Operator selection
+     - Built-in operator names such as ``"sum"`` and ``"max"``.
+     - Also accepts recognized ``operator`` and NumPy aliases. Arbitrary
+       Python callbacks remain unsupported.
 
 .. _coop-cutlass-differences:
 
@@ -82,10 +86,18 @@ payloads that work with common and qualified calls. ``ThreadDataLike``
 describes the shared interface; implementing that interface in a user class
 does not register a new payload representation with the compiler.
 
+Group queries return CuTe scalars. For example, ``block.rank()`` returns a
+``cutlass.Uint32`` that you can use in pointer arithmetic or a condition
+inside the kernel. Use ``block.rank_as(cutlass.Int32)`` when you need a signed
+rank.
 
 All threads in the group must call the primitive, even when ``valid_items``
-selects a short tile. The sections below describe the supported groups.
+selects a short tile or only rank zero uses the result. The sections below
+describe the requirements for block, warp, and mapped groups.
 
+Reduce supports the built-in operators listed below and rejects custom
+operators. CUTLASS does not implement Scan. See the :doc:`API reference
+<coop_api>` for operation signatures and return values.
 
 .. _coop-cutlass-mixed-backends:
 
@@ -125,7 +137,7 @@ CUTLASS environment also needs NumPy, ``cuda-pathfinder>=1.2.3``, and
 alongside a compatible CuTe compiler and its dependencies.
 
 The CuTe compiler must support linking external NVIDIA LTO-IR into a kernel,
-and NVRTC must be available to compile the CUB and CUDAX functions. See the
+and NVRTC must be available to compile the CUB functions. See the
 :ref:`developer guide's compiler requirements <coop-cutlass-compiler-requirements>`
 for the required CuTe integration hooks. Importing :mod:`cuda.coop` alone does
 not load CUTLASS or initialize CUDA bindings.
@@ -257,6 +269,11 @@ shape, and an initialized ``ThreadData`` can pass through CuTe runtime
 branches and loops. Scalar controls such as ``valid_items`` and ``offset``
 may be runtime values where the primitive allows them.
 
+A helper containing a cooperative call is different from an operator passed
+to Reduce, Scan, or Merge Sort. CUTLASS currently accepts the documented
+built-in operators and aliases; it does not compile arbitrary device
+callbacks. Numba's callback support is described in its
+:doc:`Programming Guide <coop/programming_guide>`.
 
 Block algorithms
 ----------------
@@ -305,10 +322,11 @@ alignment; it does not change the logical item layout.
 Block scratch and reuse
 -----------------------
 
-Transpose algorithms allocate scratch implicitly unless passed
-``temp_storage``. Construct one ``TempStorage`` inside the kernel to share
-capacity across calls. An omitted size lets the compiler allocate enough
-storage for all uses; an explicit byte capacity must accommodate them.
+Block transpose algorithms and Block Reduce allocate scratch implicitly
+unless passed ``temp_storage``. Construct one ``TempStorage`` inside the
+kernel to share capacity across calls. An omitted size lets the compiler
+allocate enough storage for all uses; an explicit byte capacity must
+accommodate them.
 ``alignment`` is a minimum: the allocation also satisfies each primitive's
 alignment requirements.
 
@@ -414,6 +432,105 @@ eight groups of eight threads, each loading its own partial tile.
    :start-after: docs: start cutlass-logical-warp-load-store
    :end-before: docs: end cutlass-logical-warp-load-store
 
+.. _coop-cutlass-hierarchy:
+
+Hierarchy queries and synchronization
+-------------------------------------
+
+``this_thread()``, ``this_warp()``, ``this_block()``, ``this_cluster()``, and
+``this_grid()`` describe the corresponding physical groups. ``rank`` and
+``count`` accept a hierarchy level: ``thread`` (also spelled ``gpu_thread``),
+``warp``, ``block``, ``cluster``, or ``grid``. Their default result is a CuTe
+``Uint32``, or ``Uint64`` when the group or queried level is the grid.
+``rank_as(dtype, level="thread")`` and ``count_as`` select a signed or
+unsigned 8-, 16-, 32-, or 64-bit integer type. Floating and Boolean query
+types are unsupported. NumPy integer dtypes and Python ``int`` are also
+accepted as dtype selectors; the compiled values are CuTe scalars.
+``is_member()`` returns a CuTe ``Uint8`` membership flag.
+
+Mapped groups may query their constituents and immediate physical parent.
+Thus ``this_warp().group_by(8)`` supports thread and warp queries, while
+``this_block().group_by(2)`` supports thread, warp, and block queries. Queries
+above that parent are rejected. With ``exhaustive=False``, trailing units that
+cannot form a complete group are excluded; guard rank-dependent work with
+``is_member()``. Metadata queries do not synchronize threads.
+
+``sync()`` supports thread, physical warp, logical warp, block, and cluster
+groups. Every participating member must reach the synchronization;
+``sync_aligned()`` additionally requires an aligned, converged group.
+Synchronization of mapped groups of physical warps and grid groups is
+unsupported. Queries and synchronization consume the exact dimensions and
+launch flags supplied by the compiler. Cluster primitives require consistent
+cluster dimensions and launch mode; grid queries also require exact grid
+dimensions.
+
+.. _coop-cutlass-reduce:
+
+Built-in Reduce and Sum
+-----------------------
+
+``reduce(group, value, ...)`` and ``sum(group, value, ...)`` use CUB for block,
+physical-warp, and logical-warp reductions. Each member supplies a scalar or
+a fixed per-thread ``ThreadData`` payload; every payload item contributes to
+the group's result. Logical warp widths are 1, 2, 4, 8, 16, or 17 through
+32, and the enclosing block must contain complete physical warps. For widths
+17 through 31, construct the group with ``exhaustive=False`` and guard the
+call with ``group.is_member()`` to exclude trailing lanes. CUB requires a
+non-power-of-two group to be the only logical group in its physical warp.
+All members of a participating group must call the primitive.
+
+The built-in operators are sum, product, minimum, maximum, bitwise AND,
+bitwise OR, and bitwise XOR. For example, ``binary_op="max"`` selects maximum,
+and ``binary_op="bit_or"`` selects bitwise OR. An omitted operator selects
+sum. Bitwise operators require integer values. The qualified API also accepts
+known ``operator`` and NumPy callable aliases; arbitrary callbacks are
+unsupported.
+
+Only group rank zero may use the scalar result; the other members must still
+call the primitive. The input payload remains unchanged.
+
+Block calls can select a CUB algorithm. A scalar call can limit its input to
+a valid prefix:
+
+.. list-table:: Reduction controls
+   :header-rows: 1
+
+   * - Group and input
+     - Supported controls
+   * - Block scalar
+     - ``valid_items``, a block algorithm, and ``temp_storage``
+   * - Block multi-item payload
+     - A block algorithm and ``temp_storage``, without ``valid_items``
+   * - Physical or logical warp scalar
+     - ``valid_items``, without an algorithm selector
+   * - Physical or logical warp multi-item payload
+     - No ``valid_items``, algorithm selector, or explicit ``temp_storage``
+
+Block algorithm names are ``raking_commutative_only``, ``raking``, and
+``warp_reductions`` (the default). A valid prefix contains from one through
+the group size contributing members, counting threads rather than payload
+elements. The count must be uniform within the group. Zero and out-of-range
+counts are invalid; all members still participate even when their values fall
+outside the prefix.
+
+Omitting ``temp_storage`` uses compiler-managed scratch with automatic
+synchronization. Block Reduce accepts a ``TempStorage`` descriptor with the
+same sizing, alignment, sharing, and synchronization policy as Block
+Load/Store. An explicit descriptor defaults to ``auto_sync=False``: call
+``storage.sync()`` before reusing it, or construct it with
+``auto_sync=True``. Warp Reduce always uses compiler-managed scratch with
+synchronization scoped to its participating lanes.
+
+This example uses block rank queries, a full block sum, logical-warp maxima,
+and a scalar valid-prefix sum whose result is read only at block rank zero.
+:download:`Download the reduction example
+<../../python/cuda_coop/examples/cutlass/reduce.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/reduce.py
+   :language: python
+   :start-after: docs: start cutlass-reduce
+   :end-before: docs: end cutlass-reduce
+
 .. _coop-cutlass-register-payloads:
 
 Qualified register payloads
@@ -472,12 +589,13 @@ Launch dimensions and resources
 -------------------------------
 
 Specify the block dimensions in the CuTe launch, including all dimensions of a
-multidimensional block. Primitives specialize for those exact dimensions. The
-block dimensions determine the participating threads. Group queries and
-synchronization are not yet implemented by this integration. A maximum thread
-bound cannot substitute for the actual participating group size. Missing
-required facts cause a compilation error; see :ref:`the compiler launch
-contract <coop-cutlass-exact-launch-facts>`.
+multidimensional block. Primitives specialize for those exact dimensions. Grid
+queries also need exact grid dimensions; cluster operations require exact
+cluster dimensions and the corresponding launch flags. Grid reductions and
+synchronization are unsupported. A maximum thread bound cannot substitute for
+the actual participating group size. Missing required facts cause a
+compilation error; see :ref:`the compiler launch contract
+<coop-cutlass-exact-launch-facts>`.
 
 More items per thread can increase register use, and additional scratch can
 reduce the number of resident blocks. Check the compiled kernel's resource
