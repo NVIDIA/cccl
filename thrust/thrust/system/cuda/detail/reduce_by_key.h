@@ -198,15 +198,8 @@ struct ReduceByKeyAgent
         // extended floating-point types (__half, __nv_bfloat16, ...): not `== 0`, which may be ambiguous
         return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
       }
-      else
-      {
-        return false;
-      }
     }
-    else
-    {
-      return false;
-    }
+    return false;
   }();
 
   struct impl
