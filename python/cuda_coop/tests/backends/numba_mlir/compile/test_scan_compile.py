@@ -589,7 +589,7 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
     The configured launch supplies block geometry without launching a GPU.
     """
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def stateless_prefix(block_aggregate):
@@ -615,10 +615,10 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, final_state):
         thread = cuda.threadIdx.x
-        state = coop.ThreadData(items_per_thread=1, dtype=types.int64)
+        state = numba_coop.ThreadData(items_per_thread=1, dtype=types.int64)
         state[0] = 11
-        destination[thread] = coop.exclusive_sum(
-            coop.this_block(),
+        destination[thread] = numba_coop.exclusive_sum(
+            numba_coop.this_block(),
             source[thread],
             state,
             prefix_op=running,
@@ -626,8 +626,8 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
         )
         state_int32 = cuda.local.array(1, dtype=types.int32)
         state_int32[0] = 5
-        destination[_BLOCK_THREADS + thread] = coop.exclusive_sum(
-            coop.this_block(),
+        destination[_BLOCK_THREADS + thread] = numba_coop.exclusive_sum(
+            numba_coop.this_block(),
             source[thread],
             state_int32,
             prefix_op=running_int32,
@@ -636,8 +636,8 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
         values = cuda.local.array(2, dtype=types.int32)
         values[0] = source[thread * 2]
         values[1] = source[thread * 2 + 1]
-        scanned = coop.inclusive_sum(
-            coop.this_block(),
+        scanned = numba_coop.inclusive_sum(
+            numba_coop.this_block(),
             values,
             prefix_op=stateless_prefix,
             algorithm="warp_scans",
@@ -678,12 +678,12 @@ def test_production_kernel_compile_consumes_prefix_descriptors() -> None:
 def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
     auto_sync,
 ) -> None:
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     @cuda.jit(device=True)
     def scan_with(storage, value):
-        return coop.inclusive_sum(
-            coop.this_block(), value, temp_storage=storage
+        return numba_coop.inclusive_sum(
+            numba_coop.this_block(), value, temp_storage=storage
         )
 
     @cuda.jit(chip="sm_90")
@@ -692,7 +692,7 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
         # the helper and becomes visible only after inlining. Acceptance must
         # not depend on an unrelated marker being present.
         thread = cuda.threadIdx.x
-        storage = coop.TempStorage(auto_sync=auto_sync)
+        storage = numba_coop.TempStorage(auto_sync=auto_sync)
         first = scan_with(storage, source[thread])
         destination[thread] = scan_with(storage, first)
 
@@ -726,20 +726,20 @@ def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
 
     from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda.coop.numba_mlir._compiler._group_planner_support import (
         GroupRewriteError,
     )
 
     @cuda.jit(device=True)
     def primitive_prefix(aggregate):
-        return coop.inclusive_sum(coop.this_block(), aggregate)
+        return numba_coop.inclusive_sum(numba_coop.this_block(), aggregate)
 
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         thread = cuda.threadIdx.x
-        destination[thread] = coop.exclusive_sum(
-            coop.this_block(), source[thread], prefix_op=primitive_prefix
+        destination[thread] = numba_coop.exclusive_sum(
+            numba_coop.this_block(), source[thread], prefix_op=primitive_prefix
         )
 
     key = (

@@ -52,7 +52,7 @@ from ._core.api.topk import (
 __version__: str
 
 def register(
-    backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"],
+    backend: Literal["numba-cuda-mlir", "numba_cuda_mlir", "cutlass"],
 ) -> None: ...
 
 __all__ = [

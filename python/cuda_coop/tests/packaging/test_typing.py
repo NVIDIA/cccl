@@ -5,8 +5,8 @@
 """Check public stubs through isolated valid and invalid consumer programs.
 
 Copy only the imported package's ``.pyi`` stubs and ``py.typed`` marker to a
-temporary root. Then implementation modules and an unrelated installed wheel
-cannot satisfy missing public declarations.
+temporary root. Implementation modules and a separately installed cuda-coop
+then cannot supply missing public declarations.
 """
 
 from __future__ import annotations
@@ -24,7 +24,11 @@ import pytest
 from cuda import coop
 
 _CONSUMER_ROOT = Path(__file__).with_name("typing")
-_VALID_CONSUMERS = ("common_consumer.py", "numba_consumer.py")
+_VALID_CONSUMERS = (
+    "common_consumer.py",
+    "numba_consumer.py",
+    "cutlass_consumer.py",
+)
 
 
 def _mypy_args(cache_dir: Path) -> list[str]:

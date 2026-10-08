@@ -444,13 +444,13 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
     def kernel(source, destination, distance, items_per_thread):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
+        payload = numba_coop.ThreadData(items_per_thread, dtype=types.int32)
         for item in range(items_per_thread):
             payload[item] = source[thread * items_per_thread + item]
         exchanged = common_coop.exchange(
@@ -463,8 +463,8 @@ def test_production_kernel_compile_links_shared_storage_and_barriers(
             exchanged,
             mode="up",
         )
-        rotated = qualified_coop.shuffle(
-            qualified_coop.this_block(),
+        rotated = numba_coop.shuffle(
+            numba_coop.this_block(),
             source[thread],
             mode="rotate",
             distance=distance,
@@ -508,13 +508,13 @@ def test_untyped_load_composes_directly_into_exchange(
 ) -> None:
     compiler_cuda = _production_compile_environment(monkeypatch)
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop as common_coop
 
     @compiler_cuda.jit(chip="sm_90")
     def kernel(source, destination, items_per_thread):
         thread = compiler_cuda.threadIdx.x
-        payload = qualified_coop.ThreadData(items_per_thread)
+        payload = numba_coop.ThreadData(items_per_thread)
         common_coop.load(
             common_coop.this_block(),
             source,
@@ -608,7 +608,7 @@ def _evaluate_warp_mask(definitions, operand, rank):
 def test_production_warp_exchange_emits_ordered_reuse_barriers(
     width, monkeypatch, items_per_thread
 ):
-    import cuda.coop.numba_mlir as coop
+    import cuda.coop.numba_mlir as numba_coop
 
     monkeypatch.setattr(
         numba_mlir_tools,
@@ -619,16 +619,18 @@ def test_production_warp_exchange_emits_ordered_reuse_barriers(
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, items_per_thread):
         thread = cuda.threadIdx.x
-        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
+        payload = numba_coop.ThreadData(items_per_thread, dtype=types.int32)
         for item in range(items_per_thread):
             payload[item] = source[thread * items_per_thread + item]
-        first = coop.exchange(
-            coop.this_warp().group_by(width),
+        first = numba_coop.exchange(
+            numba_coop.this_warp().group_by(width),
             payload,
             mode="blocked_to_striped",
         )
-        second = coop.exchange(
-            coop.this_warp().group_by(width), first, mode="blocked_to_striped"
+        second = numba_coop.exchange(
+            numba_coop.this_warp().group_by(width),
+            first,
+            mode="blocked_to_striped",
         )
         for item in range(items_per_thread):
             destination[thread * items_per_thread + item] = second[item]

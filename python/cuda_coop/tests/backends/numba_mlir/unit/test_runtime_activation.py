@@ -2,10 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check backend activation and import failures in fresh interpreters.
+"""Check backend activation and import failures.
 
-Separate processes prevent one import order or registry state from masking
-a later case. Embedded probes also exercise missing and unsupported runtimes.
+Most cases run in fresh interpreters, so one import order or registry state
+cannot mask a later case. Embedded probes also exercise missing and
+unsupported runtimes. The runtime-load retry check instead patches the
+activation module in the pytest process.
 """
 
 import os
@@ -168,7 +170,7 @@ def test_reduce_providers_load_only_during_reduce_planning():
         from numba_cuda_mlir.numba_cuda.compiler import run_frontend
 
         from cuda import coop as common
-        import cuda.coop.numba_mlir as qualified
+        import cuda.coop.numba_mlir as numba_coop
         from cuda.coop.numba_mlir._compiler._group_planner import _GroupCallPlanner
         from cuda.coop.numba_mlir._compiler._operations import _FACTORY_OPERATIONS
 
@@ -184,13 +186,13 @@ def test_reduce_providers_load_only_during_reduce_planning():
         assert provider_module not in sys.modules
         assert callable(common.reduce)
         assert callable(common.sum)
-        assert callable(qualified.reduce)
-        assert callable(qualified.sum)
+        assert callable(numba_coop.reduce)
+        assert callable(numba_coop.sum)
         assert provider_module not in sys.modules
         assert not reduce_factories()
 
         def kernel(value):
-            return qualified.sum(qualified.this_block(), value)
+            return numba_coop.sum(numba_coop.this_block(), value)
 
         func_ir = run_frontend(kernel)
         planner = _GroupCallPlanner(

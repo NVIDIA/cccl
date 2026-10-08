@@ -2,14 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Define the shared Load and Store call signatures and memory contracts.
+"""Expose common Load and Store contracts to compiler adapters.
 
-The decorators register each function's identity and supported group kinds.
-Compiler adapters recognize these calls and generate the selected memory
-operation. The Python bodies reject calls outside a supported GPU kernel.
+Numba recognizes these registered functions during planning. A tracing backend
+executes their Python bodies, which check common selectors, payloads and
+controls before delegation. These checks keep a qualified backend's extra
+representations from silently widening the common API.
 """
 
 from __future__ import annotations
+
+from typing import Any
 
 from cuda.coop._typing import (
     BlockLoadStoreAlgorithm,
@@ -20,15 +23,134 @@ from cuda.coop._typing import (
     _CommonNumericT,
 )
 
-from ..thread_group import CoopCompilerContextRequiredError
+from ..thread_group import ThreadGroup
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _common_selector,
+    _group_primitive_marker,
+    _validate_common_operation_group,
 )
 from ._payload import (
     TempStorageLike,
     ThreadDataLike,
+    _common_thread_data_extent,
+    _ReadableThreadDataLike,
+    _validate_common_integer_value,
+    _validate_common_numeric_scalar,
+    _validate_common_numeric_value,
+    _validate_common_temp_storage,
 )
 from .thread_group import BlockGroup, WarpGroup
+
+_I32_MAX = (1 << 31) - 1
+_I64_MAX = (1 << 63) - 1
+_COMMON_LOAD_STORE_ALGORITHMS = frozenset(
+    {
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    }
+)
+_WARP_LOAD_STORE_ALGORITHMS = frozenset(
+    {
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+    }
+)
+
+
+def _validate_common_load_store_options(
+    operation: str,
+    group: ThreadGroup,
+    *,
+    algorithm: Any,
+    payload: Any,
+    valid_items: Any,
+    oob_default: object = None,
+    offset: Any,
+    temp_storage: Any,
+) -> None:
+    """Check common controls before a tracing backend lowers Load or Store.
+
+    Static counts and offsets can be range-checked now. When group size is
+    known, also bound valid_items by the payload tile size; a scalar Store
+    contributes one item per member. Compiler-owned integer controls get
+    dtype checks here; generated device code checks their ranges.
+
+    Warp groups have fewer algorithms and cannot use explicit scratch.
+    Block scratch must satisfy the common descriptor protocol; required
+    capacity and reuse synchronization remain backend responsibilities.
+    With no active trace, leave these checks to the compiler that
+    recognizes the marker.
+    """
+
+    if _backend_module_name() is None:
+        return
+    _validate_common_operation_group(operation, group)
+    if operation == "load" and oob_default is not None and valid_items is None:
+        raise ValueError("cuda.coop.load oob_default requires valid_items")
+    if valid_items is not None:
+        static_valid_items = _validate_common_integer_value(
+            operation,
+            "valid_items",
+            valid_items,
+        )
+        if static_valid_items is not None:
+            if not 0 <= static_valid_items <= _I32_MAX:
+                raise ValueError(
+                    f"cuda.coop.{operation} valid_items must be between 0 "
+                    "and 2147483647"
+                )
+            if group.static_size is not None:
+                items_per_thread = (
+                    _common_thread_data_extent(
+                        operation,
+                        "output" if operation == "load" else "value",
+                        payload,
+                    )
+                    if isinstance(payload, _ReadableThreadDataLike)
+                    else 1
+                )
+                tile_items = group.static_size * items_per_thread
+                if static_valid_items > tile_items:
+                    raise ValueError(
+                        f"cuda.coop.{operation} valid_items "
+                        f"{static_valid_items} exceeds group tile size "
+                        f"{tile_items}"
+                    )
+    if oob_default is not None:
+        _validate_common_numeric_scalar(operation, "oob_default", oob_default)
+    if offset is not None:
+        static_offset = _validate_common_integer_value(
+            operation,
+            "offset",
+            offset,
+        )
+        if static_offset is not None and not 0 <= static_offset <= _I64_MAX:
+            raise ValueError(
+                f"cuda.coop.{operation} offset must be between 0 and "
+                "9223372036854775807"
+            )
+    if group.kind in {"warp", "threads_within_warp"}:
+        if algorithm not in _WARP_LOAD_STORE_ALGORITHMS:
+            raise ValueError(
+                f"cuda.coop.{operation} algorithm {algorithm!r} is supported "
+                "only for block groups"
+            )
+        if temp_storage is not None:
+            raise ValueError(
+                f"cuda.coop.{operation} temp_storage is not supported for "
+                "Warp groups; omit it so the implementation can provide "
+                "per-group storage"
+            )
+    elif temp_storage is not None:
+        _validate_common_temp_storage(operation, temp_storage)
 
 
 @_common_group_operation(
@@ -52,7 +174,7 @@ def load(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Participating threads; see :ref:`thread groups <coop-common-groups>`.
         Supports blocks and physical or logical warps. Warp loads require
         an enclosing block size divisible by 32.
     source : array
@@ -61,7 +183,7 @@ def load(
         infers its dtype from this array. The array must contain all elements
         selected by ``offset`` and ``valid_items``.
     output : cuda.coop.ThreadDataLike
-        Writable :ref:`per-thread payload <coop-thread-data>`.
+        Writable :ref:`per-thread payload <coop-common-payloads>`.
         Load populates this payload in place. The group's tile contains
         ``group_size * items_per_thread`` elements.
     algorithm : str, optional
@@ -91,7 +213,7 @@ def load(
         ``(linear_thread_rank // group_size) * tile_size`` automatically;
         do not include that within-block group offset a second time.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for block
+        :ref:`Scratch descriptor <coop-common-storage>` for block
         transpose-family algorithms. ``None`` uses automatic scratch.
         Direct, striped, and vectorized loads need no shared scratch.
         Warp loads require ``None``.
@@ -120,13 +242,46 @@ def load(
         :end-before: # example-end
         :dedent: 4
 
-    The qualified import activates the Numba-CUDA-MLIR backend even if another
-    module imported ``cuda.coop`` first. Use the qualified
-    ``cuda.coop.<backend>`` API for backend-specific behavior.
+    Importing ``cuda.coop.numba_mlir`` or ``cuda.coop.cutlass`` activates that
+    integration even if another module imported ``cuda.coop`` first. Use the
+    aliases ``numba_coop`` and ``cutlass_coop`` for qualified calls.
+
+    For CuTe pointers and register payloads, see the executable
+    :ref:`CUTLASS Load and Store example <coop-cutlass-load-store>`.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.load must be called from a supported GPU kernel."
+    algorithm = _common_selector(
+        "load", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "load",
+            "output",
+            output,
+            allow_untyped_thread_data=True,
+            require_thread_data=True,
+        )
+    _validate_common_load_store_options(
+        "load",
+        group,
+        algorithm=algorithm,
+        payload=output,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        offset=offset,
+        temp_storage=temp_storage,
+    )
+
+    _group_primitive_marker(
+        "load",
+        group,
+        source,
+        output,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        oob_default=oob_default,
+        offset=offset,
+        temp_storage=temp_storage,
     )
 
 
@@ -150,7 +305,7 @@ def store(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Participating threads; see :ref:`thread groups <coop-thread-groups>`.
+        Participating threads; see :ref:`thread groups <coop-common-groups>`.
         Supports blocks and physical or logical warps. Warp stores require
         an enclosing block size divisible by 32.
     destination : array
@@ -158,7 +313,7 @@ def store(
         memory, with the same element dtype as ``value``. It must contain
         every element selected by ``offset`` and ``valid_items``.
     value : numeric scalar or cuda.coop.ThreadDataLike
-        This thread's value or readable :ref:`payload <coop-thread-data>`.
+        This thread's value or readable :ref:`payload <coop-common-payloads>`.
         Initialize every item that will be stored. The tile contains
         ``group_size * items_per_thread`` elements, with one item per thread
         for a scalar. As in CUB, transpose algorithms may rearrange the
@@ -171,7 +326,7 @@ def store(
         use vector accesses or shared-memory rearrangement, respectively.
         Blocks additionally support ``"warp_transpose"`` and
         ``"warp_transpose_timesliced"``, both requiring a block size divisible
-        by 32. See :ref:`data layouts <coop-data-layouts>` before pairing
+        by 32. See :ref:`data layouts <coop-common-layouts>` before pairing
         different Load and Store algorithms.
     valid_items : int or integer scalar, optional
         Number of valid elements in the group's tile, uniform across the
@@ -184,7 +339,7 @@ def store(
         origin automatically, using the same addressing rule as
         :func:`cuda.coop.load`.
     temp_storage : cuda.coop.TempStorageLike, optional
-        :ref:`Scratch descriptor <coop-temp-storage>` for block
+        :ref:`Scratch descriptor <coop-common-storage>` for block
         transpose-family algorithms. ``None`` uses automatic scratch.
         Direct, striped, and vectorized stores need no shared scratch.
         Warp stores require ``None``.
@@ -212,12 +367,42 @@ def store(
         :end-before: # example-end
         :dedent: 4
 
-    See :ref:`participation and synchronization <coop-participation>` for
+    See :ref:`participation and synchronization <coop-common-participation>` for
     control-flow requirements at primitive calls.
+
+    For a CuTe kernel with partial stores and element offsets, see
+    :ref:`CUTLASS Load and Store <coop-cutlass-load-store>`.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.store must be called from a supported GPU kernel."
+    algorithm = _common_selector(
+        "store", "algorithm", algorithm, _COMMON_LOAD_STORE_ALGORITHMS
+    )
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "store",
+            "value",
+            value,
+            allow_readonly_thread_data=True,
+        )
+    _validate_common_load_store_options(
+        "store",
+        group,
+        algorithm=algorithm,
+        payload=value,
+        valid_items=valid_items,
+        offset=offset,
+        temp_storage=temp_storage,
+    )
+
+    _group_primitive_marker(
+        "store",
+        group,
+        destination,
+        value,
+        algorithm=algorithm,
+        valid_items=valid_items,
+        offset=offset,
+        temp_storage=temp_storage,
     )
 
 

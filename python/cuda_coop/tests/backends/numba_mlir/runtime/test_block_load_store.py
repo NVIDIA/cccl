@@ -28,11 +28,11 @@ if not cuda.is_available():
 
 from numba_cuda_mlir import types
 
-import cuda.coop.numba_mlir as qualified_coop
+import cuda.coop.numba_mlir as numba_coop
 from cuda import coop as root_coop
 
-assert qualified_coop.__file__ is not None
-_QUALIFIED_COOP_ORIGIN = Path(qualified_coop.__file__).resolve()
+assert numba_coop.__file__ is not None
+_QUALIFIED_COOP_ORIGIN = Path(numba_coop.__file__).resolve()
 _SAFE_PATH_FLAG = "-P" if sys.version_info >= (3, 11) else "-I"
 
 pytestmark = [
@@ -108,7 +108,7 @@ def _sentinel(dtype: np.dtype) -> object:
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("common", "qualified")
+    "module", (root_coop, numba_coop), ids=("common", "qualified")
 )
 def test_runtime_payload_index_reuses_one_specialization(
     module, *, items_per_thread
@@ -133,7 +133,7 @@ def test_runtime_payload_index_reuses_one_specialization(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("portable", "qualified")
+    "module", (root_coop, numba_coop), ids=("common", "qualified")
 )
 @pytest.mark.parametrize(
     "dtype", (None, types.int32), ids=("inferred", "explicit")
@@ -209,14 +209,14 @@ def _full_store_kernel(numba_dtype, algorithm="direct"):
         thread = cuda.threadIdx.x + cuda.blockDim.x * (
             cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
         )
-        payload = qualified_coop.ThreadData(
+        payload = numba_coop.ThreadData(
             items_per_thread,
             dtype=numba_dtype,
         )
         for item in range(items_per_thread):
             payload[item] = source[thread * items_per_thread + item]
-        qualified_coop.store(
-            qualified_coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             algorithm=algorithm,
@@ -381,14 +381,14 @@ def _load_defaulting_invalid(
     items_per_thread,
 ):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(
+    payload = numba_coop.ThreadData(
         items_per_thread,
         dtype=types.int32,
     )
     payload[0] = 19
     payload[1] = 19
-    qualified_coop.load(
-        qualified_coop.this_block(),
+    numba_coop.load(
+        numba_coop.this_block(),
         source,
         payload,
         algorithm="direct",
@@ -430,14 +430,14 @@ def _store_valid_prefix(
     source, destination, valid_items, destination_offset, items_per_thread
 ):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(
+    payload = numba_coop.ThreadData(
         items_per_thread,
         dtype=types.int32,
     )
     for item in range(items_per_thread):
         payload[item] = source[thread * items_per_thread + item]
-    qualified_coop.store(
-        qualified_coop.this_block(),
+    numba_coop.store(
+        numba_coop.this_block(),
         destination,
         payload,
         algorithm="direct",
@@ -494,12 +494,12 @@ def _algorithm_load_kernel(
             items_per_thread,
         ):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=numba_dtype,
             )
-            qualified_coop.load(
-                qualified_coop.this_block(),
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 payload,
                 algorithm=algorithm,
@@ -556,14 +556,14 @@ def _algorithm_store_kernel(
             items_per_thread,
         ):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=numba_dtype,
             )
             for item in range(items_per_thread):
                 payload[item] = source[thread * items_per_thread + item]
-            qualified_coop.store(
-                qualified_coop.this_block(),
+            numba_coop.store(
+                numba_coop.this_block(),
                 destination,
                 payload,
                 algorithm=algorithm,
@@ -814,12 +814,12 @@ def _partial_transpose_load_kernel(algorithm: str, qualified: bool):
         @cuda.jit
         def kernel(source, observed, valid_items, items_per_thread):
             thread = cuda.threadIdx.x
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
-            qualified_coop.load(
-                qualified_coop.this_block(),
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 payload,
                 algorithm=algorithm,
@@ -889,17 +889,17 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
             load_source, store_source, observed, destination, items_per_thread
         ):
             thread = cuda.threadIdx.x
-            load_payload = qualified_coop.ThreadData(
+            load_payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
-            qualified_coop.load(
-                qualified_coop.this_block(),
+            numba_coop.load(
+                numba_coop.this_block(),
                 load_source,
                 load_payload,
                 algorithm=algorithm,
             )
-            store_payload = qualified_coop.ThreadData(
+            store_payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
@@ -907,8 +907,8 @@ def _unguarded_wide_load_store_kernel(algorithm: str, qualified: bool):
                 index = thread * items_per_thread + item
                 observed[index] = load_payload[item]
                 store_payload[item] = store_source[index]
-            qualified_coop.store(
-                qualified_coop.this_block(),
+            numba_coop.store(
+                numba_coop.this_block(),
                 destination,
                 store_payload,
                 algorithm=algorithm,
@@ -985,15 +985,15 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
         @cuda.jit
         def kernel(source, destination, observed, items_per_thread):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(
+            storage = numba_coop.TempStorage(
                 64 * 1024, alignment=16, auto_sync=True
             )
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
-            qualified_coop.load(
-                qualified_coop.this_block(),
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 payload,
                 algorithm=algorithm,
@@ -1001,8 +1001,8 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
             )
             for item in range(items_per_thread):
                 observed[thread * items_per_thread + item] = payload[item]
-            qualified_coop.store(
-                qualified_coop.this_block(),
+            numba_coop.store(
+                numba_coop.this_block(),
                 destination,
                 payload,
                 algorithm=algorithm,
@@ -1014,15 +1014,13 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
         @cuda.jit
         def kernel(source, destination, observed, items_per_thread):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(
-                sharing="shared", auto_sync=True
-            )
-            payload = qualified_coop.ThreadData(
+            storage = numba_coop.TempStorage(sharing="shared", auto_sync=True)
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
-            qualified_coop.load(
-                qualified_coop.this_block(),
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 payload,
                 algorithm=algorithm,
@@ -1030,8 +1028,8 @@ def _transpose_reuse_kernel(algorithm: str, dynamic: bool):
             )
             for item in range(items_per_thread):
                 observed[thread * items_per_thread + item] = payload[item]
-            qualified_coop.store(
-                qualified_coop.this_block(),
+            numba_coop.store(
+                numba_coop.this_block(),
                 destination,
                 payload,
                 algorithm=algorithm,
@@ -1077,7 +1075,7 @@ def test_transpose_algorithms_reuse_caller_storage(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("common", "qualified")
+    "module", (root_coop, numba_coop), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("alignment", (1, np.int64(32)))
 @pytest.mark.parametrize("sharing", ("shared", "exclusive"))
@@ -1149,19 +1147,19 @@ def _qualified_grid_stride_load_store(source, destination, items_per_thread):
         # Runtime counts trap rather than saturate. Clamp each grid-stride
         # remainder to the exact tile accepted by this block.
         valid_items = min(valid_items, (_THREADS * items_per_thread))
-        payload = qualified_coop.ThreadData(
+        payload = numba_coop.ThreadData(
             items_per_thread,
             dtype=types.int32,
         )
-        qualified_coop.load(
-            qualified_coop.this_block(),
+        numba_coop.load(
+            numba_coop.this_block(),
             source,
             payload,
             valid_items=valid_items,
             offset=tile_offset,
         )
-        qualified_coop.store(
-            qualified_coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             valid_items=valid_items,
@@ -1202,7 +1200,9 @@ def _run_invalid_runtime_valid_items_probe(
     test process, then compiles the requested operation and payload extent.
     A device trap poisons its CUDA context, so the child contains that failure.
     Return its status and output for the test's device-trap assertion. The
-    timeout bounds a stalled child; no kernel runs in the pytest worker here.
+    timeout bounds a stalled child. This helper launches nothing in the pytest
+    worker; its caller then runs a valid kernel there to check that the
+    worker's context still works.
     """
 
     operation_body = textwrap.indent(
@@ -1341,7 +1341,7 @@ def test_common_scalar_transpose_store_matches_an_independent_oracle():
 
 
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+    "module", (root_coop, numba_coop), ids=("root", "qualified")
 )
 def test_thread_data_constructor_alias_across_branch(module, monkeypatch):
     from cuda.coop.numba_mlir._compiler._rewrite import CoopSinglePhaseRewrite
@@ -1386,8 +1386,8 @@ def _qualified_local_array_transpose_store(
     payload = cuda.local.array(shape=items_per_thread, dtype=types.int32)
     for item in range(items_per_thread):
         payload[item] = source[thread * items_per_thread + item]
-    qualified_coop.store(
-        qualified_coop.this_block(),
+    numba_coop.store(
+        numba_coop.this_block(),
         destination,
         payload,
         algorithm="transpose",
@@ -1413,9 +1413,9 @@ def test_qualified_transpose_store_accepts_local_array_payload(
 @cuda.jit
 def _qualified_untyped_load(source, observed, items_per_thread):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(items_per_thread)
-    qualified_coop.load(
-        qualified_coop.this_block(),
+    payload = numba_coop.ThreadData(items_per_thread)
+    numba_coop.load(
+        numba_coop.this_block(),
         source,
         payload,
         algorithm="direct",
@@ -1426,7 +1426,7 @@ def _qualified_untyped_load(source, observed, items_per_thread):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+    "module", (root_coop, numba_coop), ids=("root", "qualified")
 )
 @pytest.mark.parametrize("projection", (0, -1), ids=("first", "last"))
 @pytest.mark.parametrize("operation", ("load", "store"))
@@ -1458,7 +1458,7 @@ def test_untyped_thread_data_infers_dtype_through_tuple_aliases(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+    "module", (root_coop, numba_coop), ids=("root", "qualified")
 )
 @pytest.mark.parametrize(
     "dtype", (None, types.int32), ids=("inferred", "explicit")
@@ -1502,11 +1502,11 @@ def test_qualified_load_infers_an_untyped_payload(*, items_per_thread):
 @cuda.jit
 def _qualified_untyped_store(source, destination, items_per_thread):
     thread = cuda.threadIdx.x
-    payload = qualified_coop.ThreadData(items_per_thread)
+    payload = numba_coop.ThreadData(items_per_thread)
     for item in range(items_per_thread):
         payload[item] = source[thread * items_per_thread + item]
-    qualified_coop.store(
-        qualified_coop.this_block(),
+    numba_coop.store(
+        numba_coop.this_block(),
         destination,
         payload,
         algorithm="direct",
@@ -1527,7 +1527,7 @@ def test_qualified_store_infers_an_untyped_payload(*, items_per_thread):
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+    "module", (root_coop, numba_coop), ids=("root", "qualified")
 )
 def test_direct_load_store_ignores_unused_temp_storage(
     module, *, items_per_thread
@@ -1611,9 +1611,9 @@ def test_storage_free_load_store_are_safe_in_divergent_control_flow(
 @cuda.jit
 def _looped_shared_store(source, destination, observed, items_per_thread):
     thread = cuda.threadIdx.x
-    storage = qualified_coop.TempStorage(sharing="shared")
+    storage = numba_coop.TempStorage(sharing="shared")
     for iteration in range(2):
-        payload = qualified_coop.ThreadData(
+        payload = numba_coop.ThreadData(
             items_per_thread,
             dtype=types.int32,
         )
@@ -1622,8 +1622,8 @@ def _looped_shared_store(source, destination, observed, items_per_thread):
             payload[item] = source[
                 tile_offset + thread * items_per_thread + item
             ]
-        qualified_coop.store(
-            qualified_coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             algorithm="direct",
@@ -1691,7 +1691,7 @@ def test_common_load_is_planned_after_device_helper_inlining(
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize(
-    "module", (root_coop, qualified_coop), ids=("root", "qualified")
+    "module", (root_coop, numba_coop), ids=("root", "qualified")
 )
 @pytest.mark.parametrize("alignment", [None, 1, 16, 32])
 def test_thread_data_alignment_with_inferred_load_store(
@@ -1726,11 +1726,11 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
         @cuda.jit
         def kernel(destination, items_per_thread):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(
+            storage = numba_coop.TempStorage(
                 sharing="exclusive",
                 auto_sync=False,
             )
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
@@ -1740,8 +1740,8 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
                     payload[item] = (
                         tile_offset + thread * items_per_thread + item
                     )
-                qualified_coop.store(
-                    qualified_coop.this_block(),
+                numba_coop.store(
+                    numba_coop.this_block(),
                     destination,
                     payload,
                     algorithm="transpose",
@@ -1755,10 +1755,10 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
         @cuda.jit
         def kernel(destination, items_per_thread):
             thread = cuda.threadIdx.x
-            storage = qualified_coop.TempStorage(
+            storage = numba_coop.TempStorage(
                 sharing="exclusive", auto_sync=True
             )
-            payload = qualified_coop.ThreadData(
+            payload = numba_coop.ThreadData(
                 items_per_thread,
                 dtype=types.int32,
             )
@@ -1768,8 +1768,8 @@ def _looped_exclusive_store_kernel(manual_sync: bool):
                     payload[item] = (
                         tile_offset + thread * items_per_thread + item
                     )
-                qualified_coop.store(
-                    qualified_coop.this_block(),
+                numba_coop.store(
+                    numba_coop.this_block(),
                     destination,
                     payload,
                     algorithm="transpose",
@@ -1806,7 +1806,7 @@ def test_exclusive_storage_reused_by_a_looped_call_site_stays_ordered(
 
 
 @pytest.mark.parametrize("dtype", [np.int32, np.float64])
-@pytest.mark.parametrize("module", [root_coop, qualified_coop])
+@pytest.mark.parametrize("module", [root_coop, numba_coop])
 def test_kernel_items_per_thread_specializes_repeated_launches(dtype, module):
     @cuda.jit
     def kernel(source, destination, items_per_thread):
@@ -1824,7 +1824,7 @@ def test_kernel_items_per_thread_specializes_repeated_launches(dtype, module):
         np.testing.assert_array_equal(destination, source + 7)
 
 
-@pytest.mark.parametrize("module", [root_coop, qualified_coop])
+@pytest.mark.parametrize("module", [root_coop, numba_coop])
 def test_kernel_items_per_thread_without_cooperative_producer(module):
     @cuda.jit
     def kernel(destination, items_per_thread):

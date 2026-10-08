@@ -14,8 +14,9 @@ Terms
 
    backend
       The integration that lets a kernel compiler recognize ``cuda.coop``
-      calls and generate CUDA code for them. Numba-CUDA-MLIR is the first
-      supported backend. See :ref:`registration <coop-backend-registration>`.
+      calls and generate CUDA code for them. The current integrations target
+      Numba-CUDA-MLIR and CUTLASS / CuTe DSL. See :ref:`registration
+      <coop-backend-registration>`.
 
    blocked
       A layout in which each thread owns consecutive elements of a
@@ -32,7 +33,7 @@ Terms
       ``reduce``, or ``exclusive_sum``. Each primitive defines which threads
       participate, how it uses their data, and where its results are
       available. See
-      :ref:`participation and synchronization <coop-participation>`.
+      :ref:`participation and synchronization <coop-common-participation>`.
 
    family
       A group of related :term:`primitives <primitive>` that share semantics
@@ -40,13 +41,15 @@ Terms
       ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
       ``inclusive_sum``. Families organize implementation modules; a
       :term:`thread group` describes the threads executing a primitive.
-      See :ref:`implementation families <coop-implementation-families>`.
+      See the implementation discussions in the
+      :doc:`Numba-CUDA-MLIR <developer_overview>` and
+      :doc:`CUTLASS <cutlass_developer_guide>` Developer Guides.
 
    payload
       The values contributed or received by one thread. ``ThreadData(K)``
       describes a fixed-size payload of ``K`` items. Some operations also
       accept scalars or backend-specific arrays. See
-      :ref:`thread data <coop-thread-data>`.
+      :ref:`thread data <coop-common-payloads>`.
 
    phi
       A compiler intermediate representation (IR) operation that selects a
@@ -120,29 +123,33 @@ Terms
       A sort that preserves the input order of elements with equal keys.
       A function's contract must promise stability before a program relies
       on it. Radix Sort in ``cuda.coop`` is stable; Merge Sort does not
-      promise equal-key order. See :ref:`radix sorting <coop-radix>`.
+      promise equal-key order. See :doc:`radix sorting <visualizations/radix>`.
 
    radix digit
-      A fixed-width interval of key bits used in one ranking or sorting
-      step. ``radix_rank_keys`` assigns ranks according to one such digit;
+      A fixed-width interval of key bits used in one ranking or sorting step.
+      ``radix_rank_keys`` assigns ranks according to one such digit;
       ``radix_sort_keys`` and ``radix_sort_pairs`` order keys over the
-      requested bit interval. See :ref:`radix sorting and ranks <coop-radix>`.
+      requested bit interval. See :doc:`radix sorting and ranks
+      <visualizations/radix>`.
 
    common API
       .. raw:: html
 
          <span id="term-portable-API"></span>
 
-      The backend-independent API exposed through ``from cuda import coop``.
-      It describes operations on thread groups, values, and storage.
-      Support for particular operations and argument types depends on the
-      backend. Qualified APIs provide backend-specific extensions. See
-      :ref:`choosing an API <coop-programming-api-choice>`.
+      The contract shared by Numba-CUDA-MLIR and CUTLASS, exposed through
+      ``from cuda import coop``. Implemented operations on thread groups,
+      values, and storage follow the documented argument and result rules; see
+      :ref:`backend operation support <coop-backend-operation-support>` for
+      availability. Qualified APIs add compiler-specific extensions. See
+      :ref:`choosing an API <coop-api-namespaces>`.
 
    qualified API
-      A backend's namespace, such as ``cuda.coop.numba_mlir``. It provides
-      the common operations and compiler-specific extensions. See
-      :ref:`namespace choices <coop-faq-namespaces>`.
+      A backend's namespace: ``cuda.coop.numba_mlir`` or
+      ``cuda.coop.cutlass``. Each includes its supported common operations and
+      compiler-specific extensions. Host registration uses
+      ``cuda.coop.register`` or occurs when importing the qualified namespace.
+      See :ref:`namespace choices <coop-faq-namespaces>`.
 
    striped
       A layout in which consecutive threads own consecutive tile elements
@@ -160,7 +167,7 @@ Terms
    thread group
       The threads participating in a primitive, such as a block, a physical
       warp, or a logical group within a warp. A thread's rank identifies its
-      position within that group. See :ref:`groups <coop-thread-groups>`.
+      position within that group. See :ref:`groups <coop-common-groups>`.
 
    tile
       The sequence of values processed by one group in an operation. With
@@ -171,7 +178,7 @@ Terms
    top-k
       Selection of up to ``k`` smallest or largest keys, optionally with
       associated values. ``cuda.coop`` TopK returns an unordered selection;
-      only its selected prefix is defined. See :ref:`TopK <coop-topk>`.
+      only its selected prefix is defined. See :doc:`TopK <visualizations/topk>`.
 
 .. _coop-glossary-layouts:
 
@@ -232,7 +239,8 @@ Load with a direct Store without conversion changes the output order.
 Follow the values in the :doc:`Load <visualizations/load>` and
 :doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
 <visualizations/exchange>` converts between layouts; the
-:ref:`programming guide <coop-data-layouts>` shows how layout affects Scan.
+:ref:`shared layout discussion <coop-common-layouts>` explains how layout
+affects Scan.
 
 .. _coop-glossary-decoding:
 

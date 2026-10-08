@@ -22,6 +22,7 @@ from pathlib import Path, PurePosixPath
 _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/__init__.py",
     "cuda/coop/__init__.pyi",
+    "cuda/coop/_registration.py",
     "cuda/coop/_typing.pyi",
     "cuda/coop/py.typed",
     "cuda/coop/_core/_auto_registration.py",
@@ -31,6 +32,10 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/_core/api/exchange.pyi",
     "cuda/coop/_core/api/load_store.py",
     "cuda/coop/_core/api/load_store.pyi",
+    "cuda/coop/_core/api/merge_sort.py",
+    "cuda/coop/_core/api/merge_sort.pyi",
+    "cuda/coop/_core/api/radix_sort.py",
+    "cuda/coop/_core/api/radix_sort.pyi",
     "cuda/coop/_core/api/reduce.py",
     "cuda/coop/_core/api/reduce.pyi",
     "cuda/coop/_core/api/scan.py",
@@ -43,25 +48,52 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/_core/api/thread_data.pyi",
     "cuda/coop/_core/api/thread_group.py",
     "cuda/coop/_core/api/thread_group.pyi",
+    "cuda/coop/_core/api/topk.py",
+    "cuda/coop/_core/api/topk.pyi",
     "cuda/coop/_core/block/exchange.py",
     "cuda/coop/_core/block/load_store.py",
+    "cuda/coop/_core/block/merge_sort.py",
+    "cuda/coop/_core/block/radix.py",
+    "cuda/coop/_core/block/radix_rank.py",
+    "cuda/coop/_core/block/radix_sort.py",
     "cuda/coop/_core/block/reduce.py",
     "cuda/coop/_core/block/scan.py",
     "cuda/coop/_core/block/shuffle.py",
+    "cuda/coop/_core/block/topk.py",
     "cuda/coop/_core/group/exchange.py",
     "cuda/coop/_core/group/load_store.py",
+    "cuda/coop/_core/group/merge_sort.py",
+    "cuda/coop/_core/group/radix_sort.py",
     "cuda/coop/_core/group/reduce.py",
     "cuda/coop/_core/group/scan.py",
     "cuda/coop/_core/group/shuffle.py",
+    "cuda/coop/_core/group/topk.py",
     "cuda/coop/_core/reduce.py",
     "cuda/coop/_core/scan.py",
     "cuda/coop/_core/warp/__init__.py",
     "cuda/coop/_core/warp/exchange.py",
     "cuda/coop/_core/warp/load_store.py",
+    "cuda/coop/_core/warp/merge_sort.py",
     "cuda/coop/_core/warp/reduce.py",
     "cuda/coop/_core/warp/scan.py",
     "cuda/coop/_headers/_identity.py",
     "cuda/coop/_headers/_toolkit.py",
+    "cuda/coop/cutlass/__init__.py",
+    "cuda/coop/cutlass/__init__.pyi",
+    "cuda/coop/cutlass/py.typed",
+    "cuda/coop/cutlass/_compiler/_activation.py",
+    "cuda/coop/cutlass/_compiler/_bundle.py",
+    "cuda/coop/cutlass/_compiler/_finalize.py",
+    "cuda/coop/cutlass/_compiler/_launch.py",
+    "cuda/coop/cutlass/_compiler/_nvrtc.py",
+    "cuda/coop/cutlass/_compiler/_runtime.py",
+    "cuda/coop/cutlass/_group_load_store.py",
+    "cuda/coop/cutlass/_group_load_store.pyi",
+    "cuda/coop/cutlass/_lowering/_load_store.py",
+    "cuda/coop/cutlass/_thread_data.py",
+    "cuda/coop/cutlass/_thread_data.pyi",
+    "cuda/coop/cutlass/_thread_group.py",
+    "cuda/coop/cutlass/_thread_group.pyi",
     "cuda/coop/numba_mlir/__init__.py",
     "cuda/coop/numba_mlir/__init__.pyi",
     "cuda/coop/numba_mlir/_compiler/_activation.py",
@@ -69,13 +101,18 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_compiler/_caching.py",
     "cuda/coop/numba_mlir/_compiler/_group_exchange.py",
     "cuda/coop/numba_mlir/_compiler/_group_load_store.py",
+    "cuda/coop/numba_mlir/_compiler/_group_merge_sort.py",
     "cuda/coop/numba_mlir/_compiler/_group_planner.py",
+    "cuda/coop/numba_mlir/_compiler/_group_radix_sort.py",
     "cuda/coop/numba_mlir/_compiler/_group_reduce.py",
     "cuda/coop/numba_mlir/_compiler/_group_scan.py",
     "cuda/coop/numba_mlir/_compiler/_group_shuffle.py",
+    "cuda/coop/numba_mlir/_compiler/_group_topk.py",
     "cuda/coop/numba_mlir/_compiler/_nvrtc.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_exchange.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_merge_sort.py",
+    "cuda/coop/numba_mlir/_compiler/_rewrite_radix_sort.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_reduce.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_scan.py",
     "cuda/coop/numba_mlir/_compiler/_rewrite_shuffle.py",
@@ -83,18 +120,27 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_group/_exchange.pyi",
     "cuda/coop/numba_mlir/_group/_load_store.py",
     "cuda/coop/numba_mlir/_group/_load_store.pyi",
+    "cuda/coop/numba_mlir/_group/_merge_sort.py",
+    "cuda/coop/numba_mlir/_group/_merge_sort.pyi",
+    "cuda/coop/numba_mlir/_group/_radix_sort.py",
+    "cuda/coop/numba_mlir/_group/_radix_sort.pyi",
     "cuda/coop/numba_mlir/_group/_reduce.py",
     "cuda/coop/numba_mlir/_group/_reduce.pyi",
     "cuda/coop/numba_mlir/_group/_scan.py",
     "cuda/coop/numba_mlir/_group/_scan.pyi",
     "cuda/coop/numba_mlir/_group/_shuffle.py",
     "cuda/coop/numba_mlir/_group/_shuffle.pyi",
+    "cuda/coop/numba_mlir/_group/_topk.py",
+    "cuda/coop/numba_mlir/_group/_topk.pyi",
     "cuda/coop/numba_mlir/_lowering/_exchange.py",
     "cuda/coop/numba_mlir/_lowering/_load_store.py",
+    "cuda/coop/numba_mlir/_lowering/_merge_sort.py",
+    "cuda/coop/numba_mlir/_lowering/_radix_sort.py",
     "cuda/coop/numba_mlir/_lowering/_reduce.py",
     "cuda/coop/numba_mlir/_lowering/_scan.py",
     "cuda/coop/numba_mlir/_lowering/_shuffle.py",
     "cuda/coop/numba_mlir/_lowering/_thread_group.py",
+    "cuda/coop/numba_mlir/_lowering/_topk.py",
     "cuda/coop/numba_mlir/_stateful_function.py",
     "cuda/coop/numba_mlir/_stateful_function.pyi",
     "cuda/coop/numba_mlir/_temp_storage.py",
@@ -111,12 +157,17 @@ _REQUIRED_HEADER_FILES = {
     "cuda/coop/_headers/include/cub/version.cuh",
     "cuda/coop/_headers/include/cub/block/block_exchange.cuh",
     "cuda/coop/_headers/include/cub/block/block_load.cuh",
+    "cuda/coop/_headers/include/cub/block/block_merge_sort.cuh",
+    "cuda/coop/_headers/include/cub/block/block_radix_rank.cuh",
+    "cuda/coop/_headers/include/cub/block/block_radix_sort.cuh",
     "cuda/coop/_headers/include/cub/block/block_reduce.cuh",
     "cuda/coop/_headers/include/cub/block/block_scan.cuh",
     "cuda/coop/_headers/include/cub/block/block_shuffle.cuh",
     "cuda/coop/_headers/include/cub/block/block_store.cuh",
+    "cuda/coop/_headers/include/cub/block/block_topk.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_exchange.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_load.cuh",
+    "cuda/coop/_headers/include/cub/warp/warp_merge_sort.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_reduce.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_scan.cuh",
     "cuda/coop/_headers/include/cub/warp/warp_store.cuh",
@@ -159,10 +210,12 @@ def _one_member(names: set[str], suffix: str) -> str:
 
 
 def _validate_metadata(archive: zipfile.ZipFile, names: set[str]) -> None:
-    """Check the distribution name, supported Python versions, and wheel tag.
+    """Check the name, Python requirement, extras, dependencies, and wheel tag.
 
-    These declarations control how installers select the wheel. Keep them
-    consistent with a pure-Python package shared by all supported platforms.
+    Installers use these fields to select the wheel and its optional
+    dependencies. Keep them consistent with one pure-Python wheel for all
+    platforms. The wheel must not require CUTLASS because no CUTLASS package
+    is qualified as a dependency.
     """
     metadata_name = _one_member(names, ".dist-info/METADATA")
     wheel_name = _one_member(names, ".dist-info/WHEEL")
@@ -261,8 +314,6 @@ def validate(wheel: str | Path) -> None:
                 "cuda-coop wheel must not contain cuda/__init__.py; "
                 "it would break the PEP 420 cuda namespace"
             )
-        if any(name.startswith("cuda/coop/cutlass/") for name in names):
-            raise SystemExit("cuda-coop wheel must not contain a CUTLASS backend")
         forbidden = sorted(_FORBIDDEN_PACKAGE_FILES & names)
         if forbidden:
             raise SystemExit(

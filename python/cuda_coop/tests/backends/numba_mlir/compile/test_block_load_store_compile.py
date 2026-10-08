@@ -75,10 +75,14 @@ def _algorithm(
     items_per_thread: int = 2,
     valid_items: ArgumentBinding | None = None,
 ) -> _types.Algorithm:
-    """Materialize a Load or Store provider for one CUB algorithm and shape.
+    """Materialize a block Load or Store provider for direct compilation.
 
-    Storage-free algorithms get no scratch pointer or barrier. Others take a
-    leading scratch pointer and block synchronization.
+    Derive scratch and synchronization contracts from the algorithm. Direct,
+    striped, and vectorize need no scratch or reuse barrier. Transpose
+    algorithms use a leading scratch pointer and require block-scope
+    synchronization before scratch reuse. The generated allocation wrapper
+    emits that barrier; the wrapper that takes caller-provided scratch leaves
+    synchronization to its caller.
     """
     if valid_items is None:
         valid_items = ArgumentBinding.runtime()
@@ -496,7 +500,7 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 
-    import cuda.coop.numba_mlir as qualified_coop
+    import cuda.coop.numba_mlir as numba_coop
     from cuda import coop
 
     fixed_device = SimpleNamespace(compute_capability=_FIXED_COMPUTE_CAPABILITY)
@@ -537,15 +541,15 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
 
     @compiler_cuda.jit(chip="sm_90")
     def storage_bearing(source, destination, items_per_thread):
-        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
-        qualified_coop.load(
-            qualified_coop.this_block(),
+        payload = numba_coop.ThreadData(items_per_thread, dtype=types.int32)
+        numba_coop.load(
+            numba_coop.this_block(),
             source,
             payload,
             algorithm="warp_transpose_timesliced",
         )
-        qualified_coop.store(
-            qualified_coop.this_block(),
+        numba_coop.store(
+            numba_coop.this_block(),
             destination,
             payload,
             algorithm="warp_transpose_timesliced",

@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Load a compiler adapter when the host requests registration.
+"""Initialize an explicitly requested compiler integration on the host.
 
-The adapter installs its compiler hooks during import. Python's import cache
-makes repeated registration calls safe and keeps compiler imports out of the
-common API's normal import path.
+Importing the qualified adapter installs its compiler hooks and validates its
+optional dependencies. The module cache makes repeated registration safe.
+Registration makes the integration available; the compiler processing a kernel
+determines how common operations are lowered.
 """
 
 from __future__ import annotations
@@ -15,7 +16,9 @@ import importlib
 from typing import Literal
 
 
-def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None:
+def register(
+    backend: Literal["numba-cuda-mlir", "numba_cuda_mlir", "cutlass"],
+) -> None:
     """Register cooperative primitives with the selected compiler backend.
 
     Call this on the host before compiling a kernel, including when
@@ -27,7 +30,7 @@ def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None:
     ----------
     backend
         Compiler backend to register. ``"numba_cuda_mlir"`` is an alias for
-        ``"numba-cuda-mlir"``.
+        ``"numba-cuda-mlir"``. Use ``"cutlass"`` for CuTe DSL kernels.
 
     Raises
     ------
@@ -38,19 +41,22 @@ def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None:
         incompatible. Other backend initialization errors propagate unchanged.
     """
 
-    if backend not in ("numba-cuda-mlir", "numba_cuda_mlir"):
+    if backend in ("numba-cuda-mlir", "numba_cuda_mlir"):
+        module_name, label = "cuda.coop.numba_mlir", "Numba-CUDA-MLIR"
+    elif backend == "cutlass":
+        module_name, label = "cuda.coop.cutlass", "CUTLASS"
+    else:
         raise ValueError(
             f"Unsupported cuda.coop backend {backend!r}; "
-            "expected 'numba-cuda-mlir' or 'numba_cuda_mlir'."
+            "expected 'numba-cuda-mlir', 'numba_cuda_mlir', or 'cutlass'."
         )
 
-    module_name = "cuda.coop.numba_mlir"
     try:
         importlib.import_module(module_name)
     except ModuleNotFoundError as error:
         if error.name != module_name:
             raise
         raise ImportError(
-            "This cuda-coop installation does not include the Numba-CUDA-MLIR "
-            "adapter. Install a cuda-coop version with Numba-CUDA-MLIR support."
+            f"This cuda-coop installation does not include the {label} "
+            f"adapter. Install a cuda-coop version with {label} support."
         ) from error

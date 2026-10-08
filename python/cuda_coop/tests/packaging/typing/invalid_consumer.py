@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+"""Show calls that the public stubs must reject.
+
+mypy checks this file; it is never run. Each expected-error marker names
+an error code for that source line. The reported lines and codes must match
+all markers exactly.
+"""
+
 from __future__ import annotations
 
 import operator
@@ -10,13 +17,13 @@ from typing import cast
 import numpy as np
 
 import cuda.coop as common
-import cuda.coop.numba_mlir as coop
+import cuda.coop.numba_mlir as numba_coop
 
 common.register("numba")  # expected-error: [arg-type]
 
-coop.TempStorage(64, 16)  # expected-error: [call-arg]
+numba_coop.TempStorage(64, 16)  # expected-error: [call-arg]
 common.TempStorage(64, 16)  # expected-error: [call-arg]
-values = coop.ThreadData(items_per_thread=2, dtype=np.int32)
+values = numba_coop.ThreadData(items_per_thread=2, dtype=np.int32)
 common_values = common.ThreadData(items_per_thread=2, dtype=np.int32)
 common_block = common.this_block()
 common_block.rank_as(np.float32)  # expected-error: [arg-type]
@@ -28,14 +35,16 @@ common_block.group_by(2).rank("grid")  # expected-error: [call-overload]
 common.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
 # Test rejected attributes.
 common.StatefulFunction  # expected-error: [attr-defined]  # noqa: B018
-qualified_block = coop.this_block()
+qualified_block = numba_coop.this_block()
 qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
 qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
 qualified_block.count_as(bool)  # expected-error: [arg-type]
-coop.this_grid().sync_aligned()  # expected-error: [misc]
+numba_coop.this_grid().sync_aligned()  # expected-error: [misc]
 qualified_block.group_by(2).sync_aligned()  # expected-error: [misc]
 qualified_block.group_by(2).count("grid")  # expected-error: [call-overload]
-coop.this_warp().group_by(8).rank("cluster")  # expected-error: [call-overload]
+numba_coop.this_warp().group_by(8).rank(  # expected-error: [call-overload]
+    "cluster"
+)
 common.load(  # expected-error: [call-overload]
     common.this_block(),
     object(),
@@ -66,77 +75,77 @@ common.store(  # expected-error: [call-overload]
     common_values,
     algorithm="warp_transpose",
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.load(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     object(),
     values,
     algorithm="warp_transpose",
 )
-coop.load(
-    coop.this_warp(),  # expected-error: [arg-type]
+numba_coop.load(
+    numba_coop.this_warp(),  # expected-error: [arg-type]
     object(),
     values,
-    temp_storage=coop.TempStorage(),
+    temp_storage=numba_coop.TempStorage(),
 )
-coop.load(
-    coop.this_warp().group_by(8),  # expected-error: [arg-type]
+numba_coop.load(
+    numba_coop.this_warp().group_by(8),  # expected-error: [arg-type]
     object(),
     values,
-    temp_storage=coop.TempStorage(),
+    temp_storage=numba_coop.TempStorage(),
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_warp(),
-    object(),
-    values,
-    algorithm=0,
-)
-coop.store(  # expected-error: [call-overload]
-    coop.this_warp(),
-    object(),
-    values,
-    algorithm=True,
-)
-coop.load(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.load(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     object(),
     values,
     algorithm=0,
 )
-coop.store(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.store(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     object(),
     values,
     algorithm=True,
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.load(  # expected-error: [call-overload]
+    numba_coop.this_block(),
+    object(),
+    values,
+    algorithm=0,
+)
+numba_coop.store(  # expected-error: [call-overload]
+    numba_coop.this_block(),
+    object(),
+    values,
+    algorithm=True,
+)
+numba_coop.load(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     object(),
     values,
     algorithm="stripd",
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.load(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     object(),
     values,
     valid_items=1.5,
 )
-coop.load(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.load(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     object(),
     values,
     oob_default=0,
 )
-coop.store(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.store(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     object(),
     values,
     offset="1",
 )
 # Test rejected attributes.
-coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
-coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
-coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
-coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.BlockLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.BlockStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.WarpLoadAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.WarpStoreAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 common.exchange(
     common.this_block(),
     common_values,
@@ -147,42 +156,42 @@ common.shuffle(
     common_values,
     distance=2,  # expected-error: [arg-type]
 )
-coop.exchange(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.exchange(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     values,
     mode="scatter_to_blocked",
 )
-coop.exchange(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.exchange(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     values,
     mode="warp_striped_to_blocked",
 )
-coop.exchange(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.exchange(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     values,
     mode="scatter_to_striped",
-    ranks=coop.ThreadData(items_per_thread=2, dtype=np.int32),
+    ranks=numba_coop.ThreadData(items_per_thread=2, dtype=np.int32),
 )
-coop.shuffle(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.shuffle(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     values,
     mode="offset",
 )
-coop.shuffle(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.shuffle(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     np.int32(1),
     mode="up",
 )
-floating_ranks = coop.ThreadData(items_per_thread=2, dtype=np.float32)
-floating_flags = coop.ThreadData(items_per_thread=2, dtype=np.float32)
-coop.exchange(  # expected-error: [call-overload]
-    coop.this_block(),
+floating_ranks = numba_coop.ThreadData(items_per_thread=2, dtype=np.float32)
+floating_flags = numba_coop.ThreadData(items_per_thread=2, dtype=np.float32)
+numba_coop.exchange(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     values,
     mode="scatter_to_blocked",
     ranks=floating_ranks,
 )
-coop.exchange(  # expected-error: [call-overload]
-    coop.this_block(),
+numba_coop.exchange(  # expected-error: [call-overload]
+    numba_coop.this_block(),
     values,
     mode="scatter_to_striped_flagged",
     ranks=values,
@@ -256,25 +265,29 @@ class BinaryPrefixFunctor:
         return left + right
 
 
-prefix_state = coop.ThreadData(items_per_thread=1, dtype=np.int32)
-stateful_prefix = coop.StatefulFunction(carry_prefix, np.int32)
-stateful_int64_state = coop.StatefulFunction(carry_int64_state, np.int64)
-stateful_float32_value = coop.StatefulFunction(carry_float32_value, np.int32)
-coop.StatefulFunction(
+prefix_state = numba_coop.ThreadData(items_per_thread=1, dtype=np.int32)
+stateful_prefix = numba_coop.StatefulFunction(carry_prefix, np.int32)
+stateful_int64_state = numba_coop.StatefulFunction(carry_int64_state, np.int64)
+stateful_float32_value = numba_coop.StatefulFunction(
+    carry_float32_value, np.int32
+)
+numba_coop.StatefulFunction(
     unary_stateful_prefix,  # expected-error: [arg-type]
     np.int32,
 )
-coop.StatefulFunction(42, np.int32)  # expected-error: [arg-type]
-coop.StatefulFunction(  # expected-error: [misc]
+numba_coop.StatefulFunction(42, np.int32)  # expected-error: [arg-type]
+numba_coop.StatefulFunction(  # expected-error: [misc]
     carry_wrong_return,
     np.int32,
 )
-bad_functor: coop.StatefulFunction[np.int64, np.int32] = coop.StatefulFunction(
-    Float32PrefixFunctor,  # expected-error: [arg-type]
-    np.int64,
+bad_functor: numba_coop.StatefulFunction[np.int64, np.int32] = (
+    numba_coop.StatefulFunction(
+        Float32PrefixFunctor,  # expected-error: [arg-type]
+        np.int64,
+    )
 )
-bad_binary_functor: coop.StatefulFunction[np.int64, np.int32] = (
-    coop.StatefulFunction(
+bad_binary_functor: numba_coop.StatefulFunction[np.int64, np.int32] = (
+    numba_coop.StatefulFunction(
         BinaryPrefixFunctor,  # expected-error: [arg-type]
         np.int64,
     )
@@ -300,65 +313,65 @@ common.sum(  # expected-error: [call-overload]
     common_block,
     np.complex64(1),
 )
-coop.sum(  # expected-error: [call-overload]
+numba_coop.sum(  # expected-error: [call-overload]
     qualified_block,
     np.bool_(True),
 )
-coop.reduce(  # expected-error: [call-overload]
+numba_coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.complex64(1),
     binary_op="sum",
 )
-coop.reduce(  # expected-error: [call-overload]
+numba_coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     binary_op=0,
 )
-coop.sum(  # expected-error: [call-overload]
+numba_coop.sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     algorithm=0,
 )
 complex_values = cast(common.ThreadDataLike[np.complex64], object())
-coop.sum(  # expected-error: [type-var]
+numba_coop.sum(  # expected-error: [type-var]
     qualified_block,
     complex_values,
 )
-coop.sum(  # expected-error: [call-overload]
+numba_coop.sum(  # expected-error: [call-overload]
     qualified_block,
     values,
     valid_items=2,
 )
-coop.sum(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.sum(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     np.int32(1),
     algorithm="raking",
 )
-coop.reduce(  # expected-error: [call-overload]
+numba_coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     binary_op=select_left,
     broadcast=True,
 )
-coop.reduce(  # expected-error: [call-overload]
+numba_coop.reduce(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     binary_op=select_left,
     algorithm="raking_commutative_only",
 )
 # Test rejected attributes.
-coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+numba_coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018
 common.scan(  # expected-error: [call-overload]
     common_block,
     np.int32(1),
     mode=object(),
 )
-coop.scan(  # expected-error: [call-overload]
+numba_coop.scan(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     algorithm=object(),
 )
-coop.inclusive_scan(  # expected-error: [call-overload]
+numba_coop.inclusive_scan(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     scan_op=object(),
@@ -389,27 +402,30 @@ common.scan(  # expected-error: [call-overload]
     mode="exclusive",
     initial_value=np.float64(0),
 )
-coop.exclusive_scan(  # expected-error: [misc]
+numba_coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,
     np.int32(1),
     initial_value=np.float32(0),
 )
-coop.scan(  # expected-error: [call-overload]
+numba_coop.scan(  # expected-error: [call-overload]
     qualified_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
 )
-coop.exclusive_scan(  # expected-error: [misc]
+numba_coop.exclusive_scan(  # expected-error: [misc]
     qualified_block, values, initial_value=np.uint32(0)
 )
-coop.scan(  # expected-error: [call-overload]
+numba_coop.scan(  # expected-error: [call-overload]
     qualified_block, values, mode="exclusive", initial_value=np.int16(0)
 )
-coop.exclusive_scan(  # expected-error: [misc]
+numba_coop.exclusive_scan(  # expected-error: [misc]
     qualified_block,
     np.float32(1),
     initial_value=np.float64(0),
 )
-coop.scan(  # expected-error: [call-overload]
-    coop.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+numba_coop.scan(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
 )
 common.scan(  # expected-error: [call-overload]
     common_block,
@@ -437,61 +453,61 @@ common.scan(  # expected-error: [call-overload]
     mode="inclusive",
     initial_value=np.int32(0),
 )
-coop.exclusive_scan(  # expected-error: [call-overload]
+numba_coop.exclusive_scan(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     scan_op="max",
 )
-coop.scan(
+numba_coop.scan(
     qualified_block,
     values,
     scan_op=np.multiply,  # expected-error: [arg-type]
 )
-coop.exclusive_scan(  # expected-error: [call-overload]
+numba_coop.exclusive_scan(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     scan_op=operator.mul,
 )
-coop.exclusive_scan(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.exclusive_scan(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     np.int32(1),
     scan_op=select_left,
 )
-coop.scan(  # expected-error: [call-overload]
+numba_coop.scan(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     mode="inclusive",
     initial_value=np.int32(0),
 )
-coop.inclusive_sum(
-    coop.this_warp(),  # expected-error: [arg-type]
+numba_coop.inclusive_sum(
+    numba_coop.this_warp(),  # expected-error: [arg-type]
     values,
 )
-coop.inclusive_sum(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.inclusive_sum(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     np.int32(1),
     algorithm="raking",
 )
-coop.inclusive_sum(
+numba_coop.inclusive_sum(
     qualified_block,  # expected-error: [arg-type]
     np.int32(1),
     valid_items=1,
 )
-coop.inclusive_sum(  # expected-error: [call-overload]
+numba_coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     aggregate_output=np.int32(0),
 )
-coop.inclusive_sum(  # expected-error: [call-overload]
+numba_coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.bool_(True),
 )
-coop.inclusive_scan(  # expected-error: [call-overload]
+numba_coop.inclusive_scan(  # expected-error: [call-overload]
     qualified_block,
     np.complex64(1),
     scan_op="max",
 )
-coop.scan(
+numba_coop.scan(
     qualified_block,
     np.int32(1),
     prefix_op=select_left,  # expected-error: [arg-type]
@@ -501,85 +517,85 @@ common.inclusive_sum(  # expected-error: [call-overload]
     np.int32(1),
     prefix_op=prefix_from_aggregate,
 )
-coop.inclusive_sum(
-    coop.this_warp(),  # expected-error: [arg-type]
+numba_coop.inclusive_sum(
+    numba_coop.this_warp(),  # expected-error: [arg-type]
     np.int32(1),
     prefix_op=prefix_from_aggregate,
 )
-coop.exclusive_sum(  # expected-error: [call-overload]
+numba_coop.exclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     prefix_state,
     prefix_op=prefix_from_aggregate,
 )
-coop.exclusive_sum(  # expected-error: [call-overload]
+numba_coop.exclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     prefix_op=stateful_prefix,
 )
-coop.exclusive_sum(  # expected-error: [call-overload]
+numba_coop.exclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     prefix_state,
 )
-coop.exclusive_sum(  # expected-error: [call-overload]
+numba_coop.exclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     prefix_state=prefix_state,
     prefix_op=stateful_prefix,
 )
-coop.inclusive_sum(  # expected-error: [call-overload]
+numba_coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     block_prefix_callback_op=prefix_from_aggregate,
 )
-coop.inclusive_sum(  # expected-error: [call-overload]
+numba_coop.inclusive_sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
-    aggregate_output=coop.ThreadData(items_per_thread=1, dtype=np.int32),
+    aggregate_output=numba_coop.ThreadData(items_per_thread=1, dtype=np.int32),
     prefix_op=prefix_from_aggregate,
 )
-coop.exclusive_scan(  # expected-error: [call-overload]
+numba_coop.exclusive_scan(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     scan_op=select_left,
     initial_value=np.int32(0),
     prefix_op=prefix_from_aggregate,
 )
-coop.inclusive_sum(
+numba_coop.inclusive_sum(
     qualified_block,
     np.int32(1),
     prefix_op=float32_prefix,  # expected-error: [arg-type]
 )
-coop.inclusive_sum(
+numba_coop.inclusive_sum(
     qualified_block,
     np.int32(1),
     prefix_op=float32_return_prefix,  # expected-error: [arg-type]
 )
-coop.inclusive_sum(
+numba_coop.inclusive_sum(
     qualified_block,
     values,
     prefix_op=float32_prefix,  # expected-error: [arg-type]
 )
 bool_prefix_values = cast(common.ThreadDataLike[np.bool_], object())
-coop.inclusive_sum(  # expected-error: [type-var]
+numba_coop.inclusive_sum(  # expected-error: [type-var]
     qualified_block,
     bool_prefix_values,
     prefix_op=lambda aggregate: aggregate,
 )
 complex_prefix_values = cast(common.ThreadDataLike[np.complex64], object())
-coop.inclusive_sum(  # expected-error: [type-var]
+numba_coop.inclusive_sum(  # expected-error: [type-var]
     qualified_block,
     complex_prefix_values,
     prefix_op=lambda aggregate: aggregate,
 )
-coop.exclusive_sum(  # expected-error: [misc]
+numba_coop.exclusive_sum(  # expected-error: [misc]
     qualified_block,
     np.int32(1),
     prefix_state,
     prefix_op=stateful_int64_state,
 )
-coop.exclusive_sum(  # expected-error: [misc]
+numba_coop.exclusive_sum(  # expected-error: [misc]
     qualified_block,
     np.int32(1),
     prefix_state,
@@ -601,13 +617,13 @@ common.merge_sort_keys(
     common.this_grid(),  # expected-error: [arg-type]
     common_values,
 )
-coop.merge_sort_keys(  # expected-error: [call-overload]
+numba_coop.merge_sort_keys(  # expected-error: [call-overload]
     qualified_block, values, descending=True, compare_op=lambda a, b: a < b
 )
-coop.merge_sort_keys(  # expected-error: [call-overload]
+numba_coop.merge_sort_keys(  # expected-error: [call-overload]
     qualified_block, values, compare_op="less"
 )
-coop.merge_sort_pairs(  # expected-error: [call-overload]
+numba_coop.merge_sort_pairs(  # expected-error: [call-overload]
     qualified_block, values, values, oob_default=99
 )
 
@@ -648,13 +664,13 @@ common.topk_max_pairs(
     common_values,
     k="3",  # expected-error: [arg-type]
 )
-coop.topk_min_pairs(
-    coop.this_grid(),  # expected-error: [arg-type]
+numba_coop.topk_min_pairs(
+    numba_coop.this_grid(),  # expected-error: [arg-type]
     values,
     values,
     k=3,
 )
-coop.topk_max_keys(
+numba_coop.topk_max_keys(
     qualified_block,
     values,
     k=3,
@@ -681,12 +697,12 @@ common.discontinuity(  # expected-error: [call-overload]
     common_values,
     valid_items=4,
 )
-coop.discontinuity(  # expected-error: [call-overload]
+numba_coop.discontinuity(  # expected-error: [call-overload]
     qualified_block,
     values,
     mode="unknown",
 )
-coop.adjacent_difference(
+numba_coop.adjacent_difference(
     qualified_block,
     values,
     difference_op="minus",  # expected-error: [arg-type]
@@ -710,9 +726,9 @@ common.histogram(
     bins=32,
     counter_dtype=np.float32,  # expected-error: [arg-type]
 )
-coop.histogram(  # expected-error: [call-overload]
+numba_coop.histogram(  # expected-error: [call-overload]
     qualified_block,
-    coop.ThreadData(items_per_thread=2, dtype=np.int32),
+    numba_coop.ThreadData(items_per_thread=2, dtype=np.int32),
     bins=32,
     algorithm="other",
 )
@@ -737,7 +753,7 @@ common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),
 )
-coop.sum(
+numba_coop.sum(
     qualified_block.group_by(2),  # expected-error: [arg-type]
     np.int32(1),
 )
@@ -745,8 +761,8 @@ common.sum(
     common.this_thread(),  # expected-error: [arg-type]
     np.int32(1),
 )
-coop.sum(  # expected-error: [call-overload]
-    coop.this_warp(),
+numba_coop.sum(  # expected-error: [call-overload]
+    numba_coop.this_warp(),
     values,
     valid_items=7,
 )
@@ -755,7 +771,7 @@ common.sum(
     np.int32(1),
     temp_storage=common.TempStorage(),
 )
-coop.sum(  # expected-error: [call-overload]
+numba_coop.sum(  # expected-error: [call-overload]
     qualified_block,
     np.int32(1),
     temp_storage=0,

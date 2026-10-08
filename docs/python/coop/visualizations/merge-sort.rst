@@ -6,6 +6,9 @@
 Merge Sort
 ==========
 
+This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
+operation support <coop-backend-operation-support>` for CUTLASS availability.
+
 :func:`~cuda.coop.merge_sort_keys` sorts the keys held by a group.
 :func:`~cuda.coop.merge_sort_pairs` carries an associated value with each key,
 such as its original array position. Both return new payloads in

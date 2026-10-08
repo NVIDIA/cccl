@@ -2,18 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Define the common constructor for per-thread values in a GPU kernel.
+"""Construct common per-thread payloads through the active compiler.
 
-A compiler replaces this call with storage for the calling thread. The Python
-body rejects host execution because it cannot provide that device storage.
+Tracing backends implement the constructor with their own storage and
+scalar representation. The common-operation scope marks the new payload
+as common, so an explicit ``dtype`` and later item writes must use the
+common numeric dtypes. Qualified constructors can accept more types and
+convert register values. Numba recognizes the function marker before
+Python execution.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from ..thread_group import CoopCompilerContextRequiredError
-from ._payload import ThreadDataLike
+from ._dispatch import _backend_member, _common_root_operation_scope
+from ._payload import ThreadDataLike, _normalize_alignment
 
 
 def ThreadData(
@@ -25,8 +29,8 @@ def ThreadData(
     """Construct a fixed-size payload owned by the calling thread.
 
     Each thread has its own slots. See :ref:`per-thread payloads
-    <coop-thread-data>` for their relationship to a group tile and the
-    :ref:`blocked and striped layouts <coop-data-layouts>`.
+    <coop-common-payloads>` for their relationship to a group tile and the
+    :ref:`blocked and striped layouts <coop-common-layouts>`.
 
     Parameters
     ----------
@@ -67,11 +71,18 @@ def ThreadData(
         :start-after: # thread-data-example-begin
         :end-before: # thread-data-example-end
         :dedent: 4
+
+    For per-thread payloads in CuTe kernels, see
+    :ref:`CUTLASS Load and Store <coop-cutlass-load-store>`. The qualified
+    :class:`cuda.coop.cutlass.ThreadData` also converts CuTe register values.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.ThreadData must be called from a supported GPU kernel."
-    )
+    alignment = _normalize_alignment(alignment)
+
+    with _common_root_operation_scope("ThreadData"):
+        return _backend_member("ThreadData")(
+            items_per_thread, dtype=dtype, alignment=alignment
+        )
 
 
 __all__ = ["ThreadData", "ThreadDataLike"]
