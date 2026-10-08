@@ -15,12 +15,16 @@ log_vars() {
   done
 }
 
-# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD
+# of the local checkout is used.
 echo "CCCL_TAG (override): ${CCCL_TAG-}";
 if test -n "${CCCL_TAG-}"; then
-    # If CCCL_TAG is defined, fetch it to the local checkout
-    git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
-    cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+    if [[ "${CCCL_RESOLVE_TAG_LOCALLY:-0}" == 1 ]]; then
+        cccl_sha="$(git -C "${cccl_repo}" rev-parse "${CCCL_TAG}^{commit}")";
+    else
+        git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
+        cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+    fi
 else
     cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
 fi
@@ -58,13 +62,18 @@ echo "::group::Setting up clone of CUDA environment with custom CCCL..."
 export PATH="$PWD/cuda/bin:$PATH"
 export CUDA_HOME="$PWD/cuda"
 export CUDA_PATH="$PWD/cuda"
+export CUDACXX="$PWD/cuda/bin/nvcc"
 command -v nvcc
 nvcc --version
 echo "::endgroup::"
 
 echo "::group::Cloning PyTorch..."
-rm -rf pytorch
-git clone "${pytorch_repo}" -b "${pytorch_branch}" --recursive --depth 1
+if [[ "${CCCL_REUSE_THIRD_PARTY_SOURCE:-0}" != 1 || ! -d pytorch/.git ]]; then
+    rm -rf pytorch
+    git clone "${pytorch_repo}" -b "${pytorch_branch}" --recursive --depth 1
+else
+    echo "Reusing PyTorch checkout for baseline comparison."
+fi
 echo "PyTorch HEAD:"
 git -C pytorch log -1 --format=short
 echo "::endgroup::"
@@ -82,7 +91,25 @@ declare -a cmake_args=(
   "-DUSE_NCCL=OFF"
   # Need to define this explicitly, torch's FindCUDA logic adds ancient arches if left undefined:
   "-DTORCH_CUDA_ARCH_LIST=7.5;8.0;9.0;10.0;12.0"
+  "-DCMAKE_CUDA_COMPILER:FILEPATH=${CUDACXX}"
+  "-DCUDA_NVCC_EXECUTABLE:FILEPATH=${CUDACXX}"
+  "-DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_HOME}"
 )
+if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+  # Profile one architecture; newer targets also add per-source GPU images.
+  # Compiling those images can exceed the CI budget before the baseline starts.
+  export TORCH_CUDA_ARCH_LIST=8.0
+  # PyTorch forwards launcher environment variables into CMake with FORCE.
+  unset CMAKE_CUDA_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_C_COMPILER_LAUNCHER
+  export USE_CCACHE=OFF
+  cmake_args+=(
+    "-DTORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}"
+    "-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-"
+    "-DUSE_CCACHE=OFF"
+    "-DCMAKE_CUDA_COMPILER_LAUNCHER="
+    "-DCMAKE_CXX_COMPILER_LAUNCHER="
+  )
+fi
 SCCACHE_NO_DIST_COMPILE=1 cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
 echo "::endgroup::"
 

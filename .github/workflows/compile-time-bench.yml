@@ -15,8 +15,12 @@ on:
         description: "Display name."
         required: true
         type: string
-      gpu:
-        description: "GPU selector."
+      project:
+        description: "Build driver: cccl, pytorch, matx, or rapids."
+        required: true
+        type: string
+      runner:
+        description: "GitHub Actions runner label."
         required: true
         type: string
       launch_args:
@@ -28,12 +32,14 @@ on:
         required: true
         type: string
       preset:
-        description: "CMake preset passed to ci/build_compile_time_bench.sh."
-        required: true
+        description: "CCCL CMake preset passed to ci/build_compile_time_bench.sh."
+        required: false
+        default: ""
         type: string
       targets_json:
-        description: "JSON array of build targets."
-        required: true
+        description: "JSON array of build-system targets."
+        required: false
+        default: "[]"
         type: string
       args:
         description: "Extra quoted wrapper args before '--'."
@@ -44,30 +50,16 @@ on:
         description: "JSON object with a 'slices' array for summarize_events.py."
         required: true
         type: string
-      comment:
-        description: "Whether to post a sticky PR comment."
-        required: false
-        default: "true"
-        type: string
-      comment_header:
-        description: "Sticky comment header."
-        required: true
-        type: string
       artifact_retention_days:
         description: "Artifact retention in days."
         required: false
         default: 14
         type: number
-      pr_number:
-        description: "Pull request number for sticky comments."
-        required: false
-        default: ""
-        type: string
 
 jobs:
   run:
     name: "Compile-time: ${{ inputs.name }}"
-    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    runs-on: ${{ inputs.runner }}
     permissions:
       id-token: write
       contents: read
@@ -109,7 +101,8 @@ jobs:
         env:
           CONFIG_ID: ${{ inputs.id }}
           CONFIG_NAME: ${{ inputs.name }}
-          GPU: ${{ inputs.gpu }}
+          PROJECT: ${{ inputs.project }}
+          RUNNER: ${{ inputs.runner }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
           PRESET: ${{ inputs.preset }}
@@ -123,7 +116,8 @@ jobs:
           jq -n \
             --arg id "${CONFIG_ID}" \
             --arg name "${CONFIG_NAME}" \
-            --arg gpu "${GPU}" \
+            --arg project "${PROJECT}" \
+            --arg runner "${RUNNER}" \
             --arg launch_args "${LAUNCH_ARGS}" \
             --arg baseline_ref "${BASELINE_REF}" \
             --arg preset "${PRESET}" \
@@ -131,7 +125,8 @@ jobs:
             '{
               id: $id,
               name: $name,
-              gpu: $gpu,
+              project: $project,
+              runner: $runner,
               launch_args: $launch_args,
               baseline_ref: $baseline_ref,
               preset: $preset,
@@ -153,9 +148,10 @@ jobs:
           AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
           BASELINE_REF: ${{ inputs.baseline_ref }}
           CONFIG_ID: ${{ inputs.id }}
-          GPU_NAME: ${{ inputs.gpu }}
+          GH_TOKEN: ${{ github.token }}
           LAUNCH_ARGS: ${{ inputs.launch_args }}
           PRESET: ${{ inputs.preset }}
+          PROJECT: ${{ inputs.project }}
           SLICES_PATH: ${{ steps.inputs.outputs.slices }}
           TARGETS_PATH: ${{ steps.inputs.outputs.targets }}
           WRAPPER_ARGS: ${{ inputs.args }}
@@ -163,7 +159,8 @@ jobs:
           ci_script="${RUNNER_TEMP}/compile-time-ci-${CONFIG_ID}.sh"
           artifact_root="compile-time-artifacts/${CONFIG_ID}"
           build_infix="compile-time-${CONFIG_ID}"
-          report_root="build/${build_infix}/${PRESET}/compile_time"
+          report_name="${PRESET:-${PROJECT}}"
+          report_root="build/${build_infix}/${report_name}/compile_time"
           mkdir -p "${artifact_root}"
 
           cat <<"EOF" > "${ci_script}"
@@ -189,8 +186,11 @@ jobs:
 
           declare -a bench_args=(
             -baseline-ref "${BASELINE_REF}"
-            -preset "${PRESET}"
+            -project "${PROJECT}"
           )
+          if [[ -n "${PRESET}" ]]; then
+            bench_args+=(-preset "${PRESET}")
+          fi
           for target in "${targets[@]}"; do
             bench_args+=(-target "${target}")
           done
@@ -201,9 +201,10 @@ jobs:
           EOF
           chmod +x "${ci_script}"
 
-          GPU_ARGS=""
-          if [[ ! "${LAUNCH_ARGS}" =~ "--gpus" ]]; then
-            GPU_ARGS="--gpus all"
+          RAPIDS_LIBS="$(jq -r 'join(" ")' "${TARGETS_PATH}")"
+          declare -a container_command=(/compile-time-ci.sh)
+          if [[ "${PROJECT}" == "rapids" ]]; then
+            container_command=(./ci/rapids/rapids-entrypoint.sh /compile-time-ci.sh)
           fi
 
           {
@@ -214,7 +215,7 @@ jobs:
 
           rc=0
           .devcontainer/launch.sh \
-            -d ${LAUNCH_ARGS} ${GPU_ARGS} \
+            -d ${LAUNCH_ARGS} \
             --env "AWS_ROLE_ARN=" \
             --env "AWS_REGION=${AWS_REGION:-}" \
             --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
@@ -222,27 +223,18 @@ jobs:
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "BASELINE_REF=${BASELINE_REF}" \
             --env "CCCL_BUILD_INFIX=${build_infix}" \
+            --env "CI=true" \
+            --env "GH_TOKEN=${GH_TOKEN}" \
             --env "PRESET=${PRESET}" \
+            --env "PROJECT=${PROJECT}" \
+            --env "RAPIDS_LIBS=${RAPIDS_LIBS}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
             --volume "${ci_script}:/compile-time-ci.sh" \
             --volume "${TARGETS_PATH}:/compile-time-targets.json" \
             --volume "${SLICES_PATH}:/compile-time-slices.json" \
-            -- /compile-time-ci.sh \
+            -- "${container_command[@]}" \
             || rc=$?
-
-          if [[ -d "${report_root}/event_reports" ]]; then
-            cp -a "${report_root}/event_reports" "${artifact_root}/reports"
-          fi
-          if [[ -d "${report_root}/raw_traces" ]]; then
-            cp -a "${report_root}/raw_traces" "${artifact_root}/traces-current"
-          fi
-          if [[ -d "${report_root}/baseline_raw_traces" ]]; then
-            cp -a "${report_root}/baseline_raw_traces" "${artifact_root}/traces-baseline"
-          fi
-          if [[ -d "${report_root}/perfetto_traces" ]]; then
-            cp -a "${report_root}/perfetto_traces" "${artifact_root}/perfetto"
-          fi
 
           exit "${rc}"
 
@@ -255,28 +247,38 @@ jobs:
           ARTIFACTS_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts
           CONFIG_PATH: ${{ steps.inputs.outputs.config }}
           RUN_ARTIFACT_ROOT: ${{ steps.run-bench.outputs.artifact_root }}
+          RUN_REPORT_ROOT: ${{ steps.run-bench.outputs.report_root }}
+          RUN_OUTCOME: ${{ steps.run-bench.outcome }}
         run: |
           artifact_root="${RUN_ARTIFACT_ROOT}"
           if [[ -z "${artifact_root}" ]]; then
             artifact_root="compile-time-artifacts/${CONFIG_ID}"
           fi
-          summary_json="${artifact_root}/reports/summary.json"
+          summary_json=""
+          if [[ -n "${RUN_REPORT_ROOT}" ]]; then
+            summary_json="${RUN_REPORT_ROOT}/event_reports/summary.json"
+          fi
           comment_md="${artifact_root}/comment.md"
           mkdir -p "${artifact_root}"
-          if [[ -f "${summary_json}" ]]; then
+          if [[ -n "${summary_json}" && -f "${summary_json}" ]]; then
             ci/compile_time/render_pr_comment.py \
               --summary "${summary_json}" \
               --config "${CONFIG_PATH}" \
               --artifacts-url "${ARTIFACTS_URL}" \
+              --run-outcome "${RUN_OUTCOME}" \
+              --fragment \
               -o "${comment_md}"
           else
+            escaped_config_name="$(jq -rn --arg value "${CONFIG_NAME}" '$value | @html')"
             cat > "${comment_md}" <<EOF
-          <!-- cccl-compile-time-bench: ${CONFIG_ID} -->
-          ## ⚠️ CCCL compile-time benchmark comparison: ${CONFIG_NAME}
+          <details>
+          <summary><strong>⚠️ ${escaped_config_name}</strong></summary>
 
           Compile-time benchmark reporting did not produce a summary manifest.
 
           **Artifacts:** [reports and traces](${ARTIFACTS_URL})
+
+          </details>
           EOF
           fi
           echo "comment=${comment_md}" >> "${GITHUB_OUTPUT}"
@@ -289,39 +291,39 @@ jobs:
           cat "${COMMENT_PATH}" >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload compile-time report artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-reports
-          path: compile-time-artifacts/${{ inputs.id }}/reports
+          path: ${{ steps.run-bench.outputs.report_root }}/event_reports
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload current trace artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-traces-current
-          path: compile-time-artifacts/${{ inputs.id }}/traces-current
+          path: ${{ steps.run-bench.outputs.report_root }}/raw_traces
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload baseline trace artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-traces-baseline
-          path: compile-time-artifacts/${{ inputs.id }}/traces-baseline
+          path: ${{ steps.run-bench.outputs.report_root }}/baseline_raw_traces
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload Perfetto trace artifacts
-        if: ${{ always() }}
+        if: ${{ always() && steps.run-bench.outputs.report_root != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: compile-time-${{ inputs.id }}-perfetto
-          path: compile-time-artifacts/${{ inputs.id }}/perfetto
-          if-no-files-found: warn
+          path: ${{ steps.run-bench.outputs.report_root }}/perfetto_traces
+          if-no-files-found: ignore
           retention-days: ${{ inputs.artifact_retention_days }}
 
       - name: Upload compile-time comment artifact
@@ -332,32 +334,3 @@ jobs:
           path: compile-time-artifacts/${{ inputs.id }}/comment.md
           if-no-files-found: warn
           retention-days: ${{ inputs.artifact_retention_days }}
-
-  comment:
-    name: "Compile-time comment: ${{ inputs.name }}"
-    needs: run
-    # Temporarily disable posting compile-time results to pull requests.
-    if: ${{ false && always() && inputs.comment == 'true' && inputs.pr_number != '' }}
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      pull-requests: write
-    steps:
-      - name: Download compile-time comment artifact
-        id: download-comment
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: compile-time-${{ inputs.id }}-comment
-          path: compile-time-comment
-
-      - name: Comment on PR
-        if: ${{ steps.download-comment.outcome == 'success' && hashFiles('compile-time-comment/comment.md') != '' }}
-        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db  # v2.9.2
-        with:
-          github_token: ${{ github.token }}
-          header: ${{ inputs.comment_header }}
-          number: ${{ inputs.pr_number }}
-          path: compile-time-comment/comment.md
-          hide_and_recreate: true
-          hide_classify: "OUTDATED"

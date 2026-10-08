@@ -9,12 +9,29 @@ import os
 import re
 import sys
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass, field, replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
 DEFAULT_SCOPE_FILTER = r"(^|[^A-Za-z0-9_:])(?:::)?(?:cuda|thrust|cub|cccl)::"
+GROUP_BY_EVENT = "event"
+GROUP_BY_PRIMARY_TEMPLATE = "primary-template"
+GROUP_BY_CHOICES = (GROUP_BY_EVENT, GROUP_BY_PRIMARY_TEMPLATE)
+TEMPLATE_INSTANTIATION_EVENT_NAMES = frozenset(
+    {
+        "Instantiating Template Class",
+        "Instantiating Template Function",
+    }
+)
+TEMPLATE_INSTANTIATION_FILTER_LABELS = frozenset(
+    {
+        "template-instantiation",
+        "template-class-instantiation",
+        "template-function-instantiation",
+    }
+)
 SYMBOL_SCOPE_EVENT_NAMES = {
     "Scanning Function Body",
     "Instantiating Template Class",
@@ -42,6 +59,7 @@ class ReportConfig:
     exclusive_scope: str
     sort_by: str
     top_n: int
+    group_by: str
     tag: str | None
     threshold_us: float = 0.0
     scope_filter: re.Pattern[str] | None = None
@@ -140,6 +158,7 @@ class SliceWork:
     exclusive_scope: str
     sort_by: str
     top_n: int
+    group_by: str
     tag: str | None
     threshold_us: float
     scope_filter: str
@@ -207,27 +226,25 @@ def generated_tu_input(tu: str) -> str:
 
 
 def normalize_detail(detail: str, repo_root: Path) -> str:
-    detail_path = Path(detail)
-    if detail_path.is_absolute():
-        try:
-            detail = detail_path.resolve(strict=False).relative_to(repo_root).as_posix()
-        except ValueError:
-            pass
-
-    return detail
+    # Template names are not paths. Path() on 100kB specializations is expensive.
+    if not detail or not os.path.isabs(detail):
+        return detail
+    try:
+        return Path(detail).resolve(strict=False).relative_to(repo_root).as_posix()
+    except ValueError:
+        return detail
 
 
 def normalize_project_file(detail: str, repo_root: Path) -> str | None:
-    detail_path = Path(detail)
-    if not detail_path.is_absolute():
+    if not detail or not os.path.isabs(detail):
         return None
 
     try:
-        detail = detail_path.resolve(strict=False).relative_to(repo_root).as_posix()
+        detail = Path(detail).resolve(strict=False).relative_to(repo_root).as_posix()
     except ValueError:
         return None
 
-    if detail.startswith("build/"):
+    if "build" in Path(detail).parts:
         return None
     return detail
 
@@ -251,6 +268,15 @@ def strip_angle_arguments(symbol: str) -> str:
     return "".join(stripped)
 
 
+def leading_untemplated_name(symbol: str) -> str:
+    cut = len(symbol)
+    for token in ("<", "("):
+        index = symbol.find(token)
+        if index != -1:
+            cut = min(cut, index)
+    return symbol[:cut].strip()
+
+
 def symbol_name_prefix(symbol: str) -> str:
     before_parameters = strip_angle_arguments(symbol).split("(", 1)[0].strip()
     if not before_parameters:
@@ -260,6 +286,15 @@ def symbol_name_prefix(symbol: str) -> str:
         prefix_start = before_parameters.rfind(" ", 0, operator_scope)
         return before_parameters[prefix_start + 1 :]
     return before_parameters.rsplit(None, 1)[-1]
+
+
+def primary_template_name(detail: str) -> str:
+    # NVCC supplies the primary template before the bracketed specialization.
+    # Prefer that label over attempting to parse arbitrary C++ symbol syntax.
+    reported_primary, separator, _ = detail.partition(" [")
+    if separator and reported_primary.strip():
+        return reported_primary.strip()
+    return symbol_name_prefix(detail)
 
 
 def itanium_nested_scope_candidates(symbol: str) -> list[str]:
@@ -296,44 +331,84 @@ def itanium_nested_scope_candidates(symbol: str) -> list[str]:
 def symbol_scope_candidates(event: TraceEvent) -> list[str]:
     if event.name not in SYMBOL_SCOPE_EVENT_NAMES or not event.detail:
         return []
+    return list(_scope_candidate_texts(event.detail))
 
-    candidates = [symbol_name_prefix(event.detail)]
-    if " [" in event.detail:
-        _, bracketed_symbol = event.detail.split(" [", 1)
-        candidates.append(symbol_name_prefix(bracketed_symbol.rstrip("]")))
 
-    for candidate in list(candidates):
-        candidates.extend(itanium_nested_scope_candidates(candidate))
-
-    return candidates
+def _scope_candidate_texts(detail: str) -> Iterator[str]:
+    # NVCC template events are "primary [specialization]". Prefer the primary
+    # label and the untemplated specialization name; do not strip angle
+    # arguments from the specialization (often 10k–100kB).
+    primary, separator, rest = detail.partition(" [")
+    primary = primary.strip()
+    if primary:
+        yield primary
+        if "<" in primary or "(" in primary:
+            prefix = symbol_name_prefix(primary)
+            if prefix and prefix != primary:
+                yield prefix
+        yield from itanium_nested_scope_candidates(primary)
+    if separator:
+        specialization = rest[:-1] if rest.endswith("]") else rest
+        leading = leading_untemplated_name(specialization)
+        if leading:
+            yield leading
+            yield from itanium_nested_scope_candidates(leading)
+        return
+    prefix = symbol_name_prefix(detail)
+    if prefix:
+        yield prefix
+        yield from itanium_nested_scope_candidates(
+            detail if detail.startswith("_Z") else prefix
+        )
 
 
 def matches_scope_filter(
-    event: TraceEvent, scope_filter: re.Pattern[str] | None
+    event: TraceEvent,
+    scope_filter: re.Pattern[str] | None,
+    cache: dict[str, bool] | None = None,
 ) -> bool:
     if scope_filter is None or event.name not in SYMBOL_SCOPE_EVENT_NAMES:
         return True
-    return any(
-        scope_filter.search(candidate) for candidate in symbol_scope_candidates(event)
-    )
+    if cache is not None:
+        cached = cache.get(scope_filter.pattern)
+        if cached is not None:
+            return cached
+    matched = False
+    if event.detail:
+        matched = any(
+            scope_filter.search(candidate)
+            for candidate in _scope_candidate_texts(event.detail)
+        )
+    if cache is not None:
+        cache[scope_filter.pattern] = matched
+    return matched
 
 
-def matches_report_config(event: TraceEvent, config: ReportConfig) -> bool:
+def matches_report_config(
+    event: TraceEvent,
+    config: ReportConfig,
+    scope_cache: dict[str, bool] | None = None,
+) -> bool:
     return config.spec.matches(event) and matches_scope_filter(
-        event, config.scope_filter
+        event, config.scope_filter, scope_cache
     )
 
 
 def report_event_identity(
-    event: TraceEvent, config: ReportConfig, repo_root: Path
+    event: TraceEvent,
+    config: ReportConfig,
+    repo_root: Path,
+    scope_cache: dict[str, bool] | None = None,
 ) -> tuple[str, str] | None:
-    if not matches_report_config(event, config):
+    if not matches_report_config(event, config, scope_cache):
         return None
 
     if config.spec.label == "file-processing":
         event_key = normalize_project_file(event.detail, repo_root)
         if event_key is None:
             return None
+    elif config.group_by == GROUP_BY_PRIMARY_TEMPLATE:
+        event_key = primary_template_name(event.detail)
     else:
         event_key = event.key(repo_root)
 
@@ -341,9 +416,12 @@ def report_event_identity(
 
 
 def filter_event_identity(
-    event: TraceEvent, config: ReportConfig, repo_root: Path
+    event: TraceEvent,
+    config: ReportConfig,
+    repo_root: Path,
+    scope_cache: dict[str, bool] | None = None,
 ) -> tuple[str, str] | None:
-    if not matches_report_config(event, config):
+    if not matches_report_config(event, config, scope_cache):
         return None
     return general_event_identity(event, repo_root)
 
@@ -622,6 +700,40 @@ def event_exclusive_us(event: TraceEvent, config: ReportConfig) -> int:
     return max(0, event.inclusive_us - merged_interval_duration(child_intervals))
 
 
+def add_side_stats_for_requests(
+    stats_by_slice: dict[str, dict[tuple[str, str], EventStats]],
+    requests: list[SliceRequest],
+    events: list[TraceEvent],
+    trace_path_str: str,
+    repo_root: Path,
+) -> None:
+    exclusive_all_us: dict[int, int] = {}
+    for event in events:
+        scope_cache: dict[str, bool] = {}
+        event_id = id(event)
+        for request in requests:
+            identity = report_event_identity(
+                event, request.config, repo_root, scope_cache
+            )
+            if identity is None:
+                continue
+            if request.config.exclusive_scope == "all":
+                exclusive_us = exclusive_all_us.get(event_id)
+                if exclusive_us is None:
+                    exclusive_us = event_exclusive_us(event, request.config)
+                    exclusive_all_us[event_id] = exclusive_us
+            else:
+                exclusive_us = event_exclusive_us(event, request.config)
+            add_event_stats(
+                stats_by_slice[request.config.slice_id],
+                identity,
+                event.inclusive_us,
+                exclusive_us,
+                trace_path_str,
+                event.root_tu,
+            )
+
+
 def collect_trace_stats(
     stats: dict[tuple[str, str], EventStats],
     events: list[TraceEvent],
@@ -630,10 +742,13 @@ def collect_trace_stats(
     *,
     report_config: ReportConfig,
     exclusive_config: ReportConfig,
+    allowed_report_ids: set[tuple[str, str]] | None = None,
 ) -> None:
     for event in events:
         identity = report_event_identity(event, report_config, repo_root)
         if identity is None:
+            continue
+        if allowed_report_ids is not None and identity not in allowed_report_ids:
             continue
         add_event_stats(
             stats,
@@ -645,24 +760,6 @@ def collect_trace_stats(
         )
 
 
-def side_stats_for_events(
-    events: list[TraceEvent],
-    trace_path: str,
-    repo_root: Path,
-    config: ReportConfig,
-) -> dict[tuple[str, str], EventStats]:
-    stats: dict[tuple[str, str], EventStats] = {}
-    collect_trace_stats(
-        stats,
-        events,
-        trace_path,
-        repo_root,
-        report_config=config,
-        exclusive_config=config,
-    )
-    return stats
-
-
 def add_event_stats(
     stats: dict[tuple[str, str], EventStats],
     identity: tuple[str, str],
@@ -672,23 +769,17 @@ def add_event_stats(
     root_tu: str,
 ) -> None:
     event_name, event_key = identity
-    event_stats = stats.setdefault(
-        identity, EventStats(event_name=event_name, event_key=event_key)
-    )
-    merge_event_stats(
-        event_stats,
-        EventStats(
-            event_name=event_name,
-            event_key=event_key,
-            event_count=1,
-            total_inclusive_us=inclusive_us,
-            total_exclusive_us=exclusive_us,
-            max_inclusive_us=inclusive_us,
-            max_exclusive_us=exclusive_us,
-            trace_paths={trace_path},
-            root_tus={root_tu},
-        ),
-    )
+    event_stats = stats.get(identity)
+    if event_stats is None:
+        event_stats = EventStats(event_name=event_name, event_key=event_key)
+        stats[identity] = event_stats
+    event_stats.event_count += 1
+    event_stats.total_inclusive_us += inclusive_us
+    event_stats.total_exclusive_us += exclusive_us
+    event_stats.max_inclusive_us = max(event_stats.max_inclusive_us, inclusive_us)
+    event_stats.max_exclusive_us = max(event_stats.max_exclusive_us, exclusive_us)
+    event_stats.trace_paths.add(trace_path)
+    event_stats.root_tus.add(root_tu)
 
 
 def selected_total_us(stats: EventStats, timing: str) -> int:
@@ -735,34 +826,6 @@ def selected_metric_us(stats: EventStats, timing: str, sort_by: str) -> float:
 
 def trace_paths_by_relative_root(trace_dir: Path) -> dict[Path, Path]:
     return {path.relative_to(trace_dir): path for path in iter_trace_paths(trace_dir)}
-
-
-def comparable_child_identities(
-    events: list[TraceEvent],
-    repo_root: Path,
-    config: ReportConfig,
-) -> set[tuple[str, str]]:
-    if config.exclusive_scope == "all":
-        return {general_event_identity(event, repo_root) for event in events}
-    if config.exclusive_scope == "same-filter":
-        return {
-            identity
-            for event in events
-            if (identity := filter_event_identity(event, config, repo_root)) is not None
-        }
-    raise ValueError(f"unknown exclusive scope: {config.exclusive_scope}")
-
-
-def comparable_report_filter(
-    config: ReportConfig,
-    repo_root: Path,
-    comparable_report_ids: set[tuple[str, str]],
-) -> FilterSpec:
-    def matches(event: TraceEvent) -> bool:
-        identity = report_event_identity(event, config, repo_root)
-        return identity is not None and identity in comparable_report_ids
-
-    return replace(config.spec, matches=matches)
 
 
 def comparable_child_filter(
@@ -815,56 +878,64 @@ def merge_comparison_side_stats(
         comparison.matched_trace_paths.update(source_stats.trace_paths)
 
 
-def comparison_side_from_events(
+def comparison_sides_for_requests(
     name: str,
     events: list[TraceEvent],
     repo_root: Path,
-    config: ReportConfig,
-) -> ComparisonSide:
-    report_ids = {
-        identity
-        for event in events
-        if (identity := report_event_identity(event, config, repo_root)) is not None
+    requests: list[SliceRequest],
+) -> dict[str, ComparisonSide]:
+    report_ids_by_slice = {request.config.slice_id: set() for request in requests}
+    child_ids_by_slice: dict[str, set[tuple[str, str]]] = {
+        request.config.slice_id: set() for request in requests
     }
-    child_ids = comparable_child_identities(events, repo_root, config)
-    return ComparisonSide(
-        name=name,
-        repo_root=repo_root,
-        events=events,
-        report_ids=report_ids,
-        child_ids=child_ids,
-    )
+    shared_all_child_ids: set[tuple[str, str]] | None = None
+    if any(request.config.exclusive_scope == "all" for request in requests):
+        shared_all_child_ids = set()
+        for request in requests:
+            if request.config.exclusive_scope == "all":
+                child_ids_by_slice[request.config.slice_id] = shared_all_child_ids
+
+    for event in events:
+        scope_cache: dict[str, bool] = {}
+        if shared_all_child_ids is not None:
+            shared_all_child_ids.add(general_event_identity(event, repo_root))
+        for request in requests:
+            identity = report_event_identity(
+                event, request.config, repo_root, scope_cache
+            )
+            if identity is not None:
+                report_ids_by_slice[request.config.slice_id].add(identity)
+            if request.config.exclusive_scope == "same-filter":
+                child_identity = filter_event_identity(
+                    event, request.config, repo_root, scope_cache
+                )
+                if child_identity is not None:
+                    child_ids_by_slice[request.config.slice_id].add(child_identity)
+
+    return {
+        request.config.slice_id: ComparisonSide(
+            name=name,
+            repo_root=repo_root,
+            events=events,
+            report_ids=report_ids_by_slice[request.config.slice_id],
+            child_ids=child_ids_by_slice[request.config.slice_id],
+        )
+        for request in requests
+    }
 
 
-def comparison_pair_stats(
-    baseline_events: list[TraceEvent],
-    current_events: list[TraceEvent],
+def accumulate_matched_trace_comparison(
+    comparison_stats: dict[tuple[str, str], ComparisonStats],
+    sides: tuple[ComparisonSide, ...],
     rel_path_str: str,
-    baseline_repo_root: Path,
-    current_repo_root: Path,
     config: ReportConfig,
-) -> dict[tuple[str, str], ComparisonStats]:
-    sides = (
-        comparison_side_from_events(
-            "baseline", baseline_events, baseline_repo_root, config
-        ),
-        comparison_side_from_events(
-            "current", current_events, current_repo_root, config
-        ),
-    )
+) -> None:
     comparable_report_ids = set.intersection(*(side.report_ids for side in sides))
     if not comparable_report_ids:
-        return {}
+        return
 
     comparable_child_ids = set.intersection(*(side.child_ids for side in sides))
-    comparison_stats: dict[tuple[str, str], ComparisonStats] = {}
     for side in sides:
-        report_config = replace(
-            config,
-            spec=comparable_report_filter(
-                config, side.repo_root, comparable_report_ids
-            ),
-        )
         exclusive_config = replace(
             config,
             spec=comparable_child_filter(config, side.repo_root, comparable_child_ids),
@@ -879,11 +950,11 @@ def comparison_pair_stats(
             side.events,
             rel_path_str,
             side.repo_root,
-            report_config=report_config,
+            report_config=config,
             exclusive_config=exclusive_config,
+            allowed_report_ids=comparable_report_ids,
         )
         merge_comparison_side_stats(comparison_stats, side.name, side_stats)
-    return comparison_stats
 
 
 def sorted_rows(
@@ -915,14 +986,21 @@ def slugify(value: str) -> str:
     return slug or "report"
 
 
+def report_filename_pieces(config: ReportConfig) -> list[str]:
+    pieces = ["top", str(config.top_n), config.spec.label, config.timing]
+    if config.group_by != GROUP_BY_EVENT:
+        pieces.insert(3, f"grouped-by-{config.group_by}")
+    if config.timing == "exclusive":
+        pieces.append(config.exclusive_scope)
+    pieces.append(f"by-{config.sort_by}")
+    return pieces
+
+
 def default_output_path(
     output_dir: Path,
     config: ReportConfig,
 ) -> Path:
-    pieces = ["top", str(config.top_n), config.spec.label, config.timing]
-    if config.timing == "exclusive":
-        pieces.append(config.exclusive_scope)
-    pieces.append(f"by-{config.sort_by}")
+    pieces = report_filename_pieces(config)
     if config.tag:
         pieces.append(slugify(config.tag))
     return output_dir / ("-".join(slugify(piece) for piece in pieces) + ".csv")
@@ -933,10 +1011,8 @@ def comparison_output_path(
     config: ReportConfig,
     direction: str,
 ) -> Path:
-    pieces = ["top", str(config.top_n), config.spec.label, config.timing]
-    if config.timing == "exclusive":
-        pieces.append(config.exclusive_scope)
-    pieces.extend([f"by-{config.sort_by}", direction])
+    pieces = report_filename_pieces(config)
+    pieces.append(direction)
     if config.tag:
         pieces.append(slugify(config.tag))
     return output_dir / ("-".join(slugify(piece) for piece in pieces) + ".csv")
@@ -1153,11 +1229,20 @@ def report_config(
     exclusive_scope: str,
     sort_by: str,
     top_n: int,
+    group_by: str,
     tag: str | None,
     threshold_s: float,
     scope_filter: re.Pattern[str] | None,
 ) -> ReportConfig:
     spec = resolve_filter(filter_name)
+    if group_by == GROUP_BY_PRIMARY_TEMPLATE:
+        if spec.label not in TEMPLATE_INSTANTIATION_FILTER_LABELS:
+            raise ValueError(
+                "primary-template grouping requires a built-in template "
+                "instantiation filter"
+            )
+    elif group_by != GROUP_BY_EVENT:
+        raise ValueError(f"unsupported group_by '{group_by}'")
     resolved_exclusive_scope = (
         spec.default_exclusive_scope if exclusive_scope == "auto" else exclusive_scope
     )
@@ -1169,6 +1254,7 @@ def report_config(
         exclusive_scope=resolved_exclusive_scope,
         sort_by=sort_by,
         top_n=top_n,
+        group_by=group_by,
         tag=tag,
         threshold_us=threshold_s * 1_000_000.0,
         scope_filter=scope_filter,
@@ -1178,18 +1264,22 @@ def report_config(
 def single_slice_request(
     args: argparse.Namespace, parser: argparse.ArgumentParser
 ) -> SliceRequest:
-    config = report_config(
-        slice_id=slugify(args.tag or args.filter),
-        title=args.tag or resolve_filter(args.filter).description,
-        filter_name=args.filter,
-        timing=args.timing,
-        exclusive_scope=args.exclusive_scope,
-        sort_by=args.sort,
-        top_n=args.top,
-        tag=args.tag,
-        threshold_s=args.threshold,
-        scope_filter=compile_scope_filter(args.scope_filter, parser),
-    )
+    try:
+        config = report_config(
+            slice_id=slugify(args.tag or args.filter),
+            title=args.tag or resolve_filter(args.filter).description,
+            filter_name=args.filter,
+            timing=args.timing,
+            exclusive_scope=args.exclusive_scope,
+            sort_by=args.sort,
+            top_n=args.top,
+            group_by=args.group_by,
+            tag=args.tag,
+            threshold_s=args.threshold,
+            scope_filter=compile_scope_filter(args.scope_filter, parser),
+        )
+    except ValueError as e:
+        parser.error(str(e))
     return SliceRequest(config=config, filter_name=args.filter)
 
 
@@ -1227,6 +1317,7 @@ def slice_request_from_json(
     top_n = require_slice_field(slice_data, "top", path)
     threshold = require_slice_field(slice_data, "threshold", path)
     exclusive_scope = slice_data.get("exclusive_scope", "auto")
+    group_by = slice_data.get("group_by", GROUP_BY_EVENT)
     scope_filter_pattern = slice_data.get("scope_filter", DEFAULT_SCOPE_FILTER)
 
     if not isinstance(title, str) or not title:
@@ -1239,6 +1330,8 @@ def slice_request_from_json(
         raise ValueError(f"{path}: unsupported sort '{sort_by}'")
     if exclusive_scope not in ("auto", "all", "same-filter"):
         raise ValueError(f"{path}: unsupported exclusive_scope '{exclusive_scope}'")
+    if group_by not in GROUP_BY_CHOICES:
+        raise ValueError(f"{path}: unsupported group_by '{group_by}'")
     if isinstance(top_n, bool) or not isinstance(top_n, int) or top_n <= 0:
         raise ValueError(f"{path}: top must be a positive integer")
     if (
@@ -1262,6 +1355,7 @@ def slice_request_from_json(
         exclusive_scope=exclusive_scope,
         sort_by=sort_by,
         top_n=top_n,
+        group_by=group_by,
         tag=None,
         threshold_s=float(threshold),
         scope_filter=compile_scope_filter(scope_filter_pattern, parser),
@@ -1320,6 +1414,7 @@ def slice_work_from_request(request: SliceRequest) -> SliceWork:
         exclusive_scope=config.exclusive_scope,
         sort_by=config.sort_by,
         top_n=config.top_n,
+        group_by=config.group_by,
         tag=config.tag,
         threshold_us=config.threshold_us,
         scope_filter=(
@@ -1335,6 +1430,7 @@ def iter_slice_works(request: SliceRequest) -> list[SliceWork]:
     return works
 
 
+@lru_cache(maxsize=128)
 def config_from_slice_work(work: SliceWork) -> ReportConfig:
     return ReportConfig(
         slice_id=work.slice_id,
@@ -1344,6 +1440,7 @@ def config_from_slice_work(work: SliceWork) -> ReportConfig:
         exclusive_scope=work.exclusive_scope,
         sort_by=work.sort_by,
         top_n=work.top_n,
+        group_by=work.group_by,
         tag=work.tag,
         threshold_us=work.threshold_us,
         scope_filter=re.compile(work.scope_filter) if work.scope_filter else None,
@@ -1367,26 +1464,40 @@ def process_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
             task.current_path,
         )
 
-    both_sides = "baseline" in parsed and "current" in parsed
-    results: dict[str, SliceTraceResult] = {}
-    for work in task.slices:
-        config = config_from_slice_work(work)
-        sides = {
-            side_name: side_stats_for_events(events, path, repo_root, config)
-            for side_name, (events, repo_root, path) in parsed.items()
-        }
-        comparison: dict[tuple[str, str], ComparisonStats] = {}
-        if both_sides:
-            comparison = comparison_pair_stats(
-                parsed["baseline"][0],
-                parsed["current"][0],
+    requests = [
+        SliceRequest(config=config_from_slice_work(work), filter_name=work.filter_name)
+        for work in task.slices
+    ]
+    side_stats: dict[str, dict[str, dict[tuple[str, str], EventStats]]] = {}
+    for side_name, (events, repo_root, path) in parsed.items():
+        stats_by_slice = {request.config.slice_id: {} for request in requests}
+        add_side_stats_for_requests(stats_by_slice, requests, events, path, repo_root)
+        side_stats[side_name] = stats_by_slice
+
+    comparisons: dict[str, dict[tuple[str, str], ComparisonStats]] = {
+        request.config.slice_id: {} for request in requests
+    }
+    if "baseline" in parsed and "current" in parsed:
+        sides_by_slice = [
+            comparison_sides_for_requests(side_name, events, repo_root, requests)
+            for side_name, (events, repo_root, _) in parsed.items()
+        ]
+        for request in requests:
+            sides = tuple(side[request.config.slice_id] for side in sides_by_slice)
+            accumulate_matched_trace_comparison(
+                comparisons[request.config.slice_id],
+                sides,
                 task.rel_path,
-                parsed["baseline"][1],
-                parsed["current"][1],
-                config,
+                request.config,
             )
-        results[work.slice_id] = SliceTraceResult(sides=sides, comparison=comparison)
-    return results
+
+    return {
+        request.config.slice_id: SliceTraceResult(
+            sides={name: side_stats[name][request.config.slice_id] for name in parsed},
+            comparison=comparisons[request.config.slice_id],
+        )
+        for request in requests
+    }
 
 
 def merge_side_stats(
@@ -1486,8 +1597,26 @@ def iter_trace_results(
     # Python 3.11 and newer.
     executor = ProcessPoolExecutor(max_workers=worker_count, mp_context=ctx)
     try:
-        futures = [executor.submit(summarize_trace_task, task) for task in tasks]
-        yield from emit(future.result() for future in as_completed(futures))
+        task_iterator = iter(tasks)
+        pending = set()
+        for _ in range(worker_count):
+            task = next(task_iterator, None)
+            if task is not None:
+                pending.add(executor.submit(summarize_trace_task, task))
+
+        def completed_results() -> Iterator[dict[str, SliceTraceResult]]:
+            while pending:
+                completed, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in completed:
+                    pending.remove(future)
+                    yield future.result()
+                    task = next(task_iterator, None)
+                    if task is not None:
+                        pending.add(executor.submit(summarize_trace_task, task))
+
+        # Keep only one task per worker in flight so completed result maps can
+        # be released as the reducer consumes them.
+        yield from emit(completed_results())
     finally:
         # Cancel traces that have not started so one bad file does not wait
         # for the rest of the queue. Running workers finish on their own.
@@ -1589,6 +1718,7 @@ def run_slice_report(
         "exclusive_scope": config.exclusive_scope,
         "sort": config.sort_by,
         "top": config.top_n,
+        "group_by": config.group_by,
         "threshold_s": config.threshold_us / 1_000_000.0,
         "output_dir": slice_output_dir.as_posix(),
         "children": [],
@@ -1698,8 +1828,38 @@ def run_slice_report(
             f"from {current_trace_count} trace(s) to {report_csv}"
         )
 
-    manifest["children"] = [
-        run_slice_report(
+    return manifest
+
+
+def run_slice_tree(
+    request: SliceRequest,
+    *,
+    aggregates: dict[str, SliceAggregate],
+    matched_trace_count: int,
+    baseline_trace_count: int | None,
+    current_trace_count: int,
+    baseline_dir: Path | None,
+    output_dir: Path,
+    output_csv: Path | None,
+    allow_empty: bool,
+    manifests: list[dict[str, Any]],
+    checkpoint: Callable[[], None],
+) -> None:
+    manifest = run_slice_report(
+        request,
+        aggregates=aggregates,
+        matched_trace_count=matched_trace_count,
+        baseline_trace_count=baseline_trace_count,
+        current_trace_count=current_trace_count,
+        baseline_dir=baseline_dir,
+        output_dir=output_dir,
+        output_csv=output_csv,
+        allow_empty=allow_empty,
+    )
+    manifests.append(manifest)
+    checkpoint()
+    for child in request.children:
+        run_slice_tree(
             child,
             aggregates=aggregates,
             matched_trace_count=matched_trace_count,
@@ -1709,10 +1869,9 @@ def run_slice_report(
             output_dir=output_dir / child.config.slice_id,
             output_csv=None,
             allow_empty=allow_empty,
+            manifests=manifest["children"],
+            checkpoint=checkpoint,
         )
-        for child in request.children
-    ]
-    return manifest
 
 
 def main() -> None:
@@ -1763,6 +1922,15 @@ def main() -> None:
         help=(
             "sort selected timing by total contribution, average event cost, "
             "average per root TU, or max event cost"
+        ),
+    )
+    parser.add_argument(
+        "--group-by",
+        choices=GROUP_BY_CHOICES,
+        default=GROUP_BY_EVENT,
+        help=(
+            "event identity grouping; primary-template aggregates template "
+            "instantiation specializations by NVCC's reported primary template"
         ),
     )
     parser.add_argument(
@@ -1828,16 +1996,6 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--jobs",
-        type=int,
-        default=default_worker_count(),
-        help=(
-            "worker processes used to parse traces (default: min(cpu count, 8)). "
-            "Each worker parses one trace file, or one baseline/current pair, and "
-            "applies every slice before discarding the events. 1 summarizes in-process."
-        ),
-    )
-    parser.add_argument(
         "--repo-root", default=Path(__file__).resolve().parents[2], type=Path
     )
     parser.add_argument(
@@ -1848,6 +2006,16 @@ def main() -> None:
         "--list-filters",
         action="store_true",
         help="print built-in filters and exit",
+    )
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=default_worker_count(),
+        help=(
+            "worker processes used to parse traces (default: min(cpu count, 8)). "
+            "Each worker parses one trace file, or one baseline/current pair, and "
+            "applies all slices before discarding the events."
+        ),
     )
     args = parser.parse_args()
 
@@ -1869,6 +2037,7 @@ def main() -> None:
             (args.timing != parser.get_default("timing"), "--inclusive/--exclusive"),
             (args.top != parser.get_default("top"), "--top"),
             (args.sort != parser.get_default("sort"), "--sort"),
+            (args.group_by != parser.get_default("group_by"), "--group-by"),
             (args.threshold != parser.get_default("threshold"), "--threshold"),
             (
                 args.exclusive_scope != parser.get_default("exclusive_scope"),
@@ -1912,9 +2081,11 @@ def main() -> None:
         if args.slices is not None
         else [single_slice_request(args, parser)]
     )
-
+    works = tuple(work for request in requests for work in iter_slice_works(request))
     manifest = {
         "schema_version": 1,
+        "status": "incomplete",
+        "expected_slice_ids": [work.slice_id for work in works],
         "mode": "comparison" if baseline_dir is not None else "single",
         "trace_dir": trace_dir.as_posix(),
         "baseline_dir": baseline_dir.as_posix() if baseline_dir else None,
@@ -1923,23 +2094,23 @@ def main() -> None:
         "slices": [],
     }
 
-    works = tuple(work for request in requests for work in iter_slice_works(request))
-    tasks, matched_trace_count, baseline_trace_count = trace_tasks_for_slices(
-        trace_dir,
-        baseline_dir,
-        repo_root,
-        baseline_repo_root,
-        works,
-    )
-    aggregates = summarize_trace_tasks(tasks, args.jobs)
-    current_trace_count = sum(task.current_path is not None for task in tasks)
+    summary_json = output_dir / "summary.json"
+    write_json(summary_json, manifest)
 
-    for request in requests:
-        slice_output_dir = (
-            output_dir / request.config.slice_id if multi_slice else output_dir
+    def checkpoint_manifest() -> None:
+        write_json(summary_json, manifest)
+
+    try:
+        tasks, matched_trace_count, baseline_trace_count = trace_tasks_for_slices(
+            trace_dir, baseline_dir, repo_root, baseline_repo_root, works
         )
-        manifest["slices"].append(
-            run_slice_report(
+        aggregates = summarize_trace_tasks(tasks, args.jobs)
+        current_trace_count = sum(task.current_path is not None for task in tasks)
+        for request in requests:
+            slice_output_dir = (
+                output_dir / request.config.slice_id if multi_slice else output_dir
+            )
+            run_slice_tree(
                 request,
                 aggregates=aggregates,
                 matched_trace_count=matched_trace_count,
@@ -1949,11 +2120,24 @@ def main() -> None:
                 output_dir=slice_output_dir,
                 output_csv=output_csv,
                 allow_empty=multi_slice,
+                manifests=manifest["slices"],
+                checkpoint=checkpoint_manifest,
             )
-        )
+    except BaseException as error:
+        manifest["status"] = "failed"
+        manifest["error"] = f"{type(error).__name__}: {error}"
+        try:
+            checkpoint_manifest()
+        except OSError as checkpoint_error:
+            print(
+                f"failed to checkpoint summary manifest: {checkpoint_error}",
+                file=sys.stderr,
+            )
+        raise
 
-    summary_json = output_dir / "summary.json"
-    write_json(summary_json, manifest)
+    manifest["status"] = "complete"
+    manifest.pop("error", None)
+    checkpoint_manifest()
     print(f"wrote summary manifest: {summary_json}")
 
 

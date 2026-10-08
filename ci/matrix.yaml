@@ -1,8 +1,10 @@
 compile_time:
   pull_request:
-    - id: public-headers-gcc13
-      name: Public headers compile-time bench
-      gpu: t4
+    # Compile-time builds need the 500 GB disk on these CPU runners for build outputs and traces.
+    - id: cccl-gcc13
+      name: CCCL compile-time bench
+      project: cccl
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -10,36 +12,122 @@ compile_time:
         - cub.headers.base
         - thrust.cpp.cuda.headers.base
         - libcudacxx.test.public_headers
-      args: "-arch native"
+      args: "-arch 75"
       slices:
-        - id: total-compilation
+        - &compile_time_total_compilation
+          id: total-compilation
           title: TU total compilation
           filter: total-compilation
           timing: inclusive
           sort: total
           top: 15
           threshold: 3.0
-        - id: file-processing
+        - &compile_time_file_processing
+          id: file-processing
           title: Direct file processing
           filter: file-processing
           timing: exclusive
           sort: total
           top: 15
           threshold: 0.2
-        - id: function-bodies
+        - &compile_time_function_bodies
+          id: function-bodies
           title: Function-body parsing
           filter: scanning-function-body
           timing: inclusive
           sort: total
           top: 15
           threshold: 0.25
-        - id: template-instantiation
+        - &compile_time_template_instantiation
+          id: template-instantiation
           title: Template instantiation
           filter: template-instantiation
           timing: inclusive
           sort: total
           top: 15
           threshold: 0.2
+    # Third-party configs run weekly; PRs opt in with the override below or [run-third-party-compile-time-bench].
+    - &compile_time_pytorch
+      id: pytorch-gcc14
+      name: PyTorch compile-time bench
+      project: pytorch
+      runner: linux-amd64-cpu32
+      # CUDA 13.3 PTXAS cannot read the largest PyTorch profiling traces.
+      launch_args: "--config ci/compile_time/pytorch-devcontainer.json"
+      baseline_ref: origin/main
+      args: "-no-prepare-perfetto -summary-jobs 1"
+      slices: &compile_time_third_party_slices
+        - *compile_time_total_compilation
+        - *compile_time_file_processing
+        - *compile_time_function_bodies
+        - *compile_time_template_instantiation
+        - id: primary-template-instantiation
+          title: Template instantiation by primary template
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0.2
+          group_by: primary-template
+    - &compile_time_matx
+      id: matx-gcc14
+      name: MatX compile-time bench
+      project: matx
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
+      baseline_ref: origin/main
+      args: &compile_time_third_party_args "-no-prepare-perfetto"
+      slices: *compile_time_third_party_slices
+    - &compile_time_rapids_cudf
+      id: rapids-cudf
+      name: RAPIDS cuDF compile-time bench
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      args: *compile_time_third_party_args
+      targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
+      slices: *compile_time_third_party_slices
+    - &compile_time_rapids_cuvs
+      id: rapids-cuvs
+      name: RAPIDS cuVS compile-time bench
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      args: *compile_time_third_party_args
+      targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
+      slices: *compile_time_third_party_slices
+    - &compile_time_rapids_cugraph
+      id: rapids-cugraph
+      name: RAPIDS cuGraph compile-time bench
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      args: *compile_time_third_party_args
+      targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
+      slices: *compile_time_third_party_slices
+    - &compile_time_rapids_cuopt
+      id: rapids-cuopt
+      name: RAPIDS cuOpt compile-time bench
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      args: *compile_time_third_party_args
+      targets: [cuopt]
+      slices: *compile_time_third_party_slices
+
+  # Temporary PR coverage: run these weekly configurations without an opt-in tag.
+  # Reset this list to empty before merging.
+  override:
+    - *compile_time_pytorch
+    - *compile_time_matx
+    - *compile_time_rapids_cudf
+    - *compile_time_rapids_cuvs
+    - *compile_time_rapids_cugraph
+    - *compile_time_rapids_cuopt
 
 # Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
 # the author to run the benchmarks when the generated code changed.

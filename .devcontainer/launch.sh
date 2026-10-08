@@ -15,6 +15,7 @@ print_help() {
     echo "  --cuda-ext               Use a docker image with extended CTK libraries."
     echo "  --tidy-ext               Use a docker image with Clang/LLVM development libraries."
     echo "  -H, --host               Specify the host compiler. E.g., gcc12"
+    echo "  --config path            Use a specific devcontainer JSON file in Docker mode."
     echo "  -d, --docker             Launch the development environment in Docker directly without using VSCode."
     echo "  --gpus gpu-request       GPU devices to add to the container ('all' to pass all GPUs)."
     echo "  -e, --env list           Set additional container environment variables."
@@ -70,7 +71,7 @@ parse_options() {
     set -- "${@:1:$#-1}";
 
     local OPTIONS=c:e:H:dhv:
-    local LONG_OPTIONS=cuda:,cuda-ext,tidy-ext,env:,host:,gpus:,volume:,ulimit:,docker,help
+    local LONG_OPTIONS=cuda:,cuda-ext,tidy-ext,config:,env:,host:,gpus:,volume:,ulimit:,docker,help
     # shellcheck disable=SC2155
     local PARSED_OPTIONS="$(getopt -n "$0" -o "${OPTIONS}" --long "${LONG_OPTIONS}" -- "$@")"
 
@@ -103,6 +104,10 @@ parse_options() {
             --tidy-ext)
                 tidy_ext=true
                 shift
+                ;;
+            --config)
+                devcontainer_config="$2"
+                shift 2
                 ;;
             -e|--env)
                 env_vars+=("$1" "$2")
@@ -168,7 +173,7 @@ launch_docker() {
     # `INITIALIZE_COMMANDS`, `MOUNTS`, `REMOTE_USER`, `RUN_ARGS`, and
     # `WORKSPACE_FOLDER` variables
     # shellcheck disable=SC2312,SC1090
-    source <(python3 .devcontainer/launch.py "${path}/devcontainer.json")
+    source <(python3 .devcontainer/launch.py "${devcontainer_config:-${path}/devcontainer.json}")
 
     ###
     # Worktree support
@@ -350,7 +355,17 @@ main() {
     set -- "${unparsed[@]}";
 
     # If no CTK/Host compiler are provided, just use the default environment
-    if [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
+    if [[ -n ${devcontainer_config:-} ]]; then
+        if ! ${docker_mode:-false} || [[ -n ${cuda_version:-} || -n ${host_compiler:-} ]]; then
+            echo "--config requires Docker mode and cannot be combined with --cuda or --host" >&2
+            exit 2
+        fi
+        if [[ ! -f "${devcontainer_config}" ]]; then
+            echo "Devcontainer configuration ${devcontainer_config} does not exist" >&2
+            exit 1
+        fi
+        path="$(dirname "${devcontainer_config}")"
+    elif [[ -z ${cuda_version:-} ]] && [[ -z ${host_compiler:-} ]]; then
         path=".devcontainer"
     else
         if [[ -z ${cuda_version:-} ]]; then

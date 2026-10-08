@@ -283,6 +283,7 @@ CCCL's CI is built on GitHub Actions and relies on a dynamically generated job m
 * **`ci/matrix.yaml`**
 
   * Declares build and test jobs for `pull_request`, `nightly`, and `weekly` workflows.
+  * `compile_time.override` temporarily selects compile-time benchmark configurations for PRs and enables third-party comparisons without a commit tag. Reset it to empty before merging.
   * Pull request (PR) runs typically spawn ~250 jobs.
   * To reduce overhead, you can add an override matrix in `workflows.override`. This limits the PR CI run to a targeted subset of jobs. Overrides are recommended when:
     * Changes touch high-dependency areas (e.g. top-level CI/devcontainers, libcudacxx, thrust, CUB). See `ci/inspect_changes.py` for dependency information.
@@ -328,15 +329,16 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
 * `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
+* `[run-third-party-compile-time-bench]`: Run the weekly comparisons against the preceding scheduled weekly run for MatX, PyTorch, and RAPIDS on a PR for testing.
 * `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.
 * `[skip-rapids]`: Skip building the RAPIDS third-party smoke test.
 
-> ⚠️ All of these tags block merging until removed and a full CI run (with no overrides) succeeds.
+> ⚠️ Skip tags and `[bench-only]` block merging until removed and a full CI run succeeds.
 
-Use these tags for early iterations to save resources. Remove them before review/merge.
+Use skip tags for early iterations to save resources. Remove them before review/merge.
 
 ---
 

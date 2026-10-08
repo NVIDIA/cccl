@@ -30,22 +30,30 @@ Tag reference
      - The documentation verification build.
      - Yes
    * - ``[skip-tpt]`` / ``[skip-third-party-testing]``
-     - All third-party canary builds (MatX, PyTorch, RAPIDS).
+     - All third-party canary and compile-time benchmark builds (MatX, PyTorch, RAPIDS).
      - Yes
    * - ``[skip-rapids]``
-     - RAPIDS canary builds only.
+     - RAPIDS canary and compile-time benchmark builds only.
      - Yes
    * - ``[skip-matx]``
-     - MatX canary builds only.
+     - MatX canary and compile-time benchmark builds only.
      - Yes
    * - ``[skip-pytorch]``
-     - PyTorch canary builds only.
+     - PyTorch canary and compile-time benchmark builds only.
+     - Yes
+   * - ``[skip-compile-time-bench]``
+     - All compile-time benchmark jobs on a PR.
      - Yes
    * - ``[bench-only]``
      - Equivalent to ``[skip-matrix][skip-vdc][skip-docs][skip-tpt]``.
      - Yes
 
 ``[skip-tpt]`` and ``[skip-third-party-testing]`` are aliases for the same tag.
+To run the weekly MatX, PyTorch, and RAPIDS compile-time jobs on a PR, add
+``[run-third-party-compile-time-bench]`` to the last commit message. This opt-in
+tag does not suppress CI jobs or block merging. Skip tags still take precedence.
+Alternatively, select the configurations in ``compile_time.override`` in
+``ci/matrix.yaml`` for temporary PR coverage, then reset that list before merge.
 
 ``[bench-only]`` shorthand
 --------------------------

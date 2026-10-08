@@ -173,11 +173,17 @@ def count_warnings(slice_data: dict[str, Any]) -> int:
     )
 
 
+def count_slices(slice_data: dict[str, Any]) -> int:
+    return 1 + sum(count_slices(child) for child in slice_data.get("children", []))
+
+
 def render_comment(
     summary: dict[str, Any],
     config: dict[str, Any],
     *,
     artifacts_url: str,
+    fragment: bool = False,
+    run_outcome: str = "",
 ) -> str:
     config_id = str(config["id"])
     slices = summary.get("slices", [])
@@ -187,36 +193,93 @@ def render_comment(
     worse_count = sum(count_rows(slice_data, "worse") for slice_data in slices)
     better_count = sum(count_rows(slice_data, "better") for slice_data in slices)
     warning_count = sum(count_warnings(slice_data) for slice_data in slices)
-    result = (
-        f"**Result:** {worse_count} regression row(s), "
-        f"{better_count} improvement row(s) above threshold."
-    )
+    completed_slice_count = sum(count_slices(slice_data) for slice_data in slices)
+    report_incomplete = summary.get("status", "complete") != "complete"
+    run_incomplete = bool(run_outcome and run_outcome != "success")
+    if report_incomplete:
+        result = (
+            "**Result:** Report generation failed; completed results may be partial."
+        )
+        if summary.get("error"):
+            result += f" Error: {md_code_span(str(summary['error']))}."
+    elif run_incomplete:
+        result = (
+            f"**Result:** Benchmark step ended with {md_code_span(run_outcome)}; "
+            "reports may be partial."
+        )
+    else:
+        result = (
+            f"**Result:** {worse_count} regression row(s), "
+            f"{better_count} improvement row(s) above threshold."
+        )
     if warning_count:
         result += f" {warning_count} warning(s)."
+    summary_result = (
+        f"{worse_count} regression row(s), {better_count} improvement row(s)"
+    )
+    if warning_count:
+        summary_result += f", {warning_count} warning(s)"
+    if report_incomplete or run_incomplete:
+        summary_result = f"report incomplete; {summary_result}"
 
-    lines = [
-        f"<!-- cccl-compile-time-bench: {md_escape(config_id)} -->",
-        f"## ⏱️ CCCL compile-time benchmark comparison: {md_escape(config.get('name', config_id))}",
-        "",
+    run_rows = [
+        f"| Config | {md_code_span(config_id)} |",
+        f"| Project | {md_code_span(config['project'])} |",
+        f"| Baseline | {md_code_span(config.get('baseline_ref', ''))} |",
+    ]
+    if config.get("preset"):
+        run_rows.append(f"| Preset | {md_code_span(config['preset'])} |")
+    if config.get("targets"):
+        run_rows.append(f"| Targets | {md_code_span(', '.join(config['targets']))} |")
+    if run_outcome:
+        run_rows.append(f"| Benchmark step | {md_code_span(run_outcome)} |")
+    run_rows.append(
+        f"| Runner / launch args | {md_code_span(config.get('runner', ''))} / "
+        f"{md_code_span(config.get('launch_args', ''))} |"
+    )
+
+    body = [
         result,
         "",
         "| Run | Value |",
         "| --- | --- |",
-        f"| Config | {md_code_span(config_id)} |",
-        f"| Baseline | {md_code_span(config.get('baseline_ref', ''))} |",
-        f"| Preset | {md_code_span(config.get('preset', ''))} |",
-        f"| Targets | {md_code_span(', '.join(config.get('targets', [])))} |",
-        f"| GPU / launch args | {md_code_span(config.get('gpu', ''))} / {md_code_span(config.get('launch_args', ''))} |",
+        *run_rows,
         "",
         f"**Artifacts:** [reports and traces]({artifacts_url})",
         "",
     ]
     if sections:
-        lines.extend(join_sections(sections))
+        body.extend(join_sections(sections))
+    elif report_incomplete or run_incomplete:
+        if completed_slice_count:
+            body.append(
+                "Completed report slices had no changes above their configured thresholds."
+            )
+        else:
+            body.append("No completed report slices are available.")
     else:
-        lines.append(
+        body.append(
             "No compile-time benchmark changes exceeded the configured thresholds."
         )
+
+    config_name = md_escape(config.get("name", config_id))
+    if fragment:
+        icon = "⚠️" if report_incomplete or run_incomplete else "⏱️"
+        lines = [
+            "<details>",
+            f"<summary><strong>{icon} {config_name}</strong> — {summary_result}</summary>",
+            "",
+            *body,
+            "",
+            "</details>",
+        ]
+    else:
+        lines = [
+            f"<!-- cccl-compile-time-bench: {md_escape(config_id)} -->",
+            f"## ⏱️ CCCL compile-time benchmark comparison: {config_name}",
+            "",
+            *body,
+        ]
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -227,6 +290,16 @@ def main() -> None:
     parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--artifacts-url", required=True)
+    parser.add_argument(
+        "--run-outcome",
+        default="",
+        help="GitHub Actions outcome of the benchmark step, when available.",
+    )
+    parser.add_argument(
+        "--fragment",
+        action="store_true",
+        help="Render a configuration section for inclusion in a combined comment.",
+    )
     parser.add_argument("-o", "--output", type=Path)
     args = parser.parse_args()
 
@@ -234,6 +307,8 @@ def main() -> None:
         load_json(args.summary),
         load_json(args.config),
         artifacts_url=args.artifacts_url,
+        fragment=args.fragment,
+        run_outcome=args.run_outcome,
     )
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
