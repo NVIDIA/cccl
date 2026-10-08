@@ -322,3 +322,28 @@ def check_neighbor_results() -> None:
         coop.discontinuity(block, values, mode="heads_and_tails"),
         tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.int32]],
     )
+
+
+def check_histogram_surface() -> None:
+    """Check that counter selection determines the histogram result type."""
+
+    block = coop.this_block()
+    samples = coop.ThreadData(items_per_thread=3, dtype=np.uint8)
+    assert_type(
+        coop.histogram(block, samples, bins=33), coop.ThreadDataLike[np.int32]
+    )
+    assert_type(
+        coop.histogram(
+            block,
+            samples,
+            bins=65,
+            bins_per_thread=2,
+            counter_dtype=np.uint64,
+            algorithm="sort",
+        ),
+        coop.ThreadDataLike[np.uint64],
+    )
+    assert_type(
+        coop.histogram(block, samples, bins=33, counter_dtype=int),
+        coop.ThreadDataLike[np.int32],
+    )
