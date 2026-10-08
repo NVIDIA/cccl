@@ -42,11 +42,10 @@ runs:
         artifact_dir=$(mktemp -d)
         trap 'rm -rf "$artifact_dir"' EXIT
 
-        # The CLI paginates artifact discovery and extracts each artifact separately.
+        # actions/download-artifact truncates discovery at 1000 artifacts; gh follows all pages.
         gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
           --pattern 'zz_jobs-*' --dir "$artifact_dir"
 
-        # Restore the jobs/<job-id>/ layout expected by the result scripts.
         mkdir -p jobs
         mv "$artifact_dir"/zz_jobs-*/* jobs/
 
