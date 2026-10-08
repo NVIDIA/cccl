@@ -35,11 +35,20 @@ runs:
 
     - name: Download job artifacts
       continue-on-error: true # This may fail if no jobs succeed. The checks below will catch this.
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131  # v7
-      with:
-        path: jobs
-        pattern: zz_jobs-*
-        merge-multiple: true
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        artifact_dir=$(mktemp -d)
+        trap 'rm -rf "$artifact_dir"' EXIT
+
+        # The CLI paginates artifact discovery and extracts each artifact separately.
+        gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+          --pattern 'zz_jobs-*' --dir "$artifact_dir"
+
+        # Restore the jobs/<job-id>/ layout expected by the result scripts.
+        mkdir -p jobs
+        mv "$artifact_dir"/zz_jobs-*/* jobs/
 
     - name: Clean up job artifacts
       continue-on-error: true
