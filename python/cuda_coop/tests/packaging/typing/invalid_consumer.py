@@ -611,6 +611,30 @@ coop.merge_sort_pairs(  # expected-error: [call-overload]
     qualified_block, values, values, oob_default=99
 )
 
+
+# Common radix calls require block groups and integral keys. Striped output
+# and digit-prefix arrays belong to the qualified API; order stays boolean.
+radix_keys = common.ThreadData(items_per_thread=2, dtype=np.int32)
+radix_float = common.ThreadData(items_per_thread=2, dtype=np.float32)
+common.radix_sort_keys(
+    common.this_warp(),  # expected-error: [arg-type]
+    radix_keys,
+)
+common.radix_sort_keys(  # expected-error: [type-var]
+    common.this_block(), radix_float
+)
+common.radix_sort_keys(  # expected-error: [call-arg]
+    common.this_block(), radix_keys, blocked_to_striped=True
+)
+common.radix_rank_keys(  # expected-error: [call-arg]
+    common.this_block(), radix_keys, exclusive_digit_prefix=radix_keys
+)
+common.radix_sort_keys(
+    common.this_block(),
+    radix_keys,
+    descending="yes",  # expected-error: [arg-type]
+)
+
 common.sum(
     common.this_cluster(),  # expected-error: [arg-type]
     np.int32(1),

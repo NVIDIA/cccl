@@ -2,17 +2,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Normalize integer dimensions before CUB block templates are specialized.
+"""Normalize dimensions and boolean options for CUB block specializations.
 
-Template parameters need concrete integers. These helpers accept integral
-scalar types, reject booleans, and produce ordinary Python integers for the
-shared specialization descriptions.
+Integer dimensions accept integral scalar types, reject booleans, and become
+ordinary Python integers. Boolean options accept only native or NumPy boolean
+scalars. These checks keep the two kinds of template option distinct without
+importing a compiler or NumPy.
 """
 
 from __future__ import annotations
 
 from numbers import Integral
 from typing import Any
+
+
+def normalize_boolean_option(name: str, value: Any) -> bool:
+    """Accept native or NumPy boolean scalars without importing NumPy.
+
+    Inspect the type hierarchy to recognize NumPy booleans while keeping the
+    shared core free of that dependency. Reject general truthy values,
+    including integers, so a specialization option cannot silently change its
+    meaning.
+    """
+
+    if isinstance(value, bool):
+        return value
+    for value_type in type(value).__mro__:
+        module_root = (value_type.__module__ or "").split(".", 1)[0]
+        if module_root == "numpy" and value_type.__name__ in {"bool", "bool_"}:
+            return bool(value)
+    raise ValueError(f"{name} must be a boolean")
 
 
 def normalize_positive_int(name: str, value: Any) -> int:

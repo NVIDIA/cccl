@@ -68,6 +68,7 @@ from ._group_planner_support import (
     _GROUP_CONSTRUCTORS,
     _GROUP_METHODS,
     _NAME_COUNTER,
+    _PAYLOAD_DTYPE_LIKE,
     GroupRewriteError,
     _group_operation_name,
     _is_common_root_operation,
@@ -2043,6 +2044,125 @@ class _GroupCallPlanner:
             ir.Assign(ir.Expr.call(function_var, args, (), loc), payload, loc)
         )
         return payload
+
+    def _boxed_group_operand(
+        self,
+        statements: list[Any],
+        *,
+        operation: str,
+        value: ir.Var,
+        scope: Any,
+        loc: ir.Loc,
+    ) -> tuple[ir.Var, bool]:
+        """Represent a scalar as a one-item array for an array-only provider.
+
+        Array-only families call this during group planning to reuse the
+        same provider for scalar input. The Boolean result records the
+        public operand form, so later result construction can restore that
+        form without mistaking a one-item array for a scalar.
+
+        Return an existing array unchanged. For a scalar, append a payload
+        allocation marker and a write to element zero. Return the payload and
+        a flag describing the original operand's array form; the family uses
+        that flag to restore a scalar result after the provider call.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        operation : str
+            Canonical public operation name, used in diagnostics and
+            generated temporary names.
+        value : ir.Var
+            Public operand, either a supported per-thread array or a
+            scalar.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        """
+
+        is_array = self._array_operand_state(operation, value)
+        if is_array:
+            return value, True
+        payload = self._typed_payload_like(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input",
+            prototype=value,
+            is_array=False,
+            dtype_policy=_PAYLOAD_DTYPE_LIKE,
+        )
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{operation}_input_index",
+            value=0,
+        )
+        statements.append(ir.SetItem(payload, index, value, loc))
+        return payload, False
+
+    def _result_value(
+        self,
+        statements: list[Any],
+        *,
+        payload: ir.Var,
+        is_array: bool,
+        scope: Any,
+        loc: ir.Loc,
+        stem: str,
+    ) -> ir.Var:
+        """Recover the public result shape from an internal array payload.
+
+        A family calls this after appending the provider call to its
+        replacement statements. This restores the public result form when
+        the provider itself always writes an array.
+
+        Return an array payload unchanged. For a scalar result, append a read
+        of element zero and return its variable. The caller must supply a
+        one-item payload for that case; this helper does not check its extent.
+
+        Parameters
+        ----------
+        statements : list of IR statements
+            Pending replacement statements, appended to in execution
+            order. The function's blocks are unchanged until the owning
+            planner installs this list.
+        payload : ir.Var
+            Internal provider result array, already defined by earlier
+            pending statements.
+        is_array : bool
+            Whether the public call should return the whole array. False
+            extracts element zero as a scalar.
+        scope : ir.Scope
+            Scope in which to create temporary IR variables.
+        loc : ir.Loc
+            Source location attached to generated statements and
+            diagnostics.
+        stem : str
+            Readable prefix for the index and scalar-result temporary
+            names.
+        """
+
+        if is_array:
+            return payload
+        index = self._value_var(
+            statements,
+            scope=scope,
+            loc=loc,
+            stem=f"{stem}_index",
+            value=0,
+        )
+        result = self._new_var(scope, loc, f"{stem}_scalar")
+        statements.append(
+            ir.Assign(ir.Expr.getitem(payload, index, loc), result, loc)
+        )
+        return result
 
     def _lower_root_operation(
         self, inst: ir.Assign, call: ir.Expr, function: Any, operation: str

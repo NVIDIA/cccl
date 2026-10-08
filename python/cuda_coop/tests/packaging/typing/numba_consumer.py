@@ -639,3 +639,31 @@ def check_merge_sort_surface() -> None:
         ),
         tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
     )
+
+
+def check_radix_surface() -> None:
+    """Check typed Rank and Sort results, including qualified extensions."""
+
+    block = coop.this_block()
+    keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    assert_type(
+        coop.radix_sort_keys(block, keys), coop.ThreadDataLike[np.int32]
+    )
+    assert_type(
+        coop.radix_rank_keys(block, keys, radix_bits=4),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.radix_sort_pairs(block, keys, values),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+    )
+    prefix = coop.ThreadData(items_per_thread=1, dtype=np.int32)
+    assert_type(
+        coop.radix_rank_keys(block, keys, exclusive_digit_prefix=prefix),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.radix_sort_keys(block, np.float64(1.5), blocked_to_striped=True),
+        np.float64,
+    )

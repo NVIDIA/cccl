@@ -125,6 +125,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
+| Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -273,12 +274,13 @@ in the block; static offsets are checked during planning. `valid_items` is
 relative to each group's own tile, not the entire block, and must be uniform
 within that group.
 
-`ThreadGroup` follows the C++ hierarchy query surface. `rank(level="thread")`
-and `count(level="thread")` accept `thread` (or `gpu_thread`), `warp`, `block`,
-`cluster`, and `grid`; mapped groups have narrower limits, described below.
-Results use the unsigned type of the matching C++ hierarchy query: normally
-`uint32`, and `uint64` when the group or queried outer level is the grid.
-Use `rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to
+`ThreadGroup` follows the C++ hierarchy query surface.
+`rank(level="thread")` and `count(level="thread")` accept `thread` (or
+`gpu_thread`), `warp`, `block`, `cluster`, and `grid`; logical and mapped
+`group_by` groups have narrower limits, described below. Results use the
+unsigned type of the matching C++ hierarchy query: normally `uint32`, and
+`uint64` when the group or queried outer level is the grid. Use
+`rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to
 select an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
@@ -302,8 +304,8 @@ group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, Reduce, Scan, and Merge Sort accept an optional caller
-descriptor:
+Block Load, Store, Reduce, Scan, Merge Sort, and Radix Sort accept an optional
+caller descriptor:
 
 ```python
 storage = coop.TempStorage(

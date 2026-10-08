@@ -46,6 +46,7 @@ else:
 
 _NAME_COUNTER = count()
 _PAYLOAD_DTYPE_LIKE = "like"
+_PAYLOAD_DTYPE_INT32 = "int32"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
     _thread_groups.this_warp: _thread_groups.this_warp,
@@ -130,12 +131,13 @@ def _typed_group_payload_like(
     _dtype_policy: str,
     _items_per_thread: int | None = None,
 ) -> Any:
-    """Mark a fresh result payload whose dtype follows an existing value.
+    """Mark a fresh payload whose shape and dtype are resolved later.
 
     The planner emits this callable into IR while payload facts are still
     being inferred. ``_is_array`` selects inherited array extent or one scalar
     item; ``_items_per_thread`` can override that extent. ``_dtype_policy``
-    identifies the supported prototype-dtype rule.
+    either inherits the prototype dtype or fixes int32 for rank and
+    discontinuity-flag output.
 
     The provider rewrite replaces the marker with a local-array allocation
     once dtype and extent are known. Calling it directly is an error; it must
@@ -167,6 +169,7 @@ __all__ = [
     "_GROUP_CONSTRUCTORS",
     "_GROUP_METHODS",
     "_NAME_COUNTER",
+    "_PAYLOAD_DTYPE_INT32",
     "_PAYLOAD_DTYPE_LIKE",
     "GroupRewriteError",
     "_group_operation_name",
