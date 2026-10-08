@@ -1,0 +1,126 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Check how storage policy reaches Load and Store provider requests.
+
+Storage-free algorithms must ignore descriptor options when constructing
+their provider. Scratch-using algorithms must pass the selected reuse
+barrier policy from the common plan to deferred storage registration.
+"""
+
+import pytest
+
+pytest.importorskip("cutlass")
+
+from cutlass import Int32
+
+from cuda.coop._core import ArgumentBinding, StorageOwnership, this_block
+from cuda.coop.cutlass._compiler import _rendering
+from cuda.coop.cutlass._lowering._load_store import _CubLoadStoreRequest
+from tests._group_planning import _load_store, _plan
+
+pytestmark = [pytest.mark.unit, pytest.mark.backend_cutlass]
+
+
+def _request(kind, algorithm, **kwargs):
+    return _CubLoadStoreRequest(
+        _plan(
+            this_block(),
+            _load_store(kind, dtype=Int32, algorithm=algorithm, **kwargs),
+        ),
+        Int32,
+    )
+
+
+@pytest.mark.parametrize("algorithm", ("direct", "striped", "vectorize"))
+@pytest.mark.parametrize("kind", ("load", "store"))
+def test_storage_free_provider_ignores_descriptor_controls(kind, algorithm):
+    implicit = _request(kind, algorithm)
+    explicit = _request(
+        kind,
+        algorithm,
+        storage_ownership=StorageOwnership.CALLER,
+        storage_sharing="exclusive",
+        storage_size_in_bytes=1,
+        storage_alignment=64,
+        storage_auto_sync=False,
+    )
+    assert implicit == explicit
+    assert implicit.symbol_name == explicit.symbol_name
+    source = _rendering.render_bundle_source([implicit])
+    assert source == _rendering.render_bundle_source([explicit])
+    assert not _rendering.bundle_scratch_layout_probes([explicit])
+    for token in ("temp_storage", "TempStorage", "__shared__", "__syncthreads"):
+        assert token not in source
+
+
+@pytest.mark.parametrize("kind", ("load", "store"))
+@pytest.mark.parametrize("sharing", ("shared", "exclusive"))
+@pytest.mark.parametrize(
+    "options, expected_sync",
+    [
+        (None, True),
+        ({}, False),
+        ({"auto_sync": None}, False),
+        ({"auto_sync": False}, False),
+        ({"auto_sync": True}, True),
+    ],
+    ids=("implicit", "default", "none", "manual", "automatic"),
+)
+def test_reuse_barrier_requires_explicit_opt_in(
+    monkeypatch, kind, sharing, options, expected_sync
+):
+    """Pass explicit synchronization policy to storage registration.
+
+    Implicit storage retains automatic reuse barriers. An explicit descriptor
+    uses manual synchronization unless ``auto_sync=True``. Check both the
+    common plan and the registered descriptor so a correct plan cannot hide
+    a lost option at the backend boundary.
+    """
+
+    from cuda.coop._core import (
+        GroupLoadStoreKind,
+        LaunchFacts,
+        SynchronizationScope,
+    )
+    from cuda.coop.cutlass import TempStorage
+    from cuda.coop.cutlass._compiler import _storage
+    from cuda.coop.cutlass._lowering._load_store import (
+        _make_group_load_store_plan,
+        _scratch_arguments,
+    )
+
+    storage = (
+        None if options is None else TempStorage(sharing=sharing, **options)
+    )
+    plan = _make_group_load_store_plan(
+        group=this_block(),
+        launch=LaunchFacts((64, 1, 1)),
+        kind=GroupLoadStoreKind(kind),
+        dtype=Int32,
+        items_per_thread=2,
+        algorithm="transpose",
+        valid_items=ArgumentBinding.omitted(),
+        oob_default=ArgumentBinding.omitted(),
+        offset=ArgumentBinding.omitted(),
+        temp_storage=storage,
+    )
+    expected = (
+        SynchronizationScope.BLOCK
+        if expected_sync
+        else SynchronizationScope.NONE
+    )
+    assert plan.temp_storage.auto_sync is expected_sync
+    assert plan.synchronization.storage_reuse_barrier is expected
+    observed = []
+
+    def register(descriptor, **kwargs):
+        observed.append(descriptor.auto_sync)
+        return (object(), object(), object())
+
+    monkeypatch.setattr(
+        _storage, "register_deferred_temp_storage_event", register
+    )
+    _scratch_arguments(_CubLoadStoreRequest(plan, Int32), storage)
+    assert observed == [expected_sync]

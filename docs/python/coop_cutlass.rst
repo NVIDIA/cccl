@@ -209,7 +209,8 @@ floating-point sum can differ from a sequential CPU sum because the order
 of additions differs.
 
 Load initializes the destination payload in place and returns ``None``.
-Store writes the destination and also returns ``None``. Other
+Store also returns ``None``. Transpose Store algorithms may rearrange the
+input payload; copy values before Store if they are needed later. Other
 operations document their result ownership below. Read results only at the
 positions or threads where the primitive defines them.
 
@@ -244,18 +245,101 @@ Helpers and compile-time values
 
 A ``@cute.jit`` helper called by a ``@cute.kernel`` can contain cooperative
 operations. Its calls are traced in the enclosing kernel's compiler
-environment and contribute to that kernel's provider bundle. Every required
-group member must reach a cooperative call, including when it appears in a
-helper or loop.
+environment and contribute to that kernel's provider bundle and scratch
+requirements. Every required group member must reach a cooperative call,
+including when it appears in a helper or loop.
 
-Payload extents, group mappings, dtype selectors, and algorithm names
-must be known while tracing. Use
+Payload extents, group mappings, dtype selectors, algorithm names, and
+``TempStorage`` constructor options must be known while tracing. Use
 ``cutlass.range_constexpr`` when a loop index selects payload items or
 constructs different static calls. Runtime loops may repeat a fixed call
 shape, and an initialized ``ThreadData`` can pass through CuTe runtime
 branches and loops. Scalar controls such as ``valid_items`` and ``offset``
 may be runtime values where the primitive allows them.
 
+
+Block algorithms
+----------------
+
+The six block algorithms use these register layouts. For linear thread rank
+``t``, item index ``i``, block size ``B``, and ``I`` items per thread, blocked
+layout accesses tile index ``t * I + i``; striped layout accesses
+``t + i * B``.
+
+.. list-table:: Block Load and Store algorithms
+   :header-rows: 1
+
+   * - ``algorithm``
+     - Register layout
+     - Shared scratch
+   * - ``direct``
+     - Blocked
+     - None
+   * - ``striped``
+     - Striped
+     - None
+   * - ``vectorize``
+     - Blocked
+     - None
+   * - ``transpose``
+     - Blocked
+     - Required
+   * - ``warp_transpose``
+     - Blocked
+     - Required
+   * - ``warp_transpose_timesliced``
+     - Blocked
+     - Required
+
+The two warp-transpose block algorithms require a block size divisible by 32.
+``vectorize`` uses vector accesses when the type, item count, and address
+alignment permit them, with direct accesses as a fallback.
+
+Direct, striped, and vectorized Load/Store use no shared scratch and need no
+scratch-reuse barrier, even when passed a ``TempStorage`` descriptor.
+``ThreadData(items_per_thread, alignment=...)`` requests a minimum payload
+alignment; it does not change the logical item layout.
+
+.. _coop-cutlass-storage:
+
+Block scratch and reuse
+-----------------------
+
+Transpose algorithms allocate scratch implicitly unless passed
+``temp_storage``. Construct one ``TempStorage`` inside the kernel to share
+capacity across calls. An omitted size lets the compiler allocate enough
+storage for all uses; an explicit byte capacity must accommodate them.
+``alignment`` is a minimum: the allocation also satisfies each primitive's
+alignment requirements.
+
+Scratch belongs to one kernel execution on one block. It cannot preserve
+application state between blocks or launches. CUTLASS materializes scratch
+through CuTe's shared-memory allocator after tracing has collected the
+requirements; CuTe owns the resulting kernel's shared-memory accounting.
+See :ref:`the allocation walkthrough <coop-cutlass-scratch-allocation>` for
+the compiler path. The Numba-specific ``cuda.shared.array`` coexistence rules
+in the Numba guide describe that compiler's allocation model.
+
+``sharing="shared"`` reuses one slice across call sites. With
+``sharing="exclusive"``, distinct call sites receive separate slices. This
+uses more shared memory to avoid barriers needed solely for cross-call scratch
+reuse when automatic synchronization is disabled. Both policies default to
+``auto_sync=False``. The kernel must call ``storage.sync()`` before reusing
+that storage, including on the next loop iteration. Set ``auto_sync=True`` to
+insert trailing reuse synchronization after each storage-using call. Without
+an explicit descriptor, the compiler manages scratch and its reuse
+synchronization automatically.
+
+The following example transforms eight independent tiles. It uses a shared
+descriptor with ``auto_sync=True`` by default. Its options select exclusive
+slices or manual ``storage.sync()`` calls.
+:download:`Download the storage example
+<../../python/cuda_coop/examples/cutlass/block_storage.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_storage.py
+   :language: python
+   :start-after: docs: start cutlass-block-storage
+   :end-before: docs: end cutlass-block-storage
 
 .. _coop-cutlass-register-payloads:
 
@@ -298,8 +382,10 @@ scratch reuse when those cases occur in the application. For operations with
 undefined tails or nonleader results, compare only the defined outputs.
 
 Compile before timing and synchronize the measured work. ``cute.compile``
-returns a callable you can retain for repeated launches. The first
-compilation includes provider generation, NVRTC, and device linking.
+returns a callable you can retain for repeated launches; the
+:ref:`debugger walkthrough <cuda.coop.cutlass.debugger_walkthrough>` shows
+compilation followed by two executions. The first compilation includes
+provider generation, NVRTC, and device linking.
 
 To inspect generated C++, set ``CUDA_COOP_SOURCE_DUMP_DIR`` before compilation.
 Use the final linked cubin to assess inlining, barriers, shared memory, and
@@ -320,11 +406,7 @@ bound cannot substitute for the actual participating group size. Missing
 required facts cause a compilation error; see :ref:`the compiler launch
 contract <coop-cutlass-exact-launch-facts>`.
 
-More items per thread can increase register use. Check the compiled
-kernel's resource usage as well as its execution time.
-
-
-Load and Store currently support only block groups and the storage-free
-``direct`` algorithm. An explicit ``TempStorage`` descriptor is validated but
-does not change code generation. Warp groups and the striped, vectorize, and
-transpose algorithms are not implemented by this integration.
+More items per thread can increase register use, and additional scratch can
+reduce the number of resident blocks. Check the compiled kernel's resource
+usage as well as its execution time. Use inferred scratch capacity and
+alignment unless the kernel needs an explicit allocation policy.

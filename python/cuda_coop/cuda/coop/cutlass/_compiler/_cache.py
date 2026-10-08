@@ -14,9 +14,12 @@ import stat
 import tempfile
 import threading
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
 
 from cutlass.base_dsl.common import DSLRuntimeError
+
+from ._layout import _validate_storage_layout
+from ._types import ScratchLayout
 
 if os.name == "nt":
     import msvcrt
@@ -35,11 +38,19 @@ _ACTIVE_ARTIFACT_LOCK_FDS: set[int] = set()
 
 @dataclass(frozen=True)
 class _CachedBundle:
-    """Track an LTO-IR path with the size and digest required for reuse."""
+    """Pair an LTO-IR artifact with the layouts from its compilation.
+
+    Size and digest validate the artifact's bytes. ``layouts_by_expression``
+    stores compiler-query results rather than caller keys, so a new trace can
+    reuse the bundle with its own requirement identities.
+    """
 
     path: str
     artifact_size: int | None = None
     artifact_sha256: str | None = None
+    layouts_by_expression: dict[str, ScratchLayout] = field(
+        default_factory=dict
+    )
 
 
 def _acquire_state_lock_before_fork() -> None:
@@ -53,9 +64,9 @@ def _release_state_lock_after_fork() -> None:
 def _reset_locks_after_fork() -> None:
     """Discard inherited lock state without unlocking the parent process.
 
-    Close inherited artifact descriptors and create new thread locks
-    in the child. A parent-owned lock context must not release its
-    lock from the child.
+    Close inherited artifact descriptors and create new thread locks in the
+    child. A parent-owned lock context must not release its lock from the
+    child.
     """
 
     global _ACTIVE_ARTIFACT_LOCK_FDS, _ARTIFACT_LOCKS, _STATE_LOCK
@@ -101,10 +112,10 @@ def _close_artifact_lock_descriptor(descriptor: int) -> None:
 def artifact_lock(path: str, *, scope: str):
     """Serialize one artifact across threads and processes.
 
-    A local reentrant lock protects threads, and a sidecar file lock
-    protects processes. Validate the lock file before use. Only the process
-    that acquired the descriptor may release it, including when a fork
-    occurs inside the context.
+    A local reentrant lock protects threads, and a sidecar file lock protects
+    processes. Validate the lock file before use. Only the process that
+    acquired the descriptor may release it, including when a fork occurs
+    inside the context.
     """
 
     lock_path = f"{path}.lock"
@@ -312,11 +323,11 @@ def _cached_artifact_is_valid(cached: _CachedBundle) -> bool:
 
 
 def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
-    """Reuse only a complete artifact whose contents match its metadata.
+    """Reuse an artifact whose contents and stored layouts pass validation.
 
-    The sidecar must name the requested cache key. Missing,
-    malformed, or stale entries are misses so the caller can rebuild
-    them under the artifact lock.
+    The metadata supplies the expected key, byte size, digest, and layout map.
+    Invalid entries are cache misses. The bundle compiler separately checks
+    that the layout map contains the complete set of requested expressions.
     """
 
     try:
@@ -324,20 +335,44 @@ def load_bundle(path: str, cache_key: str) -> _CachedBundle | None:
             metadata = json.load(stream)
         if metadata["cache_key"] != cache_key:
             return None
-        cached = _CachedBundle(path, metadata["size"], metadata["sha256"])
+        layouts = {
+            expression: _validate_storage_layout(
+                layout["size_in_bytes"],
+                layout["alignment"],
+                description=expression,
+            )
+            for expression, layout in metadata.get("layouts", {}).items()
+        }
+        cached = _CachedBundle(
+            path, metadata["size"], metadata["sha256"], layouts
+        )
         return cached if _cached_artifact_is_valid(cached) else None
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return None
 
 
-def publish_bundle(path: str, cache_key: str, blob: bytes) -> _CachedBundle:
-    """Publish data before metadata under the caller-held artifact lock.
+def publish_bundle(
+    path: str,
+    cache_key: str,
+    blob: bytes,
+    *,
+    layouts_by_expression: dict[str, ScratchLayout] | None = None,
+) -> _CachedBundle:
+    """Publish the image before its digest and layout metadata.
 
-    Each file is replaced atomically. Publishing the size and digest last lets
-    later readers reject an incomplete or mismatched pair.
+    The caller must hold the artifact lock across this operation. Metadata
+    records ``layouts_by_expression`` from the same compilation as ``blob``;
+    readers can then check both the artifact bytes and requested layout set.
+    Each file is replaced atomically. Publishing metadata last lets readers
+    reject an incomplete or mismatched pair.
     """
 
-    cached = _CachedBundle(path, len(blob), hashlib.sha256(blob).hexdigest())
+    cached = _CachedBundle(
+        path,
+        len(blob),
+        hashlib.sha256(blob).hexdigest(),
+        layouts_by_expression or {},
+    )
     write_binary_atomic(path, blob, scope="cuda.coop.cutlass")
     write_text_atomic(
         f"{path}.json",
@@ -346,6 +381,12 @@ def publish_bundle(path: str, cache_key: str, blob: bytes) -> _CachedBundle:
                 "cache_key": cache_key,
                 "size": len(blob),
                 "sha256": cached.artifact_sha256,
+                "layouts": {
+                    expression: asdict(layout)
+                    for expression, layout in (
+                        cached.layouts_by_expression.items()
+                    )
+                },
             },
             sort_keys=True,
         )

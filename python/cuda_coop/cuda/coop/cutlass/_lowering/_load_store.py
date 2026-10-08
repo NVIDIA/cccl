@@ -8,9 +8,12 @@ A request gives both sides the same symbol, template arguments, and runtime
 parameter order. Tracing emits an extern call and queues its immutable
 request; finalization renders and compiles the wrapper as LTO-IR.
 
-DIRECT uses no shared scratch. Load writes a temporary register tensor and
-then replaces the output payload's scalar expressions. Store passes its
-initialized items as scalar arguments without changing the payload.
+DIRECT, STRIPED, and VECTORIZE use no shared scratch. Transpose algorithms add
+a shared-memory address, byte capacity, and barrier flag. Finalization
+supplies the address and capacity after C++ layout probes resolve. Load writes
+a temporary register tensor and then replaces the output payload's scalar
+expressions. Store passes its initialized items as scalar arguments without
+changing the payload.
 """
 
 from __future__ import annotations
@@ -22,7 +25,7 @@ from numbers import Integral, Real
 from typing import Any
 
 from cutlass._mlir.dialects import llvm
-from cutlass.base_dsl.typing import Int32, Int64
+from cutlass.base_dsl.typing import Int32, Int64, Uint32
 from cutlass.cute.ffi import ffi
 
 from cuda.coop._core import (
@@ -55,12 +58,12 @@ _provider_types = _types
 
 @dataclasses.dataclass(frozen=True, eq=False)
 class _CubLoadStoreRequest:
-    """Bind one supported shared plan to a C++ wrapper request.
+    """Bind a supported shared-core plan to its CUB wrapper and scalar ABI.
 
-    Require a storage-free block DIRECT implementation with no
-    returned-result contract or reuse barrier. The plan's artifact key drives
-    equality and the generated symbol, so requests with equivalent
-    specialization contracts share one definition.
+    The plan supplies participation, algorithm arguments, and synchronization
+    policy. Wrapper identity includes that complete contract. Scratch-layout
+    identity depends only on the CUB specialization, so different wrapper
+    policies can reuse a query for the same C++ ``TempStorage`` type.
     """
 
     plan: GroupLoweringPlan
@@ -77,20 +80,27 @@ class _CubLoadStoreRequest:
             raise TypeError("Load/Store requires a shared Algorithm")
         if self.operation.dtype is not self.value_type:
             raise TypeError("Load/Store provider dtype does not match its plan")
-        if self.operation.algorithm is not GroupLoadStoreAlgorithm.DIRECT:
-            raise NotImplementedError("CUTLASS Load/Store supports only DIRECT")
         if self.plan.result is not None:
             raise ValueError(
                 "Load/Store operates in place and has no result contract"
             )
-        if self.plan.temp_storage.ownership is not StorageOwnership.NONE:
-            raise ValueError("DIRECT Load/Store requires a storage-free plan")
-        if (
+        if not self.uses_scratch and (
             self.plan.synchronization.storage_reuse_barrier
             is not SynchronizationScope.NONE
         ):
             raise ValueError(
-                "DIRECT Load/Store must not introduce a reuse barrier"
+                "storage-free Load/Store must not introduce a reuse barrier"
+            )
+        if (
+            self.uses_scratch
+            and self.plan.synchronization.storage_reuse_barrier
+            not in {
+                SynchronizationScope.BLOCK,
+                SynchronizationScope.NONE,
+            }
+        ):
+            raise ValueError(
+                "block Load/Store requires block-scoped reuse synchronization"
             )
         if self.operation.oob_default.kind is BindingKind.STATIC:
             _validate_static_oob_default(
@@ -115,6 +125,22 @@ class _CubLoadStoreRequest:
     @property
     def block_dim(self):
         return self.plan.participation.exact_block_dim
+
+    @property
+    def uses_scratch(self):
+        return self.plan.temp_storage.ownership is not StorageOwnership.NONE
+
+    @property
+    def cpp_type(self):
+        arguments = ", ".join(
+            _render_template_argument(self, name, value)
+            for name, value in self.implementation.ordered_template_arguments
+        )
+        return f"::cub::{self.implementation.struct_name}<{arguments}>"
+
+    @property
+    def scratch_requirement_key(self):
+        return ("cub_load_store_layout", self.implementation.semantic_key)
 
     @property
     def semantic_key(self):
@@ -142,15 +168,17 @@ class _CubLoadStoreRequest:
 
 
 def _render_cub_load_store(request):
-    """Render the C++ side of the Load/Store extern ABI.
+    """Emit the CUB call and the checks required by its provider ABI.
 
     Place the base pointer first, then Store item scalars, then runtime
-    count/default/offset controls in that order. Load adds a final result
-    pointer. Static controls appear in the body and have no ABI argument.
+    count/default/offset controls. Scratch-using wrappers next receive a
+    shared-memory address, byte capacity, and automatic-barrier flag. Load
+    adds a final result pointer. Static controls have no ABI argument.
 
-    Guard runtime counts and negative offsets before the CUB call. Load copies
-    every item slot to its result buffer. Slots beyond ``valid_items`` stay
-    unspecified unless ``oob_default`` is supplied.
+    Check scratch size and alignment, then convert its address for CUB. Guard
+    runtime counts and negative offsets before the call, then synchronize
+    after it when requested. Load copies every item slot to its result buffer;
+    slots beyond ``valid_items`` stay unspecified unless a default is supplied.
     """
 
     request.__post_init__()
@@ -171,19 +199,48 @@ def _render_cub_load_store(request):
         params.append(f"{type_specification.cpp_type} oob_default")
     if operation.offset.kind is BindingKind.RUNTIME:
         params.append("long long offset")
+    if request.uses_scratch:
+        params.extend(
+            (
+                "unsigned int temp_storage_smem_addr",
+                "int temp_storage_bytes",
+                "int temp_storage_auto_sync",
+            )
+        )
     if is_load:
         params.append(f"{type_specification.cpp_type}* result_items")
-    template_arguments = ", ".join(
-        _render_template_argument(request, name, value)
-        for name, value in request.implementation.ordered_template_arguments
-    )
     lines = [
         f"void {request.symbol_name}({', '.join(params)}) {{",
-        (
-            "  using implementation_type = "
-            f"::cub::{request.implementation.struct_name}<{template_arguments}>;"
-        ),
+        f"  using implementation_type = {request.cpp_type};",
     ]
+    storage = ""
+    if request.uses_scratch:
+        lines.extend(
+            [
+                (
+                    "  using storage_type = typename "
+                    "implementation_type::TempStorage;"
+                ),
+                "  if (temp_storage_bytes < sizeof(storage_type) ||",
+                (
+                    "      (temp_storage_smem_addr & "
+                    "(alignof(storage_type) - 1)) != 0) {"
+                ),
+                '    asm volatile("trap;");',
+                "  }",
+                "  unsigned long long generic_addr;",
+                (
+                    '  asm("cvta.shared.u64 %0, %1;" : "=l"(generic_addr) : '
+                    '"l"(static_cast<unsigned long long>'
+                    "(temp_storage_smem_addr)));"
+                ),
+                (
+                    "  auto& storage = "
+                    "*reinterpret_cast<storage_type*>(generic_addr);"
+                ),
+            ]
+        )
+        storage = "storage"
     if operation.valid_items.kind is BindingKind.RUNTIME:
         count = (
             request.plan.resolved_group.static_size * operation.items_per_thread
@@ -221,7 +278,7 @@ def _render_cub_load_store(request):
         if expression is not None:
             args.append(expression)
     lines.append(
-        "  implementation_type()."
+        f"  implementation_type({storage})."
         f"{request.implementation.method_name}({', '.join(args)});"
     )
     if is_load:
@@ -229,6 +286,8 @@ def _render_cub_load_store(request):
             f"  result_items[{i}] = items[{i}];"
             for i in range(operation.items_per_thread)
         )
+    if request.uses_scratch:
+        lines.append("  if (temp_storage_auto_sync != 0) { __syncthreads(); }")
     return [*lines, "}"]
 
 
@@ -243,6 +302,7 @@ def _make_request(
     valid_items_binding,
     oob_default_binding,
     offset_binding,
+    temp_storage=None,
 ):
     """Require a supported shared plan before creating a provider request."""
 
@@ -256,6 +316,7 @@ def _make_request(
         valid_items=valid_items_binding,
         oob_default=oob_default_binding,
         offset=offset_binding,
+        temp_storage=temp_storage,
     ).require_supported()
     return _CubLoadStoreRequest(plan, value_type)
 
@@ -273,8 +334,9 @@ def provider_load(
     oob_default_binding,
     offset,
     offset_binding,
+    temp_storage=None,
 ):
-    """Emit a Load extern call and replace the output payload values.
+    """Trace a Load call and copy its per-thread result into ``output``.
 
     The qualified ``load`` entry point calls this during CuTe tracing,
     after classifying the optional controls. Each live control has a
@@ -283,10 +345,13 @@ def provider_load(
 
     Check source dtype, pointer eligibility, and any provable static capacity
     before registering the request. A temporary register tensor receives the
-    C++ output; its scalar expressions replace the ThreadData items.
+    C++ output; its scalar expressions replace the ThreadData items. Runtime
+    binding values supply only the dynamic operands. Scratch registration
+    defers the address and capacity until finalization.
 
-    If lowering fails, restore the queued request snapshot. This rollback does
-    not remove emitted IR or undo assignments already made to the payload.
+    A failure restores the session's wrapper and scratch records. This
+    rollback does not undo emitted IR or assignments already made to the
+    payload.
 
     Parameters
     ----------
@@ -314,6 +379,9 @@ def provider_load(
         Live source element offset, used only for a runtime binding.
     offset_binding : ArgumentBinding
         Classification and any embedded source offset.
+    temp_storage : TempStorage or None
+        Optional block scratch descriptor. None leaves allocation policy to
+        the compiler; storage-free algorithms need no scratch operands.
 
     Returns
     -------
@@ -339,6 +407,7 @@ def provider_load(
         valid_items_binding=valid_items_binding,
         oob_default_binding=oob_default_binding,
         offset_binding=offset_binding,
+        temp_storage=temp_storage,
     )
     pointer = _memory_pointer(
         source,
@@ -358,15 +427,17 @@ def provider_load(
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
+        scratch_types, scratch_args = _scratch_arguments(request, temp_storage)
         ffi(
             name=request.symbol_name,
             params_types=[
                 llvm.PointerType.get(0),
                 *runtime_types,
+                *scratch_types,
                 llvm.PointerType.get(0),
             ],
             return_type=None,
-        )(pointer, *runtime_args, result.iterator.llvm_ptr)
+        )(pointer, *runtime_args, *scratch_args, result.iterator.llvm_ptr)
         output.dtype = value_type
         for i in range(output.items_per_thread):
             output[i] = result[i]
@@ -386,8 +457,9 @@ def provider_store(
     valid_items_binding,
     offset,
     offset_binding,
+    temp_storage=None,
 ):
-    """Emit a Store extern call from scalar or ThreadData values.
+    """Trace a Store call with per-thread values and deferred scratch.
 
     The qualified ``store`` entry point calls this during CuTe tracing.
     The binding records choose which controls are embedded in C++ and
@@ -396,8 +468,10 @@ def provider_store(
 
     Resolve one dtype for all items and require the destination to match it.
     Check pointer and static-capacity constraints before registration. The
-    extern call receives item values directly, preserving the input payload. A
-    failure restores queued request state.
+    wrapper receives input items as scalars and collects them in its C++
+    array, preserving the caller's payload values. Registration records
+    scratch use for finalization; a failure restores session bookkeeping
+    without undoing emitted IR.
 
     Parameters
     ----------
@@ -419,6 +493,9 @@ def provider_store(
         Live destination element offset, used only for a runtime binding.
     offset_binding : ArgumentBinding
         Classification and any embedded destination offset.
+    temp_storage : TempStorage or None
+        Optional block scratch descriptor. None uses compiler allocation.
+        Storage-free algorithms omit scratch operands.
 
     Returns
     -------
@@ -457,6 +534,7 @@ def provider_store(
         valid_items_binding=valid_items_binding,
         oob_default_binding=ArgumentBinding.omitted(),
         offset_binding=offset_binding,
+        temp_storage=temp_storage,
     )
     pointer = _memory_pointer(
         destination,
@@ -473,15 +551,17 @@ def provider_store(
     snapshot = _state.snapshot_active_session_state()
     try:
         _state.register_request(request)
+        scratch_types, scratch_args = _scratch_arguments(request, temp_storage)
         ffi(
             name=request.symbol_name,
             params_types=[
                 llvm.PointerType.get(0),
                 *([value_type] * len(values)),
                 *runtime_types,
+                *scratch_types,
             ],
             return_type=None,
-        )(pointer, *values, *runtime_args)
+        )(pointer, *values, *runtime_args, *scratch_args)
     except BaseException:
         _state.restore_active_session_state(snapshot)
         raise
@@ -526,12 +606,14 @@ def _make_group_load_store_plan(
     valid_items: ArgumentBinding,
     oob_default: ArgumentBinding,
     offset: ArgumentBinding,
+    temp_storage=None,
 ) -> GroupLoweringPlan:
-    """Plan Load/Store from launch facts and scalar binding records.
+    """Build the shared-core plan with the caller's scratch policy.
 
-    The core selects specialization contracts and static argument
-    checks. The provider request then restricts that plan to its
-    supported block DIRECT ABI.
+    ``temp_storage=None`` requests implementation-owned storage and automatic
+    reuse synchronization. An explicit descriptor supplies caller-owned
+    capacity, alignment, sharing, and synchronization settings. The shared
+    planner then determines whether the selected algorithm needs scratch.
     """
 
     operation = GroupLoadStoreSemantics(
@@ -542,6 +624,21 @@ def _make_group_load_store_plan(
         valid_items=valid_items,
         oob_default=oob_default,
         offset=offset,
+        storage_ownership=(
+            StorageOwnership.IMPLEMENTATION
+            if temp_storage is None
+            else StorageOwnership.CALLER
+        ),
+        storage_sharing=None if temp_storage is None else temp_storage.sharing,
+        storage_size_in_bytes=None
+        if temp_storage is None
+        else temp_storage.size_in_bytes,
+        storage_alignment=None
+        if temp_storage is None
+        else temp_storage.alignment,
+        storage_auto_sync=True
+        if temp_storage is None
+        else temp_storage.auto_sync,
     )
     call = make_group_primitive_call(
         group,
@@ -938,9 +1035,49 @@ def _required_static_elements(request: _CubLoadStoreRequest) -> int | None:
     return offset + (group_instances - 1) * tile_items + valid_items
 
 
+def _scratch_arguments(request, temp_storage):
+    """Supply scratch operands only when the shared plan requires them.
+
+    An omitted descriptor gets a fresh allocation identity with automatic
+    reuse barriers. An explicit CUTLASS descriptor keeps its identity and
+    policy. The returned ABI types match the provider wrapper's address, byte
+    capacity, and barrier flag; finalization replaces the first two values.
+    """
+
+    if not request.uses_scratch:
+        return (), ()
+    from .._compiler._storage import register_deferred_temp_storage_event
+    from .._temp_storage import TempStorage
+
+    if temp_storage is None:
+        temp_storage = TempStorage(auto_sync=True)
+    elif not isinstance(temp_storage, TempStorage):
+        raise TypeError(
+            "cuda.coop.cutlass Load/Store scratch must be CUTLASS TempStorage"
+        )
+    arguments = register_deferred_temp_storage_event(
+        temp_storage,
+        primitive_name=request.operation_kind.value,
+        requirement_key=request.scratch_requirement_key,
+    )
+    return (Uint32, Int32, Int32), arguments
+
+
+def _scratch_layout_probe(request):
+    """Query the CUB TempStorage type when the request needs scratch."""
+
+    if not request.uses_scratch:
+        return None
+    return _rendering.make_scratch_layout_probe(
+        request.scratch_requirement_key,
+        f"typename {request.cpp_type}::TempStorage",
+    )
+
+
 _rendering.register_bundle_renderer(
     "cub_group_load_store",
     render=_render_cub_load_store,
+    scratch_layout_probe=_scratch_layout_probe,
     include_lines=(
         "#include <cub/block/block_load.cuh>",
         "#include <cub/block/block_store.cuh>",

@@ -2,9 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from .._core.api import TempStorageLike as TempStorageLike
 from .._core.api import ThreadDataLike as ThreadDataLike
 from ._group_load_store import load as load
 from ._group_load_store import store as store
+from ._temp_storage import TempStorage as TempStorage
 from ._thread_data import ThreadData as ThreadData
 from ._thread_group import (
     Hierarchy as Hierarchy,

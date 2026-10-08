@@ -355,5 +355,5 @@ logical group and use the appropriate warp mask. Each primitive documents
 whether it accepts explicit storage. Rules for combining cooperative scratch
 with the kernel's own shared memory depend on the compiler. See
 :ref:`Numba storage <coop-temp-storage>`, the
-:doc:`CUTLASS Programming Guide <../coop_cutlass>`, and the
+:ref:`CUTLASS storage <coop-cutlass-storage>`, and the
 :ref:`storage FAQ <coop-faq-temp-storage>` for examples and limits.

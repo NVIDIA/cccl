@@ -166,7 +166,7 @@ share scratch while the values stay in each thread's payload:
 
 .. code-block:: python
 
-   # Inside a Numba kernel; source, destination, and items_per_thread are kernel arguments.
+   # Inside a kernel; source, destination, and items_per_thread are arguments.
    block = coop.this_block()
    items = coop.ThreadData(items_per_thread)
    scratch = coop.TempStorage(auto_sync=True)
@@ -191,15 +191,16 @@ synchronization.
 
 Explicit descriptors control scratch for Numba's supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
+CUTLASS uses explicit descriptors for block transpose-family Load/Store.
 Storage-free block Load/Store accept and validate a descriptor but do not use
-it. CUTLASS currently provides storage-free block Load/Store only. See the
-:ref:`shared storage model <coop-common-storage>` and the
+it. See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
 
 Numba's restrictions on combining cooperative backing with user static or
-dynamic shared arrays are specific to that backend. Warp operations reject
-explicit descriptors. The compiler allocates any scratch required by CUB
-operations.
+dynamic shared arrays are specific to that backend.
+
+Warp operations reject explicit descriptors. When a Warp operation uses CUB,
+the compiler allocates any scratch that CUB requires.
 
 .. _coop-faq-installed-extra:
 

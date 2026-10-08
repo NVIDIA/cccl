@@ -21,6 +21,7 @@ from typing import Any
 from cutlass.base_dsl.common import DSLRuntimeError
 
 from ._rendering import canonical_bundle_requests
+from ._types import DeferredTempStorageEvent
 
 _SESSION_SCOPE = "cuda.coop.cutlass"
 _TRACE_HOOK_DISPATCHER_ATTR = (
@@ -40,16 +41,20 @@ _UNSPECIFIED_MODULE = object()
 
 
 class BundleSession:
-    """Collect deduplicated provider requests for one trace module.
+    """Collect wrapper definitions and scratch uses for one CuTe trace.
 
-    The lock protects request and module changes. Snapshots copy the request
-    set so rollback can restore it without aliasing later additions; request
-    objects themselves remain shared immutable descriptions.
+    Wrapper requests form a set because identical calls share generated code.
+    Scratch events retain every traced use in order: two calls to the same
+    wrapper can require distinct exclusive slices. Snapshots capture both
+    collections so a failed lowering cannot leave a stray scratch event. The
+    lock protects collection and module changes; snapshots keep their own
+    containers while sharing the immutable request descriptions.
     """
 
     def __init__(self, trace_module_op=None):
         self.trace_module_op = trace_module_op
         self.requests = set()
+        self._deferred_temp_storage_events: list[DeferredTempStorageEvent] = []
         self._lock = threading.RLock()
 
     def add(self, request):
@@ -57,13 +62,22 @@ class BundleSession:
             self.requests.add(request)
 
     def snapshot(self):
+        """Copy trace bookkeeping before a lowering step that can fail."""
+
         with self._lock:
-            return self.trace_module_op, set(self.requests)
+            return (
+                self.trace_module_op,
+                set(self.requests),
+                list(self._deferred_temp_storage_events),
+            )
 
     def restore(self, snapshot):
+        """Restore trace bookkeeping without changing emitted MLIR."""
+
         with self._lock:
-            self.trace_module_op, requests = snapshot
+            self.trace_module_op, requests, events = snapshot
             self.requests = set(requests)
+            self._deferred_temp_storage_events = list(events)
 
     def request_list(self):
         """Order requests by symbol and reject conflicting definitions."""
@@ -71,9 +85,23 @@ class BundleSession:
         with self._lock:
             return list(canonical_bundle_requests(self.requests))
 
+    def add_deferred_temp_storage_event(
+        self, event: DeferredTempStorageEvent
+    ) -> None:
+        """Keep repeated calls even when they share one provider."""
+
+        with self._lock:
+            self._deferred_temp_storage_events.append(event)
+
+    def deferred_temp_storage_event_list(
+        self,
+    ) -> list[DeferredTempStorageEvent]:
+        with self._lock:
+            return list(self._deferred_temp_storage_events)
+
     def is_empty(self):
         with self._lock:
-            return not self.requests
+            return not self.requests and not self._deferred_temp_storage_events
 
     def belongs_to_trace_module(self, module):
         with self._lock:
@@ -199,9 +227,9 @@ def _ensure_trace_hook_registered() -> None:
 def _sessions_for_options(compile_options: Any) -> list[BundleSession] | None:
     """Find sessions without retaining their compile-options owner.
 
-    Unhashable options still need weak references. Check identity
-    before reusing the fallback so a recycled Python object ID
-    cannot inherit old requests.
+    Unhashable options still need weak references. Check identity before
+    reusing the fallback so a recycled Python object ID cannot inherit old
+    requests.
     """
 
     try:
@@ -366,8 +394,7 @@ def get_or_create_bundle_session(
     it to recreate a removed session. Compile options alone cannot identify
     a trace because CuTe can reuse them for nested or later compilations.
 
-    Use a session for these compile options. Create a new session only when
-    neither a bound nor an unbound one is available.
+    Create and store a new session only when neither is available.
 
     Parameters
     ----------
@@ -420,7 +447,7 @@ def active_bundle_session() -> BundleSession:
 
 
 def snapshot_active_session_state_for(*, get_cute_dsl: Callable[[], Any]):
-    """Save the active options, module, and requests before lowering.
+    """Save active options, the module, requests, and scratch events.
 
     Lowerings take this snapshot before recording a wrapper request.
     If emission fails, ``restore_active_session_state_for`` removes those

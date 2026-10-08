@@ -51,16 +51,17 @@ def _remove_managed_bundle_link_options(dsl: Any) -> None:
 
 
 def _trace_finalize_hook(dsl, module, function_name):
-    """Compile this module's requests and attach its LTO-IR bundle.
+    """Finish one trace's provider bundle and deferred scratch allocations.
 
     CuTe calls this registered hook after it has traced a module and before
     it links device code. At that point all cooperative calls are known, so
     their wrappers can share one NVRTC compilation. The hook changes the
     module and compiler link options; it does not launch the kernel.
 
-    Other nested or outer trace sessions remain queued. Render the selected
-    requests after tracing, compile for the configured target, and add the
-    resulting path to the GPU module for CuTe's later link step.
+    The matching session supplies deduplicated wrapper requests and every
+    recorded scratch use. Compile first to learn exact C++ layouts, then plan
+    and insert allocations before attaching the LTO-IR file for CuTe linking.
+    Other trace sessions remain separate, including nested compilations.
 
     Parameters
     ----------
@@ -87,11 +88,27 @@ def _trace_finalize_hook(dsl, module, function_name):
     arch = _target.resolve_nvrtc_arch(
         ROOT_SCOPE, lambda: _target.configured_gpu_arch(lambda: dsl)
     )
-    path = _bundle.compile_bundle_source(
-        source,
-        arch=arch,
-        required_headers=tuple(_rendering.registered_bundle_headers().values()),
-    )
+    headers = tuple(_rendering.registered_bundle_headers().values())
+    probes = _rendering.bundle_scratch_layout_probes(requests)
+    if probes:
+        from . import _storage
+
+        compilation = _bundle.compile_bundle_source_with_layouts(
+            source,
+            arch=arch,
+            required_headers=headers,
+            layout_probes=tuple(probes.values()),
+        )
+        plans = _storage.plan_deferred_temp_storage_events(
+            session.deferred_temp_storage_event_list(),
+            compilation.layouts,
+        )
+        _storage.materialize_deferred_temp_storage_plans(plans)
+        path = compilation.path
+    else:
+        path = _bundle.compile_bundle_source(
+            source, arch=arch, required_headers=headers
+        )
     _bundle.append_link_library_attr(module, path)
 
 

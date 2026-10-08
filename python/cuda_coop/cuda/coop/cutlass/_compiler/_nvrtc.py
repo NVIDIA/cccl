@@ -18,14 +18,17 @@ from cuda.coop._headers._toolkit import (
     validate_nvrtc_version,
 )
 
+from ._layout import _decode_layout_probe_name, _PreparedLayoutProbes
+from ._types import ScratchLayout
+
 
 @dataclass(frozen=True)
 class CompileContext:
     """Record header and compiler-library identity for an NVRTC cache key.
 
-    Paths and versions keep a bundle tied to the toolkit selected
-    by its headers. The header digest detects changed contents
-    within the include roots.
+    Paths and versions keep a bundle tied to the toolkit selected by its
+    headers. The header digest detects changed contents within the include
+    roots.
     """
 
     include_dirs: tuple[str, ...]
@@ -118,10 +121,62 @@ def _program_log(nvrtc: Any, program: Any) -> str:
 
 
 def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
-    """Compile the generated source and return its LTO-IR bytes.
+    """Compile source without layout queries and return its LTO-IR bytes.
 
-    Include the NVRTC log on compilation failure. Always destroy the program,
-    but preserve an existing failure if destruction also reports an error.
+    The shared compiler helper reports the NVRTC log on compilation failure
+    and destroys the program without replacing an earlier failure.
+    """
+
+    return _compile_ltoir(source, options)[0]
+
+
+def compile_ltoir_with_layouts(
+    prepared: _PreparedLayoutProbes, options: tuple[bytes, ...]
+) -> tuple[bytes, dict[str, ScratchLayout]]:
+    """Compile provider code and evaluate its layouts in the same program.
+
+    ``prepared`` contains the provider source, probe template, and registered
+    name expressions; ``options`` selects the compiler settings. The result
+    pairs LTO-IR bytes with layouts indexed by those expressions. Registering
+    names before compilation makes NVRTC instantiate the requested probes.
+    """
+
+    return _compile_ltoir(prepared.source, options, prepared)
+
+
+def _compile_ltoir(
+    source: str,
+    options: tuple[bytes, ...],
+    prepared: _PreparedLayoutProbes | None = None,
+) -> tuple[bytes, dict[str, ScratchLayout]]:
+    """Keep probe registration, layout extraction, and code on one program.
+
+    The bundle compiler reaches this helper on a cache miss, after it has
+    selected and preloaded the toolkit libraries. The query names encode
+    C++ constant values in template arguments, so compilation can return
+    storage requirements without executing a device function.
+
+    Queries are registered before compilation and decoded before program
+    destruction. With no ``prepared`` probes the layout map is empty. Cleanup
+    always destroys the program without replacing an earlier compile or query
+    failure with a destruction error.
+
+    Parameters
+    ----------
+    source : str
+        Complete C++ translation unit. With prepared probes, this must be
+        the prepared source containing their variable-template declaration.
+    options : tuple of bytes
+        NVRTC flags selecting the target architecture, headers, and LTO-IR.
+    prepared : _PreparedLayoutProbes or None
+        Probe names and decoder identity from ``_prepare_layout_probes``.
+        None compiles code without requesting layout metadata.
+
+    Returns
+    -------
+    tuple
+        LTO-IR bytes and a map from query expressions to byte sizes and
+        alignments, all obtained from this NVRTC program.
     """
 
     nvrtc = _load_nvrtc()
@@ -134,6 +189,15 @@ def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
         )
     failed = False
     try:
+        expressions = () if prepared is None else prepared.expressions
+        for expression in expressions:
+            error = nvrtc.nvrtcAddNameExpression(program, expression.encode())[
+                0
+            ]
+            if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                raise RuntimeError(
+                    f"Cannot register NVRTC storage layout probe: {error}"
+                )
         error = nvrtc.nvrtcCompileProgram(program, len(options), list(options))[
             0
         ]
@@ -141,6 +205,19 @@ def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
             raise RuntimeError(
                 "CUTLASS provider compilation failed:\n"
                 f"{_program_log(nvrtc, program)}"
+            )
+        layouts: dict[str, ScratchLayout] = {}
+        for expression in expressions:
+            error, name = nvrtc.nvrtcGetLoweredName(
+                program, expression.encode()
+            )
+            if error != nvrtc.nvrtcResult.NVRTC_SUCCESS:
+                raise RuntimeError(
+                    f"Cannot retrieve NVRTC storage layout probe: {error}"
+                )
+            assert prepared is not None
+            layouts[expression] = _decode_layout_probe_name(
+                name, symbol=prepared.symbol, expression=expression
             )
         error, size = nvrtc.nvrtcGetLTOIRSize(program)
         if error != nvrtc.nvrtcResult.NVRTC_SUCCESS or size <= 0:
@@ -153,7 +230,7 @@ def compile_ltoir(source: str, options: tuple[bytes, ...]) -> bytes:
             raise RuntimeError(
                 f"Cannot retrieve CUTLASS provider LTO-IR: {error}"
             )
-        return bytes(blob)
+        return bytes(blob), layouts
     except BaseException:
         failed = True
         raise

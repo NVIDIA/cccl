@@ -10,7 +10,7 @@ import re
 from collections.abc import Iterable
 from typing import Any
 
-from ._types import BundleRenderer
+from ._types import BundleRenderer, ScratchLayoutProbe
 
 _FEATURE_DEFINE_RE = re.compile(
     r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s|\(|$)"
@@ -19,18 +19,25 @@ _BUNDLE_RENDERERS: dict[str, BundleRenderer] = {}
 
 
 def register_bundle_renderer(
-    kind, *, render, include_lines=(), cccl_headers=()
+    kind,
+    *,
+    render,
+    include_lines=(),
+    cccl_headers=(),
+    scratch_layout_probe=None,
 ):
-    """Associate a request kind with source rendering and required headers.
+    """Register how one provider kind emits wrappers and describes scratch.
 
-    Keep provider registration unique so a kind cannot silently change its
-    renderer after requests have been collected.
+    ``render`` emits a request's C++ lines. ``include_lines`` and
+    ``cccl_headers`` supply its preamble and header lookup requirements. The
+    optional ``scratch_layout_probe`` callback returns a layout query or
+    ``None`` for each request. A kind can have only one registered renderer.
     """
 
     if kind in _BUNDLE_RENDERERS:
         raise ValueError(f"bundle renderer {kind!r} is already registered")
     _BUNDLE_RENDERERS[kind] = BundleRenderer(
-        tuple(include_lines), tuple(cccl_headers), render
+        tuple(include_lines), tuple(cccl_headers), render, scratch_layout_probe
     )
 
 
@@ -128,15 +135,59 @@ def registered_bundle_headers() -> dict[str, str]:
     return {include: headers[include] for include in sorted(headers)}
 
 
-def render_bundle_source(requests):
-    """Render one C-linkage definition for each canonical provider request.
+def make_scratch_layout_probe(requirement_key, cpp_type):
+    return ScratchLayoutProbe(
+        requirement_key, f"sizeof({cpp_type})", f"alignof({cpp_type})"
+    )
 
-    Combine a deterministic preamble with the registered renderers. C linkage
-    keeps the emitted symbol names aligned with the CuTe extern calls.
+
+def bundle_scratch_layout_probes(requests):
+    """Collect one compatible layout probe per requirement key.
+
+    Storage-free requests can omit a probe. Repeated keys must describe the
+    same C++ expressions so finalization binds each call to the right layout.
     """
 
-    lines = [*bundle_include_lines(requests), 'extern "C" {']
+    probes = {}
     for request in canonical_bundle_requests(requests):
+        renderer = bundle_renderer_for(request)
+        if renderer is None or renderer.scratch_layout_probe is None:
+            continue
+        probe = renderer.scratch_layout_probe(request)
+        if probe is None:
+            continue
+        existing = probes.get(probe.requirement_key)
+        if existing is not None and existing != probe:
+            raise ValueError("scratch requirement has conflicting C++ layouts")
+        probes[probe.requirement_key] = probe
+    return probes
+
+
+def render_bundle_source(requests):
+    """Render canonical requests with shared type definitions and C linkage.
+
+    Merge compatible type definitions by name before emitting the wrappers.
+    Deterministic ordering stabilizes the source identity; C linkage keeps
+    symbol names aligned with CuTe extern calls.
+    """
+
+    requests = canonical_bundle_requests(requests)
+    definitions = {}
+    for request in requests:
+        implementation = getattr(request, "implementation", None)
+        for definition in getattr(implementation, "type_definitions", ()):
+            existing = definitions.get(definition.name)
+            if existing is not None and existing != definition.code:
+                raise ValueError(
+                    f"conflicting provider type definition {definition.name!r}"
+                )
+            definitions[definition.name] = definition.code
+    lines = [
+        *bundle_include_lines(requests),
+        *(definitions[name] for name in sorted(definitions)),
+        'extern "C" {',
+    ]
+    for request in requests:
         renderer = bundle_renderer_for(request)
         if renderer is None:
             raise ValueError(

@@ -57,11 +57,11 @@ architecture or launch state can belong to the original context. The upstream
 [context-isolation fix](https://github.com/NVIDIA/numba-cuda-mlir/pull/314)
 must be released and qualified before relying on that reuse.
 
-The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS package
-version has passed consumer qualification, so there is no CUTLASS installation
-extra or supported minimum version. A compatible CuTe compiler must provide
-the external LTO-IR linking and compilation hooks described in its developer
-guide.
+The CUTLASS integration targets Linux with CUDA 13. No public CUTLASS
+package version has passed consumer qualification, so there is no CUTLASS
+installation extra or supported minimum version. A compatible CuTe compiler
+must provide the external LTO-IR linking and compilation hooks that the
+CUTLASS Developer Guide describes.
 
 - Numba-CUDA-MLIR: [Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop/programming_guide.html)
   and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html).
@@ -134,9 +134,8 @@ avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 Each qualified API includes its supported common operations, preserving their
 signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
 local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
-CuTe register conversions and the controls documented in its guide. Custom
-operators and Scan prefix callbacks are currently supported only by
-Numba-CUDA-MLIR.
+CuTe register conversions and the controls documented in its guide. Only
+Numba-CUDA-MLIR currently supports custom operators and Scan prefix callbacks.
 
 Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a
 compile-time positive power of two in bytes to request minimum payload storage
@@ -172,8 +171,7 @@ explains terms and concepts, including blocked and striped layouts.
 Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
 expands with its implemented families; the [coverage
 table](https://nvidia.github.io/cccl/unstable/python/coop/concepts.html#coop-backend-operation-support)
-lists current support. Qualified APIs add the extensions documented in each
-guide.
+lists current support. Each guide describes its qualified API's extensions.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -349,12 +347,11 @@ select an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
 `is_member()` returns an integer membership flag.
 
 
-In Numba-CUDA-MLIR, `sync()` and `sync_aligned()` expose the matching non-grid
-group barriers. All participating members must reach `sync()`.
-`sync_aligned()` additionally requires the caller to keep the group aligned
-and converged. Numba-CUDA-MLIR cannot request a cooperative grid launch and
-does not support grid synchronization. See the CUTLASS guide for its supported
-queries and synchronization.
+`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
+participating members must reach `sync()`. `sync_aligned()` additionally
+requires the caller to keep the group aligned and converged. Numba-CUDA-MLIR
+does not support grid synchronization because it cannot request a cooperative
+grid launch. CUTLASS does not yet implement group queries or synchronization.
 
 The `count` and `exhaustive` arguments of `group_by` must be compile-time
 constants. A logical threads-within-warp group can query its threads and
@@ -372,8 +369,8 @@ group or parent-group participant must still reach the primitive.
 
 Numba-CUDA-MLIR accepts an optional caller descriptor for block Load, Store,
 Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent Difference, Discontinuity,
-Histogram, and both Run Length Decode forms. See the CUTLASS guide for the
-calls that accept a descriptor. This transpose example uses Numba-CUDA-MLIR:
+Histogram, and both Run Length Decode forms. CUTLASS currently accepts one for
+block Load and Store:
 
 ```python
 storage = coop.TempStorage(
@@ -386,27 +383,23 @@ coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
 For Load and Store on block, physical Warp, and logical Warp groups,
-`direct`, `striped`, and `vectorize` are storage-free: they
-default-construct CUB primitives without shared-memory allocation, pointer
-arguments, or barriers. For block calls, an explicit descriptor is validated
-but does not change their code generation. Construct `TempStorage` inside
-the kernel; module-global storage descriptors cannot be resolved. A
-descriptor may be passed to a device helper that Numba-CUDA-MLIR inlines
-into the kernel, which is the default.
+`direct`, `striped`, and `vectorize` are storage-free where implemented: they
+need no shared-memory allocation, storage pointer arguments, or reuse
+barriers. An explicit block descriptor is validated but does not change that
+code generation.
 
 The three block transpose Load/Store algorithms use CUB temporary storage,
-as do the other listed block operations. Without a descriptor, the compiler
+as do the other listed block operations. Without a descriptor, each compiler
 allocates the specialization's exact storage and inserts a block reuse
-barrier. A caller descriptor selects shared or exclusive slices and may
-request capacity and alignment. Both explicit and omitted storage
-participate in the shared-memory plan and launch accounting. The provider
-determines the required byte count and alignment.
+barrier. A descriptor selects shared or exclusive slices and may request
+capacity and minimum alignment. The provider determines the required byte
+count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
-every call that passes the same descriptor on one region, while
-`"exclusive"` gives each call site its own slice. A call site inside a loop
-reuses its slice under either layout, so `auto_sync` is independent of
-`sharing` and defaults to `False` for both.
+calls that pass the same descriptor on one region; `"exclusive"` gives each
+call site its own slice. A call site inside a loop reuses its slice under
+either policy. `auto_sync` defaults to `False` for both policies and both
+integrations.
 
 Exclusive slices use more shared memory to avoid barriers needed solely for
 cross-call scratch reuse when `auto_sync=False`. Repeated execution of one
@@ -414,48 +407,57 @@ call site still reuses its slice and must be synchronized. Omitting storage
 lets the compiler choose the layout and insert reuse barriers; it does not
 guarantee a separate slice per call site.
 
-A descriptor names one region. Distinct descriptors and compiler-owned storage
-never alias each other. With `auto_sync=True`, the compiler appends
-`cuda.syncthreads()` immediately after every block call that consumes the
-storage, including the last one. Warp calls do not accept a descriptor. The
-compiler never inserts a barrier before a call. The trailing barrier orders
-only reuse of the temporary storage. Arrange explicit barriers for the
-kernel's own shared-memory traffic. With `auto_sync=False`, the caller issues
-`cuda.syncthreads()` between consecutive uses, and a call site inside a loop
-counts as a reuse on every iteration. Compiler-owned storage always
-synchronizes.
+Distinct descriptors and compiler-owned storage do not alias each other. With
+the default `auto_sync=False`, call `storage.sync()` or the appropriate block
+barrier before reusing the scratch, including on the next loop iteration.
+Set `auto_sync=True` to append a barrier after each scratch-using call,
+including the last call. That barrier protects reuse of CUB scratch; it does
+not replace barriers needed by the kernel's own shared-memory operations.
+Compiler-owned scratch always synchronizes.
 
-All descriptors and compiler-owned requirements of a kernel share one
-shared-memory backing. Up to 48 KiB, the compiler uses static shared memory
-without querying the device. Larger requests trigger a query of the device's
-default and opt-in limits. Backing above the default limit uses dynamic shared
-memory, and the launch reserves its exact byte count within the opt-in limit.
-Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
-allocations reliably. A kernel using cooperative temporary storage must not
-also declare a zero-sized or runtime-sized `cuda.shared.array`. When
-cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Reduce uses the same cooperative backing,
-including when `temp_storage` is omitted.
+Construct descriptors inside the kernel. Numba-CUDA-MLIR resolves descriptors
+in its compiler passes; a descriptor may also be passed to a device helper
+inlined into that kernel. CUTLASS records uses while tracing the CuTe kernel,
+probes exact storage requirements, and allocates through CuTe's shared-memory
+allocator before compilation finishes. The
+[Numba storage example](tests/backends/numba_mlir/runtime/test_storage_examples.py)
+and [CuTe storage example](examples/cutlass/block_storage.py) demonstrate
+reuse policies and synchronization.
 
-With `auto_sync=False`, a descriptor must originate from exactly one
-constructor site. Selecting between multiple manual-sync constructors is
-unsupported: the compiler cannot prove that caller barriers protect the
-merged region, even when a particular program supplies sufficient barriers.
+Numba-CUDA-MLIR has these additional compiler constraints:
 
-Cooperative calls in device helpers must be inlined into the kernel; use
-`@cuda.jit(device=True, inline="always")` when selecting the helper's
-policy explicitly. Standalone primitive helpers and primitives inside
-standalone callbacks are unsupported. `literal_unroll` values cannot determine
-cooperative payload extents, group dimensions, selectors, or descriptor
-constructor arguments. Use separate calls with explicit constants, or an
-ordinary loop with one fixed cooperative shape. An unrelated `literal_unroll`
-loop does not add this restriction.
+- All cooperative storage in a kernel shares one backing. Up to 48 KiB, the
+  compiler uses static shared memory without querying the device. Larger
+  requests trigger a query of the device's default and opt-in limits. Backing
+  above the default limit uses dynamic shared memory, and the launch reserves
+  its exact byte count within the opt-in limit. Supported Numba-CUDA-MLIR
+  releases do not reliably separate static and dynamic allocations: a
+  scratch-using kernel must not also declare a zero-sized or runtime-sized
+  `cuda.shared.array`. When cooperative backing becomes dynamic, user static
+  shared arrays are also unsupported. Reduce uses the same cooperative
+  backing, including when `temp_storage` is omitted.
+- A descriptor with `auto_sync=False` must originate from one constructor
+  site. Selecting between multiple manual-sync constructors is unsupported:
+  the compiler cannot prove that caller barriers protect the merged region,
+  even when a particular program supplies sufficient barriers.
+- Cooperative calls in device helpers must be inlined into the kernel. Use
+  `@cuda.jit(device=True, inline="always")` when selecting the policy explicitly.
+  Standalone primitive helpers and primitives inside standalone callbacks are
+  unsupported. `literal_unroll` values cannot determine cooperative payload
+  extents, group dimensions, selectors, or descriptor arguments. An unrelated
+  `literal_unroll` loop does not add this restriction.
 
-Warp `transpose` uses compiler-owned storage with one disjoint slice per
-physical or logical group and inserts `syncwarp` with the exact group mask.
-Explicit `TempStorage` is rejected by both the common and qualified APIs for
-every Warp Load and Store algorithm, including the storage-free modes.
+CuTe traces helper functions through its own compiler and allocates cooperative
+scratch through its shared-memory allocator. For CuTe helper functions and
+compiler-owned allocation, see the
+[CUTLASS Programming Guide](https://nvidia.github.io/cccl/unstable/python/coop_cutlass.html)
+and [Developer Guide](https://nvidia.github.io/cccl/unstable/python/coop/cutlass_developer_guide.html).
+
+In Numba-CUDA-MLIR, Warp `transpose` uses compiler-owned storage with one
+disjoint slice per physical or logical group and masked synchronization for
+reuse. Numba-CUDA-MLIR rejects explicit `TempStorage` for every Warp Load and
+Store algorithm, including the storage-free modes. CUTLASS does not yet
+implement Warp Load/Store.
 
 ## Reduce and Sum
 
