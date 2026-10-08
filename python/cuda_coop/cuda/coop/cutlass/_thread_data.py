@@ -19,9 +19,10 @@ Module helpers decide which arguments are register payloads. Qualified
 calls convert CuTe register tensors and vectors to ThreadData; common calls
 reject them.
 
-Merge Sort, Radix Sort, and Radix Rank copy readable input payloads into new
-ThreadData before lowering, so read-only inputs work. Lowerings allocate
-register outputs with the payload's alignment when one is set.
+The snapshot helper copies readable payloads into new ThreadData before
+lowering, so the operation can leave its inputs unchanged. The copy only
+reads items, so these operations also accept read-only inputs. Lowerings
+allocate register outputs with the payload's alignment when one is set.
 """
 
 from __future__ import annotations
@@ -1181,7 +1182,7 @@ def _coerce_thread_payload(
 
 
 def _snapshot_readable_payload(value, *, name, primitive, allow_scalar=False):
-    """Copy readable input items so Sort and Rank preserve the caller's payload.
+    """Copy readable items before lowering to preserve the caller's payload.
 
     Common calls, and any input with the readable ThreadData interface,
     pass the shared payload checks. Copy their items, dtype, extent, and

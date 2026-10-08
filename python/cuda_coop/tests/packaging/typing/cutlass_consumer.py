@@ -9,7 +9,7 @@
 declarations. Checks cover group query types, primitive results, descriptor
 attributes, and calls across namespaces. Payload constructors, conversions,
 and rearrangements must preserve the value dtype independently of ranks
-and flags. Sorting keeps key and value result types independent.
+and flags. Sorting and selection keep key and value result types independent.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -948,4 +948,102 @@ def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
     assert_type(
         cutlass_coop.radix_sort_keys(common_coop.this_block(), keys),
         cutlass_coop.ThreadData[np.int32],
+    )
+
+
+def check_cutlass_topk_surface() -> None:
+    """Keep key and value dtypes through each minimum and maximum overload.
+
+    Counts affect which result positions are defined, not their static type.
+    Read-only payloads need no setter, and mixed register/payload pairs lose
+    element detail only for the register operand whose annotation lacks it.
+    """
+
+    block = cutlass_coop.this_block()
+    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float32)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=Int16)
+    storage = cutlass_coop.TempStorage(alignment=32)
+    assert_type(
+        cutlass_coop.topk_min_keys(block, keys, k=7),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    assert_type(
+        cutlass_coop.topk_max_keys(
+            block, keys, k=Int64(7), valid_items=Uint32(63)
+        ),
+        cutlass_coop.ThreadData[np.float32],
+    )
+    assert_type(
+        cutlass_coop.topk_min_pairs(
+            block, keys, values, k=7, temp_storage=storage
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Int16]
+        ],
+    )
+    assert_type(
+        cutlass_coop.topk_max_pairs(
+            block,
+            keys,
+            values,
+            k=np.uint16(7),
+            valid_items=31,
+            temp_storage=storage,
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Int16]
+        ],
+    )
+    assert_type(
+        cutlass_coop.topk_min_keys(block, _ReadOnlyKeys(), k=0),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.topk_max_pairs(
+            block, _ReadOnlyKeys(), _ReadOnlyKeys(), k=2
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]
+        ],
+    )
+    assert_type(
+        cutlass_coop.topk_min_keys(block, keys.to_register_tensor(), k=7),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.topk_max_keys(block, keys.to_tensor_ssa(), k=7),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.topk_min_pairs(block, keys.to_tensor_ssa(), values, k=7),
+        tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Int16]],
+    )
+    assert_type(
+        cutlass_coop.topk_max_pairs(
+            block, keys, values.to_register_tensor(), k=7
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.float32], cutlass_coop.ThreadData[Any]
+        ],
+    )
+    assert_type(
+        cutlass_coop.topk_min_pairs(
+            block, keys.to_register_tensor(), values.to_tensor_ssa(), k=7
+        ),
+        tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Any]],
+    )
+    assert_type(
+        common_coop.topk_min_keys(block, keys, k=7),
+        common_coop.ThreadDataLike[np.float32],
+    )
+    assert_type(
+        common_coop.topk_max_pairs(block, keys, values, k=7),
+        tuple[
+            common_coop.ThreadDataLike[np.float32],
+            common_coop.ThreadDataLike[Int16],
+        ],
+    )
+    assert_type(
+        cutlass_coop.topk_max_keys(common_coop.this_block(), keys, k=7),
+        cutlass_coop.ThreadData[np.float32],
     )

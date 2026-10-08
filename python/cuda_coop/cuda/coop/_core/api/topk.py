@@ -5,10 +5,14 @@
 """Define block TopK calls and their selected-prefix contract.
 
 The registered functions select minimum or maximum keys, optionally with
-paired values. Compiler backends preserve the input payloads and return
-new ones. The full payload shape is retained, but only the selected
-prefix is defined. Python execution raises an error because these calls
-require a GPU kernel.
+paired values. Backends preserve the inputs and return new payloads with the
+same extent. Only the selected blocked prefix is defined.
+
+Numba-CUDA-MLIR replaces these calls during compilation. CuTe tracing runs
+the bodies in Python. It checks that keys and values are numeric ThreadData
+(read-only views are allowed) and that the group is a block, then calls the
+backend. Backend lowering checks counts and plans scratch, using any supplied
+storage descriptor. Calls require an active compiler backend.
 """
 
 from __future__ import annotations
@@ -21,10 +25,12 @@ from ..._typing import (
     IntegralScalar,
     ThreadDataLike,
 )
-from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
+from ._payload import _validate_common_numeric_value
 from .temp_storage import TempStorageLike as TempStorage
 from .thread_group import BlockGroup
 
@@ -87,10 +93,21 @@ def topk_min_keys(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_min_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_min_keys
+        CuTe payloads and qualified controls.
 
     Examples
     --------
@@ -105,8 +122,21 @@ def topk_min_keys(
         :end-before: # topk-keys-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_min_keys must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_min_keys",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_min_keys",
+        group,
+        keys,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
@@ -170,10 +200,21 @@ def topk_min_pairs(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_min_pairs
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_min_pairs
+        CuTe payloads and qualified controls.
 
     Examples
     --------
@@ -188,8 +229,29 @@ def topk_min_pairs(
         :end-before: # topk-min-pairs-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_min_pairs must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_min_pairs",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "topk_min_pairs",
+            "values",
+            values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_min_pairs",
+        group,
+        keys,
+        values,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
@@ -247,10 +309,21 @@ def topk_max_keys(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_max_keys
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_max_keys
+        CuTe payloads and qualified controls.
 
     Examples
     --------
@@ -265,8 +338,21 @@ def topk_max_keys(
         :end-before: # topk-keys-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_max_keys must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_max_keys",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_max_keys",
+        group,
+        keys,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
@@ -330,10 +416,21 @@ def topk_max_pairs(
     numeric ordering.
 
     Call this operation inside a kernel compiled by a registered
-    backend. The Numba-CUDA-MLIR implementation accepts signed
-    runtime counts up to 64 bits and unsigned counts up to 32 bits.
-    It rejects invalid static counts during compilation and traps
+    backend. The Numba-CUDA-MLIR and CUTLASS implementations accept
+    signed runtime counts up to 64 bits and unsigned counts up to 32 bits.
+    They reject invalid static counts during compilation and trap
     on invalid runtime counts.
+
+    Qualified Numba-CUDA-MLIR calls also accept fixed-size local arrays;
+    qualified CUTLASS calls accept CuTe register payloads. Both return fresh
+    per-thread payloads with the same defined-prefix contract.
+
+    See Also
+    --------
+    cuda.coop.numba_mlir.topk_max_pairs
+        Numba-CUDA-MLIR payloads and qualified controls.
+    cuda.coop.cutlass.topk_max_pairs
+        CuTe payloads and qualified controls.
 
     Examples
     --------
@@ -347,8 +444,29 @@ def topk_max_pairs(
         :end-before: # topk-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.topk_max_pairs must be called from a supported GPU kernel."
+    if _backend_module_name() is not None:
+        _validate_common_numeric_value(
+            "topk_max_pairs",
+            "keys",
+            keys,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+        _validate_common_numeric_value(
+            "topk_max_pairs",
+            "values",
+            values,
+            allow_readonly_thread_data=True,
+            require_thread_data=True,
+        )
+    return _group_primitive_marker(
+        "topk_max_pairs",
+        group,
+        keys,
+        values,
+        k=k,
+        valid_items=valid_items,
+        temp_storage=temp_storage,
     )
 
 
