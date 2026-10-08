@@ -1082,3 +1082,53 @@ def check_cutlass_neighbors() -> None:
         cutlass_coop.discontinuity(block, values.to_tensor_ssa(), mode="tails"),
         cutlass_coop.ThreadData[Int32],
     )
+
+
+def check_cutlass_histogram() -> None:
+    """Infer counters from their selector independently of the sample dtype.
+
+    NumPy and CuTe selectors retain their annotation type. The default and
+    Python ``int`` both select CuTe Int32, even for register-payload samples.
+    """
+
+    block = cutlass_coop.this_block()
+    samples = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.uint8)
+    storage = cutlass_coop.TempStorage(alignment=16)
+    assert_type(
+        cutlass_coop.histogram(
+            block, samples, bins=65, bins_per_thread=2, temp_storage=storage
+        ),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.histogram(
+            block, samples, bins=65, bins_per_thread=2, counter_dtype=np.uint64
+        ),
+        cutlass_coop.ThreadData[np.uint64],
+    )
+    assert_type(
+        cutlass_coop.histogram(
+            block, samples, bins=65, bins_per_thread=2, counter_dtype=Uint64
+        ),
+        cutlass_coop.ThreadData[Uint64],
+    )
+    assert_type(
+        cutlass_coop.histogram(
+            block,
+            samples.to_register_tensor(),
+            bins=65,
+            bins_per_thread=2,
+            counter_dtype=int,
+        ),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.histogram(
+            block,
+            samples.to_tensor_ssa(),
+            bins=65,
+            bins_per_thread=2,
+            algorithm="sort",
+        ),
+        cutlass_coop.ThreadData[Int32],
+    )

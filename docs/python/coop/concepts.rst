@@ -59,7 +59,7 @@ in the programming guides.
      - Available
    * - Histogram
      - Available
-     - Not implemented
+     - Available
    * - Run Length Decode, windowed and bulk
      - Available
      - Not implemented

@@ -2,14 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Expose fresh block histograms through the common compiled-kernel API.
+"""Provide fresh block histograms through the common compiled-kernel API.
 
-Samples contain bin indices. The result is a separate counter payload whose
-dtype and per-thread extent can differ from the input. The decorator registers
-this function so that compilers can recognize its calls. An ordinary Python
-call raises a compiler-context error. Each call zeroes its shared counters
-before counting, so reused scratch never carries counts from an earlier call.
-To accumulate tiles, add the returned counters yourself.
+Samples contain bin indices. Results use a separate striped counter payload
+whose dtype and per-thread extent can differ from the input. Decorators let
+compilers recognize the call. A CuTe DSL trace runs the Python checks for
+static bin controls, dtype selectors, and readable sample payloads. Numba
+replaces the call during compilation and checks its typed operands.
+
+The backend plans CUB scratch and intermediate bin counters. Each call starts
+its counters at zero, so reused scratch does not retain earlier counts. To
+accumulate tiles, add the returned counters yourself.
 """
 
 from __future__ import annotations
@@ -30,12 +33,21 @@ from cuda.coop._typing import (
     ThreadDataLike,
 )
 
-from ..thread_group import CoopCompilerContextRequiredError
+from ..block._common import normalize_positive_int
+from ..block.histogram import (
+    normalize_histogram_algorithm,
+    validate_histogram_dtype,
+)
 from ._dispatch import (
+    _backend_module_name,
     _common_group_operation,
+    _group_primitive_marker,
 )
 from ._payload import (
     TempStorageLike,
+    _common_payload_dtype,
+    _common_thread_data_extent,
+    _validate_common_thread_data_payload,
 )
 from .thread_group import BlockGroup
 
@@ -66,8 +78,7 @@ def histogram(
 ) -> ThreadDataLike[numpy.int32] | ThreadDataLike[_Counter]:
     """Return fresh striped bin counts, preserving the input samples.
 
-    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
-    support this operation.
+    Implemented by both Numba-CUDA-MLIR and CUTLASS.
 
     Parameters
     ----------
@@ -133,8 +144,28 @@ def histogram(
         :end-before: # histogram-accumulation-example-end
         :dedent: 4
     """
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.histogram must be called from a supported GPU kernel."
+    normalize_positive_int("bins", bins)
+    normalize_positive_int("bins_per_thread", bins_per_thread)
+    normalize_histogram_algorithm(algorithm)
+    if counter_dtype is not None:
+        validate_histogram_dtype(counter_dtype, counter=True)
+    if _backend_module_name() is not None:
+        _validate_common_thread_data_payload(
+            "histogram", "samples", samples, allow_readonly=True
+        )
+        _common_thread_data_extent("histogram", "samples", samples)
+        validate_histogram_dtype(
+            _common_payload_dtype("histogram", "samples", samples)
+        )
+    return _group_primitive_marker(
+        "histogram",
+        group,
+        samples,
+        bins=bins,
+        bins_per_thread=bins_per_thread,
+        counter_dtype=counter_dtype,
+        algorithm=algorithm,
+        temp_storage=temp_storage,
     )
 
 

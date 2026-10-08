@@ -8,8 +8,9 @@ Importing this namespace validates the optional runtime and lets the common
 API recognize the active CuTe DSL compiler environment. Calls inside that
 environment use these implementations. The namespace provides Load/Store,
 Reduce, Sum, Scan, Exchange, Shuffle, Merge Sort, Radix Sort, Radix Rank,
-TopK, Adjacent Difference, Discontinuity, and supported group queries and
-synchronization. Reduce and Scan accept only built-in operators.
+TopK, Adjacent Difference, Discontinuity, Histogram, and thread-group handles
+such as ``this_block()`` with rank/count queries and synchronization. Reduce
+and Scan accept only built-in operators.
 
 Qualified calls also accept the CuTe payload forms documented by each
 operation. The per-operation docs describe which block calls accept a
@@ -19,6 +20,7 @@ TempStorage descriptor to control their temporary shared-memory storage.
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._compiler._activation import register_trace_context
 from ._group_exchange import exchange
+from ._group_histogram import histogram
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
 from ._group_neighbors import adjacent_difference, discontinuity
@@ -68,6 +70,7 @@ __all__ = [
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
+    "histogram",
     "inclusive_scan",
     "inclusive_sum",
     "load",
