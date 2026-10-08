@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits fill
+// tbb system inherits fill
 #include <thrust/system/cpp/detail/fill.h>
