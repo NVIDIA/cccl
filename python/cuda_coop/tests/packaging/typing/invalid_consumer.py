@@ -272,9 +272,10 @@ common.sum(
     common.this_thread(),  # expected-error: [arg-type]
     np.int32(1),
 )
-coop.sum(
-    coop.this_warp(),  # expected-error: [arg-type]
+coop.sum(  # expected-error: [call-overload]
+    coop.this_warp(),
     values,
+    valid_items=7,
 )
 common.sum(
     common.this_warp(),  # expected-error: [arg-type]

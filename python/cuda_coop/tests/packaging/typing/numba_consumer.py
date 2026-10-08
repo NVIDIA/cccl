@@ -253,6 +253,8 @@ def check_numba_surface(
         np.float32,
     )
     assert_type(coop.sum(warp, np.uint32(4)), np.uint32)
+    assert_type(coop.sum(warp, values), np.uint16)
+    assert_type(coop.reduce(logical_warp, values, binary_op="max"), np.uint16)
     assert_type(coop.reduce(block, values, binary_op="min"), np.uint16)
     assert_type(
         coop.reduce(block, readonly_values, binary_op="min"),

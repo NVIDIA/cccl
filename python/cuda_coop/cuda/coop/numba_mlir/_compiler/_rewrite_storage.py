@@ -406,7 +406,8 @@ class _StorageRewrite:
         groups. Each warp or thread needs its own region so concurrent
         operations do not overwrite one another. Use zero for a block-wide
         group, the linear thread rank for a thread, or that rank divided by the
-        logical warp width.
+        logical warp width. Non-exhaustive warp groups restart the index
+        within each physical warp so trailing lanes consume no scratch.
 
         Parameters
         ----------
@@ -450,6 +451,66 @@ class _StorageRewrite:
             stem="group_topology_logical_width",
             value=topology.logical_width,
         )
+        if 32 % topology.logical_width:
+            physical_width = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_physical_width",
+                value=32,
+            )
+            physical_warp = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_physical_warp",
+                fn=operator.floordiv,
+                lhs=linear_rank,
+                rhs=physical_width,
+            )
+            lane = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_lane",
+                fn=operator.mod,
+                lhs=linear_rank,
+                rhs=physical_width,
+            )
+            groups_per_warp = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_groups_per_warp",
+                value=32 // topology.logical_width,
+            )
+            warp_offset = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_warp_offset",
+                fn=operator.mul,
+                lhs=physical_warp,
+                rhs=groups_per_warp,
+            )
+            local_instance = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_local_instance",
+                fn=operator.floordiv,
+                lhs=lane,
+                rhs=logical_width,
+            )
+            return self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_instance_index",
+                fn=operator.add,
+                lhs=warp_offset,
+                rhs=local_instance,
+            )
         return self._emit_integer_binop(
             block,
             scope=scope,

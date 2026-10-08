@@ -243,10 +243,10 @@ def validate_emittable_topology(
 ) -> GroupTopologyRequirements | None:
     """Require group rank formulas that the storage emitters support.
 
-    A plan must cover the exact block dimensions with its logical width
-    and instance count. Accept a single block, contiguous power-of-two
-    logical warps dividing 32, or individual threads. Check the symbolic
-    instance and rank expressions against those forms; emitters implement
+    A plan must cover every complete group in the exact block dimensions.
+    Accept a single block, contiguous logical groups within each physical
+    warp, or individual threads. Check the symbolic instance and rank
+    expressions against those forms; emitters implement
     these specific formulas rather than evaluating arbitrary topology
     expression strings.
 
@@ -283,7 +283,19 @@ def validate_emittable_topology(
             "cooperative provider storage requires exact block dimensions."
         )
     block_threads = exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
-    if topology.logical_width * topology.instances != block_threads:
+    participating_threads = block_threads
+    nonexhaustive_warp = (
+        participation.group_kind == "threads_within_warp"
+        and not participation.complete_parent_partition
+        and 1 <= topology.logical_width <= 32
+    )
+    if nonexhaustive_warp:
+        participating_threads = (
+            (block_threads // 32)
+            * (32 // topology.logical_width)
+            * topology.logical_width
+        )
+    if topology.logical_width * topology.instances != participating_threads:
         raise CoopSinglePhaseRewriteError(
             "cooperative provider topology does not cover the exact "
             "block dimensions."
@@ -305,15 +317,29 @@ def validate_emittable_topology(
         if (
             width < 1
             or width > 32
-            or width & (width - 1)
-            or 32 % width != 0
-            or topology.instance_index != f"linear_thread_rank / {width}"
-            or topology.thread_rank != f"linear_thread_rank % {width}"
+            or (width & (width - 1) and block_threads % 32 != 0)
         ):
             raise CoopSinglePhaseRewriteError(
-                "warp-scoped cooperative storage requires a power-of-two "
-                "logical width dividing 32 "
-                "and canonical contiguous ranks."
+                "warp-scoped cooperative storage requires a logical width "
+                "from 1 through 32; non-power-of-two widths require "
+                "complete physical warps."
+            )
+        if nonexhaustive_warp:
+            instance_index = (
+                f"(linear_thread_rank / 32) * {32 // width} + "
+                f"((linear_thread_rank % 32) / {width})"
+            )
+            thread_rank = f"(linear_thread_rank % 32) % {width}"
+        else:
+            instance_index = f"linear_thread_rank / {width}"
+            thread_rank = f"linear_thread_rank % {width}"
+        if (
+            topology.instance_index != instance_index
+            or topology.thread_rank != thread_rank
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "warp-scoped cooperative storage requires canonical "
+                "ranks within each physical warp."
             )
     elif scope is SynchronizationScope.NONE:
         if (
