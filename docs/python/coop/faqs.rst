@@ -639,9 +639,10 @@ of the destination unchanged.
 How does Batched Warp Reduction differ from ordinary Reduce?
 ------------------------------------------------------------
 
-Ordinary block ``reduce(block, values)`` combines the threads' payload items
-into one aggregate. Ordinary Warp ``reduce(warp, value)`` accepts one scalar
-per lane. Both define the result only at group rank zero.
+Ordinary ``reduce(group, values)`` combines all participating threads'
+payload items into one aggregate. Both block and Warp reductions accept
+one scalar or a fixed-size payload per thread and define the result only
+at group rank zero.
 ``reduce_batched(warp, values)`` reduces each local slot independently across
 the warp. Three slots per lane mean three independent results, one for each
 slot.
