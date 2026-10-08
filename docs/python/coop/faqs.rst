@@ -160,11 +160,12 @@ barriers automatically. See :ref:`exclusive scratch slices
 synchronization.
 
 Explicit descriptors control scratch for block transpose-family Load/Store,
-Block Scan, Block Merge Sort, Block Radix Sort, and TopK. Storage-free block
-Load/Store accept and validate a descriptor but do not use it. Warp operations
-reject explicit descriptors. The compiler allocates any scratch required by
-CUB operations. See :ref:`temporary storage <coop-temp-storage>` for the
-complete contract and shared-memory restrictions.
+Block Scan, Block Merge Sort, Block Radix Sort, TopK, Adjacent Difference,
+and Discontinuity. Storage-free block Load/Store accept and validate a
+descriptor but do not use it. Warp operations reject explicit descriptors.
+The compiler allocates any scratch required by CUB operations. See
+:ref:`temporary storage <coop-temp-storage>` for the complete contract and
+shared-memory restrictions.
 
 .. _coop-faq-installed-extra:
 
@@ -212,3 +213,22 @@ Each call sorts only the selected group's tile. Several blocks therefore
 produce independently sorted tiles. A globally sorted array requires an
 algorithm that combines those tiles. Warp and logical-warp Merge Sort
 likewise sort each participating group's tile independently.
+
+.. _coop-faq-neighbor-operations:
+
+When should I use Adjacent Difference or Discontinuity?
+-------------------------------------------------------
+
+Use :func:`cuda.coop.adjacent_difference` to compute a value from each item
+and its neighbor, such as the delta between successive samples. Use
+:func:`cuda.coop.discontinuity` to produce flags that mark boundaries, such
+as the first and last item of each equal-value run. It returns ``int32``
+flags; ``mode="heads_and_tails"`` returns both payloads.
+
+Tile boundaries matter for both operations. Supply a predecessor or
+successor when comparisons must continue across tiles. A multiblock
+kernel that reads global neighbors must preserve those source values
+until all readers finish. The
+:doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+:doc:`Discontinuity <visualizations/discontinuity>` examples use separate
+input and output arrays.

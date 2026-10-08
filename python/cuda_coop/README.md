@@ -127,6 +127,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
 | Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
+| Neighbor comparisons | `adjacent_difference`, `discontinuity` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -305,8 +306,8 @@ group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, and TopK accept an
-optional caller descriptor:
+Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
+Difference, and Discontinuity accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(

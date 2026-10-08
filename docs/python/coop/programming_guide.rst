@@ -147,6 +147,9 @@ several operations:
      - Integer-key sorting and digit ranks
      - Also supports floating-point sorting, striped sort output,
        digit-prefix output, scalars, and fixed local arrays
+   * - Neighbor comparisons
+     - Adjacent differences and head/tail flags with tile boundary controls
+     - Also accepts stateless ``difference_op`` and ``flag_op`` callbacks
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -265,7 +268,7 @@ parts of the API.
    * - ``coop.this_block()``
      - All threads in the block
      - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
-       Radix Rank, and TopK
+       Radix Rank, TopK, Adjacent Difference, and Discontinuity
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -485,9 +488,9 @@ Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
 Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
-Rank, and TopK return fresh payloads, so their input values remain available
-afterwards. Reduction returns a scalar, including when each thread contributes
-several items.
+Rank, TopK, Adjacent Difference, and Discontinuity return fresh payloads, so
+their input values remain available afterwards. Reduction returns a scalar,
+including when each thread contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -720,7 +723,7 @@ allocation. Its contents are opaque; keep application values in
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
    * - Block transpose-family Load/Store; Block Reduce; Block Scan; Block Merge Sort;
-       Block Radix Sort; TopK
+       Block Radix Sort; TopK; Adjacent Difference; Discontinuity
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
@@ -1123,6 +1126,41 @@ Use a sorting primitive when the result must be ordered. TopK can avoid
 ordering elements that the kernel will discard; it does not promise that
 its selected prefix is already sorted. See :ref:`the TopK FAQ
 <coop-faq-topk-order>`.
+
+.. _coop-neighbor-comparisons:
+
+Comparing neighboring values
+----------------------------
+
+:func:`cuda.coop.adjacent_difference` computes an arithmetic result for each
+item and its left or right neighbor. It returns a fresh payload and
+preserves its input. A tile predecessor or successor lets comparisons
+continue across tile boundaries. With ``valid_items``, the invalid suffix
+is copied from the input. The current CUB interface does not support a
+right partial difference with an explicit successor; that combination
+is rejected.
+
+:func:`cuda.coop.discontinuity` returns ``int32`` head flags, tail flags,
+or both. Its default predicate marks unequal neighbors. Both operations
+interpret inputs in blocked order, but Discontinuity always processes a
+full tile. Arbitrary padding can change the last valid item's tail flag.
+The :doc:`Adjacent Difference <visualizations/adjacent-difference>` and
+:doc:`Discontinuity <visualizations/discontinuity>` pages explain tile
+boundaries and include tested delta-encoding and run-ID examples.
+
+The qualified functions in ``cuda.coop.numba_mlir`` also accept fixed-size
+local arrays and stateless device-compilable binary callables.
+``difference_op(current, neighbor)`` returns the input dtype. Its argument
+order stays the same for left and right differences.
+
+For Discontinuity, ``flag_op(previous, current)`` determines heads and
+``flag_op(current, next)`` determines tails. The distinction matters for a
+predicate such as ``<``. Without a supplied tile boundary, the first head
+or last tail remains one regardless of the predicate. Returned flags have
+``int32`` dtype and the same per-thread extent as the input.
+
+See :func:`cuda.coop.numba_mlir.adjacent_difference` and
+:func:`cuda.coop.numba_mlir.discontinuity` for the qualified API reference.
 
 
 Checking and tuning a kernel

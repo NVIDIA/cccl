@@ -7,6 +7,8 @@ from ._group._exchange import exchange
 from ._group._load_store import load, store
 from ._group._merge_sort import merge_sort_keys as merge_sort_keys
 from ._group._merge_sort import merge_sort_pairs as merge_sort_pairs
+from ._group._neighbors import adjacent_difference as adjacent_difference
+from ._group._neighbors import discontinuity as discontinuity
 from ._group._radix_sort import radix_rank_keys as radix_rank_keys
 from ._group._radix_sort import radix_sort_keys as radix_sort_keys
 from ._group._radix_sort import radix_sort_pairs as radix_sort_pairs
@@ -48,6 +50,8 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "adjacent_difference",
+    "discontinuity",
     "exchange",
     "exclusive_scan",
     "exclusive_sum",
