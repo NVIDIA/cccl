@@ -84,7 +84,6 @@ NUMBA_TYPES_TO_CPP = {
 }
 
 _BlockThreads = int | tuple[int, ...] | list[int]
-_CompileIdentity = tuple[int, bool, str, tuple[bytes, ...]]
 
 _SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
 
@@ -1269,7 +1268,7 @@ class Algorithm:
         self.block_threads: _BlockThreads | None = None
         self._private_symbol_digest = None
         self._private_symbol_key = None
-        self._provider_compile_identity = None
+        self._provider_compile_identity: nvrtc.CompilerIdentity | None = None
         self._specialize(template_arguments)
 
     def __repr__(self) -> str:
@@ -1286,7 +1285,7 @@ class Algorithm:
         )
         return f"{self.c_name}{namespace}_{self.method_name}"
 
-    def _current_provider_compile_identity(self):
+    def _current_provider_compile_identity(self) -> nvrtc.CompilerIdentity:
         """Describe compilation for the current device and this provider.
 
         ``_bind_provider_compile_identity`` calls this when its caller has
@@ -1309,12 +1308,14 @@ class Algorithm:
             code="lto",
         )
 
-    def _bind_provider_compile_identity(self, compile_identity=None):
+    def _bind_provider_compile_identity(
+        self, compile_identity: nvrtc.CompilerIdentity | None = None
+    ) -> nvrtc.CompilerIdentity:
         """Bind compilation inputs before naming or reusing provider code.
 
         Symbol qualification, cache-key construction, and ``get_lto_ir`` call
         this so a specialization cannot reuse code for a different target or
-        compiler setup. ``compile_identity`` is the tuple returned by
+        compiler setup. ``compile_identity`` is the record returned by
         ``nvrtc.compiler_identity``; ``None`` queries the current device and
         this provider's resolved context.
 
@@ -1341,8 +1342,8 @@ class Algorithm:
         *,
         logical_warp_threads: int | None = None,
         block_threads: _BlockThreads | None = None,
-        compile_identity: _CompileIdentity | None = None,
-    ) -> _CompileIdentity:
+        compile_identity: nvrtc.CompilerIdentity | None = None,
+    ) -> nvrtc.CompilerIdentity:
         """Bind this provider to a deterministic private symbol namespace.
 
         Source emission and overload registration must agree on exported names,
@@ -1365,14 +1366,14 @@ class Algorithm:
         block_threads : int, tuple of int, or list of int, optional
             Enclosing block configuration override. ``None`` uses
             ``self.block_threads``.
-        compile_identity : tuple, optional
+        compile_identity : nvrtc.CompilerIdentity, optional
             Target and options returned by ``nvrtc.compiler_identity``. ``None``
             resolves them from this provider's compiler context and current
             device.
 
         Returns
         -------
-        tuple
+        nvrtc.CompilerIdentity
             Bound compilation identity for subsequent source and artifact
             creation.
 
@@ -1650,7 +1651,7 @@ class Algorithm:
         logical_warp_threads: int | None = None,
         block_threads: _BlockThreads | None = None,
         *,
-        compile_identity: _CompileIdentity | None = None,
+        compile_identity: nvrtc.CompilerIdentity | None = None,
     ) -> tuple[str, list[bytes], tuple[str, ...], OrderedDict[str, str]]:
         """Generate C++ wrappers and compile-time storage metadata.
 
@@ -1684,7 +1685,7 @@ class Algorithm:
         block_threads : int, tuple of int, or list of int, optional
             Exact enclosing block size or dimensions. ``None`` uses
             ``self.block_threads``.
-        compile_identity : tuple, optional
+        compile_identity : nvrtc.CompilerIdentity, optional
             Bound target/options identity. ``None`` resolves the current
             device's identity through ``_qualify_private_symbols``.
 
@@ -2059,7 +2060,7 @@ class Algorithm:
         logical_warp_threads: int | None = None,
         block_threads: _BlockThreads | None = None,
         *,
-        compile_identity: _CompileIdentity | None = None,
+        compile_identity: nvrtc.CompilerIdentity | None = None,
     ) -> list[bytes]:
         """Compile or reuse this specialization's matching link images.
 
@@ -2084,7 +2085,7 @@ class Algorithm:
         block_threads : int, tuple of int, or list of int, optional
             Exact enclosing block configuration; ``None`` uses
             ``self.block_threads``.
-        compile_identity : tuple, optional
+        compile_identity : nvrtc.CompilerIdentity, optional
             Previously resolved target/options identity, or ``None`` to query
             it.
 
@@ -2132,7 +2133,7 @@ class Algorithm:
             compile_identity=compile_identity,
         )
 
-        cc = int(compile_identity[0])
+        cc = compile_identity.cc
         _, (ltoir, layouts) = nvrtc.compile_with_layouts(
             cpp=src,
             layout_types=temp_storage_types,
