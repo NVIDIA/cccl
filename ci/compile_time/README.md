@@ -130,6 +130,10 @@ PyTorch uses the CUDA 13.4/GCC 14 environment defined in
 profiling traces. Its CI entry passes `-summary-jobs 1` because individual
 traces can exceed 20 GB. This option controls reporting workers independently
 of build parallelism and applies the configured slices to each trace pair.
+PyTorch profiling builds target only SM80 (`TORCH_CUDA_ARCH_LIST=8.0`) for both
+CCCL revisions. PyTorch adds no per-source architectures for this target; the
+multiarchitecture RowwiseScaledMM build exceeded six hours before the baseline
+could start. All extracted CUDA translation units are still built.
 
 CI uploads reports and raw traces from their build locations, avoiding another
 local copy before artifact upload. RAPIDS trace collection assigns nested

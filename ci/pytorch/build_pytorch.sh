@@ -96,10 +96,14 @@ declare -a cmake_args=(
   "-DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_HOME}"
 )
 if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+  # Profile one architecture; newer targets also add per-source GPU images.
+  # Compiling those images can exceed the CI budget before the baseline starts.
+  export TORCH_CUDA_ARCH_LIST=8.0
   # PyTorch forwards launcher environment variables into CMake with FORCE.
   unset CMAKE_CUDA_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_C_COMPILER_LAUNCHER
   export USE_CCACHE=OFF
   cmake_args+=(
+    "-DTORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}"
     "-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-"
     "-DUSE_CCACHE=OFF"
     "-DCMAKE_CUDA_COMPILER_LAUNCHER="
