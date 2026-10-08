@@ -69,12 +69,13 @@ struct worker_policy
   BlockStoreAlgorithm store_algorithm; //!< Block store algorithm used to write the selected keys.
 
   epilogue_policy epilogue; //!< Sub-policy for the compaction epilogue.
+  int radix_bits; //!< Digit width of the block top-k radix passes (0, the omitted default: the block primitive's).
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
-        && lhs.epilogue == rhs.epilogue;
+        && lhs.epilogue == rhs.epilogue && lhs.radix_bits == rhs.radix_bits;
   }
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
@@ -85,9 +86,11 @@ struct worker_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
   {
-    return os << "worker_policy { .threads_per_block = " << p.threads_per_block
-              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-              << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue << " }";
+    return os
+        << "worker_policy { .threads_per_block = " << p.threads_per_block
+        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+        << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue
+        << ", .radix_bits = " << p.radix_bits << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -189,12 +192,32 @@ struct baseline_topk_policy
   constexpr auto epilogue  = epilogue_policy{16, load_alg, store_alg, scan_alg};
   return baseline_topk_policy{
     {
-      worker_policy{256, 64, load_alg, store_alg, epilogue},
-      worker_policy{256, 32, load_alg, store_alg, epilogue},
-      worker_policy{256, 16, load_alg, store_alg, epilogue},
-      worker_policy{256, 8, load_alg, store_alg, epilogue},
-      worker_policy{256, 4, load_alg, store_alg, epilogue},
-      worker_policy{128, 2, load_alg, store_alg, epilogue},
+      worker_policy{256, 64, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 32, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 16, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 8, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 4, load_alg, store_alg, epilogue, 0},
+      worker_policy{128, 2, load_alg, store_alg, epilogue, 0},
+    },
+    multi_worker_policy{256, 64}};
+}
+
+//! SM 12.0 baseline sub-policy, measured on RTX 5090: same tile size classes as the default, so the backend coverage
+//! is unchanged.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_sm120_baseline_policy() -> baseline_topk_policy
+{
+  constexpr auto load_alg  = BLOCK_LOAD_VECTORIZE;
+  constexpr auto store_alg = BLOCK_STORE_DIRECT;
+  constexpr auto epilogue =
+    epilogue_policy{16, BLOCK_LOAD_WARP_TRANSPOSE, BLOCK_STORE_WARP_TRANSPOSE, BLOCK_SCAN_WARP_SCANS};
+  return baseline_topk_policy{
+    {
+      worker_policy{256, 64, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 32, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 16, load_alg, store_alg, epilogue, 0},
+      worker_policy{128, 16, load_alg, store_alg, epilogue, 0},
+      worker_policy{64, 16, load_alg, store_alg, epilogue, 6},
+      worker_policy{128, 2, load_alg, store_alg, epilogue, 0},
     },
     multi_worker_policy{256, 64}};
 }
@@ -260,6 +283,9 @@ struct cluster_topk_policy
                                  //!< shared-memory budget: the hardware opt-in budget). A smaller cap shrinks each
                                  //!< CTA's resident capacity (and thus its dynamic shared-memory request), so a smaller
                                  //!< segment overflows into the streaming path.
+  bool wave_aware_cluster_width = false; //!< After the launch shape is chosen (fully resident or streaming), also try
+                                         //!< narrower clusters (8, 4, 2, 1 CTAs) at the largest shared memory and keep
+                                         //!< the width that minimizes `waves / sqrt(width)`.
 
   // Equality/streaming make this a regular type (required by the `policy_selector` concept / `dispatch_compute_cap`).
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
@@ -272,7 +298,8 @@ struct cluster_topk_policy
         && lhs.tie_break_items_per_thread == rhs.tie_break_items_per_thread
         && lhs.copy_items_per_thread == rhs.copy_items_per_thread
         && lhs.max_blocks_per_cluster == rhs.max_blocks_per_cluster
-        && lhs.max_chunk_slots_per_block == rhs.max_chunk_slots_per_block;
+        && lhs.max_chunk_slots_per_block == rhs.max_chunk_slots_per_block
+        && lhs.wave_aware_cluster_width == rhs.wave_aware_cluster_width;
   }
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const cluster_topk_policy& lhs, const cluster_topk_policy& rhs)
@@ -291,8 +318,8 @@ struct cluster_topk_policy
         << ", .single_block_max_seg_size = " << p.single_block_max_seg_size << ", .bits_per_pass = " << p.bits_per_pass
         << ", .histogram_items_per_thread = " << p.histogram_items_per_thread << ", .tie_break_items_per_thread = "
         << p.tie_break_items_per_thread << ", .copy_items_per_thread = " << p.copy_items_per_thread
-        << ", .max_blocks_per_cluster = " << p.max_blocks_per_cluster
-        << ", .max_chunk_slots_per_block = " << p.max_chunk_slots_per_block << " }";
+        << ", .max_blocks_per_cluster = " << p.max_blocks_per_cluster << ", .max_chunk_slots_per_block = "
+        << p.max_chunk_slots_per_block << ", .wave_aware_cluster_width = " << p.wave_aware_cluster_width << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -1912,6 +1939,42 @@ static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(131072, 512
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(131072, 1024)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(262144, 512)));
 static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(262144, 1024)));
+
+//! SM 12.0 cluster sub-policy for keys-only top-k under the non-deterministic requirement, measured on RTX 5090
+//! (F32/U32/F64 keys). Multi-CTA segments run markedly faster with a narrower digit than the default 11-bit one.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+make_sm120_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
+  -> cluster_topk_policy
+{
+  // k >= segment size degenerates to the select-all copy path, which keeps the default policy, as do segments small
+  // enough for the single-CTA path, where the extra pass of the narrower digit does not pay off.
+  if (max_k >= static_max_segment_size || static_max_segment_size <= 8 * 1024)
+  {
+    return make_cluster_policy();
+  }
+
+  auto policy                     = make_cluster_policy();
+  policy.wave_aware_cluster_width = true;
+  if (static_max_segment_size <= 16 * 1024)
+  {
+    // Segments up to 16K keys run the single-CTA path, with 10-bit digits.
+    policy.single_block_max_seg_size = 16 * 1024;
+    policy.bits_per_pass             = 10;
+  }
+  else
+  {
+    // Beyond 16K keys, 32 KiB chunks measured faster for both resident and streaming segments.
+    policy.chunk_bytes = 32 * 1024;
+    // 1M..<2M keys stream and gain from one fewer pass (11-bit digits); 512K..<1M and >=2M keep 8-bit digits.
+    const bool wide_digit = static_max_segment_size >= 1024 * 1024 && static_max_segment_size < 2048 * 1024;
+    policy.bits_per_pass  = (static_max_segment_size < 512 * 1024) ? 9 : (wide_digit ? 11 : 8);
+  }
+  return policy;
+}
+
+static_assert(is_valid_cluster_policy(make_sm120_keys_cluster_policy(16384, 256)));
+static_assert(is_valid_cluster_policy(make_sm120_keys_cluster_policy(65536, 1024)));
+static_assert(is_valid_cluster_policy(make_sm120_keys_cluster_policy(1 << 21, 2048)));
 
 // -----------------------------------------------------------------------------
 // Backend selection

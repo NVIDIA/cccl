@@ -25,6 +25,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/argument>
+#include <cuda/std/__type_traits/conditional.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -106,7 +107,9 @@ struct agent_batched_topk_worker_per_segment
   using block_load_keys_t = BlockLoad<key_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
   using block_load_vals_t = BlockLoad<value_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
 
-  using block_topk_t = block_topk<key_t, threads_per_block, items_per_thread, value_t>;
+  static constexpr int radix_bits =
+    active_policy.radix_bits > 0 ? active_policy.radix_bits : block_topk_default_radix_bits;
+  using block_topk_t = block_topk<key_t, threads_per_block, items_per_thread, value_t, radix_bits>;
 
   // TODO (elstehle): Specialize for the case that we statically know k and we can skip passing num_valid_items to
   // Store()
@@ -122,6 +125,10 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Shared Memory Storage
   // -------------------------------------------------------------------------
+  // The epilogue only runs when large segments can be present; otherwise its storage would just limit occupancy.
+  template <typename StorageT>
+  using epilogue_storage_t = ::cuda::std::conditional_t<only_small_segments, NullType, StorageT>;
+
   struct TempStorage_
   {
     union
@@ -131,9 +138,9 @@ struct agent_batched_topk_worker_per_segment
       typename block_topk_t::TempStorage topk;
       typename block_store_keys_t::TempStorage store_keys;
       typename block_store_vals_t::TempStorage store_vals;
-      typename block_load_epilogue_t::TempStorage load_epilogue;
-      typename block_scan_epilogue_t::TempStorage scan_epilogue;
-      typename block_store_epilogue_t::TempStorage store_epilogue;
+      epilogue_storage_t<typename block_load_epilogue_t::TempStorage> load_epilogue;
+      epilogue_storage_t<typename block_scan_epilogue_t::TempStorage> scan_epilogue;
+      epilogue_storage_t<typename block_store_epilogue_t::TempStorage> store_epilogue;
     };
   };
 
