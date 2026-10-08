@@ -140,6 +140,9 @@ several operations:
    * - Shifting values
      - Unit ``up`` and ``down`` shifts of a block's ``ThreadData`` tile
      - Also supports scalar block ``offset`` and ``rotate`` modes
+   * - Comparison sorting
+     - Ascending or descending Merge Sort of keys or key-value pairs
+     - Also accepts a custom ``compare_op`` and fixed local arrays
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -251,13 +254,13 @@ parts of the API.
      - Hierarchy queries
    * - ``coop.this_warp()``
      - One physical warp
-     - Load, Store, Exchange, Reduce, scalar Scan
+     - Load, Store, Exchange, Reduce, scalar Scan, Merge Sort
    * - ``coop.this_warp().group_by(8)``
      - Eight consecutive lanes within a physical warp
      - Logical-warp forms of those operations
    * - ``coop.this_block()``
      - All threads in the block
-     - Load, Store, Exchange, Shuffle, Reduce, Scan
+     - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -710,9 +713,9 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store; Block Scan
+   * - Block transpose-family Load/Store; Block Reduce; Block Scan; Block Merge Sort
      - Automatic scratch, or an explicit ``TempStorage``
-   * - Warp transpose Load/Store; Warp Scan
+   * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
@@ -944,6 +947,59 @@ Each block has its own state. Launching this kernel with several blocks
 would require separate input/output ranges and would create independent
 running sums. For a whole-array scan across many blocks, use an appropriate
 device-wide scan or design the additional inter-block algorithm explicitly.
+
+.. _coop-merge-sort:
+
+Sorting keys and associated values
+----------------------------------
+
+:func:`~cuda.coop.merge_sort_keys` orders a group's keys.
+:func:`~cuda.coop.merge_sort_pairs` moves an associated value with each key,
+such as an original array index. Both return new payloads and preserve their
+inputs. The payloads use :term:`blocked` order. Sorting each block's tile
+does not sort an array spanning several blocks.
+
+Follow keys and their associated values through the
+:doc:`Merge Sort visualization <visualizations/merge-sort>`.
+
+This example sorts a block tile and moves each key's original position
+with that key:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_merge_sort_examples.py
+   :language: python
+   :start-after: # merge-sort-example-begin
+   :end-before: # merge-sort-example-end
+   :dedent: 4
+
+The default order is ascending; use ``descending=True`` to reverse it.
+Merge Sort does not promise to preserve the input order of equal keys.
+The keys and values in a pair call must have the same number of items per
+thread, but may have different dtypes.
+
+Merge Sort supports blocks with a power-of-two thread count, physical
+warps, and logical warps of 1, 2, 4, 8, 16, or 32 lanes. Warp calls sort
+each group's tile independently. Every member of the group participates.
+Only block calls accept an explicit ``temp_storage`` descriptor.
+
+For a partial tile, pass ``valid_items`` together with ``oob_default``.
+Use the same count and sentinel in every group member. The count is between
+zero and ``group_size * items_per_thread`` and describes the group's blocked
+prefix. The sentinel must sort after all valid keys: use an upper bound for
+ascending order or a lower bound for descending order. A typed sentinel,
+whether a runtime value or a NumPy scalar constant, must have exactly the key
+dtype. For ordinary Python literals, integer keys require integers within
+the key dtype's range. Floating keys accept integer or floating literals
+within the dtype's finite range. They also accept positive or negative
+infinity, as a Python float or a NumPy scalar of the key dtype.
+
+Only the sorted valid prefix is defined. Load only the valid input elements
+and store only that output prefix. A sentinel does not make an out-of-bounds
+memory access valid.
+
+The qualified API accepts ``compare_op`` for a custom strict weak ordering.
+The comparator must be stateless, return a Boolean, and perform ordinary
+device computation. Supply the desired direction in the comparator rather
+than combining it with ``descending=True``.
 
 
 Checking and tuning a kernel

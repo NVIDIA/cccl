@@ -124,6 +124,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Reduction | `reduce`, `sum` |
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
+| Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -287,21 +288,22 @@ requires the caller to keep the group aligned and converged. Grid
 synchronization is not available because this backend cannot request a
 cooperative grid launch.
 
-For `group_by`, `count` and `exhaustive` must be compile-time constants. A
-logical threads-within-warp group can query its threads and immediate parent
-Warp; a mapped warps-within-block group can query its threads, physical
-Warps, and immediate parent block. Queries above the immediate physical
-parent are rejected. Mapped warps-within-block groups expose queries and
-`is_member()` but not `sync()` or `sync_aligned()`; the planner does not
-manage the lifetime of their block barriers. For a non-exhaustive partition,
-use `is_member()` to guard rank-dependent work for excluded threads. Do not
-use that branch to skip a collective unless the collective's participation
-contract explicitly permits it; every required group or parent-group
-participant must still reach the collective.
+The `count` and `exhaustive` arguments of `group_by` must be compile-time
+constants. A logical threads-within-warp group can query its threads and
+immediate parent Warp; a mapped warps-within-block group can query its
+threads, physical Warps, and immediate parent block. Queries above the
+immediate physical parent are rejected. Mapped warps-within-block groups
+expose queries and `is_member()` but not `sync()` or `sync_aligned()`; the
+planner does not manage the lifetime of their block barriers. For a
+non-exhaustive partition, use `is_member()` to guard rank-dependent work
+for excluded threads. Do not use that branch to skip a collective unless the
+collective's participation contract explicitly permits it; every required
+group or parent-group participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, Reduce, and Scan accept an optional caller descriptor:
+Block Load, Store, Reduce, Scan, and Merge Sort accept an optional caller
+descriptor:
 
 ```python
 storage = coop.TempStorage(
@@ -322,13 +324,13 @@ the kernel; module-global storage descriptors cannot be resolved. A
 descriptor may be passed to a device helper that Numba-CUDA-MLIR inlines
 into the kernel, which is the default.
 
-The three block transpose Load/Store algorithms and Block Scan use CUB
-temporary storage. Without a descriptor, the compiler allocates the
-specialization's exact storage and inserts a block reuse barrier. A caller
-descriptor selects shared or exclusive slices and may request capacity and
-alignment. Both explicit and omitted storage participate in the
-shared-memory plan and launch accounting. The provider determines the
-required byte count and alignment.
+The three block transpose Load/Store algorithms use CUB temporary storage,
+as do the other listed block operations. Without a descriptor, the compiler
+allocates the specialization's exact storage and inserts a block reuse
+barrier. A caller descriptor selects shared or exclusive slices and may
+request capacity and alignment. Both explicit and omitted storage
+participate in the shared-memory plan and launch accounting. The provider
+determines the required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while

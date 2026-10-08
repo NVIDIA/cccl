@@ -19,6 +19,12 @@ from .load_store import (
     make_warp_load_store_specialization,
     make_warp_store_specialization,
 )
+from .merge_sort import (
+    WarpMergeSortPayload,
+    WarpMergeSortSpecialization,
+    WarpMergeSortTilePolicy,
+    make_warp_merge_sort_specialization,
+)
 from .reduce import (
     WarpReduceOperation,
     WarpReduceSpecialization,
@@ -38,6 +44,9 @@ __all__ = [
     "WarpLoadStoreAlgorithm",
     "WarpLoadStoreKind",
     "WarpLoadStoreSemantics",
+    "WarpMergeSortPayload",
+    "WarpMergeSortSpecialization",
+    "WarpMergeSortTilePolicy",
     "WarpReduceOperation",
     "WarpReduceSpecialization",
     "WarpScanMode",
@@ -47,6 +56,7 @@ __all__ = [
     "make_warp_load_specialization",
     "make_warp_load_store_semantics",
     "make_warp_load_store_specialization",
+    "make_warp_merge_sort_specialization",
     "make_warp_reduce_specialization",
     "make_warp_scan_specialization",
     "make_warp_store_specialization",
