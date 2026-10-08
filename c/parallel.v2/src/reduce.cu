@@ -103,7 +103,8 @@ CUresult cccl_device_reduce_compile(
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
-  cccl_value_t init,
+  cccl_type_info init,
+  cccl_init_kind_t init_kind,
   cccl_determinism_t determinism,
   int cc_major,
   int cc_minor,
@@ -111,29 +112,45 @@ CUresult cccl_device_reduce_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* build_config)
+  const cccl_build_config* build_config)
 try
 {
+  if (init_kind == CCCL_FUTURE_VALUE_INIT)
+  {
+    fprintf(stderr, "\nERROR in cccl_device_reduce_compile(): future value init is not supported\n");
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
   const char* ctk_root          = ctk_root_str.empty() ? nullptr : ctk_root_str.c_str();
   cccl::detail::MergedBuildConfig merged(build_config, cub_path, thrust_path);
 
-  auto result =
-    CubCall::from("cub/device/device_reduce.cuh")
-      .run("cub::DeviceReduce::Reduce")
-      .name("cccl_jit_reduce")
-      .with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init, stream)
-      .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+  auto base = CubCall::from("cub/device/device_reduce.cuh").run("cub::DeviceReduce::Reduce").name("cccl_jit_reduce");
+
+  auto result = [&] {
+    if (init_kind == CCCL_NO_INIT)
+    {
+      return base.with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, no_init(init), stream)
+        .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+    else // CCCL_VALUE_INIT
+    {
+      cccl_value_t init_val{init, nullptr}; // state=nullptr; passed at run time
+      return base.with(temp_storage, temp_bytes, in(input_it), out(output_it), num_items, op, init_val, stream)
+        .compileOnly(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
+    }
+  }();
 
   build->cc = cc_major * 10 + cc_minor;
   cccl::detail::copy_bytes(result.library_bytes, build->payload, build->payload_size);
   // Zero-init fields set by _load, not _compile (matches v1's contract).
   build->jit_compiler     = nullptr;
   build->reduce_fn        = nullptr;
-  build->accumulator_size = init.type.size;
+  build->accumulator_size = init.size;
   build->determinism      = determinism;
+  build->init_kind        = init_kind;
 
   return CUDA_SUCCESS;
 }
@@ -162,7 +179,7 @@ try
     return CUDA_ERROR_UNKNOWN;
   }
 
-  auto fn = compiler->getFunction<reduce_fn_t>("cccl_jit_reduce");
+  auto fn = compiler->getFunction<reduce_init_fn_t>("cccl_jit_reduce");
   if (!fn)
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_load(): %s\n", compiler->getLastError().c_str());
@@ -305,12 +322,14 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  // extra = {accumulator_size (u64), determinism (u32)}
-  std::vector<char> extra(sizeof(uint64_t) + sizeof(uint32_t));
+  // extra = {accumulator_size (u64), determinism (u32), init_kind (u32)}
+  std::vector<char> extra(sizeof(uint64_t) + 2 * sizeof(uint32_t));
   uint64_t accum_size_le  = build->accumulator_size;
   uint32_t determinism_le = static_cast<uint32_t>(build->determinism);
+  uint32_t init_kind_le   = static_cast<uint32_t>(build->init_kind);
   std::memcpy(extra.data(), &accum_size_le, sizeof(accum_size_le));
   std::memcpy(extra.data() + sizeof(accum_size_le), &determinism_le, sizeof(determinism_le));
+  std::memcpy(extra.data() + sizeof(accum_size_le) + sizeof(determinism_le), &init_kind_le, sizeof(init_kind_le));
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_REDUCE, build->cc, {"cccl_jit_reduce"}, extra, build->payload, build->payload_size);
@@ -342,14 +361,16 @@ try
   // Commit-on-success: build a local result{} and only assign to
   // *build_ptr after every read succeeds, so *build_ptr is left unchanged
   // on failure (matches v1's deserialize contract).
-  if (parsed.extra.size() != sizeof(uint64_t) + sizeof(uint32_t))
+  if (parsed.extra.size() != sizeof(uint64_t) + 2 * sizeof(uint32_t))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
   uint64_t accum_size;
   uint32_t determinism_raw;
+  uint32_t init_kind_raw;
   std::memcpy(&accum_size, parsed.extra.data(), sizeof(accum_size));
   std::memcpy(&determinism_raw, parsed.extra.data() + sizeof(accum_size), sizeof(determinism_raw));
+  std::memcpy(&init_kind_raw, parsed.extra.data() + sizeof(accum_size) + sizeof(determinism_raw), sizeof(init_kind_raw));
 
   cccl_device_reduce_build_result_t result{};
   result.cc = parsed.cc;
@@ -359,6 +380,7 @@ try
   result.reduce_fn        = nullptr;
   result.accumulator_size = accum_size;
   result.determinism      = static_cast<cccl_determinism_t>(determinism_raw);
+  result.init_kind        = static_cast<cccl_init_kind_t>(init_kind_raw);
 
   *build_ptr = result;
   return CUDA_SUCCESS;
