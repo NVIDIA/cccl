@@ -137,28 +137,28 @@ def numba_type_to_cpp(numba_type):
     return "storage_t"
 
 
-def _validate_logical_warp_threads(threads):
+def _validate_logical_warp_threads(logical_warp_threads):
     """Check the logical warp width before compiling or allocating scratch.
 
     Warp factories and provider code generation use this to require a Python
-    integer from the supported widths. ``threads`` counts participating lanes
-    per logical warp. Return it unchanged, or raise ``ValueError`` for an
-    unsupported width, boolean, or other type.
+    integer from the supported widths. ``logical_warp_threads`` counts
+    participating lanes per logical warp. Return it unchanged, or raise
+    ``ValueError`` for an unsupported width, boolean, or other type.
     """
 
     if (
-        isinstance(threads, bool)
-        or not isinstance(threads, int)
-        or threads not in _SUPPORTED_LOGICAL_WARP_THREADS
+        isinstance(logical_warp_threads, bool)
+        or not isinstance(logical_warp_threads, int)
+        or logical_warp_threads not in _SUPPORTED_LOGICAL_WARP_THREADS
     ):
         supported = ", ".join(
             str(value) for value in sorted(_SUPPORTED_LOGICAL_WARP_THREADS)
         )
         raise ValueError(
             "warp-scoped providers require a logical width in "
-            f"{{{supported}}}; got {threads!r}"
+            f"{{{supported}}}; got {logical_warp_threads!r}"
         )
-    return threads
+    return logical_warp_threads
 
 
 def _normalize_block_threads(threads_per_block):
@@ -1265,7 +1265,7 @@ class Algorithm:
         self._compile_context = compile_context
         self._temp_storage_bytes = None
         self._temp_storage_alignment = None
-        self.threads: int | None = None
+        self.logical_warp_threads: int | None = None
         self.block_threads: _BlockThreads | None = None
         self._private_symbol_digest = None
         self._private_symbol_key = None
@@ -1339,7 +1339,7 @@ class Algorithm:
     def _qualify_private_symbols(
         self,
         *,
-        threads: int | None = None,
+        logical_warp_threads: int | None = None,
         block_threads: _BlockThreads | None = None,
         compile_identity: _CompileIdentity | None = None,
     ) -> _CompileIdentity:
@@ -1359,9 +1359,9 @@ class Algorithm:
 
         Parameters
         ----------
-        threads : int, optional
+        logical_warp_threads : int, optional
             Logical warp width override used in the coalescing key. ``None``
-            uses ``self.threads``.
+            uses ``self.logical_warp_threads``.
         block_threads : int, tuple of int, or list of int, optional
             Enclosing block configuration override. ``None`` uses
             ``self.block_threads``.
@@ -1388,7 +1388,7 @@ class Algorithm:
         )
         key = algo_coalesce_key(
             self,
-            threads=threads,
+            logical_warp_threads=logical_warp_threads,
             block_threads=block_threads,
         )
         if self._private_symbol_key is not None:
@@ -1463,7 +1463,7 @@ class Algorithm:
         self.c_name += mangle
         self.template_parameters = []
         self.parameters = specialized_parameters
-        self.threads = cast(
+        self.logical_warp_threads = cast(
             int | None,
             template_arguments.get(
                 "LOGICAL_WARP_THREADS",
@@ -1647,7 +1647,7 @@ class Algorithm:
 
     def _source_code(
         self,
-        threads: int | None = None,
+        logical_warp_threads: int | None = None,
         block_threads: _BlockThreads | None = None,
         *,
         compile_identity: _CompileIdentity | None = None,
@@ -1678,9 +1678,9 @@ class Algorithm:
 
         Parameters
         ----------
-        threads : int, optional
+        logical_warp_threads : int, optional
             Logical warp width for allocating warp wrappers. ``None`` uses
-            ``self.threads``.
+            ``self.logical_warp_threads``.
         block_threads : int, tuple of int, or list of int, optional
             Exact enclosing block size or dimensions. ``None`` uses
             ``self.block_threads``.
@@ -1714,7 +1714,7 @@ class Algorithm:
         """
 
         self._qualify_private_symbols(
-            threads=threads,
+            logical_warp_threads=logical_warp_threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
@@ -1872,7 +1872,9 @@ class Algorithm:
                     )
                 elif self.execution_scope is SynchronizationScope.WARP:
                     logical_width = _validate_logical_warp_threads(
-                        threads if threads is not None else self.threads
+                        logical_warp_threads
+                        if logical_warp_threads is not None
+                        else self.logical_warp_threads
                     )
                     resolved_block_threads = _normalize_block_threads(
                         block_threads
@@ -2007,7 +2009,11 @@ class Algorithm:
         )
 
     def _make_lto_ir_cache_key(
-        self, threads=None, block_threads=None, *, compile_identity=None
+        self,
+        logical_warp_threads=None,
+        block_threads=None,
+        *,
+        compile_identity=None,
     ):
         """Validate warp topology and identify reusable link images.
 
@@ -2015,19 +2021,25 @@ class Algorithm:
         thread configuration, and compiler identity. Reusing an object with a
         different bound target fails before its cached artifact is returned.
         """
-        resolved_threads = threads if threads is not None else self.threads
+        resolved_logical_warp_threads = (
+            logical_warp_threads
+            if logical_warp_threads is not None
+            else self.logical_warp_threads
+        )
         resolved_block_threads = (
             block_threads if block_threads is not None else self.block_threads
         )
         if self.execution_scope is SynchronizationScope.WARP:
-            resolved_threads = _validate_logical_warp_threads(resolved_threads)
+            resolved_logical_warp_threads = _validate_logical_warp_threads(
+                resolved_logical_warp_threads
+            )
             resolved_block_threads = _normalize_block_threads(
                 resolved_block_threads
             )
-            if resolved_block_threads % resolved_threads != 0:
+            if resolved_block_threads % resolved_logical_warp_threads != 0:
                 raise ValueError(
                     "warp-scoped provider width must divide the exact block "
-                    f"size; got width={resolved_threads} and "
+                    f"size; got width={resolved_logical_warp_threads} and "
                     f"block_threads={resolved_block_threads}"
                 )
         compile_identity = self._bind_provider_compile_identity(
@@ -2037,14 +2049,14 @@ class Algorithm:
             self.storage_abi.value,
             self.execution_scope.value,
             self.synchronization_scope.value,
-            resolved_threads,
+            resolved_logical_warp_threads,
             resolved_block_threads,
             compile_identity,
         )
 
     def get_lto_ir(
         self,
-        threads: int | None = None,
+        logical_warp_threads: int | None = None,
         block_threads: _BlockThreads | None = None,
         *,
         compile_identity: _CompileIdentity | None = None,
@@ -2066,8 +2078,9 @@ class Algorithm:
 
         Parameters
         ----------
-        threads : int, optional
-            Logical warp width override; ``None`` uses ``self.threads``.
+        logical_warp_threads : int, optional
+            Logical warp width override; ``None`` uses
+            ``self.logical_warp_threads``.
         block_threads : int, tuple of int, or list of int, optional
             Exact enclosing block configuration; ``None`` uses
             ``self.block_threads``.
@@ -2099,7 +2112,7 @@ class Algorithm:
             compile_identity
         )
         cache_key = self._make_lto_ir_cache_key(
-            threads,
+            logical_warp_threads,
             block_threads,
             compile_identity=compile_identity,
         )
@@ -2114,7 +2127,7 @@ class Algorithm:
             return existing
 
         src, support_lto_irs, temp_storage_types, _ = self._source_code(
-            threads=threads,
+            logical_warp_threads=logical_warp_threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
         )
@@ -2413,7 +2426,7 @@ def _param_coalesce_key(param):
 def algo_coalesce_key(
     algo: Algorithm,
     *,
-    threads: int | None = None,
+    logical_warp_threads: int | None = None,
     block_threads: _BlockThreads | None = None,
 ) -> tuple[object, ...]:
     """Describe a provider for source coalescing and symbol qualification.
@@ -2433,8 +2446,9 @@ def algo_coalesce_key(
     ----------
     algo : Algorithm
         Provider whose current source and ABI state is described.
-    threads : int, optional
-        Logical warp width override, falling back to ``algo.threads``.
+    logical_warp_threads : int, optional
+        Logical warp width override, falling back to
+        ``algo.logical_warp_threads``.
     block_threads : int, tuple of int, or list of int, optional
         Block configuration override, falling back to ``algo.block_threads``.
 
@@ -2456,9 +2470,11 @@ def algo_coalesce_key(
         for method in getattr(algo, "parameters", [])
     )
 
-    resolved_threads = threads
-    if resolved_threads is None:
-        resolved_threads = getattr(algo, "threads", None)
+    resolved_logical_warp_threads = logical_warp_threads
+    if resolved_logical_warp_threads is None:
+        resolved_logical_warp_threads = getattr(
+            algo, "logical_warp_threads", None
+        )
     resolved_block_threads = block_threads
     if resolved_block_threads is None:
         resolved_block_threads = getattr(algo, "block_threads", None)
@@ -2470,7 +2486,7 @@ def algo_coalesce_key(
         tuple(getattr(algo, "includes", None) or []),
         tuple(type_defs),
         params_key,
-        resolved_threads,
+        resolved_logical_warp_threads,
         resolved_block_threads,
         getattr(algo, "fake_return", None),
         getattr(algo, "output_by_reference", None),
@@ -2683,7 +2699,7 @@ def prepare_ltoir_bundle(
 def make_invocable_from_specialization(
     specialization: Algorithm,
     *,
-    threads: int | None = None,
+    logical_warp_threads: int | None = None,
     block_threads: _BlockThreads | None = None,
 ) -> Invocable | Algorithm:
     """Turn a concrete provider into a callable and retain its link artifacts.
@@ -2703,7 +2719,7 @@ def make_invocable_from_specialization(
     ----------
     specialization : Algorithm
         Concrete provider to qualify and, outside collection, compile or reuse.
-    threads : int, optional
+    logical_warp_threads : int, optional
         Logical warp width stored on the algorithm when supplied.
     block_threads : int, tuple of int, or list of int, optional
         Exact enclosing block configuration stored when supplied.
@@ -2721,13 +2737,13 @@ def make_invocable_from_specialization(
         images and suffix metadata have inconsistent lengths.
     """
 
-    if threads is not None:
-        specialization.threads = threads
+    if logical_warp_threads is not None:
+        specialization.logical_warp_threads = logical_warp_threads
     if block_threads is not None:
         specialization.block_threads = block_threads
 
     compile_identity = specialization._qualify_private_symbols(
-        threads=threads,
+        logical_warp_threads=logical_warp_threads,
         block_threads=block_threads,
     )
 
@@ -2739,7 +2755,7 @@ def make_invocable_from_specialization(
     from ._compiler._artifacts import make_binary_tempfile
 
     lto_irs = specialization.get_lto_ir(
-        threads=threads,
+        logical_warp_threads=logical_warp_threads,
         block_threads=block_threads,
         compile_identity=compile_identity,
     )
