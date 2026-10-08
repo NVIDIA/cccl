@@ -5,6 +5,19 @@ set(
   stream_task_prototype.cu
   graph_task_prototype.cu
   cuda_try_ambiguous.cu
+  es_retry_on_past.cu
+  es_defer_on_status.cu
+  es_shift_unknown_return.cu
+  es_subst_int_for_status.cu
+  es_two_substs.cu
+  es_and_left_value.cu
+  es_unwind_and.cu
+  es_notify_or.cu
+  es_type_selector_on_code.cu
+  es_wrong_status_type.cu
+  es_uncovered_channel.cu
+  es_int_is_not_status.cu
+  es_and_over_claims.cu
 )
 
 ## cudax_add_stf_static_assert_test
