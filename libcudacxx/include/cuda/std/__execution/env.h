@@ -29,9 +29,10 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -133,37 +134,21 @@ struct __property_keys_or_empty<_Tp, true>
 template <class _Tp>
 using __property_keys_or_empty_t _CCCL_NODEBUG = typename __property_keys_or_empty<_Tp>::type;
 
+// Normalize shorthand keys before forming the union, so that _Query and
+// property_query<_Query> advertise the same expression.
 template <class... _Lists>
-struct __concat_property_key_lists;
-
-template <>
-struct __concat_property_key_lists<>
-{
-  using type _CCCL_NODEBUG = ::cuda::execution::property_key_list<>;
-};
-
-template <class... _Queries>
-struct __concat_property_key_lists<::cuda::execution::property_key_list<_Queries...>>
-{
-  using type _CCCL_NODEBUG = ::cuda::execution::property_key_list<_Queries...>;
-};
-
-template <class... _Lhs, class... _Rhs, class... _Rest>
-struct __concat_property_key_lists<::cuda::execution::property_key_list<_Lhs...>,
-                                   ::cuda::execution::property_key_list<_Rhs...>,
-                                   _Rest...>
-    : __concat_property_key_lists<::cuda::execution::property_key_list<_Lhs..., _Rhs...>, _Rest...>
-{};
-
-template <class... _Lists>
-using __concat_property_key_lists_t _CCCL_NODEBUG = typename __concat_property_key_lists<_Lists...>::type;
+using __merge_property_key_lists_t _CCCL_NODEBUG = ::cuda::std::__type_apply_q<
+  ::cuda::execution::property_key_list,
+  ::cuda::std::__type_unique<
+    ::cuda::std::__type_transform<::cuda::std::__type_concat<::cuda::std::__as_type_list<_Lists>...>,
+                                  ::cuda::std::__type_quote1<__as_property_query_t>>>>;
 
 template <class _List, class _PropertyQuery>
 inline constexpr bool __property_key_list_contains_v = false;
 
 template <class... _Queries, class _PropertyQuery>
 inline constexpr bool __property_key_list_contains_v<::cuda::execution::property_key_list<_Queries...>, _PropertyQuery> =
-  (is_same_v<__as_property_query_t<_Queries>, _PropertyQuery> || ...);
+  ::cuda::std::__is_one_of_v<_PropertyQuery, __as_property_query_t<_Queries>...>;
 
 template <class _Env, class _Query, class... _Args>
 _CCCL_API auto __query_result_()
@@ -218,13 +203,10 @@ template <class _Env, class _Query, class... _Args>
 inline constexpr bool __is_valid_property_query_v<_Env, ::cuda::execution::property_query<_Query, _Args...>> =
   __queryable_with<const remove_cvref_t<_Env>&, _Query, _Args...>;
 
-template <class _Env, class _PropertyQuery>
-_CCCL_CONCEPT __valid_property_query = __is_valid_property_query_v<_Env, _PropertyQuery>;
-
 template <class _Env, class _Query>
 _CCCL_API constexpr void __validate_property_query() noexcept
 {
-  static_assert(__valid_property_query<_Env, __as_property_query_t<_Query>>,
+  static_assert(__is_valid_property_query_v<_Env, __as_property_query_t<_Query>>,
                 "The environment advertises a query expression that is not valid for a const environment.");
 }
 
@@ -343,7 +325,7 @@ template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
 {
   // Internal metadata consumed through cuda::execution::property_keys_t.
-  using __property_keys = ::cuda::execution::property_key_list<_Query>;
+  using __property_keys _CCCL_NODEBUG = ::cuda::execution::property_key_list<_Query>;
 
   template <class... _Args>
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
@@ -361,7 +343,7 @@ template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
 {
   // Internal metadata consumed through cuda::execution::property_keys_t.
-  using __property_keys = ::cuda::execution::property_key_list<_Query>;
+  using __property_keys _CCCL_NODEBUG = ::cuda::execution::property_key_list<_Query>;
 
   template <class... _Args>
   [[nodiscard]] _CCCL_NODEBUG_API constexpr auto query(_Query, _Args&&...) const noexcept -> const _Value&
@@ -389,7 +371,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
 {
   // Internal metadata consumed through cuda::execution::property_keys_t. Components
   // without discoverable property-key metadata contribute no query expressions.
-  using __property_keys = __detail::__concat_property_key_lists_t<__detail::__property_keys_or_empty_t<_Envs>...>;
+  using __property_keys _CCCL_NODEBUG =
+    __detail::__merge_property_key_lists_t<__detail::__property_keys_or_empty_t<_Envs>...>;
 
   //!
   //! @brief Retrieves the first environment that satisfies the given query type.
@@ -458,7 +441,7 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
 {
   // Internal metadata consumed through cuda::execution::property_keys_t.
-  using __property_keys = ::cuda::execution::property_key_list<>;
+  using __property_keys _CCCL_NODEBUG = ::cuda::execution::property_key_list<>;
 
   _CCCL_API auto query() const = delete;
 };
@@ -471,8 +454,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 {
   // Internal metadata consumed through cuda::execution::property_keys_t. Components
   // without discoverable property-key metadata contribute no query expressions.
-  using __property_keys = __detail::__concat_property_key_lists_t<__detail::__property_keys_or_empty_t<_Env0>,
-                                                                  __detail::__property_keys_or_empty_t<_Env1>>;
+  using __property_keys _CCCL_NODEBUG =
+    __detail::__merge_property_key_lists_t<__detail::__property_keys_or_empty_t<_Env0>,
+                                           __detail::__property_keys_or_empty_t<_Env1>>;
 
   _Env0 __env0_;
   _Env1 __env1_;

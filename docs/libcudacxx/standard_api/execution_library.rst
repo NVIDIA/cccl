@@ -41,7 +41,9 @@ query expressions that environments promise to support:
   User-defined types customize the alias by defining
   ``cuda::std::remove_cvref_t<T>::property_keys`` as a ``property_key_list`` specialization.
 - ``cuda::std::execution::prop`` and ``cuda::std::execution::env`` provide query metadata
-  automatically. ``env`` concatenates the discoverable advertised lists of its components.
+  automatically. ``env`` combines the discoverable advertised lists of its components,
+  normalizes entries to ``property_query`` specializations, and removes duplicates.
+  Query lookup still uses the first matching component.
 
 Use ``cuda::checked_env<Queries...>(env)`` to explicitly check that ``env`` accepts the named query
 expressions. The returned adaptor records that validated set as its advertised query list and

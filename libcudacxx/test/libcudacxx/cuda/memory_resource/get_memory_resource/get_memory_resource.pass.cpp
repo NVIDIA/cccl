@@ -75,10 +75,12 @@ static_assert(
 using owning_any_env      = cuda::std::execution::env<cuda::mr::any_resource<>>;
 using owning_resource_env = cuda::std::execution::env<derived_resource>;
 using resource_env        = cuda::std::execution::env<cuda::mr::resource_ref<>>;
+using get_memory_resource_env_list =
+  cuda::execution::property_key_list<cuda::execution::property_query<cuda::mr::get_memory_resource_t>>;
 static_assert(
   cuda::std::is_same_v<cuda::execution::property_keys_t<owning_any_env>, cuda::execution::property_key_list<>>);
-static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<owning_resource_env>, get_memory_resource_list>);
-static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<resource_env>, get_memory_resource_list>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<owning_resource_env>, get_memory_resource_env_list>);
+static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<resource_env>, get_memory_resource_env_list>);
 
 static_assert(cuda::std::execution::__queryable_with<const derived_resource&, cuda::mr::get_memory_resource_t>);
 static_assert(cuda::std::execution::__queryable_with<const cuda::mr::resource_ref<>&, cuda::mr::get_memory_resource_t>);

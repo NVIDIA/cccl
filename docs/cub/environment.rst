@@ -102,7 +102,9 @@ metadata automatically.
 User-defined environments can customize the alias by defining
 ``cuda::std::remove_cvref_t<T>::property_keys`` as a
 ``cuda::execution::property_key_list`` specialization. ``cuda::std::execution::env``
-concatenates the discoverable lists of its components.
+combines the discoverable lists of its components, normalizes entries to
+``cuda::execution::property_query`` specializations, and removes duplicates. Query lookup
+still uses the first matching component in the ``env``.
 
 A query with no additional arguments can be listed directly. Use
 ``cuda::execution::property_query`` to describe a query that takes additional

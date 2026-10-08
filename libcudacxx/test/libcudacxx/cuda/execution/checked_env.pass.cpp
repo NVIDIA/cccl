@@ -20,6 +20,12 @@ struct query1_t
 struct query2_t
 {};
 
+struct query3_t
+{};
+
+struct query4_t
+{};
+
 struct original_query_t
 {};
 
@@ -37,6 +43,16 @@ struct custom_env
     return value + offset;
   }
 
+  TEST_HOST_DEVICE_FUNC constexpr int& query(query3_t, int& arg) const noexcept
+  {
+    return arg;
+  }
+
+  TEST_HOST_DEVICE_FUNC constexpr int query(query4_t, int&& arg) const noexcept
+  {
+    return value + arg;
+  }
+
   int value;
 };
 
@@ -50,6 +66,17 @@ TEST_HOST_DEVICE_FUNC constexpr bool test()
   static_assert(cuda::std::is_same_v<cuda::execution::property_keys_t<decltype(env)>, expected_keys>);
   assert(env.query(query1_t{}) == 42);
   assert(env.query(query2_t{}, 8) == 50);
+
+  using query3        = cuda::execution::property_query<query3_t, int&>;
+  using query4        = cuda::execution::property_query<query4_t, int>;
+  auto forwarding_env = cuda::checked_env<query3, query4>(custom_env{42});
+  int arg             = 8;
+  static_assert(cuda::std::is_same_v<decltype(forwarding_env.query(query3_t{}, arg)), int&>);
+  assert(&forwarding_env.query(query3_t{}, arg) == &arg);
+  assert(forwarding_env.query(query4_t{}, 8) == 50);
+  static_assert(!cuda::std::execution::__queryable_with<const decltype(forwarding_env)&, original_query_t>);
+  static_assert(!cuda::std::execution::__queryable_with<const decltype(forwarding_env)&, query3_t, int>);
+  static_assert(!cuda::std::execution::__queryable_with<const decltype(forwarding_env)&, query4_t, int&>);
 
   custom_env referenced{24};
   auto ref_env = cuda::checked_env<query1_t>(cuda::std::ref(referenced));
