@@ -16,9 +16,9 @@
    } // namespace cuda
 
 Tells whether a type is an arithmetic type, including implementation defined extended
-floating point types. This includes types such as ``__half``, ``__nv_bfloat16_t`` and
-other CUDA builtin floating point types not normally considered to be arithmetic or
-floating point types by the standard traits.
+floating point types. This includes types such as ``__half``, ``__nv_bfloat16`` and other
+CUDA builtin floating point types not normally considered to be arithmetic or floating
+point types by the standard traits.
 
 A type ``T`` is considered arithmetic if and only if it satisfies the following
 conditions:
