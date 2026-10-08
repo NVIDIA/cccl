@@ -1,0 +1,40 @@
+{
+  "variant": "patch",
+  "torch": "2.13.0+cu130",
+  "cuda": "13.0",
+  "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "files": [
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate/cub/cub/block/block_reduce.cuh",
+      "bytes": 29500,
+      "sha256": "d5737af3698d46525d4ead85cca5de05fe0d9e5794f4907b31505c11bcbd781b"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/candidate/cub/cub/block/specializations/block_reduce_warp_reductions.cuh",
+      "bytes": 9985,
+      "sha256": "f7437da751e4ceeb95e7aba45e6ed8d86cc4bf9340080fd27f1d6b0ead0d41a7"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/tools/consumer_integer/normalization.cu",
+      "bytes": 3827,
+      "sha256": "7962ad0bc85e72cc069ef1cc660e558e91c1deacd9b334a3f035f010bde3ade1"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-P/cccl_patch_h20.so",
+      "bytes": 681712,
+      "sha256": "d1d1e3ff6cc0302c71d89a09353150a8408d9c1f03dd944cd5a6fe5b7e156fa4"
+    },
+    {
+      "path": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-P/build.ninja",
+      "bytes": 2487,
+      "sha256": "48da793600751e300e55921d3bd6069be6fe9197cf721bff3628a019f3f63708"
+    }
+  ],
+  "library": "/home/jwipc/experiments/cccl-broadcast-blackwell-20261001/build/integer-P/cccl_patch_h20.so"
+}

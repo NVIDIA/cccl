@@ -1,0 +1,8 @@
+{
+  "relative_path": "cuda_nvdisasm/linux-x86_64/cuda_nvdisasm-linux-x86_64-13.2.51-archive.tar.xz",
+  "sha256": "0eff70c711a579efa95e141d6e7476a0c041dfb9976a545afca20b555a9fb4a4",
+  "md5": "54922ec4fc2f1f0fe53f4e0f5d1e8cd3",
+  "size": "4282196",
+  "version": "13.2.51",
+  "url": "https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvdisasm/linux-x86_64/cuda_nvdisasm-linux-x86_64-13.2.51-archive.tar.xz"
+}

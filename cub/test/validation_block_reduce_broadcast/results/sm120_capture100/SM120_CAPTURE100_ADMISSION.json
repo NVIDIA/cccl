@@ -1,0 +1,15 @@
+{
+  "evidence/sm120-capture100-plan.json": "c1dc6fbb1a09ed472a9302ba2a30a3b4093eccef854252cef6435925a84f1bc6",
+  "evidence/sm120-capture100-manifest.json": "1cedd1c90faaa0b03843099720950280495a1314056544e7103bc93b55852965",
+  "tools/consumer_retained/benchmark_batched.py": "7453a030befb116ff776c0294297cfba4f1d8bddee1bbade2f866f6c4ffd2d4c",
+  "tools/consumer_retained/common.py": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e",
+  "tools/consumer_integer/benchmark_batched.py": "849c02dafcfdf3ff1bd6f40874da533ad577aaa14b2ed9d0eb5fe5483185cee0",
+  "tools/consumer_integer/common.py": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e",
+  "tools/consumer_legacy/benchmark_batched.py": "1301078de32d4fedf53e7c28586613cd1be4afce378a606c4784e5443dfc83b3",
+  "tools/consumer_legacy/common.py": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e",
+  "tools/admit_sm120_capture100.py": "6ff21d19143206ad8227db1fccefcaeead48b3382c0183c17b20369603d8d5e9",
+  "tools/run_sm120.py": "71687903829e4d9b9d12aa0a04e415a148b2782f13bce53db6fc8490d679e958",
+  "tools/gpu_plan_gpu0.py": "3890baad18363ccf2778a7a1584d34b92f30665e593af174bacf0325ca5b65df",
+  "tools/summarize_formal_sm120.py": "545b6785bc9cf4bf85e38ab60ed1d944e5ef6fecf10fffeb33a0da9578c6cbbb",
+  "evidence/SM120_CAPTURE100_PROTOCOL.md": "de5629c819b7f7e4326516fd2cf54342a86d7e309fec4a37e6d346cc67b5f931"
+}

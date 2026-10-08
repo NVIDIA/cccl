@@ -1,0 +1,40 @@
+{
+  "variant": "patch",
+  "torch": "2.7.0+cu128",
+  "cuda": "12.8",
+  "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "files": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/iteration-hybrid-v2/cub/cub/block/block_reduce.cuh",
+      "bytes": 29500,
+      "sha256": "d5737af3698d46525d4ead85cca5de05fe0d9e5794f4907b31505c11bcbd781b"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/iteration-hybrid-v2/cub/cub/block/specializations/block_reduce_warp_reductions.cuh",
+      "bytes": 9985,
+      "sha256": "f7437da751e4ceeb95e7aba45e6ed8d86cc4bf9340080fd27f1d6b0ead0d41a7"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_integer/bindings.cpp",
+      "bytes": 516,
+      "sha256": "84eff6522ef789a264ec7c098637140bd333797092d3062e99a4b48e9389644a"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/tools/consumer_integer/normalization.cu",
+      "bytes": 3827,
+      "sha256": "7962ad0bc85e72cc069ef1cc660e558e91c1deacd9b334a3f035f010bde3ade1"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-P/cccl_patch_h20.so",
+      "bytes": 469176,
+      "sha256": "518db0d3bb188b743ee9fab38c4873b98461dc2060ff61049b490452a645cd2d"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-P/build.ninja",
+      "bytes": 2701,
+      "sha256": "d585ca8cf8145319e82b509834f96ee5fe555d3e3d09905dfb6f11a918a66209"
+    }
+  ],
+  "library": "/root/autodl-tmp/cccl-reduce-broadcast-h20/build/formal-integer-P/cccl_patch_h20.so"
+}
