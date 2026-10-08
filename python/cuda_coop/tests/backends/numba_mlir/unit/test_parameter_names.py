@@ -25,8 +25,12 @@ def _materialize(specialization, *, adapter=None):
 
 def _source(algorithm):
     """Generate wrapper text with a fixed identity, without compiling it."""
+    from cuda.coop.numba_mlir._compiler._nvrtc import CompilerIdentity
+
     return algorithm._source_code(
-        compile_identity=(90, True, "lto", (), "test-toolchain")
+        compile_identity=CompilerIdentity(
+            cc=90, rdc=True, code="lto", compiler_options=()
+        )
     )[0]
 
 
