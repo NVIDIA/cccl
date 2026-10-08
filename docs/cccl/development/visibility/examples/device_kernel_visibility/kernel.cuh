@@ -8,3 +8,5 @@ __global__ void kernel(char ln, T* val)
   printf("%c: kernel: set val = 42\n", ln);
   *val = 42;
 }
+
+// docs/cccl/development/visibility/examples/device_kernel_visibility
