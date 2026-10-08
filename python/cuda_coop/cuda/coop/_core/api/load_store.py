@@ -13,16 +13,16 @@ from __future__ import annotations
 
 from cuda.coop._typing import (
     BlockLoadStoreAlgorithm,
+    CommonThreadDataLike,
     IntegerValue,
-    PortableThreadDataLike,
     ValidItems,
     WarpLoadStoreAlgorithm,
-    _PortableNumericT,
+    _CommonNumericT,
 )
 
 from ..thread_group import CoopCompilerContextRequiredError
 from ._dispatch import (
-    _portable_group_operation,
+    _common_group_operation,
 )
 from ._payload import (
     TempStorageLike,
@@ -31,19 +31,19 @@ from ._payload import (
 from .thread_group import BlockGroup, WarpGroup
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "load",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def load(
     group: BlockGroup | WarpGroup,
     source: object,
-    output: ThreadDataLike[_PortableNumericT],
+    output: ThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",
     valid_items: ValidItems | None = None,
-    oob_default: _PortableNumericT | float | None = None,
+    oob_default: _CommonNumericT | float | None = None,
     offset: IntegerValue | None = None,
     temp_storage: TempStorageLike | None = None,
 ) -> None:
@@ -112,14 +112,14 @@ def load(
     )
 
 
-@_portable_group_operation(
+@_common_group_operation(
     "store",
     group_kinds=("block", "warp", "threads_within_warp"),
 )
 def store(
     group: BlockGroup | WarpGroup,
     destination: object,
-    value: _PortableNumericT | PortableThreadDataLike[_PortableNumericT],
+    value: _CommonNumericT | CommonThreadDataLike[_CommonNumericT],
     /,
     *,
     algorithm: BlockLoadStoreAlgorithm | WarpLoadStoreAlgorithm = "direct",

@@ -19,7 +19,7 @@ _CallableT = TypeVar("_CallableT", bound=Callable[..., object])
 
 
 @dataclass(frozen=True)
-class _PortableGroupOperation:
+class _CommonGroupOperation:
     """Store the operation name and allowed groups for one public callable."""
 
     name: str
@@ -27,13 +27,13 @@ class _PortableGroupOperation:
     function: Callable[..., object]
 
 
-_PORTABLE_GROUP_OPERATIONS_BY_NAME: dict[str, _PortableGroupOperation] = {}
-_PORTABLE_GROUP_OPERATIONS_BY_FUNCTION: dict[
-    Callable[..., object], _PortableGroupOperation
+_COMMON_GROUP_OPERATIONS_BY_NAME: dict[str, _CommonGroupOperation] = {}
+_COMMON_GROUP_OPERATIONS_BY_FUNCTION: dict[
+    Callable[..., object], _CommonGroupOperation
 ] = {}
 
 
-def _portable_group_operation(
+def _common_group_operation(
     name: str,
     *,
     group_kinds: tuple[str, ...],
@@ -48,27 +48,25 @@ def _portable_group_operation(
 
     if not name or not group_kinds:
         raise ValueError(
-            "portable group operations require a name and group kinds"
+            "common group operations require a name and group kinds"
         )
 
     def decorate(function: _CallableT) -> _CallableT:
         """Register one function in both tables and reject conflicts."""
 
-        registration = _PortableGroupOperation(
-            name, tuple(group_kinds), function
-        )
-        existing = _PORTABLE_GROUP_OPERATIONS_BY_NAME.get(name)
+        registration = _CommonGroupOperation(name, tuple(group_kinds), function)
+        existing = _COMMON_GROUP_OPERATIONS_BY_NAME.get(name)
         if existing is not None and existing != registration:
             raise RuntimeError(
-                f"portable group operation {name!r} is already registered"
+                f"common group operation {name!r} is already registered"
             )
-        existing_function = _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION.get(function)
+        existing_function = _COMMON_GROUP_OPERATIONS_BY_FUNCTION.get(function)
         if existing_function is not None and existing_function != registration:
             raise RuntimeError(
-                f"portable group marker {function!r} is already registered"
+                f"common group marker {function!r} is already registered"
             )
-        _PORTABLE_GROUP_OPERATIONS_BY_NAME[name] = registration
-        _PORTABLE_GROUP_OPERATIONS_BY_FUNCTION[function] = registration
+        _COMMON_GROUP_OPERATIONS_BY_NAME[name] = registration
+        _COMMON_GROUP_OPERATIONS_BY_FUNCTION[function] = registration
         function.__cuda_coop_backend_member__ = name
         return function
 
@@ -76,5 +74,5 @@ def _portable_group_operation(
 
 
 __all__ = [
-    "_portable_group_operation",
+    "_common_group_operation",
 ]

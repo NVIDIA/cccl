@@ -16,10 +16,10 @@ from ._registration import register
 
 __path__ = extend_path(__path__, __name__)
 
-from ._core import api as _portable_api
+from ._core import api as _common_api
 
 globals().update(
-    {name: getattr(_portable_api, name) for name in _portable_api.__all__}
+    {name: getattr(_common_api, name) for name in _common_api.__all__}
 )
 
 
@@ -35,7 +35,7 @@ def _package_version() -> str:
 __version__ = _package_version()
 
 __all__ = ["__version__", "register"]
-__all__.extend(_portable_api.__all__)
+__all__.extend(_common_api.__all__)
 
 
 def __dir__() -> list[str]:
