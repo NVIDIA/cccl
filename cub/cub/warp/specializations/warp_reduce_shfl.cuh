@@ -30,6 +30,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -38,6 +39,14 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+template <typename ReductionOp, typename T>
+inline constexpr bool is_warp_vote_any_op =
+  ::cuda::std::is_same_v<T, bool> && ::cuda::__is_cuda_std_logical_or_v<ReductionOp, T>;
+
+template <typename ReductionOp, typename T>
+inline constexpr bool is_warp_vote_all_op =
+  ::cuda::std::is_same_v<T, bool> && ::cuda::__is_cuda_std_logical_and_v<ReductionOp, T>;
+
 /**
  * @brief WarpReduceShfl provides SHFL-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -462,24 +471,35 @@ struct WarpReduceShfl
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
-    const int last_lane         = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
-    T reduce_value              = input;
+    const int last_lane = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
 
-    if constexpr (IS_ARCH_WARP && (AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
+    if constexpr (is_warp_vote_any_op<ReductionOp, T>)
     {
-      if constexpr (!AllValidLanes)
-      {
-        reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
-      }
-      if (const auto output = cub::detail::warp_redux(reduce_value, member_mask, reduction_op))
-      {
-        return *output;
-      }
+      return __any_sync(member_mask, input && (AllValidLanes || lane_id <= last_lane));
     }
-    // Template-iterate reduction steps
-    ReduceStep(reduce_value, reduction_op, last_lane, constant_v<0>);
-    return reduce_value;
+    else if constexpr (is_warp_vote_all_op<ReductionOp, T>)
+    {
+      return __all_sync(member_mask, input || (!AllValidLanes && lane_id > last_lane));
+    }
+    else
+    {
+      constexpr bool has_identity = ::cuda::has_identity_element_v<ReductionOp, T>;
+      T reduce_value              = input;
+      if constexpr (IS_ARCH_WARP && (AllValidLanes || has_identity) && is_warp_redux_op_supported<ReductionOp, T>)
+      {
+        if constexpr (!AllValidLanes)
+        {
+          reduce_value = lane_id <= last_lane ? input : ::cuda::identity_element<ReductionOp, T>();
+        }
+        if (const auto output = cub::detail::warp_redux(reduce_value, member_mask, reduction_op))
+        {
+          return *output;
+        }
+      }
+      // Template-iterate reduction steps
+      ReduceStep(reduce_value, reduction_op, last_lane, constant_v<0>);
+      return reduce_value;
+    }
   }
 
   /**

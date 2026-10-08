@@ -850,6 +850,97 @@ C2H_TEST("Transform works with C++ source operations using custom headers", "[tr
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 
+// __half::__half(__nv_bfloat16) exists since CUDA 12.2.
+#if _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+// Regression test for NVIDIA/cccl#11885: the CUDA 12.4 Update 1 headers define __half::__half(__nv_bfloat16) in
+// cuda_bf16.h without `inline` under NVRTC, so linking the kernel with a C++ source operation (a second translation
+// unit including cuda_bf16.h) fails unless the operation's unit leaves the constructor to the kernel
+// (nvrtc/user_source_prelude.h). The operation calls that constructor, so the call resolving to the kernel's definition
+// is exercised too.
+C2H_TEST("Transform works with a C++ source operation converting bfloat16 to half", "[transform][cpp_source]")
+{
+  const std::string cpp_source = R"(
+    #include <cuda_fp16.h>
+    #include <cuda_bf16.h>
+    extern "C" __device__ void op(void* input, void* output) {
+      *static_cast<__half*>(output) = __half(*static_cast<const __nv_bfloat16*>(input));
+    }
+  )";
+  operation_t op               = make_cpp_operation("op", cpp_source);
+
+  // Values exactly representable in both formats, plus one that only half overflows to infinity.
+  const std::vector<__nv_bfloat16> input{
+    __nv_bfloat16{1.0f}, __nv_bfloat16{-2.5f}, __nv_bfloat16{0.125f}, __nv_bfloat16{2.75f}, __nv_bfloat16{65536.0f}};
+  pointer_t<__nv_bfloat16> input_ptr(input);
+  pointer_t<__half> output_ptr(input.size());
+  std::optional<transform_build_cache_t> no_cache = std::nullopt;
+  const std::optional<std::string> no_key         = std::nullopt;
+
+  unary_transform(input_ptr, output_ptr, input.size(), op, no_cache, no_key);
+
+  const std::vector<__half> output(output_ptr);
+  for (std::size_t i = 0; i < input.size(); ++i)
+  {
+    REQUIRE(float{output[i]} == float{__float2half_rn(__bfloat162float(input[i]))});
+  }
+}
+
+// The prelude defines __CUDA_NO_HALF_CONVERSIONS__ while it includes cuda_bf16.h; a build that opts out of the __half
+// conversions itself must still see them disabled everywhere, in the operation's unit as in the kernel.
+C2H_TEST("Transform honors __CUDA_NO_HALF_CONVERSIONS__ from the build config", "[transform][cpp_source]")
+{
+  using T = int32_t;
+
+  const std::size_t num_items = GENERATE(42, 1337);
+
+  const std::string cpp_source = R"(
+    #include <cuda_fp16.h>
+    #include <cuda_bf16.h>
+    #include <cuda/std/type_traits>
+    static_assert(!cuda::std::is_constructible_v<__half, __nv_bfloat16>, "conversion opt-out must be preserved");
+    static_assert(!cuda::std::is_constructible_v<__half, float>, "conversion opt-out must be preserved");
+    extern "C" __device__ void op(void* input, void* output) {
+      *static_cast<int*>(output) = *static_cast<const int*>(input) * 2;
+    }
+  )";
+  operation_t op               = make_cpp_operation("op", cpp_source);
+
+  const std::vector<T> input = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(num_items);
+
+  const char* extra_flags[]      = {"-D__CUDA_NO_HALF_CONVERSIONS__"};
+  const cccl_build_config config = make_build_config(extra_flags, 1, nullptr, 0);
+
+  cccl_device_transform_build_result_t build{};
+  const auto& build_info = BuildInformation<>::init();
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_build_ex(
+      &build,
+      input_ptr,
+      output_ptr,
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path(),
+      &config));
+  REQUIRE(CUDA_SUCCESS == cccl_device_unary_transform(build, input_ptr, output_ptr, num_items, op, CU_STREAM_LEGACY));
+
+  const std::vector<T> output(output_ptr);
+  std::vector<T> expected = input;
+  std::transform(expected.begin(), expected.end(), expected.begin(), [](T x) {
+    return x * 2;
+  });
+  REQUIRE(output == expected);
+
+  REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
+}
+#endif // _CCCL_HAS_NVBF16() && _CCCL_CTK_AT_LEAST(12, 2)
+
 struct transform_stateful_counter_state_t
 {
   int* d_counter;

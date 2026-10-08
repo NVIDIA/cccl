@@ -33,30 +33,36 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  include <cub/device/device_merge_sort.cuh>
 #  include <cub/device/device_radix_sort.cuh>
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
+#  include <cub/util_type.cuh>
 
 _CCCL_DIAG_POP
 
 #  include <cuda/__cmath/round_up.h>
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__algorithm/sort.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_one_of.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/climits>
 
 #  include <cuda/std/__cccl/prologue.h>
 
