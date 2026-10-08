@@ -94,8 +94,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PYTHON_VERSION: ${{ matrix.python_version }}
           RAPIDS_LIBS: ${{ matrix.libs }}
+          # Match cuOpt's RAPIDS_BRANCH: RMM main (26.12) removed stream APIs that cuOpt still uses.
+          # Update this when cuOpt moves to the next RAPIDS release.
+          RAPIDS_cmake_GIT_REPO: ${{ matrix.libs == 'cuopt' && '{"upstream":"rapidsai","tag":"release/26.10"}' || '' }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
-          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
           # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
