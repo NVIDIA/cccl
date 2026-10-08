@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 
 import numpy as np
 from typing_extensions import assert_type
@@ -38,12 +38,17 @@ class _ReadOnlyThreadData(Generic[_ItemT]):
         return self._value
 
 
-def check_common_surface(source: object, destination: object) -> None:
+def check_common_surface(
+    source: object,
+    destination: object,
+    compiler_integer_dtype: Any,
+) -> None:
     """Exercise public declarations without importing package internals."""
 
     block = coop.this_block()
     warp = coop.this_warp()
     logical_warp = warp.group_by(8)
+    mapped_warps = block.group_by(2)
     values = coop.ThreadData(items_per_thread=2, dtype=np.int16, alignment=16)
     read_only_values = _ReadOnlyThreadData(np.int16(1))
     storage = coop.TempStorage(64, alignment=16, sharing="shared")
@@ -54,6 +59,25 @@ def check_common_surface(source: object, destination: object) -> None:
         logical_warp,
         coop.ThreadGroup[Literal["threads_within_warp"]],
     )
+    generic_group: coop.ThreadGroup = block
+    generic_group.rank()
+    generic_group.count("warp")
+    assert_type(generic_group.rank_as(np.uint32), np.uint32)
+    assert_type(generic_group.count_as(int, "warp"), int)
+    block.rank()
+    block.count("warp")
+    assert_type(block.rank_as(np.uint16), np.uint16)
+    assert_type(block.rank_as(int), int)
+    assert_type(block.count_as(np.int64, "grid"), np.int64)
+    block.count_as(compiler_integer_dtype)
+    block.is_member()
+    assert_type(block.sync(), None)
+    assert_type(block.sync_aligned(), None)
+    assert_type(logical_warp.sync(), None)
+    mapped_warps.rank("warp")
+    mapped_warps.count("block")
+    mapped_warps.is_member()
+    coop.this_grid().rank()
     assert_type(values, coop.ThreadDataLike[np.int16])
     assert_type(storage, coop.TempStorageLike)
     assert_type(
@@ -120,4 +144,26 @@ def check_common_surface(source: object, destination: object) -> None:
     assert_type(
         coop.shuffle(block, read_only_values, mode="down"),
         coop.ThreadDataLike[np.int16],
+    )
+    assert_type(coop.sum(block, np.int32(4)), np.int32)
+    assert_type(
+        coop.reduce(logical_warp, np.float32(4), binary_op="max"),
+        np.float32,
+    )
+    assert_type(coop.sum(warp, np.uint32(4)), np.uint32)
+    assert_type(coop.sum(warp, values), np.int16)
+    assert_type(coop.reduce(logical_warp, values, binary_op="max"), np.int16)
+    assert_type(coop.reduce(block, values, binary_op="min"), np.int16)
+    assert_type(
+        coop.sum(warp, np.int32(4), valid_items=np.int32(7)),
+        np.int32,
+    )
+    assert_type(
+        coop.sum(block, values, algorithm="raking"),
+        np.int16,
+    )
+    assert_type(coop.sum(block, values, temp_storage=storage), np.int16)
+    assert_type(
+        coop.reduce(block, np.int32(4), binary_op="max", temp_storage=storage),
+        np.int32,
     )

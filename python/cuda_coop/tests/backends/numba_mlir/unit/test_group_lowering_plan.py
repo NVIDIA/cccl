@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check scalar provenance and the core plans selected from compiler IR.
+"""Check static versus runtime scalar controls and the selected core plans.
 
 Tests inspect plans before provider compilation, including loop dtype
 propagation, argument bindings, and storage and synchronization requirements.

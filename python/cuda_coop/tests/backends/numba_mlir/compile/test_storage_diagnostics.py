@@ -48,7 +48,7 @@ def _fixed_current_device(monkeypatch):
     )
 
 
-def _compile(kernel, *arg_types, block=(32, 1, 1)):
+def _compile(kernel, *arg_types, block=(32, 1, 1), cluster=None):
     """Compile with exact launch dimensions; do not execute the kernel."""
     return kernel._compile_launch_config_signature(
         types.void(*arg_types),
@@ -56,7 +56,7 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
             ("grid", (1, 1, 1)),
             ("block", block),
             ("sharedmem", 0),
-            ("cluster", None),
+            ("cluster", cluster),
         ),
     )
 
@@ -427,3 +427,89 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
         ),
     ):
         _compile(kernel, types.int32[::1], types.int32[::1], block=(1024, 1, 1))
+
+
+@pytest.mark.parametrize("kind", ["block", "warp", "logical_warp"])
+@pytest.mark.parametrize("shape", [0, 128], ids=["dynamic", "static"])
+def test_reduce_shared_memory_coexistence(kind, shape):
+    """CUB scratch follows the common backing allocation's alias checks."""
+
+    @cuda.jit(device=True)
+    def allocate():
+        return cuda.shared.array(shape, types.int32)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        tile = allocate()
+        thread = cuda.threadIdx.x
+        tile[thread] = source[thread]
+        cuda.syncthreads()
+        if kind == "block":
+            group = coop.this_block()
+        elif kind == "warp":
+            group = coop.this_warp()
+        else:
+            group = coop.this_warp().group_by(8)
+        total = coop.sum(group, source[thread])
+        if group.rank() == 0:
+            destination[thread] = tile[thread] + total
+
+    if shape:
+        assert _compile(
+            kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+        ).metadata["ltoir"]
+    else:
+        with pytest.raises(
+            CoopSinglePhaseRewriteError,
+            match="shared-memory backing.*dynamic/runtime-sized.*would alias",
+        ):
+            _compile(
+                kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+            )
+
+
+def test_reduce_uses_dynamic_cooperative_backing(monkeypatch):
+    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+
+    monkeypatch.setattr(
+        _rewrite_storage,
+        "_query_device_shared_memory_limits",
+        lambda: {
+            "max_default_shared_memory_per_block": 48 * 1024,
+            "max_optin_shared_memory_per_block": 96 * 1024,
+        },
+    )
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        scratch = coop.TempStorage(64 * 1024, auto_sync=True)
+        items = coop.ThreadData(items_per_thread=2, dtype=types.int32)
+        coop.load(
+            coop.this_block(),
+            source,
+            items,
+            algorithm="transpose",
+            temp_storage=scratch,
+        )
+        total = coop.sum(coop.this_block(), items, temp_storage=scratch)
+        if cuda.threadIdx.x == 0:
+            destination[0] = total
+
+    compiled = _compile(
+        kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+    )
+    assert compiled.metadata["required_dynamic_shared_memory"] == 64 * 1024
+
+
+def test_group_query_allows_user_dynamic_arrays():
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        tile = cuda.shared.array(0, types.int32)
+        thread = cuda.threadIdx.x
+        tile[thread] = source[thread]
+        result = coop.this_block().group_by(2).rank()
+        destination[thread] = tile[thread] + result
+
+    assert _compile(
+        kernel, types.int32[::1], types.int32[::1], block=(128, 1, 1)
+    ).metadata["ltoir"]

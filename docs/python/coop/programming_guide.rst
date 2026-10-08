@@ -102,6 +102,10 @@ several operations:
      - ``ThreadData``; scalar inputs where the operation accepts them
      - Also accepts fixed local arrays in supported array operations;
        exposes ``local`` and ``shared`` memory namespaces
+   * - Reduction operator
+     - Built-in string operators such as ``"sum"`` and ``"max"``
+     - Also accepts supported Python operators and device callbacks;
+       callback restrictions depend on the operation and group
    * - Layout exchange
      - Blocked-to-striped and striped-to-blocked conversion
      - Also supports block scatter and warp-striped layouts, with optional
@@ -179,21 +183,106 @@ configuration and lifetime.
 Groups: which threads cooperate
 -------------------------------
 
-
 A group defines the participants in an operation. ``this_block()`` uses
-all threads in the current block; ``this_warp()`` uses a complete physical
-warp of 32 threads. ``this_warp().group_by(8)`` partitions it into four
-consecutive logical warps of eight threads. The compiler obtains the block
-shape from the kernel launch; the group factories take no size arguments.
+the current block; ``this_warp()`` uses the current physical warp of 32
+threads. The compiler obtains the launch dimensions from the kernel launch.
+The group factories take no size arguments.
 
-Load and Store support blocks, physical warps, and logical warp widths of
-1, 2, 4, 8, 16, or 32. Warp operations require a block size divisible by 32.
-The partition width is a compile-time constant. Every member of a
-participating group must reach the same primitive invocation.
+The hierarchy vocabulary includes the following groups. Availability of a
+descriptor and availability of a primitive on that descriptor are separate
+parts of the API.
 
-The common API also declares other hierarchy descriptors. Their presence
-does not imply executable operations or queries on those scopes in this
-backend.
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * - Expression
+     - Participants
+     - Current use
+   * - ``coop.this_thread()``
+     - One thread
+     - Hierarchy queries
+   * - ``coop.this_warp()``
+     - One physical warp
+     - Load, Store, Exchange, Reduce
+   * - ``coop.this_warp().group_by(8)``
+     - Eight consecutive lanes within a physical warp
+     - Logical-warp forms of those operations
+   * - ``coop.this_block()``
+     - All threads in the block
+     - Load, Store, Exchange, Shuffle, Reduce
+   * - ``coop.this_block().group_by(2)``
+     - Two consecutive physical warps
+     - Hierarchy queries
+   * - ``coop.this_cluster()``
+     - Blocks in the launch's cluster
+     - Hierarchy queries with supported hardware and cluster launch facts
+   * - ``coop.this_grid()``
+     - The kernel grid
+     - Hierarchy queries; grid primitives and grid synchronization
+       are unavailable
+
+``group_by`` counts units in the next inner hierarchy level: threads for a
+warp parent, physical warps for a block parent. Thus
+``this_block().group_by(2)`` describes 64 threads. For logical Warp
+primitives, choose a width of 1, 2, 4, 8, 16, or 32. Use a block size
+divisible by 32 for these Warp operations; the last physical warp must be
+complete. Nested ``group_by`` calls are unsupported.
+
+The count and ``exhaustive`` flag are compile-time constants. By default,
+the partition must cover the parent exactly. A non-exhaustive partition
+can leave a remainder. For instance, partitioning a 96-thread block into
+pairs of warps leaves the last warp outside a complete group.
+``is_member()`` identifies participating threads. Guard queries that require
+membership for excluded threads, and check the primitive's participation
+requirements before using that guard around an operation.
+
+Mapped groups of physical warps support hierarchy queries through their
+immediate parent block. Primitives and group barriers are unavailable for
+these groups. Use the block and logical-warp forms for the examples in this
+guide.
+
+.. _coop-group-queries:
+
+Ranks and sizes
+^^^^^^^^^^^^^^^
+
+``group.rank()`` gives the calling thread's rank within the group;
+``group.count()`` gives the number of threads in it. Ranks start at zero.
+For a multidimensional block, the linear thread rank is
+``x + blockDim.x * (y + blockDim.y * z)``.
+
+The optional ``level`` argument lets you query the hierarchy in other units.
+For a 128-thread block:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Query
+     - Meaning
+   * - ``block.rank("thread")``
+     - Calling thread's linear rank, 0 through 127
+   * - ``block.count("thread")``
+     - 128 threads
+   * - ``block.rank("warp")``
+     - Calling warp's rank in the block, 0 through 3
+   * - ``block.count("warp")``
+     - Four physical warps
+   * - ``block.rank("grid")``
+     - This block's linear rank in the grid
+   * - ``block.count("grid")``
+     - Number of blocks in the grid
+
+Queries accept ``thread`` (also ``gpu_thread``), ``warp``, ``block``,
+``cluster``, and ``grid`` where the relationship is supported. Mapped groups
+can query their constituents and immediate physical parent. Queries above
+that parent are rejected.
+
+Results normally use unsigned 32-bit integers; queries involving the grid
+use unsigned 64-bit integers. ``rank_as`` and ``count_as`` take an explicit
+integer dtype, for example ``block.rank_as(types.int32)``. A signed result
+can be convenient for address calculations involving subtraction; choose a
+type large enough for the launch.
 
 
 .. _coop-participation:
@@ -213,8 +302,11 @@ missing input, as in the first kernel. An early return by some block threads
 has the same problem if the remaining threads later execute a block
 primitive.
 
-Use ``cuda.syncthreads()`` for explicit block synchronization in
-Numba kernels. Every thread in the block must reach the barrier.
+``group.sync()`` provides a barrier for supported groups. Every member must
+reach it. ``sync_aligned()`` has the additional requirement that the group
+be aligned and converged; use ``sync()`` unless your code establishes that
+stronger precondition. For explicit block synchronization in Numba kernels,
+``cuda.syncthreads()`` is also available.
 
 An operation's scratch-reuse barrier protects its temporary storage.
 Automatic synchronization inserts a trailing barrier after each call that
@@ -222,7 +314,6 @@ consumes scratch. It does not prove that arbitrary user control flow is safe;
 every member must still reach the primitive and its barrier.
 Arrange synchronization for your own shared-memory communication as well.
 Constructing a group or a ``ThreadData`` object does not synchronize threads.
-
 
 .. _coop-thread-data:
 
@@ -307,6 +398,7 @@ Dtypes and storage
 The current numeric payload types are signed and unsigned integers of 8,
 16, 32, or 64 bits, and 32- or 64-bit floating point. Boolean, half
 precision, complex, and structured payloads are outside this contract.
+Bitwise operators require integer values.
 
 Leave the constructor's element type unspecified for normal use. Load infers
 it from the source, and Store can establish it from the destination.
@@ -320,7 +412,8 @@ Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
 Exchange and array Shuffle return fresh payloads, so their input values
-remain available afterwards.
+remain available afterwards. Reduction returns a scalar, including when
+each thread contributes several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -542,9 +635,9 @@ allocation. Its contents are opaque; keep application values in
      - Scratch behavior in the current backend
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
-   * - Block transpose-family Load/Store
+   * - Block transpose-family Load/Store; Block Reduce
      - Automatic scratch, or an explicit ``TempStorage``
-   * - Warp transpose Load/Store
+   * - Warp transpose Load/Store; Warp Reduce
      - Automatic scratch per group; explicit descriptors are rejected
    * - Exchange and Shuffle
      - Compiler-owned scratch and reuse synchronization
@@ -573,8 +666,15 @@ launch accounting. The compiler may reuse its scratch across compatible calls
 and inserts the required reuse barriers.
 
 With the default ``auto_sync=False``, the kernel must provide reuse barriers.
-Put an explicit block barrier before a later call reuses the same scratch,
-including between loop iterations.
+For example, this kernel uses explicit block barriers after each storage-using
+call, including between loop iterations:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
+   :name: coop-pg-manual-scratch
+   :start-after: # coop-pg-manual-scratch-begin
+   :end-before: # coop-pg-manual-scratch-end
+   :dedent: 4
 
 Set ``auto_sync=True`` to insert automatic trailing barriers for scratch
 reuse. Without an explicit descriptor, the compiler synchronizes scratch
@@ -604,14 +704,65 @@ User static shared arrays may coexist with static cooperative backing, but are
 rejected when the cooperative backing becomes dynamic, including an implicit
 oversized allocation. These checks apply after helper inlining. Keep both
 allocations static within the device limit, use global memory for the user
-buffer, or separate the work into kernels. Storage-free operations do not
-create this conflict. The compatibility restrictions remain until a released
-compiler with the shared-memory fix has passed the coexistence tests.
+buffer, or separate the work into kernels. Reduce uses the same cooperative
+backing, including when ``temp_storage`` is omitted. The compatibility restrictions remain
+until a released compiler with the shared-memory fix has passed the coexistence
+tests.
 
 Extra shared memory can reduce resident blocks per multiprocessor. The
 default inferred allocation and unsized shared descriptor are sufficient
 for the kernels above; use an explicit capacity when you have a reason to
 reserve that amount of shared memory.
+
+
+.. _coop-reductions:
+
+Reduction and result ownership
+------------------------------
+
+``coop.sum`` and ``coop.reduce`` combine the group's inputs into a scalar.
+Block, physical-warp, and logical-warp reductions accept a scalar or
+``ThreadData`` input; every item in every participating thread contributes.
+Consume the result only on group rank zero. All required members still
+execute the reduction. Logical-warp widths may be powers of two from 1
+through 32 or any width from 17 through 31. CUB supports only one
+non-power-of-two group per physical warp. For those widths, use
+``group_by(width, exhaustive=False)`` and
+guard the reduction with ``group.is_member()`` to exclude trailing lanes.
+
+The :doc:`Reduce visualization <visualizations/reduce>` shows which values
+contribute and which group members receive a defined result.
+
+This kernel writes one sum per block, including a partial final tile:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
+   :language: python
+   :name: coop-pg-reduce
+   :start-after: # coop-pg-reduce-begin
+   :end-before: # coop-pg-reduce-end
+   :dedent: 4
+
+The group-rank test surrounds only the result write. Moving the reduction
+into that branch would leave required participants out of the call.
+
+For another built-in operator, use ``coop.reduce`` with ``binary_op`` set
+to ``"min"``, ``"max"``, ``"multiplies"``, ``"bit_and"``,
+``"bit_or"``, or ``"bit_xor"``. Choose the padding value accordingly.
+Qualified custom Reduce callbacks follow the same group and result contracts;
+they must be associative.
+
+Partial scalar Reduce also accepts ``valid_items`` on block and warp
+groups. It counts contributing threads from rank zero, must be between one
+and the group size, and requires a scalar input. The example instead
+pads a multi-item Load and reduces the full payload. These two techniques
+have different valid-count contracts.
+
+Block Reduce accepts ``temp_storage=scratch`` to share a ``coop.TempStorage``
+descriptor with other block operations. Omitting the argument uses
+compiler-managed scratch with automatic synchronization. An explicit
+``coop.TempStorage()`` defaults to ``auto_sync=False``: insert a block barrier
+between uses, or construct it with ``auto_sync=True``. Warp Reduce uses
+compiler-managed scratch.
 
 
 Checking and tuning a kernel

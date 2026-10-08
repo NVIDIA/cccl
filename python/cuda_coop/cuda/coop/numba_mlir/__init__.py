@@ -6,13 +6,13 @@
 
 Import this qualified API on the host before compiling kernels. Importing it
 loads the supported compiler runtime and registers the whole-function
-planner. Load, Store, Exchange, Shuffle, and ThreadData are kernel
-constructs. Group descriptors can also be created on the host and used as
-kernel globals. Construct TempStorage inside each kernel. During
-compilation, the compiler rebuilds the descriptor from its compile-time
-constant arguments and validates them. The compiler rejects a descriptor
-that comes from a module global. The ``local`` and ``shared`` namespaces and
-the Exchange and Shuffle markers load on first access.
+planner. Primitive calls and ThreadData are kernel constructs. Group
+descriptors can also be created on the host and used as kernel globals.
+Construct TempStorage inside each kernel. During compilation, the compiler
+rebuilds the descriptor from its compile-time constant arguments and
+validates them. The compiler rejects a descriptor that comes from a module
+global. The ``local`` and ``shared`` namespaces and the Exchange, Shuffle,
+Reduce, and Sum markers load on first access.
 """
 
 import importlib
@@ -36,6 +36,7 @@ from ._thread_group import (
 
 if TYPE_CHECKING:
     from ._group._exchange import exchange
+    from ._group._reduce import reduce, sum
     from ._group._shuffle import shuffle
     from ._thread_data import local, shared
 
@@ -50,9 +51,11 @@ __all__ = [
     "exchange",
     "load",
     "local",
+    "reduce",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",
@@ -69,10 +72,12 @@ def __getattr__(name):
     Unknown names raise ``AttributeError`` as normal module lookup requires.
     """
 
-    if name in {"exchange", "shuffle"}:
+    if name in {"exchange", "reduce", "shuffle", "sum"}:
         module_name = {
             "exchange": "_group._exchange",
+            "reduce": "_group._reduce",
             "shuffle": "_group._shuffle",
+            "sum": "_group._reduce",
         }[name]
         value = getattr(
             importlib.import_module(f"{__name__}.{module_name}"), name

@@ -199,7 +199,6 @@ class UnsupportedReasonCode(str, Enum):
     PARTIAL_PHYSICAL_WARP = "partial_physical_warp"
     GROUP_KIND = "group_kind"
     OPERAND_FORM = "operand_form"
-    CUB_BROADCAST = "cub_broadcast"
     OPERATION_VARIANT = "operation_variant"
     LAUNCH_CAPABILITY = "launch_capability"
 
@@ -543,9 +542,10 @@ class ResultContract:
     """Group the named logical results in their public return order.
 
     ``values`` must be a non-empty sequence of ``LogicalResultContract``
-    records with unique names. Its first entry is the primary result; the
-    convenience properties describe that entry, not every returned value. The
-    contract does not prescribe how a backend packs multiple values.
+    records with unique names. Its first entry is the primary result.
+    ``primary``, ``visibility``, and ``operand_kind`` describe that entry;
+    ``has_aggregate`` checks all entries. The contract does not prescribe
+    how a backend packs multiple values.
     """
 
     values: tuple[LogicalResultContract, ...]

@@ -46,6 +46,13 @@ primitive supports that group.
    :no-special-members:
 
    .. automethod:: group_by
+   .. automethod:: rank
+   .. automethod:: count
+   .. automethod:: rank_as
+   .. automethod:: count_as
+   .. automethod:: is_member
+   .. automethod:: sync
+   .. automethod:: sync_aligned
 
 .. autoclass:: ThreadHierarchy
    :no-members:
@@ -78,6 +85,14 @@ Memory operations
 
 .. autofunction:: load
 .. autofunction:: store
+
+Reduction
+^^^^^^^^^
+
+See :ref:`reduction and result ownership <coop-reductions>`.
+
+.. autofunction:: reduce
+.. autofunction:: sum
 
 
 Data rearrangement
@@ -123,6 +138,13 @@ Memory operations
 
 .. autofunction:: load
 .. autofunction:: store
+
+
+Reduction
+^^^^^^^^^
+
+.. autofunction:: reduce
+.. autofunction:: sum
 
 
 Data rearrangement

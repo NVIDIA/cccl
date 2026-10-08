@@ -49,7 +49,7 @@ Windows checks build and import the universal wheel and verify its headers;
 they do not execute the compiler backend. Other combinations need separate
 runtime qualification. See the
 [validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
-for tested platforms and coverage.
+for tested platforms, coverage, and hardware requirements.
 
 With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
 and configured launch callables in their original CUDA context. Reuse on
@@ -121,13 +121,13 @@ explains terms and concepts, including blocked and striped layouts.
 | Family | Entry points |
 | --- | --- |
 | Memory operations | `load`, `store` |
+| Reduction | `reduce`, `sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 
 Each operation documents its supported groups and result ownership in the
-[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html). The
-[visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html)
-explain these contracts with interactive diagrams and tested kernel
-examples.
+[API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
+Interactive diagrams and tested kernel examples explain these contracts in
+the [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html).
 
 
 ## Configuration
@@ -271,13 +271,36 @@ in the block; static offsets are checked during planning. `valid_items` is
 relative to each group's own tile, not the entire block, and must be uniform
 within that group.
 
-`ThreadGroup` objects are descriptor-only in this release. Runtime query,
-membership, and synchronization methods such as `rank`, `count`, `rank_as`,
-`count_as`, `sync`, `sync_aligned`, and `is_member` are not exposed.
+`ThreadGroup` follows the C++ hierarchy query surface. `rank(level="thread")`
+and `count(level="thread")` accept `thread` (or `gpu_thread`), `warp`, `block`,
+`cluster`, and `grid`; mapped groups have narrower limits, described below.
+Results use the unsigned type of the matching C++ hierarchy query: normally
+`uint32`, and `uint64` when the group or queried outer level is the grid.
+Use `rank_as(dtype, level="thread")` or `count_as(dtype, level="thread")` to
+select an explicit signed or unsigned 8-, 16-, 32-, or 64-bit integer dtype.
+`is_member()` returns an integer membership flag.
+
+`sync()` and `sync_aligned()` expose the matching non-grid group barriers. All
+participating members must reach `sync()`. `sync_aligned()` additionally
+requires the caller to keep the group aligned and converged. Grid
+synchronization is not available because this backend cannot request a
+cooperative grid launch.
+
+For `group_by`, `count` and `exhaustive` must be compile-time constants. A
+logical threads-within-warp group can query its threads and immediate parent
+Warp; a mapped warps-within-block group can query its threads, physical
+Warps, and immediate parent block. Queries above the immediate physical
+parent are rejected. Mapped warps-within-block groups expose queries and
+`is_member()` but not `sync()` or `sync_aligned()`; the planner does not
+manage the lifetime of their block barriers. For a non-exhaustive partition,
+use `is_member()` to guard rank-dependent work for excluded threads. Do not
+use that branch to skip a collective unless the collective's participation
+contract explicitly permits it; every required group or parent-group
+participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load and Store accept an optional caller descriptor:
+Block Load, Store, and Reduce accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
@@ -289,20 +312,21 @@ storage = coop.TempStorage(
 coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
-For block, physical Warp, and logical Warp calls, `direct`, `striped`, and
-`vectorize` are storage-free: they default-construct CUB primitives without
-shared-memory allocation, pointer arguments, or barriers. For block calls,
-an explicit descriptor is validated but does not change their code
-generation. Construct `TempStorage` inside the kernel; module-global storage
-descriptors cannot be resolved. A descriptor may be passed to a device
+For Load and Store on block, physical Warp, and logical Warp groups, `direct`,
+`striped`, and `vectorize` are storage-free: they default-construct CUB
+primitives without shared-memory allocation, pointer arguments, or barriers.
+For block calls, an explicit descriptor is validated but does not change their
+code generation. Construct `TempStorage` inside the kernel; module-global
+storage descriptors cannot be resolved. A descriptor may be passed to a device
 helper that Numba-CUDA-MLIR inlines into the kernel, which is the default.
 
-The three block transpose algorithms use CUB temporary storage. Without a
-descriptor, the compiler allocates the specialization's exact storage and
-inserts a block reuse barrier. A caller descriptor selects shared or
-exclusive slices and may request capacity and alignment. Both explicit and
-omitted storage participate in the shared-memory plan and launch accounting.
-The provider determines the required byte count and alignment.
+The three block transpose Load/Store algorithms and Block Reduce use CUB
+temporary storage. Without a descriptor, the compiler allocates the
+specialization's exact storage and inserts a block reuse barrier. A caller
+descriptor selects shared or exclusive slices and may request capacity and
+alignment. Both explicit and omitted storage participate in the shared-memory
+plan and launch accounting. The provider determines the required byte count
+and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while
@@ -337,8 +361,8 @@ allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized `cuda.shared.array`. When
 cooperative backing becomes dynamic, user static shared arrays are also
 unsupported. Keep both user arrays and cooperative backing static, or move the
-user data out of shared memory. Storage-free operations do not add this
-restriction.
+user data out of shared memory. Reduce uses the same cooperative backing,
+including when `temp_storage` is omitted.
 
 With `auto_sync=False`, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
@@ -358,6 +382,85 @@ Warp `transpose` uses compiler-owned storage with one disjoint slice per
 physical or logical group and inserts `syncwarp` with the exact group mask.
 Explicit `TempStorage` is rejected by both the common and qualified APIs for
 every Warp Load and Store algorithm, including the storage-free modes.
+
+## Reduce and Sum
+
+`sum(group, value, ...)` and `reduce(group, value, binary_op=..., ...)` return
+one scalar with the payload element dtype. Block, physical-Warp, and
+logical-Warp reductions accept a numeric scalar or fixed-size `ThreadData`;
+every item in every participating thread contributes. The qualified
+`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+Logical Warp widths may be powers of two from 1 through 32 or any width from
+17 through 31. CUB supports only one non-power-of-two group per physical Warp.
+The block must contain complete physical Warps. For a non-power-of-two width,
+use `group_by(width, exhaustive=False)` and guard the reduction with
+`group.is_member()` so trailing lanes do not participate.
+
+Every reduction uses CUB. Only rank zero of each selected group has a defined
+result; other members must still execute the call and must not consume their
+returned value. For example, this full block reduction combines
+`items_per_thread` values per thread but writes only from the block root:
+
+```python
+from numba_cuda_mlir import cuda, types
+
+from cuda import coop
+
+
+@cuda.jit
+def block_sum(source, output, items_per_thread):
+    thread = cuda.threadIdx.x
+    values = coop.ThreadData(items_per_thread)
+    for item in range(items_per_thread):
+        values[item] = source[items_per_thread * thread + item]
+    total = coop.sum(coop.this_block(), values)
+    if thread == 0:
+        output[0] = total
+```
+
+The complete runnable form is in `examples/numba_mlir/block_sum.py`.
+
+`sum` selects addition. `reduce` accepts the aliases `+`, `sum`, `add`, and
+`plus`; `*`, `mul`, `multiply`, and `multiplies`; `min` and `minimum`; `max`
+and `maximum`; and the bitwise pairs `&`/`bit_and`, `|`/`bit_or`, and
+`^`/`bit_xor`. Bitwise reductions require an integer payload dtype. The
+qualified API additionally recognizes the corresponding Python `operator`
+functions and NumPy ufuncs. Built-in operator and algorithm selectors are
+normalized to canonical lowercase strings. Enum-like and other non-string
+selector objects are rejected.
+
+The following controls select the reduction form:
+
+- `valid_items` reduces the first N scalar values by linear group rank. It is
+  available for block, physical-Warp, and logical-Warp groups. N must be
+  uniform within the group and satisfy
+  `1 <= N <= group_size`. Static violations are rejected during compilation;
+  runtime violations execute a deterministic device trap before CUB's 32-bit
+  parameter is formed, invalidating the current CUDA context.
+- `algorithm` selects block-only `raking_commutative_only`, `raking`, or
+  `warp_reductions` (the default). Scalar and fixed-array
+  payloads are supported. `raking_commutative_only` is restricted to Sum and
+  recognized commutative built-ins. The addition-specific nondeterministic CUB
+  variant is intentionally not exposed.
+- A custom Python device callback is available only through
+  `cuda.coop.numba_mlir.reduce`. It must be associative and stateless. It
+  supports scalar or fixed-array payloads for block, physical-Warp, and
+  logical-Warp groups. Stateful callbacks are unsupported.
+
+Every required member must participate in converged control flow. Omitting
+`temp_storage` uses compiler-owned shared storage with automatic
+synchronization: a block barrier for Block Reduce and `syncwarp` with the
+participating mask for Warp Reduce.
+
+Block Reduce also accepts `temp_storage=scratch`, where `scratch` is a
+`coop.TempStorage()` descriptor. It follows the same sizing, alignment,
+sharing, and synchronization policy as Block Load/Store. An explicit descriptor
+defaults to `auto_sync=False`; insert a block barrier between uses, or choose
+`coop.TempStorage(auto_sync=True)`. Warp Reduce uses compiler-owned storage.
+
+Grid Reduce and Sum are unsupported because a grid reduction requires hidden
+per-launch workspace; use a separate kernel or explicitly managed multi-stage
+reduction instead.
 
 ## Exchange and Shuffle
 

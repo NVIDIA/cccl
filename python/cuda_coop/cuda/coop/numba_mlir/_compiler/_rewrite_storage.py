@@ -221,8 +221,8 @@ class _StorageRewrite:
                 )
                 if (size, alignment, auto_sync, sharing) != planned:
                     raise CoopSinglePhaseRewriteError(
-                        f"cooperative provider TempStorage contract "
-                        f"disagrees between the group lowering plan "
+                        "cooperative provider TempStorage contract "
+                        "disagrees between the group lowering plan "
                         f"{planned!r} and the descriptor "
                         f"{(size, alignment, auto_sync, sharing)!r}."
                     )
@@ -394,10 +394,10 @@ class _StorageRewrite:
     ) -> GroupTopologyRequirements | None:
         """Require group rank formulas that the storage emitters support.
 
-        A plan must cover the exact block dimensions with its logical width
-        and instance count. Accept a single block, contiguous power-of-two
-        logical warps dividing 32, or individual threads. Check the symbolic
-        instance and rank expressions against those forms; emitters implement
+        A plan must cover every complete group in the exact block dimensions.
+        Accept a single block, contiguous logical groups within each physical
+        warp, or individual threads. Check the symbolic instance and rank
+        expressions against those forms; emitters implement
         these specific formulas rather than evaluating arbitrary topology
         expression strings.
 
@@ -436,7 +436,19 @@ class _StorageRewrite:
         block_threads = (
             exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
         )
-        if topology.logical_width * topology.instances != block_threads:
+        participating_threads = block_threads
+        nonexhaustive_warp = (
+            participation.group_kind == "threads_within_warp"
+            and not participation.complete_parent_partition
+            and 1 <= topology.logical_width <= 32
+        )
+        if nonexhaustive_warp:
+            participating_threads = (
+                (block_threads // 32)
+                * (32 // topology.logical_width)
+                * topology.logical_width
+            )
+        if topology.logical_width * topology.instances != participating_threads:
             raise CoopSinglePhaseRewriteError(
                 "cooperative provider topology does not cover the exact "
                 "block dimensions."
@@ -458,15 +470,29 @@ class _StorageRewrite:
             if (
                 width < 1
                 or width > 32
-                or width & (width - 1)
-                or 32 % width != 0
-                or topology.instance_index != f"linear_thread_rank / {width}"
-                or topology.thread_rank != f"linear_thread_rank % {width}"
+                or (width & (width - 1) and block_threads % 32 != 0)
             ):
                 raise CoopSinglePhaseRewriteError(
-                    "warp-scoped cooperative storage requires a power-of-two "
-                    "logical width dividing 32 "
-                    "and canonical contiguous ranks."
+                    "warp-scoped cooperative storage requires a logical width "
+                    "from 1 through 32; non-power-of-two widths require "
+                    "complete physical warps."
+                )
+            if nonexhaustive_warp:
+                instance_index = (
+                    f"(linear_thread_rank / 32) * {32 // width} + "
+                    f"((linear_thread_rank % 32) / {width})"
+                )
+                thread_rank = f"(linear_thread_rank % 32) % {width}"
+            else:
+                instance_index = f"linear_thread_rank / {width}"
+                thread_rank = f"linear_thread_rank % {width}"
+            if (
+                topology.instance_index != instance_index
+                or topology.thread_rank != thread_rank
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "warp-scoped cooperative storage requires canonical "
+                    "ranks within each physical warp."
                 )
         elif scope is SynchronizationScope.NONE:
             if (
@@ -480,7 +506,7 @@ class _StorageRewrite:
                 )
         else:
             raise CoopSinglePhaseRewriteError(
-                f"cuda.coop.numba_mlir provider execution scope "
+                "cuda.coop.numba_mlir provider execution scope "
                 f"{scope.value!r} has no storage emitter"
             )
         return topology
@@ -499,7 +525,8 @@ class _StorageRewrite:
         groups. Each warp or thread needs its own region so concurrent
         operations do not overwrite one another. Use zero for a block-wide
         group, the linear thread rank for a thread, or that rank divided by the
-        logical warp width.
+        logical warp width. Non-exhaustive warp groups restart the index
+        within each physical warp so trailing lanes consume no scratch.
 
         Parameters
         ----------
@@ -543,6 +570,66 @@ class _StorageRewrite:
             stem="group_topology_logical_width",
             value=topology.logical_width,
         )
+        if 32 % topology.logical_width:
+            physical_width = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_physical_width",
+                value=32,
+            )
+            physical_warp = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_physical_warp",
+                fn=operator.floordiv,
+                lhs=linear_rank,
+                rhs=physical_width,
+            )
+            lane = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_lane",
+                fn=operator.mod,
+                lhs=linear_rank,
+                rhs=physical_width,
+            )
+            groups_per_warp = self._emit_integer_constant(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_groups_per_warp",
+                value=32 // topology.logical_width,
+            )
+            warp_offset = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_warp_offset",
+                fn=operator.mul,
+                lhs=physical_warp,
+                rhs=groups_per_warp,
+            )
+            local_instance = self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_local_instance",
+                fn=operator.floordiv,
+                lhs=lane,
+                rhs=logical_width,
+            )
+            return self._emit_integer_binop(
+                block,
+                scope=scope,
+                loc=loc,
+                stem="group_topology_instance_index",
+                fn=operator.add,
+                lhs=warp_offset,
+                rhs=local_instance,
+            )
         return self._emit_integer_binop(
             block,
             scope=scope,
@@ -592,7 +679,7 @@ class _StorageRewrite:
             ) from exc
         if max_default <= 0 or max_optin <= 0 or max_optin < max_default:
             raise CoopSinglePhaseRewriteError(
-                f"The current device reported invalid shared-memory limits: "
+                "The current device reported invalid shared-memory limits: "
                 f"default={max_default}, opt-in={max_optin}."
             )
         return (max_default, max_optin)
@@ -695,9 +782,9 @@ class _StorageRewrite:
                 f"TempStorage requires {max_alignment}-byte alignment, but "
                 f"the {total_size}-byte backing exceeds the "
                 f"{max_default}-byte static shared-memory limit and dynamic "
-                f"shared memory guarantees only "
+                "shared memory guarantees only "
                 f"{_DYNAMIC_SHARED_MEMORY_ALIGNMENT}-byte alignment; reduce "
-                f"the requested alignment or the storage size."
+                "the requested alignment or the storage size."
             )
         dynamic_shared_bytes = total_size if uses_dynamic_smem else 0
         if dynamic_shared_bytes > max_optin:
@@ -773,14 +860,15 @@ class _StorageRewrite:
     def _reject_conflicting_user_shared_arrays(
         self, plan: _TempStorageGlobalPlan
     ) -> None:
-        """Reject static/dynamic overlap in supported compiler releases.
+        """Reject shared allocations that overlap in the supported compiler.
 
-        Runtime-sized arrays and zero-sized views use the dynamic window.
-        Static globals currently overlap that window as well, so coexistence
-        is safe only when both user and cooperative allocations are static.
+        User runtime-sized or zero-sized shared arrays use the dynamic
+        window; static allocations currently overlap that window. Coexistence
+        is allowed only when both sides are static. Inspect constructor origins
+        after inlining and restore lookup state if a diagnostic is raised.
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
-
+        uses_dynamic_smem = plan.uses_dynamic_smem
         saved_block = self._block
         saved_block_defs = self._block_defs
         conflicts: list[tuple[str, ir.Loc]] = []
@@ -815,7 +903,7 @@ class _StorageRewrite:
                         isinstance(extent, int) and extent > 0
                         for extent in dimensions
                     )
-                    if plan.uses_dynamic_smem or not is_static:
+                    if uses_dynamic_smem or not is_static:
                         placement = (
                             "static" if is_static else "dynamic/runtime-sized"
                         )
@@ -825,19 +913,22 @@ class _StorageRewrite:
             self._block_defs = saved_block_defs
         if not conflicts:
             return
-        placement = "dynamic" if plan.uses_dynamic_smem else "static"
+        placement = "dynamic" if uses_dynamic_smem else "static"
+        requirement = (
+            "cuda.coop temporary storage requires a "
+            f"{plan.total_size}-byte {placement} shared-memory backing"
+        )
         where = ", ".join(
             f"{kind} cuda.shared.array(...) at {loc}"
             for kind, loc in conflicts[:3]
         )
         raise CoopSinglePhaseRewriteError(
-            f"cuda.coop temporary storage requires a {plan.total_size}-byte "
-            f"{placement} shared-memory backing, but this kernel also "
-            f"declares {where}. The supported numba-cuda-mlir compiler does "
-            f"not separate these allocations; they would alias. Use "
-            f"statically sized user shared arrays and keep the combined "
-            f"cooperative backing within the static shared-memory limit, or "
-            f"move the user data out of shared memory."
+            f"{requirement}, but "
+            f"this kernel also declares {where}. The supported numba-cuda-mlir "
+            "compiler does not separate these allocations; they would alias. "
+            "Use statically sized user shared arrays and keep the combined "
+            "cooperative backing within the static shared-memory limit, or "
+            "move the user data out of shared memory."
         )
 
     def _emit_temp_storage_backing(
@@ -1192,7 +1283,7 @@ class _StorageRewrite:
             )
             if slice_info is None:
                 raise CoopSinglePhaseRewriteError(
-                    f"Could not resolve TempStorage slice for call at "
+                    "Could not resolve TempStorage slice for call at "
                     f"{call_assign.loc}."
                 )
             if (
@@ -1255,7 +1346,7 @@ class _StorageRewrite:
         slice_info = plan.slices_by_call_id.get(id(call_assign))
         if slice_info is None:
             raise CoopSinglePhaseRewriteError(
-                f"Could not resolve implicit TempStorage slice for call at "
+                "Could not resolve implicit TempStorage slice for call at "
                 f"{call_assign.loc}."
             )
         sliced_var = ir.Var(
@@ -1336,9 +1427,9 @@ class _StorageRewrite:
         }.get(synchronization_scope)
         if sync_attr is None:
             raise CoopSinglePhaseRewriteError(
-                f"cuda.coop.numba_mlir provider synchronization scope "
+                "cuda.coop.numba_mlir provider synchronization scope "
                 f"{SynchronizationScope(synchronization_scope).value!r} has "
-                f"no emitter"
+                "no emitter"
             )
         sync_args = []
         if (
@@ -1608,15 +1699,15 @@ class _StorageRewrite:
                     helper_name = helper.py_func.__qualname__
                     raise CoopSinglePhaseRewriteError(
                         f"TempStorage descriptor {names!r} is passed to a "
-                        f"device function that was not inlined into this "
+                        "device function that was not inlined into this "
                         f"kernel ({helper_name!r}); let Numba-CUDA-MLIR "
-                        f"inline the collective helper (inline='always') or "
-                        f"move its cooperative calls into the kernel."
+                        "inline the primitive helper (inline='always') or "
+                        "move its cooperative calls into the kernel."
                     )
                 raise CoopSinglePhaseRewriteError(
-                    f"TempStorage values are opaque compile-time descriptors "
-                    f"and may only be passed as temp_storage= to a "
-                    f"registered cooperative primitive; a use involving "
+                    "TempStorage values are opaque compile-time descriptors "
+                    "and may only be passed as temp_storage= to a "
+                    "registered cooperative primitive; a use involving "
                     f"{names!r} would escape to runtime."
                 )
 
@@ -1632,10 +1723,10 @@ class _StorageRewrite:
         if unconsumed:
             names = ", ".join(sorted(unconsumed))
             raise CoopSinglePhaseRewriteError(
-                f"TempStorage values are opaque compile-time descriptors and "
-                f"must be passed as temp_storage= to a registered "
+                "TempStorage values are opaque compile-time descriptors and "
+                "must be passed as temp_storage= to a registered "
                 f"cooperative primitive; constructor(s) {names!r} have no "
-                f"primitive consumer."
+                "primitive consumer."
             )
 
     def _collect_temp_storage_uses(

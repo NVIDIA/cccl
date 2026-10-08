@@ -45,6 +45,7 @@ from cuda.coop._core import (
     LaunchFacts,
     ThreadGroup,
     ThreadHierarchy,
+    normalize_thread_level,
     resolve_thread_group,
 )
 
@@ -65,6 +66,7 @@ from ._group_errors import (
 from ._group_planner_support import (
     _COMMON_GROUP_CONSTRUCTORS,
     _GROUP_CONSTRUCTORS,
+    _GROUP_METHODS,
     _NAME_COUNTER,
     GroupRewriteError,
     _group_operation_name,
@@ -147,7 +149,23 @@ class _GroupCallPlanner:
         # Host-side thread groups and hierarchies, keyed by IR variable name.
         self._group_cache: dict[str, ThreadGroup] = {}
         self._hierarchy_cache: dict[str, ThreadHierarchy] = {}
+        self._compile_context = None
+        self._group_method_invocables: dict[tuple[Any, ...], Any] = {}
         self.context = GroupPlanningContext(self)
+
+    def _provider_compile_context(self):
+        """Resolve and reuse one provider compile context for this planner.
+
+        All generated group-method helpers in the attempt share the same
+        header and option context. Cache it lazily so plans with no such
+        helper do not need to resolve compiler inputs here.
+        """
+
+        if self._compile_context is None:
+            from ._nvrtc import resolve_compile_context
+
+            self._compile_context = resolve_compile_context()
+        return self._compile_context
 
     @staticmethod
     def _make_launch_facts(config: dict[str, Any]) -> LaunchFacts:
@@ -2102,6 +2120,199 @@ class _GroupCallPlanner:
         self.dead_func_names.add(call.func.name)
         self.replacements[inst] = replacement
 
+    def _group_method(self, call: ir.Expr) -> tuple[str, ThreadGroup] | None:
+        """Recognize a supported method on a resolvable group descriptor.
+
+        ``run`` uses this probe to distinguish executable queries such as
+        ``group.rank()`` from descriptor construction before it chooses a
+        replacement device helper.
+
+        Return the method name and group, or ``None`` for unrelated calls.
+        ``group_by`` is excluded because it constructs another descriptor;
+        this path handles methods that must become executable device helpers.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Call expression inspected by ``run`` while the original
+            group descriptors and their aliases are still present.
+        """
+
+        definition = self._definition(call.func)
+        if (
+            not isinstance(definition, ir.Expr)
+            or definition.op != "getattr"
+            or definition.attr not in _GROUP_METHODS
+            or definition.attr == "group_by"
+        ):
+            return None
+        group = self._group(definition.value)
+        if group is None:
+            return None
+        return definition.attr, group
+
+    def _lower_group_method(
+        self, inst: ir.Assign, call: ir.Expr, *, method: str, group: ThreadGroup
+    ) -> None:
+        """Plan a group method and stage its no-argument device helper call.
+
+        ``run`` calls this after recognizing a query or synchronization
+        method. Unlike an ordinary Python object method, the receiver
+        describes compile-time thread membership and must disappear before
+        device typing.
+
+        Validate argument shape and resolve dtype/level controls as constants.
+        Resolve the group through the requested hierarchy level and reject
+        unsupported mapped-parent queries, mapped-warp synchronization, and
+        grid synchronization. Grid sync needs a cooperative launch, which this
+        launch descriptor cannot request.
+
+        Reuse an invocable keyed by group semantics, operation, dtype, and
+        level within this planner attempt. Its C++ helper embeds the
+        descriptor, so the replacement passes no runtime group object. Record
+        the old callee as dead and stage the replacement; the normal planner
+        run installs it later.
+
+        Parameters
+        ----------
+        inst : ir.Assign
+            Original public call assignment. Its target, scope, and
+            source location identify the replacement result and
+            generated temporaries.
+        call : ir.Expr
+            Method-call expression stored in ``inst.value``, retaining
+            the public positional and keyword arguments.
+        method : str
+            Supported method name returned by ``_group_method``,
+            including typed query variants such as ``rank_as``.
+        group : ThreadGroup
+            Descriptor recovered from the method receiver. Its hierarchy
+            is resolved against this compilation's launch before code
+            generation.
+        """
+
+        if call.vararg is not None or call.varkwarg is not None:
+            raise GroupRewriteError(
+                f"ThreadGroup.{method} does not support splats"
+            )
+        kwargs = dict(call.kws)
+        dtype = None
+        level = "thread"
+        if method in {"rank", "count"}:
+            if len(call.args) > 1 or any(name != "level" for name in kwargs):
+                raise GroupRewriteError(
+                    f"invalid ThreadGroup.{method} arguments"
+                )
+            if call.args and "level" in kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} received level more than once"
+                )
+            if call.args:
+                level = self._constant(call.args[0])
+            elif "level" in kwargs:
+                level = self._constant(kwargs["level"])
+            operation = method
+        elif method in {"rank_as", "count_as"}:
+            if len(call.args) > 2 or any(
+                name not in {"dtype", "level"} for name in kwargs
+            ):
+                raise GroupRewriteError(
+                    f"invalid ThreadGroup.{method} arguments"
+                )
+            if call.args and "dtype" in kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} received dtype more than once"
+                )
+            if len(call.args) > 1 and "level" in kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} received level more than once"
+                )
+            if call.args:
+                dtype = self._constant(call.args[0])
+            elif "dtype" in kwargs:
+                dtype = self._constant(kwargs["dtype"])
+            if len(call.args) > 1:
+                level = self._constant(call.args[1])
+            elif "level" in kwargs:
+                level = self._constant(kwargs["level"])
+            operation = method.removesuffix("_as")
+        else:
+            if call.args or kwargs:
+                raise GroupRewriteError(
+                    f"ThreadGroup.{method} accepts no arguments"
+                )
+            operation = method
+
+        if operation in {"rank", "count"}:
+            level = normalize_thread_level(
+                level,
+                scope="cuda.coop.numba_mlir",
+                feature=f"ThreadGroup.{operation}",
+            )
+            if group.mapping is not None:
+                level_order = {
+                    "thread": 0,
+                    "warp": 1,
+                    "block": 2,
+                    "cluster": 3,
+                    "grid": 4,
+                }
+                if level_order[level] > level_order[group.mapping.parent]:
+                    raise NotImplementedError(
+                        "cuda.coop.numba_mlir mapped ThreadGroup queries above "
+                        "the immediate parent require "
+                        "recursive group composition"
+                    )
+            group = self._resolve_group(
+                group, feature=f"ThreadGroup.{operation}", through_level=level
+            )
+        else:
+            group = self._resolve_group(
+                group, feature=f"ThreadGroup.{operation}"
+            )
+        if group.kind == "warps_within_block" and operation in {
+            "sync",
+            "sync_aligned",
+        }:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir mapped-Warp synchronization requires "
+                "planner-owned barrier lifetime"
+            )
+        if group.kind == "grid" and operation in {"sync", "sync_aligned"}:
+            raise NotImplementedError(
+                "cuda.coop.numba_mlir grid synchronization requires a verified "
+                "cooperative launch, which the "
+                "current launch descriptor cannot "
+                "request"
+            )
+
+        from .._lowering._thread_group import (
+            _normalize_query_dtype,
+            make_group_method_invocable,
+        )
+
+        if operation in {"rank", "count"}:
+            dtype = _normalize_query_dtype(group, level, dtype)
+
+        key = (group.semantic_key, operation, dtype, level)
+        invocable = self._group_method_invocables.get(key)
+        if invocable is None:
+            invocable = make_group_method_invocable(
+                group=group,
+                operation=operation,
+                dtype=dtype,
+                level=level,
+                compile_context=self._provider_compile_context(),
+            )
+            self._group_method_invocables[key] = invocable
+        self.dead_func_names.add(call.func.name)
+        self.replacements[inst] = self._rewritten_call(
+            inst,
+            factory=invocable,
+            args=[],
+            kwargs={},
+        )
+
     def _mark_descriptor_calls(self) -> None:
         """Mark thread-group and hierarchy assignments for removal.
 
@@ -2233,6 +2444,10 @@ class _GroupCallPlanner:
         instance's caches, dtype facts, and replacement bookkeeping; block
         bodies change only after all calls and descriptor uses pass.
 
+        Recognized rank, count, membership, and synchronization methods also
+        become provider calls. Their helpers embed the resolved group and
+        compile-time query controls before the descriptor is erased.
+
         Returns
         -------
         bool
@@ -2270,6 +2485,15 @@ class _GroupCallPlanner:
                 if operation is not None:
                     self._lower_root_operation(inst, call, function, operation)
                     continue
+                method = self._group_method(call)
+                if method is not None:
+                    method_name, group = method
+                    self._lower_group_method(
+                        inst,
+                        call,
+                        method=method_name,
+                        group=group,
+                    )
         self._validate_group_descriptor_references()
         if not (
             self.descriptor_assigns or self.replacements or self.dead_func_names
@@ -2302,11 +2526,13 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
 
     One recognized call anywhere in the function is enough: a group
     constructor such as ``this_block()``, ``ThreadHierarchy()``, a registered
-    public group operation such as ``load()`` or ``store()``, or
-    ``group_by()`` on a recognized group descriptor. For ``group_by()``, trace
-    the receiver through aliases, casts, control-flow merges, and earlier
-    subgroup calls to distinguish group descriptors from unrelated objects
-    with that method.
+    public group operation such as ``load()`` or ``store()``, or a supported
+    method on a recognized group descriptor. Partitioning, hierarchy queries,
+    and synchronization need planning even when no primitive remains.
+
+    Trace method receivers through aliases, casts, control-flow merges, and
+    earlier subgroup calls to distinguish group descriptors from unrelated
+    objects with the same method name.
 
     Inspect only the supplied IR. Calls inside device helpers become visible
     here after inlining; this scan does not visit their bodies. ``ThreadData``
@@ -2398,7 +2624,7 @@ def has_group_markers(func_ir: ir.FunctionIR) -> bool:
             if (
                 isinstance(function_definition, ir.Expr)
                 and function_definition.op == "getattr"
-                and (function_definition.attr == "group_by")
+                and function_definition.attr in _GROUP_METHODS
                 and is_group_descriptor(function_definition.value, set())
             ):
                 return True

@@ -161,10 +161,12 @@ class EscapingGroupDescriptorError(GroupRewriteError):
     def __init__(self, names):
         super().__init__(
             _wrap_diagnostic(
-                f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values "
-                f"are compile-time descriptors and may only feed this_*(), "
-                f"group_by(), or group-first primitives; descriptor use "
-                f"involving {names!r} would escape to runtime",
+                f"cuda.coop.numba_mlir ThreadGroup/ThreadHierarchy values are "
+                f"compile-time descriptors and may "
+                f"only feed this_*(), group_by(), "
+                f"group methods, or group-first primitives; descriptor use "
+                f"involving {names!r} "
+                f"would escape to runtime",
             )
         )
 

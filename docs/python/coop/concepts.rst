@@ -113,21 +113,45 @@ Groups and thread data
 :func:`cuda.coop.this_block` describes the current CUDA thread block, and
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
-consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store, and
-Exchange support all three forms; Shuffle is block-only. Warp operations
-require an enclosing block with a multiple of 32 threads and no incomplete
-final physical warp. For a multidimensional block, threads are linearized
-in x-major order. Every member of a participating group must reach its
-collective; complete sibling logical groups may take different control-flow
-paths.
+consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store,
+Exchange, and Reduce support all three forms; Shuffle is block-only. Warp
+operations require an enclosing block with a multiple of 32 threads and no
+incomplete final physical warp. For a multidimensional block, threads are
+linearized in x-major order. Every member of a participating group must reach
+its collective; complete sibling logical groups may take different
+control-flow paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not targets for these operations.
-``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
-compile-time vocabulary for describing a static partition. Runtime query,
-membership, and synchronization methods such as ``rank``, ``count``,
-``rank_as``, ``count_as``, ``sync``, ``sync_aligned``, and ``is_member`` are
-not exposed.
+groups of physical warps. These groups support hierarchy queries; the
+primitives above require block or warp groups. ``ThreadGroup`` exposes the
+hierarchy query surface.
+``rank(level="thread")`` and ``count(level="thread")`` accept ``thread`` (or
+``gpu_thread``), ``warp``, ``block``, ``cluster``, and ``grid``; mapped groups
+have narrower limits, described below. Results use the unsigned type of the
+matching C++ hierarchy query: normally ``uint32``, and ``uint64`` when the
+group or queried outer level is the grid.
+``rank_as(dtype, level="thread")`` and
+``count_as(dtype, level="thread")`` select an explicit signed or unsigned 8-,
+16-, 32-, or 64-bit integer dtype. ``is_member()`` returns an integer
+membership flag.
+
+``sync()`` and ``sync_aligned()`` expose the matching non-grid barriers. Every
+participating member must reach ``sync()``. ``sync_aligned()`` additionally
+requires an aligned and converged group. Grid synchronization is unavailable
+because the backend cannot request a cooperative grid launch.
+
+For ``group_by``, ``count`` and ``exhaustive`` must be compile-time
+constants. A mapped threads-within-warp group can query its threads and
+immediate parent Warp. A mapped warps-within-block group can query its
+threads, physical Warps, and immediate parent block. Queries above the
+immediate physical parent are rejected. Mapped warps-within-block groups
+support queries and ``is_member()`` but not ``sync()`` or
+``sync_aligned()``; the planner does not manage the lifetime of their block
+barriers. For a non-exhaustive partition, use ``is_member()`` to guard
+rank-dependent work for excluded threads. Do not use that branch to skip a
+collective unless the collective's participation contract explicitly permits
+it; every required group or parent-group participant must still reach the
+collective.
 
 
 Participation and synchronization
@@ -369,7 +393,7 @@ release.
 Temporary storage
 -----------------
 
-Block Load and Store accept an optional ``TempStorage`` descriptor.
+Block Load, Store, and Reduce accept an optional ``TempStorage`` descriptor.
 
 Scratch belongs to one block during its kernel execution. A descriptor does
 not carry data between blocks or kernel launches.
@@ -392,7 +416,7 @@ in bytes. The planner may strengthen it to satisfy every primitive using the
 storage. Integer-like values implementing ``__index__`` are accepted. An
 explicit ``size_in_bytes`` must still be large enough for the planned storage.
 
-For block, physical Warp, and logical Warp operations, ``direct``,
+For block, physical Warp, and logical Warp Load/Store, ``direct``,
 ``striped``, and ``vectorize`` are storage-free. They default-construct the
 CUB primitive, report zero temporary bytes, and emit no shared-memory
 allocation, storage pointer, or synchronization barrier. For a block call,
@@ -431,19 +455,20 @@ caller issues ``cuda.syncthreads()`` between consecutive uses of the
 descriptor, and a call site inside a loop counts as a reuse on every
 iteration. Compiler-owned storage always synchronizes.
 
-The compiler stages every descriptor and every compiler-owned requirement of
-a kernel into one shared-memory backing. Up to 48 KiB, it uses static shared
-memory without querying the device. Larger requests, from explicit
-``size_in_bytes`` or implicit requirements, trigger a query of the device's
-default and opt-in limits. Backing above the default limit uses dynamic shared
-memory, and the launch reserves its exact byte count within the opt-in limit.
+The compiler stages descriptors and compiler-managed CUB scratch into one
+shared-memory backing. Up to 48 KiB, it uses a conservative static limit
+without querying the device. Larger requests, from explicit ``size_in_bytes``
+or implicit requirements, trigger a query of the device's default and opt-in
+limits. Backing above the default limit uses dynamic shared memory, and the
+launch reserves its exact byte count within the opt-in limit.
 Supported Numba-CUDA-MLIR releases do not separate static and dynamic shared
 allocations reliably. A kernel using cooperative temporary storage must not
 also declare a zero-sized or runtime-sized ``cuda.shared.array``. When
 cooperative backing becomes dynamic, user static shared arrays are also
-unsupported. Keep both user arrays and cooperative backing static, or move
-the user data out of shared memory. Storage-free operations do not add this
-restriction.
+unsupported. Keep both user arrays and cooperative backing static, or move the
+user data out of shared memory. Reduce uses this same cooperative backing,
+including when ``temp_storage`` is omitted. Storage-free Load/Store algorithms
+do not add this restriction.
 
 With ``auto_sync=False``, a descriptor must originate from exactly one
 constructor site. Selecting between multiple manual-sync constructors is
