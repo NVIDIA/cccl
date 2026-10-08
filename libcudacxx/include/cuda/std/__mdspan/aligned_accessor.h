@@ -31,6 +31,7 @@
 
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/__type_traits/is_abstract.h>
