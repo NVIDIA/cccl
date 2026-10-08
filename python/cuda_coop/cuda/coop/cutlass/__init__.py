@@ -7,8 +7,9 @@
 Importing this namespace validates the optional runtime and lets the common
 API recognize the active CuTe DSL compiler environment. Calls inside that
 environment use these implementations. The namespace provides Load/Store,
-Reduce, Sum, Scan, Exchange, Shuffle, Merge Sort, and supported group queries
-and synchronization. Reduce and Scan accept only built-in operators.
+Reduce, Sum, Scan, Exchange, Shuffle, Merge Sort, Radix Sort, Radix Rank,
+and supported group queries and synchronization. Reduce and Scan accept only
+built-in operators.
 
 Qualified calls also accept the CuTe payload forms documented by each
 operation. The per-operation docs describe which block calls accept a
@@ -20,6 +21,11 @@ from ._compiler._activation import register_trace_context
 from ._group_exchange import exchange
 from ._group_load_store import load, store
 from ._group_merge_sort import merge_sort_keys, merge_sort_pairs
+from ._group_radix_sort import (
+    radix_rank_keys,
+    radix_sort_keys,
+    radix_sort_pairs,
+)
 from ._group_reduce import reduce, sum
 from ._group_scan import (
     exclusive_scan,
@@ -58,6 +64,9 @@ __all__ = [
     "load",
     "merge_sort_keys",
     "merge_sort_pairs",
+    "radix_rank_keys",
+    "radix_sort_keys",
+    "radix_sort_pairs",
     "reduce",
     "scan",
     "shuffle",

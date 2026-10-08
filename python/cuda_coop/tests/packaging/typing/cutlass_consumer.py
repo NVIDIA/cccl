@@ -25,6 +25,7 @@ from cutlass import (
     Float64,
     Int16,
     Int32,
+    Int64,
     Uint8,
     Uint16,
     Uint32,
@@ -819,4 +820,132 @@ def check_cutlass_merge_sort_surface() -> None:
             oob_default=np.int32(1000),
         ),
         tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Any]],
+    )
+
+
+def check_cutlass_radix_surface(scalar: Float32, value: Int16) -> None:
+    """Separate type-preserving Sort outputs from signed Int32 Rank outputs.
+
+    Scalar and payload forms retain their shape. Register inputs can lose
+    static element detail for Sort, but Rank has a fixed result dtype. Bin
+    prefixes are a separate writable output with their own per-thread extent.
+    """
+
+    block = cutlass_coop.this_block()
+    keys = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = cutlass_coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    prefixes = cutlass_coop.ThreadData(items_per_thread=1, dtype=Int32)
+    storage = cutlass_coop.TempStorage(alignment=32)
+    assert_type(
+        cutlass_coop.radix_sort_keys(block, keys),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_pairs(
+            block,
+            keys,
+            values,
+            begin_bit=Int64(3),
+            end_bit=Uint32(8),
+            descending=True,
+            temp_storage=storage,
+            blocked_to_striped=True,
+        ),
+        tuple[
+            cutlass_coop.ThreadData[np.int32],
+            cutlass_coop.ThreadData[np.float64],
+        ],
+    )
+    assert_type(cutlass_coop.radix_sort_keys(block, scalar), Float32)
+    assert_type(
+        cutlass_coop.radix_sort_pairs(block, scalar, value),
+        tuple[Float32, Int16],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_keys(
+            block, cutlass_coop.ThreadData(items_per_thread=2, dtype=Float64)
+        ),
+        cutlass_coop.ThreadData[Float64],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_pairs(block, Uint64(1), np.uint8(2)),
+        tuple[Uint64, np.uint8],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_keys(block, _ReadOnlyKeys()),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_pairs(block, _ReadOnlyKeys(), _ReadOnlyKeys()),
+        tuple[
+            cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[np.int32]
+        ],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_keys(block, keys.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_pairs(block, keys.to_register_tensor(), values),
+        tuple[
+            cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[np.float64]
+        ],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_pairs(block, keys, values.to_tensor_ssa()),
+        tuple[cutlass_coop.ThreadData[np.int32], cutlass_coop.ThreadData[Any]],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_pairs(
+            block,
+            keys.to_tensor_ssa(),
+            values.to_register_tensor(),
+        ),
+        tuple[cutlass_coop.ThreadData[Any], cutlass_coop.ThreadData[Any]],
+    )
+    assert_type(
+        cutlass_coop.radix_rank_keys(
+            block,
+            keys,
+            begin_bit=4,
+            radix_bits=4,
+            descending=True,
+            exclusive_digit_prefix=prefixes,
+        ),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.radix_rank_keys(block, _ReadOnlyKeys()),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.radix_rank_keys(block, keys.to_register_tensor()),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.radix_rank_keys(block, keys.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Int32],
+    )
+    assert_type(
+        cutlass_coop.radix_rank_keys(
+            block,
+            Int64(1),
+            end_bit=8,
+            exclusive_digit_prefix=common_coop.ThreadData(
+                items_per_thread=4, dtype=np.int32
+            ),
+        ),
+        Int32,
+    )
+    assert_type(
+        common_coop.radix_sort_keys(block, keys),
+        common_coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        common_coop.radix_rank_keys(block, keys),
+        common_coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        cutlass_coop.radix_sort_keys(common_coop.this_block(), keys),
+        cutlass_coop.ThreadData[np.int32],
     )

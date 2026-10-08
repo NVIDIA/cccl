@@ -129,7 +129,8 @@ See the :ref:`Numba <coop-merge-sort>` and
 Radix sorting and ranking
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-See the :ref:`Numba Radix Sort and Rank examples <coop-radix>`.
+See the :ref:`Numba <coop-radix>` and
+:ref:`CUTLASS <coop-cutlass-radix>` Radix Sort and Rank examples.
 
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
@@ -298,9 +299,9 @@ or to get a register tensor after Load.
 Qualified Reduce and Sum accept register tensors and ``TensorSSA`` values
 directly. Inside the kernel they return CuTe scalars, even when a NumPy dtype
 selects the payload type; the stubs report that NumPy type for static checks.
-Qualified block Scan, Exchange, array Shuffle, and Merge Sort keys and pairs
-also accept both forms and return ``ThreadData`` payloads. Scalar Shuffle
-returns a CuTe scalar.
+Qualified block Scan, Exchange, array Shuffle, Merge Sort, Radix Sort, and
+Radix Rank also accept both forms and return ``ThreadData`` payloads. Rank
+results have signed Int32 dtype. Scalar Shuffle returns a CuTe scalar.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
 between common and qualified calls. Qualified Reduce and Scan also accept
@@ -360,3 +361,10 @@ Comparison sorting
 
 .. autofunction:: merge_sort_keys
 .. autofunction:: merge_sort_pairs
+
+Radix sorting and ranking
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: radix_sort_keys
+.. autofunction:: radix_sort_pairs
+.. autofunction:: radix_rank_keys
