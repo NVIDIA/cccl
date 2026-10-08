@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan deferred scratch from call events and exact native layout facts.
+"""Test scratch planning from traced calls and exact C++ layouts.
 
-Synthetic events stand in for traced collective calls. The tests supply
-size and alignment directly, then inspect shared slots, exclusive slices,
-and isolation by kernel and descriptor. Separate session checks cover
-rollback and the operands that final allocation will replace.
+Synthetic events stand in for traced collective calls. The tests supply size
+and alignment directly, then check shared slots, exclusive slices, and
+isolation by kernel and descriptor. Other tests cover session rollback, fresh
+placeholder operands, and kernel discovery.
 """
 
 from dataclasses import replace
@@ -47,6 +47,14 @@ def _event(storage, key, kernel):
         size_placeholder=object(),
         location="example.py:12",
     )
+
+
+def _region_op(name, attributes=None):
+    """Build one region and block for a synthetic MLIR nesting test."""
+
+    operation = ir.Operation.create(name, attributes=attributes, regions=1)
+    operation.regions[0].blocks.append()
+    return operation
 
 
 @pytest.mark.parametrize("capacity", [None, 128])
@@ -210,36 +218,126 @@ def test_event_rollback():
     assert session.deferred_temp_storage_event_list() == [first]
 
 
-def test_registration_uses_fresh_operands(monkeypatch):
-    """Give each call its own operands for deferred storage replacement.
+@pytest.mark.parametrize("kernel_name", ("cuda.kernel", "lir.func"))
+@pytest.mark.parametrize(
+    "nested", (False, True), ids=("entry", "nested-region")
+)
+def test_registration_uses_fresh_operands(kernel_name, nested):
+    """Give each traced call fresh operands and its enclosing kernel.
 
-    Calls may share storage but still need distinct address and size operands.
-    An MLIR context permits operand creation here without tracing or launching
-    a GPU kernel.
+    One descriptor is reused in two kernels on purpose. Each call needs its
+    own address and size placeholders, and planning groups the calls by
+    kernel. A call in a nested region must resolve to the same kernel as a
+    call in the entry block. Unregistered MLIR operations test the traversal
+    without compiling a kernel.
     """
 
     session = _state.BundleSession()
     storage = TempStorage(128, auto_sync=False)
-    kernel = object()
-    monkeypatch.setattr(_storage, "_active_cuda_kernel_op", lambda: kernel)
-    with ir.Context(), ir.Location.unknown():
+    with ir.Context() as context, ir.Location.unknown():
+        context.allow_unregistered_dialects = True
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):
-            for _ in range(2):
-                args = _storage.register_deferred_temp_storage_event(
-                    storage,
-                    primitive_name="load",
-                    requirement_key="scratch",
-                    active_session_getter=lambda: session,
-                )
-                assert len(args) == 3
-        first, second = session.deferred_temp_storage_event_list()
-        assert first.smem_addr_placeholder != second.smem_addr_placeholder
-        assert first.size_placeholder != second.size_placeholder
-        assert first.kernel_op is kernel
-        assert first.temp_storage is storage
-        assert first.capacity_size_in_bytes == 128
-        assert first.auto_sync is False
+            gpu_module = _region_op("gpu.module")
+        kernels = []
+        for name in ("first", "second"):
+            attributes = {"sym_name": ir.StringAttr.get(name)}
+            if kernel_name == "lir.func":
+                attributes["gpu.kernel"] = ir.UnitAttr.get()
+            with ir.InsertionPoint(gpu_module.regions[0].blocks[0]):
+                kernel = _region_op(kernel_name, attributes)
+            kernels.append(kernel)
+            block = kernel.regions[0].blocks[0]
+            if nested:
+                with ir.InsertionPoint(block):
+                    region = _region_op("test.region")
+                block = region.regions[0].blocks[0]
+            with ir.InsertionPoint(block):
+                for _ in range(2):
+                    args = _storage.register_deferred_temp_storage_event(
+                        storage,
+                        primitive_name="load",
+                        requirement_key="scratch",
+                        active_session_getter=lambda: session,
+                    )
+                    assert len(args) == 3
+        events = session.deferred_temp_storage_event_list()
+        assert len(events) == 4
+        assert len({event.smem_addr_placeholder for event in events}) == 4
+        assert len({event.size_placeholder for event in events}) == 4
+        assert [event.kernel_op for event in events] == [
+            kernels[0],
+            kernels[0],
+            kernels[1],
+            kernels[1],
+        ]
+        for event in events:
+            assert event.temp_storage is storage
+            assert event.capacity_size_in_bytes == 128
+            assert event.auto_sync is False
+        plans = _storage.plan_deferred_temp_storage_events(
+            events, {"scratch": _types.ScratchLayout(64, 16)}
+        )
+        assert [plan.kernel_op for plan in plans] == kernels
+        assert [len(plan.bindings) for plan in plans] == [2, 2]
+
+
+@pytest.mark.parametrize(
+    "parent_name,function_name,attribute_names",
+    [
+        pytest.param("gpu.module", "lir.func", (), id="device-function"),
+        pytest.param(
+            "gpu.module", "lir.func", ("cu_attrs",), id="launch-attrs-only"
+        ),
+        pytest.param(
+            "builtin.module", "lir.func", ("gpu.kernel",), id="wrong-parent"
+        ),
+        pytest.param(
+            "gpu.module", "func.func", ("gpu.kernel",), id="other-function"
+        ),
+    ],
+)
+def test_kernel_discovery_rejects_non_kernel_functions(
+    parent_name, function_name, attribute_names
+):
+    """Reject functions that resemble a kernel but are not one.
+
+    Only ``cuda.kernel``, or an ``lir.func`` that has ``gpu.kernel`` and sits
+    directly in ``gpu.module``, owns scratch. Launch attributes alone must not
+    make a device helper own kernel scratch.
+    """
+
+    with ir.Context() as context, ir.Location.unknown():
+        context.allow_unregistered_dialects = True
+        module = ir.Module.create()
+        with ir.InsertionPoint(module.body):
+            parent = _region_op(parent_name)
+        attributes = {
+            name: ir.DictAttr.get({})
+            if name == "cu_attrs"
+            else ir.UnitAttr.get()
+            for name in attribute_names
+        }
+        with ir.InsertionPoint(parent.regions[0].blocks[0]):
+            function = _region_op(function_name, attributes)
+        with (
+            ir.InsertionPoint(function.regions[0].blocks[0]),
+            pytest.raises(
+                _storage.DSLRuntimeError, match="enclosing CUDA kernel"
+            ),
+        ):
+            _storage._active_cuda_kernel_op()
+
+
+def test_kernel_discovery_requires_an_active_trace():
+    with (
+        ir.Context(),
+        ir.Location.unknown(),
+        pytest.raises(
+            _storage.DSLRuntimeError, match="active CuTe kernel trace"
+        ),
+    ):
+        _storage._active_cuda_kernel_op()
 
 
 def test_requirement_key_must_be_hashable():
