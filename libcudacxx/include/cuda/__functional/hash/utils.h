@@ -25,7 +25,9 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cstring/memcpy.h>
 #include <cuda/std/__memory/assume_aligned.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -77,6 +79,22 @@ template <typename _Tp, typename _Extent>
   return __chunk;
 }
 
+//! @brief Stores a hash block without imposing alignment on the containing holder.
+//! @tparam _BlockT The type of the hash block
+//!
+//! Keeping the block representation byte-aligned makes the holder the same size
+//! as the key.
+template <typename _BlockT>
+struct __hash_unaligned_block
+{
+  ::cuda::std::array<::cuda::std::byte, sizeof(_BlockT)> __bytes_;
+
+  _CCCL_HOST_DEVICE_API constexpr operator _BlockT() const noexcept
+  {
+    return ::cuda::std::bit_cast<_BlockT>(__bytes_);
+  }
+};
+
 //! @brief Type erased holder of all the bytes
 //!
 //! @tparam _KeySize The size of the key in bytes
@@ -111,7 +129,11 @@ struct __byte_holder
   static constexpr ::cuda::std::size_t __num_blocks =
     _UseTailBlock ? _KeySize / _BlockSize : __num_chunks * __blocks_per_chunk;
 
-  _BlockT __blocks_[__num_blocks];
+  // Preserve native blocks when their alignment does not add padding to the
+  // holder.
+  using _BlockStorage _CCCL_NODEBUG =
+    ::cuda::std::conditional_t<_KeySize % alignof(_BlockT) == 0, _BlockT, __hash_unaligned_block<_BlockT>>;
+  _BlockStorage __blocks_[__num_blocks];
   ::cuda::std::byte __bytes_[__tail_size];
 };
 
