@@ -1797,7 +1797,7 @@ CUB_TEST("DeviceHistogram high-bin HistoCache strategy handles strided rows", "[
     c2h::device_vector<int>(num_levels - 1, 0),
     c2h::device_vector<int>(num_levels - 1, 0),
     c2h::device_vector<int>(num_levels - 1, 0)};
-  cuda::std::array<int*, num_active_channels> histogram_ptrs{
+  const cuda::std::array<int*, num_active_channels> histogram_ptrs{
     thrust::raw_pointer_cast(d_histograms[0].data()),
     thrust::raw_pointer_cast(d_histograms[1].data()),
     thrust::raw_pointer_cast(d_histograms[2].data())};
@@ -1907,14 +1907,20 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
        ", .cache_count_replicas = 1, .items_per_thread = 4, .threads_per_block = 0"
        ", .min_histogram_bytes = 0, .blocks_per_sm = 0, .grid_items = 0 } }");
 
-  constexpr auto histocache_policy = [=] {
-    auto policy                         = p1;
-    policy.histocache.threads_per_block = 512;
-    return policy;
-  }();
-  STATIC_REQUIRE(histocache_policy.histocache.threads(histocache_policy.threads_per_block) == 512);
+  constexpr auto histocache_policy = cub::HistoCachePolicy{
+    cub::HistogramCacheAlgorithm::single_probe,
+    cub::HistogramSpillAlgorithm::global_memory_privatized,
+    cub::HistogramAggregationAlgorithm::rle,
+    16384,
+    1,
+    4,
+    512,
+    0,
+    0,
+    0};
+  STATIC_REQUIRE(histocache_policy.threads(p1.threads_per_block) == 512);
   STATIC_REQUIRE(p1.histocache.threads(p1.threads_per_block) == p1.threads_per_block);
-  STATIC_REQUIRE(histocache_policy.histocache.grid_items == 0);
+  STATIC_REQUIRE(histocache_policy.grid_items == 0);
   STATIC_REQUIRE(p1.histocache.grid_items == 0);
   STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(0, 8) == 0);
   STATIC_REQUIRE(cub::detail::histogram::cache_slots_from_bytes(255, 8) == 16);

@@ -1285,8 +1285,8 @@ struct AgentHistoCache
                                  UnderlyingSpillOp>>;
     static_assert(histocache.items_per_thread > 0, "HistoCache items_per_thread must be positive");
     static_assert(histocache.blocks_per_sm >= 0, "HistoCache blocks per SM must not be negative");
-    namespace cg        = ::cooperative_groups;
-    cg::grid_group grid = cg::this_grid();
+    namespace cg              = ::cooperative_groups;
+    const cg::grid_group grid = cg::this_grid();
 
     const ::cuda::std::uint32_t tid_global    = blockIdx.x * blockDim.x + threadIdx.x;
     const ::cuda::std::uint32_t total_threads = gridDim.x * blockDim.x;
@@ -1300,8 +1300,8 @@ struct AgentHistoCache
     // Smaller keys could improve capacity for low bin counts, but would require separate kernel instantiations.
     auto* cache_keys        = reinterpret_cast<::cuda::std::uint32_t*>(dynamic_smem);
     CounterT* cache_counts  = reinterpret_cast<CounterT*>(cache_keys + NumActiveChannels * cache_slots_per_channel);
-    const int thread_idx    = threadIdx.x;
-    const int block_threads = blockDim.x;
+    const int thread_idx    = static_cast<int>(threadIdx.x);
+    const int block_threads = static_cast<int>(blockDim.x);
 
     using PixelOffsetT =
       ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(::cuda::std::int64_t)), ::cuda::std::int64_t, OffsetT>;
