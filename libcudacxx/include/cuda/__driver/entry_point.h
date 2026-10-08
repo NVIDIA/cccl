@@ -128,7 +128,7 @@ __driver_api_status(__driver_status __status, const char*) noexcept
 //!
 //! @return The function pointer and driver-loading status.
 //! @note Library and symbol loading failures are cached and are not retried.
-[[nodiscard]] _CCCL_PUBLIC_HOST_API inline __driver_function_result<decltype(&cuGetProcAddress)>
+[[nodiscard]] _CCCL_PUBLIC_HOST_API inline __driver_function_result<decltype(&::cuGetProcAddress)>
 __getProcAddressFn() noexcept
 {
   constexpr auto __fn_name = "cuGetProcAddress_v2";
@@ -168,16 +168,16 @@ __getProcAddressFn() noexcept
   }
 #    endif // ^^^ !_CCCL_OS(WINDOWS) ^^^
 
-  return {reinterpret_cast<decltype(&cuGetProcAddress)>(__fn), ::cuda::__driver::__driver_success(__fn_name)};
+  return {reinterpret_cast<decltype(&::cuGetProcAddress)>(__fn), ::cuda::__driver::__driver_success(__fn_name)};
 }
 
 #  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
 
 [[nodiscard]]
-_CCCL_PUBLIC_HOST_API inline __driver_function_result<decltype(&cuGetProcAddress)>
-__getProcAddressFn(decltype(cuGetProcAddress)* __ptr = nullptr, bool __set = false) noexcept
+_CCCL_PUBLIC_HOST_API inline __driver_function_result<decltype(&::cuGetProcAddress)>
+__getProcAddressFn(decltype(::cuGetProcAddress)* __ptr = nullptr, bool __set = false) noexcept
 {
-  static decltype(cuGetProcAddress)* __fn = __ptr;
+  static decltype(::cuGetProcAddress)* __fn = __ptr;
 
   if (__set)
   {

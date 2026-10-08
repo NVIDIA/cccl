@@ -178,7 +178,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetName);
 
   // TODO CUdevice is just an int, we probably could just cast, but for now do the safe thing
-  const ::CUdevice __dev = __deviceGet(__ordinal);
+  const ::CUdevice __dev = ::cuda::__driver::__deviceGet(__ordinal);
   _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
 }
 
@@ -186,7 +186,7 @@ _CCCL_HOST_API inline void __deviceGetName(char* __name_out, int __len, int __or
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceTotalMem);
   ::std::size_t __result;
-  const ::CUdevice __dev = __deviceGet(__ordinal);
+  const ::CUdevice __dev = ::cuda::__driver::__deviceGet(__ordinal);
   _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to query total memory of a device", &__result, __dev);
   return static_cast<::cuda::std::size_t>(__result);
 }
@@ -553,7 +553,7 @@ _CCCL_HOST_API inline __driver_status __mempoolGetAccessNoThrow( // NOLINT(bugpr
 
 #  if _CCCL_CTK_AT_LEAST(13, 0)
 _CCCL_HOST_API inline ::CUmemoryPool
-__getDefaultMemPool(CUmemLocation __location, CUmemAllocationType_enum __allocation_type)
+__getDefaultMemPool(::CUmemLocation __location, ::CUmemAllocationType_enum __allocation_type)
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuMemGetDefaultMemPool, cuMemGetDefaultMemPool, 13, 0);
