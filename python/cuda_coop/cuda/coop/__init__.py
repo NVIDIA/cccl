@@ -4,9 +4,10 @@
 
 """Expose cooperative operations through a common CUDA Python interface.
 
-Compiler adapters translate these calls into device code. Importing the common
-interface does not load a compiler; :func:`register` loads a selected adapter
-when explicit registration is needed.
+Compiler adapters translate these calls into device code. The root import
+probes supported compiler runtimes already loaded by the application and can
+activate their adapters. Use :func:`register` or a qualified backend import
+when importing the common interface before the compiler runtime.
 """
 
 import importlib.metadata
@@ -17,6 +18,7 @@ from ._registration import register
 __path__ = extend_path(__path__, __name__)
 
 from ._core import api as _common_api
+from ._core._auto_registration import _auto_register_known_dsls
 
 globals().update(
     {name: getattr(_common_api, name) for name in _common_api.__all__}
@@ -42,3 +44,7 @@ def __dir__() -> list[str]:
     """List public names for interactive completion."""
 
     return sorted(__all__)
+
+
+_auto_register_known_dsls()
+del _auto_register_known_dsls

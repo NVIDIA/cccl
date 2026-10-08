@@ -18,7 +18,7 @@ from ._payload import ThreadDataLike
 
 def ThreadData(
     items_per_thread: int,
-    dtype: object = None,
+    dtype: object | None = None,
     *,
     alignment: int | None = None,
 ) -> ThreadDataLike[Any]:
@@ -55,6 +55,18 @@ def ThreadData(
         Writable per-thread payload with indexed reads and writes. Its
         contents are uninitialized; write every item before reading it.
         Construction does not synchronize threads.
+
+    Examples
+    --------
+    Construct a payload from the kernel's item-count argument, fill its
+    items with squared indices, and store the resulting blocked tiles:
+
+    .. literalinclude::
+        ../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+        :language: python
+        :start-after: # thread-data-example-begin
+        :end-before: # thread-data-example-end
+        :dedent: 4
     """
 
     raise CoopCompilerContextRequiredError(

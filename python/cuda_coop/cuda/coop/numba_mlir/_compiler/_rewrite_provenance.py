@@ -1,0 +1,2145 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Recover compile-time facts from cooperative values before type inference.
+
+The call rewrite needs payload shapes, scalar bindings, and scratch ownership
+before ordinary compiler typing is available. These helpers follow variable
+definitions, aliases, casts, and control-flow merges to recover those facts.
+They distinguish unknown provenance from conflicting concrete origins so a
+branch or loop rebinding cannot silently select one descriptor's contract.
+
+Storage constructor identities also determine which calls may reuse an aligned
+scratch region. This module builds per-descriptor layouts;
+``_rewrite_storage`` combines them into one backing allocation and emits array
+views and barriers.
+"""
+
+from __future__ import annotations
+
+import operator
+from typing import TYPE_CHECKING, cast
+
+import numba_cuda_mlir.numba_cuda.types as numba_types
+from numba_cuda_mlir import cuda as _cuda_module
+from numba_cuda_mlir.cuda.local import array as _cuda_local_array
+from numba_cuda_mlir.cuda.shared import array as _cuda_shared_array
+from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
+
+from cuda.coop._core import StorageOwnership, SynchronizationScope
+from cuda.coop._core import api as _common_api
+
+from .._temp_storage import TempStorage
+from .._thread_data import ThreadData, _normalize_thread_data_alignment
+from ._descriptor_provenance import (
+    descriptor_definitions,
+    payload_write_dtypes,
+    temp_storage_constructor,
+)
+from ._operations import factory_operation
+from ._parameters import normalize_dtype_param
+from ._rewrite_support import (
+    _INFERENCE_EXCEPTIONS,
+    _MIN_TEMP_STORAGE_ALIGNMENT,
+    _UNRESOLVED,
+    CoopSinglePhaseRewriteError,
+    Rewrite,
+    _align_up,
+    _default_temp_storage_alignment,
+    _dtype_values_match,
+    _normalize_temp_storage_alignment,
+    _phi_incoming_values,
+    _ResolvedCallTarget,
+    _RewriteMatch,
+    _TempStorageCtorSpecification,
+    _TempStorageGlobalPlan,
+    _TempStoragePlan,
+    _TempStorageRequirementSummary,
+    _TempStorageSlice,
+    _TempStorageUseRequirement,
+    _ThreadDataSpecification,
+    _validate_temp_storage_alignment,
+    ir,
+)
+from ._scalar_provenance import (
+    StaticScalarProvenance,
+    cuda_index_dtype,
+    scalar_call_dtype,
+    scalar_expression_dtype,
+    try_resolve_static_scalar,
+    try_resolve_static_scalar_provenance,
+)
+
+if TYPE_CHECKING:
+    from .._types import Algorithm
+    from ._rewrite import CoopSinglePhaseRewrite
+
+
+class _ProvenanceRewrite(Rewrite):
+    """Keep the facts used while cooperative calls are being replaced.
+
+    Provenance means where an IR value comes from. These queries trace
+    definitions to recover static values, payload types, and storage owners
+    before ordinary typing. A missing fact stays unknown; concrete descriptor
+    conflicts produce diagnostics.
+
+    ``state`` supplies the function IR, argument types, and compiler metadata.
+    ``allow_launch_dim_deferral`` permits a retry when launch facts are
+    missing. Mixins share this state, including block lookups, descriptor
+    tables, storage plans, and provider caches.
+    """
+
+    def __init__(
+        self,
+        state,
+        *,
+        allow_launch_dim_deferral: bool = True,
+    ) -> None:
+        super().__init__(state)
+        self._state = state
+        self._allow_launch_dim_deferral = allow_launch_dim_deferral
+        self._func_ir = state.func_ir
+        self._block: ir.Block | None = None
+        self._block_defs: dict[str, object] = {}
+        self._matches: dict[ir.Assign, _RewriteMatch] = {}
+        self._func_matches: dict[ir.Assign, _RewriteMatch] = {}
+        self._rewrite_started = False
+        self._factory_argument_cleanup_candidates: set[ir.Assign] = set()
+        self._payload_callee_cleanup_names: set[str] = set()
+        self._temp_storage_assigns: set[ir.Assign] = set()
+        self._temp_storage_func_vars: set[str] = set()
+        self._temp_storage_ctor_specifications: dict[
+            str, _TempStorageCtorSpecification
+        ] = {}
+        self._temp_storage_ctor_order: dict[str, int] = {}
+        self._temp_storage_ctor_roots: dict[str, str] = {}
+        self._temp_storage_ctor_sites: dict[str, set[int]] = {}
+        self._thread_data_func_vars: set[str] = set()
+        self._thread_data_specifications: dict[
+            str, _ThreadDataSpecification
+        ] = {}
+        self._thread_data_like_vars: set[str] = set()
+        self._thread_data_extents: dict[ir.Assign, int] = {}
+        self._func_ir_identity: int | None = None
+        self._func_temp_storage_requirements: dict[
+            str, _TempStorageRequirementSummary
+        ] = {}
+        self._temp_storage_plans: dict[str, _TempStoragePlan] = {}
+        self._temp_storage_global_plan: _TempStorageGlobalPlan | None = None
+        self._implicit_temp_storage_requirements = (
+            _TempStorageRequirementSummary()
+        )
+        self._implicit_temp_storage_plan: _TempStoragePlan | None = None
+        self._temp_storage_backing_var: ir.Var | None = None
+        self._temp_storage_backing_emitted = False
+        self._arg_type_map = self._build_arg_type_map()
+        self._invocable_cache: dict[
+            tuple[str, tuple[tuple[str, str, str], ...]], object
+        ] = {}
+        self._prebundled_specializations: dict[
+            tuple[str, tuple[tuple[str, str, str], ...]],
+            Algorithm,
+        ] = {}
+        self._deferred_launch_dim_inference = False
+
+    def _lookup_block_definition(self, name: str) -> object:
+        """Look up a block definition only for an unambiguous name.
+
+        Before SSA reconstruction, branches and loops may assign the same name
+        more than once. The block map stores only the last assignment, which
+        can follow the use being analyzed. Refuse that shortcut when the
+        function's definition table contains multiple assignments. This avoids
+        mistaking a branch or later rebinding for a constant.
+
+        Parameters
+        ----------
+        name : str
+            IR variable name to find in the current block's assignment map.
+
+        Returns
+        -------
+        object or None
+            Local definition, or None for a missing or multiply assigned name.
+        """
+
+        # Before SSA, a name can be rebound in a loop or branch. The block map
+        # retains only its last assignment, which may follow the current use.
+        if len(self._func_ir._definitions.get(name, ())) > 1:
+            return None
+        return self._block_defs.get(name)
+
+    def _infer_constant(self, value):
+        """Try local and scalar facts before the compiler's constant resolver.
+
+        A unique block definition can supply a constant, global, or closure
+        value. Otherwise use static scalar provenance, then let compiler
+        inference return a value or raise its normal inference error.
+        """
+
+        if isinstance(value, ir.Var):
+            definition = self._lookup_block_definition(value.name)
+            if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
+                return definition.value
+        scalar = self._resolve_static_scalar_provenance(value)
+        if isinstance(scalar, StaticScalarProvenance):
+            return scalar.value
+        return self._func_ir.infer_constant(value)
+
+    def _resolve_static_scalar_value(
+        self,
+        value: object,
+    ) -> object:
+        """Resolve a scalar only when its IR provenance is explicitly static.
+
+        Use the shared scalar-provenance resolver with this function's
+        definitions and specialized argument types. Callers use the result to
+        choose between compile-time scalar bindings and runtime operands;
+        ordinary constant inference does not establish this binding contract.
+
+        Parameters
+        ----------
+        value : object
+            Scalar value or IR reference for the provenance resolver.
+
+        Returns
+        -------
+        object
+            Resolved scalar, including None when it is explicitly static,
+            or the ``_UNRESOLVED`` sentinel when static provenance cannot
+            be established. Compare the sentinel by identity; None can
+            mean an omitted control.
+        """
+
+        arg_types = tuple(getattr(self._state, "args", ()) or ())
+        resolved, scalar = try_resolve_static_scalar(
+            value,
+            definitions=self._lookup_definitions,
+            argument_type=lambda index: (
+                arg_types[index] if 0 <= index < len(arg_types) else None
+            ),
+        )
+        return scalar if resolved else _UNRESOLVED
+
+    def _resolve_static_scalar_provenance(self, value):
+        """Resolve a scalar together with its established source dtype.
+
+        Return ``_UNRESOLVED`` when the shared resolver cannot prove static
+        origin. Keeping dtype provenance lets scalar coercion distinguish a
+        Python literal from a value with an explicit numeric width.
+        """
+
+        arg_types = tuple(getattr(self._state, "args", ()) or ())
+        resolved, scalar = try_resolve_static_scalar_provenance(
+            value,
+            definitions=self._lookup_definitions,
+            argument_type=lambda index: (
+                arg_types[index] if 0 <= index < len(arg_types) else None
+            ),
+        )
+        return scalar if resolved else _UNRESOLVED
+
+    def _build_arg_type_map(self) -> dict[str, object]:
+        """Pair argument names with compiler types only when counts agree."""
+
+        arg_names = tuple(getattr(self._func_ir, "arg_names", ()) or ())
+        arg_types = tuple(getattr(self._state, "args", ()) or ())
+        if len(arg_names) != len(arg_types):
+            return {}
+        return dict(zip(arg_names, arg_types))
+
+    def _lookup_definition(self, value):
+        """Resolve one unambiguous assignment for a provenance query.
+
+        Queries for a callee or constructor need one source value before they
+        can inspect it. Before static single assignment (SSA) reconstruction, a
+        name can have several assignments in branches or loops. Choosing the
+        last one would lose the other possibilities, so the guarded block lookup
+        and function lookup only accept an unambiguous definition. Use
+        ``_lookup_definitions`` when the caller can combine several
+        alternatives.
+
+        Parameters
+        ----------
+        value : ir.Var, str, or object
+            Variable or variable name to look up. An already resolved definition
+            is returned unchanged so recursive queries can accept either form.
+
+        Returns
+        -------
+        object or None
+            The defining value, or ``None`` when the name has no unique
+            definition.
+        """
+
+        if isinstance(value, ir.Var):
+            definition = self._lookup_block_definition(value.name)
+            if definition is not None:
+                return definition
+            try:
+                return self._func_ir.get_definition(value)
+            except KeyError:
+                return None
+        if isinstance(value, str):
+            definition = self._lookup_block_definition(value)
+            if definition is not None:
+                return definition
+            try:
+                return self._func_ir.get_definition(value)
+            except KeyError:
+                return None
+        return value
+
+    def _lookup_definitions(self, value) -> list[object]:
+        """Collect recorded sources without discarding branch inputs.
+
+        Payload and descriptor queries need to compare every possible
+        assignment: selecting just one branch could accept incompatible dtypes
+        or storage settings. This helper supplies the definitions recorded for a
+        name, plus an unambiguous block-local definition when available. It
+        deduplicates by object identity and leaves the caller to follow aliases
+        and check agreement. This is a conservative collection, not a proof that
+        each assignment can reach the current statement.
+
+        Parameters
+        ----------
+        value : ir.Var, str, or object
+            Variable or name whose definitions are needed. A resolved definition
+            is returned as a one-element list for the recursive callers.
+
+        Returns
+        -------
+        list of object
+            Candidate defining values. An unknown variable produces an empty
+            list.
+        """
+
+        defs: list[object] = []
+        seen_ids: set[int] = set()
+
+        def add(candidate) -> None:
+            if candidate is None:
+                return
+            cid = id(candidate)
+            if cid in seen_ids:
+                return
+            seen_ids.add(cid)
+            defs.append(candidate)
+
+        if isinstance(value, ir.Var):
+            add(self._lookup_block_definition(value.name))
+            for definition in (
+                getattr(self._func_ir, "_definitions", {}) or {}
+            ).get(value.name, ()):
+                add(definition)
+            return defs
+        if isinstance(value, str):
+            add(self._lookup_block_definition(value))
+            for definition in (
+                getattr(self._func_ir, "_definitions", {}) or {}
+            ).get(value, ()):
+                add(definition)
+            return defs
+        return [value]
+
+    def _resolve_attribute_chain(self, func_var):
+        """Trace a Python object and attribute path through untyped IR.
+
+        Return ``(root, attributes)`` in lookup order. Return ``None`` for a
+        cycle or a root that is not a constant, global, or closure value.
+        """
+
+        attrs: list[str] = []
+        current = func_var
+        seen: set[str] = set()
+        while True:
+            if isinstance(current, ir.Var):
+                if current.name in seen:
+                    return None
+                seen.add(current.name)
+                current = self._lookup_definition(current)
+            elif isinstance(current, ir.Expr) and current.op == "getattr":
+                attrs.append(current.attr)
+                current = current.value
+            else:
+                break
+        if isinstance(current, (ir.Global, ir.FreeVar, ir.Const)):
+            root = current.value
+        else:
+            return None
+        attrs.reverse()
+        return (root, attrs)
+
+    def _resolve_python_value(self, value):
+        """Read a resolved attribute chain to identify a Python callable.
+
+        Missing attributes and failed imports return ``None``. Reading an
+        attribute can trigger the backend's lazy registration.
+        """
+
+        chain = self._resolve_attribute_chain(value)
+        if chain is None:
+            return None
+        root, attrs = chain
+        obj = root
+        try:
+            for attr in attrs:
+                obj = getattr(obj, attr)
+        except (AttributeError, ImportError):
+            return None
+        return obj
+
+    def _is_common_root_member(self, value, name: str) -> bool:
+        """Require both common API identity and its backend-member marker."""
+
+        member = getattr(_common_api, name)
+        return (
+            self._resolve_python_value(value) is member
+            and getattr(member, "__cuda_coop_backend_member__", None) == name
+        )
+
+    def _is_supported_factory(self, obj) -> bool:
+        """Require a registered factory in an accepted provider namespace."""
+
+        if not callable(obj):
+            return False
+        metadata = factory_operation(obj)
+        if metadata is None:
+            return False
+        from ._operations import rewrite_operation
+
+        specification = rewrite_operation(metadata.operation)
+        if specification is None:
+            return False
+        return metadata.namespace in specification.factory_namespaces
+
+    def _resolve_factory_from_var(self, func_var):
+        """Resolve a callee through the operation registry.
+
+        Constants, globals, closure values, and directly supplied callables
+        can identify it. A function's spelling alone does not identify a
+        cooperative provider.
+        """
+
+        direct = None
+        direct_def = self._lookup_definition(func_var)
+        if isinstance(direct_def, (ir.Global, ir.FreeVar, ir.Const)):
+            direct = direct_def.value
+        elif callable(direct_def):
+            direct = direct_def
+        elif direct_def is None:
+            try:
+                direct = self._infer_constant(func_var)
+            except _INFERENCE_EXCEPTIONS:
+                direct = None
+        return direct if self._is_supported_factory(direct) else None
+
+    def _extract_1d_extent_literal(self, value_ref):
+        """Read a native array's element count from its shape argument.
+
+        Array provenance queries call this before provider specialization needs
+        ``items_per_thread``. The extent is the number of elements in the
+        array's single dimension, not a byte count. For example, both ``4`` and
+        ``(4,)`` describe four elements. Native-array typing later checks the
+        constructor; this query does not apply ``ThreadData``'s positivity and
+        boolean rules.
+
+        Parameters
+        ----------
+        value_ref : ir.Var or object
+            Shape argument to resolve with the rewrite's constant inference.
+
+        Returns
+        -------
+        int or None
+            Scalar shape or the sole integer in a tuple or list. ``None`` means
+            the shape is unresolved or is not a recognized one-dimensional
+            shape.
+        """
+
+        try:
+            value = self._infer_constant(value_ref)
+        except _INFERENCE_EXCEPTIONS:
+            return None
+        if isinstance(value, int):
+            return value
+        if (
+            isinstance(value, tuple)
+            and len(value) == 1
+            and isinstance(value[0], int)
+        ):
+            return int(value[0])
+        if (
+            isinstance(value, list)
+            and len(value) == 1
+            and isinstance(value[0], int)
+        ):
+            return int(value[0])
+        return None
+
+    @staticmethod
+    def _is_jitted_dispatcher(obj: object) -> bool:
+        """Recognize the dispatcher interface of a resolved helper callee.
+
+        Parameters
+        ----------
+        obj : object
+            Python value resolved from a call's callee.
+
+        Returns
+        -------
+        bool
+            Whether the value is callable and has ``py_func`` and a
+            ``targetoptions`` dictionary. This checks the interface; it does
+            not require the device-function option to be enabled.
+        """
+
+        return (
+            obj is not None
+            and callable(obj)
+            and hasattr(obj, "py_func")
+            and isinstance(getattr(obj, "targetoptions", None), dict)
+        )
+
+    def _is_temp_storage_ctor_call(self, call: ir.Expr) -> bool:
+        if self._is_common_root_member(call.func, "TempStorage"):
+            return True
+        return self._resolve_python_value(call.func) is TempStorage
+
+    def _is_thread_data_ctor_call(self, call: ir.Expr) -> bool:
+        if self._is_common_root_member(call.func, "ThreadData"):
+            return True
+        return self._resolve_python_value(call.func) is ThreadData
+
+    def _extract_thread_data_specification(
+        self, call: ir.Expr
+    ) -> _ThreadDataSpecification:
+        """Recover the compile-time ``ThreadData`` constructor contract.
+
+        Require a positive integral item count, rejecting booleans, and
+        normalize an explicit alignment. A directly referenced function
+        argument used for the extent requests literal specialization before
+        continuing. An omitted or explicitly None dtype remains unresolved so
+        operation consumers or typed writes can supply it later.
+
+        Record whether the constructor came from the common API; ``apply``
+        uses that flag when validating the inferred numeric dtype before
+        lowering the descriptor to a local array. This method does not
+        allocate that array or mutate the constructor expression.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Recognized common or Numba-CUDA-MLIR ``ThreadData``
+            constructor call.
+
+        Returns
+        -------
+        _ThreadDataSpecification
+            Static extent, optional dtype and alignment, and whether the
+            constructor came from the common API.
+
+        Raises
+        ------
+        ForceLiteralArg
+            The extent is a function argument awaiting literal specialization.
+        CoopSinglePhaseRewriteError
+            Constructor arguments are invalid or required compile-time
+            values cannot be resolved.
+        """
+
+        kw_map = {name: value for name, value in call.kws}
+        is_common_root = self._is_common_root_member(call.func, "ThreadData")
+        allowed_keywords = {"items_per_thread", "dtype", "alignment"}
+        unexpected_keywords = sorted(set(kw_map) - allowed_keywords)
+        if unexpected_keywords:
+            names = ", ".join(unexpected_keywords)
+            scope = "cuda.coop" if is_common_root else "cuda.coop.numba_mlir"
+            raise CoopSinglePhaseRewriteError(
+                f"{scope}.ThreadData got unexpected keyword(s): {names}"
+            )
+        extent_refs = []
+        if call.args:
+            extent_refs.append(("positional items_per_thread", call.args[0]))
+        if "items_per_thread" in kw_map:
+            extent_refs.append(("items_per_thread", kw_map["items_per_thread"]))
+        if len(call.args) > 2:
+            raise CoopSinglePhaseRewriteError(
+                "coop.ThreadData accepts at most items_per_thread and dtype "
+                "positional arguments."
+            )
+        if len(extent_refs) > 1:
+            names = " and ".join((name for name, _ in extent_refs))
+            raise CoopSinglePhaseRewriteError(
+                f"coop.ThreadData received both {names}; specify only one."
+            )
+        if not extent_refs:
+            raise CoopSinglePhaseRewriteError(
+                "coop.ThreadData requires items_per_thread."
+            )
+        items_ref = extent_refs[0][1]
+        try:
+            definition = self._func_ir.get_definition(items_ref)
+        except KeyError:
+            definition = None
+        if isinstance(definition, ir.Arg) and not isinstance(
+            self._state.args[definition.index], numba_types.Literal
+        ):
+            raise ForceLiteralArg({definition.index})
+        dtype_ref = None
+        if len(call.args) == 2:
+            dtype_ref = call.args[1]
+        if "dtype" in kw_map:
+            if dtype_ref is not None:
+                raise CoopSinglePhaseRewriteError(
+                    "coop.ThreadData received dtype "
+                    "both positionally and by keyword."
+                )
+            dtype_ref = kw_map["dtype"]
+        alignment = None
+        alignment_ref = kw_map.get("alignment")
+        if alignment_ref is not None:
+            try:
+                raw_alignment = self._infer_constant(alignment_ref)
+            except _INFERENCE_EXCEPTIONS as exc:
+                raise CoopSinglePhaseRewriteError(
+                    "coop.ThreadData alignment must be a compile-time "
+                    "integer or None"
+                ) from exc
+            try:
+                alignment = _normalize_thread_data_alignment(raw_alignment)
+            except (TypeError, ValueError) as exc:
+                raise CoopSinglePhaseRewriteError(
+                    f"coop.ThreadData {exc}"
+                ) from exc
+        try:
+            raw_items_per_thread = self._infer_constant(items_ref)
+        except _INFERENCE_EXCEPTIONS as exc:
+            raise CoopSinglePhaseRewriteError(
+                "items_per_thread must be a compile-time integer"
+            ) from exc
+        if isinstance(raw_items_per_thread, bool):
+            raise CoopSinglePhaseRewriteError(
+                "items_per_thread must be an integer"
+            )
+        try:
+            items_per_thread = operator.index(raw_items_per_thread)
+        except TypeError as exc:
+            raise CoopSinglePhaseRewriteError(
+                "items_per_thread must be an integer"
+            ) from exc
+        if items_per_thread <= 0:
+            raise CoopSinglePhaseRewriteError(
+                "items_per_thread must be a positive integer"
+            )
+        dtype = None
+        if dtype_ref is not None:
+            dtype = self._resolve_dtype_ref(dtype_ref)
+            if dtype is None:
+                try:
+                    self._infer_constant(dtype_ref)
+                except _INFERENCE_EXCEPTIONS as exc:
+                    raise CoopSinglePhaseRewriteError(
+                        "coop.ThreadData dtype must resolve to a "
+                        "compile-time dtype or None"
+                    ) from exc
+            if any(dtype is alias for alias in (bool, int, float, complex)):
+                dtype = normalize_dtype_param(dtype)
+        return _ThreadDataSpecification(
+            items_per_thread=items_per_thread,
+            dtype=dtype,
+            common_root=is_common_root,
+            alignment=alignment,
+        )
+
+    @staticmethod
+    def _merge_thread_data_specifications(
+        existing: _ThreadDataSpecification | None,
+        observed: _ThreadDataSpecification,
+    ) -> _ThreadDataSpecification:
+        """Combine payload facts that must describe one compatible allocation.
+
+        Provenance queries call this when aliases or branches provide more than
+        one description of a payload. A later provider needs one element count
+        and dtype, so unequal known values raise a rewrite error. Unknown fields
+        can be filled from the other description. Keep the larger alignment and
+        retain common API origin if either input has it.
+
+        Parameters
+        ----------
+        existing : _ThreadDataSpecification or None
+            Facts accumulated so far, or ``None`` for the first description.
+        observed : _ThreadDataSpecification
+            Facts from another source of the payload. ``items_per_thread``
+            counts elements; ``alignment`` is in bytes. Either may still be
+            unknown.
+
+        Returns
+        -------
+        _ThreadDataSpecification
+            Combined facts, or ``observed`` unchanged when it is the first
+            input.
+        """
+
+        if existing is None:
+            return observed
+        if (
+            existing.items_per_thread is not None
+            and observed.items_per_thread is not None
+            and (existing.items_per_thread != observed.items_per_thread)
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "Inconsistent items_per_thread "
+                "across merged coop.ThreadData aliases."
+            )
+        if (
+            existing.dtype is not None
+            and observed.dtype is not None
+            and (existing.dtype != observed.dtype)
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "Inconsistent dtype across merged coop.ThreadData aliases."
+            )
+        items_per_thread = existing.items_per_thread
+        if items_per_thread is None:
+            items_per_thread = observed.items_per_thread
+        dtype = existing.dtype
+        if dtype is None:
+            dtype = observed.dtype
+        alignment = existing.alignment
+        if alignment is None:
+            alignment = observed.alignment
+        elif observed.alignment is not None:
+            alignment = max(alignment, observed.alignment)
+        return _ThreadDataSpecification(
+            items_per_thread=items_per_thread,
+            dtype=dtype,
+            common_root=existing.common_root or observed.common_root,
+            alignment=alignment,
+        )
+
+    @staticmethod
+    def _merge_temp_storage_ctor_specifications(
+        existing: _TempStorageCtorSpecification | None,
+        observed: _TempStorageCtorSpecification,
+    ) -> _TempStorageCtorSpecification:
+        """Require identical settings when storage aliases merge."""
+
+        if existing is None:
+            return observed
+        if existing != observed:
+            raise CoopSinglePhaseRewriteError(
+                "Inconsistent TempStorage constructor metadata "
+                "across merged aliases."
+            )
+        return existing
+
+    def _record_temp_storage_ctor(self, inst: ir.Assign, call: ir.Expr) -> None:
+        """Record one constructor site for the variable it defines.
+
+        The rewrite runs before SSA reconstruction, so a name rebound inside a
+        branch or loop body keeps one name for several constructor sites.
+        Every site must agree on the effective contract, and the sites are
+        counted so that auto_sync=False storage cannot be silently collapsed.
+        """
+
+        name = inst.target.name
+        specification = self._extract_temp_storage_ctor_specification(call)
+        existing = self._temp_storage_ctor_specifications.get(name)
+        if existing is not None and (
+            self._temp_storage_contract(existing)
+            != self._temp_storage_contract(specification)
+        ):
+            raise CoopSinglePhaseRewriteError(
+                f"TempStorage aliases have inconsistent contracts across "
+                f"constructor instances ({name})."
+            )
+        self._temp_storage_ctor_specifications.setdefault(name, specification)
+        self._temp_storage_ctor_sites.setdefault(name, set()).add(id(inst))
+
+    @staticmethod
+    def _collapsed_manual_sync_error(
+        names: str, sites: int
+    ) -> CoopSinglePhaseRewriteError:
+        return CoopSinglePhaseRewriteError(
+            f"TempStorage with auto_sync=False must be constructed at "
+            f"exactly one site; {names} reaches {sites} constructor sites. "
+            f"The compiler cannot verify caller synchronization when it "
+            f"merges these regions. Construct the descriptor once or set "
+            f"auto_sync=True."
+        )
+
+    def _validate_temp_storage_ctor_sites(self) -> None:
+        """Reject repeated constructor sites when the caller manages barriers.
+
+        Equal settings do not prove that independently constructed regions can
+        share storage safely after the rewrite combines them.
+        """
+
+        for name, sites in sorted(self._temp_storage_ctor_sites.items()):
+            if len(sites) < 2:
+                continue
+            specification = self._temp_storage_ctor_specifications[name]
+            if not self._temp_storage_contract(specification)[2]:
+                raise self._collapsed_manual_sync_error(repr(name), len(sites))
+
+    def _record_inferred_thread_data_dtype(
+        self, value: ir.Var, dtype, seen: set[str] | None = None
+    ) -> None:
+        """Record an inferred dtype on payload constructors and aliases.
+
+        Update partial descriptions and reject a conflicting known dtype.
+        Follow copies, casts, merged paths, and static tuple items. ``seen``
+        prevents revisiting names in loops or alias cycles.
+        """
+
+        if not isinstance(value, ir.Var) or dtype is None:
+            return
+        if seen is None:
+            seen = set()
+        if value.name in seen:
+            return
+        seen.add(value.name)
+        specification = self._thread_data_specifications.get(value.name)
+        if specification is None:
+            specification = self._resolve_thread_data_specification(value)
+            if specification is not None:
+                self._thread_data_specifications[value.name] = specification
+        if specification is not None:
+            if specification.dtype is None:
+                self._thread_data_specifications[value.name] = (
+                    _ThreadDataSpecification(
+                        items_per_thread=specification.items_per_thread,
+                        dtype=dtype,
+                        common_root=specification.common_root,
+                        alignment=specification.alignment,
+                    )
+                )
+            elif specification.dtype != dtype:
+                raise CoopSinglePhaseRewriteError(
+                    "Inconsistent inferred dtype for coop.ThreadData usage."
+                )
+        for definition in self._lookup_definitions(value):
+            if isinstance(definition, ir.Var):
+                self._record_inferred_thread_data_dtype(definition, dtype, seen)
+                continue
+            if not isinstance(definition, ir.Expr):
+                continue
+            if definition.op == "cast":
+                cast_value = getattr(definition, "value", None)
+                if isinstance(cast_value, ir.Var):
+                    self._record_inferred_thread_data_dtype(
+                        cast_value, dtype, seen
+                    )
+            elif definition.op == "phi":
+                for incoming in _phi_incoming_values(definition):
+                    if isinstance(incoming, ir.Var):
+                        self._record_inferred_thread_data_dtype(
+                            incoming, dtype, seen
+                        )
+            elif definition.op == "static_getitem":
+                for item in self._resolve_static_tuple_item_vars(definition):
+                    self._record_inferred_thread_data_dtype(item, dtype, seen)
+
+    def _extract_temp_storage_ctor_specification(
+        self, call: ir.Expr
+    ) -> _TempStorageCtorSpecification:
+        """Resolve storage constructor settings before layout planning.
+
+        Delegate argument rules to the shared descriptor parser, require
+        compile-time values, and apply the backend's pointer-alignment
+        minimum. Convert parser failures into rewrite diagnostics.
+        """
+
+        def constant(value, *, name):
+            try:
+                return self._infer_constant(value)
+            except _INFERENCE_EXCEPTIONS as exc:
+                raise CoopSinglePhaseRewriteError(
+                    f"TempStorage {name} must be a compile-time literal."
+                ) from exc
+
+        try:
+            descriptor = temp_storage_constructor(call, constant)
+        except (TypeError, ValueError) as exc:
+            message = str(exc)
+            if not message.startswith("TempStorage"):
+                message = f"TempStorage {message}"
+            raise CoopSinglePhaseRewriteError(message) from exc
+        alignment = descriptor.alignment
+        if alignment is not None:
+            alignment = _normalize_temp_storage_alignment(alignment)
+        return _TempStorageCtorSpecification(
+            size_in_bytes=descriptor.size_in_bytes,
+            alignment=alignment,
+            auto_sync=descriptor.auto_sync,
+            sharing=descriptor.sharing,
+        )
+
+    @staticmethod
+    def _mixed_temp_storage_binding_error(
+        name: str,
+    ) -> CoopSinglePhaseRewriteError:
+        return CoopSinglePhaseRewriteError(
+            f"TempStorage variables must be bound to a TempStorage "
+            f"descriptor on every path; {name!r} is also bound to a "
+            f"non-descriptor value such as None. Remove the None initializer "
+            f"or construct the descriptor unconditionally."
+        )
+
+    def _collect_temp_storage_ctor_keys(
+        self,
+        value: ir.Var,
+        seen: set[str],
+        *,
+        display_name: str | None = None,
+    ) -> set[str]:
+        """Collect reachable storage constructor owners.
+
+        Follow the shared descriptor-provenance traversal through aliases and
+        control-flow joins, recording constructor specifications as they are
+        found. Once backing emission has begun, previously validated
+        constructor owners still count even though their calls have been
+        replaced by slices. A join containing both a descriptor and a
+        non-descriptor such as None is invalid; returning only the descriptor
+        branch would hide an unsafe path.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Variable whose possible storage origins are needed.
+        seen : set of str
+            Visited variable names used to stop cycles in the provenance walk.
+        display_name : str or None, optional
+            User-facing variable name for diagnostics. When absent, prefer
+            the current name unless it is a compiler temporary.
+
+        Returns
+        -------
+        set of str
+            Constructor owner names before canonicalization. Empty means
+            no descriptor origin was found, including when traversal stops
+            at a cycle.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A constructor contract is invalid or inconsistent, or one
+            variable merges descriptor and non-descriptor definitions.
+        """
+
+        if not isinstance(value, ir.Var):
+            return set()
+        if value.name in seen:
+            return set()
+        # Diagnostics name the user's variable, not a compiler temporary that
+        # a conditional expression or an alias chain introduced.
+        if display_name is None and not value.name.startswith("$"):
+            display_name = value.name
+        shown = display_name or value.name
+        keys: set[str] = set()
+        non_descriptor = False
+        for owner, definition in descriptor_definitions(
+            value, self._lookup_definitions, seen=seen
+        ):
+            if (
+                isinstance(definition, ir.Expr)
+                and definition.op == "call"
+                and self._is_temp_storage_ctor_call(definition)
+            ):
+                assert owner is not None
+                specification = self._extract_temp_storage_ctor_specification(
+                    definition
+                )
+                self._temp_storage_ctor_specifications[owner] = (
+                    self._merge_temp_storage_ctor_specifications(
+                        self._temp_storage_ctor_specifications.get(owner),
+                        specification,
+                    )
+                )
+                keys.add(owner)
+            elif (
+                self._temp_storage_backing_emitted
+                and owner in self._temp_storage_ctor_specifications
+            ):
+                # Previously validated constructors are replaced by backing
+                # slices as individual blocks are rewritten.
+                keys.add(owner)
+            else:
+                non_descriptor = True
+        if keys and non_descriptor:
+            raise self._mixed_temp_storage_binding_error(shown)
+        return keys
+
+    @staticmethod
+    def _temp_storage_contract(
+        specification: _TempStorageCtorSpecification,
+    ) -> tuple[int | None, int | None, bool, str]:
+        """Return effective settings used to compare storage descriptors.
+
+        An omitted ``auto_sync`` counts as false.
+        """
+
+        auto_sync = (
+            False
+            if specification.auto_sync is None
+            else specification.auto_sync
+        )
+        return (
+            specification.size_in_bytes,
+            specification.alignment,
+            auto_sync,
+            specification.sharing,
+        )
+
+    def _canonical_temp_storage_ctor_key(self, key: str) -> str:
+        """Return the canonical owner of a merged descriptor.
+
+        Point ``key`` directly at that owner to shorten later lookups.
+        """
+
+        roots = getattr(self, "_temp_storage_ctor_roots", {})
+        root = roots.get(key, key)
+        while roots.get(root, root) != root:
+            root = roots[root]
+        if key != root:
+            roots[key] = root
+        return root
+
+    def _merge_temp_storage_ctor_keys(self, keys: set[str]) -> str:
+        """Unify compatible storage constructor owners.
+
+        All reachable roots must have the same effective size, alignment,
+        sharing, and synchronization contract. Distinct roots may merge only
+        with automatic synchronization: the compiler cannot prove that
+        caller-managed barriers still protect reuse after independently
+        constructed regions collapse into one allocation.
+
+        Choose the earliest recorded constructor, breaking ties by variable
+        name, and redirect existing root mappings to it. Requirement
+        collection later uses this canonical identity to combine every alias's
+        primitive uses. This method checks distinct roots; repeated
+        constructor sites under one pre-SSA name are checked separately by
+        constructor-site validation.
+
+        Parameters
+        ----------
+        keys : set of str
+            Nonempty set of known constructor owner names to unify.
+
+        Returns
+        -------
+        str
+            Canonical owner name. ``_temp_storage_ctor_roots`` is updated
+            in place.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Effective contracts differ, or multiple roots disable
+            automatic sync.
+        """
+
+        roots = {self._canonical_temp_storage_ctor_key(key) for key in keys}
+        contracts = {
+            self._temp_storage_contract(
+                self._temp_storage_ctor_specifications[key]
+            )
+            for key in roots
+        }
+        if len(contracts) != 1:
+            ordered_keys = sorted(
+                roots,
+                key=lambda key: (
+                    self._temp_storage_ctor_order.get(key, 1 << 30),
+                    key,
+                ),
+            )
+            names = ", ".join(ordered_keys)
+            raise CoopSinglePhaseRewriteError(
+                f"TempStorage aliases have inconsistent contracts across "
+                f"constructor instances ({names})."
+            )
+        if len(roots) > 1 and not next(iter(contracts))[2]:
+            # Caller synchronization may suffice, but this planner cannot
+            # prove that it protects reuse after the regions merge.
+            ordered = sorted(
+                roots,
+                key=lambda key: (
+                    self._temp_storage_ctor_order.get(key, 1 << 30),
+                    key,
+                ),
+            )
+            raise self._collapsed_manual_sync_error(
+                ", ".join(repr(key) for key in ordered), len(roots)
+            )
+        canonical = min(
+            roots,
+            key=lambda key: (
+                self._temp_storage_ctor_order.get(key, 1 << 30),
+                key,
+            ),
+        )
+        for key, root in tuple(self._temp_storage_ctor_roots.items()):
+            if self._canonical_temp_storage_ctor_key(root) in roots:
+                self._temp_storage_ctor_roots[key] = canonical
+        for key in roots | keys:
+            self._temp_storage_ctor_roots[key] = canonical
+        return canonical
+
+    def _resolve_temp_storage_ctor_key(self, value: ir.Var) -> str | None:
+        """Find and unify the constructors that can supply a storage value.
+
+        Return ``None`` when no owner is known. Conflicting constructor
+        contracts or an unsafe merge propagate a rewrite diagnostic.
+        """
+
+        if not isinstance(value, ir.Var):
+            return None
+        keys = self._collect_temp_storage_ctor_keys(value, seen=set())
+        if not keys:
+            return None
+        return self._merge_temp_storage_ctor_keys(keys)
+
+    def _resolve_temp_storage_plan(
+        self, value: ir.Var
+    ) -> _TempStoragePlan | None:
+        """Find a descriptor's layout, assigning global offsets when needed.
+
+        Canonicalize aliases first. Return ``None`` for an unknown descriptor;
+        otherwise reuse or finalize its plan against the known requirements.
+        """
+
+        rewrite = cast("CoopSinglePhaseRewrite", self)
+        key = self._resolve_temp_storage_ctor_key(value)
+        if key is None:
+            return None
+        if (
+            self._temp_storage_global_plan is None
+            and self._temp_storage_ctor_specifications
+        ):
+            rewrite._ensure_temp_storage_global_plan()
+        return self._finalize_temp_storage_plan_for_var(key)
+
+    @staticmethod
+    def _temp_storage_domain_key(
+        entry: _TempStorageUseRequirement,
+    ) -> tuple[object, ...]:
+        """Identify storage uses that may reuse one region.
+
+        Legacy block providers share one domain. Caller-owned storage also
+        uses one domain, preserving its explicit reuse contract; its
+        block-only restriction is checked by storage-plan validation.
+        Implementation-owned storage instead partitions uses by group topology
+        and reuse-barrier scope so incompatible group instances cannot alias.
+
+        When a group has an execution scope but no reuse barrier, append the
+        call order to its key. Such calls receive distinct domains even if
+        their topologies match: completion before scratch reuse is uncertain.
+
+        Parameters
+        ----------
+        entry : _TempStorageUseRequirement
+            Primitive use with its lowering plan and scan-order position.
+
+        Returns
+        -------
+        tuple of object
+            Placement key for ``_layout_temp_storage_uses``.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            The lowering plan is unsupported, lacks storage contracts, or
+            its storage instances disagree with its topology.
+        """
+
+        lowering_plan = entry.lowering_plan
+        if lowering_plan is None:
+            return ("legacy-provider",)
+        if lowering_plan.unsupported is not None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage received an unsupported group "
+                "lowering plan."
+            )
+        topology = lowering_plan.topology
+        synchronization = lowering_plan.synchronization
+        storage = lowering_plan.temp_storage
+        if topology is None or synchronization is None or storage is None:
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage requires complete group "
+                "topology, synchronization, and storage contracts."
+            )
+        if storage.ownership is StorageOwnership.NONE:
+            raise CoopSinglePhaseRewriteError(
+                "a storage-bearing cooperative provider received a "
+                "storage-free lowering plan."
+            )
+        if storage.instances != topology.instances or (
+            storage.instance_index != topology.instance_index
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "cooperative provider storage layout disagrees with its "
+                "group topology."
+            )
+        if storage.ownership is StorageOwnership.CALLER:
+            # Explicit single-block storage keeps the caller's reuse layout.
+            # The backend separates topology domains only when it owns the
+            # storage and controls every slice.
+            return ("caller-storage",)
+        domain = (
+            topology.group_kind,
+            topology.execution_scope.value,
+            topology.logical_width,
+            topology.instances,
+            topology.instance_index,
+            topology.thread_rank,
+            synchronization.storage_reuse_barrier.value,
+        )
+        if (
+            synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+            and topology.execution_scope is not SynchronizationScope.NONE
+        ):
+            return (*domain, "non-reusable", entry.order)
+        return domain
+
+    def _layout_temp_storage_uses(
+        self,
+        uses: list[_TempStorageUseRequirement],
+        *,
+        sharing: str,
+    ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
+        """Lay out scratch for each call and group instance.
+
+        Exclusive sharing gives each use a distinct domain. Shared placement
+        reuses a domain only when ``_temp_storage_domain_key`` permits it.
+        Within a domain, reserve the largest per-instance requirement and
+        align its stride for every consumer. Multiple group instances receive
+        separate strides; compatible calls reuse those same instance slots.
+
+        Offsets are relative to the region, before the function-wide backing's
+        base offset is assigned. Views retain each call's actual byte count
+        even when another call determines the larger shared stride. No
+        lifetime or control-flow overlap analysis is performed here.
+
+        Parameters
+        ----------
+        uses : list of _TempStorageUseRequirement
+            Nonempty list of validated requirements and lowering plans.
+        sharing : str
+            Validated sharing policy: ``"exclusive"`` separates every
+            call; ``"shared"`` permits reuse within compatible domains.
+
+        Returns
+        -------
+        required_size : int
+            Region size in bytes, including alignment gaps and all instances.
+        required_alignment : int
+            Maximum required alignment, at least that of the storage pointer.
+        slices_by_call_id : dict of int to _TempStorageSlice
+            Region-relative offset, byte count, instance stride, and lowering
+            plan keyed by the object identity of each call assignment.
+        """
+
+        ordered_uses = sorted(uses, key=lambda entry: entry.order)
+        required_alignment = max(
+            _MIN_TEMP_STORAGE_ALIGNMENT,
+            *(max(1, int(entry.alignment)) for entry in ordered_uses),
+        )
+        domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
+        for entry in ordered_uses:
+            domain_key = (
+                ("exclusive", entry.order)
+                if sharing == "exclusive"
+                else self._temp_storage_domain_key(entry)
+            )
+            domains.setdefault(domain_key, []).append(entry)
+
+        required_size = 0
+        slices_by_call_id: dict[int, _TempStorageSlice] = {}
+        for domain_uses in domains.values():
+            domain_alignment = max(
+                _MIN_TEMP_STORAGE_ALIGNMENT,
+                *(max(1, int(entry.alignment)) for entry in domain_uses),
+            )
+            per_instance_size = max(
+                int(entry.size_in_bytes) for entry in domain_uses
+            )
+            instance_stride = _align_up(per_instance_size, domain_alignment)
+            first_plan = domain_uses[0].lowering_plan
+            instances = (
+                1
+                if first_plan is None or first_plan.topology is None
+                else first_plan.topology.instances
+            )
+            required_size = _align_up(required_size, domain_alignment)
+            domain_offset = required_size
+            for entry in domain_uses:
+                slices_by_call_id[id(entry.call_assign)] = _TempStorageSlice(
+                    offset=domain_offset,
+                    size_in_bytes=int(entry.size_in_bytes),
+                    stride=instance_stride,
+                    instances=instances,
+                    lowering_plan=entry.lowering_plan,
+                )
+            required_size += (
+                per_instance_size
+                if instances == 1
+                else instance_stride * instances
+            )
+        return required_size, required_alignment, slices_by_call_id
+
+    def _finalize_temp_storage_plan_for_var(
+        self, var_name: str
+    ) -> _TempStoragePlan:
+        """Combine a descriptor contract with its primitive requirements.
+
+        Lay out the uses, infer capacity when the constructor omitted it, and
+        check that an explicit capacity covers the result. Alignment is raised
+        to satisfy both the constructor and every consumer, with a
+        pointer-sized minimum. An unspecified ``auto_sync`` means
+        caller-managed synchronization.
+
+        Cache the resulting region plan before the function-wide allocation
+        adds its base offset. A descriptor with no uses needs an explicit
+        capacity and the default sharing/synchronization policy here;
+        whole-function descriptor validation separately rejects constructors
+        without primitive consumers.
+
+        Parameters
+        ----------
+        var_name : str
+            Known constructor owner name; aliases are canonicalized first.
+
+        Returns
+        -------
+        _TempStoragePlan
+            Cached or newly finalized region plan with slices for each call.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            Constructor metadata is missing, capacity cannot be inferred
+            or is insufficient, or the descriptor policy is invalid for
+            the known uses.
+        """
+
+        var_name = self._canonical_temp_storage_ctor_key(var_name)
+        cached = self._temp_storage_plans.get(var_name)
+        if cached is not None:
+            return cached
+        ctor_specification = self._temp_storage_ctor_specifications.get(
+            var_name
+        )
+        if ctor_specification is None:
+            raise CoopSinglePhaseRewriteError(
+                f"Missing TempStorage constructor metadata for "
+                f"variable '{var_name}'."
+            )
+        requirements = self._func_temp_storage_requirements.get(var_name)
+        uses = list(requirements.uses) if requirements is not None else []
+        uses.sort(key=lambda entry: entry.order)
+        if uses:
+            (
+                required_size,
+                required_alignment,
+                slices_by_call_id,
+            ) = self._layout_temp_storage_uses(
+                uses,
+                sharing=ctor_specification.sharing,
+            )
+        else:
+            required_size = 0
+            required_alignment = max(
+                _MIN_TEMP_STORAGE_ALIGNMENT,
+                int(ctor_specification.alignment or 1),
+            )
+            slices_by_call_id = {}
+        if ctor_specification.size_in_bytes is None:
+            if required_size <= 0:
+                raise CoopSinglePhaseRewriteError(
+                    "TempStorage size_in_bytes must be specified until a "
+                    "cooperative primitive provides a storage requirement."
+                )
+            size_in_bytes = required_size
+        else:
+            size_in_bytes = int(ctor_specification.size_in_bytes)
+        if size_in_bytes <= 0:
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage size_in_bytes must be a positive integer."
+            )
+        if required_size > 0 and size_in_bytes < required_size:
+            raise CoopSinglePhaseRewriteError(
+                f"TempStorage size_in_bytes is smaller than required by "
+                f"primitive uses ({size_in_bytes} < {required_size})."
+            )
+        if ctor_specification.alignment is None:
+            alignment = _default_temp_storage_alignment(required_alignment)
+        else:
+            requested_alignment = _normalize_temp_storage_alignment(
+                ctor_specification.alignment
+            )
+            alignment = max(
+                requested_alignment,
+                _default_temp_storage_alignment(required_alignment),
+            )
+        _validate_temp_storage_alignment(alignment)
+        auto_sync = (
+            False
+            if ctor_specification.auto_sync is None
+            else ctor_specification.auto_sync
+        )
+        if not uses and (ctor_specification.sharing != "shared" or auto_sync):
+            raise CoopSinglePhaseRewriteError(
+                "TempStorage non-default sharing or auto_sync requires a "
+                "cooperative primitive to consume the storage descriptor."
+            )
+        plan = _TempStoragePlan(
+            size_in_bytes=size_in_bytes,
+            alignment=alignment,
+            sharing=ctor_specification.sharing,
+            auto_sync=auto_sync,
+            slices_by_call_id=slices_by_call_id,
+        )
+        self._temp_storage_plans[var_name] = plan
+        return plan
+
+    def _is_local_array_ctor_call(self, call: ir.Expr) -> bool:
+        return self._resolve_python_value(call.func) is _cuda_local_array
+
+    def _extract_local_array_specification(
+        self, call: ir.Expr
+    ) -> _ThreadDataSpecification:
+        """Recover a native local array's one-dimensional extent and dtype.
+
+        Read positional or keyword constructor inputs. Leave unavailable facts
+        as ``None``; normal compiler typing still validates the native call.
+        """
+
+        kw_map = {name: value for name, value in call.kws}
+        items_ref = None
+        if call.args:
+            items_ref = call.args[0]
+        elif "shape" in kw_map:
+            items_ref = kw_map["shape"]
+        dtype_ref = None
+        if len(call.args) >= 2:
+            dtype_ref = call.args[1]
+        elif "dtype" in kw_map:
+            dtype_ref = kw_map["dtype"]
+        items_per_thread = None
+        if items_ref is not None:
+            items_per_thread = self._extract_1d_extent_literal(items_ref)
+        dtype = None
+        if dtype_ref is not None:
+            dtype = self._resolve_dtype_ref(dtype_ref)
+        return _ThreadDataSpecification(
+            items_per_thread=items_per_thread, dtype=dtype
+        )
+
+    def _is_shared_array_ctor_call(self, call: ir.Expr) -> bool:
+        return self._resolve_python_value(call.func) is _cuda_shared_array
+
+    def _extract_shared_array_specification(
+        self, call: ir.Expr
+    ) -> _ThreadDataSpecification:
+        """Recover a native shared array's extent and dtype when known.
+
+        Use the payload-description record to carry these facts without
+        claiming that the array is a public ``ThreadData`` value.
+        """
+
+        kw_map = {name: value for name, value in call.kws}
+        shape_ref = None
+        if call.args:
+            shape_ref = call.args[0]
+        elif "shape" in kw_map:
+            shape_ref = kw_map["shape"]
+        dtype_ref = None
+        if len(call.args) >= 2:
+            dtype_ref = call.args[1]
+        elif "dtype" in kw_map:
+            dtype_ref = kw_map["dtype"]
+        extent = None
+        if shape_ref is not None:
+            extent = self._extract_1d_extent_literal(shape_ref)
+        dtype = None
+        if dtype_ref is not None:
+            dtype = self._resolve_dtype_ref(dtype_ref)
+        return _ThreadDataSpecification(items_per_thread=extent, dtype=dtype)
+
+    def _resolve_array_specification_from_var(
+        self, value: ir.Var, seen: set[str]
+    ) -> _ThreadDataSpecification | None:
+        """Merge array facts across constructors, aliases, and branches.
+
+        Recognize public payloads and native local or shared arrays. ``seen``
+        stops recursive paths; unknown paths contribute no facts. The result
+        is partial inference, not proof that every path supplies an array.
+        """
+
+        if not isinstance(value, ir.Var):
+            return None
+        if value.name in seen:
+            return None
+        seen.add(value.name)
+        merged: _ThreadDataSpecification | None = None
+        for definition in self._lookup_definitions(value):
+            candidate: _ThreadDataSpecification | None = None
+            if isinstance(definition, ir.Expr):
+                if definition.op == "call":
+                    if self._is_thread_data_ctor_call(definition):
+                        candidate = self._extract_thread_data_specification(
+                            definition
+                        )
+                    elif self._is_local_array_ctor_call(definition):
+                        candidate = self._extract_local_array_specification(
+                            definition
+                        )
+                    elif self._is_shared_array_ctor_call(definition):
+                        candidate = self._extract_shared_array_specification(
+                            definition
+                        )
+                elif definition.op == "cast":
+                    cast_value = getattr(definition, "value", None)
+                    if isinstance(cast_value, ir.Var):
+                        candidate = self._resolve_array_specification_from_var(
+                            cast_value, seen
+                        )
+                elif definition.op == "static_getitem":
+                    for item in self._resolve_static_tuple_item_vars(
+                        definition
+                    ):
+                        item_specification = (
+                            self._resolve_array_specification_from_var(
+                                item, set(seen)
+                            )
+                        )
+                        if item_specification is None:
+                            continue
+                        merged = self._merge_thread_data_specifications(
+                            merged, item_specification
+                        )
+                    continue
+                elif definition.op == "phi":
+                    for incoming in _phi_incoming_values(definition):
+                        if not isinstance(incoming, ir.Var):
+                            continue
+                        incoming_specification = (
+                            self._resolve_array_specification_from_var(
+                                incoming, set(seen)
+                            )
+                        )
+                        if incoming_specification is None:
+                            continue
+                        merged = self._merge_thread_data_specifications(
+                            merged, incoming_specification
+                        )
+                    continue
+            elif isinstance(definition, ir.Var):
+                candidate = self._resolve_array_specification_from_var(
+                    definition, seen
+                )
+            if candidate is not None:
+                merged = self._merge_thread_data_specifications(
+                    merged, candidate
+                )
+        return merged
+
+    def _resolve_thread_data_specification_from_var(
+        self, value: ir.Var, seen: set[str]
+    ) -> _ThreadDataSpecification | None:
+        """Infer payload shape and dtype through variable origins.
+
+        Follow aliases, casts, static tuple selections, and phi inputs to
+        ``ThreadData`` or local-array constructors. Reuse complete cached
+        specifications; otherwise merge discovered facts with any partial
+        cached information and cache the result. Conflicting known extents or
+        dtypes are errors, while alignment constraints merge by taking the
+        larger minimum.
+
+        Unrecognized or cyclic paths contribute no facts. A returned
+        specification is therefore partial inference, not proof that every
+        path is a public payload. ``_is_thread_data_like_var`` supplies that
+        stricter origin check when rewriting the public ``items_per_thread``
+        attribute. Shared arrays are handled by the separate
+        array-specification resolver.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Variable whose payload facts are needed.
+        seen : set of str
+            Active traversal names, extended in place. Branches receive
+            copies so each incoming path can contribute its facts.
+
+        Returns
+        -------
+        _ThreadDataSpecification or None
+            Merged known facts, possibly with an unresolved dtype, or None
+            when no payload specification can be recovered.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A constructor is invalid, or incoming payload facts conflict.
+        """
+
+        if not isinstance(value, ir.Var):
+            return None
+        cached = self._thread_data_specifications.get(value.name)
+        if (
+            cached is not None
+            and cached.items_per_thread is not None
+            and (cached.dtype is not None)
+        ):
+            return cached
+        if value.name in seen:
+            return None
+        seen.add(value.name)
+        merged: _ThreadDataSpecification | None = cached
+        for definition in self._lookup_definitions(value):
+            candidate: _ThreadDataSpecification | None = None
+            if isinstance(definition, ir.Expr):
+                if definition.op == "call":
+                    if self._is_thread_data_ctor_call(definition):
+                        candidate = self._extract_thread_data_specification(
+                            definition
+                        )
+                    elif self._is_local_array_ctor_call(definition):
+                        candidate = self._extract_local_array_specification(
+                            definition
+                        )
+                elif definition.op == "cast":
+                    cast_value = getattr(definition, "value", None)
+                    if isinstance(cast_value, ir.Var):
+                        candidate = (
+                            self._resolve_thread_data_specification_from_var(
+                                cast_value, seen
+                            )
+                        )
+                elif definition.op == "static_getitem":
+                    for item in self._resolve_static_tuple_item_vars(
+                        definition
+                    ):
+                        item_specification = (
+                            self._resolve_thread_data_specification_from_var(
+                                item, set(seen)
+                            )
+                        )
+                        if item_specification is None:
+                            continue
+                        merged = self._merge_thread_data_specifications(
+                            merged, item_specification
+                        )
+                    continue
+                elif definition.op == "phi":
+                    for incoming in _phi_incoming_values(definition):
+                        if not isinstance(incoming, ir.Var):
+                            continue
+                        incoming_specification = (
+                            self._resolve_thread_data_specification_from_var(
+                                incoming, set(seen)
+                            )
+                        )
+                        if incoming_specification is None:
+                            continue
+                        merged = self._merge_thread_data_specifications(
+                            merged, incoming_specification
+                        )
+                    continue
+            elif isinstance(definition, ir.Var):
+                candidate = self._resolve_thread_data_specification_from_var(
+                    definition, seen
+                )
+            if candidate is not None:
+                merged = self._merge_thread_data_specifications(
+                    merged, candidate
+                )
+        if merged is not None:
+            self._thread_data_specifications[value.name] = merged
+        return merged
+
+    def _resolve_static_tuple_item_vars(
+        self, definition: ir.Expr
+    ) -> list[ir.Var]:
+        """Recover candidate variables for a static tuple item."""
+
+        index = getattr(definition, "index", None)
+        tuple_value = getattr(definition, "value", None)
+        if not isinstance(index, int) or not isinstance(tuple_value, ir.Var):
+            return []
+        return self._resolve_tuple_item_vars(tuple_value, index, seen=set())
+
+    def _resolve_tuple_item_vars(
+        self, tuple_value: ir.Var, index: int, seen: set[str]
+    ) -> list[ir.Var]:
+        """Trace a selected tuple element back to its possible source variables.
+
+        A payload or descriptor may pass through a tuple before a cooperative
+        call uses it. Provenance queries use this walk to recover the selected
+        item without treating the whole tuple as a payload. Keep alternatives
+        from merged control-flow paths so later checks can compare their facts.
+
+        Parameters
+        ----------
+        tuple_value : ir.Var
+            Variable holding the tuple or an alias of it.
+        index : int
+            Compile-time element index. Valid negative indices count from the
+            end.
+        seen : set of str
+            Names already visited on this recursive path. The method adds the
+            current name; recursive alternatives receive copies to detect cycles
+            without suppressing a separate branch.
+
+        Returns
+        -------
+        list of ir.Var
+            Recognized source variables. Unknown, cyclic, and out-of-range paths
+            contribute no entries, so this result may be incomplete.
+        """
+
+        if tuple_value.name in seen:
+            return []
+        seen.add(tuple_value.name)
+        items: list[ir.Var] = []
+        for tuple_definition in self._lookup_definitions(tuple_value):
+            if isinstance(tuple_definition, ir.Var):
+                items.extend(
+                    self._resolve_tuple_item_vars(
+                        tuple_definition, index, seen=set(seen)
+                    )
+                )
+                continue
+            if not isinstance(tuple_definition, ir.Expr):
+                continue
+            if tuple_definition.op == "build_tuple":
+                tuple_items = tuple(getattr(tuple_definition, "items", ()))
+                if -len(tuple_items) <= index < len(tuple_items):
+                    item = tuple_items[index]
+                    if isinstance(item, ir.Var):
+                        items.append(item)
+                continue
+            if tuple_definition.op in {"cast", "exhaust_iter"}:
+                source = getattr(tuple_definition, "value", None)
+                if isinstance(source, ir.Var):
+                    items.extend(
+                        self._resolve_tuple_item_vars(
+                            source, index, seen=set(seen)
+                        )
+                    )
+                continue
+            if tuple_definition.op == "phi":
+                for incoming in _phi_incoming_values(tuple_definition):
+                    if isinstance(incoming, ir.Var):
+                        items.extend(
+                            self._resolve_tuple_item_vars(
+                                incoming, index, seen=set(seen)
+                            )
+                        )
+        return items
+
+    def _resolve_thread_data_specification(
+        self, value: ir.Var
+    ) -> _ThreadDataSpecification | None:
+        if not isinstance(value, ir.Var):
+            return None
+        return self._resolve_thread_data_specification_from_var(
+            value, seen=set()
+        )
+
+    def _is_thread_data_like_var(
+        self, value: ir.Var, seen: set[str] | None = None
+    ) -> bool:
+        """Check that known origins identify a public ``ThreadData`` payload.
+
+        Unlike shape inference, this check rejects an incoming non-payload
+        origin, including a native local array, even when another branch is
+        ``ThreadData``. Trace aliases, casts, iterator exhaustion, tuple
+        items, and phi inputs; cycle-only paths remain unknown rather than
+        proving or disproving origin. At least one positive origin and no
+        negative origin are needed to cache a positive result. This prevents
+        rewriting ``items_per_thread`` on a mixed or unrelated object just
+        because some shape information is available.
+
+        Parameters
+        ----------
+        value : ir.Var
+            Candidate receiver of the public payload attribute.
+        seen : set of str or None, optional
+            Initial traversal guard. A copy is used, leaving the supplied
+            set intact.
+
+        Returns
+        -------
+        bool
+            Whether public payload provenance is established. Positive
+            results are cached in ``_thread_data_like_vars``; unknown
+            results return False.
+        """
+
+        def resolve(candidate: ir.Var, active: set[str]) -> bool | None:
+            if not isinstance(candidate, ir.Var):
+                return False
+            if candidate.name in self._thread_data_like_vars:
+                return True
+            if candidate.name in active:
+                return None
+            active.add(candidate.name)
+            states: list[bool | None] = []
+            for definition in self._lookup_definitions(candidate):
+                if isinstance(definition, ir.Var):
+                    states.append(resolve(definition, set(active)))
+                    continue
+                if not isinstance(definition, ir.Expr):
+                    states.append(False)
+                    continue
+                if definition.op == "call":
+                    states.append(self._is_thread_data_ctor_call(definition))
+                    continue
+                sources: list[ir.Var] = []
+                if definition.op in {"cast", "exhaust_iter"}:
+                    source = getattr(definition, "value", None)
+                    if isinstance(source, ir.Var):
+                        sources.append(source)
+                elif definition.op == "phi":
+                    sources.extend(
+                        incoming
+                        for incoming in _phi_incoming_values(definition)
+                        if isinstance(incoming, ir.Var)
+                    )
+                elif definition.op == "static_getitem":
+                    sources.extend(
+                        self._resolve_static_tuple_item_vars(definition)
+                    )
+                if not sources:
+                    states.append(False)
+                    continue
+                states.extend(
+                    resolve(source, set(active)) for source in sources
+                )
+            if False in states:
+                return False
+            if any(state is True for state in states):
+                self._thread_data_like_vars.add(candidate.name)
+                return True
+            return None
+
+        return resolve(value, set() if seen is None else set(seen)) is True
+
+    def _resolve_var_numba_type(self, value: ir.Var):
+        """Read an existing compiler type without starting a new typing pass.
+
+        Prefer the state's type map, then known argument names and argument
+        definitions. Return ``None`` when those sources have no type.
+        """
+
+        typemap = getattr(self._state, "typemap", None)
+        if isinstance(typemap, dict):
+            mapped = typemap.get(value.name)
+            if mapped is not None:
+                return mapped
+        if value.name in self._arg_type_map:
+            return self._arg_type_map[value.name]
+        definition = self._lookup_definition(value)
+        if isinstance(definition, ir.Arg):
+            arg_types = tuple(getattr(self._state, "args", ()) or ())
+            if 0 <= definition.index < len(arg_types):
+                return arg_types[definition.index]
+        return None
+
+    def _resolve_call_result_dtype(self, definition: ir.Expr):
+        """Probe a recognized scalar callee's result type from operand dtypes.
+
+        Resolve the Python callee first, then use the shared scalar call
+        rules. Unknown callees or unsupported calls yield no dtype.
+        """
+
+        func_obj = None
+        func_ref = getattr(definition, "func", None)
+        if isinstance(func_ref, ir.Var):
+            try:
+                func_obj = self._infer_constant(func_ref)
+            except (*_INFERENCE_EXCEPTIONS, ImportError):
+                func_obj = None
+            if func_obj is None:
+                func_def = self._lookup_definition(func_ref)
+                if isinstance(func_def, (ir.Global, ir.FreeVar, ir.Const)):
+                    func_obj = func_def.value
+        elif isinstance(func_ref, (ir.Global, ir.FreeVar, ir.Const)):
+            func_obj = func_ref.value
+        if func_obj is None:
+            try:
+                func_obj = self._resolve_python_value(func_ref)
+            except _INFERENCE_EXCEPTIONS:
+                func_obj = None
+        if func_obj is None:
+            return None
+        return scalar_call_dtype(
+            func_obj, definition.args, self._resolve_var_dtype
+        )
+
+    @staticmethod
+    def _merge_scalar_dtypes(dtypes):
+        """Keep a scalar dtype only when every candidate is known and agrees.
+
+        Normalize equivalent spellings before comparison. This does not
+        promote conflicting types or infer a dtype from only one known branch.
+        """
+
+        candidates = list(dtypes)
+        if not candidates or any(dtype is None for dtype in candidates):
+            return None
+        resolved = []
+        for dtype in candidates:
+            try:
+                dtype = normalize_dtype_param(dtype)
+            except (TypeError, ValueError):
+                pass
+            if any(
+                _dtype_values_match(dtype, existing) for existing in resolved
+            ):
+                continue
+            resolved.append(dtype)
+        return resolved[0] if len(resolved) == 1 else None
+
+    def _cuda_index_dtype(self, definition: ir.Expr):
+        return cuda_index_dtype(
+            definition, self._resolve_attribute_chain, _cuda_module
+        )
+
+    def _resolve_definition_dtype(self, definition, *, seen: set[str]):
+        """Infer an element or scalar dtype from one recognized IR definition.
+
+        Trace argument types, scalar values, array accesses, operators, and
+        calls. Copy ``seen`` into recursive paths and require agreement at
+        control-flow joins. Unsupported expressions return ``None``.
+        """
+
+        from ._parameters import _python_scalar_dtype
+
+        if isinstance(definition, ir.Arg):
+            arg_types = tuple(getattr(self._state, "args", ()) or ())
+            if 0 <= definition.index < len(arg_types):
+                arg_type = arg_types[definition.index]
+                return getattr(arg_type, "dtype", arg_type)
+            return None
+        if isinstance(definition, (ir.Const, ir.Global, ir.FreeVar)):
+            return _python_scalar_dtype(definition.value)
+        if isinstance(definition, ir.Var):
+            return self._resolve_var_dtype(definition, seen=set(seen))
+        if not isinstance(definition, ir.Expr):
+            return None
+        if definition.op in {"cast", "exhaust_iter"}:
+            source = getattr(definition, "value", None)
+            if isinstance(source, ir.Var):
+                return self._resolve_var_dtype(source, seen=set(seen))
+            return None
+        if definition.op == "getattr":
+            cuda_dtype = self._cuda_index_dtype(definition)
+            if cuda_dtype is not None:
+                return cuda_dtype
+            if definition.attr == "dtype" and isinstance(
+                definition.value, ir.Var
+            ):
+                return self._resolve_var_dtype(definition.value, seen=set(seen))
+            return None
+        if definition.op in {"getitem", "static_getitem"}:
+            base_value = getattr(definition, "value", None)
+            if isinstance(base_value, ir.Var):
+                return self._resolve_var_dtype(base_value, seen=set(seen))
+            return None
+        if definition.op in {"binop", "inplace_binop", "unary"}:
+            return scalar_expression_dtype(
+                definition,
+                lambda value: self._resolve_var_dtype(value, seen=set(seen)),
+            )
+        if definition.op == "phi":
+            return self._merge_scalar_dtypes(
+                self._resolve_var_dtype(incoming, seen=set(seen))
+                for incoming in _phi_incoming_values(definition)
+                if isinstance(incoming, ir.Var)
+            )
+        if definition.op == "call":
+            return self._resolve_call_result_dtype(definition)
+        return None
+
+    def _infer_thread_data_dtype_from_writes(self, value: ir.Var):
+        """Infer one payload dtype from its known element assignments.
+
+        Inspect writes only for a recognized payload. Reject differing write
+        dtypes, record a consistent result on its aliases, and return ``None``
+        when the write analysis supplies no dtype.
+        """
+
+        if self._resolve_thread_data_specification(value) is None:
+            return None
+        inferred = None
+        for value_dtype in payload_write_dtypes(
+            self._func_ir, value, self._resolve_var_dtype
+        ):
+            if inferred is None:
+                inferred = value_dtype
+            elif inferred != value_dtype:
+                raise CoopSinglePhaseRewriteError(
+                    "Failed to infer a consistent dtype "
+                    "from coop.ThreadData writes."
+                )
+        if inferred is not None:
+            self._record_inferred_thread_data_dtype(value, inferred)
+        return inferred
+
+    def _resolve_var_dtype(self, value: ir.Var, seen: set[str] | None = None):
+        """Infer a dtype from payload facts, types, or definitions.
+
+        Prefer an established payload dtype, then an array element or scalar
+        compiler type. Otherwise require all recovered definition dtypes to
+        agree. ``seen`` guards recursion; unknown paths remain unresolved.
+        """
+
+        if seen is None:
+            seen = set()
+        if value.name in seen:
+            return None
+        seen.add(value.name)
+        specification = self._resolve_thread_data_specification(value)
+        if specification is not None and specification.dtype is not None:
+            return specification.dtype
+        var_type = self._resolve_var_numba_type(value)
+        dtype = getattr(var_type, "dtype", None)
+        if dtype is not None:
+            return dtype
+        if var_type is not None and hasattr(var_type, "bitwidth"):
+            return var_type
+        return self._merge_scalar_dtypes(
+            self._resolve_definition_dtype(definition, seen=set(seen))
+            for definition in self._lookup_definitions(value)
+        )
+
+    def _resolve_dtype_ref(self, value_ref):
+        """Resolve a requested dtype from a constant or an operand's type.
+
+        If ordinary constant inference fails, recognize an array's ``dtype``
+        attribute or ask for the variable's known dtype. Return ``None`` when
+        neither path establishes one.
+        """
+
+        try:
+            return self._infer_constant(value_ref)
+        except _INFERENCE_EXCEPTIONS:
+            pass
+        if isinstance(value_ref, ir.Var):
+            definition = self._lookup_definition(value_ref)
+            if (
+                isinstance(definition, ir.Expr)
+                and definition.op == "getattr"
+                and definition.attr == "dtype"
+                and isinstance(definition.value, ir.Var)
+            ):
+                return self._resolve_var_dtype(definition.value)
+            return self._resolve_var_dtype(value_ref)
+        return None
+
+    def _resolve_factory_kwarg_value(self, op_name: str, name: str, value_ref):
+        """Resolve a factory input without losing an explicit ``None`` value.
+
+        Use the operation's dtype-keyword rules before constant inference.
+        Compiler argument types can also establish an omitted or explicit
+        ``None``. Return ``_UNRESOLVED`` for other unknown inputs so argument
+        validation can distinguish missing facts from an omitted option.
+        """
+
+        from ._operations import rewrite_operation
+
+        specification = rewrite_operation(op_name)
+        if (
+            specification is not None
+            and name in specification.dtype_factory_kwargs
+        ):
+            dtype = self._resolve_dtype_ref(value_ref)
+            if dtype is not None:
+                return dtype
+        try:
+            return self._infer_constant(value_ref)
+        except _INFERENCE_EXCEPTIONS:
+            pass
+        if isinstance(value_ref, ir.Var):
+            import numba_cuda_mlir.numba_cuda.types as numba_mlir_types
+
+            value_type = self._arg_type_map.get(value_ref.name)
+            definition = self._lookup_definition(value_ref)
+            if isinstance(definition, ir.Arg):
+                value_type = self._state.args[definition.index]
+            if isinstance(value_type, numba_mlir_types.NoneType) or (
+                isinstance(value_type, numba_mlir_types.Omitted)
+                and value_type.value is None
+            ):
+                return None
+        return _UNRESOLVED
+
+    def _resolve_call_target(self, call: ir.Expr) -> _ResolvedCallTarget | None:
+        """Resolve a registered factory and any subscripted storage operand.
+
+        Recognize direct provider calls and the ``factory[storage](...)`` IR
+        form by callable identity. Descriptor-use validation later decides
+        whether the storage syntax is allowed; this lookup only records it.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Call whose callee may resolve to a registered factory.
+
+        Returns
+        -------
+        _ResolvedCallTarget or None
+            Factory registration, callee names, and optional storage operand.
+            Return ``None`` when the callee is not a registered provider.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A subscripted provider lacks an IR variable for its storage.
+        """
+
+        factory = self._resolve_factory_from_var(call.func)
+        if factory is not None:
+            metadata = factory_operation(factory)
+            assert metadata is not None
+            return _ResolvedCallTarget(
+                factory=factory,
+                factory_metadata=metadata,
+                func_var_name=call.func.name,
+                func_var_name_extra=None,
+                getitem_temp_storage=None,
+            )
+        func_def = self._lookup_definition(call.func)
+        if not (
+            isinstance(func_def, ir.Expr)
+            and func_def.op in {"getitem", "static_getitem"}
+        ):
+            return None
+        factory = self._resolve_factory_from_var(func_def.value)
+        if factory is None:
+            return None
+        metadata = factory_operation(factory)
+        assert metadata is not None
+        getitem_temp_storage = getattr(func_def, "index", None)
+        if not isinstance(getitem_temp_storage, ir.Var):
+            getitem_temp_storage = getattr(func_def, "index_var", None)
+        if not isinstance(getitem_temp_storage, ir.Var):
+            raise CoopSinglePhaseRewriteError(
+                f"coop single-phase getitem syntax expects a runtime "
+                f"temp-storage variable: '{factory.__name__}"
+                f"[temp_storage](...)'."
+            )
+        return _ResolvedCallTarget(
+            factory=factory,
+            factory_metadata=metadata,
+            func_var_name=call.func.name,
+            func_var_name_extra=func_def.value.name,
+            getitem_temp_storage=getitem_temp_storage,
+        )
+
+
+__all__ = ["_ProvenanceRewrite"]
