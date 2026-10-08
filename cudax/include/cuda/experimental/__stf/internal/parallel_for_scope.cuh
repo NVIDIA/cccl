@@ -25,6 +25,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -41,6 +42,7 @@
 #include <cuda/experimental/__stf/utility/occupancy.cuh>
 
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -826,8 +828,7 @@ public:
       {
         if constexpr (::cuda::std::is_same_v<partitioner_t, null_partition>)
         {
-          fprintf(stderr, "Fatal: Grid execution requires a partitioner.\n");
-          abort();
+          _CCCL_THROW(::std::logic_error, "grid execution requires a partitioner");
         }
         else
         {

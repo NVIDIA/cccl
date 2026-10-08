@@ -10,47 +10,19 @@
 
 /**
  * @file
- *
- * @brief Ensure fence() in a nested stackable context triggers an abort
+ * @brief Ensure fence() in a nested stackable context is reported
  */
 
 #include <cuda/experimental/stf.cuh>
 
-#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 
 using namespace cuda::experimental::stf;
 
-bool should_abort = false;
-
-void cleanupRoutine(int /*unused*/)
-{
-  if (should_abort)
-  {
-    exit(EXIT_SUCCESS);
-  }
-  else
-  {
-    fprintf(stderr, "Unexpected SIGABRT !\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
 int main()
 {
-#if _CCCL_COMPILER(MSVC)
-  signal(SIGABRT, &cleanupRoutine);
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
-  struct sigaction sigabrt_action{};
-  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-  sigabrt_action.sa_handler = &cleanupRoutine;
-
-  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
-  {
-    perror("sigaction SIGABRT");
-    exit(EXIT_FAILURE);
-  }
-#endif // !_CCCL_COMPILER(MSVC)
-
   stackable_ctx sctx;
 
   auto lA = sctx.logical_data(shape_of<slice<int>>(64));
@@ -59,6 +31,7 @@ int main()
     a(i) = static_cast<int>(i);
   };
 
+  bool caught = false;
   {
     auto scope = sctx.graph_scope();
 
@@ -66,10 +39,20 @@ int main()
       a(i) *= 2;
     };
 
-    should_abort = true;
-    sctx.fence(); // fence() in nested context must abort
+    try
+    {
+      sctx.fence(); // fence() in a nested context is not supported
+    }
+    catch (const ::std::logic_error& e)
+    {
+      caught = true;
+      fprintf(stderr, "Caught expected error: %s\n", e.what());
+    }
   }
 
-  _CCCL_ASSERT(false, "This should not be reached");
-  return EXIT_FAILURE;
+  // Back at the root, fence() is legal and the context finalizes normally.
+  sctx.fence();
+  sctx.finalize();
+
+  return caught ? EXIT_SUCCESS : EXIT_FAILURE;
 }
