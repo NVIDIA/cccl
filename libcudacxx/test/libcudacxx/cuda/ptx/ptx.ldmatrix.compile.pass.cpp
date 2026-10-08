@@ -9,10 +9,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/ldmatrix.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/ldmatrix.h>
 
 #include "generated/ldmatrix.h"
 
