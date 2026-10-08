@@ -6,9 +6,9 @@
 
 ``test_typing.py`` runs ``mypy --strict`` on this file against copied
 ``.pyi`` stubs. This prevents implementation modules from supplying missing
-declarations. Checks cover group query types, Reduce results, Load/Store
-returns, descriptor attributes, and calls across namespaces. Payload
-constructors and conversions must preserve the scalar dtype.
+declarations. Checks cover group query types, Reduce and Scan results,
+Load/Store returns, descriptor attributes, and calls across namespaces.
+Payload constructors and conversions must preserve the scalar dtype.
 
 The test neither imports this file nor traces or launches a kernel.
 """
@@ -16,10 +16,19 @@ The test neither imports this file nor traces or launches a kernel.
 from __future__ import annotations
 
 import operator
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
-from cutlass import Float64, Int16, Int32, Uint8, Uint16, Uint32, Uint64
+from cutlass import (
+    Float32,
+    Float64,
+    Int16,
+    Int32,
+    Uint8,
+    Uint16,
+    Uint32,
+    Uint64,
+)
 from typing_extensions import assert_type
 
 import cuda.coop.cutlass as cutlass_coop
@@ -156,8 +165,9 @@ def check_cutlass_dynamic_memory_controls(
 def check_cutlass_warp_surface(source: object, destination: object) -> None:
     """Check Warp Load/Store types across both API namespaces.
 
-    All four physical Warp algorithms accept prefix controls. Groups from
-    either namespace must work with common and qualified calls.
+    All four physical Warp algorithms accept ``valid_items``,
+    ``oob_default``, and ``offset``. Groups from either namespace must work
+    with common and qualified calls.
     """
 
     warp = cutlass_coop.this_warp()
@@ -306,4 +316,248 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
             temp_storage=common_coop.TempStorage(),
         ),
         Uint32,
+    )
+
+
+def check_cutlass_scan_surface(scalar: Uint32) -> None:
+    """Check scalar versus payload results and qualified Scan controls.
+
+    All five spellings preserve a ``ThreadData`` or scalar input dtype. Block
+    Scan of a register tensor or ``TensorSSA`` input returns
+    ``ThreadData[Any]`` because the stubs cannot see its CuTe element type;
+    the compiler determines the dtype while tracing.
+    """
+
+    block = cutlass_coop.this_block()
+    logical = cutlass_coop.this_warp().group_by(8)
+    values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    aggregate = cutlass_coop.ThreadData(items_per_thread=1, dtype=Uint32)
+    common_aggregate = common_coop.ThreadData(items_per_thread=1, dtype=Uint32)
+    assert_type(
+        cutlass_coop.exclusive_sum(
+            block, scalar, aggregate_output=common_aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.scan(block, values), cutlass_coop.ThreadData[np.int32]
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.inclusive_scan(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, values, scan_op="max", initial_value=np.int32(-8)
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(block, values, scan_op=np.add),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, scalar, scan_op=operator.mul, initial_value=1
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values, algorithm="raking_memoize"),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    storage = cutlass_coop.TempStorage(sharing="exclusive")
+    assert_type(
+        cutlass_coop.scan(
+            block, values, algorithm="warp_scans", temp_storage=storage
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_scan(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(
+            logical, scalar, valid_items=7, aggregate_output=aggregate
+        ),
+        Uint32,
+    )
+    assert_type(common_coop.inclusive_sum(logical, scalar), Uint32)
+    assert_type(
+        cutlass_coop.inclusive_sum(common_coop.this_warp(), scalar), Uint32
+    )
+    assert_type(
+        cutlass_coop.inclusive_sum(block, values.to_register_tensor()),
+        cutlass_coop.ThreadData[Any],
+    )
+    assert_type(
+        cutlass_coop.exclusive_sum(block, values.to_tensor_ssa()),
+        cutlass_coop.ThreadData[Any],
+    )
+
+
+def check_cutlass_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    """Accept matching initial-value types without changing the result dtype.
+
+    NumPy and CuTe spellings can describe the same numeric dtype. Python
+    numbers use the input's type context. These declarations check accepted
+    type combinations; representability of a particular literal is a compiler
+    validation, not a mypy assertion here.
+    """
+
+    block = cutlass_coop.this_block()
+    warp = cutlass_coop.this_warp()
+    numpy_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=np.int32)
+    cute_values = cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32)
+    assert_type(
+        cutlass_coop.exclusive_scan(block, Int32(4), initial_value=Int32(0)),
+        Int32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=Float32(0)
+        ),
+        Float32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(block, Int32(4), initial_value=np.int32(0)),
+        Int32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=np.float32(0)
+        ),
+        Float32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            warp, Float64(4), initial_value=np.float64(0)
+        ),
+        Float64,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, np.int32(4), mode="exclusive", initial_value=Int32(0)
+        ),
+        np.int32,
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            warp, np.float32(4), initial_value=Float32(0)
+        ),
+        np.float32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, np.float64(4), mode="exclusive", initial_value=Float64(0)
+        ),
+        np.float64,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            block, numpy_values, mode="exclusive", initial_value=Int32(0)
+        ),
+        cutlass_coop.ThreadData[np.int32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, cute_values, initial_value=np.float32(0)
+        ),
+        cutlass_coop.ThreadData[Float32],
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, Int32(4), initial_value=np.int32(0)),
+        Int32,
+    )
+    assert_type(
+        common_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=np.float32(0)
+        ),
+        Float32,
+    )
+    assert_type(
+        common_coop.exclusive_scan(
+            warp, Float64(4), initial_value=np.float64(0)
+        ),
+        Float64,
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, np.int32(4), initial_value=Int32(0)),
+        np.int32,
+    )
+    assert_type(
+        common_coop.scan(
+            warp, np.float32(4), mode="exclusive", initial_value=Float32(0)
+        ),
+        np.float32,
+    )
+    assert_type(
+        common_coop.exclusive_scan(
+            warp, np.float64(4), initial_value=Float64(0)
+        ),
+        np.float64,
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, numpy_values, initial_value=Int32(0)),
+        common_coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        common_coop.scan(
+            block, cute_values, mode="exclusive", initial_value=np.float32(0)
+        ),
+        common_coop.ThreadDataLike[Float32],
+    )
+    assert_type(
+        cutlass_coop.exclusive_scan(
+            block, Int32(4), initial_value=integer_seed
+        ),
+        Int32,
+    )
+    assert_type(
+        cutlass_coop.scan(
+            warp, Float32(4), mode="exclusive", initial_value=floating_seed
+        ),
+        Float32,
+    )
+    assert_type(
+        common_coop.exclusive_scan(block, Int32(4), initial_value=0), Int32
+    )
+    assert_type(
+        common_coop.exclusive_scan(
+            warp, Float32(4), initial_value=floating_seed
+        ),
+        Float32,
     )
