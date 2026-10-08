@@ -66,10 +66,10 @@ class CompilerIntegerLike(CompilerScalarLike, Protocol):
 
 
 if not TYPE_CHECKING and numpy is None:
-    PortableNumericScalar: TypeAlias = int | float | CompilerScalarLike
+    CommonNumericScalar: TypeAlias = int | float | CompilerScalarLike
     IntegerValue: TypeAlias = int | CompilerIntegerLike
 else:
-    PortableNumericScalar: TypeAlias = (
+    CommonNumericScalar: TypeAlias = (
         int
         | float
         | numpy.int8
@@ -89,13 +89,13 @@ else:
 
 ValidItems: TypeAlias = IntegerValue
 
-_PortableNumericT = TypeVar("_PortableNumericT", bound=PortableNumericScalar)
+_CommonNumericT = TypeVar("_CommonNumericT", bound=CommonNumericScalar)
 
-PortableThreadDataLike = _ReadableThreadDataLike
+CommonThreadDataLike = _ReadableThreadDataLike
 
 __all__ = [
-    "PortableThreadDataLike",
+    "CommonThreadDataLike",
     "TempStorageLike",
     "ThreadDataLike",
-    "_PortableNumericT",
+    "_CommonNumericT",
 ]
