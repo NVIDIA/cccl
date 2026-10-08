@@ -6,9 +6,9 @@
 
 Importing this namespace validates the optional runtime and registers its
 active compiler environment with the common API. Calls inside that environment
-use these implementations. The namespace provides block Load and Store with
-all six CUB block algorithms, TempStorage descriptors for transpose scratch,
-block thread groups, and per-thread register payloads.
+use these implementations. The namespace provides block and physical-warp
+Load/Store, thread groups, and per-thread register payloads. TempStorage
+descriptors control scratch for block transpose algorithms.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike
@@ -16,7 +16,13 @@ from ._compiler._activation import register_trace_context
 from ._group_load_store import load, store
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData
-from ._thread_group import Hierarchy, ThreadGroup, ThreadHierarchy, this_block
+from ._thread_group import (
+    Hierarchy,
+    ThreadGroup,
+    ThreadHierarchy,
+    this_block,
+    this_warp,
+)
 
 __all__ = [
     "Hierarchy",
@@ -29,6 +35,7 @@ __all__ = [
     "load",
     "store",
     "this_block",
+    "this_warp",
 ]
 
 

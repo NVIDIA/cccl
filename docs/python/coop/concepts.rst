@@ -38,7 +38,7 @@ in the programming guides.
      - Not implemented
    * - Block and warp Load/Store
      - Available
-     - Block only
+     - Block and physical warp
    * - Built-in Reduce/Sum and Scan
      - Available
      - Not implemented
@@ -71,10 +71,10 @@ in the programming guides.
 
 Numba-CUDA-MLIR additionally supports qualified device operators and
 :ref:`Scan prefix callbacks <coop-prefix-callbacks>`. Custom operators and
-stateful Scan callbacks are outside CUTLASS's current scope. CUTLASS
-qualification covers a compatible Linux/CUDA 13 environment. No official
-public runtime artifact has passed consumer qualification; see its programming
-guide before selecting a runtime.
+stateful Scan callbacks are outside CUTLASS's current scope. CUTLASS support
+targets Linux with CUDA 13. No public CUTLASS package version has been
+qualified yet; see the :doc:`CUTLASS Programming Guide <../coop_cutlass>`
+before choosing a runtime.
 
 .. raw:: html
 
@@ -318,8 +318,9 @@ contract before consuming a result.
 
 Sorting and selection operate on one group's tile. Sorting each block does not
 sort a whole array. TopK defines an unordered selected prefix; the remaining
-payload positions are not output. For available families, see :ref:`backend
-operation support <coop-backend-operation-support>`.
+payload positions are not output. For the available sorting and selection
+families, see :ref:`backend operation support
+<coop-backend-operation-support>`.
 
 .. _coop-common-storage:
 .. _temporary-storage:

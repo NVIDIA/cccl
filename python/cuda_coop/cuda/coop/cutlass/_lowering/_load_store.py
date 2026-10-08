@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Lower shared block Load/Store plans to CuTe calls and C++ wrappers.
+"""Lower shared Load/Store plans to CuTe calls and C++ wrappers.
 
 A request gives both sides the same symbol, template arguments, and runtime
 parameter order. Tracing emits an extern call and queues its immutable
@@ -12,8 +12,8 @@ DIRECT, STRIPED, and VECTORIZE use no shared scratch. Transpose algorithms add
 a shared-memory address, byte capacity, and barrier flag. Finalization
 supplies the address and capacity after C++ layout probes resolve. Load writes
 a temporary register tensor and then replaces the output payload's scalar
-expressions. Store passes its initialized items as scalar arguments without
-changing the payload.
+expressions. This wrapper passes Store items as scalars, leaving the payload
+unchanged. The public contract does not promise that after a transpose Store.
 """
 
 from __future__ import annotations
@@ -61,9 +61,10 @@ class _CubLoadStoreRequest:
     """Bind a supported shared-core plan to its CUB wrapper and scalar ABI.
 
     The plan supplies participation, algorithm arguments, and synchronization
-    policy. Wrapper identity includes that complete contract. Scratch-layout
-    identity depends only on the CUB specialization, so different wrapper
-    policies can reuse a query for the same C++ ``TempStorage`` type.
+    policy. Wrapper identity includes that complete contract. Scratch request
+    keys retain the Algorithm identity and number of independent groups.
+    Layout preparation merges probes for the same C++ ``TempStorage`` array,
+    so wrappers with different controls can share those layout results.
     """
 
     plan: GroupLoweringPlan
@@ -74,8 +75,22 @@ class _CubLoadStoreRequest:
         """Reject plans whose contracts cannot use this wrapper ABI."""
 
         self.plan.require_supported()
-        if self.plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise NotImplementedError("CUTLASS Load/Store requires a block")
+        if self.plan.target not in {
+            GroupLoweringTarget.CUB_BLOCK,
+            GroupLoweringTarget.CUB_WARP,
+        }:
+            raise NotImplementedError(
+                "CUTLASS Load/Store requires a CUB block or warp plan"
+            )
+        if self.plan.target is GroupLoweringTarget.CUB_WARP:
+            if self.plan.resolved_group.kind != "warp":
+                raise NotImplementedError(
+                    "CUTLASS Warp Load/Store requires physical warps"
+                )
+            if self.plan.temp_storage.ownership is StorageOwnership.CALLER:
+                raise NotImplementedError(
+                    "explicit TempStorage is supported only for block groups"
+                )
         if not isinstance(self.plan.implementation, Algorithm):
             raise TypeError("Load/Store requires a shared Algorithm")
         if self.operation.dtype is not self.value_type:
@@ -91,16 +106,23 @@ class _CubLoadStoreRequest:
             raise ValueError(
                 "storage-free Load/Store must not introduce a reuse barrier"
             )
+        # A warp must reuse its own scratch with a warp barrier. A block
+        # barrier would also require unrelated warps to reach this call.
+        expected_scope = (
+            SynchronizationScope.WARP
+            if self.is_warp
+            else SynchronizationScope.BLOCK
+        )
         if (
             self.uses_scratch
             and self.plan.synchronization.storage_reuse_barrier
             not in {
-                SynchronizationScope.BLOCK,
+                expected_scope,
                 SynchronizationScope.NONE,
             }
         ):
             raise ValueError(
-                "block Load/Store requires block-scoped reuse synchronization"
+                "Load/Store scratch reuse must synchronize its group"
             )
         if self.operation.oob_default.kind is BindingKind.STATIC:
             _validate_static_oob_default(
@@ -127,6 +149,24 @@ class _CubLoadStoreRequest:
         return self.plan.participation.exact_block_dim
 
     @property
+    def is_warp(self):
+        return self.plan.target is GroupLoweringTarget.CUB_WARP
+
+    @property
+    def group_instances(self):
+        """Count groups whose independent scratch slices share one allocation.
+
+        Flatten all three block dimensions. Each physical warp needs one CUB
+        storage object; a block operation needs only one for the whole block.
+        """
+
+        if not self.is_warp:
+            return 1
+        if self.block_dim is None:
+            raise ValueError("Warp Load/Store requires exact block dimensions")
+        return math.prod(self.block_dim) // self.plan.resolved_group.static_size
+
+    @property
     def uses_scratch(self):
         return self.plan.temp_storage.ownership is not StorageOwnership.NONE
 
@@ -140,7 +180,13 @@ class _CubLoadStoreRequest:
 
     @property
     def scratch_requirement_key(self):
-        return ("cub_load_store_layout", self.implementation.semantic_key)
+        """Distinguish the CUB layout and the number of copies to allocate."""
+
+        return (
+            "cub_load_store_layout",
+            self.implementation.semantic_key,
+            self.group_instances,
+        )
 
     @property
     def semantic_key(self):
@@ -176,9 +222,10 @@ def _render_cub_load_store(request):
     adds a final result pointer. Static controls have no ABI argument.
 
     Check scratch size and alignment, then convert its address for CUB. Guard
-    runtime counts and negative offsets before the call, then synchronize
-    after it when requested. Load copies every item slot to its result buffer;
-    slots beyond ``valid_items`` stay unspecified unless a default is supplied.
+    runtime counts and offset bounds before the call. For physical warps, add
+    the warp's tile origin and select its scratch slice. Synchronize the group
+    after the call when requested. Load copies every item slot to its result
+    buffer; slots beyond ``valid_items`` stay unspecified without a default.
     """
 
     request.__post_init__()
@@ -213,6 +260,20 @@ def _render_cub_load_store(request):
         f"void {request.symbol_name}({', '.join(params)}) {{",
         f"  using implementation_type = {request.cpp_type};",
     ]
+    if request.is_warp:
+        # CUDA linearizes x first. The same group index selects both the
+        # warp's tile in the memory operand and its own shared-scratch slice.
+        bx, by, _ = request.block_dim
+        width = request.plan.resolved_group.static_size
+        lines.extend(
+            [
+                (
+                    f"  unsigned int linear_tid = threadIdx.x + {bx}u * "
+                    f"(threadIdx.y + {by}u * threadIdx.z);"
+                ),
+                f"  unsigned int group_index = linear_tid / {width}u;",
+            ]
+        )
     storage = ""
     if request.uses_scratch:
         lines.extend(
@@ -221,7 +282,10 @@ def _render_cub_load_store(request):
                     "  using storage_type = typename "
                     "implementation_type::TempStorage;"
                 ),
-                "  if (temp_storage_bytes < sizeof(storage_type) ||",
+                (
+                    f"  if (temp_storage_bytes < {request.group_instances}u "
+                    "* sizeof(storage_type) ||"
+                ),
                 (
                     "      (temp_storage_smem_addr & "
                     "(alignof(storage_type) - 1)) != 0) {"
@@ -236,7 +300,8 @@ def _render_cub_load_store(request):
                 ),
                 (
                     "  auto& storage = "
-                    "*reinterpret_cast<storage_type*>(generic_addr);"
+                    "reinterpret_cast<storage_type*>(generic_addr)"
+                    f"[{'group_index' if request.is_warp else '0'}];"
                 ),
             ]
         )
@@ -250,11 +315,29 @@ def _render_cub_load_store(request):
             'asm volatile("trap;"); }'
         )
     if operation.offset.kind is BindingKind.RUNTIME:
-        lines.append('  if (offset < 0) { asm volatile("trap;"); }')
+        # The upper bound leaves room for every automatically added warp tile.
+        condition = next(
+            item
+            for item in request.plan.participation.argument_preconditions
+            if item.name == "offset"
+        )
+        lines.append(
+            f"  if (offset < {condition.minimum}ll || "
+            f"offset > {condition.maximum}ll) {{ "
+            'asm volatile("trap;"); }'
+        )
     offset = _binding_expr(request, operation.offset, runtime_name="offset")
     lines.append(
         f"  auto* tile_ptr = base{'' if offset is None else ' + ' + offset};"
     )
+    if request.is_warp:
+        tile_items = (
+            request.plan.resolved_group.static_size * operation.items_per_thread
+        )
+        lines.append(
+            "  tile_ptr += static_cast<long long>(group_index) * "
+            f"{tile_items}ll;"
+        )
     initial = (
         ""
         if is_load
@@ -287,7 +370,10 @@ def _render_cub_load_store(request):
             for i in range(operation.items_per_thread)
         )
     if request.uses_scratch:
-        lines.append("  if (temp_storage_auto_sync != 0) { __syncthreads(); }")
+        barrier = (
+            "__syncwarp(0xffffffffu)" if request.is_warp else "__syncthreads()"
+        )
+        lines.append(f"  if (temp_storage_auto_sync != 0) {{ {barrier}; }}")
     return [*lines, "}"]
 
 
@@ -468,10 +554,12 @@ def provider_store(
 
     Resolve one dtype for all items and require the destination to match it.
     Check pointer and static-capacity constraints before registration. The
-    wrapper receives input items as scalars and collects them in its C++
-    array, preserving the caller's payload values. Registration records
-    scratch use for finalization; a failure restores session bookkeeping
-    without undoing emitted IR.
+    wrapper receives input items as scalars and copies them into its C++
+    array, so this implementation leaves the caller's payload unchanged. The
+    public contract still does not promise that after a transpose Store.
+
+    Registration records scratch use for finalization; a failure restores
+    session bookkeeping without undoing emitted IR.
 
     Parameters
     ----------
@@ -996,8 +1084,8 @@ def _required_static_elements(request: _CubLoadStoreRequest) -> int | None:
     """Compute the operand prefix needed when count and offset are static.
 
     A runtime control leaves the bound unknown. Account for group tile origins
-    when the plan describes multiple warp instances; current request
-    validation permits only block plans.
+    when the plan describes multiple physical warps. The common operand must
+    have space through the last group's selected prefix.
     """
 
     operation = request.operation
@@ -1064,13 +1152,18 @@ def _scratch_arguments(request, temp_storage):
 
 
 def _scratch_layout_probe(request):
-    """Query the CUB TempStorage type when the request needs scratch."""
+    """Ask C++ for the layout of all independent group storage objects.
+
+    Probe the array type so its size includes every group and any C++ layout
+    requirements. The deferred allocator reserves one region; the generated
+    wrapper selects the calling group's element (element 0 for a block).
+    """
 
     if not request.uses_scratch:
         return None
     return _rendering.make_scratch_layout_probe(
         request.scratch_requirement_key,
-        f"typename {request.cpp_type}::TempStorage",
+        f"typename {request.cpp_type}::TempStorage[{request.group_instances}]",
     )
 
 
@@ -1081,11 +1174,15 @@ _rendering.register_bundle_renderer(
     include_lines=(
         "#include <cub/block/block_load.cuh>",
         "#include <cub/block/block_store.cuh>",
+        "#include <cub/warp/warp_load.cuh>",
+        "#include <cub/warp/warp_store.cuh>",
         "#include <cuda/std/cstdint>",
     ),
     cccl_headers=(
         ("cub/block/block_load.cuh", "cub/block/block_load.cuh"),
         ("cub/block/block_store.cuh", "cub/block/block_store.cuh"),
+        ("cub/warp/warp_load.cuh", "cub/warp/warp_load.cuh"),
+        ("cub/warp/warp_store.cuh", "cub/warp/warp_store.cuh"),
     ),
 )
 

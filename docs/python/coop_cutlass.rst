@@ -330,9 +330,10 @@ insert trailing reuse synchronization after each storage-using call. Without
 an explicit descriptor, the compiler manages scratch and its reuse
 synchronization automatically.
 
-The following example transforms eight independent tiles. It uses a shared
-descriptor with ``auto_sync=True`` by default. Its options select exclusive
-slices or manual ``storage.sync()`` calls.
+By default, the following example transforms eight independent tiles with
+``sharing="shared"`` and ``auto_sync=True``. The ``sharing`` option selects
+shared or exclusive slices. The ``manual_sync`` option replaces automatic
+synchronization with ``storage.sync()`` calls.
 :download:`Download the storage example
 <../../python/cuda_coop/examples/cutlass/block_storage.py>`:
 
@@ -340,6 +341,44 @@ slices or manual ``storage.sync()`` calls.
    :language: python
    :start-after: docs: start cutlass-block-storage
    :end-before: docs: end cutlass-block-storage
+
+Physical Warp Load and Store
+----------------------------
+
+``this_warp()`` selects the calling thread's complete 32-lane warp. The block
+size must be divisible by 32, and all lanes in each participating warp must
+call the primitive with uniform controls. Different warps may use different
+``valid_items``, ``oob_default``, and ``offset`` values.
+
+The four warp algorithms use the same layouts as their block counterparts:
+``direct`` and ``vectorize`` use blocked layout without scratch, ``striped``
+uses striped layout without scratch, and ``transpose`` uses blocked layout
+with independent scratch for each warp. Transpose scratch is allocated
+implicitly, with automatic warp synchronization for reuse. Explicit
+``temp_storage`` is rejected for every warp algorithm.
+
+Each warp addresses a consecutive tile within the block. For ``I`` items per
+thread and linear thread rank ``t``, the compiler adds
+``(t // 32) * 32 * I`` to the user-provided ``offset``. The linear rank flattens
+the exact block dimensions in CUDA order: ``x + block_x * (y + block_y * z)``.
+Do not add the within-block warp origin yourself. An offset for a different
+block or a later loop iteration remains the caller's responsibility.
+
+``valid_items`` counts the valid prefix of each warp's tile, from zero through
+``32 * I``. As with Block Load, payload items outside that prefix are
+unspecified unless ``oob_default`` is supplied, even if initialized before
+Load. Store writes only the valid prefix and may rearrange its input payload
+when using a transpose algorithm.
+
+This example uses two physical warps in an ``(8, 4, 2)`` block and checks the
+independent partial tiles against a CPU reference.
+:download:`Download the Warp example
+<../../python/cuda_coop/examples/cutlass/warp_load_store.py>`:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/warp_load_store.py
+   :language: python
+   :start-after: docs: start cutlass-warp-load-store
+   :end-before: docs: end cutlass-warp-load-store
 
 .. _coop-cutlass-register-payloads:
 
