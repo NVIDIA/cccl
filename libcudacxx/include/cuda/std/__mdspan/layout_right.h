@@ -184,15 +184,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
   {
-    index_type __size = 1; // NOLINT(misc-const-correctness)
-    if constexpr (extents_type::rank() > 0) // MSVC raises a warning even with __r != extents_type::rank()
-    {
-      for (size_t __r = 0; __r < extents_type::rank(); __r++)
-      {
-        __size *= extents().extent(__r);
-      }
-    }
-    return __size;
+    return ::cuda::std::__mdspan_detail::__extents_product<index_type>(extents()).value;
   }
 
   template <size_t... _Pos, class... _Indices>
@@ -216,9 +208,9 @@ public:
     // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
     // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
                  "layout_right::mapping: out of bounds indexing");
-    return __op_index(make_index_sequence<sizeof...(_Indices)>(), __idx...);
+    return __op_index(make_index_sequence<sizeof...(_Indices)>{}, __idx...);
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
@@ -254,12 +246,7 @@ public:
     // While it would be caught by extents itself too, using a too large __r
     // is functionally an out of bounds access on the stored information needed to compute strides
     _CCCL_ASSERT(__r < extents_type::rank(), "layout_right::mapping::stride(): invalid rank index");
-    index_type __s = 1;
-    for (rank_type __i = extents_type::rank() - 1; __i > __r; __i--)
-    {
-      __s *= extents().extent(__i);
-    }
-    return __s;
+    return ::cuda::std::__mdspan_detail::__extents_product_value<index_type>(extents(), __r + 1, extents_type::rank());
   }
 
   template <class _OtherExtents, class _Extents2 = _Extents>

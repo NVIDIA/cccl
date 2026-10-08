@@ -136,7 +136,7 @@ public:
     // layout_left::mapping<dextents<char, 1>> map(
     //           layout_right::mapping<dextents<unsigned, 1>>(dextents<unsigned, 1>(200))); map.extents().extent(0) ==
     //           -56
-    _CCCL_ASSERT(__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
                  "layout_left::mapping converting ctor: other.required_span_size() must be representable as "
                  "index_type.");
   }
@@ -184,15 +184,7 @@ public:
 
   [[nodiscard]] _CCCL_API constexpr index_type required_span_size() const noexcept
   {
-    index_type __size = 1;
-    if constexpr (extents_type::rank() != 0)
-    {
-      for (size_t __r = 0; __r != extents_type::rank(); __r++)
-      {
-        __size *= extents().extent(__r);
-      }
-    }
-    return __size;
+    return ::cuda::std::__mdspan_detail::__extents_product<index_type>(extents()).value;
   }
 
   template <size_t... _Pos>
@@ -219,11 +211,11 @@ public:
     // return a value exceeding required_span_size(), which is used to know how large an allocation one needs
     // Thus, this is a canonical point in multi-dimensional data structures to make invalid element access checks
     // However, mdspan does check this on its own, so for now we avoid double checking in hardened mode
-    _CCCL_ASSERT(__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_multidimensional_index_in(extents(), __idx...),
                  "layout_left::mapping: out of bounds indexing");
 
     const array<index_type, extents_type::rank()> __idx_a{static_cast<index_type>(__idx)...};
-    return __op_index(__idx_a, make_index_sequence<sizeof...(_Indices)>());
+    return __op_index(__idx_a, make_index_sequence<sizeof...(_Indices)>{});
   }
 
   [[nodiscard]] _CCCL_API static constexpr bool is_always_unique() noexcept
@@ -259,12 +251,7 @@ public:
     // While it would be caught by extents itself too, using a too large __r
     // is functionally an out of bounds access on the stored information needed to compute strides
     _CCCL_ASSERT(__r < extents_type::rank(), "layout_left::mapping::stride(): invalid rank index");
-    index_type __s = 1;
-    for (rank_type __i = 0; __i < __r; __i++)
-    {
-      __s *= extents().extent(__i);
-    }
-    return __s;
+    return ::cuda::std::__mdspan_detail::__extents_product_value<index_type>(extents(), 0, __r);
   }
 
   template <class _OtherExtents, class _Extents2 = _Extents>

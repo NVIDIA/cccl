@@ -29,6 +29,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/mdspan>
 
 #include "../ConvertibleToIntegral.h"
@@ -47,14 +48,25 @@ TEST_FUNC constexpr void test_construction(E e, S s)
 
   // check required_span_size()
   typename E::index_type expected_size = 1;
+  bool is_empty                        = false;
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
     if (e.extent(r) == 0)
     {
-      expected_size = 0;
+      is_empty = true;
       break;
     }
-    expected_size += (e.extent(r) - 1) * static_cast<typename E::index_type>(s[r]);
+  }
+  if (is_empty)
+  {
+    expected_size = 0;
+  }
+  else
+  {
+    for (typename E::rank_type r = 0; r < E::rank(); r++)
+    {
+      expected_size += (e.extent(r) - 1) * static_cast<typename E::index_type>(s[r]);
+    }
   }
   assert(m.required_span_size() == expected_size);
 
@@ -135,6 +147,15 @@ TEST_FUNC constexpr bool test()
     test_construction(cuda::std::extents<int64_t, D, D, D, D>(7, 1, 0, 9), cuda::std::span<int, 4>(s));
     test_construction(cuda::std::extents<int64_t, D, D, D, D>(7, 0, 1, 9), cuda::std::span<int, 4>(s));
   }
+  {
+    cuda::std::array<int, 2> s{3, 10};
+    test_construction(cuda::std::extents<int, 4, 0>(), cuda::std::span<int, 2>(s));
+    test_construction(cuda::std::extents<int, D, D>(4, 0), cuda::std::span<int, 2>(s));
+  }
+  {
+    cuda::std::array<int, 2> s{cuda::std::numeric_limits<int>::max(), 1};
+    test_construction(cuda::std::extents<int, D, D>(3, 0), cuda::std::span<int, 2>(s));
+  }
 
   {
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned, 2>>;
@@ -150,7 +171,11 @@ TEST_FUNC constexpr bool test()
   {
     // not no-throw constructible index_type from stride
     using mapping_t = cuda::std::layout_stride::mapping<cuda::std::dextents<unsigned char, 2>>;
+    using extents_t = cuda::std::dextents<unsigned char, 2>;
     static_assert(cuda::std::is_convertible<IntType, unsigned char>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<unsigned char, IntType>::value);
+    static_assert(cuda::std::is_constructible<mapping_t, extents_t, cuda::std::span<IntType, 2>>::value);
+    static_assert(!cuda::std::is_nothrow_constructible<mapping_t, extents_t, cuda::std::span<IntType, 2>>::value);
     static_assert(
       !cuda::std::is_constructible<mapping_t, cuda::std::dextents<int, 2>, cuda::std::span<IntType, 2>>::value);
   }
