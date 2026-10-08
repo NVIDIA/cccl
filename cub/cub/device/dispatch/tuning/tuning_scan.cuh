@@ -1118,7 +1118,7 @@ struct policy_selector
         // error in ptxas, see also: https://github.com/NVIDIA/cccl/issues/7700 and
         // https://github.com/NVIDIA/cccl/issues/9208. This probably degrades performance a lot. We should revert this
         // once nvhpc can properly inline a function again.
-        lookahead_policy_opt->reduce_and_scan_warps = 2;
+        // lookahead_policy_opt->reduce_and_scan_warps = 2;
 #endif // _CCCL_COMPILER(NVHPC)
 
         return {ScanAlgorithm::lookahead, ScanLookbackPolicy{}, *lookahead_policy_opt};
