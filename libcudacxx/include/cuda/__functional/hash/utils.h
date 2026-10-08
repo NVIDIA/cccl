@@ -44,20 +44,37 @@ template <typename _Tp, typename _Extent>
 
   const auto __ptr = __bytes + __index * sizeof(_Tp);
 
-  if (::cuda::is_aligned(__ptr, alignof(_Tp)))
+  _Tp __chunk;
+#if (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
+  // NVCC and NVRTC can propagate guarded alignment assumptions to the unaligned path,
+  // causing misaligned device loads. Plain memcpy avoids these alignment assumptions.
+  // TODO: Revert to the alignment-aware loader below once nvbug 6898681 is resolved.
+  // https://nvbugspro.nvidia.com/bug/6898681
+  ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
+#else // use the optimized loader on other compilation paths
+  if constexpr (alignof(_Tp) == 8)
   {
-    _Tp __chunk;
-    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<alignof(_Tp)>(__ptr), sizeof(_Tp));
-    return __chunk;
+    if (::cuda::is_aligned(__ptr, 8))
+    {
+      ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<8>(__ptr), sizeof(_Tp));
+      return __chunk;
+    }
   }
 
-  // Keep the unaligned path separate so alignment assumptions cannot be propagated to its loads.
-  ::cuda::std::array<::cuda::std::byte, sizeof(_Tp)> __bytes_copy;
-  for (::cuda::std::size_t __i = 0; __i < sizeof(_Tp); ++__i)
+  if (::cuda::is_aligned(__ptr, 4))
   {
-    __bytes_copy[__i] = __ptr[__i];
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<4>(__ptr), sizeof(_Tp));
   }
-  return ::cuda::std::bit_cast<_Tp>(__bytes_copy);
+  else if (::cuda::is_aligned(__ptr, 2))
+  {
+    ::cuda::std::memcpy(&__chunk, ::cuda::std::assume_aligned<2>(__ptr), sizeof(_Tp));
+  }
+  else
+  {
+    ::cuda::std::memcpy(&__chunk, __ptr, sizeof(_Tp));
+  }
+#endif // (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVRTC)) && _CCCL_DEVICE_COMPILATION()
+  return __chunk;
 }
 
 //! @brief Type erased holder of all the bytes
