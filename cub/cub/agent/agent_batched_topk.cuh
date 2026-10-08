@@ -107,9 +107,7 @@ struct agent_batched_topk_worker_per_segment
   using block_load_keys_t = BlockLoad<key_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
   using block_load_vals_t = BlockLoad<value_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
 
-  static constexpr int radix_bits =
-    active_policy.radix_bits > 0 ? active_policy.radix_bits : block_topk_default_radix_bits;
-  using block_topk_t = block_topk<key_t, threads_per_block, items_per_thread, value_t, radix_bits>;
+  using block_topk_t = block_topk<key_t, threads_per_block, items_per_thread, value_t>;
 
   // TODO (elstehle): Specialize for the case that we statically know k and we can skip passing num_valid_items to
   // Store()

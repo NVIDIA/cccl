@@ -69,13 +69,12 @@ struct worker_policy
   BlockStoreAlgorithm store_algorithm; //!< Block store algorithm used to write the selected keys.
 
   epilogue_policy epilogue; //!< Sub-policy for the compaction epilogue.
-  int radix_bits; //!< Digit width of the block top-k radix passes (0, the omitted default: the block primitive's).
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const worker_policy& lhs, const worker_policy& rhs)
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.store_algorithm == rhs.store_algorithm
-        && lhs.epilogue == rhs.epilogue && lhs.radix_bits == rhs.radix_bits;
+        && lhs.epilogue == rhs.epilogue;
   }
 
   _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const worker_policy& lhs, const worker_policy& rhs)
@@ -86,11 +85,9 @@ struct worker_policy
 #if _CCCL_HOSTED()
   friend ::std::ostream& operator<<(::std::ostream& os, const worker_policy& p)
   {
-    return os
-        << "worker_policy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue
-        << ", .radix_bits = " << p.radix_bits << " }";
+    return os << "worker_policy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+              << ", .store_algorithm = " << p.store_algorithm << ", .epilogue = " << p.epilogue << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -192,18 +189,18 @@ struct baseline_topk_policy
   constexpr auto epilogue  = epilogue_policy{16, load_alg, store_alg, scan_alg};
   return baseline_topk_policy{
     {
-      worker_policy{256, 64, load_alg, store_alg, epilogue, 0},
-      worker_policy{256, 32, load_alg, store_alg, epilogue, 0},
-      worker_policy{256, 16, load_alg, store_alg, epilogue, 0},
-      worker_policy{256, 8, load_alg, store_alg, epilogue, 0},
-      worker_policy{256, 4, load_alg, store_alg, epilogue, 0},
-      worker_policy{128, 2, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 64, load_alg, store_alg, epilogue},
+      worker_policy{256, 32, load_alg, store_alg, epilogue},
+      worker_policy{256, 16, load_alg, store_alg, epilogue},
+      worker_policy{256, 8, load_alg, store_alg, epilogue},
+      worker_policy{256, 4, load_alg, store_alg, epilogue},
+      worker_policy{128, 2, load_alg, store_alg, epilogue},
     },
     multi_worker_policy{256, 64}};
 }
 
-//! SM 12.0 baseline sub-policy, measured on RTX 5090: same tile size classes as the default, so the backend coverage
-//! is unchanged.
+//! SM 12.0 baseline sub-policy, measured on RTX 5090: the default worker shapes with vectorized loads and direct
+//! stores, so the backend coverage is unchanged.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto make_sm120_baseline_policy() -> baseline_topk_policy
 {
   constexpr auto load_alg  = BLOCK_LOAD_VECTORIZE;
@@ -212,12 +209,12 @@ struct baseline_topk_policy
     epilogue_policy{16, BLOCK_LOAD_WARP_TRANSPOSE, BLOCK_STORE_WARP_TRANSPOSE, BLOCK_SCAN_WARP_SCANS};
   return baseline_topk_policy{
     {
-      worker_policy{256, 64, load_alg, store_alg, epilogue, 0},
-      worker_policy{256, 32, load_alg, store_alg, epilogue, 0},
-      worker_policy{256, 16, load_alg, store_alg, epilogue, 0},
-      worker_policy{128, 16, load_alg, store_alg, epilogue, 0},
-      worker_policy{64, 16, load_alg, store_alg, epilogue, 6},
-      worker_policy{128, 2, load_alg, store_alg, epilogue, 0},
+      worker_policy{256, 64, load_alg, store_alg, epilogue},
+      worker_policy{256, 32, load_alg, store_alg, epilogue},
+      worker_policy{256, 16, load_alg, store_alg, epilogue},
+      worker_policy{256, 8, load_alg, store_alg, epilogue},
+      worker_policy{256, 4, load_alg, store_alg, epilogue},
+      worker_policy{128, 2, load_alg, store_alg, epilogue},
     },
     multi_worker_policy{256, 64}};
 }

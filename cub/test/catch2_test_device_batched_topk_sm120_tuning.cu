@@ -196,16 +196,15 @@ CUB_TEST("DeviceBatchedTopK selector routes keys-only non-deterministic requests
   STATIC_REQUIRE(r16k_t::policy(cc_120).backend == bt::topk_algorithm::cluster);
   STATIC_REQUIRE(r16k1_t::policy(cc_120).backend == bt::topk_algorithm::cluster);
 
-  // The baseline kernel picks the SM 12.0 workers: 1K keys run the 64x16 worker with 6-bit digits, 2K the 128x16
-  // worker.
+  // The baseline kernel picks the SM 12.0 workers: 1K keys run the 256x4 worker, 2K the 256x8 worker.
   constexpr auto sm120_workers = bt::make_sm120_baseline_policy().worker_per_segment_policies;
   STATIC_REQUIRE(r1k_t::baseline_worker_index<12, 0> == 4);
-  STATIC_REQUIRE(sm120_workers[4].threads_per_block == 64);
-  STATIC_REQUIRE(sm120_workers[4].items_per_thread == 16);
-  STATIC_REQUIRE(sm120_workers[4].radix_bits == 6);
+  STATIC_REQUIRE(sm120_workers[4].threads_per_block == 256);
+  STATIC_REQUIRE(sm120_workers[4].items_per_thread == 4);
+  STATIC_REQUIRE(sm120_workers[4].load_algorithm == cub::BLOCK_LOAD_VECTORIZE);
   STATIC_REQUIRE(r2k_t::baseline_worker_index<12, 0> == 3);
-  STATIC_REQUIRE(sm120_workers[3].threads_per_block == 128);
-  STATIC_REQUIRE(sm120_workers[3].items_per_thread == 16);
+  STATIC_REQUIRE(sm120_workers[3].threads_per_block == 256);
+  STATIC_REQUIRE(sm120_workers[3].items_per_thread == 8);
 
   // The gate is independent of the key type.
   STATIC_REQUIRE(uses_sm120_keys_tables<request<cuda::std::uint8_t, cub::NullType, 16 * 1024, 8 * 1024>>(
@@ -229,12 +228,11 @@ sm120_cluster_is(bool wave_aware, int chunk_bytes, int single_block_max_seg_size
 }
 
 [[nodiscard]] constexpr bool
-sm120_worker_is(const bt::worker_policy& worker, int threads_per_block, int items_per_thread, int radix_bits)
+sm120_worker_is(const bt::worker_policy& worker, int threads_per_block, int items_per_thread)
 {
   return worker.threads_per_block == threads_per_block && worker.items_per_thread == items_per_thread
-      && worker.radix_bits == radix_bits && worker.load_algorithm == cub::BLOCK_LOAD_VECTORIZE
-      && worker.store_algorithm == cub::BLOCK_STORE_DIRECT && worker.epilogue.items_per_thread == 16
-      && worker.epilogue.load_algorithm == cub::BLOCK_LOAD_WARP_TRANSPOSE
+      && worker.load_algorithm == cub::BLOCK_LOAD_VECTORIZE && worker.store_algorithm == cub::BLOCK_STORE_DIRECT
+      && worker.epilogue.items_per_thread == 16 && worker.epilogue.load_algorithm == cub::BLOCK_LOAD_WARP_TRANSPOSE
       && worker.epilogue.store_algorithm == cub::BLOCK_STORE_WARP_TRANSPOSE
       && worker.epilogue.scan_algorithm == cub::BLOCK_SCAN_WARP_SCANS;
 }
@@ -243,15 +241,15 @@ CUB_TEST("DeviceBatchedTopK SM 12.0 keys-only tables select the measured values"
          "[keys][segmented][topk][device][tuning]",
          CUB_SMALL)
 {
-  // Baseline: every worker's geometry and digit width, and the shared load/store/epilogue choices.
+  // Baseline: every worker's geometry, and the shared load/store/epilogue choices.
   constexpr auto baseline = request<float, cub::NullType, 1024, 512>::policy(cc_120).baseline;
   STATIC_REQUIRE(baseline.worker_per_segment_policies.size() == 6);
-  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[0], 256, 64, 0));
-  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[1], 256, 32, 0));
-  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[2], 256, 16, 0));
-  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[3], 128, 16, 0));
-  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[4], 64, 16, 6));
-  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[5], 128, 2, 0));
+  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[0], 256, 64));
+  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[1], 256, 32));
+  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[2], 256, 16));
+  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[3], 256, 8));
+  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[4], 256, 4));
+  STATIC_REQUIRE(sm120_worker_is(baseline.worker_per_segment_policies[5], 128, 2));
   STATIC_REQUIRE(baseline.multi_worker_per_segment_policy.threads_per_block == 256);
   STATIC_REQUIRE(baseline.multi_worker_per_segment_policy.items_per_thread == 64);
 
@@ -331,8 +329,7 @@ CUB_TEST("DeviceBatchedTopK selector applies the SM 12.0 tables only to compute 
   STATIC_REQUIRE(uses_default_tables<r1k_t>(cc_100));
 
   STATIC_REQUIRE(r1k_t::baseline_worker_index<12, 1> == r1k_t::baseline_worker_index<9, 0>);
-  STATIC_REQUIRE(
-    r1k_t::policy(cc_121).baseline.worker_per_segment_policies[r1k_t::baseline_worker_index<12, 1>].radix_bits == 0);
+  STATIC_REQUIRE(r1k_t::policy(cc_121).baseline == bt::make_baseline_policy());
 }
 
 CUB_TEST("DeviceBatchedTopK resolves to the SM 12.0 tables on an SM 12.0 device",
@@ -409,7 +406,7 @@ using key_type = cuda::std::uint32_t;
 using key_type = double;
 #endif
 
-// Static segment-size bounds covering the SM 12.0 baseline workers (1K: 64x16 with 6-bit digits, 2K: 128x16), the
+// Static segment-size bounds covering the SM 12.0 baseline workers (1K: 256x4, 2K: 256x8), the
 // cluster backend with the default cluster policy (8K), and the SM 12.0 cluster table's classes (16K, >16K).
 using max_segment_size_list = c2h::enum_type_list<size_t64, 1024, 2048, 8 * 1024, 16 * 1024, 16 * 1024 + 1>;
 
