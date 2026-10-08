@@ -28,13 +28,14 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -807,10 +808,8 @@ struct BinaryOpHasIdxParam : ::cuda::std::false_type
 {};
 
 template <typename T, typename BinaryOp>
-struct BinaryOpHasIdxParam<T,
-                           BinaryOp,
-                           ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
-                             ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
+struct BinaryOpHasIdxParam<T, BinaryOp, ::cuda::std::enable_if_t<::cuda::std::__is_callable_v<BinaryOp, T, T, int>>>
+    : ::cuda::std::true_type
 {};
 
 /******************************************************************************
