@@ -44,11 +44,23 @@ using is_arithmetic = ::cuda::std::bool_constant<is_arithmetic_v<_Tp>>;
 #if _CCCL_HAS_NVFP16() && defined(__CUDA_NO_HALF_OPERATORS__)
 template <>
 inline constexpr bool is_arithmetic_v<__half> = false;
+template <>
+inline constexpr bool is_arithmetic_v<const __half> = false;
+template <>
+inline constexpr bool is_arithmetic_v<volatile __half> = false;
+template <>
+inline constexpr bool is_arithmetic_v<const volatile __half> = false;
 #endif // _CCCL_HAS_NVFP16
 
 #if _CCCL_HAS_NVBF16() && defined(__CUDA_NO_BFLOAT16_OPERATORS__)
 template <>
 inline constexpr bool is_arithmetic_v<__nv_bfloat16> = false;
+template <>
+inline constexpr bool is_arithmetic_v<const __nv_bfloat16> = false;
+template <>
+inline constexpr bool is_arithmetic_v<volatile __nv_bfloat16> = false;
+template <>
+inline constexpr bool is_arithmetic_v<const volatile __nv_bfloat16> = false;
 #endif // _CCCL_HAS_NVBF16
 
 _CCCL_END_NAMESPACE_CUDA
