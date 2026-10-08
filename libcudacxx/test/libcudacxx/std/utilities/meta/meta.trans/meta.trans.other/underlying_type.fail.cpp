@@ -5,8 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-, C++ 14,
-  c++ 17
+// C++ 14, C++ 17
 // type_traits
 
 // underlying_type
@@ -17,7 +16,7 @@
 
 #include "test_macros.h"
 
-  enum E1
+enum E1
 {
   E1Zero,
   E1One,
