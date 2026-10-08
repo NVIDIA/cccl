@@ -39,8 +39,7 @@ namespace cuda_cub
 namespace detail
 {
 // Named forwarders to the cub::detail::DeviceSetOps APIs. They carry _CCCL_EXEC_CHECK_DISABLE, which the generic
-// lambdas below cannot: the cub APIs are __host__-only without CDP but are reached from the __host__ __device__
-// set_operations helper.
+// lambdas below cannot.
 #  define THRUST_DETAIL_DEFINE_CUB_SET_OP_FORWARDER(NAME, CUB_FN)             \
     _CCCL_EXEC_CHECK_DISABLE                                                  \
     template <typename... Args>                                               \
