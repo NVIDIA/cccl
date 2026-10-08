@@ -108,7 +108,12 @@ struct RadixEncoder<float>
 {
   _CCCL_HOST_DEVICE std::uint32_t operator()(float x) const
   {
-    const auto bits    = ::cuda::std::bit_cast<std::uint32_t>(x);
+    auto bits = ::cuda::std::bit_cast<std::uint32_t>(x);
+    // -0.0 and +0.0 compare equal, so they need the same bucket for the sort to stay stable
+    if (bits == (static_cast<std::uint32_t>(1) << 31))
+    {
+      bits = 0;
+    }
     std::uint32_t mask = -static_cast<std::int32_t>(bits >> 31) | (static_cast<std::uint32_t>(1) << 31);
     return bits ^ mask;
   }
@@ -119,7 +124,12 @@ struct RadixEncoder<double>
 {
   _CCCL_HOST_DEVICE std::uint64_t operator()(double x) const
   {
-    const auto bits    = ::cuda::std::bit_cast<std::uint64_t>(x);
+    auto bits = ::cuda::std::bit_cast<std::uint64_t>(x);
+    // -0.0 and +0.0 compare equal, so they need the same bucket for the sort to stay stable
+    if (bits == (static_cast<std::uint64_t>(1) << 63))
+    {
+      bits = 0;
+    }
     std::uint64_t mask = -static_cast<std::int64_t>(bits >> 63) | (static_cast<std::uint64_t>(1) << 63);
     return bits ^ mask;
   }
