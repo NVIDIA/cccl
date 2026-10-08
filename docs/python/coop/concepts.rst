@@ -113,15 +113,16 @@ Groups and thread data
 :func:`cuda.coop.this_block` describes the current CUDA thread block, and
 :func:`cuda.coop.this_warp` describes the current 32-thread physical warp. A
 physical warp can be partitioned with ``this_warp().group_by(width)`` into
-consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load and Store
-support all three forms. The enclosing block must contain a multiple of 32
-threads, with no incomplete final physical warp. For a multidimensional block,
-threads are linearized in x-major order. Every member of a participating group
-must reach its collective; complete sibling logical groups may take different
-control-flow paths.
+consecutive logical warps of 1, 2, 4, 8, 16, or 32 threads. Load, Store, and
+Exchange support all three forms; Shuffle is block-only. Warp operations
+require an enclosing block with a multiple of 32 threads and no incomplete
+final physical warp. For a multidimensional block, threads are linearized
+in x-major order. Every member of a participating group must reach its
+collective; complete sibling logical groups may take different control-flow
+paths.
 
 The common group vocabulary also includes thread, cluster, grid, and mapped
-groups of physical warps, but those are not Load or Store targets.
+groups of physical warps, but those are not targets for these operations.
 ``ThreadGroup`` objects are descriptor-only in this release. ``group_by`` is
 compile-time vocabulary for describing a static partition. Runtime query,
 membership, and synchronization methods such as ``rank``, ``count``,
@@ -135,8 +136,7 @@ Participation and synchronization
 Every member of a participating group must reach the same cooperative call.
 A branch around a block operation must be uniform across the block; a branch
 around a logical-warp operation must be uniform within that logical warp.
-Complete sibling logical groups may follow different paths. Warp operations
-require a block size divisible by 32, with no incomplete final physical warp.
+Complete sibling logical groups may follow different paths.
 
 Do not put a block Load or Store inside a per-element ``if index < count``
 condition. Use ``valid_items`` to describe the valid prefix while all block
@@ -301,6 +301,71 @@ CUB's behavior. Reload or reinitialize the payload before using its previous
 arrangement again.
 
 
+Exchange semantics
+------------------
+
+The common signature is:
+
+.. code-block:: python
+
+   exchange(group, value, /, *, mode="striped_to_blocked") -> ThreadData
+
+``value`` must be a fixed-size ``ThreadData`` payload. The result is a fresh
+payload with the same dtype and extent; Exchange does not modify ``value``.
+Block, physical Warp, and logical Warp groups support
+``striped_to_blocked`` and ``blocked_to_striped``. In blocked order, thread
+``t`` owns consecutive tile indices beginning at
+``t * items_per_thread``. In striped order, its item ``i`` has tile index
+``t + i * group_size``.
+
+The qualified :func:`cuda.coop.numba_mlir.exchange` entry point also accepts
+local arrays. Block groups additionally support warp-striped conversions,
+scatter-to-blocked, scatter-to-striped, guarded scatter, flagged scatter, and
+warp time slicing. Physical and logical Warp groups retain the two common
+layout modes. Scatter ``ranks`` are relative to the block tile, must have a
+signed integer dtype, and must have the same extent as ``value``.
+``valid_flags`` are required only by flagged scatter, must have a non-boolean
+integer dtype, and must have that same extent.
+
+For unguarded block scatter, every rank must be in
+``[0, group_size * items_per_thread)``. Guarded scatter skips negative ranks,
+but every nonnegative rank must still be in range. Flagged scatter uses only
+ranks whose corresponding flag is nonzero; those active ranks must be in
+range. These runtime bounds and unique active destinations are caller
+preconditions. Holes and duplicate destinations produce unspecified result
+slots. ``warp_time_slicing=True`` reduces BlockExchange storage and is not
+available for Warp groups or guarded and flagged scatter modes.
+
+
+Shuffle semantics
+-----------------
+
+Shuffle is block-only. The common signature is:
+
+.. code-block:: python
+
+   shuffle(group, value, /, *, mode="down", distance=1) -> ThreadData
+
+The common API accepts only ``ThreadData``, ``up`` or ``down``, and the
+fixed distance ``1``. The flattened blocked tile moves by one item. The first
+``up`` result or last ``down`` result is unspecified; all other slots come
+from the adjacent tile position. The returned payload is fresh and ``value``
+is unchanged.
+
+The qualified :func:`cuda.coop.numba_mlir.shuffle` entry point also accepts
+scalar values with ``offset`` or ``rotate`` mode. Offset distance is signed,
+may be negative, and may vary by thread, but it must fit a signed 32-bit
+integer. A static overflow is rejected during compilation; a runtime overflow
+executes a device trap before CUB's parameter is narrowed. Within that range,
+a source rank outside the block leaves that thread's result unspecified.
+Rotate distance may be static or runtime and must satisfy
+``0 < distance < block_threads``. An invalid runtime Rotate distance also
+executes a device trap. A trap invalidates that CUDA context, so validate
+untrusted distances before launching a kernel. Array values remain limited to
+unit ``up`` and ``down``; boundary-output projections are not part of this
+release.
+
+
 Temporary storage
 -----------------
 
@@ -394,8 +459,9 @@ descriptor constructor arguments. Use separate calls with explicit constants,
 or an ordinary loop with one fixed cooperative shape. The restriction does
 not apply to an unrelated ``literal_unroll`` loop.
 
-Warp ``transpose`` uses compiler-owned storage with one disjoint slice per
-physical or logical group. The compiler inserts ``syncwarp`` with the exact
-logical-group mask. Both the common and qualified APIs reject explicit
-``TempStorage`` for every Warp Load and Store algorithm, including the
-storage-free modes.
+Warp ``transpose`` and Warp Exchange use compiler-owned storage with one
+disjoint slice per physical or logical group. The compiler inserts
+``syncwarp`` with the exact logical-group mask. Exchange and Shuffle always
+use compiler-owned storage and append a group-scoped reuse barrier. Both the
+common and qualified APIs reject explicit ``TempStorage`` for every Warp
+Load and Store algorithm, including the storage-free modes.

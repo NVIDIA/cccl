@@ -12,7 +12,7 @@ set -euo pipefail
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$ci_dir/.." && pwd)"
 
-usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime]"
+usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime] [-compute-sanitizer-racecheck]"
 
 # shellcheck source=ci/util/python/common_arg_parser.sh
 source "$ci_dir/util/python/common_arg_parser.sh"
@@ -20,8 +20,13 @@ parse_python_args "$@"
 require_py_version "$usage" || exit 1
 
 stage="contracts"
+racecheck=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -compute-sanitizer-racecheck)
+      racecheck=true
+      shift
+      ;;
     -stage | --stage)
       if [[ $# -lt 2 || -z "$2" ]]; then
         echo "Error: $1 requires a value" >&2
@@ -72,6 +77,20 @@ case "$stage" in
     exit 1
     ;;
 esac
+
+if [[ "$racecheck" == true ]]; then
+  if [[ "$stage" != "numba-mlir-runtime" ]]; then
+    echo "Error: -compute-sanitizer-racecheck requires -stage numba-mlir-runtime" >&2
+    exit 1
+  fi
+  if ! command -v compute-sanitizer >/dev/null 2>&1; then
+    echo "Error: racecheck qualification requires compute-sanitizer on PATH" >&2
+    exit 1
+  fi
+  # Pytest runs these instrumented cases serially, including their negative
+  # controls. A missing sanitizer must fail this lane rather than skip it.
+  export CUDA_COOP_RUN_RACECHECK=1
+fi
 
 if [[ "$stage" == "numba-mlir-compile" ]]; then
   # Hide every device for the complete compiler-contract stage, including
@@ -160,7 +179,7 @@ case "$stage" in
     python -m pyright --warnings --project "$repo_root/python/cuda_coop/tests/typing/pyright-unused.json" \
       --pythonpath "$(command -v python)"
     cd "$tests_root"
-    python -m pytest -v test_*.py packaging/
+    python -m pytest -v test_*.py contracts/ packaging/
     ;;
   numba-mlir-compile)
     python -m pyright --project "$repo_root/python/cuda_coop" \

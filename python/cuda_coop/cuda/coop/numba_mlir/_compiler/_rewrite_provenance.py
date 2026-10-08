@@ -116,6 +116,7 @@ class _ProvenanceRewrite(Rewrite):
         self._temp_storage_ctor_roots: dict[str, str] = {}
         self._temp_storage_ctor_sites: dict[str, set[int]] = {}
         self._thread_data_func_vars: set[str] = set()
+        self._typed_group_payload_func_vars: set[str] = set()
         self._thread_data_specifications: dict[
             str, _ThreadDataSpecification
         ] = {}
@@ -510,6 +511,146 @@ class _ProvenanceRewrite(Rewrite):
         if self._is_common_root_member(call.func, "ThreadData"):
             return True
         return self._resolve_python_value(call.func) is ThreadData
+
+    def _is_typed_group_payload_ctor_call(self, call: ir.Expr) -> bool:
+        """Recognize the planner's exact result-marker callable.
+
+        Resolve aliases to the callable object and reject attribute chains.
+        Matching by identity prevents an unrelated similarly named function
+        from being treated as a compiler-generated allocation marker.
+        """
+
+        chain = self._resolve_attribute_chain(call.func)
+        if chain is None:
+            return False
+        root, attrs = chain
+        if attrs:
+            return False
+        from ._group_planner_support import _typed_group_payload_like
+
+        return root is _typed_group_payload_like
+
+    def _is_typed_group_payload_var(self, value: ir.Var) -> bool:
+        """Look for a result-marker call among reaching definitions.
+
+        This probe distinguishes generated payloads that need complete extent
+        facts from ordinary candidates during provider inference. General
+        alias and shape traversal is handled by the specification resolvers.
+        """
+
+        return any(
+            isinstance(definition, ir.Expr)
+            and definition.op == "call"
+            and self._is_typed_group_payload_ctor_call(definition)
+            for definition in self._lookup_definitions(value)
+        )
+
+    def _extract_typed_group_payload_specification(
+        self, call: ir.Expr, *, seen: set[str] | None = None
+    ) -> _ThreadDataSpecification:
+        """Recover result dtype and extent from a planner-created marker.
+
+        Provider rewriting calls this when it encounters a result marker
+        instead of a real allocation. Here, extent means the number of array
+        elements owned by one thread; those elements need a concrete dtype
+        and count before local-array allocation can be emitted.
+
+        Validate the marker's positional arguments and constant shape/type
+        policy. Inherit dtype from the prototype's array facts or known scalar
+        type. An explicit positive extent takes precedence. Otherwise use
+        the prototype's array extent when the marker's array flag is true,
+        or one item when it is false. Retain any common API provenance
+        supplied by the prototype.
+
+        Return a possibly partial ``_ThreadDataSpecification``. Missing
+        inferred facts can be resolved by later provider inference, but
+        malformed marker arguments or an unknown policy raise
+        ``CoopSinglePhaseRewriteError``. The supplied ``seen`` path guards
+        recursive prototype traversal.
+
+        Parameters
+        ----------
+        call : ir.Expr
+            Call to ``_typed_group_payload_like`` emitted by group
+            planning, after its marker identity has been recognized.
+        seen : set of str or None, optional
+            Variable names already visited while following the
+            prototype. ``None`` starts a fresh traversal; independent
+            recursive branches receive copies.
+        """
+
+        if seen is None:
+            seen = set()
+        if len(call.args) not in {3, 4} or call.kws:
+            raise CoopSinglePhaseRewriteError(
+                "typed group payload marker requires prototype, array-kind, "
+                "dtype-policy, and optional explicit-extent arguments"
+            )
+        prototype, is_array_ref, dtype_policy_ref = call.args[:3]
+        if not isinstance(prototype, ir.Var):
+            raise CoopSinglePhaseRewriteError(
+                "typed group payload prototype must be a variable"
+            )
+        try:
+            is_array = self._infer_constant(is_array_ref)
+            dtype_policy = self._infer_constant(dtype_policy_ref)
+        except _INFERENCE_EXCEPTIONS as exc:
+            raise CoopSinglePhaseRewriteError(
+                "typed group payload shape and dtype policy must be "
+                "compile-time constants"
+            ) from exc
+        if not isinstance(is_array, bool):
+            raise CoopSinglePhaseRewriteError(
+                "typed group payload array-kind must be a compile-time bool"
+            )
+        from ._group_planner_support import _PAYLOAD_DTYPE_LIKE
+
+        if dtype_policy != _PAYLOAD_DTYPE_LIKE:
+            raise CoopSinglePhaseRewriteError(
+                f"unknown typed group payload dtype policy {dtype_policy!r}"
+            )
+        prototype_specification = self._resolve_array_specification_from_var(
+            prototype, seen=set(seen)
+        )
+        if len(call.args) == 4:
+            try:
+                items_per_thread = self._infer_constant(call.args[3])
+            except _INFERENCE_EXCEPTIONS as exc:
+                raise CoopSinglePhaseRewriteError(
+                    "typed group payload explicit extent must be a "
+                    "compile-time positive integer"
+                ) from exc
+            if (
+                isinstance(items_per_thread, bool)
+                or not isinstance(items_per_thread, int)
+                or items_per_thread < 1
+            ):
+                raise CoopSinglePhaseRewriteError(
+                    "typed group payload explicit extent must be a "
+                    "compile-time positive integer"
+                )
+        elif is_array:
+            items_per_thread = (
+                prototype_specification.items_per_thread
+                if prototype_specification is not None
+                else None
+            )
+        else:
+            items_per_thread = 1
+        dtype = (
+            prototype_specification.dtype
+            if prototype_specification is not None
+            else None
+        )
+        if dtype is None:
+            dtype = self._resolve_var_dtype(prototype)
+        return _ThreadDataSpecification(
+            items_per_thread=items_per_thread,
+            dtype=dtype,
+            common_root=prototype_specification.common_root
+            if prototype_specification is not None
+            else False,
+        )
 
     def _extract_thread_data_specification(
         self, call: ir.Expr
@@ -1471,11 +1612,17 @@ class _ProvenanceRewrite(Rewrite):
     def _resolve_array_specification_from_var(
         self, value: ir.Var, seen: set[str]
     ) -> _ThreadDataSpecification | None:
-        """Merge array facts across constructors, aliases, and branches.
+        """Merge array facts from constructors and generated result markers.
 
-        Recognize public payloads and native local or shared arrays. ``seen``
-        stops recursive paths; unknown paths contribute no facts. The result
-        is partial inference, not proof that every path supplies an array.
+        Follow aliases, casts, static tuple items, and phi inputs to
+        ThreadData, local/shared arrays, or result markers. A marker inherits
+        its dtype from its prototype; its extent can be explicit. Unknown or
+        cyclic paths contribute no facts. Conflicting payload facts raise
+        ``CoopSinglePhaseRewriteError``.
+
+        Extend ``seen`` in place and copy it for independent branches. Return
+        merged facts or ``None``; this is partial shape/type inference, not
+        proof that every origin is a public ThreadData payload.
         """
 
         if not isinstance(value, ir.Var):
@@ -1491,6 +1638,12 @@ class _ProvenanceRewrite(Rewrite):
                     if self._is_thread_data_ctor_call(definition):
                         candidate = self._extract_thread_data_specification(
                             definition
+                        )
+                    elif self._is_typed_group_payload_ctor_call(definition):
+                        candidate = (
+                            self._extract_typed_group_payload_specification(
+                                definition, seen=seen
+                            )
                         )
                     elif self._is_local_array_ctor_call(definition):
                         candidate = self._extract_local_array_specification(
@@ -1552,11 +1705,13 @@ class _ProvenanceRewrite(Rewrite):
         """Infer payload shape and dtype through variable origins.
 
         Follow aliases, casts, static tuple selections, and phi inputs to
-        ``ThreadData`` or local-array constructors. Reuse complete cached
-        specifications; otherwise merge discovered facts with any partial
-        cached information and cache the result. Conflicting known extents or
-        dtypes are errors, while alignment constraints merge by taking the
-        larger minimum.
+        ``ThreadData``, local-array constructors, or planner-created result
+        payload markers. Result markers derive their shape and dtype from a
+        prototype and any explicit extent. Reuse complete cached
+        specifications; otherwise merge discovered facts with partial cached
+        information and cache the result. Conflicting known extents or dtypes
+        are errors, while alignment constraints merge by taking the larger
+        minimum.
 
         Unrecognized or cyclic paths contribute no facts. A returned
         specification is therefore partial inference, not proof that every
@@ -1605,6 +1760,12 @@ class _ProvenanceRewrite(Rewrite):
                     if self._is_thread_data_ctor_call(definition):
                         candidate = self._extract_thread_data_specification(
                             definition
+                        )
+                    elif self._is_typed_group_payload_ctor_call(definition):
+                        candidate = (
+                            self._extract_typed_group_payload_specification(
+                                definition, seen=seen
+                            )
                         )
                     elif self._is_local_array_ctor_call(definition):
                         candidate = self._extract_local_array_specification(
@@ -1752,31 +1913,31 @@ class _ProvenanceRewrite(Rewrite):
     def _is_thread_data_like_var(
         self, value: ir.Var, seen: set[str] | None = None
     ) -> bool:
-        """Check that known origins identify a public ``ThreadData`` payload.
+        """Check origins of public or planner-created payloads.
 
         Unlike shape inference, this check rejects an incoming non-payload
         origin, including a native local array, even when another branch is
-        ``ThreadData``. Trace aliases, casts, iterator exhaustion, tuple
-        items, and phi inputs; cycle-only paths remain unknown rather than
-        proving or disproving origin. At least one positive origin and no
-        negative origin are needed to cache a positive result. This prevents
-        rewriting ``items_per_thread`` on a mixed or unrelated object just
-        because some shape information is available.
+        ``ThreadData`` or a generated result payload. Trace aliases, casts,
+        iterator exhaustion, tuple items, and phi inputs. Cycle-only paths
+        remain unknown. A positive origin and no negative origin are needed
+        to cache a positive result. This prevents rewriting
+        ``items_per_thread`` on a mixed or unrelated object merely because
+        some shape information is available.
 
         Parameters
         ----------
         value : ir.Var
             Candidate receiver of the public payload attribute.
         seen : set of str or None, optional
-            Initial traversal guard. A copy is used, leaving the supplied
-            set intact.
+            Initial traversal guard. Copy it before traversal so the supplied
+            set remains unchanged.
 
         Returns
         -------
         bool
-            Whether public payload provenance is established. Positive
-            results are cached in ``_thread_data_like_vars``; unknown
-            results return False.
+            Whether public payload provenance is established. Cache
+            positive results in ``_thread_data_like_vars``. Return ``False``
+            when provenance is unknown.
         """
 
         def resolve(candidate: ir.Var, active: set[str]) -> bool | None:
@@ -1796,7 +1957,10 @@ class _ProvenanceRewrite(Rewrite):
                     states.append(False)
                     continue
                 if definition.op == "call":
-                    states.append(self._is_thread_data_ctor_call(definition))
+                    states.append(
+                        self._is_thread_data_ctor_call(definition)
+                        or self._is_typed_group_payload_ctor_call(definition)
+                    )
                     continue
                 sources: list[ir.Var] = []
                 if definition.op in {"cast", "exhaust_iter"}:

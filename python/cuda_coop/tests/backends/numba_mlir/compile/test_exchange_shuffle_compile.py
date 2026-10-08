@@ -1,0 +1,674 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Compile Exchange and Shuffle with CUDA devices hidden.
+
+Fixed device queries select an architecture while the compiler, NVRTC,
+and linker still run. Source checks cover call parameters and storage;
+compiled-kernel checks cover linked code and ordered reuse barriers.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+from types import SimpleNamespace
+
+import pytest
+
+pytest.importorskip("numba_cuda_mlir")
+
+import numba_cuda_mlir.tools as numba_mlir_tools
+from numba_cuda_mlir import cuda, types
+
+from cuda.coop._core import ArgumentBinding, SynchronizationScope
+from cuda.coop.numba_mlir import _types
+from cuda.coop.numba_mlir._compiler import _nvrtc
+from cuda.coop.numba_mlir._compiler._operations import StorageABI
+from cuda.coop.numba_mlir._lowering import _exchange, _shuffle
+from cuda.coop.numba_mlir._types import algo_coalesce_key
+
+pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
+
+_FIXED_COMPUTE_CAPABILITY = (9, 0)
+_BLOCK_THREADS = 64
+_ITEMS_PER_THREAD = 2
+_BLOCK_MODES = (
+    "striped_to_blocked",
+    "blocked_to_striped",
+    "warp_striped_to_blocked",
+    "blocked_to_warp_striped",
+    "scatter_to_blocked",
+    "scatter_to_striped",
+    "scatter_to_striped_guarded",
+    "scatter_to_striped_flagged",
+)
+_WARP_MODES = (
+    "striped_to_blocked",
+    "blocked_to_striped",
+    "scatter_to_striped",
+)
+_LOGICAL_WARP_WIDTHS = (1, 2, 4, 8, 16, 32)
+_DTYPES = (
+    types.int8,
+    types.uint8,
+    types.int16,
+    types.uint16,
+    types.int32,
+    types.uint32,
+    types.int64,
+    types.uint64,
+    types.float32,
+    types.float64,
+)
+
+
+@pytest.fixture(autouse=True)
+def _fixed_current_device(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[int, int]]:
+    """Hide runtime discovery while leaving NVRTC and nvJitLink real."""
+
+    assert os.environ.get("CUDA_VISIBLE_DEVICES") == "", (
+        "the Numba-CUDA-MLIR compile stage must hide all CUDA devices"
+    )
+    queries: list[tuple[int, int]] = []
+
+    def current_device() -> SimpleNamespace:
+        queries.append(_FIXED_COMPUTE_CAPABILITY)
+        return SimpleNamespace(compute_capability=_FIXED_COMPUTE_CAPABILITY)
+
+    monkeypatch.setattr(_types.cuda, "get_current_device", current_device)
+    return queries
+
+
+@pytest.fixture(scope="module")
+def compile_context() -> _nvrtc.CompileContext:
+    """Reuse one resolved toolchain configuration for this module.
+
+    Each collected algorithm receives this context, so its source and compiled
+    bundle use the same headers and compiler libraries.
+    """
+
+    return _nvrtc.resolve_compile_context()
+
+
+def _collect(factory, compile_context: _nvrtc.CompileContext, /, **kwargs):
+    """Capture one lowering request before it compiles provider code.
+
+    The algorithm retains its logical width and block shape for source
+    rendering and bundled compilation.
+    """
+
+    with _types.collect_specializations() as collected:
+        factory(**kwargs)
+    assert len(collected) == 1
+    algorithm = collected[0]
+    algorithm._compile_context = compile_context
+    return algorithm
+
+
+def _source(algorithm) -> str:
+    return algorithm._source_code()[0]
+
+
+def _compile_bundle(collected) -> bytes:
+    """Compile collected providers with their individual group dimensions.
+
+    A nonempty result checks that the emitted wrappers compile together. The
+    caller can then inspect storage sizes resolved during compilation.
+    """
+
+    ltoir = _types.prepare_ltoir_bundle(
+        collected,
+        allow_single=True,
+    )
+    assert isinstance(ltoir, bytes)
+    assert ltoir
+    return ltoir
+
+
+def _block_exchange(
+    compile_context: _nvrtc.CompileContext,
+    *,
+    mode: str,
+    dtype=types.int32,
+    warp_time_slicing: bool = False,
+):
+    kwargs = {
+        "dtype": dtype,
+        "threads_per_block": _BLOCK_THREADS,
+        "items_per_thread": _ITEMS_PER_THREAD,
+        "mode": mode,
+        "warp_time_slicing": warp_time_slicing,
+    }
+    if mode == "scatter_to_striped_flagged":
+        factory = _exchange.exchange_flagged
+        kwargs.update(rank_dtype=types.int32, valid_flag_dtype=types.uint8)
+    elif mode.startswith("scatter_to_"):
+        factory = _exchange.exchange_ranked
+        kwargs["rank_dtype"] = types.int32
+    else:
+        factory = _exchange.exchange
+    return _collect(factory, compile_context, **kwargs)
+
+
+def _warp_exchange(
+    compile_context: _nvrtc.CompileContext,
+    *,
+    mode: str,
+    threads_in_warp: int,
+    dtype=types.int32,
+):
+    kwargs = {
+        "dtype": dtype,
+        "threads_per_block": _BLOCK_THREADS,
+        "threads_in_warp": threads_in_warp,
+        "items_per_thread": _ITEMS_PER_THREAD,
+        "mode": mode,
+    }
+    if mode == "scatter_to_striped":
+        factory = _exchange.warp_exchange_ranked
+        kwargs["rank_dtype"] = types.int32
+    else:
+        factory = _exchange.warp_exchange
+    return _collect(factory, compile_context, **kwargs)
+
+
+def test_all_block_exchange_modes_compile_with_owned_storage(
+    compile_context: _nvrtc.CompileContext,
+    _fixed_current_device: list[tuple[int, int]],
+) -> None:
+    collected = [
+        _block_exchange(compile_context, mode=mode) for mode in _BLOCK_MODES
+    ]
+
+    for mode, item in zip(_BLOCK_MODES, collected):
+        algorithm = item
+        source = _source(item)
+        method = "".join(part.title() for part in mode.split("_"))
+        assert f".{method}(" in source
+        assert "cub::BlockExchange<" in source
+        assert "TempStorage" in source
+        assert "__shared__" in source
+        assert "__syncthreads();" in source
+        assert "__syncwarp" not in source
+        assert algorithm.storage_abi is StorageABI.LEADING_POINTER
+        assert algorithm.execution_scope is SynchronizationScope.BLOCK
+        assert algorithm.synchronization_scope is SynchronizationScope.BLOCK
+
+    _compile_bundle(collected)
+    assert all(item.temp_storage_bytes > 0 for item in collected)
+    assert all(item.temp_storage_alignment > 0 for item in collected)
+    assert _fixed_current_device
+
+
+def test_block_exchange_time_slicing_changes_storage_identity_and_size(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    ordinary = _block_exchange(
+        compile_context,
+        mode="blocked_to_warp_striped",
+    )
+    sliced = _block_exchange(
+        compile_context,
+        mode="blocked_to_warp_striped",
+        warp_time_slicing=True,
+    )
+    ordinary_source = _source(ordinary)
+    sliced_source = _source(sliced)
+    assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 0, 1, 1>" in (
+        ordinary_source
+    )
+    assert "cub::BlockExchange<::cuda::std::int32_t, 64, 2, 1, 1, 1>" in (
+        sliced_source
+    )
+    assert algo_coalesce_key(ordinary) != algo_coalesce_key(sliced)
+
+    _compile_bundle([ordinary, sliced])
+    assert 0 < sliced.temp_storage_bytes < ordinary.temp_storage_bytes
+
+
+def test_all_warp_exchange_modes_and_logical_widths_compile(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    collected = [
+        _warp_exchange(
+            compile_context,
+            mode=mode,
+            threads_in_warp=width,
+        )
+        for width in _LOGICAL_WARP_WIDTHS
+        for mode in _WARP_MODES
+    ]
+
+    for item, (width, mode) in zip(
+        collected,
+        (
+            (width, mode)
+            for width in _LOGICAL_WARP_WIDTHS
+            for mode in _WARP_MODES
+        ),
+    ):
+        algorithm = item
+        source = _source(item)
+        method = "".join(part.title() for part in mode.split("_"))
+        assert f".{method}(" in source
+        assert (
+            "cub::WarpExchange<::cuda::std::int32_t, 2, "
+            f"{width}, ::cub::WARP_EXCHANGE_SMEM>"
+        ) in source
+        assert f"temp_storages[{_BLOCK_THREADS // width}]" in source
+        assert "__syncthreads" not in source
+        if width == 32:
+            assert "__syncwarp();" in source
+        else:
+            assert (
+                "__syncwarp((((1u << "
+                f"{width}) - 1u) << (((__coop_thread_rank & 31) / "
+                f"{width}) * {width})));"
+            ) in source
+            assert "__syncwarp();" not in source
+        assert algorithm.storage_abi is StorageABI.LEADING_POINTER
+        assert algorithm.execution_scope is SynchronizationScope.WARP
+        assert algorithm.synchronization_scope is SynchronizationScope.WARP
+
+    _compile_bundle(collected)
+    assert all(item.temp_storage_bytes > 0 for item in collected)
+    assert len({algo_coalesce_key(item) for item in collected}) == len(
+        collected
+    )
+
+
+def test_shuffle_modes_compile_with_exact_distance_abis(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    static = [
+        _collect(
+            _shuffle.shuffle_scalar,
+            compile_context,
+            dtype=types.int32,
+            threads_per_block=_BLOCK_THREADS,
+            mode="offset",
+            distance=ArgumentBinding.static(-3),
+        ),
+        _collect(
+            _shuffle.shuffle_scalar,
+            compile_context,
+            dtype=types.int32,
+            threads_per_block=_BLOCK_THREADS,
+            mode="rotate",
+            distance=ArgumentBinding.static(3),
+        ),
+        _collect(
+            _shuffle.shuffle_array,
+            compile_context,
+            dtype=types.int32,
+            threads_per_block=_BLOCK_THREADS,
+            items_per_thread=_ITEMS_PER_THREAD,
+            mode="up",
+        ),
+        _collect(
+            _shuffle.shuffle_array,
+            compile_context,
+            dtype=types.int32,
+            threads_per_block=_BLOCK_THREADS,
+            items_per_thread=_ITEMS_PER_THREAD,
+            mode="down",
+        ),
+    ]
+    runtime_offset = _collect(
+        _shuffle.shuffle_scalar,
+        compile_context,
+        dtype=types.int32,
+        threads_per_block=_BLOCK_THREADS,
+        mode="offset",
+        distance=ArgumentBinding.runtime(),
+    )
+    runtime_rotate = _collect(
+        _shuffle.shuffle_scalar,
+        compile_context,
+        dtype=types.int32,
+        threads_per_block=_BLOCK_THREADS,
+        mode="rotate",
+        distance=ArgumentBinding.runtime(),
+    )
+
+    sources = [_source(item) for item in static]
+    assert ".Offset(input_item, output_item, -3)" in sources[0]
+    assert ".Rotate(input_item, output_item, 3)" in sources[1]
+    assert ".Up(" in sources[2]
+    assert ".Down(" in sources[3]
+    for source in sources:
+        assert "cub::BlockShuffle<" in source
+        assert "__shared__" in source
+        assert "__syncthreads();" in source
+        assert "__syncwarp" not in source
+
+    offset_source = _source(runtime_offset)
+    rotate_source = _source(runtime_rotate)
+    assert "::cuda::std::int64_t distance" in offset_source
+    assert "distance < -2147483648 || distance > 2147483647" in offset_source
+    assert "static_cast<::cuda::std::int32_t>(distance)" in offset_source
+    assert "::cuda::std::int64_t distance" in rotate_source
+    assert "distance < 1 || distance > 63" in rotate_source
+    assert "static_cast<::cuda::std::uint32_t>(distance)" in rotate_source
+    assert 'asm volatile("trap;" : : :);' in offset_source
+    assert 'asm volatile("trap;" : : :);' in rotate_source
+
+    all_items = [*static, runtime_offset, runtime_rotate]
+    _compile_bundle(all_items)
+    assert all(item.temp_storage_bytes > 0 for item in all_items)
+
+
+def test_exchange_and_shuffle_compile_for_every_supported_dtype(
+    compile_context: _nvrtc.CompileContext,
+) -> None:
+    collected = []
+    for dtype in _DTYPES:
+        collected.extend(
+            (
+                _block_exchange(
+                    compile_context,
+                    mode="striped_to_blocked",
+                    dtype=dtype,
+                ),
+                _warp_exchange(
+                    compile_context,
+                    mode="blocked_to_striped",
+                    threads_in_warp=8,
+                    dtype=dtype,
+                ),
+                _collect(
+                    _shuffle.shuffle_array,
+                    compile_context,
+                    dtype=dtype,
+                    threads_per_block=_BLOCK_THREADS,
+                    items_per_thread=_ITEMS_PER_THREAD,
+                    mode="down",
+                ),
+                _collect(
+                    _shuffle.shuffle_scalar,
+                    compile_context,
+                    dtype=dtype,
+                    threads_per_block=_BLOCK_THREADS,
+                    mode="offset",
+                    distance=ArgumentBinding.static(-3),
+                ),
+                _collect(
+                    _shuffle.shuffle_scalar,
+                    compile_context,
+                    dtype=dtype,
+                    threads_per_block=_BLOCK_THREADS,
+                    mode="rotate",
+                    distance=ArgumentBinding.static(3),
+                ),
+            )
+        )
+
+    _compile_bundle(collected)
+    assert all(item.temp_storage_bytes > 0 for item in collected)
+
+
+def _production_compile_environment(monkeypatch: pytest.MonkeyPatch):
+    """Fix architecture discovery for complete kernel compilation.
+
+    Only the device queries are replaced. Kernel rewriting, provider
+    compilation, and linking still use their production implementations.
+    """
+
+    import numba_cuda_mlir.tools as numba_mlir_tools
+    from numba_cuda_mlir import cuda as compiler_cuda
+
+    fixed_device = SimpleNamespace(compute_capability=_FIXED_COMPUTE_CAPABILITY)
+
+    def fixed_compute_capability(as_type=str):
+        assert as_type in (str, tuple)
+        return _FIXED_COMPUTE_CAPABILITY if as_type is tuple else "sm_90"
+
+    monkeypatch.setattr(
+        numba_mlir_tools,
+        "get_gpu_compute_capability",
+        fixed_compute_capability,
+    )
+    monkeypatch.setattr(
+        compiler_cuda, "get_current_device", lambda: fixed_device
+    )
+    return compiler_cuda
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_production_kernel_compile_links_shared_storage_and_barriers(
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
+) -> None:
+    compiler_cuda = _production_compile_environment(monkeypatch)
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as common_coop
+
+    @compiler_cuda.jit(chip="sm_90")
+    def kernel(source, destination, distance, items_per_thread):
+        thread = compiler_cuda.threadIdx.x
+        payload = qualified_coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            payload[item] = source[thread * items_per_thread + item]
+        exchanged = common_coop.exchange(
+            common_coop.this_block(),
+            payload,
+            mode="blocked_to_striped",
+        )
+        shifted = common_coop.shuffle(
+            common_coop.this_block(),
+            exchanged,
+            mode="up",
+        )
+        rotated = qualified_coop.shuffle(
+            qualified_coop.this_block(),
+            source[thread],
+            mode="rotate",
+            distance=distance,
+        )
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = (
+                shifted[item] + rotated if item == 0 else shifted[item]
+            )
+
+    signature = types.void(
+        types.int32[::1],
+        types.int32[::1],
+        types.int32,
+        types.IntegerLiteral(items_per_thread),
+    )
+    launch_config_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        signature,
+        launch_config_key,
+    )
+    assert isinstance(result.metadata["ltoir"], bytes)
+    assert result.metadata["ltoir"]
+    assert isinstance(result.metadata["cubin"], bytes)
+    assert result.metadata["cubin"]
+    assert result.metadata["linked_external_link_items"]
+
+    ptx = next(iter(kernel.inspect_lto_ptx().values()))
+    assert ".visible .entry" in ptx
+    assert ".shared" in ptx
+    assert "bar.sync" in ptx
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_untyped_load_composes_directly_into_exchange(
+    monkeypatch: pytest.MonkeyPatch, items_per_thread
+) -> None:
+    compiler_cuda = _production_compile_environment(monkeypatch)
+
+    import cuda.coop.numba_mlir as qualified_coop
+    from cuda import coop as common_coop
+
+    @compiler_cuda.jit(chip="sm_90")
+    def kernel(source, destination, items_per_thread):
+        thread = compiler_cuda.threadIdx.x
+        payload = qualified_coop.ThreadData(items_per_thread)
+        common_coop.load(
+            common_coop.this_block(),
+            source,
+            payload,
+            algorithm="direct",
+        )
+        exchanged = common_coop.exchange(
+            common_coop.this_block(),
+            payload,
+            mode="blocked_to_striped",
+        )
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = exchanged[item]
+
+    signature = types.void(
+        types.int32[::1],
+        types.int32[::1],
+        types.IntegerLiteral(items_per_thread),
+    )
+    launch_config_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        signature,
+        launch_config_key,
+    )
+    assert result.metadata["ltoir"]
+    assert result.metadata["cubin"]
+    assert result.metadata["linked_external_link_items"]
+
+
+def _evaluate_warp_mask(definitions, operand, rank):
+    """Interpret the emitted barrier-mask arithmetic for one thread rank.
+
+    The test compares this value with an independent set of expected lanes.
+    Only operations used by the mask are supported; reject unfamiliar ones
+    so a changed expression cannot silently evade the check. Integer casts
+    must retain their signed or unsigned bit behavior.
+    """
+    expression = definitions[operand]
+    operation = expression.split()[0]
+    inputs = re.findall(r"%[\w-]+", expression)
+    if operation == "arith.constant":
+        return int(expression.split()[1])
+    if operation == "gpu.thread_id":
+        return rank if expression.split()[1] == "x" else 0
+    if operation == "gpu.block_dim":
+        return _BLOCK_THREADS if expression.split()[1] == "x" else 1
+    values = [_evaluate_warp_mask(definitions, value, rank) for value in inputs]
+    if operation in {"arith.index_cast", "arith.extui"}:
+        return values[0]
+    if operation == "arith.trunci":
+        assert expression.endswith("to i32")
+        return values[0] & 0xFFFFFFFF
+    if operation == "arith.extsi":
+        assert len(values) == 1 and expression.endswith(": i32 to i64"), (
+            expression
+        )
+        value = values[0] & 0xFFFFFFFF
+        return value - (1 << 32) if value & (1 << 31) else value
+    assert (
+        operation
+        in {
+            "arith.addi",
+            "arith.muli",
+            "arith.andi",
+            "arith.floordivsi",
+            "arith.shli",
+        }
+        and len(values) == 2
+    ), f"unexpected warp-mask operation: {expression}"
+    left, right = values
+    if operation == "arith.addi":
+        return left + right
+    if operation == "arith.muli":
+        return left * right
+    if operation == "arith.andi":
+        return left & right
+    if operation == "arith.floordivsi":
+        return left // right
+    if operation == "arith.shli":
+        return left << right
+    raise AssertionError(f"unexpected warp-mask operation: {expression}")
+
+
+@pytest.mark.parametrize("width", _LOGICAL_WARP_WIDTHS)
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_production_warp_exchange_emits_ordered_reuse_barriers(
+    width, monkeypatch, items_per_thread
+):
+    import cuda.coop.numba_mlir as coop
+
+    monkeypatch.setattr(
+        numba_mlir_tools,
+        "get_gpu_compute_capability",
+        lambda as_type=str: (9, 0) if as_type is tuple else "sm_90",
+    )
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination, items_per_thread):
+        thread = cuda.threadIdx.x
+        payload = coop.ThreadData(items_per_thread, dtype=types.int32)
+        for item in range(items_per_thread):
+            payload[item] = source[thread * items_per_thread + item]
+        first = coop.exchange(
+            coop.this_warp().group_by(width),
+            payload,
+            mode="blocked_to_striped",
+        )
+        second = coop.exchange(
+            coop.this_warp().group_by(width), first, mode="blocked_to_striped"
+        )
+        for item in range(items_per_thread):
+            destination[thread * items_per_thread + item] = second[item]
+
+    launch_key = (
+        ("grid", (1, 1, 1)),
+        ("block", (_BLOCK_THREADS, 1, 1)),
+        ("sharedmem", 0),
+        ("cluster", None),
+    )
+    result = kernel._compile_launch_config_signature(
+        types.void(
+            types.int32[::1],
+            types.int32[::1],
+            types.IntegerLiteral(items_per_thread),
+        ),
+        launch_key,
+    )
+    assert result.metadata["cubin"]
+    mlir = result.metadata["mlir_module_str"]
+    definitions = dict(
+        re.findall(r"^\s*(%[\w-]+) = (.*)$", mlir, flags=re.MULTILINE)
+    )
+    operands = re.findall(r"nvvm.bar.warp.sync\s+(%[\w-]+)", mlir)
+    assert len(operands) == 2
+    assert "gpu.barrier" not in mlir
+    events = [
+        "call" if "func.call" in line else "barrier"
+        for line in mlir.splitlines()
+        if ("func.call" in line and "BlockedToStriped" in line)
+        or "nvvm.bar.warp.sync" in line
+    ]
+    assert events == ["call", "barrier", "call", "barrier"]
+    for rank in range(_BLOCK_THREADS):
+        group_start = (rank % 32 // width) * width
+        expected = sum(
+            1 << lane for lane in range(group_start, group_start + width)
+        )
+        for operand in operands:
+            assert (
+                _evaluate_warp_mask(definitions, operand, rank) & 0xFFFFFFFF
+                == expected
+            )

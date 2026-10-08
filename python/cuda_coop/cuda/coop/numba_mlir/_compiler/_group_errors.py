@@ -79,6 +79,22 @@ class InconsistentTupleExtentError(GroupRewriteError):
         )
 
 
+class UnknownResultExtentError(GroupRewriteError):
+    """Report that a generated payload copy has no known item count.
+
+    Copy construction emits one IR read and write for each item. It therefore
+    requires a static per-thread extent before ordinary type inference.
+    """
+
+    def __init__(self, operation):
+        super().__init__(
+            _wrap_diagnostic(
+                f"cuda.coop.numba_mlir.{operation} could not infer a static "
+                f"items_per_thread extent for its non-mutating result",
+            )
+        )
+
+
 class NonConstantThreadGroupError(GroupRewriteError):
     """The group operand cannot be reconstructed as a planning descriptor.
 

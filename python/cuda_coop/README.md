@@ -42,10 +42,12 @@ Python 3.10 through 3.14 is supported. The current backend integration
 requires `numba-cuda-mlir>=0.5.0,<0.6`.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python
-3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
-contracts cover Python 3.10 and 3.14. Windows checks build and import the
-universal wheel and verify its headers; they do not execute the compiler
-backend. Other combinations need separate runtime qualification. See the
+3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
+matrix also configures H100 runtime tests with serial synchronization race
+checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
+Windows checks build and import the universal wheel and verify its headers;
+they do not execute the compiler backend. Other combinations need separate
+runtime qualification. See the
 [validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
 for tested platforms and coverage.
 
@@ -119,6 +121,7 @@ explains terms and concepts, including blocked and striped layouts.
 | Family | Entry points |
 | --- | --- |
 | Memory operations | `load`, `store` |
+| Data rearrangement | `exchange`, `shuffle` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html). The
@@ -355,6 +358,45 @@ Warp `transpose` uses compiler-owned storage with one disjoint slice per
 physical or logical group and inserts `syncwarp` with the exact group mask.
 Explicit `TempStorage` is rejected by both the common and qualified APIs for
 every Warp Load and Store algorithm, including the storage-free modes.
+
+## Exchange and Shuffle
+
+`exchange(group, value, mode=...)` returns a fresh payload and leaves `value`
+unchanged. The common API accepts `striped_to_blocked` and
+`blocked_to_striped` for block, physical Warp, and logical Warp groups. A
+blocked tile gives each thread consecutive items. A striped tile gives item
+`i` to thread `i % group_size` at per-thread position `i // group_size`.
+
+The qualified `cuda.coop.numba_mlir.exchange` API additionally exposes the
+block-only `warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and
+the CUB scatter modes. Scatter ranks are local to the selected group tile and
+must use a signed integer `ThreadData` or local-array payload with the same
+extent as `value`. Unguarded ranks must be in
+`[0, group_size * items_per_thread)`. Guarded scatter skips negative ranks;
+every nonnegative rank must still be in range. Flagged scatter uses only ranks
+whose corresponding non-boolean integer flag is nonzero; each active rank must
+be in range. Active destinations must be unique for a deterministic result;
+holes and duplicate destinations are otherwise unspecified.
+`warp_time_slicing=True` is available only for block Exchange and is not valid
+for guarded or flagged scatter.
+
+`shuffle(block, value, mode=...)` is block-only. The common API accepts a
+`ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
+edge item is unspecified. The qualified API also accepts scalar `offset` and
+`rotate` modes. Offset distance is signed, may vary by thread, and must fit a
+signed 32-bit integer. Static overflows are rejected during compilation;
+runtime overflows trap before narrowing to CUB. Within that range, a source
+rank outside the block leaves that thread's result unspecified. Rotate
+distance may be static or runtime and must satisfy
+`0 < distance < block_threads`. An invalid runtime Rotate distance also
+executes a device trap. A trap invalidates that CUDA context, so validate
+untrusted distances before launch.
+
+Exchange and Shuffle require converged participation by every member of the
+selected group. They use compiler-owned CUB temporary storage and append a
+reuse barrier after every call. Block operations use one block-wide storage
+instance and `syncthreads`; physical and logical Warp Exchange use one
+disjoint slice per group and `syncwarp` with the exact group mask.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
