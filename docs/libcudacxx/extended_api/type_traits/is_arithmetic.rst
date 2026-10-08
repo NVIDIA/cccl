@@ -31,3 +31,9 @@ conditions:
 If all of the above conditions are satisfied, then users are allowed to specialize the
 variable template (``cuda::is_arithmetic_v``) for their own types, but CCCL does NOT
 provide support for any issues arising from this.
+
+As an example, the CUDA builtin extended floating point types ``__half`` and
+``__nv_bfloat16`` would normally qualify as arithmetic types. If, however, the user
+defines ``__CUDA_NO_HALF_OPERATORS__`` or ``__CUDA_NO_BFLOAT16_OPERATORS__`` respectively
+(disabling the ``*``, ``+``, ``-``, and ``/`` operators), then these types would no longer
+qualify as arithmetic (but are still considered floating point types).

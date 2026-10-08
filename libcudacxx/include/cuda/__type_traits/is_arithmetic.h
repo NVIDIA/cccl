@@ -39,6 +39,18 @@ inline constexpr bool is_arithmetic_v = ::cuda::std::is_arithmetic_v<_Tp> || is_
 template <class _Tp>
 using is_arithmetic = ::cuda::std::bool_constant<is_arithmetic_v<_Tp>>;
 
+// If the CUDA half types don't have the proper conversion operators or arithmetic operators
+// then they don't qualify as arithmetic operators.
+#if _CCCL_HAS_NVFP16() && defined(__CUDA_NO_HALF_OPERATORS__)
+template <>
+inline constexpr bool is_arithmetic_v<__half> = false;
+#endif // _CCCL_HAS_NVFP16
+
+#if _CCCL_HAS_NVBF16() && defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+template <>
+inline constexpr bool is_arithmetic_v<__nv_bfloat16> = false;
+#endif // _CCCL_HAS_NVBF16
+
 _CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
