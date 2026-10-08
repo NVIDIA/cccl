@@ -36,6 +36,7 @@
 
 #  include <cuda/__functional/operator_properties.h>
 #  include <cuda/__memory/uninitialized_array.h>
+#  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__cmath/fpclassify.h>
@@ -43,7 +44,6 @@
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
@@ -193,20 +193,11 @@ struct ReduceByKeyAgent
       {
         return ::cuda::identity_element<ReductionOp, value_type>() == 0;
       }
-#  if _CCCL_HAS_NVFP16()
-      else if constexpr (::cuda::std::is_same_v<value_type, __half>)
+      else if constexpr (::cuda::is_floating_point_v<value_type>)
       {
-        // not `== 0`, which is ambiguous for __half
+        // extended floating-point types (__half, __nv_bfloat16, ...): not `== 0`, which may be ambiguous
         return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
       }
-#  endif // _CCCL_HAS_NVFP16()
-#  if _CCCL_HAS_NVBF16()
-      else if constexpr (::cuda::std::is_same_v<value_type, __nv_bfloat16>)
-      {
-        // not `== 0`, which is ambiguous for __nv_bfloat16
-        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
-      }
-#  endif // _CCCL_HAS_NVBF16()
       else
       {
         return false;
