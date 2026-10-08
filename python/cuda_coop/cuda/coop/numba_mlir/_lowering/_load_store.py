@@ -365,7 +365,7 @@ def _load(
     )
     invocation_topology = (
         {
-            "threads": threads_in_warp,
+            "logical_warp_threads": threads_in_warp,
             "block_threads": block_dim,
         }
         if registered.namespace == "warp"
@@ -612,7 +612,7 @@ def _store(
     )
     invocation_topology = (
         {
-            "threads": threads_in_warp,
+            "logical_warp_threads": threads_in_warp,
             "block_threads": block_dim,
         }
         if registered.namespace == "warp"
