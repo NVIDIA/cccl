@@ -29,7 +29,6 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstdlib>
 #include <cuda/std/cstring> // memmove
 
 #include <cuda/std/__cccl/prologue.h>
