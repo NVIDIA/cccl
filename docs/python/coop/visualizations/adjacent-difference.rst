@@ -6,8 +6,9 @@
 Adjacent Difference
 ===================
 
-This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
+Both Numba-CUDA-MLIR and CUTLASS implement Adjacent Difference. The
+:ref:`CuTe example <coop-cutlass-neighbors>` uses the same boundary and
+input-preservation rules as the Numba examples below.
 
 :func:`cuda.coop.adjacent_difference` subtracts a neighboring item from
 each item in a block tile. The result has the input's dtype, extent, and
@@ -64,7 +65,7 @@ values must match the input dtype and agree across the block.
 Every thread in the complete block must call the operation, including for
 partial tiles; warp groups are unsupported. The function infers dtype and
 per-thread extent from ``ThreadData``. It accepts automatic scratch or an
-explicit :ref:`TempStorage <coop-temp-storage>`.
+explicit :ref:`TempStorage <coop-common-storage>`.
 
 For a partial tile, ``valid_items`` must agree across the block. Only
 positions below that count compute a difference. Every later position
@@ -81,11 +82,10 @@ Encoding deltas across block tiles
 ----------------------------------
 
 With four items per thread, this kernel uses 128 threads to process each
-full 512-item tile. The previous tile's final source item supplies
-the left boundary.
-The first tile uses zero so its first result retains the first input.
-An inclusive sum of the resulting deltas reconstructs the original sequence
-when the first delta is the first original value.
+full 512-item tile. The previous tile's final source item supplies the
+left boundary. The first tile uses zero so its first result retains the first
+input. An inclusive sum of the resulting deltas reconstructs the original
+sequence when the first delta is the first original value.
 
 .. literalinclude:: ../../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_neighbors.py
    :language: python

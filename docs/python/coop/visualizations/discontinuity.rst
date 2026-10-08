@@ -6,8 +6,9 @@
 Discontinuity
 =============
 
-This page describes the Numba-CUDA-MLIR implementation. See :ref:`backend
-operation support <coop-backend-operation-support>` for CUTLASS availability.
+Both Numba-CUDA-MLIR and CUTLASS implement Discontinuity with the built-in
+inequality predicate. The :ref:`CuTe example <coop-cutlass-neighbors>`
+computes both head and tail flags while preserving its input.
 
 :func:`cuda.coop.discontinuity` flags changes between adjacent values in a
 full block tile. A head marks the start of a run; a tail marks its end.
@@ -61,7 +62,7 @@ must match the input dtype and agree across the block.
 Every thread in the complete block must call the operation; warp groups
 are unsupported. The function infers dtype and per-thread extent from
 ``ThreadData``. It accepts automatic scratch or an explicit
-:ref:`TempStorage <coop-temp-storage>`.
+:ref:`TempStorage <coop-common-storage>`.
 
 The operation requires a full tile. There is no ``valid_items`` argument.
 Padding becomes input: a padding value equal to the final valid value can

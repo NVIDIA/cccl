@@ -12,7 +12,9 @@ payload shifts from scalar offset and rotate calls. Merge Sort checks
 paired partial-tile controls and rejects backend-specific input forms from
 common calls. Radix checks integer Rank keys, writable bin-prefix outputs,
 and the different controls accepted by Sort, Rank, and common calls. TopK
-checks block-only groups, integer counts, and payload-only inputs.
+checks block-only groups, integer counts, and payload-only inputs. Neighbor
+operations reject warp groups, scalar inputs, and unsupported modes or
+callbacks.
 """
 
 from __future__ import annotations
@@ -37,7 +39,7 @@ cutlass_coop.this_grid().sync_aligned()  # expected-error: [misc]
 
 
 def callback(left: Int32, right: Int32) -> Int32:
-    """Supply a typed callback that CUTLASS Reduce and Scan must reject."""
+    """Supply a callable for rejected operators, comparators, and prefixes."""
 
     del right
     return left
@@ -461,4 +463,15 @@ common.topk_max_pairs(
     values,
     values.to_tensor_ssa(),  # expected-error: [arg-type]
     k=1,
+)
+
+cutlass_coop.adjacent_difference(warp, values)  # expected-error: [arg-type]
+cutlass_coop.adjacent_difference(  # expected-error: [call-overload]
+    block, scalar
+)
+cutlass_coop.discontinuity(  # expected-error: [call-overload]
+    block, values, mode="up"
+)
+cutlass_coop.discontinuity(  # expected-error: [call-overload]
+    block, values, flag_op=callback
 )

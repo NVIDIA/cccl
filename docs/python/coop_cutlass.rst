@@ -9,9 +9,9 @@
 CUTLASS Programming Guide
 =========================
 
-Use ``cuda.coop`` inside a CuTe kernel for the cooperative primitives
-documented below. The CUTLASS backend implements each supported operation with
-CUB; see :ref:`backend operation support
+Use ``cuda.coop`` inside a CuTe kernel to load a tile, reduce or scan its
+values, rearrange, sort, or select items, compare neighboring items, and store
+the result. The CUTLASS backend implements each supported operation with CUB; see :ref:`backend operation support
 <coop-backend-operation-support>`.
 
 Each thread keeps its items in a ``ThreadData`` object. ``load`` fills that
@@ -942,6 +942,41 @@ producer or tensor adapter loses the intended unsigned element type, use
    # Inside a CuTe kernel, with a register-memory fragment:
    values = cutlass_coop.ThreadData.from_register_tensor(fragment)
    cutlass_coop.store(cutlass_coop.this_block(), destination, values)
+
+.. _coop-cutlass-neighbors:
+
+Comparing neighboring values
+----------------------------
+
+``adjacent_difference`` subtracts the previous or next item from each item
+in a block's flattened, blocked sequence. ``discontinuity`` returns int32
+head flags, tail flags, or both. Both operations preserve their input and
+support the ten numeric payload dtypes. Every thread in the complete block
+participates, including in multidimensional blocks.
+
+Pass ``tile_predecessor_item`` or ``tile_successor_item`` to compare across
+tile boundaries. Adjacent Difference also accepts a block-uniform
+``valid_items`` count; its invalid suffix retains the original input.
+Right partial tiles cannot take a successor, and Discontinuity requires a
+full tile. Without an external neighbor, Adjacent Difference preserves the
+boundary input, while Discontinuity marks the boundary as a head or tail.
+These defaults let a tile act as a separate sequence; provide a neighbor
+when it continues a sequence in another tile. See
+:doc:`Adjacent Difference <coop/visualizations/adjacent-difference>` and
+:doc:`Discontinuity <coop/visualizations/discontinuity>` for the shared rules.
+
+Both functions accept explicit block ``TempStorage``. The example below
+reuses one descriptor between the operations; automatic trailing
+synchronization makes that reuse safe. The qualified functions also accept
+CuTe register tensors and immutable register vectors. They snapshot the
+input and return fresh ``ThreadData``; flags contain CuTe ``Int32`` values.
+Custom arithmetic and flag callbacks are not supported.
+
+.. literalinclude:: ../../python/cuda_coop/tests/backends/cutlass/runtime/test_neighbors.py
+   :language: python
+   :start-after: docs: start cutlass-neighbors
+   :end-before: docs: end cutlass-neighbors
+   :dedent: 4
 
 .. _coop-cutlass-checking:
 

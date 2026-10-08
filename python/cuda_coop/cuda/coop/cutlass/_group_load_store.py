@@ -5,9 +5,10 @@
 """Validate block and warp Load/Store calls for CuTe lowering.
 
 Exact launch facts and shared group planning determine participation and
-algorithm support. Binding records separate embedded constants from runtime
-arguments. Block calls can use explicit scratch descriptors; physical and
-logical warps use compiler-managed scratch when their algorithm needs it.
+algorithm support. Argument bindings mark each control as omitted, as a
+constant embedded in generated C++, or as a runtime argument. Block calls can
+use explicit scratch descriptors; physical and logical warps use
+compiler-managed scratch when their algorithm needs it.
 """
 
 from __future__ import annotations
@@ -100,7 +101,9 @@ def load(
     Load populates the payload in the selected algorithm's layout. Beyond
     ``valid_items``, slots have unspecified values unless ``oob_default`` is
     supplied, even if initialized before Load. A default requires
-    ``valid_items``. A runtime default must have the memory dtype.
+    ``valid_items``. A runtime default must have the memory dtype. A Python or
+    NumPy default must be finite and within the memory dtype's range; a float
+    default requires a floating-point dtype.
 
     The count ranges from zero through the group's full tile size. ``offset``
     is a nonnegative element offset. Counts, offsets, and supplied defaults
@@ -124,7 +127,7 @@ def load(
     Transpose algorithms use shared scratch. With no ``temp_storage``, the
     compiler allocates it and inserts a trailing reuse barrier. An explicit
     :class:`cuda.coop.cutlass.TempStorage` is supported only for block calls.
-    It sets sharing and synchronization policy; its default
+    It sets size, alignment, sharing, and synchronization policy; its default
     ``auto_sync=False`` requires a barrier before reuse. Each physical or
     logical warp uses an independent scratch slice and a reuse barrier that
     covers only its own lanes.
@@ -241,11 +244,15 @@ def store(
 
 
 def _normalize_algorithm(algorithm: Any) -> GroupLoadStoreAlgorithm:
-    """Normalize enum values and strings before variant validation."""
+    """Resolve an enum or normalized Load/Store algorithm name.
+
+    Strip surrounding whitespace and accept case and hyphen variants before
+    matching the shared selector. Report available choices for unknown names.
+    """
 
     token = getattr(algorithm, "value", algorithm)
     if isinstance(token, str):
-        token = token.lower().replace("-", "_")
+        token = token.strip().lower().replace("-", "_")
     try:
         return GroupLoadStoreAlgorithm(token)
     except (TypeError, ValueError) as exc:
@@ -306,8 +313,10 @@ def _classify_integer_binding(value: Any, *, name: str) -> ArgumentBinding:
 def _classify_oob_default(value: Any) -> ArgumentBinding:
     """Embed host numeric defaults and retain DSL inputs for runtime.
 
-    This selects the binding form. The provider later checks compatibility
-    with the memory dtype.
+    Embed Python and NumPy numbers as plain int or float constants, and keep
+    DSL values as runtime inputs. Reject booleans and non-finite floats here.
+    The provider later checks range and float-to-integer compatibility with
+    the memory dtype.
     """
 
     if value is None:
