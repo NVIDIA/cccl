@@ -483,9 +483,8 @@ def test_direct_cub_reduce_selects_operation_and_scope(
     provider = getattr(_reduce, provider_name)
     call = _provider_call(func_ir, provider)
     assert len(call.args) == 1
-    if kind == "warp":
-        assert "items_per_thread" not in dict(call.kws)
-        assert "value_kind" not in dict(call.kws)
+    assert _kwarg_value(func_ir, call, "items_per_thread") == 1
+    assert _kwarg_value(func_ir, call, "value_kind") == "scalar"
     valid_name = "num_valid" if kind == "block" else "valid_items"
     assert _kwarg_value(func_ir, call, valid_name).value == 7
 
@@ -619,6 +618,28 @@ def test_runtime_valid_items_rejects_invalid_dtype_before_provider(
         planner.run()
 
 
+@pytest.mark.parametrize("qualified", [False, True])
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_warp_array_rejects_scalar_valid_items(qualified, items_per_thread):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+
+    module = numba_coop if qualified else coop
+
+    def kernel(value):
+        items = module.ThreadData(items_per_thread)
+        items[0] = value
+        return module.sum(module.this_warp(), items, valid_items=7)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(
+        ValueError, match="valid_items is not supported for array inputs"
+    ):
+        planner.run()
+
+
 @pytest.mark.parametrize("valid_items", [True, 0, 65])
 def test_static_valid_items_rejects_before_provider(valid_items, monkeypatch):
     from numba_cuda_mlir import types
@@ -663,6 +684,26 @@ def test_float_bitwise_reduce_rejects_before_provider(monkeypatch):
     )
     _, planner = _plan(kernel, arg_types=(types.float32,))
     with pytest.raises(TypeError, match="requires an integer dtype"):
+        planner.run()
+
+
+@pytest.mark.parametrize("qualified", [False, True])
+def test_warp_reduce_rejects_multiple_non_power_of_two_groups(qualified):
+    from numba_cuda_mlir import types
+
+    import cuda.coop.numba_mlir as numba_coop
+    from cuda import coop
+
+    module = numba_coop if qualified else coop
+
+    def kernel(value):
+        group = module.this_warp().group_by(12, exhaustive=False)
+        return module.sum(group, value)
+
+    _, planner = _plan(kernel, arg_types=(types.int32,))
+    with pytest.raises(
+        NotImplementedError, match="only one non-power-of-two group"
+    ):
         planner.run()
 
 
