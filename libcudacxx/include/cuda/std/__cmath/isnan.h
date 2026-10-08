@@ -68,7 +68,7 @@ template <class _Tp>
   const auto __storage = ::cuda::std::__fp_get_storage(__x);
   // On SM100+ (new NVVM), the compiler recognizes the pattern (storage & 0xFF...FF) as fabs(), reintroducing double
   // instructions. The workaround is to shift both operands by 1. This generates the same number of instructions on all
-  // gpu archs with 64-bit integer ops (roughtly SM107+)
+  // gpu archs with 64-bit integer ops (roughly SM107+)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
                     (return (__storage << 1) > (__fp_exp_mask_of_v<double> << 1);),
                     (return (__storage & __fp_exp_mant_mask_of_v<double>) > __fp_exp_mask_of_v<double>;))
