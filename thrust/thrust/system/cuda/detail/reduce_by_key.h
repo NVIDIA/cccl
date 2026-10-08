@@ -34,14 +34,16 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__functional/operator_properties.h>
 #  include <cuda/__memory/uninitialized_array.h>
+#  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__cmath/fpclassify.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
@@ -184,7 +186,21 @@ struct ReduceByKeyAgent
 
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
-  static constexpr int has_identity_zero = ::cuda::identity_element<ReductionOp, value_type>() == 0;
+  static constexpr bool has_identity_zero = []() constexpr {
+    if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
+    {
+      if constexpr (::cuda::std::is_arithmetic_v<value_type>)
+      {
+        return ::cuda::identity_element<ReductionOp, value_type>() == 0;
+      }
+      else if constexpr (::cuda::is_floating_point_v<value_type>)
+      {
+        // extended floating-point types (__half, __nv_bfloat16, ...): not `== 0`, which may be ambiguous
+        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+      }
+    }
+    return false;
+  }();
 
   struct impl
   {
@@ -213,7 +229,7 @@ struct ReduceByKeyAgent
       if constexpr (has_identity_zero)
       {
         size_value_pair_t identity;
-        identity.value = 0;
+        identity.value = value_type{};
         identity.key   = 0;
         BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
       }

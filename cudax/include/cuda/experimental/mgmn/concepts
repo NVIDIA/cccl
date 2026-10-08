@@ -1,0 +1,39 @@
+// -*- C++ -*-
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_EXPERIMENTAL_MGMN_CONCEPTS
+#define _CUDA_EXPERIMENTAL_MGMN_CONCEPTS
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// IWYU pragma: begin_exports
+#include <cuda/experimental/mgmn/__concepts/common.h>
+#include <cuda/experimental/mgmn/__concepts/communicator.h>
+#include <cuda/experimental/mgmn/__concepts/has_all_gather.h>
+#include <cuda/experimental/mgmn/__concepts/has_all_gather_v.h>
+#include <cuda/experimental/mgmn/__concepts/has_all_reduce.h>
+#include <cuda/experimental/mgmn/__concepts/has_all_to_all.h>
+#include <cuda/experimental/mgmn/__concepts/has_all_to_all_v.h>
+#include <cuda/experimental/mgmn/__concepts/has_broadcast.h>
+#include <cuda/experimental/mgmn/__concepts/has_gather.h>
+#include <cuda/experimental/mgmn/__concepts/has_gather_v.h>
+#include <cuda/experimental/mgmn/__concepts/has_reduce.h>
+// IWYU pragma: end_exports
+
+#endif // _CUDA_EXPERIMENTAL_MGMN_CONCEPTS
