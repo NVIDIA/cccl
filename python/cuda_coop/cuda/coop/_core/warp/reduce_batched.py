@@ -25,7 +25,18 @@ from .._types import (
     TempStorageParameter,
 )
 from ..block._common import normalize_positive_int
-from .reduce import _validate_logical_warp_threads
+
+
+def _validate_logical_warp_threads(value: Any) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value not in {1, 2, 4, 8, 16, 32}
+    ):
+        raise ValueError(
+            "threads_in_warp must be a power of two between 1 and 32"
+        )
+    return value
 
 
 @dataclass(frozen=True, eq=False)
