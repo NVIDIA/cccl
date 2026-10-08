@@ -143,9 +143,13 @@ When a diff places `__syncthreads()`, `__syncwarp(...)`, or a CUB block/warp col
 flow, or adds a thread-dependent early exit (`if (...) return;`, `break`, `continue`) upstream of
 an existing one, flag it: threads that skip a barrier other threads reach deadlock the block or
 corrupt the collective's shared state. Tests where all threads take the same path never exercise
-the divergent case, so this ships silently. Acceptable only if the governing condition is
-block-uniform — computed identically in every thread from `blockIdx`/`blockDim`/kernel arguments;
-verify the uniformity from the surrounding code rather than taking a guard's presence on faith.
+the divergent case, so this ships silently. Acceptable only if the governing condition is uniform
+across the operation's scope: block-uniform for `__syncthreads()` and `cub::Block*` collectives
+(computed identically in every thread from `blockIdx`/`blockDim`/kernel arguments), or uniform
+across the participating lanes for `__syncwarp(mask)` and `cub::Warp*` collectives (a
+warp-dependent but lane-uniform guard like `if (warp_id == 0)` is fine when every lane named in
+the mask reaches the call); verify the uniformity from the surrounding code rather than taking a
+guard's presence on faith.
 
 ## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
 
