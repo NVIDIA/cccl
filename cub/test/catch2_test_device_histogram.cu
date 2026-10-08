@@ -903,7 +903,7 @@ CUB_TEST(
   "DeviceHistogram::Histogram* sample count close to INT_MAX", "[histogram][device]", CUB_SMALL, large_offset_types)
 {
   using offset_t                 = c2h::get<0, TestType>;
-  constexpr offset_t num_samples = (cs::numeric_limits<std::int32_t>::max)() - 65535;
+  constexpr offset_t num_samples = cs::numeric_limits<int32_t>::max() - 65535;
   const auto expected            = c2h::host_vector<int>(256, static_cast<int>(num_samples / 256));
 
   c2h::device_vector<int> d_histogram(256, thrust::no_init);
@@ -987,27 +987,20 @@ CUB_TEST("DeviceHistogram::Histogram* rows starting beyond INT_MAX", "[histogram
   constexpr int row_stride_bytes = 50000;
 
   c2h::host_vector<int> expected(256, 0);
-  for (std::int64_t row = 0; row < num_rows; ++row)
+  for (uint64_t row = 0; row < num_rows; ++row)
   {
-    const std::int64_t begin = row * row_stride_bytes;
-    const std::int64_t end   = begin + row_samples;
-    for (std::int64_t bin = begin >> 25; bin <= (end - 1) >> 25; ++bin)
+    const uint64_t begin = row * row_stride_bytes;
+    const uint64_t end   = begin + row_samples;
+    for (uint64_t bin = begin >> 25; bin <= (end - 1) >> 25; ++bin)
     {
-      expected[bin] += static_cast<int>((std::min) (end, (bin + 1) << 25) - (std::max) (begin, bin << 25));
+      expected[bin] += static_cast<int>(std::min(end, (bin + 1) << 25) - std::max(begin, bin << 25));
     }
   }
 
   const auto samples = cuda::transform_iterator(cuda::counting_iterator<uint64_t>{0}, upper_bits_of_index{});
   c2h::device_vector<int> d_histogram(256, thrust::no_init);
   histogram_even(
-    samples,
-    thrust::raw_pointer_cast(d_histogram.data()),
-    257,
-    0,
-    256,
-    row_samples,
-    num_rows,
-    std::size_t{row_stride_bytes});
+    samples, thrust::raw_pointer_cast(d_histogram.data()), 257, 0, 256, row_samples, num_rows, size_t{row_stride_bytes});
   CHECK(d_histogram == expected);
 
   const c2h::device_vector<int> d_levels(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{257});
@@ -1018,7 +1011,7 @@ CUB_TEST("DeviceHistogram::Histogram* rows starting beyond INT_MAX", "[histogram
     thrust::raw_pointer_cast(d_levels.data()),
     row_samples,
     num_rows,
-    std::size_t{row_stride_bytes});
+    size_t{row_stride_bytes});
   CHECK(d_histogram == expected);
 }
 

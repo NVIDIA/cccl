@@ -112,7 +112,9 @@ template <typename SampleT, bool MayExceedOffsetT, typename OffsetT, typename Di
 struct DeviceHistogram
 {
 private:
-  template <bool MayExceedOffsetT,
+  // TwoPhase: the caller passes the temporary storage; otherwise the environment provides it
+  template <bool TwoPhase,
+            bool MayExceedOffsetT,
             int NumChannels,
             int NumActiveChannels,
             typename SampleIteratorT,
@@ -130,10 +132,10 @@ private:
     ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
     OffsetT num_row_pixels,
     OffsetT num_rows,
-    size_t row_stride_bytes,
+    ::cuda::std::size_t row_stride_bytes,
     const EnvT& env)
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
+    _CCCL_NVTX_RANGE_SCOPE_IF(!TwoPhase || d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
@@ -142,83 +144,40 @@ private:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-
-    return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        return CUB_NS_QUALIFIER::detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
-          num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
-            return CUB_NS_QUALIFIER::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
-              storage,
-              bytes,
-              d_samples,
-              d_histogram,
-              num_levels,
-              lower_level,
-              upper_level,
-              row_pixels,
-              rows,
-              row_stride_samples,
-              stream,
-              is_byte_sample_t{},
-              policy_selector);
-          });
-      });
+    const auto algorithm =
+      [&](auto policy_selector, void* storage, ::cuda::std::size_t& bytes, auto stream) -> cudaError_t {
+      return CUB_NS_QUALIFIER::detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
+        num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
+          return CUB_NS_QUALIFIER::detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
+            storage,
+            bytes,
+            d_samples,
+            d_histogram,
+            num_levels,
+            lower_level,
+            upper_level,
+            row_pixels,
+            rows,
+            row_stride_samples,
+            stream,
+            is_byte_sample_t{},
+            policy_selector);
+        });
+    };
+    if constexpr (TwoPhase)
+    {
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        d_temp_storage, temp_storage_bytes, env, algorithm);
+    }
+    else
+    {
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(env, algorithm);
+    }
   }
 
-  template <bool MayExceedOffsetT,
-            int NumChannels,
-            int NumActiveChannels,
-            typename SampleIteratorT,
-            typename CounterT,
-            typename LevelT,
-            typename OffsetT,
-            typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t multi_histogram_even_env_impl(
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
-    ::cuda::std::array<int, NumActiveChannels> num_levels,
-    ::cuda::std::array<LevelT, NumActiveChannels> lower_level,
-    ::cuda::std::array<LevelT, NumActiveChannels> upper_level,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    const EnvT& env)
-  {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramEven");
-
-    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t _CCCL_NODEBUG =
-      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
-
-    using default_policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        return detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
-          num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
-            return detail::histogram::dispatch_even<NumChannels, NumActiveChannels>(
-              storage,
-              bytes,
-              d_samples,
-              d_histogram,
-              num_levels,
-              lower_level,
-              upper_level,
-              row_pixels,
-              rows,
-              row_stride_samples,
-              stream,
-              is_byte_sample_t{},
-              policy_selector);
-          });
-      });
-  }
-
-  template <bool MayExceedOffsetT,
+  // TwoPhase: the caller passes the temporary storage; otherwise the environment provides it
+  template <bool TwoPhase,
+            bool MayExceedOffsetT,
             int NumChannels,
             int NumActiveChannels,
             typename SampleIteratorT,
@@ -228,17 +187,17 @@ private:
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t multi_histogram_range_impl(
     void* d_temp_storage,
-    size_t& temp_storage_bytes,
+    ::cuda::std::size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
     ::cuda::std::array<int, NumActiveChannels> num_levels,
     ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
     OffsetT num_row_pixels,
     OffsetT num_rows,
-    size_t row_stride_bytes,
+    ::cuda::std::size_t row_stride_bytes,
     const EnvT& env)
   {
-    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
+    _CCCL_NVTX_RANGE_SCOPE_IF(!TwoPhase || d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
@@ -247,76 +206,34 @@ private:
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        return detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
-          num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
-            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
-              storage,
-              bytes,
-              d_samples,
-              d_histogram,
-              num_levels,
-              d_levels,
-              row_pixels,
-              rows,
-              row_stride_samples,
-              stream,
-              is_byte_sample_t{},
-              policy_selector);
-          });
-      });
-  }
-
-  template <bool MayExceedOffsetT,
-            int NumChannels,
-            int NumActiveChannels,
-            typename SampleIteratorT,
-            typename CounterT,
-            typename LevelT,
-            typename OffsetT,
-            typename EnvT>
-  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t multi_histogram_range_env_impl(
-    SampleIteratorT d_samples,
-    ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
-    ::cuda::std::array<int, NumActiveChannels> num_levels,
-    ::cuda::std::array<const LevelT*, NumActiveChannels> d_levels,
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    const EnvT& env)
-  {
-    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramRange");
-
-    using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
-    using is_byte_sample_t _CCCL_NODEBUG =
-      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
-
-    using default_policy_selector =
-      detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) -> cudaError_t {
-        return detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
-          num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
-            return detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
-              storage,
-              bytes,
-              d_samples,
-              d_histogram,
-              num_levels,
-              d_levels,
-              row_pixels,
-              rows,
-              row_stride_samples,
-              stream,
-              is_byte_sample_t{},
-              policy_selector);
-          });
-      });
+    const auto algorithm =
+      [&](auto policy_selector, void* storage, ::cuda::std::size_t& bytes, auto stream) -> cudaError_t {
+      return CUB_NS_QUALIFIER::detail::histogram::dispatch_with_offset_type<SampleT, MayExceedOffsetT>(
+        num_row_pixels, num_rows, row_stride_bytes, [&](auto row_pixels, auto rows, auto row_stride_samples) {
+          return CUB_NS_QUALIFIER::detail::histogram::dispatch_range<NumChannels, NumActiveChannels>(
+            storage,
+            bytes,
+            d_samples,
+            d_histogram,
+            num_levels,
+            d_levels,
+            row_pixels,
+            rows,
+            row_stride_samples,
+            stream,
+            is_byte_sample_t{},
+            policy_selector);
+        });
+    };
+    if constexpr (TwoPhase)
+    {
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(
+        d_temp_storage, temp_storage_bytes, env, algorithm);
+    }
+    else
+    {
+      return CUB_NS_QUALIFIER::detail::dispatch_with_env_and_tuning<default_policy_selector>(env, algorithm);
+    }
   }
 
 public:
@@ -449,7 +366,7 @@ public:
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return multi_histogram_even_impl<false, 1, 1>(
+    return multi_histogram_even_impl<true, false, 1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1017,7 +934,7 @@ public:
     size_t row_stride_bytes,
     const EnvT& env = {})
   {
-    return multi_histogram_even_impl<true, NumChannels, NumActiveChannels>(
+    return multi_histogram_even_impl<true, true, NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1187,7 +1104,7 @@ public:
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return multi_histogram_range_impl<false, 1, 1>(
+    return multi_histogram_range_impl<true, false, 1, 1>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1707,7 +1624,7 @@ public:
     size_t row_stride_bytes,
     const EnvT& env = {})
   {
-    return multi_histogram_range_impl<true, NumChannels, NumActiveChannels>(
+    return multi_histogram_range_impl<true, true, NumChannels, NumActiveChannels>(
       d_temp_storage,
       temp_storage_bytes,
       d_samples,
@@ -1848,7 +1765,10 @@ public:
     const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return multi_histogram_even_env_impl<false, 1, 1>(
+    ::cuda::std::size_t unused_temp_storage_bytes{};
+    return multi_histogram_even_impl<false, false, 1, 1>(
+      nullptr,
+      unused_temp_storage_bytes,
       d_samples,
       ::cuda::std::array{d_histogram},
       ::cuda::std::array{num_levels},
@@ -2234,8 +2154,19 @@ public:
     size_t row_stride_bytes,
     const EnvT& env = {})
   {
-    return multi_histogram_even_env_impl<true, NumChannels, NumActiveChannels>(
-      d_samples, d_histogram, num_levels, lower_level, upper_level, num_row_pixels, num_rows, row_stride_bytes, env);
+    ::cuda::std::size_t unused_temp_storage_bytes{};
+    return multi_histogram_even_impl<false, true, NumChannels, NumActiveChannels>(
+      nullptr,
+      unused_temp_storage_bytes,
+      d_samples,
+      d_histogram,
+      num_levels,
+      lower_level,
+      upper_level,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      env);
   }
 
   //! @rst
@@ -2320,7 +2251,10 @@ public:
     const EnvT& env = {})
   {
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    return multi_histogram_range_env_impl<false, 1, 1>(
+    ::cuda::std::size_t unused_temp_storage_bytes{};
+    return multi_histogram_range_impl<false, false, 1, 1>(
+      nullptr,
+      unused_temp_storage_bytes,
       d_samples,
       ::cuda::std::array{d_histogram},
       ::cuda::std::array{num_levels},
@@ -2654,8 +2588,18 @@ public:
     size_t row_stride_bytes,
     const EnvT& env = {})
   {
-    return multi_histogram_range_env_impl<true, NumChannels, NumActiveChannels>(
-      d_samples, d_histogram, num_levels, d_levels, num_row_pixels, num_rows, row_stride_bytes, env);
+    ::cuda::std::size_t unused_temp_storage_bytes{};
+    return multi_histogram_range_impl<false, true, NumChannels, NumActiveChannels>(
+      nullptr,
+      unused_temp_storage_bytes,
+      d_samples,
+      d_histogram,
+      num_levels,
+      d_levels,
+      num_row_pixels,
+      num_rows,
+      row_stride_bytes,
+      env);
   }
 
   //@}
