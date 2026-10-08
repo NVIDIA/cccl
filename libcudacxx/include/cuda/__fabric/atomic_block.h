@@ -24,38 +24,15 @@
 #if _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_COMPILER(NVRTC)
 
 #  include <cuda/__fabric/common.h>
-#  include <cuda/std/__floating_point/cuda_fp_types.h>
+#  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__memory/addressof.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/cstring>
 
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
-
-template <class _Tp>
-struct __atomic_block_representation
-{
-  using type = _Tp;
-};
-
-#  if _CCCL_HAS_NVFP16()
-template <>
-struct __atomic_block_representation<::__half2>
-{
-  using type = ::__half2_raw;
-};
-#  endif // _CCCL_HAS_NVFP16()
-
-#  if _CCCL_HAS_NVBF16()
-template <>
-struct __atomic_block_representation<::__nv_bfloat162>
-{
-  using type = ::__nv_bfloat162_raw;
-};
-#  endif // _CCCL_HAS_NVBF16()
 
 //! @brief A 16-byte-aligned, 16-byte staging block for one fabric atomic value.
 //!
@@ -68,12 +45,7 @@ struct __atomic_block_representation<::__nv_bfloat162>
 template <class _Tp>
 struct alignas(__fabric_block_size) atomic_block
 {
-private:
-  using _Representation = typename __atomic_block_representation<_Tp>::type;
-
-public:
-  static_assert(::cuda::std::is_trivially_copyable_v<_Representation>);
-  static_assert(sizeof(_Representation) == sizeof(_Tp));
+  static_assert(::cuda::is_trivially_copyable_v<_Tp>);
   static_assert(sizeof(_Tp) == 4 || sizeof(_Tp) == 8 || sizeof(_Tp) == 16);
 
   //! @brief Store an operand in the slot selected by the endpoint offset.
@@ -85,16 +57,7 @@ public:
     const auto __slot = __offset % __fabric_block_size;
     _CCCL_ASSERT(__offset % sizeof(_Tp) == 0 && __slot + sizeof(_Tp) <= __fabric_block_size,
                  "invalid atomic element offset");
-    if constexpr (::cuda::std::is_same_v<_Tp, _Representation>)
-    {
-      ::cuda::std::memcpy(__storage_ + __slot, ::cuda::std::addressof(__value), sizeof(_Tp));
-    }
-    else
-    {
-      // CUDA packed floating-point types provide a trivially copyable raw representation.
-      const _Representation __raw = __value;
-      ::cuda::std::memcpy(__storage_ + __slot, ::cuda::std::addressof(__raw), sizeof(_Tp));
-    }
+    ::cuda::std::memcpy(__storage_ + __slot, ::cuda::std::addressof(__value), sizeof(_Tp));
   }
 
   //! @brief Read the value in the slot selected by the endpoint offset.
@@ -106,9 +69,14 @@ public:
     const auto __slot = __offset % __fabric_block_size;
     _CCCL_ASSERT(__offset % sizeof(_Tp) == 0 && __slot + sizeof(_Tp) <= __fabric_block_size,
                  "invalid atomic element offset");
-    _Representation __value;
-    ::cuda::std::memcpy(::cuda::std::addressof(__value), __storage_ + __slot, sizeof(_Tp));
-    return static_cast<_Tp>(__value);
+    // A buffer object avoids NVCC's bit_cast lowering issue with bare arrays.
+    struct __buffer
+    {
+      unsigned char __bytes[sizeof(_Tp)];
+    };
+    __buffer __value;
+    ::cuda::std::memcpy(__value.__bytes, __storage_ + __slot, sizeof(_Tp));
+    return ::cuda::std::bit_cast<_Tp>(__value);
   }
 
 private:
