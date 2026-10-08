@@ -10,7 +10,6 @@
 
 #include <thrust/device_vector.h>
 
-#include <cuda/functional>
 #include <cuda/memory_pool>
 #include <cuda/std/execution>
 #include <cuda/stream>
@@ -31,11 +30,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc{};
 
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch& launch) {
-               do_not_optimize(
-                 cuda::std::copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), cuda::__is_even{}));
-             });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      do_not_optimize(
+        cuda::std::copy_if(cuda_policy(alloc, launch), in.begin(), in.end(), out.begin(), is_even_after_truncation{}));
+    });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
