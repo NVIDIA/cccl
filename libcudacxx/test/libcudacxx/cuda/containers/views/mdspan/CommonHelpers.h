@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef TEST_STD_CONTAINERS_VIEWS_MDSPAN_COMMON_HELPERS_TYPE_H
-#define TEST_STD_CONTAINERS_VIEWS_MDSPAN_COMMON_HELPERS_TYPE_H
+#ifndef TEST_CUDA_CONTAINERS_VIEWS_MDSPAN_COMMON_HELPERS_TYPE_H
+#define TEST_CUDA_CONTAINERS_VIEWS_MDSPAN_COMMON_HELPERS_TYPE_H
 
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
@@ -97,4 +97,4 @@ template <class ToMDS,
 TEST_FUNC constexpr void test_equality_with_accessor(const ToMDS&, const FromMDS&)
 {}
 
-#endif // TEST_STD_CONTAINERS_VIEWS_MDSPAN_COMMON_HELPERS_TYPE_H
+#endif // TEST_CUDA_CONTAINERS_VIEWS_MDSPAN_COMMON_HELPERS_TYPE_H

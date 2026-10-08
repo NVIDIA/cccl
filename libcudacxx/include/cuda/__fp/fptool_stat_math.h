@@ -24,7 +24,7 @@
 //! @file fptool_stat_math.h
 //! @brief Math API for `fpmp2_stat`
 //!
-//! Mirrors the free functions of `<cuda/fpmp_math>` for the statistics-collecting
+//! Mirrors the math free functions of `<cuda/fpmp>` for the statistics-collecting
 //! wrapper: each one unwraps its arguments, calls the `fpmp2` implementation and wraps
 //! the result again, so results are bit-identical to the plain type. Including this
 //! header lets unqualified calls such as `exp(x)` or `hypot(x, y)` resolve for a `_stat`
@@ -42,6 +42,7 @@
 //! its `fpmp2` result converts implicitly, as in `fp32mp2_stat v = icdf(bits);`.
 
 #include <cuda/__fp/fpmp_math.h>
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/__fp/fptool_stat.h>
 
 #include <cuda/std/__cccl/prologue.h>

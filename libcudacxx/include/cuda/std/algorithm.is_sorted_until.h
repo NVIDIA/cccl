@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__algorithm/is_sorted_until.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_ALGORITHM_ALGORITHM_IS_SORTED_UNTIL_H

@@ -1,4 +1,6 @@
+#include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -54,6 +56,15 @@ std::string hash_pch_options(const std::vector<std::string>& options, const std:
 
   append(pch_preamble_source);
   append(kind_name);
+  if (kind_name == "host")
+  {
+    // Bump when the host PCH's hardcoded -include list changes (see
+    // LIBNVCC_PCH_HOST in generatePCH): that list isn't part of `options`
+    // (config.appendCommandLineArguments only serializes CompilerConfig
+    // fields), so without this a stale cached PCH from before such a change
+    // would otherwise be reused as-is.
+    append("host-pch-cxa-guard-v1");
+  }
   for (const auto& option : options)
   {
     append(option);
@@ -563,9 +574,18 @@ std::string JITCompiler::createTempDirectory()
   int pid = getpid();
 #endif
 
+  // JIT modules are never dlclose'd (see DynamicLibrary::unload), and dlopen returns the existing
+  // handle when asked for a path that is already loaded -- even if the file at that path has since
+  // been deleted and recreated. A directory name that repeats within this process would therefore
+  // make a later build silently bind to an earlier module and fail to find its entry point. The
+  // random suffix alone is only 20 bits, which collides in practice once a process has compiled a
+  // few hundred modules, so also include a process-wide counter to make every name unique.
+  static std::atomic<std::uint64_t> next_id{0};
+
   for (int attempt = 0; attempt < 10; ++attempt)
   {
-    std::string dir_name            = "hostjit_" + std::to_string(pid) + "_" + std::to_string(dis(gen));
+    std::string dir_name =
+      "hostjit_" + std::to_string(pid) + "_" + std::to_string(next_id.fetch_add(1)) + "_" + std::to_string(dis(gen));
     std::filesystem::path full_path = base_tmp_dir / dir_name;
 
     std::error_code ec;

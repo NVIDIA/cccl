@@ -39,26 +39,49 @@
 
 namespace cuda::experimental::coop
 {
-template <class _Level>
-[[nodiscard]] _CCCL_DEVICE_API _CCCL_CONSTEVAL thread_scope __minimum_required_scope_for() noexcept
-{
-  if constexpr (::cuda::std::is_same_v<_Level, thread_level>)
-  {
-    return thread_scope_thread;
-  }
-  else if constexpr (::cuda::std::is_same_v<_Level, warp_level> || ::cuda::std::is_same_v<_Level, block_level>)
-  {
-    return thread_scope_block;
-  }
-  else if constexpr (::cuda::std::is_same_v<_Level, cluster_level> || ::cuda::std::is_same_v<_Level, grid_level>)
-  {
-    return thread_scope_device;
-  }
-  else
-  {
-    return thread_scope_system;
-  }
-}
+template <thread_scope _Scope, class _Level>
+inline constexpr bool __is_sufficient_scope_for_v = false;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_thread, thread_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_block, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_block, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_block, block_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, block_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_cluster, cluster_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, block_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, cluster_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_device, grid_level> = true;
+
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, thread_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, warp_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, block_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, cluster_level> = true;
+template <>
+inline constexpr bool __is_sufficient_scope_for_v<thread_scope_system, grid_level> = true;
 
 template <class _Tp>
 inline constexpr thread_scope __barrier_scope_v = thread_scope_system;
@@ -103,6 +126,11 @@ class __barrier_synchronizer_instance
   _Barrier* __barrier_;
 
 public:
+  [[nodiscard]] _CCCL_DEVICE_API static __barrier_synchronizer_instance invalid() noexcept
+  {
+    return __barrier_synchronizer_instance{nullptr};
+  }
+
   _CCCL_DEVICE_API explicit __barrier_synchronizer_instance(_Barrier* __barrier) noexcept
       : __barrier_{__barrier}
   {}
@@ -177,8 +205,7 @@ public:
   {
     using _Level = typename _ParentGroup::level_type;
 
-    // todo(dabayer): Relax this condition if all units in the group are within a level that is smaller than _Level.
-    static_assert(__barrier_scope_v<_Barrier> <= ::cuda::experimental::coop::__minimum_required_scope_for<_Level>(),
+    static_assert(__is_sufficient_scope_for_v<__barrier_scope_v<_Barrier>, _Level>,
                   "_Barrier's thread scope is insufficient for group synchronization in _Level");
 
     if constexpr (_MappingResult::static_group_count() != ::cuda::std::dynamic_extent

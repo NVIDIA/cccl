@@ -3,9 +3,8 @@ FPEMU — IEEE-754 Double Precision in Software
 
 `fpemu` provides IEEE-754 double-precision arithmetic built from 32-bit integer and float
 operations rather than native FP64 instructions. It is for hardware where FP64 throughput is
-limited or absent: the emulation runs on the units the GPU has in abundance, so a `double`
-workload can be faster in software than in the hardware path it would otherwise use — and it
-runs at all on parts with no usable FP64 at all.
+rationed: the emulation runs on the units the GPU has in abundance, so a `double` workload can
+be faster in software than in the hardware path it would otherwise use.
 
 At its default accuracy the packed form reproduces `double` bit for bit, so the trade being
 made is throughput against the FP64 pipeline, not accuracy against `double`. Accuracy only
@@ -20,7 +19,11 @@ Where this pays off
 Measured on a midpoint-rule π integration — 2^26 terms, five arithmetic operations per term, no
 memory traffic worth speaking of — on L40S (Ada), RTX PRO 6000 Blackwell and B300, where native
 FP64 runs at roughly 1/35 of FP32. "Correct digits" means correct decimal digits of the computed
-integral.
+integral, end to end: the partial sums are reduced in the type under test, so each row carries its
+own summation error as well as the error of the loop. That is the honest number for a computation
+written entirely in one type, and it is the reason the unpacked form gains accuracy below — the
+error it absorbs is largely that reduction. Measured the other way, with a reduction more accurate
+than every type being compared, the high-accuracy forms and `double` come out level.
 
 | Type | Correct digits | Speed vs native `double` |
 |---|---|---|
@@ -29,11 +32,15 @@ integral.
 | `fp64emu_unpacked_high` | 16.3 | **1.53–1.77×** |
 | `fp64emu_unpacked_mid` | 16.4 | **1.88–2.13×** |
 
-Two results to read off it. The packed form at `high` reproduces `double` bit for bit and is
-never slower than it, so exact FP64 semantics are available without using the FP64 pipe at all.
+Two results to read off it. The packed form at `high` reproduces `double` bit for bit while
+running at parity with it, so exact FP64 semantics are available without using the FP64 pipe at
+all. Parity is the claim to carry away rather than the 1.01× lower bound measured here: the same
+comparison run against a more accurate reduction puts B300 just under, at 0.98×.
 And the unpacked form beats hardware `double` on *both* axes — about 1.5 digits more accuracy at
 roughly twice the throughput — which is the reserve bits and the deferred rounding described
-below. Cost relative to FP32 varies more across architectures than pair arithmetic does, 15–24%
+below. The speed is the part to count on; the accuracy is a genuine gain wherever per-operation
+rounding accumulates, as it does in this reduction, and shrinks to nothing where something else
+dominates the error budget. Cost relative to FP32 varies more across architectures than pair arithmetic does, 15–24%
 against a few percent, because the emulation also does bit manipulation whose relative
 throughput differs per part; sm_120 is the best host of the three for bit-exact software FP64.
 
@@ -69,7 +76,10 @@ by 9 extra bits, so intermediate computations on values that stay unpacked run o
 significand bits** and round to the storage format once — at the pack — instead of after every
 operation. Over a chain it is therefore both faster, since the pack/unpack tax is paid once at
 the boundary rather than per operation, and more accurate. On the integration measured above it
-gains about 1.4 decimal digits at `high` and 3.1 digits at `mid`.
+gains about 1.4 decimal digits at `high` and 3.1 digits at `mid`. The `mid` gain is the more
+robust of the two, since there the guard bits absorb a per-operation error that grows with the
+length of the chain; the `high` gain is against a baseline carrying the summation error described
+above, and disappears when that error is taken out of the comparison.
 
 Two consequences follow, and both matter:
 
@@ -93,12 +103,25 @@ Selected per type, and available for both representations (`fp64emu_high`, `fp64
 | `fp64emu` | `fpemu_accuracy::def` | The default selector, equal to `high` | Full IEEE-754 |
 
 Note that the default is the IEEE-correct level, so the type is safe to reach for without
-knowing this table — the lower levels are opt-in. Note also that stepping down costs range as
-well as precision: `mid` and `low` cover the normal range only, and do not carry the
-subnormal and special-value handling that `high` does.
+knowing this table — the lower levels are opt-in. Note also that stepping down costs special
+values as well as precision: in the packed form `mid` and `low` handle the normal range only,
+and do not carry the subnormal, NaN and infinity handling that `high` does. The unpacked form
+is better behaved here, its shared pack and unpack routines being full-range at every accuracy
+level, so stepping down there lowers the precision of the core without discarding the range
+handling at the boundary.
+
+What stepping down does **not** cost is exponent range, which is what makes `low` more useful
+than its precision alone suggests. The format is still binary64, so a `low` value reaches to
+about ±10^308 where a `float` stops at ±10^38, while the significand it delivers is in the
+neighbourhood of `float`'s. It is therefore the level for computations that need the *range*
+rather than the precision — a power series whose terms are well served by 24 bits of
+significand, but whose intermediate products leave `float`'s exponent behind long before the
+sum converges — and it is the cheapest arithmetic the component offers.
 
 The four rounding modes `rn` (nearest), `rz` (toward zero), `ru` (toward +∞) and `rd`
-(toward −∞) are available at every accuracy level.
+(toward −∞) are available at every accuracy level through the intrinsic spellings in the
+operations table below, but **for the packed form only** — the unpacked form offers `_rn` and
+nothing else. The operators themselves round to nearest in both, as they do for `double`.
 
 Using the types
 ---------------
@@ -129,68 +152,52 @@ auto r = sqrt(x);            // unqualified: ADL finds the fpemu overload
 |---|---|---|
 | `double` → | implicit | cast required |
 | `float` → | implicit | cast required |
-| `int32_t` → | implicit | cast required |
-| `int64_t` → | cast required | cast required |
+| any standard integer → | implicit, at every width | cast required |
 | → `double` | implicit | implicit |
 | → `float` | cast required | cast required |
+| → a standard integer | cast required, truncating | cast required, truncating |
 
 The packed form is deliberately as permissive as `double` itself, which is what makes it a
-drop-in. The unpacked form asks for the cast everywhere, since entering it is a change of
-representation rather than just of type — the practical consequence in real code is that
-`acc += 0.5` needs to become `acc += cudax::fp64emu_unpacked{0.5}`.
+drop-in — including the integer constructors, which are implicit at 64 bits as well as 32, on
+the same principle that makes `long` to `double` implicit despite its potential loss. The
+unpacked form asks for the cast everywhere, since entering it is a change of representation
+rather than just of type — the practical consequence in real code is that `acc += 0.5` needs to
+become `acc += cudax::fp64emu_unpacked{0.5}`.
+
+`__int128` and `__uint128` are `= delete`d in both directions, and `__float128` on the way in,
+rather than being absent, so the diagnostic names the rule. Only the default constructors are
+`constexpr`, so a value cannot be built at compile time.
 
 ### Operations
 
-| Operation | C++ | Built-in prefix |
+| Operation | C++ | Intrinsic spelling |
 |---|---|---|
-| Add, subtract, multiply, divide | `+`, `-`, `*`, `/` and compound forms | `dadd`, `dsub`, `dmul`, `ddiv` |
-| Square root | `sqrt()` | `dsqrt` |
-| Fused multiply-add | `fma()` | `fma` |
-| Multiply-add | `mad()` | `mad` |
-| Dot product | `dot()` | `dot` |
-| Complex multiply | `cmul()` | `cmul` |
+| Add, subtract, multiply, divide | `+`, `-`, `*`, `/` and compound forms | `__dadd_<rm>`, `__dsub_<rm>`, `__dmul_<rm>`, `__ddiv_<rm>` |
+| Fused multiply-add | `fma()` | `__fma_<rm>` |
+| Square root | `sqrt()` | `__dsqrt_<rm>` |
+| Multiply-add | `mad()` | `__mad_rn` |
+| Dot product | `dot()` | |
+| Complex multiply | `cmul()` | |
+
+The CUDA-style intrinsic spellings take these types as operands and deduce the accuracy level
+from them, so existing intrinsic call sites port across unchanged. The `<rm>` suffix is one of
+`rn`, `rz`, `ru`, `rd`, which is how a rounding mode other than nearest is selected; `mad` is
+the exception, `__mad_rn` being its only spelling.
 
 All six comparisons follow IEEE-754 semantics, for both representations. Mixed-type
 arithmetic works directly, so an `fpemu` value combines with a built-in scalar without a cast
-on the scalar side.
+on the scalar side. Note that `cmul()` returns `void` and writes its real and imaginary
+results through two reference parameters, so it is not an expression-style call.
 
-There is **no transcendental math header** for `fpemu` — no `exp`, `log` or trigonometry.
-Arithmetic, `fma` and `sqrt` are the surface. This is the main functional difference from the
-`fpmp` types, which have `<cuda/fpmp_math>`.
+There are **no transcendental math functions** for `fpemu` — no `exp`, `log` or
+trigonometry. Arithmetic, `fma` and `sqrt` are the surface. This is the main functional
+difference from the `fpmp` types, whose header carries a full math API.
 
 `fpemu` objects may be declared `volatile`, for the legacy CUDA pattern of holding
 shared-memory scalars in volatile variables. As for `fpmp2`, support is limited to storage —
 loads, stores and copies, with a bit-preserving round-trip and trivial copyability retained.
 Arithmetic and comparison take `const fpemu&` and will not bind a volatile lvalue, so compute
 on a non-volatile copy and store the result back.
-
-### The scalar built-ins
-
-Underneath the class is a C-callable layer operating on `__fpbits64`, a `uint64_t` holding the
-IEEE-754 bit pattern. It is what to reach for when the accuracy level needs to be chosen at
-the call site rather than carried by a type. The declarations come with `<cuda/fpemu>`:
-
-```
-__fp64emu_<op>_<rm>                  default (== high)
-__fp64emu_high_<op>_<rm>             correctly rounded, full IEEE-754 specials
-__fp64emu_mid_<op>_<rm>              1-2 LSB error, normal range
-__fp64emu_low_<op>_<rm>              up to half the mantissa, normal range
-```
-
-with `__fp64emu_unpacked_...` mirroring all four for the unpacked bit layout, `<op>` the
-operation from the table above and `<rm>` the rounding mode.
-
-```c++
-__fpbits64 x = __fp64emu_from_double(1.2345);
-__fpbits64 y = __fp64emu_from_double(2.3456);
-
-__fpbits64 r = __fp64emu_high_dmul_rn(x, y);   // correctly rounded multiply
-double out   = __fp64emu_to_double(r);
-```
-
-The CUDA-style spellings (`__dadd_rn`, `__dmul_rn`, `__fma_rn`, ...) also work on the class
-types and deduce the accuracy level from the argument type, so existing intrinsic call sites
-port across unchanged.
 
 The example
 -----------
