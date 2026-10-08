@@ -721,10 +721,14 @@ Reduction and result ownership
 ------------------------------
 
 ``coop.sum`` and ``coop.reduce`` combine the group's inputs into a scalar.
-Block reductions accept a scalar or ``ThreadData`` input; every item in every
-thread contributes. Physical-warp and power-of-two logical-warp reductions
-accept one scalar per lane. Consume the result only on group rank zero.
-All required members still execute the reduction.
+Block, physical-warp, and logical-warp reductions accept a scalar or
+``ThreadData`` input; every item in every participating thread contributes.
+Consume the result only on group rank zero. All required members still
+execute the reduction. Logical-warp widths may be powers of two from 1
+through 32 or any width from 17 through 31. CUB supports only one
+non-power-of-two group per physical warp. For those widths, use
+``group_by(width, exhaustive=False)`` and
+guard the reduction with ``group.is_member()`` to exclude trailing lanes.
 
 The :doc:`Reduce visualization <visualizations/reduce>` shows which values
 contribute and which group members receive a defined result.

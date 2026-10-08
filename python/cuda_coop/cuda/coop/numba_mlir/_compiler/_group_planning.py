@@ -265,8 +265,9 @@ class GroupPlanningContext:
         ``algorithm="transpose"`` uses one scratch region for the block; a
         warp ``load()`` operation with that algorithm needs a separate region
         for each participating physical or logical warp. For such plans,
-        require exact block dimensions, groups that cover the block, and one
-        shared-memory slice per group instance. Direct algorithms for
+        require exact block dimensions and one shared-memory slice per
+        complete group instance. Non-exhaustive logical warps leave trailing
+        lanes outside their groups. Direct algorithms for
         ``load()`` and ``store()`` need no scratch and skip those checks. An
         explicit ``temp_storage`` argument is supported only for a single
         block-scoped instance.
@@ -375,7 +376,21 @@ class GroupPlanningContext:
             block_threads = (
                 exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
             )
-            if topology.logical_width * topology.instances != block_threads:
+            participating_threads = block_threads
+            if (
+                participation.group_kind == "threads_within_warp"
+                and not participation.complete_parent_partition
+                and 1 <= topology.logical_width <= 32
+            ):
+                participating_threads = (
+                    (block_threads // 32)
+                    * (32 // topology.logical_width)
+                    * topology.logical_width
+                )
+            if (
+                topology.logical_width * topology.instances
+                != participating_threads
+            ):
                 raise GroupRewriteError(
                     "cuda.coop.numba_mlir group topology does not cover the "
                     "exact block dimensions"
