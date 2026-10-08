@@ -135,7 +135,7 @@ def _algorithm(
         extra_type_definitions=(_types.numba_type_to_wrapper(dtype),),
     )
     specialization._compile_context = context
-    specialization.threads = threads_in_warp
+    specialization.logical_warp_threads = threads_in_warp
     specialization.block_threads = _BLOCK_THREADS
     return specialization
 
@@ -298,7 +298,7 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
         for width in (1, 2, 4, 8, 16, 32)
     ]
 
-    assert [algorithm.threads for algorithm in algorithms] == [
+    assert [algorithm.logical_warp_threads for algorithm in algorithms] == [
         1,
         2,
         4,
@@ -310,7 +310,7 @@ def test_logical_warp_widths_have_distinct_specializations_and_cache_keys(
         len(
             {
                 algorithm._make_lto_ir_cache_key(
-                    threads=algorithm.threads,
+                    logical_warp_threads=algorithm.logical_warp_threads,
                     block_threads=_BLOCK_THREADS,
                 )
                 for algorithm in algorithms
