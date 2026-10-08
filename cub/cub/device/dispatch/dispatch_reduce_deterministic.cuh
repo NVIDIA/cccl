@@ -26,7 +26,10 @@
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_macro.cuh>
 #include <cub/util_temporary_storage.cuh>
+
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
@@ -38,6 +41,7 @@
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
@@ -87,11 +91,89 @@ struct deterministic_sum_t
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
-          typename OffsetT,
+          typename KernelNumItemsT,
           typename ReductionOpT,
           typename InitValueT,
           typename DeterministicAccumT,
+          typename TransformOpT>
+struct DeterministicDeviceReduceKernelSource
+{
+  // PolicySelector must be stateless, so we can pass the type to the kernel
+  static_assert(::cuda::std::is_empty_v<PolicySelector>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    SingleTileKernel,
+    reduce::DeterministicDeviceReduceSingleTileKernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      ReductionOpT,
+      InitValueT,
+      DeterministicAccumT,
+      TransformOpT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    ReductionKernel,
+    reduce::DeterministicDeviceReduceKernel<PolicySelector,
+                                            InputIteratorT,
+                                            KernelNumItemsT,
+                                            ReductionOpT,
+                                            DeterministicAccumT,
+                                            TransformOpT>)
+
+  // The second single-tile pass reduces the per-block partials and always uses an identity transform
+  CUB_DEFINE_KERNEL_GETTER(
+    SingleTileSecondKernel,
+    reduce::DeterministicDeviceReduceSingleTileKernel<
+      PolicySelector,
+      DeterministicAccumT*,
+      OutputIteratorT,
+      ReductionOpT,
+      InitValueT,
+      DeterministicAccumT>)
+
+  CUB_DEFINE_KERNEL_GETTER(
+    DeferredSingleTileSecondKernel,
+    reduce::DeterministicDeviceReduceDeferredSingleTileKernel<
+      PolicySelector,
+      DeterministicAccumT*,
+      OutputIteratorT,
+      KernelNumItemsT,
+      ReductionOpT,
+      InitValueT,
+      DeterministicAccumT>)
+};
+
+//! Kernel source instantiation matching the default used by `rfa::dispatch` below. Tests use this alias to
+//! reference the exact kernel instantiations the dispatch launches.
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename InitValueT,
+          typename TransformOpT   = ::cuda::std::identity,
+          typename AccumT         = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+          typename PolicySelector = policy_selector_from_types<AccumT,
+                                                               reduce::num_items_offset_t<OffsetT>,
+                                                               deterministic_sum_t<AccumT>,
+                                                               __determinism_t::__gpu_to_gpu>>
+using default_kernel_source_t = DeterministicDeviceReduceKernelSource<
+  PolicySelector,
+  THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>,
+  OutputIteratorT,
+  // Immediate chunk sizes are passed to the kernels as-is; deferred problem sizes are read on device.
+  detail::parameter_from_host_t<int, OffsetT>,
+  deterministic_sum_t<AccumT>,
+  InitValueT,
+  typename deterministic_sum_t<AccumT>::DeterministicAcc,
+  TransformOpT>;
+
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename InitValueT,
           typename TransformOpT,
+          typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invoke_single_tile(
   void* d_temp_storage,
@@ -104,6 +186,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   cudaStream_t stream,
   TransformOpT transform_op,
   ReducePolicy active_policy,
+  KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
   // Return if the caller is simply requesting the size of the storage allocation
@@ -120,14 +203,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
         launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-          .doit(detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-                  PolicySelector,
-                  InputIteratorT,
-                  OutputIteratorT,
-                  ReductionOpT,
-                  InitValueT,
-                  DeterministicAccumT,
-                  TransformOpT>,
+          .doit(kernel_source.SingleTileKernel(),
                 d_in,
                 d_out,
                 static_cast<int>(num_items),
@@ -148,14 +224,14 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   return CubDebug(detail::DebugSyncStream(stream));
 }
 
-template <typename PolicySelector,
+template <typename DeterministicAccumT,
           typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
           typename InitValueT,
-          typename DeterministicAccumT,
           typename TransformOpT,
+          typename KernelSource,
           typename KernelLauncherFactory>
 CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invoke_passes(
   void* d_temp_storage,
@@ -168,11 +244,9 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   cudaStream_t stream,
   TransformOpT transform_op,
   ReducePolicy active_policy,
+  KernelSource kernel_source,
   KernelLauncherFactory launcher_factory)
 {
-  // Immediate chunk sizes are passed to the kernels as-is; deferred problem sizes are read on device.
-  using num_items_kernel_t = detail::parameter_from_host_t<int, OffsetT>;
-
   int sm_count;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
   {
@@ -180,15 +254,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   KernelConfig reduce_config;
-  if (const auto error = CubDebug(reduce_config.__init(
-        detail::reduce::DeterministicDeviceReduceKernel<
-          PolicySelector,
-          InputIteratorT,
-          num_items_kernel_t,
-          ReductionOpT,
-          DeterministicAccumT,
-          TransformOpT>,
-        active_policy.multi_tile)))
+  if (const auto error = CubDebug(reduce_config.__init(kernel_source.ReductionKernel(), active_policy.multi_tile)))
   {
     return error;
   }
@@ -280,12 +346,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
     if (const auto error = CubDebug(
           launcher_factory(current_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
-            .doit(detail::reduce::DeterministicDeviceReduceKernel<PolicySelector,
-                                                                  InputIteratorT,
-                                                                  num_items_kernel_t,
-                                                                  ReductionOpT,
-                                                                  DeterministicAccumT,
-                                                                  TransformOpT>,
+            .doit(kernel_source.ReductionKernel(),
                   d_in,
                   d_chunk_block_reductions,
                   kernel_num_items,
@@ -324,14 +385,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
     {
       return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-        .doit(detail::reduce::DeterministicDeviceReduceDeferredSingleTileKernel<
-                PolicySelector,
-                DeterministicAccumT*,
-                OutputIteratorT,
-                num_items_kernel_t,
-                ReductionOpT,
-                InitValueT,
-                DeterministicAccumT>,
+        .doit(kernel_source.DeferredSingleTileSecondKernel(),
               d_block_reductions,
               d_out,
               detail::reduce::make_num_items_kernel_arg(num_items),
@@ -343,13 +397,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     else
     {
       return launcher_factory(1, active_policy.single_tile.threads_per_block, 0, stream)
-        .doit(detail::reduce::DeterministicDeviceReduceSingleTileKernel<
-                PolicySelector,
-                DeterministicAccumT*,
-                OutputIteratorT,
-                ReductionOpT,
-                InitValueT,
-                DeterministicAccumT>,
+        .doit(kernel_source.SingleTileSecondKernel(),
               d_block_reductions,
               d_out,
               reduce_grid_size,
@@ -373,17 +421,20 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   return CubDebug(detail::DebugSyncStream(stream));
 }
 
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename InitValueT,
-          typename TransformOpT          = ::cuda::std::identity,
-          typename AccumT                = accum_t<InitValueT, InputIteratorT, TransformOpT>,
-          typename PolicySelector        = policy_selector_from_types<AccumT,
-                                                                      reduce::num_items_offset_t<OffsetT>,
-                                                                      deterministic_sum_t<AccumT>,
-                                                                      __determinism_t::__gpu_to_gpu>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  typename InputIteratorT,
+  typename OutputIteratorT,
+  typename OffsetT,
+  typename InitValueT,
+  typename TransformOpT   = ::cuda::std::identity,
+  typename AccumT         = accum_t<InitValueT, InputIteratorT, TransformOpT>,
+  typename PolicySelector = policy_selector_from_types<AccumT,
+                                                       reduce::num_items_offset_t<OffsetT>,
+                                                       deterministic_sum_t<AccumT>,
+                                                       __determinism_t::__gpu_to_gpu>,
+  typename KernelSource =
+    default_kernel_source_t<InputIteratorT, OutputIteratorT, OffsetT, InitValueT, TransformOpT, AccumT, PolicySelector>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   void* d_temp_storage,
   size_t& temp_storage_bytes,
@@ -394,6 +445,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   cudaStream_t stream                    = {},
   TransformOpT transform_op              = {},
   PolicySelector policy_selector         = {},
+  KernelSource kernel_source             = {},
   KernelLauncherFactory launcher_factory = {})
 {
   // Get CC
@@ -421,14 +473,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
     if (num_items <= tile_items)
     {
-      return invoke_single_tile<PolicySelector,
-                                input_unwrapped_it_t,
-                                OutputIteratorT,
-                                OffsetT,
-                                deterministic_add_t,
-                                InitValueT,
-                                typename deterministic_add_t::DeterministicAcc,
-                                TransformOpT>(
+      return invoke_single_tile(
         d_temp_storage,
         temp_storage_bytes,
         d_in_unwrapped,
@@ -439,18 +484,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
         stream,
         transform_op,
         active_policy,
+        kernel_source,
         launcher_factory);
     }
   }
 
-  return invoke_passes<PolicySelector,
-                       input_unwrapped_it_t,
-                       OutputIteratorT,
-                       OffsetT,
-                       deterministic_add_t,
-                       InitValueT,
-                       typename deterministic_add_t::DeterministicAcc,
-                       TransformOpT>(
+  return invoke_passes<typename deterministic_add_t::DeterministicAcc>(
     d_temp_storage,
     temp_storage_bytes,
     d_in_unwrapped,
@@ -461,6 +500,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     stream,
     transform_op,
     active_policy,
+    kernel_source,
     launcher_factory);
 }
 } // namespace detail::rfa
