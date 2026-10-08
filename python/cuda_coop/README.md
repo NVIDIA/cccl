@@ -48,7 +48,7 @@ checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
 Windows checks build and import the universal wheel and verify its headers;
 they do not execute the compiler backend. Other combinations need separate
 runtime qualification. See the
-[validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
+[validation scope](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html#coop-numba-validation)
 for tested platforms, coverage, and hardware requirements.
 
 With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
@@ -122,6 +122,7 @@ explains terms and concepts, including blocked and striped layouts.
 | --- | --- |
 | Memory operations | `load`, `store` |
 | Reduction | `reduce`, `sum` |
+| Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
 | Data rearrangement | `exchange`, `shuffle` |
 
 Each operation documents its supported groups and result ownership in the
@@ -300,7 +301,7 @@ participant must still reach the collective.
 
 ## Temporary storage
 
-Block Load, Store, and Reduce accept an optional caller descriptor:
+Block Load, Store, Reduce, and Scan accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
@@ -312,21 +313,22 @@ storage = coop.TempStorage(
 coop.load(block, source, items, algorithm="transpose", temp_storage=storage)
 ```
 
-For Load and Store on block, physical Warp, and logical Warp groups, `direct`,
-`striped`, and `vectorize` are storage-free: they default-construct CUB
-primitives without shared-memory allocation, pointer arguments, or barriers.
-For block calls, an explicit descriptor is validated but does not change their
-code generation. Construct `TempStorage` inside the kernel; module-global
-storage descriptors cannot be resolved. A descriptor may be passed to a device
-helper that Numba-CUDA-MLIR inlines into the kernel, which is the default.
+For Load and Store on block, physical Warp, and logical Warp groups,
+`direct`, `striped`, and `vectorize` are storage-free: they
+default-construct CUB primitives without shared-memory allocation, pointer
+arguments, or barriers. For block calls, an explicit descriptor is validated
+but does not change their code generation. Construct `TempStorage` inside
+the kernel; module-global storage descriptors cannot be resolved. A
+descriptor may be passed to a device helper that Numba-CUDA-MLIR inlines
+into the kernel, which is the default.
 
-The three block transpose Load/Store algorithms and Block Reduce use CUB
+The three block transpose Load/Store algorithms and Block Scan use CUB
 temporary storage. Without a descriptor, the compiler allocates the
 specialization's exact storage and inserts a block reuse barrier. A caller
 descriptor selects shared or exclusive slices and may request capacity and
-alignment. Both explicit and omitted storage participate in the shared-memory
-plan and launch accounting. The provider determines the required byte count
-and alignment.
+alignment. Both explicit and omitted storage participate in the
+shared-memory plan and launch accounting. The provider determines the
+required byte count and alignment.
 
 A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
 every call that passes the same descriptor on one region, while
@@ -461,6 +463,68 @@ defaults to `auto_sync=False`; insert a block barrier between uses, or choose
 Grid Reduce and Sum are unsupported because a grid reduction requires hidden
 per-launch workspace; use a separate kernel or explicitly managed multi-stage
 reduction instead.
+
+## Scan
+
+The Scan family has five spellings: `scan`, `exclusive_scan`,
+`inclusive_scan`, `exclusive_sum`, and `inclusive_sum`. `scan` selects its form
+with `mode="exclusive"` or `mode="inclusive"`; the other names make that choice
+explicit. Every form returns a fresh scalar or per-thread payload and leaves
+the input unchanged.
+
+Block Scan accepts a numeric scalar, fixed-size `ThreadData`, or, in the
+qualified `cuda.coop.numba_mlir` API, a fixed-size `cuda.local.array`. The
+`raking`, `raking_memoize`, and `warp_scans` algorithms are available for
+blocks. Physical- and logical-Warp Scan accept one scalar per thread and have
+no algorithm selector.
+
+Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
+accept the same built-in string aliases as Reduce. The qualified API also
+recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
+accepts stateless device callbacks. Callbacks must be associative and return
+the input dtype. A non-sum exclusive scan requires an `initial_value` with
+the payload dtype. Ordinary Python literals are checked and converted in
+that context. Inclusive scans reject an initial value.
+
+The qualified API also accepts `aggregate_output`, an exact-dtype one-item
+`ThreadData` or local array populated with the group aggregate on every
+member. Warp forms accept `valid_items`, which selects the first N lanes by
+group rank and requires `1 <= N <= warp_width`; only those N result lanes are
+defined. The aggregate excludes the exclusive initial value and any input
+lanes beyond `valid_items`. The initial value and `valid_items` must be
+uniform within the group. At runtime, an invalid `valid_items` count triggers
+a deterministic device trap before CUB's 32-bit parameter is formed. The trap
+invalidates the current CUDA context.
+
+All Scan providers use CUB temporary storage. Block calls use compiler-owned
+scratch or an explicit `TempStorage` descriptor. Backing may use static or
+dynamic shared memory. Compiler-owned scratch and explicit descriptors with
+`auto_sync=True` append a block reuse barrier. Explicit descriptors default to
+`auto_sync=False`, so the caller must synchronize before reuse. Physical and
+logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
+for the exact participating mask. Prefix callbacks and running-prefix state
+are unsupported.
+
+This common example loads a block tile, computes its exclusive sum, and
+stores the out-of-place result:
+
+```python
+import numpy as np
+from numba_cuda_mlir import cuda
+
+from cuda import coop
+
+
+@cuda.jit
+def block_scan_kernel(values, prefixes, items_per_thread):
+    block = coop.this_block()
+    items = coop.ThreadData(items_per_thread)
+    coop.load(block, values, items)
+    scanned = coop.exclusive_sum(block, items)
+    coop.store(block, prefixes, scanned)
+```
+
+The complete runnable form is in `examples/numba_mlir/block_scan.py`.
 
 ## Exchange and Shuffle
 

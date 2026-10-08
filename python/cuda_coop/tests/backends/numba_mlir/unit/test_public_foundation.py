@@ -35,8 +35,13 @@ _COMMON_EXPORTS = [
     "this_thread",
     "this_warp",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "reduce",
+    "scan",
     "shuffle",
     "store",
     "sum",
@@ -53,11 +58,8 @@ _QUALIFIED_EXPORTS = [
 _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
-    "cuda.coop.numba_mlir._group._scan",
+    "cuda.coop.numba_mlir._scan_op",
     "cuda.coop.numba_mlir._stateful_function",
-    "cuda.coop.numba_mlir._compiler._group_scan",
-    "cuda.coop.numba_mlir._compiler._rewrite_scan",
-    "cuda.coop.numba_mlir._lowering._scan",
     "cuda.coop.numba_mlir._lowering._warp",
 )
 
@@ -74,15 +76,13 @@ def test_public_exports_are_only_the_supported_group_families():
         "BlockScanAlgorithm",
         "BlockStoreAlgorithm",
         "StatefulFunction",
-        "exclusive_scan",
         "gpu_dataclass",
-        "inclusive_scan",
-        "scan",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
     }
     assert excluded_exports.isdisjoint(common_coop.__all__)
     assert excluded_exports.isdisjoint(coop.__all__)
+    assert not hasattr(coop, "BlockScanAlgorithm")
 
     loaded = set(sys.modules)
     assert "cuda.coop.numba_mlir._group._load_store" in loaded
@@ -133,6 +133,27 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         "valid_flags",
         "warp_time_slicing",
     )
+
+    for operation in (
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "scan",
+    ):
+        common_scan = inspect.signature(getattr(common_coop, operation))
+        qualified_scan = inspect.signature(getattr(coop, operation))
+        for name, parameter in common_scan.parameters.items():
+            qualified_parameter = qualified_scan.parameters[name]
+            assert qualified_parameter.kind == parameter.kind
+            assert qualified_parameter.default == parameter.default
+        assert qualified_scan.return_annotation == common_scan.return_annotation
+        assert tuple(qualified_scan.parameters)[
+            len(common_scan.parameters) :
+        ] == (
+            "valid_items",
+            "aggregate_output",
+        )
 
     assert call_shape(coop.TempStorage) == call_shape(common_coop.TempStorage)
     for constructor in (
@@ -259,7 +280,20 @@ def test_python_operator_compilation_is_stateless_only():
 
 
 @pytest.mark.parametrize(
-    "operation", ("exchange", "load", "reduce", "shuffle", "store", "sum")
+    "operation",
+    (
+        "exchange",
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "load",
+        "reduce",
+        "scan",
+        "shuffle",
+        "store",
+        "sum",
+    ),
 )
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name

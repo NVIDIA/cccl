@@ -12,7 +12,7 @@ Construct TempStorage inside each kernel. During compilation, the compiler
 rebuilds the descriptor from its compile-time constant arguments and
 validates them. The compiler rejects a descriptor that comes from a module
 global. The ``local`` and ``shared`` namespaces and the Exchange, Shuffle,
-Reduce, and Sum markers load on first access.
+Reduce, Sum, and Scan markers load on first access.
 """
 
 import importlib
@@ -37,6 +37,13 @@ from ._thread_group import (
 if TYPE_CHECKING:
     from ._group._exchange import exchange
     from ._group._reduce import reduce, sum
+    from ._group._scan import (
+        exclusive_scan,
+        exclusive_sum,
+        inclusive_scan,
+        inclusive_sum,
+        scan,
+    )
     from ._group._shuffle import shuffle
     from ._thread_data import local, shared
 
@@ -49,9 +56,14 @@ __all__ = [
     "ThreadGroup",
     "ThreadHierarchy",
     "exchange",
+    "exclusive_scan",
+    "exclusive_sum",
+    "inclusive_scan",
+    "inclusive_sum",
     "load",
     "local",
     "reduce",
+    "scan",
     "shared",
     "shuffle",
     "store",
@@ -72,10 +84,25 @@ def __getattr__(name):
     Unknown names raise ``AttributeError`` as normal module lookup requires.
     """
 
-    if name in {"exchange", "reduce", "shuffle", "sum"}:
+    if name in {
+        "exchange",
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "reduce",
+        "scan",
+        "shuffle",
+        "sum",
+    }:
         module_name = {
             "exchange": "_group._exchange",
+            "exclusive_scan": "_group._scan",
+            "exclusive_sum": "_group._scan",
+            "inclusive_scan": "_group._scan",
+            "inclusive_sum": "_group._scan",
             "reduce": "_group._reduce",
+            "scan": "_group._scan",
             "shuffle": "_group._shuffle",
             "sum": "_group._reduce",
         }[name]
