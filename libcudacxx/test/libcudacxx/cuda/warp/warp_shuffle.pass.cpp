@@ -32,8 +32,8 @@ TEST_DEVICE_FUNC void test_semantic()
   using cuda::device::warp_shuffle_idx;
   using cuda::device::warp_shuffle_up;
   using cuda::device::warp_shuffle_xor;
-  uint32_t data           = threadIdx.x;
-  constexpr uint32_t mask = 0xFFFFFFFF;
+  [[maybe_unused]] uint32_t data           = threadIdx.x;
+  [[maybe_unused]] constexpr uint32_t mask = 0xFFFFFFFF;
   for (int i = 0; i < 64; i++)
   {
     assert(warp_shuffle_idx(data, i, mask, width_v<Value>) == __shfl_sync(mask, data, i, Value));
@@ -46,8 +46,6 @@ TEST_DEVICE_FUNC void test_semantic()
     assert(up.pred == ((threadIdx.x & (Value - 1)) >= static_cast<unsigned>(i)));
     assert(warp_shuffle_xor(data, i, mask, width_v<Value>) == __shfl_xor_sync(mask, data, i, Value));
   }
-  unused(data);
-  unused(mask);
   if (Value == 16 && threadIdx.x < 16)
   {
     constexpr uint32_t mask2 = 0xFFFF;
@@ -70,34 +68,29 @@ TEST_DEVICE_FUNC void test_non_trivial_types(const T& data)
   const T default_value{};
   // idx
   {
-    auto& data1 = threadIdx.x == 0 ? data : default_value;
-    auto ret    = warp_shuffle_idx(data1, 0);
+    auto& data1               = threadIdx.x == 0 ? data : default_value;
+    [[maybe_unused]] auto ret = warp_shuffle_idx(data1, 0);
     assert(ret.data[0] == data[0] && ret.data[1] == data[1] && ret.data[2] == data[2] && ret.data[3] == data[3]);
-    unused(ret);
   }
   {
     // down
-    auto& data1 = threadIdx.x >= 2 ? data : default_value;
-    auto ret    = warp_shuffle_down(data1, 2);
+    auto& data1               = threadIdx.x >= 2 ? data : default_value;
+    [[maybe_unused]] auto ret = warp_shuffle_down(data1, 2);
     assert(ret.data[0] == data[0] && ret.data[1] == data[1] && ret.data[2] == data[2] && ret.data[3] == data[3]);
-    unused(ret);
   }
   {
     // up
-    auto& data1 = threadIdx.x < 30 ? data : default_value;
-    auto ret    = warp_shuffle_up(data1, 2);
+    auto& data1               = threadIdx.x < 30 ? data : default_value;
+    [[maybe_unused]] auto ret = warp_shuffle_up(data1, 2);
     assert(ret.data[0] == data[0] && ret.data[1] == data[1] && ret.data[2] == data[2] && ret.data[3] == data[3]);
-    unused(ret);
   }
   {
     // xor
-    auto& data1   = threadIdx.x % 2 == 0 ? data : default_value;
-    auto ret      = warp_shuffle_xor(data1, 1);
-    auto cmp_data = threadIdx.x % 2 == 0 ? default_value : data;
+    auto& data1                    = threadIdx.x % 2 == 0 ? data : default_value;
+    [[maybe_unused]] auto ret      = warp_shuffle_xor(data1, 1);
+    [[maybe_unused]] auto cmp_data = threadIdx.x % 2 == 0 ? default_value : data;
     assert(ret.data[0] == cmp_data[0] && ret.data[1] == cmp_data[1] && ret.data[2] == cmp_data[2]
            && ret.data[3] == cmp_data[3]);
-    unused(ret);
-    unused(cmp_data);
   }
 }
 

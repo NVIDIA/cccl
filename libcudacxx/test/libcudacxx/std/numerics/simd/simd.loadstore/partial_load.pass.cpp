@@ -170,9 +170,8 @@ TEST_HOST_DEVICE_FUNC constexpr void test_partial_load_not_noexcept()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
-  cuda::std::array<T, N> arr{};
-  Mask mask(true);
-  unused(arr, mask);
+  [[maybe_unused]] cuda::std::array<T, N> arr{};
+  [[maybe_unused]] Mask mask(true);
 
   // range overloads
   static_assert(!noexcept(simd::partial_load<Vec>(arr, mask)));

@@ -23,6 +23,8 @@ _CCCL_CONST TEST_FUNC int g()
 
 int main(int, char**)
 {
-  unused(f());
+  {
+    [[maybe_unused]] auto&& discarded = f();
+  }
   return 0;
 }

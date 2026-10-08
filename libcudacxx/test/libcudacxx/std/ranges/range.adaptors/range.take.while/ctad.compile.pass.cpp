@@ -46,10 +46,8 @@ static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::take_while_view(V
 
 TEST_FUNC void testRef()
 {
-  Container c{};
-  Pred p{};
-  unused(c);
-  unused(p);
+  [[maybe_unused]] Container c{};
+  [[maybe_unused]] Pred p{};
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::take_while_view(c, p)),
                                      cuda::std::ranges::take_while_view<cuda::std::ranges::ref_view<Container>, Pred>>);
 }

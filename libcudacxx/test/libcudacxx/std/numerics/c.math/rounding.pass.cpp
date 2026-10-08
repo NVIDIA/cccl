@@ -279,12 +279,11 @@ TEST_FUNC void test_nearbyint(T val)
 }
 
 template <typename T>
-TEST_FUNC void test_nextafter(T val)
+TEST_FUNC void test_nextafter([[maybe_unused]] T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::nextafter(T{}, T{})), ret>);
 
-  unused(val);
   if constexpr (cuda::std::is_same_v<T, float>)
   {
     assert(eq(cuda::std::nextafterf(cuda::std::nextafterf(val, T(10)), T(-10)), val));

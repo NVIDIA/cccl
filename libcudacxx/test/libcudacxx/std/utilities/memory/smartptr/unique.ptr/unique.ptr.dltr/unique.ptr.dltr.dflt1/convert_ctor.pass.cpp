@@ -29,8 +29,7 @@
 TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX23 bool test()
 {
   cuda::std::default_delete<int[]> d1;
-  cuda::std::default_delete<const int[]> d2 = d1;
-  unused(d2);
+  [[maybe_unused]] cuda::std::default_delete<const int[]> d2 = d1;
 
   return true;
 }

@@ -101,8 +101,7 @@ void test_exceptions()
     const cuda::std::unexpected<int> u(5);
     try
     {
-      cuda::std::expected<void, Throwing> e(u);
-      unused(e);
+      [[maybe_unused]] cuda::std::expected<void, Throwing> e(u);
       assert(false);
     }
     catch (Except)

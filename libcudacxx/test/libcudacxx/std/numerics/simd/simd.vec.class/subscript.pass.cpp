@@ -31,12 +31,11 @@ template <typename T, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
-  Vec vec(T{7});
+  [[maybe_unused]] Vec vec(T{7});
 
   static_assert(cuda::std::is_same_v<decltype(vec[0]), typename Vec::value_type>);
   static_assert(noexcept(vec[0]));
   static_assert(is_const_member_function_v<decltype(&Vec::operator[])>);
-  unused(vec);
 
   Vec iota = make_iota_vec<T, N>();
   for (int i = 0; i < N; ++i)

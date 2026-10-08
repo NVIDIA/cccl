@@ -23,8 +23,7 @@ TEST_FUNC void not_extents()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: Extents template parameter must
   // be a specialization of extents.}}
-  cuda::shared_memory_mdspan<int, int> m;
-  unused(m);
+  [[maybe_unused]] cuda::shared_memory_mdspan<int, int> m;
 }
 
 int main(int, char**)

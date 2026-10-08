@@ -52,8 +52,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Init>
 TEST_FUNC constexpr void test_return_type()
 {
-  T* p = nullptr;
-  unused(p);
+  [[maybe_unused]] T* p = nullptr;
   static_assert(cuda::std::is_same<Init, decltype(cuda::std::transform_reduce(p, p, p, Init{}))>::value);
 }
 

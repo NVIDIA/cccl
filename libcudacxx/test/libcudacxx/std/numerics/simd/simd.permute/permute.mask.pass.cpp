@@ -261,11 +261,10 @@ TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = simd::basic_mask<4, simd::fixed_size<4>>;
-  Vec v{};
-  Mask m{};
-  int fill{};
-  bool bfill{};
-  unused(v, m, fill, bfill);
+  [[maybe_unused]] Vec v{};
+  [[maybe_unused]] Mask m{};
+  [[maybe_unused]] int fill{};
+  [[maybe_unused]] bool bfill{};
 
   static_assert(!noexcept(simd::compress(v, m)));
   static_assert(!noexcept(simd::compress(v, m, fill)));
@@ -283,10 +282,9 @@ TEST_HOST_DEVICE_FUNC constexpr void test_return_type()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = simd::basic_mask<4, simd::fixed_size<4>>;
-  Vec v{};
-  Mask m{};
-  int fill{};
-  unused(v, m, fill);
+  [[maybe_unused]] Vec v{};
+  [[maybe_unused]] Mask m{};
+  [[maybe_unused]] int fill{};
 
   static_assert(cuda::std::is_same_v<decltype(simd::compress(v, m)), Vec>);
   static_assert(cuda::std::is_same_v<decltype(simd::compress(v, m, fill)), Vec>);

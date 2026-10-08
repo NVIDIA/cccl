@@ -25,14 +25,13 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-TEST_HOST_DEVICE_FUNC void test_exp(T val)
+TEST_HOST_DEVICE_FUNC void test_exp([[maybe_unused]] T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::exp(T{})), ret>);
 
   [[maybe_unused]] const T euler = T(2.718281828459045);
   assert(eq(cuda::std::exp(T(-0.0)), T(1.0)));
-  unused(val);
   if constexpr (!cuda::std::is_integral_v<T>)
   {
     assert(eq(cuda::std::exp(val), euler));
@@ -122,7 +121,7 @@ TEST_HOST_DEVICE_FUNC void test_expm1(T val)
 }
 
 template <typename T>
-TEST_HOST_DEVICE_FUNC void test_frexp(T val)
+TEST_HOST_DEVICE_FUNC void test_frexp([[maybe_unused]] T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::frexp(T{}, nullptr)), ret>);
@@ -133,7 +132,6 @@ TEST_HOST_DEVICE_FUNC void test_frexp(T val)
   exponent = -1;
   assert(eq(cuda::std::frexp(T(-0.0), &exponent), T(0.0)));
   assert(exponent == 0);
-  unused(val);
   if constexpr (!cuda::std::is_integral_v<T>)
   {
     exponent = -1;

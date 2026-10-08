@@ -63,8 +63,7 @@ TEST_FUNC constexpr bool test()
   }
   {
     BorrowedRange range(buff, buff + 2);
-    Subrange subrange(range, 2);
-    unused(subrange);
+    [[maybe_unused]] Subrange subrange(range, 2);
     assert(subrange[0] == 1);
     assert(subrange[1] == 2);
     assert(subrange.size() == 2);

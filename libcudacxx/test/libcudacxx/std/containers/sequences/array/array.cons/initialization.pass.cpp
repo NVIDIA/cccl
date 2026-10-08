@@ -28,17 +28,12 @@ struct test_default_initialization
   template <typename T>
   TEST_FUNC void operator()() const
   {
-    cuda::std::array<T, 0> a0;
-    unused(a0);
-    cuda::std::array<T, 1> a1;
-    unused(a1);
-    cuda::std::array<T, 2> a2;
-    unused(a2);
-    cuda::std::array<T, 3> a3;
-    unused(a3);
+    [[maybe_unused]] cuda::std::array<T, 0> a0;
+    [[maybe_unused]] cuda::std::array<T, 1> a1;
+    [[maybe_unused]] cuda::std::array<T, 2> a2;
+    [[maybe_unused]] cuda::std::array<T, 3> a3;
 
-    cuda::std::array<NoDefault, 0> nodefault;
-    unused(nodefault);
+    [[maybe_unused]] cuda::std::array<NoDefault, 0> nodefault;
   }
 };
 
@@ -50,107 +45,74 @@ struct test_nondefault_initialization
     // Check direct-list-initialization syntax (introduced in C++11)
     {
       {
-        cuda::std::array<T, 0> a0_0{};
-        unused(a0_0);
+        [[maybe_unused]] cuda::std::array<T, 0> a0_0{};
       }
       {
-        cuda::std::array<T, 1> a1_0{};
-        unused(a1_0);
-        cuda::std::array<T, 1> a1_1{T()};
-        unused(a1_1);
+        [[maybe_unused]] cuda::std::array<T, 1> a1_0{};
+        [[maybe_unused]] cuda::std::array<T, 1> a1_1{T()};
       }
       {
-        cuda::std::array<T, 2> a2_0{};
-        unused(a2_0);
-        cuda::std::array<T, 2> a2_1{T()};
-        unused(a2_1);
-        cuda::std::array<T, 2> a2_2{T(), T()};
-        unused(a2_2);
+        [[maybe_unused]] cuda::std::array<T, 2> a2_0{};
+        [[maybe_unused]] cuda::std::array<T, 2> a2_1{T()};
+        [[maybe_unused]] cuda::std::array<T, 2> a2_2{T(), T()};
       }
       {
-        cuda::std::array<T, 3> a3_0{};
-        unused(a3_0);
-        cuda::std::array<T, 3> a3_1{T()};
-        unused(a3_1);
-        cuda::std::array<T, 3> a3_2{T(), T()};
-        unused(a3_2);
-        cuda::std::array<T, 3> a3_3{T(), T(), T()};
-        unused(a3_3);
+        [[maybe_unused]] cuda::std::array<T, 3> a3_0{};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_1{T()};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_2{T(), T()};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_3{T(), T(), T()};
       }
 
-      cuda::std::array<NoDefault, 0> nodefault{};
-      unused(nodefault);
+      [[maybe_unused]] cuda::std::array<NoDefault, 0> nodefault{};
     }
 
     // Check copy-list-initialization syntax
     {
       {
-        cuda::std::array<T, 0> a0_0 = {};
-        unused(a0_0);
+        [[maybe_unused]] cuda::std::array<T, 0> a0_0 = {};
       }
       {
-        cuda::std::array<T, 1> a1_0 = {};
-        unused(a1_0);
-        cuda::std::array<T, 1> a1_1 = {T()};
-        unused(a1_1);
+        [[maybe_unused]] cuda::std::array<T, 1> a1_0 = {};
+        [[maybe_unused]] cuda::std::array<T, 1> a1_1 = {T()};
       }
       {
-        cuda::std::array<T, 2> a2_0 = {};
-        unused(a2_0);
-        cuda::std::array<T, 2> a2_1 = {T()};
-        unused(a2_1);
-        cuda::std::array<T, 2> a2_2 = {T(), T()};
-        unused(a2_2);
+        [[maybe_unused]] cuda::std::array<T, 2> a2_0 = {};
+        [[maybe_unused]] cuda::std::array<T, 2> a2_1 = {T()};
+        [[maybe_unused]] cuda::std::array<T, 2> a2_2 = {T(), T()};
       }
       {
-        cuda::std::array<T, 3> a3_0 = {};
-        unused(a3_0);
-        cuda::std::array<T, 3> a3_1 = {T()};
-        unused(a3_1);
-        cuda::std::array<T, 3> a3_2 = {T(), T()};
-        unused(a3_2);
-        cuda::std::array<T, 3> a3_3 = {T(), T(), T()};
-        unused(a3_3);
+        [[maybe_unused]] cuda::std::array<T, 3> a3_0 = {};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_1 = {T()};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_2 = {T(), T()};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_3 = {T(), T(), T()};
       }
 
-      cuda::std::array<NoDefault, 0> nodefault = {};
-      unused(nodefault);
+      [[maybe_unused]] cuda::std::array<NoDefault, 0> nodefault = {};
     }
 
     // Test aggregate initialization
     {
       {
-        cuda::std::array<T, 0> a0_0 = {{}};
-        unused(a0_0);
+        [[maybe_unused]] cuda::std::array<T, 0> a0_0 = {{}};
       }
       {
-        cuda::std::array<T, 1> a1_0 = {{}};
-        unused(a1_0);
-        cuda::std::array<T, 1> a1_1 = {{T()}};
-        unused(a1_1);
+        [[maybe_unused]] cuda::std::array<T, 1> a1_0 = {{}};
+        [[maybe_unused]] cuda::std::array<T, 1> a1_1 = {{T()}};
       }
       {
-        cuda::std::array<T, 2> a2_0 = {{}};
-        unused(a2_0);
-        cuda::std::array<T, 2> a2_1 = {{T()}};
-        unused(a2_1);
-        cuda::std::array<T, 2> a2_2 = {{T(), T()}};
-        unused(a2_2);
+        [[maybe_unused]] cuda::std::array<T, 2> a2_0 = {{}};
+        [[maybe_unused]] cuda::std::array<T, 2> a2_1 = {{T()}};
+        [[maybe_unused]] cuda::std::array<T, 2> a2_2 = {{T(), T()}};
       }
       {
-        cuda::std::array<T, 3> a3_0 = {{}};
-        unused(a3_0);
-        cuda::std::array<T, 3> a3_1 = {{T()}};
-        unused(a3_1);
-        cuda::std::array<T, 3> a3_2 = {{T(), T()}};
-        unused(a3_2);
-        cuda::std::array<T, 3> a3_3 = {{T(), T(), T()}};
-        unused(a3_3);
+        [[maybe_unused]] cuda::std::array<T, 3> a3_0 = {{}};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_1 = {{T()}};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_2 = {{T(), T()}};
+        [[maybe_unused]] cuda::std::array<T, 3> a3_3 = {{T(), T(), T()}};
       }
 
       // See http://wg21.link/LWG2157
-      cuda::std::array<NoDefault, 0> nodefault = {{}};
-      unused(nodefault);
+      [[maybe_unused]] cuda::std::array<NoDefault, 0> nodefault = {{}};
     }
   }
 };

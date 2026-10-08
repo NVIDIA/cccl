@@ -35,8 +35,7 @@ TEST_HOST_DEVICE_FUNC __noinline__ void test_global_implicit_property(T ap, cuda
 TEST_HOST_DEVICE_FUNC __noinline__ void test_global()
 {
   cuda::access_property o(cuda::access_property::global{});
-  uint64_t x = (uint64_t) o;
-  unused(x);
+  [[maybe_unused]] uint64_t x = (uint64_t) o;
 }
 
 TEST_HOST_DEVICE_FUNC __noinline__ void test_shared()

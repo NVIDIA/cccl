@@ -52,11 +52,9 @@ static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::drop_while_view(V
 using result_drop_while_view_ref = cuda::std::ranges::drop_while_view<cuda::std::ranges::ref_view<Container>, Pred>;
 TEST_FUNC void testRef()
 {
-  Container c{};
-  Pred p{};
+  [[maybe_unused]] Container c{};
+  [[maybe_unused]] Pred p{};
   static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::drop_while_view(c, p)), result_drop_while_view_ref>);
-  unused(c);
-  unused(p);
 }
 
 int main(int, char**)

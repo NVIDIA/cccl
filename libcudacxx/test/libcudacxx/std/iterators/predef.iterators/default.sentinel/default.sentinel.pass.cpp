@@ -24,9 +24,8 @@ int main(int, char**)
   static_assert(cuda::std::same_as<decltype(cuda::std::default_sentinel), const cuda::std::default_sentinel_t>);
 
   cuda::std::default_sentinel_t s1;
-  auto s2 = cuda::std::default_sentinel_t{};
-  s2      = s1;
-  unused(s2);
+  [[maybe_unused]] auto s2 = cuda::std::default_sentinel_t{};
+  s2                       = s1;
 
   return 0;
 }

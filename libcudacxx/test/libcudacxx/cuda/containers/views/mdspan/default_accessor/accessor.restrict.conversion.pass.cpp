@@ -184,22 +184,21 @@ TEST_FUNC void test_host_device_accessor_conversions()
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const1), WrapperAconst>);
 
     // Test CTAD with copy constructor
-    WrapperA wrapper_acc2{wrapper_acc1};
+    [[maybe_unused]] WrapperA wrapper_acc2{wrapper_acc1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc2), decltype(wrapper_acc1)>);
-    WrapperAconst wrapper_acc_const2{wrapper_acc_const1};
+    [[maybe_unused]] WrapperAconst wrapper_acc_const2{wrapper_acc_const1};
     static_assert(cuda::std::is_same_v<decltype(wrapper_acc_const2), decltype(wrapper_acc_const1)>);
-    unused(wrapper_acc2);
-    unused(wrapper_acc_const2);
 
     // Test converting constructor: cuda::__restrict_accessor<AccessorA<const T>>(AccessorA<T>)
-    WrapperAconst wrapper_acc_const3{wrapper_acc1};
-    unused(wrapper_acc_const3);
+    [[maybe_unused]] WrapperAconst wrapper_acc_const3{wrapper_acc1};
     // Test implicit conversion: cuda::__restrict_accessor<AccessorA<T>> -> cuda::__restrict_accessor<AccessorA<const
     // T>>
     auto f = [](const WrapperA& wrapper_acc1) -> WrapperAconst {
       return wrapper_acc1;
     };
-    unused(f(WrapperA{}));
+    {
+      [[maybe_unused]] auto&& discarded = f(WrapperA{});
+    }
   }
   {
     // Test (explicit) converting constructor: cuda::__restrict_accessor<AccessorB<T>>(AccessorA<T>)
@@ -208,20 +207,26 @@ TEST_FUNC void test_host_device_accessor_conversions()
     auto f1 = [](const WrapperB& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
-    unused(f1(wrapper_acc3));
+    {
+      [[maybe_unused]] auto&& discarded = f1(wrapper_acc3);
+    }
 
     // Test implicit conversion from AccessorB<T> to AccessorA<const T> (type erasure)
     auto f2 = [](const WrapperB& wrapper_acc1) -> WrapperAconst {
       return wrapper_acc1;
     };
-    unused(f2(wrapper_acc3));
+    {
+      [[maybe_unused]] auto&& discarded = f2(wrapper_acc3);
+    }
 
     // Test that implicit conversion from AccessorA<T> to AccessorB<T> is forbidden
     auto f3 = [](const WrapperA& wrapper_acc1) -> WrapperB {
       return WrapperB{wrapper_acc1};
       // return wrapper_acc1; // rightfully does not compile
     };
-    unused(f3(WrapperA{}));
+    {
+      [[maybe_unused]] auto&& discarded = f3(WrapperA{});
+    }
   }
 }
 
@@ -243,7 +248,9 @@ TEST_FUNC void test_conversion()
     auto f1 = [](const WrapperA& wrapper_acc1) -> WrapperA {
       return wrapper_acc1;
     };
-    unused(f1(WrapperC{}));
+    {
+      [[maybe_unused]] auto&& discarded = f1(WrapperC{});
+    }
   }
   {
     // Test explicit conversion from cuda::__restrict_accessor<AccessorD<T>> to cuda::__restrict_accessor<AccessorB<T>>.
@@ -254,7 +261,9 @@ TEST_FUNC void test_conversion()
       return WrapperB{};
       // return w; // rightfully does not compile
     };
-    unused(f1(WrapperD{}));
+    {
+      [[maybe_unused]] auto&& discarded = f1(WrapperD{});
+    }
   }
 }
 
@@ -268,7 +277,9 @@ TEST_FUNC void test_aligned_to_default()
   auto f = [](const WrapperAligned& w) -> WrapperDefault {
     return w;
   };
-  unused(f(wrapper_align_acc));
+  {
+    [[maybe_unused]] auto&& discarded = f(wrapper_align_acc);
+  }
 }
 
 // Application: Explicit conversion of cuda::__restrict_accessor<default_accessor<T>>
@@ -278,13 +289,14 @@ TEST_FUNC void test_default_to_aligned()
   using WrapperDefault = cuda::__restrict_accessor<cuda::std::default_accessor<float>>;
   using WrapperAligned = cuda::__restrict_accessor<cuda::std::aligned_accessor<float, 16>>;
   WrapperDefault wrapper_default_acc{cuda::std::default_accessor<float>{}};
-  WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
+  [[maybe_unused]] WrapperAligned wrapper_aligned_acc{wrapper_default_acc};
   auto f = [](const WrapperDefault& w) -> WrapperAligned {
     return WrapperAligned{w};
     // return w; // rightfully does not compile
   };
-  unused(wrapper_aligned_acc);
-  unused(f(wrapper_default_acc));
+  {
+    [[maybe_unused]] auto&& discarded = f(wrapper_default_acc);
+  }
 }
 
 int main(int, char**)

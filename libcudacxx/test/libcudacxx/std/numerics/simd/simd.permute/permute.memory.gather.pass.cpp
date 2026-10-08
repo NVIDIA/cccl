@@ -262,10 +262,9 @@ TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
   using Ind  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = typename Ind::mask_type;
 
-  cuda::std::array<int, 4> buf{};
-  Ind indices{};
-  Mask m{};
-  unused(buf, indices, m);
+  [[maybe_unused]] cuda::std::array<int, 4> buf{};
+  [[maybe_unused]] Ind indices{};
+  [[maybe_unused]] Mask m{};
 
   static_assert(!noexcept(simd::partial_gather_from(buf, indices)));
   static_assert(!noexcept(simd::partial_gather_from(buf, m, indices)));

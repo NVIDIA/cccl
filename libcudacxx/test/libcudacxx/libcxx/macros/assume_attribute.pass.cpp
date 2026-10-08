@@ -19,6 +19,8 @@ TEST_FUNC bool f(int x)
 
 int main(int, char**)
 {
-  unused(f(5));
+  {
+    [[maybe_unused]] auto&& discarded = f(5);
+  }
   return 0;
 }

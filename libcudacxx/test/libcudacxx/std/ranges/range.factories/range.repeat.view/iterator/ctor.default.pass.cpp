@@ -19,8 +19,7 @@ TEST_FUNC constexpr bool test()
 {
   using Iter = cuda::std::ranges::iterator_t<cuda::std::ranges::repeat_view<int>>;
   static_assert(cuda::std::is_default_constructible_v<Iter>);
-  Iter iter;
-  unused(iter);
+  [[maybe_unused]] Iter iter;
 
   return true;
 }

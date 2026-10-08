@@ -195,14 +195,12 @@ void test_exceptions()
   {
     if constexpr (cuda::std::is_convertible_v<int, optional<T>>)
     {
-      optional<T> t = implicit_conversion<T>(42);
-      unused(t);
+      [[maybe_unused]] optional<T> t = implicit_conversion<T>(42);
       assert(false);
     }
     else
     {
-      optional<T> t{42};
-      unused(t);
+      [[maybe_unused]] optional<T> t{42};
       assert(false);
     }
   }
