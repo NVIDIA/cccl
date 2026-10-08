@@ -386,12 +386,15 @@ every Warp Load and Store algorithm, including the storage-free modes.
 ## Reduce and Sum
 
 `sum(group, value, ...)` and `reduce(group, value, binary_op=..., ...)` return
-one scalar with the payload element dtype. Block reductions accept a numeric
-scalar or fixed-size `ThreadData`; every item in every thread contributes.
-The qualified `cuda.coop.numba_mlir` API also accepts fixed-size
-`cuda.local.array` payloads for block reductions. Physical and logical Warp
-reductions accept one scalar per lane. Logical Warp widths must be 1, 2, 4,
-8, 16, or 32, and the block must contain complete physical Warps.
+one scalar with the payload element dtype. Block, physical-Warp, and
+logical-Warp reductions accept a numeric scalar or fixed-size `ThreadData`;
+every item in every participating thread contributes. The qualified
+`cuda.coop.numba_mlir` API also accepts fixed-size `cuda.local.array` payloads.
+Logical Warp widths may be powers of two from 1 through 32 or any width from
+17 through 31. CUB supports only one non-power-of-two group per physical Warp.
+The block must contain complete physical Warps. For a non-power-of-two width,
+use `group_by(width, exhaustive=False)` and guard the reduction with
+`group.is_member()` so trailing lanes do not participate.
 
 Every reduction uses CUB. Only rank zero of each selected group has a defined
 result; other members must still execute the call and must not consume their
@@ -441,9 +444,8 @@ The following controls select the reduction form:
   variant is intentionally not exposed.
 - A custom Python device callback is available only through
   `cuda.coop.numba_mlir.reduce`. It must be associative and stateless. It
-  supports block, physical-Warp, or
-  logical-Warp groups. Warp callbacks accept scalar payloads; block callbacks
-  may also reduce fixed arrays. Stateful callbacks are unsupported.
+  supports scalar or fixed-array payloads for block, physical-Warp, and
+  logical-Warp groups. Stateful callbacks are unsupported.
 
 Every required member must participate in converged control flow. Omitting
 `temp_storage` uses compiler-owned shared storage with automatic

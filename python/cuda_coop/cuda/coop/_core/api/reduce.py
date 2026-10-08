@@ -42,12 +42,16 @@ def reduce(
     ----------
     group : cuda.coop.ThreadGroup
         A block, physical warp, or logical warp with a power-of-two width
-        dividing 32. Every group member must participate, including members
-        excluded by ``valid_items``.
+        from 1 through 32 or a width from 17 through 31. CUB supports only one
+        non-power-of-two group per physical warp. For those widths, use
+        ``group_by(width, exhaustive=False)`` and guard the call with
+        ``group.is_member()``. Every group member must participate, including
+        members excluded by ``valid_items``. Warp groups require complete
+        physical warps in the enclosing block.
     value : numeric scalar or cuda.coop.ThreadDataLike
-        Each thread's contribution. Block reductions accept a scalar or a
+        Each thread's contribution. Reductions accept a scalar or a
         :ref:`per-thread payload <coop-thread-data>` whose elements all
-        contribute to the result. Warp reductions accept scalars only.
+        contribute to the result.
         Input values are preserved. Supported dtypes are signed and unsigned
         8-, 16-, 32-, and 64-bit integers, ``float32``, and ``float64``.
     binary_op : str, optional
@@ -123,10 +127,11 @@ def sum(
     Parameters
     ----------
     group : cuda.coop.ThreadGroup
-        Block, physical warp, or power-of-two logical warp dividing 32.
+        Block, physical warp, or supported logical warp.
+        See :func:`cuda.coop.reduce` for participation requirements.
     value : numeric scalar or cuda.coop.ThreadDataLike
-        Per-thread contribution. Block reductions also accept fixed per-thread
-        payloads. Warp reductions accept scalar values only.
+        Each thread supplies a scalar or a fixed per-thread payload. Every
+        payload item contributes to the result.
     valid_items : int or integer scalar, optional
         Uniform count of contributing group members, for scalar inputs only.
     algorithm : str, optional

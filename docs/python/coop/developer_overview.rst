@@ -875,11 +875,14 @@ the payload passed to that parameter. ``NumbaMlirCoreAdapter`` maps the
 core types and parameter descriptors to the Numba backend's representation.
 
 Reduce uses CUB BlockReduce for blocks and CUB WarpReduce for physical or
-power-of-two logical warps. The family planner checks the operand form and
-records scratch requirements. Block reductions accept scalar or array inputs
-and an optional ``TempStorage`` descriptor; warp reductions accept scalars
-and use compiler-managed scratch. Both return a result defined only at rank
-zero of the group.
+logical warps. Supported logical widths are powers of two from 1 through 32
+or widths from 17 through 31: CUB permits only one non-power-of-two group per
+physical warp. The family planner checks the operand form and records scratch
+requirements. Both accept scalar or array
+inputs and return a result defined only at group rank zero. Block reductions
+accept an optional ``TempStorage`` descriptor; warp reductions use
+compiler-managed scratch. Non-exhaustive logical groups restart their scratch
+indices within each physical warp, and only complete groups participate.
 
 Construct ``Algorithm(..., template_arguments={...})`` with the template
 arguments and auxiliary dependency values. Construction validates and

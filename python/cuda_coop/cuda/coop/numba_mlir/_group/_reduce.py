@@ -66,7 +66,8 @@ def reduce(
         device callable ``op(left, right)`` returning the input dtype.
         Custom operators must be associative and require a complete block
         or physical or logical warp.
-        Warp custom reductions accept scalar inputs only. For a block, use
+        Custom reductions accept scalar or fixed-size array inputs.
+        For a block, use
         ``algorithm=None``, ``"raking"``, or ``"warp_reductions"``;
         ``"raking_commutative_only"`` requires proven commutativity and is
         unavailable for Python callables. ``None`` selects sum.

@@ -7,9 +7,9 @@ Reduce
 ======
 
 :func:`cuda.coop.reduce` combines a group's values into one aggregate.
-:func:`cuda.coop.sum` is the sum specialization. Blocks accept one scalar or
-several items per thread; warps accept one scalar per lane. The scalar result
-is defined only at group rank zero.
+:func:`cuda.coop.sum` is the sum specialization. Blocks and warps accept one
+scalar or several items per thread. Every input item contributes, and the
+scalar result is defined only at group rank zero.
 
 The explorer uses eight teaching threads. It shows four lanes per physical
 warp and two per logical warp; **physical CUDA warps have 32 lanes**.
@@ -62,8 +62,8 @@ participates. The explorer offers this choice only for one item per thread.
 
 A custom operator uses the qualified ``cuda.coop.numba_mlir`` namespace.
 It must be associative and is supported through the CUB block or warp path,
-with a result defined only at the group root. Custom warp reductions accept
-one scalar per lane. The common namespace accepts
+with scalar or fixed-array inputs and a result defined only at the group
+root. The common namespace accepts
 built-in names such as ``"sum"``, ``"max"``, ``"min"``, ``"multiplies"``,
 and the integer bitwise operators.
 
@@ -88,7 +88,10 @@ for each block.
 The input ``values`` is unchanged. A logical warp uses
 ``coop.this_warp().group_by(8)``, yielding four groups of eight lanes inside
 each physical warp. Each group has a separate aggregate, consumed by its
-rank-zero lane:
+rank-zero lane. Logical widths may be powers of two from 1 through 32 or any
+width from 17 through 31. CUB supports only one non-power-of-two group per
+physical warp. For those widths, use ``group_by(width, exhaustive=False)`` and
+guard the reduction with ``group.is_member()`` so trailing lanes do not participate:
 
 .. code-block:: python
 

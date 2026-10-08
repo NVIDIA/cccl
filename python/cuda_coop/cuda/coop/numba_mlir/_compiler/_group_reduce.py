@@ -462,6 +462,8 @@ class _ReducePlanning:
                 {
                     "threads_per_block": block_dim,
                     "threads_in_warp": plan.topology.logical_width,
+                    "items_per_thread": primitive.items_per_thread,
+                    "value_kind": primitive.value_kind.value,
                 }
             )
             if operator_kind != "sum":
@@ -555,9 +557,11 @@ _WARP_REWRITE_KWARGS = frozenset(
     {
         "binary_op",
         "dtype",
+        "items_per_thread",
         "threads_in_warp",
         "threads_per_block",
         "valid_items",
+        "value_kind",
     }
 )
 for _operation in ("warp_sum", "warp_reduce_builtin", "warp_reduce_callback"):

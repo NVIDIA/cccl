@@ -139,23 +139,25 @@ def numba_type_to_cpp(numba_type):
     return "storage_t"
 
 
-def _validate_logical_warp_threads(logical_warp_threads):
+def _validate_logical_warp_threads(logical_warp_threads, *, power_of_two=True):
     """Check the logical warp width before compiling or allocating scratch.
 
     Warp factories and provider code generation use this to require a Python
-    integer from the supported widths. ``logical_warp_threads`` counts
-    participating lanes per logical warp. Return it unchanged, or raise
-    ``ValueError`` for an unsupported width, boolean, or other type.
+    integer from the supported widths. WarpReduce also accepts widths that
+    are not powers of two; its provider explicitly opts into that CUB range.
+    ``logical_warp_threads`` counts participating lanes per logical warp.
+    Return it unchanged, or raise ``ValueError`` for an invalid width or type.
     """
 
+    supported_widths = (
+        _SUPPORTED_LOGICAL_WARP_THREADS if power_of_two else range(1, 33)
+    )
     if (
         isinstance(logical_warp_threads, bool)
         or not isinstance(logical_warp_threads, int)
-        or logical_warp_threads not in _SUPPORTED_LOGICAL_WARP_THREADS
+        or logical_warp_threads not in supported_widths
     ):
-        supported = ", ".join(
-            str(value) for value in sorted(_SUPPORTED_LOGICAL_WARP_THREADS)
-        )
+        supported = ", ".join(str(value) for value in sorted(supported_widths))
         raise ValueError(
             "warp-scoped providers require a logical width in "
             f"{{{supported}}}; got {logical_warp_threads!r}"
@@ -2421,20 +2423,39 @@ class Algorithm:
                     logical_width = _validate_logical_warp_threads(
                         logical_warp_threads
                         if logical_warp_threads is not None
-                        else self.logical_warp_threads
+                        else self.logical_warp_threads,
+                        power_of_two=self.struct_name.split("<", 1)[0]
+                        != "WarpReduce",
                     )
                     resolved_block_threads = _normalize_block_threads(
                         block_threads
                         if block_threads is not None
                         else self.block_threads
                     )
-                    if resolved_block_threads % logical_width != 0:
+                    non_power_of_two = logical_width & (logical_width - 1) != 0
+                    required_divisor = 32 if non_power_of_two else logical_width
+                    if resolved_block_threads % required_divisor != 0:
                         raise ValueError(
-                            "warp-scoped provider width must divide the exact "
-                            f"block size; got width={logical_width} and "
+                            "warp-scoped provider requires the exact block "
+                            "size "
+                            f"to be divisible by {required_divisor}; got "
+                            f"width={logical_width} and "
                             f"block_threads={resolved_block_threads}"
                         )
-                    instances = resolved_block_threads // logical_width
+                    if non_power_of_two:
+                        # CUB restarts logical groups at each physical warp.
+                        # Only complete groups may call this provider.
+                        groups_per_warp = 32 // logical_width
+                        instances = (
+                            resolved_block_threads // 32
+                        ) * groups_per_warp
+                        instance_index = (
+                            f"(__coop_thread_rank / 32) * {groups_per_warp} + "
+                            f"((__coop_thread_rank & 31) / {logical_width})"
+                        )
+                    else:
+                        instances = resolved_block_threads // logical_width
+                        instance_index = f"__coop_thread_rank / {logical_width}"
                     storage = (
                         "unsigned __coop_thread_rank "
                         "= threadIdx.x + blockDim.x * "
@@ -2444,7 +2465,7 @@ class Algorithm:
                         f"[{instances}];\n"
                         f"    {temp_storage_type_name} "
                         f"&temp_storage = temp_storages"
-                        f"[__coop_thread_rank / {logical_width}];"
+                        f"[{instance_index}];"
                     )
                 elif self.execution_scope is SynchronizationScope.NONE:
                     storage = f"{temp_storage_type_name} temp_storage;"
@@ -2578,15 +2599,23 @@ class Algorithm:
         )
         if self.execution_scope is SynchronizationScope.WARP:
             resolved_logical_warp_threads = _validate_logical_warp_threads(
-                resolved_logical_warp_threads
+                resolved_logical_warp_threads,
+                power_of_two=self.struct_name.split("<", 1)[0] != "WarpReduce",
             )
             resolved_block_threads = _normalize_block_threads(
                 resolved_block_threads
             )
-            if resolved_block_threads % resolved_logical_warp_threads != 0:
+            required_divisor = (
+                32
+                if resolved_logical_warp_threads
+                & (resolved_logical_warp_threads - 1)
+                else resolved_logical_warp_threads
+            )
+            if resolved_block_threads % required_divisor != 0:
                 raise ValueError(
-                    "warp-scoped provider width must divide the exact block "
-                    f"size; got width={resolved_logical_warp_threads} and "
+                    "warp-scoped provider requires the exact block size "
+                    f"to be divisible by {required_divisor}; got "
+                    f"width={resolved_logical_warp_threads} and "
                     f"block_threads={resolved_block_threads}"
                 )
         compile_identity = self._bind_provider_compile_identity(

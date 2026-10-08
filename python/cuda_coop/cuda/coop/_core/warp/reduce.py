@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Describe scalar CUB reductions for physical or fixed-width logical warps.
+"""Describe CUB reductions for physical or fixed-width logical warps.
 
 The factory selects a named method and its full-warp or valid-count overloads.
 It records Min and Max in ``call`` as equivalent reductions with C++ operators
@@ -20,6 +20,7 @@ from .._bindings import ArgumentBinding, BindingKind, normalize_i32_binding
 from .._symbols import semantic_token
 from .._types import (
     INT32,
+    Array,
     CxxFunction,
     CxxOperator,
     Dependency,
@@ -30,20 +31,16 @@ from .._types import (
     TempStorageParameter,
     Value,
 )
-from ..reduce import ReduceSemantics, make_reduce_semantics
-
-_SUPPORTED_LOGICAL_WARP_THREADS = frozenset({1, 2, 4, 8, 16, 32})
+from ..reduce import ReduceSemantics, ReduceValueKind, make_reduce_semantics
 
 
 def _validate_logical_warp_threads(value: Any) -> int:
     if (
         not isinstance(value, int)
         or isinstance(value, bool)
-        or value not in _SUPPORTED_LOGICAL_WARP_THREADS
+        or not 1 <= value <= 32
     ):
-        raise ValueError(
-            "threads_in_warp must be a power of two between 1 and 32"
-        )
+        raise ValueError("threads_in_warp must be an integer between 1 and 32")
     return value
 
 
@@ -94,6 +91,8 @@ def make_warp_reduce_specialization(
     dtype: Any,
     threads_in_warp: int,
     operation: str | WarpReduceOperation,
+    items_per_thread: int = 1,
+    value_kind: str | ReduceValueKind = ReduceValueKind.SCALAR,
     reduce_operator: CxxOperator
     | PythonOperator
     | StatefulOperator
@@ -101,11 +100,13 @@ def make_warp_reduce_specialization(
     valid_items: bool | ArgumentBinding = False,
     include_full_warp: bool = False,
 ) -> WarpReduceSpecialization:
-    """Bind a scalar reduction and its count overloads for a logical warp.
+    """Bind a scalar or fixed-array reduction for a logical warp.
 
-    The width must be a power of two from 1 through 32. A static valid count
+    The width must be an integer from 1 through 32. A static valid count
     must fit within that width. Min and Max accept no valid count or custom
     operator; Reduce requires an operator description and Sum uses its own.
+    Array inputs contribute every item from every lane. Valid counts apply
+    only to scalar inputs.
 
     ``valid_items=True`` selects a runtime count and false omits it. An
     ``ArgumentBinding`` can embed a constant instead. ``include_full_warp``
@@ -168,16 +169,23 @@ def make_warp_reduce_specialization(
         )
     call = make_reduce_semantics(
         dtype=dtype,
-        items_per_thread=1,
+        items_per_thread=items_per_thread,
         operation=("sum" if operation is WarpReduceOperation.SUM else "reduce"),
-        value_kind="scalar",
+        value_kind=value_kind,
         reduce_operator=canonical_operator,
         valid_items=valid_items,
     )
-    base_parameters: list[Any] = [
-        TempStorageParameter(),
-        Reference(Dependency("T"), name="input"),
-    ]
+    base_parameters: list[Any] = [TempStorageParameter()]
+    if call.value_kind is ReduceValueKind.ARRAY:
+        base_parameters.append(
+            Array(
+                Dependency("T"),
+                Dependency("ITEMS_PER_THREAD"),
+                name="input",
+            )
+        )
+    else:
+        base_parameters.append(Reference(Dependency("T"), name="input"))
     if reduce_operator is not None:
         base_parameters.append(reduce_operator)
     output = Reference(
@@ -202,6 +210,13 @@ def make_warp_reduce_specialization(
             )
         )
 
+    template_arguments = {
+        "T": dtype,
+        "VIRTUAL_WARP_THREADS": threads_in_warp,
+    }
+    if call.value_kind is ReduceValueKind.ARRAY:
+        template_arguments["ITEMS_PER_THREAD"] = items_per_thread
+
     specialization = Algorithm(
         struct_name="WarpReduce",
         method_name=method_name,
@@ -212,14 +227,12 @@ def make_warp_reduce_specialization(
             TemplateParameter("VIRTUAL_WARP_THREADS"),
         ),
         parameters=tuple(methods),
-        template_arguments={
-            "T": dtype,
-            "VIRTUAL_WARP_THREADS": threads_in_warp,
-        },
+        template_arguments=template_arguments,
         metadata={
             "scope": "warp",
             "primitive": "reduce",
             "operation": operation,
+            "value_kind": call.value_kind,
             "operator": (
                 None
                 if reduce_operator is None

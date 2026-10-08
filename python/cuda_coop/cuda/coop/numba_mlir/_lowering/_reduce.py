@@ -359,10 +359,12 @@ def _warp_reduce(
     threads_in_warp: int = 32,
     valid_items: Any = None,
     threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    value_kind: str | None = None,
     *,
     callback: bool = False,
 ) -> Any:
-    """Build a scalar CUB reduction for a physical or logical warp.
+    """Build a scalar or array CUB reduction for a physical or logical warp.
 
     Select sum, a built-in C++ operator, or a Python callback. Retain the
     valid-prefix binding and use a bounded int32 ABI for runtime counts.
@@ -378,6 +380,9 @@ def _warp_reduce(
         raise ValueError("threads_per_block must be provided")
     block_dim = normalize_dim_param(threads_per_block)
     threads_in_warp = _positive_int(threads_in_warp, name="threads_in_warp")
+    items_per_thread = _positive_int(items_per_thread, name="items_per_thread")
+    if value_kind is None:
+        value_kind = "scalar" if items_per_thread == 1 else "array"
     valid_items_binding = _optional_binding(valid_items)
     dtype = normalize_dtype_param(dtype)
     reduce_operator = None
@@ -419,6 +424,8 @@ def _warp_reduce(
         dtype=adapter.core_dtype(dtype),
         threads_in_warp=threads_in_warp,
         operation=operation,
+        items_per_thread=items_per_thread,
+        value_kind=value_kind,
         reduce_operator=reduce_operator,
         valid_items=valid_items_binding,
         include_full_warp=False,
@@ -440,6 +447,8 @@ def warp_sum(
     threads_in_warp: int = 32,
     valid_items: Any = None,
     threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    value_kind: str | None = None,
 ) -> Any:
     """Build a direct CUB WarpReduce Sum invocable."""
 
@@ -449,6 +458,8 @@ def warp_sum(
         threads_in_warp=threads_in_warp,
         valid_items=valid_items,
         threads_per_block=threads_per_block,
+        items_per_thread=items_per_thread,
+        value_kind=value_kind,
     )
 
 
@@ -458,6 +469,8 @@ def warp_reduce_builtin(
     threads_in_warp: int = 32,
     valid_items: Any = None,
     threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    value_kind: str | None = None,
 ) -> Any:
     """Build a direct CUB WarpReduce invocable with a C++ operator."""
 
@@ -468,6 +481,8 @@ def warp_reduce_builtin(
         threads_in_warp,
         valid_items,
         threads_per_block,
+        items_per_thread,
+        value_kind,
     )
 
 
@@ -477,6 +492,8 @@ def warp_reduce(
     threads_in_warp: int = 32,
     valid_items: Any = None,
     threads_per_block: Any = None,
+    items_per_thread: int = 1,
+    value_kind: str | None = None,
 ) -> Any:
     """Build a direct CUB WarpReduce invocable with a callback."""
 
@@ -487,6 +504,8 @@ def warp_reduce(
         threads_in_warp,
         valid_items,
         threads_per_block,
+        items_per_thread,
+        value_kind,
         callback=True,
     )
 
