@@ -190,7 +190,7 @@ of the computation becomes a single line to change.
     }
 
     // The one place the precision is chosen.
-    using fp_t = cuda::experimental::fp64mp2;
+    using fp_t = cuda::fp64mp2;
 
     __global__ void dot_kernel(const fp_t* a, const fp_t* b, int n, fp_t* out)
     {
@@ -207,10 +207,10 @@ body of a ``double`` computation keeps its shape when the type underneath it is 
 in ``dot`` names a precision, so the same definition serves ``fp32mp2`` on a part where FP64 is
 rationed and ``fp64mp2`` where the algorithm needs more than ``double``.
 
-Namespace and stability
------------------------
+Namespace
+---------
 
-The component lives in the ``cuda::experimental`` namespace. The standard-named math functions
+The component lives in the ``cuda`` namespace. The standard-named math functions
 are found by argument-dependent lookup, so they can be called unqualified and a body of
 ``double`` code keeps its call sites. The component's own functions, which have no ``double``
 counterpart, are found the same way, but the sub-component pages spell out the namespace on them
@@ -218,12 +218,10 @@ to mark them as belonging to the component:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fp64mp2 x{2.0};
+    cuda::fp64mp2 x{2.0};
 
     auto r = sqrt(x);                  // a standard name: a body of double code keeps this call site
-    auto s = cudax::renormalize(x);    // no double counterpart; renormalize(x) also compiles
+    auto s = cuda::renormalize(x);    // no double counterpart; renormalize(x) also compiles
 
 Examples
 --------

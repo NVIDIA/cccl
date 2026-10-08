@@ -24,8 +24,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Comparison operation indices (also bit positions in the packed result code).
 enum cmp_op
 {
@@ -61,17 +59,17 @@ TEST_HOST_DEVICE_FUNC void check_pair(double x, double y)
 {
   const uint32_t ref = native_codes(x, y);
 
-  cudax::__fpbits64 ex = cudax::__fp64emu_from_double(x);
-  cudax::__fpbits64 ey = cudax::__fp64emu_from_double(y);
-  uint32_t cb          = 0;
-  cb |= (uint32_t) cudax::__fp64emu_cmp_eq(ex, ey) << OP_EQ;
-  cb |= (uint32_t) cudax::__fp64emu_cmp_ne(ex, ey) << OP_NE;
-  cb |= (uint32_t) cudax::__fp64emu_cmp_lt(ex, ey) << OP_LT;
-  cb |= (uint32_t) cudax::__fp64emu_cmp_le(ex, ey) << OP_LE;
-  cb |= (uint32_t) cudax::__fp64emu_cmp_gt(ex, ey) << OP_GT;
-  cb |= (uint32_t) cudax::__fp64emu_cmp_ge(ex, ey) << OP_GE;
+  cuda::__fpbits64 ex = cuda::__fp64emu_from_double(x);
+  cuda::__fpbits64 ey = cuda::__fp64emu_from_double(y);
+  uint32_t cb         = 0;
+  cb |= (uint32_t) cuda::__fp64emu_cmp_eq(ex, ey) << OP_EQ;
+  cb |= (uint32_t) cuda::__fp64emu_cmp_ne(ex, ey) << OP_NE;
+  cb |= (uint32_t) cuda::__fp64emu_cmp_lt(ex, ey) << OP_LT;
+  cb |= (uint32_t) cuda::__fp64emu_cmp_le(ex, ey) << OP_LE;
+  cb |= (uint32_t) cuda::__fp64emu_cmp_gt(ex, ey) << OP_GT;
+  cb |= (uint32_t) cuda::__fp64emu_cmp_ge(ex, ey) << OP_GE;
 
-  cudax::fp64emu px = x, py = y;
+  cuda::fp64emu px = x, py = y;
   uint32_t cp = 0;
   cp |= (uint32_t) (px == py) << OP_EQ;
   cp |= (uint32_t) (px != py) << OP_NE;
@@ -80,7 +78,7 @@ TEST_HOST_DEVICE_FUNC void check_pair(double x, double y)
   cp |= (uint32_t) (px > py) << OP_GT;
   cp |= (uint32_t) (px >= py) << OP_GE;
 
-  cudax::fp64emu_unpacked ux = (cudax::fp64emu_unpacked) x, uy = (cudax::fp64emu_unpacked) y;
+  cuda::fp64emu_unpacked ux = (cuda::fp64emu_unpacked) x, uy = (cuda::fp64emu_unpacked) y;
   uint32_t cu = 0;
   cu |= (uint32_t) (ux == uy) << OP_EQ;
   cu |= (uint32_t) (ux != uy) << OP_NE;

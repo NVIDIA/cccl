@@ -64,23 +64,19 @@ separate host implementation.
 A convention shared by all four
 -------------------------------
 
-The CCCL FP component lives in the `cuda::experimental` namespace, which will be promoted to
-`cuda::` later. The examples abbreviate it rather than pulling it in wholesale:
-
-```c++
-namespace cudax = cuda::experimental;
-```
+The CCCL FP component lives in the `cuda` namespace. The examples qualify its names rather
+than pulling it in wholesale with a using-directive.
 
 Two spellings then appear, and the split is deliberate. Type names and the component's own
 functions — `renormalize`, the accuracy-selecting `add<>`, the statistics and size control
-functions — carry the `cudax::` prefix, since they have no counterpart for `double` and so
+functions — carry the `cuda::` prefix, since they have no counterpart for `double` and so
 only occur in code written against the component to begin with. The standard-named math
 functions are left **unqualified** and found by argument-dependent lookup:
 
 ```c++
-cudax::fp64mp2 x{2.0};
+cuda::fp64mp2 x{2.0};
 auto r = sqrt(x);                  // unqualified: ADL finds the fpmp2 overload
-auto s = cudax::renormalize(x);    // component-specific: qualified
+auto s = cuda::renormalize(x);    // component-specific: qualified
 ```
 
 That is what lets an existing body of `double` code keep its call sites unchanged when the

@@ -55,10 +55,8 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Reduced precision version (23 mantissa bits like float, full FP64 exponent range).
-using fp_reduced = cudax::fp64_custom<11, 23>;
+using fp_reduced = cuda::fp64_custom<11, 23>;
 
 struct TestResults
 {
@@ -252,7 +250,7 @@ TEST_HOST_DEVICE_FUNC bool run_test()
 // why 3 rounds down to 2 while 6 rounds up to 8.
 TEST_HOST_DEVICE_FUNC bool test_power_of_two()
 {
-  using fp_po2 = cudax::fp64_custom<11, 0>;
+  using fp_po2 = cuda::fp64_custom<11, 0>;
 
   bool ok = true;
 
@@ -319,9 +317,9 @@ TEST_HOST_DEVICE_FUNC bool test_type_surface()
 // on equal terms, which makes an overload set holding both ambiguous, while a wider format
 // leaves double as the only way in. The cast is available either way.
 static_assert(::cuda::std::is_convertible_v<fp_reduced, double>, "");
-static_assert(::cuda::std::is_convertible_v<cudax::fp64_custom<>, double>, "");
+static_assert(::cuda::std::is_convertible_v<cuda::fp64_custom<>, double>, "");
 static_assert(::cuda::std::is_constructible_v<float, fp_reduced>, "");
-static_assert(::cuda::std::is_constructible_v<float, cudax::fp64_custom<8, 23>>, "");
+static_assert(::cuda::std::is_constructible_v<float, cuda::fp64_custom<8, 23>>, "");
 
 TEST_HOST_DEVICE_FUNC int pick(float)
 {
@@ -339,31 +337,31 @@ template <class _Tp>
 struct picks_ambiguously<_Tp, decltype(void(pick(::cuda::std::declval<_Tp>())))> : ::cuda::std::false_type
 {};
 
-static_assert(picks_ambiguously<cudax::fp64_custom<8, 23>>::value, "");
-static_assert(picks_ambiguously<cudax::fp64_custom<5, 10>>::value, "");
+static_assert(picks_ambiguously<cuda::fp64_custom<8, 23>>::value, "");
+static_assert(picks_ambiguously<cuda::fp64_custom<5, 10>>::value, "");
 static_assert(!picks_ambiguously<fp_reduced>::value, ""); // 23 bits, but 11 of exponent
-static_assert(!picks_ambiguously<cudax::fp64_custom<8, 24>>::value, "");
-static_assert(!picks_ambiguously<cudax::fp64_custom<>>::value, "");
+static_assert(!picks_ambiguously<cuda::fp64_custom<8, 24>>::value, "");
+static_assert(!picks_ambiguously<cuda::fp64_custom<>>::value, "");
 // A runtime size is unknown here, so it takes the explicit conversion, as it has to.
-static_assert(!picks_ambiguously<cudax::fp64_custom<8, cudax::fp_custom_dynamic_size>>::value, "");
-static_assert(!picks_ambiguously<cudax::fp64_custom<cudax::fp_custom_dynamic_size, 23>>::value, "");
+static_assert(!picks_ambiguously<cuda::fp64_custom<8, cuda::fp_custom_dynamic_size>>::value, "");
+static_assert(!picks_ambiguously<cuda::fp64_custom<cuda::fp_custom_dynamic_size, 23>>::value, "");
 
 // The way into fp_custom follows the same rank rule: implicit where the requested format is
 // at least as wide as the source in both fields, explicit where either is narrower, with
 // integers counting as double. Here is_convertible does decide it, there being no second
 // path into fp_custom the way operator double() is one out of it.
-static_assert(::cuda::std::is_convertible_v<double, cudax::fp64_custom<>>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<>>, "");
-static_assert(::cuda::std::is_convertible_v<int, cudax::fp64_custom<>>, "");
-static_assert(::cuda::std::is_convertible_v<unsigned long long, cudax::fp64_custom<>>, "");
-static_assert(::cuda::std::is_convertible_v<bool, cudax::fp64_custom<>>, "");
-static_assert(::cuda::std::is_convertible_v<char, cudax::fp64_custom<>>, "");
+static_assert(::cuda::std::is_convertible_v<double, cuda::fp64_custom<>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<>>, "");
+static_assert(::cuda::std::is_convertible_v<int, cuda::fp64_custom<>>, "");
+static_assert(::cuda::std::is_convertible_v<unsigned long long, cuda::fp64_custom<>>, "");
+static_assert(::cuda::std::is_convertible_v<bool, cuda::fp64_custom<>>, "");
+static_assert(::cuda::std::is_convertible_v<char, cuda::fp64_custom<>>, "");
 
 // A format that holds binary32 but not binary64 takes a float implicitly, whatever the
 // narrowing side is set to.
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<8, 23>>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<11, 23>>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<8, 52>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<8, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<11, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<8, 52>>, "");
 static_assert(::cuda::std::is_convertible_v<float, fp_reduced>, "");
 
 // A long double is not implicitly convertible at either setting, and for a different reason
@@ -371,7 +369,7 @@ static_assert(::cuda::std::is_convertible_v<float, fp_reduced>, "");
 // by a conversion apiece, so the call is ambiguous rather than explicit. What a long double
 // source should do here is still open; asserting it holds either way pins today's behavior.
 static_assert(!::cuda::std::is_convertible_v<long double, fp_reduced>, "");
-static_assert(!::cuda::std::is_convertible_v<long double, cudax::fp64_custom<8, 23>>, "");
+static_assert(!::cuda::std::is_convertible_v<long double, cuda::fp64_custom<8, 23>>, "");
 
 // The narrowing side is what CCCL_FP_CUSTOM_EXPLICIT_CASTS gates, so it is asserted at both
 // settings: a cast by default, implicit where a codebase written against double is being
@@ -379,10 +377,10 @@ static_assert(!::cuda::std::is_convertible_v<long double, cudax::fp64_custom<8, 
 #if CCCL_FP_CUSTOM_EXPLICIT_CASTS == 1
 
 // A double, and an integer with it, reaches a format that holds binary32 only by cast.
-static_assert(!::cuda::std::is_convertible_v<double, cudax::fp64_custom<8, 23>>, "");
-static_assert(!::cuda::std::is_convertible_v<int, cudax::fp64_custom<8, 23>>, "");
-static_assert(!::cuda::std::is_convertible_v<bool, cudax::fp64_custom<8, 23>>, "");
-static_assert(!::cuda::std::is_convertible_v<char, cudax::fp64_custom<8, 23>>, "");
+static_assert(!::cuda::std::is_convertible_v<double, cuda::fp64_custom<8, 23>>, "");
+static_assert(!::cuda::std::is_convertible_v<int, cuda::fp64_custom<8, 23>>, "");
+static_assert(!::cuda::std::is_convertible_v<bool, cuda::fp64_custom<8, 23>>, "");
+static_assert(!::cuda::std::is_convertible_v<char, cuda::fp64_custom<8, 23>>, "");
 
 // The float constructor must not become a way in for the types that convert to float, which
 // is what constrains it to a deduced float rather than naming one. fp_reduced is the case
@@ -392,46 +390,45 @@ static_assert(!::cuda::std::is_convertible_v<double, fp_reduced>, "");
 
 // Narrower than binary32 in either field, so neither source is implicit. fp64_custom<5, 52>
 // is the unordered case: a wider mantissa than binary32 and a narrower exponent.
-static_assert(!::cuda::std::is_convertible_v<float, cudax::fp64_custom<5, 10>>, "");
-static_assert(!::cuda::std::is_convertible_v<float, cudax::fp64_custom<8, 22>>, "");
-static_assert(!::cuda::std::is_convertible_v<float, cudax::fp64_custom<5, 52>>, "");
+static_assert(!::cuda::std::is_convertible_v<float, cuda::fp64_custom<5, 10>>, "");
+static_assert(!::cuda::std::is_convertible_v<float, cuda::fp64_custom<8, 22>>, "");
+static_assert(!::cuda::std::is_convertible_v<float, cuda::fp64_custom<5, 52>>, "");
 
 // A runtime size is unknown here, so every source takes the explicit constructor.
-static_assert(!::cuda::std::is_convertible_v<double, cudax::fp64_custom<8, cudax::fp_custom_dynamic_size>>, "");
-static_assert(!::cuda::std::is_convertible_v<float, cudax::fp64_custom<cudax::fp_custom_dynamic_size, 23>>, "");
+static_assert(!::cuda::std::is_convertible_v<double, cuda::fp64_custom<8, cuda::fp_custom_dynamic_size>>, "");
+static_assert(!::cuda::std::is_convertible_v<float, cuda::fp64_custom<cuda::fp_custom_dynamic_size, 23>>, "");
 
 #else // ^^^ CCCL_FP_CUSTOM_EXPLICIT_CASTS == 1 ^^^ / vvv == 0 vvv
 
 // Every source named above is implicit here, which is the whole of the setting's effect:
 // the sources are unchanged, and so are the formats.
-static_assert(::cuda::std::is_convertible_v<double, cudax::fp64_custom<8, 23>>, "");
-static_assert(::cuda::std::is_convertible_v<int, cudax::fp64_custom<8, 23>>, "");
-static_assert(::cuda::std::is_convertible_v<bool, cudax::fp64_custom<8, 23>>, "");
-static_assert(::cuda::std::is_convertible_v<char, cudax::fp64_custom<8, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<double, cuda::fp64_custom<8, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<int, cuda::fp64_custom<8, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<bool, cuda::fp64_custom<8, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<char, cuda::fp64_custom<8, 23>>, "");
 static_assert(::cuda::std::is_convertible_v<double, fp_reduced>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<5, 10>>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<8, 22>>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<5, 52>>, "");
-static_assert(::cuda::std::is_convertible_v<double, cudax::fp64_custom<8, cudax::fp_custom_dynamic_size>>, "");
-static_assert(::cuda::std::is_convertible_v<float, cudax::fp64_custom<cudax::fp_custom_dynamic_size, 23>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<5, 10>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<8, 22>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<5, 52>>, "");
+static_assert(::cuda::std::is_convertible_v<double, cuda::fp64_custom<8, cuda::fp_custom_dynamic_size>>, "");
+static_assert(::cuda::std::is_convertible_v<float, cuda::fp64_custom<cuda::fp_custom_dynamic_size, 23>>, "");
 
 #endif // CCCL_FP_CUSTOM_EXPLICIT_CASTS == 0
 
 // Explicit, not absent: every source is still constructible into every format.
-static_assert(::cuda::std::is_constructible_v<cudax::fp64_custom<8, 23>, double>, "");
-static_assert(::cuda::std::is_constructible_v<cudax::fp64_custom<5, 10>, float>, "");
-static_assert(::cuda::std::is_constructible_v<cudax::fp64_custom<5, 10>, int>, "");
-static_assert(::cuda::std::is_constructible_v<cudax::fp64_custom<5, 10>, bool>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::fp64_custom<8, 23>, double>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::fp64_custom<5, 10>, float>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::fp64_custom<5, 10>, int>, "");
+static_assert(::cuda::std::is_constructible_v<cuda::fp64_custom<5, 10>, bool>, "");
 static_assert(
-  ::cuda::std::is_constructible_v<cudax::fp64_custom<cudax::fp_custom_dynamic_size, cudax::fp_custom_dynamic_size>,
-                                  double>,
+  ::cuda::std::is_constructible_v<cuda::fp64_custom<cuda::fp_custom_dynamic_size, cuda::fp_custom_dynamic_size>, double>,
   "");
 
 // What an explicit constructor leaves untouched: the operand of a mixed expression, which
 // the hidden friends convert themselves, and the value, which arrives unreduced.
 TEST_HOST_DEVICE_FUNC bool test_narrowing_construction()
 {
-  using fp_float = cudax::fp64_custom<8, 23>;
+  using fp_float = cuda::fp64_custom<8, 23>;
 
   bool ok = true;
 
@@ -464,8 +461,8 @@ TEST_HOST_DEVICE_FUNC bool test_narrowing_construction()
 // conversion does not draw mixed arithmetic away from fp_custom.
 TEST_HOST_DEVICE_FUNC bool test_float_conversion()
 {
-  using fp_float = cudax::fp64_custom<8, 23>;
-  using fp_half  = cudax::fp64_custom<5, 10>;
+  using fp_float = cuda::fp64_custom<8, 23>;
+  using fp_half  = cuda::fp64_custom<5, 10>;
 
   bool ok = true;
 
@@ -530,7 +527,7 @@ TEST_HOST_DEVICE_FUNC void test()
 #if _CCCL_CUDA_COMPILATION()
 // Runtime sizes, which fp_custom_dynamic_size selects, live in a device variable rather
 // than in the type.
-using fp_dynamic = cudax::fp64_custom<cudax::fp_custom_dynamic_size, cudax::fp_custom_dynamic_size>;
+using fp_dynamic = cuda::fp64_custom<cuda::fp_custom_dynamic_size, cuda::fp_custom_dynamic_size>;
 
 // Reports both what the arithmetic did with the current sizes and what the sizes are, so a
 // stale device copy would be visible either way.
@@ -538,16 +535,16 @@ __global__ void dynamic_size_kernel(double* sum, int* mant_size)
 {
   const fp_dynamic __one(1.0), __tiny(0x1p-30);
   *sum       = static_cast<double>(__one + __tiny);
-  *mant_size = cudax::fp_custom_get_device_mantissa_size();
+  *mant_size = cuda::fp_custom_get_device_mantissa_size();
 }
 
 // The device-side setter, which is what a JIT-compiled program has instead of the host one.
 // One block, so nothing else is reading the size while thread 0 writes it.
 __global__ void device_set_size_kernel(int new_size, int* observed)
 {
-  cudax::fp_custom_set_device_mantissa_size(new_size);
+  cuda::fp_custom_set_device_mantissa_size(new_size);
   __syncthreads();
-  *observed = cudax::fp_custom_get_device_mantissa_size();
+  *observed = cuda::fp_custom_get_device_mantissa_size();
 }
 #endif // _CCCL_CUDA_COMPILATION()
 
@@ -570,8 +567,8 @@ void test_runtime_sizes(cuda::stream_ref stream)
   const double sum_full  = 1.0 + 0x1p-30;
 
   // Untouched, the sizes are the native ones, so the small term survives.
-  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 52);
-  assert(cudax::fp_custom_get_device_exponent_size(stream) == 11);
+  assert(cuda::fp_custom_get_device_mantissa_size(stream) == 52);
+  assert(cuda::fp_custom_get_device_exponent_size(stream) == 11);
 
   cuda::launch(stream, one_thread, dynamic_size_kernel, sum, mant_size);
   stream.sync();
@@ -580,22 +577,22 @@ void test_runtime_sizes(cuda::stream_ref stream)
 
   // 23 bits cannot hold a term 30 binades down, and the kernel needs no synchronization to
   // see the new size: the copy is ahead of it on the stream.
-  cudax::fp_custom_set_device_mantissa_size(23, stream);
+  cuda::fp_custom_set_device_mantissa_size(23, stream);
   cuda::launch(stream, one_thread, dynamic_size_kernel, sum, mant_size);
   stream.sync();
   assert(*sum == 1.0);
   assert(*mant_size == 23);
-  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 23);
+  assert(cuda::fp_custom_get_device_mantissa_size(stream) == 23);
 
   // The exponent is the other axis, and independent: 5 bits keep 1.0 but flush 2^-30.
-  cudax::fp_custom_set_device_exponent_size(5, stream);
-  assert(cudax::fp_custom_get_device_exponent_size(stream) == 5);
-  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 23);
+  cuda::fp_custom_set_device_exponent_size(5, stream);
+  assert(cuda::fp_custom_get_device_exponent_size(stream) == 5);
+  assert(cuda::fp_custom_get_device_mantissa_size(stream) == 23);
 
   // The host copy of the sizes is separate state, which the device writes must not have
   // touched.
-  assert(cudax::fp_custom_get_host_mantissa_size() == 52);
-  assert(cudax::fp_custom_get_host_exponent_size() == 11);
+  assert(cuda::fp_custom_get_host_mantissa_size() == 52);
+  assert(cuda::fp_custom_get_host_exponent_size() == 11);
 
   // A write from device code reaches the same variable the host accessors see.
   auto observed_storage = cuda::make_buffer<int>(stream, managed, 1, cuda::no_init);
@@ -604,13 +601,13 @@ void test_runtime_sizes(cuda::stream_ref stream)
     stream, cuda::make_config(cuda::grid_dims<1>(), cuda::block_dims<32>()), device_set_size_kernel, 40, observed);
   stream.sync();
   assert(*observed == 40);
-  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 40);
+  assert(cuda::fp_custom_get_device_mantissa_size(stream) == 40);
 
   // Leave the native format behind for anything that runs later.
-  cudax::fp_custom_set_device_mantissa_size(52, stream);
-  cudax::fp_custom_set_device_exponent_size(11, stream);
-  assert(cudax::fp_custom_get_device_mantissa_size(stream) == 52);
-  assert(cudax::fp_custom_get_device_exponent_size(stream) == 11);
+  cuda::fp_custom_set_device_mantissa_size(52, stream);
+  cuda::fp_custom_set_device_exponent_size(11, stream);
+  assert(cuda::fp_custom_get_device_mantissa_size(stream) == 52);
+  assert(cuda::fp_custom_get_device_exponent_size(stream) == 11);
 }
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 

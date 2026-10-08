@@ -29,15 +29,13 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 #if _CCCL_HAS_FLOAT128()
 // __float128 -> double is a lossy narrowing (and otherwise makes construction
 // ambiguous with the float/double ctors), so quad construction is deliberately
 // deleted for the single-double emulated types, mirroring the deleted 128-bit
 // integer ctors. (fp64mp2's double-double CAN hold a quad and keeps its ctor.)
-static_assert(!cuda::std::is_constructible_v<cudax::fpemu<double>, __float128>);
-static_assert(!cuda::std::is_constructible_v<cudax::fpemu_unpacked<double>, __float128>);
+static_assert(!cuda::std::is_constructible_v<cuda::fpemu<double>, __float128>);
+static_assert(!cuda::std::is_constructible_v<cuda::fpemu_unpacked<double>, __float128>);
 #endif // _CCCL_HAS_FLOAT128()
 
 // Bit-reinterpret helpers (host + device via cuda::std::bit_cast).
@@ -79,7 +77,7 @@ TEST_HOST_DEVICE_FUNC constexpr bool relax_nan_payload()
 // float -> fp64emu -> double (widening, exact).
 TEST_HOST_DEVICE_FUNC bool f2d_ok(float v)
 {
-  cudax::fp64emu e(v);
+  cuda::fp64emu e(v);
   const uint64_t be = d_bits((double) e);
   const uint64_t br = d_bits((double) v);
   if (be == br)
@@ -92,7 +90,7 @@ TEST_HOST_DEVICE_FUNC bool f2d_ok(float v)
 // double -> fp64emu -> float (narrowing, round-to-nearest-even).
 TEST_HOST_DEVICE_FUNC bool d2f_ok(double v)
 {
-  cudax::fp64emu e(v);
+  cuda::fp64emu e(v);
   const uint32_t be = f_bits((float) e);
   const uint32_t br = f_bits((float) v);
   if (be == br)

@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -52,8 +52,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 /*********************************************************************
  * Compilation mode macros (internal)
  *********************************************************************/
@@ -422,7 +421,7 @@ struct __fpemu_uint128
   uint64_t __lo_;
   uint64_t __hi_;
 
-  __fpemu_uint128() = default;
+  ::cuda::__fpemu_uint128() = default;
 
   _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128(uint64_t __value) noexcept
       : __lo_(__value)
@@ -533,7 +532,7 @@ _CCCL_HOST_DEVICE_API constexpr __fpemu_uint128& __fpemu_uint128::operator>>=(in
 
 #undef _CCCL_FPEMU_MAX
 #if _CCCL_DEVICE_COMPILATION() && !defined(__CUDA_LIBDEVICE__)
-// Global-scope qualifier: inside namespace cuda::experimental an
+// Global-scope qualifier: inside namespace cuda an
 // unqualified `max` now resolves to the fpmp2 max() template, which
 // shadows the CUDA device `::max(int, int)` builtin we want here.
 #  define _CCCL_FPEMU_MAX ::max
@@ -932,7 +931,7 @@ __shr_128_rnd(__fpemu_uint128 __man, int __shift, bool __sign = false) noexcept
 //! Used during FMA alignment; directed rounding is deferred to the pack epilogue.
 _CCCL_TRIVIAL_HOST_DEVICE_API __fpemu_uint128 __shr_128_jam(__fpemu_uint128 __man, int __shift) noexcept
 {
-  return __shr_128_rnd<__fpemu_rounding::rn>(__man, __shift);
+  return ::cuda::__shr_128_rnd<__fpemu_rounding::rn>(__man, __shift);
 } //__shr_128_jam
 
 //! @brief Arithmetic Shift a 64-bit value right with rounding
@@ -1077,7 +1076,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __unpack_mant(bool* __sign, __uint32x2 
     __man32x2.x[1] |= (1 << 20);
   }
 
-  __man32x2 = __shl_64(__man32x2, __fpemu_extra_bits);
+  __man32x2 = ::cuda::__shl_64(__man32x2, __fpemu_extra_bits);
   return __man32x2;
 } //__unpack_mant
 
@@ -1211,7 +1210,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint64_t __pack(bool __sign, uint32_t __exp, __uin
     else
     {
       int32_t __sat_exp = 0;
-      __fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __man);
+      ::cuda::__fp64_ovfl_sat<_Rm>(__sign, __sat_exp, __man);
       __man.x[1] |= (uint32_t) __sat_exp << _CCCL_FP64_HI_MANT_SHIFT;
     }
   }
@@ -1398,7 +1397,7 @@ __internal_fp64emu_round_pack(bool __sign, int32_t __exp, uint64_t __sig) noexce
   {
     if (__exp < 0)
     {
-      __sig        = __internal_fp64emu_shr_jam64(__sig, (uint32_t) (-__exp));
+      __sig        = ::cuda::__internal_fp64emu_shr_jam64(__sig, (uint32_t) (-__exp));
       __exp        = 0;
       __round_bits = (uint32_t) (__sig & 0x3FF);
     }
@@ -1424,7 +1423,7 @@ __internal_fp64emu_round_pack(bool __sign, int32_t __exp, uint64_t __sig) noexce
 // NOTE: the __fpbits64_unpacked pack/unpack routines
 //   __internal_fp64emu_unpack / __internal_fp64emu_pack
 // were moved to fpemu_impl_unpack.h (shared prologue/epilogue for every op).
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

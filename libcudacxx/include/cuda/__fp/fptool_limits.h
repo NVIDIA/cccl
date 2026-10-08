@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -22,7 +22,7 @@
 #endif // no system header
 
 /*
-// cuda::std::numeric_limits specialization for cuda::experimental::fp_custom
+// cuda::std::numeric_limits specialization for cuda::fp_custom
 //
 // fp_custom<_FpType, _ExpSize, _MantSize> stores a base-type value whose exponent and
 // mantissa have been reduced to the requested widths, so the limits below are those of
@@ -57,8 +57,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 //! @brief The binary64 bit pattern of 2^__e, subnormal encoding included.
 //!
 //! @internal Support for the numeric_limits specialization below: the limit values are
@@ -78,18 +77,18 @@ __fptool_limits_max_bits(int __emax, int __mant_bits) noexcept
   return (static_cast<::cuda::std::uint64_t>(__emax + 1023) << 52)
        | (((::cuda::std::uint64_t{1} << __mant_bits) - 1) << (52 - __mant_bits));
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _FpType, ::cuda::std::uint16_t _ExpSize, ::cuda::std::uint16_t _MantSize>
-class numeric_limits<::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>>
+class numeric_limits<::cuda::fp_custom<_FpType, _ExpSize, _MantSize>>
 {
 private:
   using __base   = numeric_limits<_FpType>;
-  using __native = ::cuda::experimental::__fp_custom_native_sizes<_FpType>;
+  using __native = ::cuda::__fp_custom_native_sizes<_FpType>;
 
-  static constexpr ::cuda::std::uint16_t __dyn = ::cuda::experimental::fp_custom_dynamic_size;
+  static constexpr ::cuda::std::uint16_t __dyn = ::cuda::fp_custom_dynamic_size;
 
   // A runtime-sized field leaves nothing to describe at compile time, so it falls back to
   // the base type's width and is_specialized below reports the values as not meaningful.
@@ -107,11 +106,11 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST auto
   __from_bits(::cuda::std::uint64_t __b) noexcept
   {
-    return ::cuda::std::bit_cast<::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>>(__b);
+    return ::cuda::std::bit_cast<::cuda::fp_custom<_FpType, _ExpSize, _MantSize>>(__b);
   }
 
 public:
-  using type = ::cuda::experimental::fp_custom<_FpType, _ExpSize, _MantSize>;
+  using type = ::cuda::fp_custom<_FpType, _ExpSize, _MantSize>;
 
   static constexpr bool is_specialized = (_ExpSize != __dyn && _MantSize != __dyn);
   static constexpr bool is_signed      = true;
@@ -122,18 +121,17 @@ public:
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type min() noexcept
   {
-    return __from_bits(::cuda::experimental::__fptool_limits_pow2_bits(__emin));
+    return __from_bits(::cuda::__fptool_limits_pow2_bits(__emin));
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type max() noexcept
   {
-    return __from_bits(::cuda::experimental::__fptool_limits_max_bits(__emax, __mant_bits));
+    return __from_bits(::cuda::__fptool_limits_max_bits(__emax, __mant_bits));
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type lowest() noexcept
   {
-    return __from_bits(
-      ::cuda::experimental::__fptool_limits_max_bits(__emax, __mant_bits) | (::cuda::std::uint64_t{1} << 63));
+    return __from_bits(::cuda::__fptool_limits_max_bits(__emax, __mant_bits) | (::cuda::std::uint64_t{1} << 63));
   }
 
   static constexpr bool is_integer = false;
@@ -142,12 +140,12 @@ public:
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type epsilon() noexcept
   {
-    return __from_bits(::cuda::experimental::__fptool_limits_pow2_bits(-__mant_bits));
+    return __from_bits(::cuda::__fptool_limits_pow2_bits(-__mant_bits));
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type round_error() noexcept
   {
-    return __from_bits(::cuda::experimental::__fptool_limits_pow2_bits(-1));
+    return __from_bits(::cuda::__fptool_limits_pow2_bits(-1));
   }
 
   static constexpr int min_exponent   = __emin + 1;
@@ -182,8 +180,7 @@ public:
   // what the standard asks denorm_min() to report in that case.
   [[nodiscard]] _CCCL_HOST_DEVICE_API static _CCCL_CONSTEXPR_BIT_CAST type denorm_min() noexcept
   {
-    return __has_subnormals ? __from_bits(::cuda::experimental::__fptool_limits_pow2_bits(__emin - __mant_bits))
-                            : min();
+    return __has_subnormals ? __from_bits(::cuda::__fptool_limits_pow2_bits(__emin - __mant_bits)) : min();
   }
 
   // The native format is the base type itself; a reduced one is neither stored nor, once
