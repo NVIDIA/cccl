@@ -1097,7 +1097,7 @@ def internal_mangle_cpp(cpp_name: str) -> str:
     and parameter names. Distinct spellings can produce the same fragment,
     and a leading digit remains a digit: this helper neither guarantees a
     valid standalone C identifier nor performs C++ ABI name mangling.
-    Provider identity is qualified separately by ``_qualify_private_symbols``.
+    ``_bind_private_symbol_namespace`` separately binds the provider identity.
 
     Parameters
     ----------
@@ -1322,6 +1322,11 @@ class Algorithm:
         Store and return the first identity. Later calls return the same
         identity or raise ``RuntimeError`` if the supplied or observed inputs
         differ. This check does not compile code or validate thread counts.
+
+        Binding belongs to this ``Algorithm`` instance. Separate kernel
+        compilations create fresh specializations; reusing this instance on
+        another device is valid only with the same compute capability and
+        compiler inputs.
         """
         observed = (
             self._current_provider_compile_identity()
@@ -1329,6 +1334,10 @@ class Algorithm:
             else compile_identity
         )
         existing = self._provider_compile_identity
+        # For example, an Algorithm bound while targeting compute_90 cannot
+        # later supply its artifacts to a compute_80 compilation. That compile
+        # needs a fresh Algorithm. A different device with the same target and
+        # compiler inputs is compatible; device ordinal is not part of identity.
         if existing is not None and existing != observed:
             raise RuntimeError(
                 "Provider artifacts were already qualified for a different "
@@ -1337,7 +1346,7 @@ class Algorithm:
         self._provider_compile_identity = observed
         return observed
 
-    def _qualify_private_symbols(
+    def _bind_private_symbol_namespace(
         self,
         *,
         logical_warp_threads: int | None = None,
@@ -1353,10 +1362,13 @@ class Algorithm:
         providers therefore share names; providers with different interfaces or
         targets remain distinct.
 
-        The first call stores the compile identity, key, and digest on this
-        object. Later calls accept the same identity and key but reject changes
-        to either. When no identity is supplied, query the current CUDA device
-        even if a previous call has already qualified the provider.
+        The first call stores the compile identity, key, and symbol suffix on
+        this object. Later calls validate the current inputs and reuse that
+        suffix without hashing again. Collection, bundling, and source emission
+        each call this because provider descriptors are mutable: once names
+        are bound, changing the provider requires a fresh specialization.
+        When no identity is supplied, query the current CUDA device even if a
+        previous call has already bound the provider.
 
         Parameters
         ----------
@@ -1393,11 +1405,17 @@ class Algorithm:
             block_threads=block_threads,
         )
         if self._private_symbol_key is not None:
+            # The target/options check above has already passed. Here we also
+            # protect the meaning of names that callers may already reference:
+            # changing this provider's warp width from 16 to 32, for example,
+            # needs a fresh specialization with its own symbol namespace.
             if self._private_symbol_key != key:
                 raise RuntimeError(
                     "Provider symbols were already qualified for a different "
-                    "thread configuration or compilation target."
+                    "provider definition or thread configuration. "
+                    "Create a new specialization for the changed inputs."
                 )
+            # Reuse the digest, but validate the mutable provider on every call.
             return compile_identity
 
         self._private_symbol_key = key
@@ -1687,7 +1705,7 @@ class Algorithm:
             ``self.block_threads``.
         compile_identity : nvrtc.CompilerIdentity, optional
             Bound target/options identity. ``None`` resolves the current
-            device's identity through ``_qualify_private_symbols``.
+            device's identity through ``_bind_private_symbol_namespace``.
 
         Returns
         -------
@@ -1714,7 +1732,7 @@ class Algorithm:
             source emitter.
         """
 
-        self._qualify_private_symbols(
+        self._bind_private_symbol_namespace(
             logical_warp_threads=logical_warp_threads,
             block_threads=block_threads,
             compile_identity=compile_identity,
@@ -2593,11 +2611,10 @@ def prepare_ltoir_bundle(
     key_to_rep = OrderedDict()
     rep_for_algo_id = {}
     for algo in all_algos:
-        algo._qualify_private_symbols(
+        algo._bind_private_symbol_namespace(
             compile_identity=compile_identity,
         )
-        key = algo_coalesce_key(algo)
-        rep = key_to_rep.setdefault(key, algo)
+        rep = key_to_rep.setdefault(algo._private_symbol_key, algo)
         rep_for_algo_id[id(algo)] = rep
 
     reps = list(key_to_rep.values())
@@ -2743,7 +2760,7 @@ def make_invocable_from_specialization(
     if block_threads is not None:
         specialization.block_threads = block_threads
 
-    compile_identity = specialization._qualify_private_symbols(
+    compile_identity = specialization._bind_private_symbol_namespace(
         logical_warp_threads=logical_warp_threads,
         block_threads=block_threads,
     )
