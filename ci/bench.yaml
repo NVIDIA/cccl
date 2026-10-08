@@ -33,9 +33,12 @@ benchmarks:
   filters:
     # CUB C++ benchmark filters (regex matched against ninja target names).
     cub:
-      # Examples:
-      # - '^cub\.bench\.for_each\.base'
-      # - '^cub\.bench\.reduce\.(sum|min)\.'
+      - '^cub\.bench\.segmented_scan\.custom\.base'
+      - '^cub\.bench\.segmented_radix_sort\.keys\.base'
+      - '^cub\.bench\.partition\.if\.base'
+      - '^cub\.bench\.merge\.pairs\.base'
+      - '^cub\.bench\.select\.flagged\.base'
+      - '^cub\.bench\.scan\.exclusive\.sum\.base'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
     python:
@@ -45,12 +48,12 @@ benchmarks:
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
-    # - "t4"         # sm_75, 16 GB
+    - "t4"         # sm_75, 16 GB
     # - "rtx2080"    # sm_75,  8 GB
     # - "rtxa6000"   # sm_86, 48 GB
     # - "l4"         # sm_89, 24 GB
     # - "rtx4090"    # sm_89, 24 GB
-    # - "h100"       # sm_90, 80 GB
+    - "h100"       # sm_90, 80 GB
     # - "rtxpro6000" # sm_120
 
   # Extra .devcontainer/launch.sh -d args
