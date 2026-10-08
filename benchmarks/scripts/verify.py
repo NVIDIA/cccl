@@ -13,7 +13,7 @@ def parse_arguments():
     )
 
     variant = parser.parse_known_args()[0].variant
-    sys.argv.remove("--variant={}".format(variant))
+    sys.argv.remove(f"--variant={variant}")
 
     return variant
 
@@ -39,9 +39,7 @@ class VerifySeeker:
         variant_point = cccl.bench.Config().label_to_variant_point(algname, self.label)
 
         print(
-            "{}, MinS, MedianS, MaxS".format(
-                workload_header(ct_workload_space, rt_workload_space)
-            )
+            f"{workload_header(ct_workload_space, rt_workload_space)}, MinS, MedianS, MaxS"
         )
         for ct_workload in ct_workload_space:
             bench = cccl.bench.Bench(algname, variant_point, list(ct_workload))
@@ -58,9 +56,7 @@ class VerifySeeker:
                     max_speedup = max(base_samples) / max(variant_samples)
                     point_str = workload_entry(ct_workload, rt_workload)
                     print(
-                        "{}, {}, {}, {}".format(
-                            point_str, min_speedup, median_speedup, max_speedup
-                        )
+                        f"{point_str}, {min_speedup}, {median_speedup}, {max_speedup}"
                     )
 
 

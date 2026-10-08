@@ -85,7 +85,8 @@ inline constexpr auto memory_order_seq_cst = memory_order::seq_cst;
 
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
-using memory_order = enum memory_order { // NOLINT(cppcoreguidelines-use-enum-class)
+using memory_order = enum memory_order
+{ // NOLINT(cppcoreguidelines-use-enum-class)
   memory_order_relaxed = __mo_relaxed,
   memory_order_consume = __mo_consume,
   memory_order_acquire = __mo_acquire,

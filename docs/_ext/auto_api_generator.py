@@ -1106,9 +1106,7 @@ def make_api_reference_label(project_name, member_type, name):
             continue
 
         char = clean_name[index].lower()
-        if char.isalnum():
-            current.append(char)
-        elif char == "_":
+        if char.isalnum() or char == "_":
             current.append(char)
         elif char.isspace():
             flush_current()

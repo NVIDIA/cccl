@@ -20,7 +20,7 @@ from libcudacxx.sym_check import util
 extract_ignore_names = ["_init", "_fini"]
 
 
-class NMExtractor(object):
+class NMExtractor:
     """
     NMExtractor - Extract symbol lists from libraries using nm.
     """
@@ -60,7 +60,7 @@ class NMExtractor(object):
         # Cast symbol to string.
         final_syms = (repr(s) for s in fmt_syms if self._want_sym(s))
         # Make unique and sort strings.
-        tmp_list = list(sorted(set(final_syms)))
+        tmp_list = sorted(set(final_syms))
         # Cast string back to symbol.
         return util.read_syms_from_list(tmp_list)
 
@@ -112,7 +112,7 @@ class NMExtractor(object):
         return sym
 
 
-class ReadElfExtractor(object):
+class ReadElfExtractor:
     """
     ReadElfExtractor - Extract symbol lists from libraries using readelf.
     """

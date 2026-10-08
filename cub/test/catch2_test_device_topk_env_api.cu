@@ -32,11 +32,11 @@ struct topk_custom_t
 
 struct topk_custom_decomposer_t
 {
-  __host__ __device__::cuda::std::tuple<int&> operator()(topk_custom_t& key) const
+  __host__ __device__ ::cuda::std::tuple<int&> operator()(topk_custom_t& key) const
   {
     return {key.rank};
   }
-  __host__ __device__::cuda::std::tuple<const int&> operator()(const topk_custom_t& key) const
+  __host__ __device__ ::cuda::std::tuple<const int&> operator()(const topk_custom_t& key) const
   {
     return {key.rank};
   }

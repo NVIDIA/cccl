@@ -271,7 +271,7 @@ try
 
   const bool sample_is_primitive = d_samples.value_type.type != CCCL_STORAGE; // TODO(bgruber): how to check if sample
                                                                               // is primitive?
-  const auto policy_sel = cub::detail::histogram::policy_selector{
+  const auto policy_sel          = cub::detail::histogram::policy_selector{
     sample_is_primitive,
     static_cast<int>(d_samples.value_type.size),
     static_cast<int>(d_output_histograms.value_type.size),

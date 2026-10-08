@@ -70,7 +70,7 @@ def _load_cuda_libraries():
 
 def _select_cuda_extra():
     try:
-        from ._cuda_version_utils import (  # noqa: PLC0415
+        from ._cuda_version_utils import (
             detect_cuda_version,
             get_recommended_extra,
         )

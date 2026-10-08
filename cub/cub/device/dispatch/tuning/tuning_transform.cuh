@@ -95,8 +95,8 @@ struct TransformPrefetchPolicy
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
   int items_per_thread_no_input = 2; //!< When there are no iterators as inputs, the kernel is just filling. This is the
                                      //!< number of items written per thread in this case.
-  int min_items_per_thread = 1; //!< Minimum number of items per thread (inclusive)
-  int max_items_per_thread = 32; //!< Maximum number of items per thread (inclusive)
+  int min_items_per_thread      = 1; //!< Minimum number of items per thread (inclusive)
+  int max_items_per_thread      = 32; //!< Maximum number of items per thread (inclusive)
   int prefetch_byte_stride = 128; //!< The stride in bytes to issue prefetch requests to memory. Corresponds somewhat to
                                   //!< the size of a cache line.
   // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost, so prevent unrolling

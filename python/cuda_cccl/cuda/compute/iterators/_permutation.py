@@ -31,10 +31,10 @@ class PermutationIterator(IteratorBase):
     """
 
     __slots__ = [
-        "_values",
         "_indices",
-        "_values_offset",
         "_indices_offset",
+        "_values",
+        "_values_offset",
     ]
 
     def __init__(
@@ -207,7 +207,7 @@ class PermutationIterator(IteratorBase):
     def children(self):
         return (self._values, self._indices)
 
-    def __add__(self, offset: int) -> "PermutationIterator":
+    def __add__(self, offset: int) -> PermutationIterator:
         """Advance the indices iterator by offset, keeping values at base."""
         return PermutationIterator(
             self._values,  # values stays at base for random access

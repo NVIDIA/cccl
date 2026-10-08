@@ -15,7 +15,10 @@ auto-register by their ``__qualname__`` for the free-function
 
 from __future__ import annotations
 
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
+
+from typing_extensions import Self
 
 from . import codec
 
@@ -39,7 +42,7 @@ class _Kind:
 class _Descriptor(_Kind):
     """Iterator / Op / Value descriptor, delegating to the codec codec."""
 
-    __slots__ = ("_write", "_read")
+    __slots__ = ("_read", "_write")
 
     def __init__(self, writer: Callable, reader: Callable) -> None:
         self._write = writer
@@ -204,13 +207,13 @@ class _Conditional(_Kind):
     absent member that (de)serializes to ``None``).
     """
 
-    __slots__ = ("selector", "branches")
+    __slots__ = ("branches", "selector")
 
     def __init__(self, selector: str, branches: dict) -> None:
         self.selector = selector
         self.branches = branches
 
-    def _kind(self, obj: Any) -> "_Kind | None":
+    def _kind(self, obj: Any) -> _Kind | None:
         return self.branches[getattr(obj, self.selector)]
 
     def write(self, w: codec.Writer, value: Any, obj: Any) -> None:
@@ -267,7 +270,7 @@ class Serializable:
         return w.getvalue()
 
     @classmethod
-    def deserialize(cls: type[_S], blob: bytes) -> _S:
+    def deserialize(cls, blob: bytes) -> Self:
         """Reconstruct a built algorithm from a blob; no objects required.
 
         Members are read in schema order and set on the instance as they are

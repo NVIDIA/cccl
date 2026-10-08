@@ -21,13 +21,12 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
 
 _CUDA_WHEEL_SUFFIX_RE = re.compile(r"\.cu(?P<version>\d+)(?=\.whl$)")
 
 
 def run_command(
-    cmd: List[str], cwd: Path = None, env: dict = None
+    cmd: list[str], cwd: Path = None, env: dict = None
 ) -> subprocess.CompletedProcess:
     """Run a command with error handling."""
     print(f"Running: {' '.join(cmd)}")
@@ -63,7 +62,7 @@ _VERSION_SUBDIRS = [
 ]
 
 
-def _cuda_subtree_dirs(wheel_dir: Path, cuda_version: str) -> List[Path]:
+def _cuda_subtree_dirs(wheel_dir: Path, cuda_version: str) -> list[Path]:
     """Absolute paths of the ``cu<version>`` subtrees expected in *wheel_dir*."""
     return [wheel_dir / parent / f"cu{cuda_version}" for parent in _VERSION_SUBDIRS]
 
@@ -83,7 +82,7 @@ def _require_cuda_subtrees(wheel_dir: Path, cuda_version: str, wheel_name: str) 
             )
 
 
-def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
+def merge_wheels(wheels: list[Path], output_dir: Path) -> Path:
     """Merge multiple wheels into a single wheel with version-specific binaries."""
     print("\n=== Merging wheels ===")
     print(f"Input wheels: {[w.name for w in wheels]}")

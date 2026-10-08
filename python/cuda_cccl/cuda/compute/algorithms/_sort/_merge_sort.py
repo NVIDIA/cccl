@@ -23,14 +23,14 @@ from ...typing import DeviceArrayLike, IteratorT, Operator
 class _MergeSort(Serializable):
     __slots__ = [
         "_bound_build_result",
+        "build_results",
         "d_in_keys_cccl",
         "d_in_values_cccl",
         "d_out_keys_cccl",
         "d_out_values_cccl",
+        "loaded_build_result",
         "op_adapter",
         "op_cccl",
-        "build_results",
-        "loaded_build_result",
     ]
 
     __serialization_schema__ = (

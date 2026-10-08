@@ -183,7 +183,7 @@ struct AgentScan
   static constexpr bool IS_INCLUSIVE = ForceInclusive || !HAS_INIT; // We are relying on either initial value not being
                                                                     // `NullType` or the ForceInclusive tag to be true
                                                                     // for inclusive scan to get picked up.
-  static constexpr int BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS = AgentScanPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = AgentScanPolicyT::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 

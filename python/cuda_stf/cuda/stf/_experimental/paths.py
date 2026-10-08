@@ -22,7 +22,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Optional
 
 # Shared library produced by the cccl.c.experimental.stf target (Linux-only).
 _STF_LIBRARY_NAME = "libcccl.c.experimental.stf.so"
@@ -64,18 +63,18 @@ def iter_site_roots():
 
 @dataclass
 class IncludePaths:
-    cuda: Optional[Path]
-    libcudacxx: Optional[Path]
-    cub: Optional[Path]
-    thrust: Optional[Path]
-    stf: Optional[Path]
+    cuda: Path | None
+    libcudacxx: Path | None
+    cub: Path | None
+    thrust: Path | None
+    stf: Path | None
 
     def as_tuple(self):
         # Note: higher-level ... lower-level order:
         return (self.stf, self.thrust, self.cub, self.libcudacxx, self.cuda)
 
 
-@lru_cache()
+@lru_cache
 def get_stf_include_dir() -> Path:
     """Return cuda-stf's own include root (cudax + C STF headers)."""
     candidate_roots = []
@@ -102,10 +101,10 @@ def get_stf_include_dir() -> Path:
     )
 
 
-def _cccl_base_include_root() -> Optional[Path]:
+def _cccl_base_include_root() -> Path | None:
     """Return cuda-cccl's include root when available."""
     try:
-        from cuda.cccl.headers.include_paths import (  # noqa: PLC0415
+        from cuda.cccl.headers.include_paths import (
             get_include_paths as _get_cccl_include_paths,
         )
     except Exception:
@@ -116,9 +115,9 @@ def _cccl_base_include_root() -> Optional[Path]:
         return None
 
 
-def _cuda_toolkit_include() -> Optional[Path]:
+def _cuda_toolkit_include() -> Path | None:
     try:
-        from cuda.pathfinder import (  # noqa: PLC0415  # type: ignore[import-not-found]
+        from cuda.pathfinder import (  # type: ignore[import-not-found]
             find_nvidia_header_directory,
         )
     except Exception:
@@ -147,7 +146,7 @@ def get_include_paths() -> IncludePaths:
     )
 
 
-@lru_cache()
+@lru_cache
 def get_library_dir() -> Path:
     """Return the directory containing the STF C shared library."""
     preferred_extra = _detect_preferred_extra()
@@ -184,7 +183,7 @@ def get_library_dir() -> Path:
     )
 
 
-@lru_cache()
+@lru_cache
 def get_library_path() -> Path:
     """Return the full path to the STF C shared library."""
     return get_library_dir() / _STF_LIBRARY_NAME
@@ -198,7 +197,7 @@ def _detect_preferred_extra() -> str | None:
     in build-isolation environments where runtime bindings may be absent.
     """
     try:
-        from ._cuda_version_utils import (  # noqa: PLC0415
+        from ._cuda_version_utils import (
             detect_cuda_version,
             get_recommended_extra,
         )

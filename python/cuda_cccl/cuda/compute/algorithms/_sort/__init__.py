@@ -14,12 +14,12 @@ from ._segmented_sort import segmented_sort as segmented_sort
 from ._sort_common import DoubleBuffer, SortOrder
 
 __all__ = [
-    "make_merge_sort",
-    "merge_sort",
-    "make_radix_sort",
-    "radix_sort",
-    "make_segmented_sort",
-    "segmented_sort",
     "DoubleBuffer",
     "SortOrder",
+    "make_merge_sort",
+    "make_radix_sort",
+    "make_segmented_sort",
+    "merge_sort",
+    "radix_sort",
+    "segmented_sort",
 ]

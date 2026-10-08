@@ -21,11 +21,10 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
 
 
 def run_command(
-    cmd: List[str], cwd: Path = None, env: dict = None
+    cmd: list[str], cwd: Path = None, env: dict = None
 ) -> subprocess.CompletedProcess:
     """Run a command with error handling."""
     print(f"Running: {' '.join(cmd)}")
@@ -43,7 +42,7 @@ def run_command(
     return result
 
 
-def merge_wheels(wheels: List[Path], output_dir: Path) -> Path:
+def merge_wheels(wheels: list[Path], output_dir: Path) -> Path:
     """Merge multiple wheels into a single wheel with version-specific binaries."""
     print("\n=== Merging wheels ===")
     print(f"Input wheels: {[w.name for w in wheels]}")

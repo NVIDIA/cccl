@@ -20,11 +20,11 @@ from typing import Any
 # default. Set before compileiq.worker picks a start method.
 os.environ["CIQ_PROCESS_MODE"] = "fork"
 
-import cccl.bench as bench  # noqa: E402
-import compileiq.search_spaces.base as ss  # noqa: E402
-from compileiq.ciq import Search  # noqa: E402
-from compileiq.types import SearchConfiguration  # noqa: E402
-from compileiq.worker import MultiProcessWorker  # noqa: E402
+import compileiq.search_spaces.base as ss
+from cccl import bench
+from compileiq.ciq import Search
+from compileiq.types import SearchConfiguration
+from compileiq.worker import MultiProcessWorker
 
 INVALID_SCORE = "*"
 
@@ -59,7 +59,7 @@ class BaseBuildFailure(BaseException):
 
 def pool_cull_sizes(num_genes, num_objectives, variant_space_size, cull=0.75):
     if not (0.05 <= cull <= 0.95):
-        raise ValueError("cull must be between 0.05 and 0.95, got {}".format(cull))
+        raise ValueError(f"cull must be between 0.05 and 0.95, got {cull}")
     min_pool_size = 128 if variant_space_size > 10000 else 32
     target = (2 * num_objectives) + 1
     poolsize = int(target / (1 - cull))
@@ -87,7 +87,7 @@ def variant_label(algname, parameter_space, config):
         )
         for search_range in parameter_space
     ]
-    return "{}.{}".format(algname, bench.VariantPoint(range_points).label())
+    return f"{algname}.{bench.VariantPoint(range_points).label()}"
 
 
 def visible_gpus():
@@ -107,11 +107,11 @@ def build_lanes(gpus, lanes_per_gpu):
     lanes = []
     for index in range(len(gpus) * lanes_per_gpu):
         gpu = gpus[index % len(gpus)]
-        gpu_dir = os.path.join(root, "build", "gpu{}".format(gpu))
+        gpu_dir = os.path.join(root, "build", f"gpu{gpu}")
         lanes.append(
             Lane(
                 gpu=gpu,
-                directory=os.path.join(gpu_dir, "lane{}".format(index // len(gpus))),
+                directory=os.path.join(gpu_dir, f"lane{index // len(gpus)}"),
                 lock=os.path.join(gpu_dir, ".lock"),
             )
         )
@@ -143,7 +143,7 @@ def configure_lanes(lanes, cmake_args):
             "--preset",
             TUNING_PRESET,
         ] + cmake_args
-        print("configuring {}".format(lane.directory))
+        print(f"configuring {lane.directory}")
         # Configure against the lane's own GPU so CMAKE_CUDA_ARCHITECTURES=native
         # resolves per lane rather than against whichever GPU the driver holds.
         environment = dict(os.environ, CUDA_VISIBLE_DEVICES=lane.gpu)
@@ -161,7 +161,7 @@ def configure_lanes(lanes, cmake_args):
 
     for lane, process in processes:
         if process.wait() != 0:
-            raise Exception("Unable to configure {}".format(lane.directory))
+            raise Exception(f"Unable to configure {lane.directory}")
 
 
 def separate_args(argv):
@@ -238,7 +238,7 @@ def prime_jsonlists(algname):
     read once per lane instead of once per variant. `configure_lanes` drops the
     file, so a run never inherits the axes or the device of an older one.
     """
-    path = "jsonlists.{}.json".format(algname)
+    path = f"jsonlists.{algname}.json"
 
     if os.path.exists(path):
         with open(path) as lists_file:
@@ -283,7 +283,7 @@ def evaluate(request_path):
         score = variant.score(ct_workload, rt_workload_space, estimator, estimator)
     else:
         if not variant.build():
-            print("SCORE {}".format(INVALID_SCORE))
+            print(f"SCORE {INVALID_SCORE}")
             return
 
         with gpu_lock(request["lock"]):
@@ -292,7 +292,7 @@ def evaluate(request_path):
     if not math.isfinite(score):
         score = INVALID_SCORE
 
-    print("SCORE {}".format(score))
+    print(f"SCORE {score}")
 
 
 class LaneObjective:
@@ -360,9 +360,7 @@ class LaneObjective:
 
         if completed.returncode == BASE_BUILD_FAILED:
             self.abort.set()
-            message = "base build failed in {}:\n{}".format(
-                lane.directory, completed.stderr
-            )
+            message = f"base build failed in {lane.directory}:\n{completed.stderr}"
             # compileiq reports a worker that dies on a BaseException without its
             # traceback, so the reason has to be printed here to survive.
             sys.stderr.write(message)
@@ -378,7 +376,7 @@ class LaneObjective:
             # The shim died before scoring; without this its traceback is lost and
             # every variant just looks invalid.
             sys.stderr.write(
-                "evaluation failed in {}:\n{}".format(lane.directory, completed.stderr)
+                f"evaluation failed in {lane.directory}:\n{completed.stderr}"
             )
 
         score: str | float = scores[-1] if scores else INVALID_SCORE
@@ -391,11 +389,7 @@ class LaneObjective:
         # Flush: workers are forked, so buffered output would be inherited and
         # re-emitted by children.
         print(
-            "{} {} (gpu {})".format(
-                variant_label(self.algname, self.parameter_space, config),
-                score,
-                lane.gpu,
-            ),
+            f"{variant_label(self.algname, self.parameter_space, config)} {score} (gpu {lane.gpu})",
             flush=True,
         )
         return score
@@ -476,7 +470,7 @@ def main():
 
     gpus = visible_gpus()
     lanes = build_lanes(gpus, lanes_per_gpu)
-    print("{} gpus x {} lanes".format(len(gpus), lanes_per_gpu))
+    print(f"{len(gpus)} gpus x {lanes_per_gpu} lanes")
 
     list_only = bench.parse_arguments().list_benches
     configure_lanes(

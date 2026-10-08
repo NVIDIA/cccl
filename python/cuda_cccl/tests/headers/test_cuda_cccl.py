@@ -1,6 +1,6 @@
 import pytest
 
-import cuda.cccl as cccl
+from cuda import cccl
 
 
 def test_version():

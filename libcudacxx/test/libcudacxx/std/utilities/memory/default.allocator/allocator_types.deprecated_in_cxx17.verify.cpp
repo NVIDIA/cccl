@@ -32,9 +32,9 @@
 TEST_FUNC void f()
 {
   {
-    using Pointer      = cuda::std::allocator<char>::pointer; // expected-warning {{'pointer' is deprecated}}
-    using ConstPointer = cuda::std::allocator<char>::const_pointer; // expected-warning {{'const_pointer' is
-                                                                    // deprecated}}
+    using Pointer        = cuda::std::allocator<char>::pointer; // expected-warning {{'pointer' is deprecated}}
+    using ConstPointer   = cuda::std::allocator<char>::const_pointer; // expected-warning {{'const_pointer' is
+                                                                      // deprecated}}
     using Reference      = cuda::std::allocator<char>::reference; // expected-warning {{'reference' is deprecated}}
     using ConstReference = cuda::std::allocator<char>::const_reference; // expected-warning {{'const_reference' is
                                                                         // deprecated}}
@@ -44,11 +44,11 @@ TEST_FUNC void f()
     using Pointer      = cuda::std::allocator<char const>::pointer; // expected-warning {{'pointer' is deprecated}}
     using ConstPointer = cuda::std::allocator<char const>::const_pointer; // expected-warning {{'const_pointer' is
                                                                           // deprecated}}
-    using Reference = cuda::std::allocator<char const>::reference; // expected-warning {{'reference' is deprecated}}
+    using Reference    = cuda::std::allocator<char const>::reference; // expected-warning {{'reference' is deprecated}}
     using ConstReference = cuda::std::allocator<char const>::const_reference; // expected-warning {{'const_reference' is
                                                                               // deprecated}}
-    using Rebind = cuda::std::allocator<char const>::rebind<int>::other; // expected-warning {{'rebind<int>' is
-                                                                         // deprecated}}
+    using Rebind         = cuda::std::allocator<char const>::rebind<int>::other; // expected-warning {{'rebind<int>' is
+                                                                                 // deprecated}}
   }
   {
     using Pointer      = cuda::std::allocator<void>::pointer; // expected-warning {{'pointer' is deprecated}}

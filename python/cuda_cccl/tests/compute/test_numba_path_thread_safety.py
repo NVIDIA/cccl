@@ -113,8 +113,8 @@ def _single_build_result(algorithm):
 
 def _make_clamped_max_op(k):
     def clamped_max(a, b):
-        m = a if a > b else b
-        return m if m > k else k
+        m = max(b, a)
+        return max(k, m)
 
     return clamped_max
 

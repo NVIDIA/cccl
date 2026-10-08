@@ -24,12 +24,12 @@ class _UniqueByKey(Serializable):
     __slots__ = [
         "_bound_build_result",
         "build_results",
-        "loaded_build_result",
-        "d_in_keys_cccl",
         "d_in_items_cccl",
-        "d_out_keys_cccl",
+        "d_in_keys_cccl",
         "d_out_items_cccl",
+        "d_out_keys_cccl",
         "d_out_num_selected_cccl",
+        "loaded_build_result",
         "op_cccl",
     ]
 

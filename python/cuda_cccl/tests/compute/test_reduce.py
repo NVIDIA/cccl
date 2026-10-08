@@ -56,7 +56,7 @@ def add_op(a, b):
 
 
 # Lambda function for testing lambda support as reducers
-add_op_lambda = lambda a, b: a + b  # noqa: E731
+add_op_lambda = lambda a, b: a + b
 
 
 reduce_params = [

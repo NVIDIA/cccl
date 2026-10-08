@@ -9,7 +9,8 @@ import functools
 import threading
 import types
 import weakref
-from typing import Any, Callable, Hashable, NamedTuple, TypeVar
+from collections.abc import Callable, Hashable
+from typing import Any, NamedTuple, TypeVar
 
 import numpy as np
 from cuda.core import Device
@@ -127,7 +128,7 @@ class _ThreadLocalCaches:
     process-wide registry still references them.
     """
 
-    __slots__ = ("wrapper_caches", "__weakref__")
+    __slots__ = ("__weakref__", "wrapper_caches")
 
     def __init__(self) -> None:
         # Outer key: decorated algorithm factory name, e.g.,

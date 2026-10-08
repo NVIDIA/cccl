@@ -16,7 +16,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from parse_matrix import (  # noqa: E402
+from parse_matrix import (
     Workflow,
     parse_matrix,
     resolve_ctk,

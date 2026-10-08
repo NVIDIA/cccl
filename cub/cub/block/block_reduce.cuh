@@ -41,7 +41,6 @@ CUB_NAMESPACE_BEGIN
 //! block.
 enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
-
   //! @rst
   //! Overview
   //! ++++++++++++++++++++++++++

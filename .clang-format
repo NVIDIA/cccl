@@ -60,6 +60,14 @@ AttributeMacros: [
                   '_CCCL_PUBLIC_API',
                   '_CCCL_PUBLIC_HOST_API',
                   '_CCCL_PUBLIC_DEVICE_API',
+                  '__shared__',
+                  '__host__',
+                  '__device__',
+                  '__global__',
+                  '__constant__',
+                  '__managed__',
+                  '__forceinline__',
+                  '__noinline__',
                  ]
 BinPackArguments: false
 BinPackParameters: false

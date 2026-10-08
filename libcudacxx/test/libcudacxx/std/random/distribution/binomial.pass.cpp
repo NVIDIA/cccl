@@ -55,10 +55,10 @@ TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false; // Math functions cuda::std::log, cuda::std::exp are not yet
                                                       // constexpr
-  using D                       = cuda::std::binomial_distribution<>;
-  using P                       = D::param_type;
-  using G                       = cuda::std::philox4x64;
-  cuda::std::array<P, 5> params = {P(10, 0.5), P(20, 0.3), P(15, 0.7), P(5, 0.25), P(30, 0.6)};
+  using D                                    = cuda::std::binomial_distribution<>;
+  using P                                    = D::param_type;
+  using G                                    = cuda::std::philox4x64;
+  cuda::std::array<P, 5> params              = {P(10, 0.5), P(20, 0.3), P(15, 0.7), P(5, 0.25), P(30, 0.6)};
   test_distribution<D, false, G, test_constexpr>(params, binomial_cdf{});
 }
 

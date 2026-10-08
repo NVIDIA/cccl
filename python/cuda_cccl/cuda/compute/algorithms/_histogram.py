@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import math
-from typing import Union
 
 import numpy as np
 
@@ -23,14 +22,14 @@ from ..typing import DeviceArrayLike, IteratorT
 class _Histogram(Serializable):
     __slots__ = [
         "_bound_build_result",
-        "num_rows",
-        "d_samples_cccl",
-        "d_histogram_cccl",
-        "h_num_output_levels_cccl",
-        "h_lower_level_cccl",
-        "h_upper_level_cccl",
         "build_results",
+        "d_histogram_cccl",
+        "d_samples_cccl",
+        "h_lower_level_cccl",
+        "h_num_output_levels_cccl",
+        "h_upper_level_cccl",
         "loaded_build_result",
+        "num_rows",
     ]
 
     __serialization_schema__ = (
@@ -276,8 +275,8 @@ def histogram_even(
     d_samples: DeviceArrayLike | IteratorT,
     d_histogram: DeviceArrayLike,
     num_output_levels: int,
-    lower_level: Union[np.floating, np.integer],
-    upper_level: Union[np.floating, np.integer],
+    lower_level: np.floating | np.integer,
+    upper_level: np.floating | np.integer,
     num_samples: int,
     stream=None,
 ):

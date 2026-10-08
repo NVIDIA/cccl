@@ -19,52 +19,52 @@ THRUST_NAMESPACE_BEGIN
 
 namespace system
 {
-system_error ::system_error(error_code ec, const std::string& what_arg)
+system_error::system_error(error_code ec, const std::string& what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ec)
 {} // end system_error::system_error()
 
-system_error ::system_error(error_code ec, const char* what_arg)
+system_error::system_error(error_code ec, const char* what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ec)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(error_code ec)
+system_error::system_error(error_code ec)
     : std::runtime_error("")
     , m_error_code(ec)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(int ev, const error_category& ecat, const std::string& what_arg)
+system_error::system_error(int ev, const error_category& ecat, const std::string& what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ev, ecat)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(int ev, const error_category& ecat, const char* what_arg)
+system_error::system_error(int ev, const error_category& ecat, const char* what_arg)
     : std::runtime_error(what_arg)
     , m_error_code(ev, ecat)
 {
   ;
 } // end system_error::system_error()
 
-system_error ::system_error(int ev, const error_category& ecat)
+system_error::system_error(int ev, const error_category& ecat)
     : std::runtime_error("")
     , m_error_code(ev, ecat)
 {
   ;
 } // end system_error::system_error()
 
-const error_code& system_error ::code() const noexcept
+const error_code& system_error::code() const noexcept
 {
   return m_error_code;
 } // end system_error::code()
 
-const char* system_error ::what() const noexcept
+const char* system_error::what() const noexcept
 {
   if (m_what.empty())
   {

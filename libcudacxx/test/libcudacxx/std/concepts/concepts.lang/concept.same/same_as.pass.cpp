@@ -149,7 +149,7 @@ static_assert(same_as<int, decltype(SubsumptionTest<void, void>())>);
 static_assert(same_as<int, decltype(SubsumptionTest<int (*)(), int (*)()>())>);
 static_assert(same_as<int, decltype(SubsumptionTest<double (&)(int), double (&)(int)>())>);
 static_assert(same_as<int, decltype(SubsumptionTest<int S2::*, int S2::*>())>);
-static_assert(same_as<int, decltype(SubsumptionTest<int& (S2::*) (), int& (S2::*) ()>())>);
+static_assert(same_as<int, decltype(SubsumptionTest<int& (S2::*)(), int& (S2::*)()>())>);
 #endif
 
 int main(int, char**)
@@ -186,14 +186,14 @@ int main(int, char**)
 
     static_assert(same_as<int (*)(), int (*)()>);
     static_assert(same_as<void (&)(), void (&)()>);
-    static_assert(same_as<S1& (*) (S1), S1& (*) (S1)>);
-    static_assert(same_as<C1& (&) (S1, int), C1& (&) (S1, int)>);
+    static_assert(same_as<S1& (*)(S1), S1& (*)(S1)>);
+    static_assert(same_as<C1& (&)(S1, int), C1& (&)(S1, int)>);
 
     static_assert(same_as<int S2::*, int S2::*>);
     static_assert(same_as<double S2::*, double S2::*>);
 
-    static_assert(same_as<int& (S2::*) (), int& (S2::*) ()>);
-    static_assert(same_as<double& (S2::*) (int), double& (S2::*) (int)>);
+    static_assert(same_as<int& (S2::*)(), int& (S2::*)()>);
+    static_assert(same_as<double& (S2::*)(int), double& (S2::*)(int)>);
   }
 
   { // Checks that `T` and `T&` are distinct types
@@ -260,14 +260,14 @@ int main(int, char**)
     static_assert(!same_as<int[1], int[2]>);
     static_assert(!same_as<double[1], int[2]>);
 
-    static_assert(!same_as<int* (*) (), const int* (*) ()>);
+    static_assert(!same_as<int* (*)(), const int* (*)()>);
     static_assert(!same_as<void (&)(), void (&)(S1)>);
-    static_assert(!same_as<S1 (*)(S1), S1& (*) (S1)>);
-    static_assert(!same_as<C3 (&)(int), C1& (&) (S1, int)>);
+    static_assert(!same_as<S1 (*)(S1), S1& (*)(S1)>);
+    static_assert(!same_as<C3 (&)(int), C1& (&)(S1, int)>);
 
     static_assert(!same_as<int S2::*, double S2::*>);
 
-    static_assert(!same_as<int& (S2::*) (), double& (S2::*) (int)>);
+    static_assert(!same_as<int& (S2::*)(), double& (S2::*)(int)>);
   }
 
   return 0;

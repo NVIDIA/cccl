@@ -24,4 +24,4 @@ except ImportError:
     ) from None
 del _cuda_bindings
 
-__all__ = ["get_include_paths", "__version__"]
+__all__ = ["__version__", "get_include_paths"]

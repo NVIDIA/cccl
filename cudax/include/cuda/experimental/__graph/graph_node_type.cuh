@@ -86,7 +86,7 @@ enum class graph_node_type : int
   semaphore_wait   = cudaGraphNodeTypeExtSemaphoreWait,
   malloc           = cudaGraphNodeTypeMemAlloc,
   free             = cudaGraphNodeTypeMemFree,
-// batch_memop      = CU_GRAPH_NODE_TYPE_BATCH_MEM_OP, // not exposed by the CUDA runtime
+  // batch_memop      = CU_GRAPH_NODE_TYPE_BATCH_MEM_OP, // not exposed by the CUDA runtime
 
 #if _CCCL_CTK_AT_LEAST(12, 8)
   conditional = cudaGraphNodeTypeConditional

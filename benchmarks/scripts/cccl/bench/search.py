@@ -26,7 +26,7 @@ def benchmark_group(algname):
 
 def list_benches(algnames, config=None, smoke=False):
     """Print the benchmarks grouped by project and algorithm"""
-    print("### Benchmarks ({})".format(len(algnames)))
+    print(f"### Benchmarks ({len(algnames)})")
 
     if config is None:
         config = Config()
@@ -40,7 +40,7 @@ def list_benches(algnames, config=None, smoke=False):
 
         space_size = config.variant_space_size(algname)
         variant_suffix = "" if space_size == 1 else "s"
-        print("  * `{}`: {} variant{}".format(algname, space_size, variant_suffix))
+        print(f"  * `{algname}`: {space_size} variant{variant_suffix}")
 
         if smoke:
             workload = SMOKE_WORKLOADS[algname]
@@ -59,7 +59,7 @@ def list_benches(algnames, config=None, smoke=False):
             for param_space in config.benchmarks[algname]:
                 param_name = param_space.label
                 param_rng = (param_space.low, param_space.high, param_space.step)
-                print("    * `{}`: {}".format(param_name, param_rng))
+                print(f"    * `{param_name}`: {param_rng}")
 
 
 def parse_sub_space(args):
@@ -172,11 +172,7 @@ def run_benches(algnames, sub_space, seeker, args):
             seeker(algname, ct_space, rt_values)
         except Exception as e:
             succeeded = False
-            print(
-                "#### ERROR exception occurred while running {}: '{}'".format(
-                    algname, e
-                )
-            )
+            print(f"#### ERROR exception occurred while running {algname}: '{e}'")
         results.append({"algorithm": algname, "succeeded": succeeded})
 
     return results

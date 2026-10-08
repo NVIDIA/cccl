@@ -22,12 +22,12 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
+from numba import cuda
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.numba import (  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import (
     get_arg_numba,
     numba_arguments,
 )
@@ -113,11 +113,10 @@ def test_graph_scope_with_repeat():
 
     for outer in range(3):
         with ctx.graph_scope():
-            with ctx.repeat(5):
-                with ctx.task(lX.rw()) as t:
-                    nb_stream = cuda.external_stream(t.stream_ptr())
-                    dX = numba_arguments(t)
-                    add_kernel[bpg, tpb, nb_stream](dX, 1.0)
+            with ctx.repeat(5), ctx.task(lX.rw()) as t:
+                nb_stream = cuda.external_stream(t.stream_ptr())
+                dX = numba_arguments(t)
+                add_kernel[bpg, tpb, nb_stream](dX, 1.0)
 
             with ctx.task(lX.rw()) as t:
                 nb_stream = cuda.external_stream(t.stream_ptr())
@@ -503,21 +502,22 @@ def test_repeat_with_while_inside_pytorch():
     step = 0.25
     tol = 0.1
 
-    with ctx.graph_scope():
-        with ctx.repeat(3):
-            with ctx.while_loop() as loop:
-                with pytorch_task(ctx, lX.rw()) as (tX,):
-                    tX[:] += step
+    with ctx.graph_scope(), ctx.repeat(3):
+        with ctx.while_loop() as loop:
+            with pytorch_task(ctx, lX.rw()) as (tX,):
+                tX[:] += step
 
-                with pytorch_task(
-                    ctx, lX.read(), ltarget.read(), lresidual.write()
-                ) as (tX, tTarget, tRes):
-                    tRes[0] = torch.max(torch.abs(tX - tTarget[0]))
+            with pytorch_task(ctx, lX.read(), ltarget.read(), lresidual.write()) as (
+                tX,
+                tTarget,
+                tRes,
+            ):
+                tRes[0] = torch.max(torch.abs(tX - tTarget[0]))
 
-                loop.continue_while(lresidual, ">", tol)
+            loop.continue_while(lresidual, ">", tol)
 
-            with pytorch_task(ctx, ltarget.rw()) as (tTarget,):
-                tTarget[0] += 1.0
+        with pytorch_task(ctx, ltarget.rw()) as (tTarget,):
+            tTarget[0] += 1.0
 
     ctx.finalize()
 
@@ -553,20 +553,18 @@ def test_while_with_repeat_inside_pytorch():
     step = 0.1
     tol = 0.1
 
-    with ctx.graph_scope():
-        with ctx.while_loop() as loop:
-            with ctx.repeat(5):
-                with pytorch_task(ctx, lX.rw()) as (tX,):
-                    tX[:] += step
+    with ctx.graph_scope(), ctx.while_loop() as loop:
+        with ctx.repeat(5), pytorch_task(ctx, lX.rw()) as (tX,):
+            tX[:] += step
 
-            with pytorch_task(ctx, lX.read(), ltarget.read(), lresidual.write()) as (
-                tX,
-                tTarget,
-                tRes,
-            ):
-                tRes[0] = torch.max(torch.abs(tX - tTarget[0]))
+        with pytorch_task(ctx, lX.read(), ltarget.read(), lresidual.write()) as (
+            tX,
+            tTarget,
+            tRes,
+        ):
+            tRes[0] = torch.max(torch.abs(tX - tTarget[0]))
 
-            loop.continue_while(lresidual, ">", tol)
+        loop.continue_while(lresidual, ">", tol)
 
     ctx.finalize()
 

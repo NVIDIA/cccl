@@ -38,8 +38,8 @@ class CacheModifiedInputIterator(IteratorBase):
     """
 
     __slots__ = [
-        "_modifier",
         "_array",
+        "_modifier",
         "_ptr",
     ]
 
@@ -137,7 +137,7 @@ class CacheModifiedInputIterator(IteratorBase):
         # Cache-modified iterator is input-only
         return None
 
-    def __add__(self, offset: int) -> "CacheModifiedInputIterator":
+    def __add__(self, offset: int) -> CacheModifiedInputIterator:
         """Advance the iterator by offset elements."""
         out = CacheModifiedInputIterator(self._array, self._modifier)
         offset_ptr = self._ptr + offset * get_dtype(out._array).itemsize

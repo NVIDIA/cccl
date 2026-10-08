@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import threading
-from typing import Hashable
+from collections.abc import Hashable
 
 from .._bindings import Iterator, IteratorKind, IteratorState, Op
 from .._caching import cache_with_registered_key_functions
@@ -48,14 +48,14 @@ class IteratorBase:
     # - get_output_deref_op() -> Op | None (cached)
 
     __slots__ = [
-        "_state_bytes",
-        "_state_alignment",
-        "_value_type",
         "_advance_op",
         "_input_deref_op",
-        "_output_deref_op",
-        "_uid_cached",
         "_op_lock",
+        "_output_deref_op",
+        "_state_alignment",
+        "_state_bytes",
+        "_uid_cached",
+        "_value_type",
     ]
 
     def __init__(
@@ -105,7 +105,7 @@ class IteratorBase:
         return self._value_type
 
     @property
-    def children(self) -> tuple["IteratorBase", ...]:
+    def children(self) -> tuple[IteratorBase, ...]:
         """Return child iterators for automatic dependency tracking. Override in subclasses."""
         return ()
 

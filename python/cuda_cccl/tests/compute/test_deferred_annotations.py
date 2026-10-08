@@ -22,7 +22,7 @@ def test_deferred_annotations():
 
 
 def test_transform_iterator_future_annotations():
-    def add_one(x: "np.int32") -> "np.int32":
+    def add_one(x: np.int32) -> np.int32:
         return x + np.int32(1)
 
     h_in = np.arange(8, dtype=np.int32)

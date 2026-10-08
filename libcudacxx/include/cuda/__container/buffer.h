@@ -885,7 +885,7 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
 
   // We don't know what to do with both device and host accessible buffers, so
   // we need to check the attributes
-  if constexpr (_Accessability == mr::__memory_accessibility ::__host_device)
+  if constexpr (_Accessability == mr::__memory_accessibility::__host_device)
   {
     __driver::__pointer_attribute_value_type_t<CU_POINTER_ATTRIBUTE_MEMORY_TYPE> __type;
     bool __is_managed{};
@@ -898,14 +898,14 @@ _CCCL_HOST_API void __fill_n(cuda::stream_ref __stream, _Tp* __first, ::cuda::st
     }
     if (__type == ::CU_MEMORYTYPE_HOST && !__is_managed)
     {
-      __fill_n<_Tp, mr::__memory_accessibility ::__host>(__stream, __first, __count, __value);
+      __fill_n<_Tp, mr::__memory_accessibility::__host>(__stream, __first, __count, __value);
     }
     else
     {
-      __fill_n<_Tp, mr::__memory_accessibility ::__device>(__stream, __first, __count, __value);
+      __fill_n<_Tp, mr::__memory_accessibility::__device>(__stream, __first, __count, __value);
     }
   }
-  else if constexpr (_Accessability == mr::__memory_accessibility ::__host)
+  else if constexpr (_Accessability == mr::__memory_accessibility::__host)
   {
     ::cuda::host_launch(
       __stream, ::cuda::std::uninitialized_fill_n<_Tp*, ::cuda::std::size_t, _Tp>, __first, __count, __value);

@@ -13,13 +13,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from render_report import (  # noqa: E402
-    _MAX_COMMENT_BYTES,  # noqa: E402
+from render_report import (
+    _MAX_COMMENT_BYTES,
     load_analysis,
     render,
 )
-from render_report import _MAX_DIFF_BLOCKS as _MAX  # noqa: E402
-from render_report import _MAX_LISTED_TARGETS as _MAX_TARGETS  # noqa: E402
+from render_report import _MAX_DIFF_BLOCKS as _MAX
+from render_report import _MAX_LISTED_TARGETS as _MAX_TARGETS
 
 #: A diff of the shape that `compare_sass.py` writes.
 DIFF = {

@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import Callable, Protocol, TypeVar
+from collections.abc import Callable
+from typing import Protocol, TypeVar
 
 from .iterators import IteratorBase
 from .op import OpAdapter, OpKind, RawOp

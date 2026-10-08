@@ -12,7 +12,7 @@ import platform
 import libcudacxx.util
 
 
-class CXXCompiler(object):
+class CXXCompiler:
     CM_Default = 0
     CM_PreProcess = 1
     CM_CheckCompileFlag = 2
@@ -229,7 +229,7 @@ class CXXCompiler(object):
             cmd += self.link_flags
         cmd += flags
         if out is not None:
-            cmd += ["/link", '/out:"{}"'.format(out)]
+            cmd += ["/link", f'/out:"{out}"']
         return cmd
 
     def _basicCmd(

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Tuple
 
 from ..._caching import cache_with_registered_key_functions
 from ..._utils.protocols import get_dtype
@@ -35,7 +34,7 @@ def _get_arrays(
     d_out_keys: DeviceArrayLike | None,
     d_in_values: DeviceArrayLike | DoubleBuffer | None,
     d_out_values: DeviceArrayLike | None,
-) -> Tuple[DeviceArrayLike, DeviceArrayLike, DeviceArrayLike, DeviceArrayLike]:
+) -> tuple[DeviceArrayLike, DeviceArrayLike, DeviceArrayLike, DeviceArrayLike]:
     if isinstance(d_in_keys, DoubleBuffer):
         d_in_keys_array = d_in_keys.current()
         d_out_keys_array = d_in_keys.alternate()

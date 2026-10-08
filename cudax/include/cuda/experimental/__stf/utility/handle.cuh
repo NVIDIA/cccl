@@ -39,10 +39,14 @@ enum class handle_flags : unsigned
 };
 
 /// A tag for constructing `handle` objects with `static_cast`.
-inline enum class use_static_cast {} use_static_cast = {};
+inline enum class use_static_cast
+{
+} use_static_cast = {};
 
 /// A tag for constructing `handle` objects with `dynamic_cast`.
-inline enum class use_dynamic_cast {} use_dynamic_cast = {};
+inline enum class use_dynamic_cast
+{
+} use_dynamic_cast = {};
 
 /// @brief Performs bitwise OR operation on `handle_flags`.
 /// @return The result of bitwise OR operation.

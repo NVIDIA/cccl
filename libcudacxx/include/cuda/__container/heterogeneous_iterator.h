@@ -64,7 +64,7 @@ template <class _Tp, __is_heterogeneous_const_iter _IsConst, ::cuda::mr::__memor
 class __heterogeneous_iterator_access;
 
 template <class _Tp, __is_heterogeneous_const_iter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility ::__host>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility::__host>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -111,7 +111,7 @@ protected:
 };
 
 template <class _Tp, __is_heterogeneous_const_iter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility ::__device>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility::__device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;
@@ -158,7 +158,7 @@ protected:
 };
 
 template <class _Tp, __is_heterogeneous_const_iter _IsConst>
-class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility ::__host_device>
+class __heterogeneous_iterator_access<_Tp, _IsConst, ::cuda::mr::__memory_accessibility::__host_device>
 {
 public:
   using iterator_concept  = ::cuda::std::contiguous_iterator_tag;

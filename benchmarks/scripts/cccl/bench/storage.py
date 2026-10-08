@@ -45,7 +45,7 @@ def get_postgres_config():
 
 
 def get_bench_table_name(subbench, algname):
-    return "{}.{}".format(algname, subbench)
+    return f"{algname}.{subbench}"
 
 
 def blob_to_samples(blob):
@@ -82,9 +82,7 @@ class SQLiteStorage(StorageBase):
     def __init__(self, db_path):
         if sqlite3.threadsafety < 3:
             raise RuntimeError(
-                "SQLite threadsafety level is {}, but serialized mode (3) is required".format(
-                    sqlite3.threadsafety
-                )
+                f"SQLite threadsafety level is {sqlite3.threadsafety}, but serialized mode (3) is required"
             )
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -112,7 +110,7 @@ class SQLiteStorage(StorageBase):
     def alg_to_df(self, algname, subbench):
         table = get_bench_table_name(subbench, algname)
         with self.conn:
-            df = pd.read_sql_query('SELECT * FROM "{}"'.format(table), self.conn)
+            df = pd.read_sql_query(f'SELECT * FROM "{table}"', self.conn)
             df["samples"] = df["samples"].apply(blob_to_samples)
 
         return df

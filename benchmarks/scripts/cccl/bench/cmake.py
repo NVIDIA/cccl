@@ -100,16 +100,12 @@ class CMake:
             p.wait(timeout=timeout)
             elapsed = time.time() - begin
             logger.info(
-                "finished build for {} (exit code: {}) in {:.3f}s".format(
-                    bench.label(), p.returncode, elapsed
-                )
+                f"finished build for {bench.label()} (exit code: {p.returncode}) in {elapsed:.3f}s"
             )
 
             return Build(p.returncode, elapsed)
         except subprocess.TimeoutExpired:
-            logger.info(
-                "build for {} reached timeout of {}s".format(bench.label(), timeout)
-            )
+            logger.info(f"build for {bench.label()} reached timeout of {timeout}s")
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             return Build(424242, float("inf"))
 
@@ -128,9 +124,9 @@ class CMake:
             build = cache.pull_build(bench)
 
             if build:
-                logger.info("found cached base build for {}".format(bench.label()))
+                logger.info(f"found cached base build for {bench.label()}")
                 if bench.is_base():
-                    if not os.path.exists("bin/{}".format(bench.exe_name())):
+                    if not os.path.exists(f"bin/{bench.exe_name()}"):
                         self.do_build(bench, None)
 
                 return build
@@ -157,9 +153,7 @@ class CMake:
 
             if elapsed is not None:
                 logger.info(
-                    "{} was already up to date, keeping recorded build time of {:.3f}s".format(
-                        bench.label(), elapsed
-                    )
+                    f"{bench.label()} was already up to date, keeping recorded build time of {elapsed:.3f}s"
                 )
                 build = Build(build.code, elapsed)
 

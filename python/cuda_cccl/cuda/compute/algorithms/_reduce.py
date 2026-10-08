@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 import numpy as np
 
@@ -44,14 +45,14 @@ from ..typing import (
 class _Reduce(Serializable):
     __slots__ = [
         "_bound_build_result",
+        "build_results",
         "d_in_cccl",
         "d_out_cccl",
-        "h_init_cccl",
-        "op_cccl",
-        "init_kind",
-        "build_results",
-        "loaded_build_result",
         "device_reduce_fn",
+        "h_init_cccl",
+        "init_kind",
+        "loaded_build_result",
+        "op_cccl",
     ]
 
     __serialization_schema__ = (

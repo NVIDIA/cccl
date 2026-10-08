@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-# ruff: noqa: E402 — the v1-skip block below intentionally precedes the
+
 # example's imports so the imports stay grouped at the start of the example
 # body (after `# example-begin`).
 

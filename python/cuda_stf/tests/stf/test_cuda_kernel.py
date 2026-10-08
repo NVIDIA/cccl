@@ -11,7 +11,7 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 try:
     from cuda.core import Program
@@ -33,7 +33,7 @@ void axpy(int n, double alpha, const double* x, double* y) {
 """
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _compile_axpy():
     # Compile the shared AXPY kernel once per module: every test reuses the
     # same cubin instead of paying NVRTC compilation on each invocation.

@@ -572,7 +572,7 @@ def test_deserialize_after_jit_matches_jit_result():
     init_value = np.array([1], dtype=np.int32)
 
     def max_op(a, b):
-        return a if a > b else b
+        return max(b, a)
 
     # Build + serialize (this JITs), then clear every in-process cache so the serialization
     # leg below runs cold: the deserialized scan must stand on its own and cannot

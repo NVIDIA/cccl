@@ -13,12 +13,12 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
+from numba import cuda
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.numba import numba_arguments  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import numba_arguments
 
 
 @pytest.fixture(autouse=True)
@@ -81,18 +81,16 @@ def test_launchable_graph_scope_zero_launches():
 
     # Enter the scope, submit work, never call launch(). The __exit__ path
     # must still run the prologue+epilogue so that lX is reusable below.
-    with ctx.launchable_graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dX, 1.0)
+    with ctx.launchable_graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dX, 1.0)
 
     # Subsequent regular graph_scope() must still work and mutate lX.
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            scale_kernel[bpg, tpb, nb_stream](dX, 2.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale_kernel[bpg, tpb, nb_stream](dX, 2.0)
 
     ctx.finalize()
 
@@ -191,11 +189,10 @@ def test_pop_prologue_shared_basic():
     # pop_epilogue; the ctx is usable for a fresh push afterwards.
     del g
 
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            scale_kernel[bpg, tpb, nb_stream](dX, 2.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale_kernel[bpg, tpb, nb_stream](dX, 2.0)
 
     ctx.finalize()
 
@@ -234,11 +231,10 @@ def test_pop_prologue_shared_stored_in_list():
     cache.clear()
 
     # Context must be reusable after the shared release.
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dX, 10.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dX, 10.0)
 
     ctx.finalize()
 

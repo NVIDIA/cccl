@@ -5,8 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-, C++ 14,
-  c++ 17
+// C++ 14, C++ 17
 // type_traits
 
 // underlying_type
@@ -17,11 +16,12 @@
 
 #include "test_macros.h"
 
-  enum E1 {
-    E1Zero,
-    E1One,
-    E1Two = sizeof(cuda::std::underlying_type<E1>::type)
-  }; // expected-error@type_traits:* {{cannot determine underlying type of incomplete enumeration type 'E1'}}
+enum E1
+{
+  E1Zero,
+  E1One,
+  E1Two = sizeof(cuda::std::underlying_type<E1>::type)
+}; // expected-error@type_traits:* {{cannot determine underlying type of incomplete enumeration type 'E1'}}
 
 //  None of these are incomplete.
 //  Scoped enums have an underlying type of 'int' unless otherwise specified

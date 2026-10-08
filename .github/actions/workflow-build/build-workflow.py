@@ -490,11 +490,7 @@ def generate_dispatch_job_name(matrix_job, job_type):
     cmake_options = (
         (" " + matrix_job["cmake_options"]) if "cmake_options" in matrix_job else ""
     )
-    extra_args = (
-        (" " + matrix_job["args"])
-        if "args" in matrix_job and matrix_job["args"]
-        else ""
-    )
+    extra_args = (" " + matrix_job["args"]) if matrix_job.get("args") else ""
 
     ctk = matrix_job["ctk"]
     host_compiler = get_host_compiler(matrix_job["cxx"])

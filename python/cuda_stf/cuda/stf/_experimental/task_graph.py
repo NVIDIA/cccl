@@ -12,7 +12,7 @@ from ._stf_bindings import stackable_context
 class _TaskGraphContext:
     """Guarded view of the stackable context owned by a TaskGraph."""
 
-    def __init__(self, owner: "TaskGraph", ctx: Any):
+    def __init__(self, owner: TaskGraph, ctx: Any):
         self._owner = owner
         self._ctx = ctx
 
@@ -73,7 +73,6 @@ class TaskGraph:
         self._record_attempted = True
         self.context.raw.push()
         self._recording = True
-        return None
 
     def __exit__(
         self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any

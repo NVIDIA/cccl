@@ -6,10 +6,10 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-from conftest import require_vmm  # noqa: E402  (shared VMM gate)
-from cuda.bindings import runtime as cudart  # noqa: E402
+from conftest import require_vmm
+from cuda.bindings import runtime as cudart
 
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 
 def _require_device():
@@ -24,7 +24,7 @@ def _require_green_context_helper(sm_count=1, dev_id=0):
     # Gate on the real capability (CUDA >= 12.4). Only a driver-level
     # "not supported" (surfaced as RuntimeError by the bindings) is skipped;
     # a wrong-argument bug (TypeError, ...) still fails the test.
-    from cuda.bindings import runtime as cudart  # noqa: PLC0415
+    from cuda.bindings import runtime as cudart
 
     err, version = cudart.cudaRuntimeGetVersion()
     if int(err) == 0 and version < 12040:
@@ -46,9 +46,8 @@ def test_scope_nested():
     stf.machine_init()
     outer = stf.exec_place.device(0)
     inner = stf.exec_place.device(0)
-    with outer:
-        with inner:
-            pass
+    with outer, inner:
+        pass
 
 
 def test_pick_stream_standalone():
@@ -76,9 +75,8 @@ def test_pick_stream_borrowed_from_context():
 def test_pick_stream_requires_resources():
     stf.machine_init()
     place = stf.exec_place.device(0)
-    with place:
-        with pytest.raises(TypeError):
-            place.pick_stream(None)
+    with place, pytest.raises(TypeError):
+        place.pick_stream(None)
 
 
 def test_two_resources_handles_isolated():

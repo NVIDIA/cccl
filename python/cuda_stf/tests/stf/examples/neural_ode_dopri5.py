@@ -56,8 +56,8 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 torch = pytest.importorskip("torch")
 nn = torch.nn
@@ -200,7 +200,7 @@ def _dopri5_step(y, t, h, t_end, atol, rtol, k_fn):
 
 
 def _lambda_body(y, t, h, t_end, atol, rtol, A):
-    def k_fn(t_, y_):  # noqa: ARG001 (t unused, autonomous)
+    def k_fn(t_, y_):
         return torch.mm(y_**3, A)
 
     return _dopri5_step(y, t, h, t_end, atol, rtol, k_fn)
@@ -213,7 +213,7 @@ _lambda_body_compiled = torch.compile(_lambda_body, mode="default", fullgraph=Tr
 
 
 def _odefunc_body(y, t, h, t_end, atol, rtol, W1, b1, W2, b2):
-    def k_fn(t_, y_):  # noqa: ARG001
+    def k_fn(t_, y_):
         y3 = y_**3
         h1 = torch.tanh(y3 @ W1.t() + b1)
         return h1 @ W2.t() + b2
@@ -543,21 +543,20 @@ def _build_cudagraph_host_odeint_persistent(
     # A dedicated stream for capture -- required by torch.cuda.graph.
     s = torch.cuda.Stream()
     s.wait_stream(torch.cuda.current_stream())
-    with torch.cuda.stream(s):
-        with torch.cuda.graph(graph):
-            y_new, t_new, h_new, cond = body_compiled(
-                y_buf,
-                t_buf,
-                h_buf,
-                t_end_buf,
-                atol,
-                rtol,
-                *param_bufs,
-            )
-            y_buf.copy_(y_new)
-            t_buf.copy_(t_new)
-            h_buf.copy_(h_new)
-            cond_buf.copy_(cond)
+    with torch.cuda.stream(s), torch.cuda.graph(graph):
+        y_new, t_new, h_new, cond = body_compiled(
+            y_buf,
+            t_buf,
+            h_buf,
+            t_end_buf,
+            atol,
+            rtol,
+            *param_bufs,
+        )
+        y_buf.copy_(y_new)
+        t_buf.copy_(t_new)
+        h_buf.copy_(h_new)
+        cond_buf.copy_(cond)
     torch.cuda.current_stream().wait_stream(s)
 
     def forward():

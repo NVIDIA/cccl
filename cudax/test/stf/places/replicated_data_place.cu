@@ -164,8 +164,8 @@ int main()
     auto lin  = ctx.logical_data(&ref[0], n);
     auto lout = ctx.logical_data(shape_of<slice<double>>(n));
     auto tok  = ctx.token(); // a void_interface dep: the instances tuple is
-                            // shorter than the deps tuple, which the
-                            // replicated rebase must tolerate
+                             // shorter than the deps tuple, which the
+                             // replicated rebase must tolerate
 
     // read at the replicated place: each shard must see the payload through
     // its own replica, and results must match the reference everywhere

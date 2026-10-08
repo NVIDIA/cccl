@@ -44,9 +44,11 @@ def type_to_problem_sizes(dtype):
         return [8, 10, 12, 14]
     elif dtype in [np.float16, np.uint16, np.int16]:
         return [10, 12, 14, 16]
-    elif dtype in [np.uint32, np.int32, np.float32]:
-        return [12, 14, 16, 18]
-    elif dtype in [np.uint64, np.int64, np.float64]:
+    elif dtype in [np.uint32, np.int32, np.float32] or dtype in [
+        np.uint64,
+        np.int64,
+        np.float64,
+    ]:
         return [12, 14, 16, 18]
     else:
         raise ValueError("Unsupported dtype")

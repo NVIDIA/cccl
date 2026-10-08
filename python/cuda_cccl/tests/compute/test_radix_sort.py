@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import itertools
-from typing import Tuple
 
 import numpy as np
 import pytest
@@ -117,7 +116,7 @@ def get_floating_point_keys(array):
     return binary
 
 
-def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tuple:
+def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> tuple:
     if begin_bit is not None and end_bit is not None:
         num_bits = end_bit - begin_bit
         mask = np.array(((1 << (num_bits)) - 1) << begin_bit, dtype=np.uint64)

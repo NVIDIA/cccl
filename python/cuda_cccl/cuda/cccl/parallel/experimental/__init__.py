@@ -16,7 +16,7 @@
 
 from warnings import warn
 
-from cuda.compute import *  # noqa: F403
+from cuda.compute import *
 
 warn(
     "The module cuda.cccl.parallel.experimental is deprecated. Use cuda.compute instead.",

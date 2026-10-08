@@ -22,8 +22,8 @@ struct S
 {};
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S (&)(int), int*>, S>);
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<long S::*, S*>, long&>);
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S && (S::*) (), S*>, S&&>);
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int S::* (S::*) (int) const, S*, int*>, int S::*>);
+static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S && (S::*)(), S*>, S&&>);
+static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int S::* (S::*)(int) const, S*, int*>, int S::*>);
 
 template <class F, class... Is>
 _CCCL_CONCEPT has_indirect_result =

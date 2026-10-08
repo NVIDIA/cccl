@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import os
 import subprocess
 import sys
@@ -108,7 +106,7 @@ class GoogleBenchmark(TestFormat):
         except lit.util.ExecuteCommandTimeoutException:
             return (
                 lit.Test.TIMEOUT,
-                "Reached timeout of {} seconds".format(litConfig.maxIndividualTestTime),
+                f"Reached timeout of {litConfig.maxIndividualTestTime} seconds",
             )
 
         if exitCode:

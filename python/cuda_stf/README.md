@@ -79,8 +79,8 @@ complementary — a consumer picks the semantics by construction:
 ```python
 stf.machine_init()
 arr = stf.DeviceArray((4, 8), np.float32, stf.data_place.device(0))
-borrowed = numba.cuda.as_cuda_array(arr)   # CAI: arr must stay alive
-owned    = torch.from_dlpack(arr)          # DLPack: the tensor keeps it alive
+borrowed = numba.cuda.as_cuda_array(arr)  # CAI: arr must stay alive
+owned = torch.from_dlpack(arr)  # DLPack: the tensor keeps it alive
 ```
 
 ## Documentation

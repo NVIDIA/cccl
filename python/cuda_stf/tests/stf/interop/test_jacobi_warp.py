@@ -29,7 +29,7 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 wp = pytest.importorskip("warp")
 
@@ -335,17 +335,16 @@ def test_graph_scope_warp():
                 stream=s,
             )
 
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            s = wrap_stream(t.stream_ptr(), device)
-            dX = get_arg_warp(t, 0, wp.float32, (n,))
-            wp.launch(
-                scale_kernel,
-                dim=n,
-                inputs=[dX, wp.float32(3.0)],
-                device=device,
-                stream=s,
-            )
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        s = wrap_stream(t.stream_ptr(), device)
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
+        wp.launch(
+            scale_kernel,
+            dim=n,
+            inputs=[dX, wp.float32(3.0)],
+            device=device,
+            stream=s,
+        )
 
     ctx.finalize()
 
@@ -363,17 +362,16 @@ def test_repeat_warp():
     ctx = stf.stackable_context()
     lX = ctx.logical_data(X_host, name="X")
 
-    with ctx.repeat(10):
-        with ctx.task(lX.rw()) as t:
-            s = wrap_stream(t.stream_ptr(), device)
-            dX = get_arg_warp(t, 0, wp.float32, (n,))
-            wp.launch(
-                add_kernel,
-                dim=n,
-                inputs=[dX, wp.float32(1.0)],
-                device=device,
-                stream=s,
-            )
+    with ctx.repeat(10), ctx.task(lX.rw()) as t:
+        s = wrap_stream(t.stream_ptr(), device)
+        dX = get_arg_warp(t, 0, wp.float32, (n,))
+        wp.launch(
+            add_kernel,
+            dim=n,
+            inputs=[dX, wp.float32(1.0)],
+            device=device,
+            stream=s,
+        )
 
     ctx.finalize()
 

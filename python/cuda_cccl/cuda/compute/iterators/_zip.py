@@ -34,13 +34,13 @@ class ZipIterator(IteratorBase):
     """
 
     __slots__ = [
-        "_iterators",
-        "_field_names",
-        "_value_offsets",
-        "_state_offsets",
         "_advance_result",
+        "_field_names",
         "_input_deref_result",
+        "_iterators",
         "_output_deref_result",
+        "_state_offsets",
+        "_value_offsets",
     ]
 
     def __init__(self, *args):
@@ -205,7 +205,7 @@ class ZipIterator(IteratorBase):
     def children(self):
         return tuple(self._iterators)
 
-    def __add__(self, offset: int) -> "ZipIterator":
+    def __add__(self, offset: int) -> ZipIterator:
         """Advance all child iterators by offset."""
         advanced_iterators = [it + offset for it in self._iterators]  # type: ignore[operator]
         return ZipIterator(*advanced_iterators)

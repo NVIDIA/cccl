@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import weakref
 from types import SimpleNamespace
-from typing import Optional
 
 from cuda.bindings import driver, runtime
 
@@ -40,7 +39,7 @@ def _set_default_mempool_threshold(device_id: int):
         )
 
 
-def _finalize_buffer(ptr: int, stream_handle: Optional[int] = None):
+def _finalize_buffer(ptr: int, stream_handle: int | None = None):
     """Cleanup function for weakref finalizer."""
     if ptr != 0:
         try:
@@ -59,7 +58,7 @@ class TempStorageBuffer:
     cudaFreeAsync for allocation and deallocation.
     """
 
-    def __init__(self, size: int, stream: Optional[StreamLike] = None):
+    def __init__(self, size: int, stream: StreamLike | None = None):
         # Get the current device
         dev = Device()
 

@@ -38,9 +38,9 @@ struct offset_to_iterator_t
   char* base_it;
   std::size_t element_size;
 
-  __host__
-    __device__ __forceinline__ thrust::transform_iterator<spaced_out_it_op<T>, thrust::counting_iterator<std::size_t>>
-    operator()(std::size_t offset) const
+  __host__ __device__
+  __forceinline__ thrust::transform_iterator<spaced_out_it_op<T>, thrust::counting_iterator<std::size_t>>
+  operator()(std::size_t offset) const
   {
     // The pointer to the beginning of this "buffer" (aka a series of same "keys")
     auto base_ptr = base_it + (element_size * offset);

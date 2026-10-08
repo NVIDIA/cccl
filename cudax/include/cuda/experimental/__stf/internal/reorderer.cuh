@@ -239,7 +239,7 @@ private:
     using task_priority = ::std::pair<int,
                                       double>; // the double is the upward rank, needed for sorting. Should I just use
                                                // the reorderer_payload
-    auto cmp = [](const task_priority& p1, const task_priority& p2) {
+    auto cmp            = [](const task_priority& p1, const task_priority& p2) {
       return p1.second < p2.second;
     };
     ::std::priority_queue<task_priority, ::std::vector<task_priority>, decltype(cmp)> ready_tasks(cmp);

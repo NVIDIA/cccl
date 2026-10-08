@@ -94,11 +94,11 @@ int main()
       lpage_rank.rw(),
       lnew_page_rank.rw(),
       lmax_diff.reduce(reducer::maxval<float>{}))
-        ->*[init_rank] __device__(
-             size_t idx, auto loffsets, auto lnonzeros, auto lpage_rank, auto lnew_page_rank, auto& max_diff) {
-              calculating_pagerank(idx, loffsets, lnonzeros, lpage_rank, lnew_page_rank, init_rank);
-              max_diff = ::std::max(max_diff, lnew_page_rank[idx] - lpage_rank[idx]);
-            };
+        ->*[init_rank]
+      __device__(size_t idx, auto loffsets, auto lnonzeros, auto lpage_rank, auto lnew_page_rank, auto& max_diff) {
+        calculating_pagerank(idx, loffsets, lnonzeros, lpage_rank, lnew_page_rank, init_rank);
+        max_diff = ::std::max(max_diff, lnew_page_rank[idx] - lpage_rank[idx]);
+      };
 
     // Update PageRank Values
     ctx.parallel_for(lpage_rank.shape(), lpage_rank.write(), lnew_page_rank.read())

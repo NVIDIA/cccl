@@ -77,7 +77,7 @@ class StubBench(Bench):
     def speedup(self, ct_workload_point, rt_values, base_estimator, variant_estimator):
         return {
             SUBBENCH: {
-                "{} {}={}".format(CT_WORKLOAD, ELEMENTS, value): s
+                f"{CT_WORKLOAD} {ELEMENTS}={value}": s
                 for value, s in self.measured.items()
             }
         }

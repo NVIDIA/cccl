@@ -17,7 +17,7 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 MiB = 1024 * 1024
 
@@ -32,7 +32,7 @@ def _require_device():
         pytest.skip("no usable CUDA device")
 
 
-from conftest import require_vmm as _require_vmm  # noqa: E402  (shared VMM gate)
+from conftest import require_vmm as _require_vmm
 
 
 def blocked_mapper_1d(data_coords, data_dims, grid_dims):

@@ -68,8 +68,8 @@ static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const&, Holde
 static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const&&, Holder<Incomplete>*>);
 
 static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* [10], Holder<Incomplete>*>);
-static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&) [10], Holder<Incomplete>*>);
-static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&&) [10], Holder<Incomplete>*>);
+static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&)[10], Holder<Incomplete>*>);
+static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&&)[10], Holder<Incomplete>*>);
 static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const[10], Holder<Incomplete>*>);
 static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const (&)[10], Holder<Incomplete>*>);
 static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const (&&)[10], Holder<Incomplete>*>);

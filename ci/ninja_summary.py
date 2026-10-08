@@ -226,8 +226,7 @@ def SummarizeEntries(entries, extra_step_types, elapsed_time_sorting):
     for target in entries:
         if earliest < 0 or target.start < earliest:
             earliest = target.start
-        if target.end > latest:
-            latest = target.end
+        latest = max(latest, target.end)
         total_cpu_time += target.Duration()
         task_start_stop_times.append((target.start, "start", target))
         task_start_stop_times.append((target.end, "stop", target))
@@ -381,7 +380,7 @@ def main():
                     SummarizeEntries(
                         entries, args.step_types, args.elapsed_time_sorting
                     )
-        except IOError:
+        except OSError:
             print("Log file %r not found, no build summary created." % log_file)
             return errno.ENOENT
 

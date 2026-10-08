@@ -11,8 +11,9 @@ import inspect
 import operator
 import struct
 import textwrap
+from collections.abc import Callable, Hashable
 from types import new_class
-from typing import TYPE_CHECKING, Callable, Hashable, List, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -1000,7 +1001,7 @@ class _StatelessOp(OpAdapter):
 #    implemented in _odr_helpers.py
 
 
-def _detect_device_array_globals(func: Callable) -> List[Tuple[str, object]]:
+def _detect_device_array_globals(func: Callable) -> list[tuple[str, object]]:
     """
     Detect device arrays referenced as globals in a function.
 
@@ -1021,7 +1022,7 @@ def _detect_device_array_globals(func: Callable) -> List[Tuple[str, object]]:
     return state_arrays
 
 
-def _detect_device_array_closures(func: Callable) -> List[Tuple[str, object]]:
+def _detect_device_array_closures(func: Callable) -> list[tuple[str, object]]:
     """
     Detect device arrays captured in function closures.
 
@@ -1031,7 +1032,7 @@ def _detect_device_array_closures(func: Callable) -> List[Tuple[str, object]]:
     Returns:
         List of (name, array) tuples for detected device arrays
     """
-    state_arrays: List[Tuple[str, object]] = []
+    state_arrays: list[tuple[str, object]] = []
     code = func.__code__
     closure = func.__closure__
 
@@ -1051,7 +1052,7 @@ def _detect_device_array_closures(func: Callable) -> List[Tuple[str, object]]:
     return state_arrays
 
 
-def _detect_all_device_arrays(func: Callable) -> List[Tuple[str, object]]:
+def _detect_all_device_arrays(func: Callable) -> list[tuple[str, object]]:
     """
     Detect all device arrays referenced by a function (globals + closures).
 
@@ -1069,7 +1070,7 @@ def _detect_all_device_arrays(func: Callable) -> List[Tuple[str, object]]:
 class _AddStateParameters(ast.NodeTransformer):
     """AST transformer that adds state parameters to a function definition."""
 
-    def __init__(self, state_names: List[str]):
+    def __init__(self, state_names: list[str]):
         self.state_names = state_names
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:
@@ -1088,7 +1089,7 @@ class _AddStateParameters(ast.NodeTransformer):
         return node
 
 
-def _transform_function_ast(func: Callable, state_names: List[str]) -> Callable:
+def _transform_function_ast(func: Callable, state_names: list[str]) -> Callable:
     """
     Transform a function to add state arrays captured as globals or closures
     as explicit parameters.
@@ -1164,12 +1165,12 @@ def _extract_state(func: Callable):
 
     # Extract names and arrays
     state_names = [name for name, _ in state_info]
-    state_arrays: List[DeviceArrayLike] = [arr for _, arr in state_info]  # type: ignore[misc]
+    state_arrays: list[DeviceArrayLike] = [arr for _, arr in state_info]  # type: ignore[misc]
 
     return state_names, state_arrays
 
 
-def _pack_state_bytes(state_arrays: List[DeviceArrayLike]) -> bytes:
+def _pack_state_bytes(state_arrays: list[DeviceArrayLike]) -> bytes:
     """
     Pack state arrays into the runtime state buffer read by the generated
     wrapper (see ``_odr_helpers.create_stateful_op_void_ptr_wrapper``): for
@@ -1259,7 +1260,7 @@ def _compile_stateful_op(op, input_types, state_arrays, output_type=None):
 
 
 class _JitOpState:
-    def __init__(self, names: List[str], arrays: List[DeviceArrayLike]):
+    def __init__(self, names: list[str], arrays: list[DeviceArrayLike]):
         # The wrapper rebuilds each state array with carray, which addresses the
         # data in C order, so a multi-dimensional Fortran-ordered array would be
         # read with the wrong strides.  Validate here, where the state is bound

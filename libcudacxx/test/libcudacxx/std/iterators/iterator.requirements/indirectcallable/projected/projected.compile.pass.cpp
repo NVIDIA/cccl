@@ -38,17 +38,17 @@ static_assert(cuda::std::same_as<ForwardIterator::value_type, int>);
 static_assert(cuda::std::same_as<decltype(*cuda::std::declval<ForwardIterator>()), int>);
 static_assert(cuda::std::same_as<cuda::std::iter_difference_t<ForwardIterator>, cuda::std::ptrdiff_t>);
 
-using BidirectionalIterator = cuda::std::projected<bidirectional_iterator<S*>, S* (S::*) () const>;
+using BidirectionalIterator = cuda::std::projected<bidirectional_iterator<S*>, S* (S::*)() const>;
 static_assert(cuda::std::same_as<BidirectionalIterator::value_type, S*>);
 static_assert(cuda::std::same_as<decltype(*cuda::std::declval<BidirectionalIterator>()), S*>);
 static_assert(cuda::std::same_as<cuda::std::iter_difference_t<BidirectionalIterator>, cuda::std::ptrdiff_t>);
 
-using RandomAccessIterator = cuda::std::projected<random_access_iterator<S*>, S && (S::*) ()>;
+using RandomAccessIterator = cuda::std::projected<random_access_iterator<S*>, S && (S::*)()>;
 static_assert(cuda::std::same_as<RandomAccessIterator::value_type, S>);
 static_assert(cuda::std::same_as<decltype(*cuda::std::declval<RandomAccessIterator>()), S&&>);
 static_assert(cuda::std::same_as<cuda::std::iter_difference_t<RandomAccessIterator>, cuda::std::ptrdiff_t>);
 
-using ContiguousIterator = cuda::std::projected<contiguous_iterator<S*>, S& (S::*) () const>;
+using ContiguousIterator = cuda::std::projected<contiguous_iterator<S*>, S& (S::*)() const>;
 static_assert(cuda::std::same_as<ContiguousIterator::value_type, S>);
 static_assert(cuda::std::same_as<decltype(*cuda::std::declval<ContiguousIterator>()), S&>);
 static_assert(cuda::std::same_as<cuda::std::iter_difference_t<ContiguousIterator>, cuda::std::ptrdiff_t>);

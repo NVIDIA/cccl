@@ -14,7 +14,7 @@ import cuda.compute
 
 
 def min_op(a, b):
-    return a if a < b else b
+    return min(b, a)
 
 
 dtype = np.dtype(np.int32)

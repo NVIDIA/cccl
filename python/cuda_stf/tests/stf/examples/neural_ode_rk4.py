@@ -45,8 +45,8 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.pytorch import pytorch_task  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.pytorch import pytorch_task
 
 torch = pytest.importorskip("torch")
 
@@ -112,7 +112,7 @@ class MLPWeights:
     W3: np.ndarray  # (H, D)
     b3: np.ndarray  # (D,)
 
-    def as_torch(self, device="cuda", dtype=torch.float32) -> "MLPWeightsT":
+    def as_torch(self, device="cuda", dtype=torch.float32) -> MLPWeightsT:
         return MLPWeightsT(
             W1=torch.as_tensor(self.W1, device=device, dtype=dtype).contiguous(),
             b1=torch.as_tensor(self.b1, device=device, dtype=dtype).contiguous(),
@@ -125,12 +125,12 @@ class MLPWeights:
 
 @dataclass
 class MLPWeightsT:
-    W1: "torch.Tensor"
-    b1: "torch.Tensor"
-    W2: "torch.Tensor"
-    b2: "torch.Tensor"
-    W3: "torch.Tensor"
-    b3: "torch.Tensor"
+    W1: torch.Tensor
+    b1: torch.Tensor
+    W2: torch.Tensor
+    b2: torch.Tensor
+    W3: torch.Tensor
+    b3: torch.Tensor
 
     def tuple(self):
         return (self.W1, self.b1, self.W2, self.b2, self.W3, self.b3)
@@ -241,7 +241,7 @@ def _warmup_compiled_bodies(cfg: NodeConfig):
 # ---------------------------------------------------------------------------
 
 
-def integrate_rk4_eager(y0: "torch.Tensor", w: MLPWeightsT, cfg: NodeConfig):
+def integrate_rk4_eager(y0: torch.Tensor, w: MLPWeightsT, cfg: NodeConfig):
     """Plain Python for-loop over RK4 steps. No torch.compile anywhere.
 
     This is the pain-point baseline: every step pays Python dispatch +
@@ -326,30 +326,32 @@ def _build_stf_persistent_forward(cfg: NodeConfig, weights: MLPWeights):
         # independent integrations rather than a continuation of the last run.
         with pytorch_task(ctx, l_y.write()) as (tY,):
             tY.copy_(y0_cuda)
-        with ctx.graph_scope():
-            with ctx.repeat(n):
-                with pytorch_task(
-                    ctx,
-                    l_y.rw(),
-                    l_W1.read(),
-                    l_b1.read(),
-                    l_W2.read(),
-                    l_b2.read(),
-                    l_W3.read(),
-                    l_b3.read(),
-                ) as (tY, tW1, tb1, tW2, tb2, tW3, tb3):
-                    tY.copy_(
-                        _rk4_body_compiled(
-                            tY,
-                            h,
-                            tW1,
-                            tb1,
-                            tW2,
-                            tb2,
-                            tW3,
-                            tb3,
-                        )
-                    )
+        with (
+            ctx.graph_scope(),
+            ctx.repeat(n),
+            pytorch_task(
+                ctx,
+                l_y.rw(),
+                l_W1.read(),
+                l_b1.read(),
+                l_W2.read(),
+                l_b2.read(),
+                l_W3.read(),
+                l_b3.read(),
+            ) as (tY, tW1, tb1, tW2, tb2, tW3, tb3),
+        ):
+            tY.copy_(
+                _rk4_body_compiled(
+                    tY,
+                    h,
+                    tW1,
+                    tb1,
+                    tW2,
+                    tb2,
+                    tW3,
+                    tb3,
+                )
+            )
 
     return forward, ctx, y_host
 

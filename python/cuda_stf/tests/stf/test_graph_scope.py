@@ -12,12 +12,12 @@ import pytest
 
 numba = pytest.importorskip("numba")
 pytest.importorskip("numba.cuda")
-from numba import cuda  # noqa: E402
+from numba import cuda
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
-from cuda.stf._experimental.interop.numba import (  # noqa: E402
+import cuda.stf._experimental as stf
+from cuda.stf._experimental.interop.numba import (
     get_arg_numba,
     numba_arguments,
 )
@@ -61,11 +61,10 @@ def test_single_graph_scope():
     tpb = 256
     bpg = (n + tpb - 1) // tpb
 
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            scale_kernel[bpg, tpb, nb_stream](dX, 2.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale_kernel[bpg, tpb, nb_stream](dX, 2.0)
 
     ctx.finalize()
 
@@ -84,18 +83,16 @@ def test_nested_graph_scopes():
     bpg = (n + tpb - 1) // tpb
 
     # First scope: X *= 3
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            scale_kernel[bpg, tpb, nb_stream](dX, 3.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale_kernel[bpg, tpb, nb_stream](dX, 3.0)
 
     # Second scope: X += 5
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dX, 5.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dX, 5.0)
 
     ctx.finalize()
 
@@ -118,12 +115,11 @@ def test_multi_data_graph_scope():
     tpb = 256
     bpg = (n + tpb - 1) // tpb
 
-    with ctx.graph_scope():
-        with ctx.task(lY.rw(), lX.read()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dY = get_arg_numba(t, 0)
-            dX = get_arg_numba(t, 1)
-            axpy_kernel[bpg, tpb, nb_stream](dY, 3.0, dX)
+    with ctx.graph_scope(), ctx.task(lY.rw(), lX.read()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dY = get_arg_numba(t, 0)
+        dX = get_arg_numba(t, 1)
+        axpy_kernel[bpg, tpb, nb_stream](dY, 3.0, dX)
 
     ctx.finalize()
 
@@ -143,11 +139,10 @@ def test_graph_scope_for_loop():
     bpg = (n + tpb - 1) // tpb
 
     for _ in range(5):
-        with ctx.graph_scope():
-            with ctx.task(lX.rw()) as t:
-                nb_stream = cuda.external_stream(t.stream_ptr())
-                dX = numba_arguments(t)
-                add_kernel[bpg, tpb, nb_stream](dX, 1.0)
+        with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+            nb_stream = cuda.external_stream(t.stream_ptr())
+            dX = numba_arguments(t)
+            add_kernel[bpg, tpb, nb_stream](dX, 1.0)
 
     ctx.finalize()
 
@@ -166,11 +161,10 @@ def test_repeat_scope():
     tpb = 256
     bpg = (n + tpb - 1) // tpb
 
-    with ctx.repeat(10):
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dX, 1.0)
+    with ctx.repeat(10), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dX, 1.0)
 
     ctx.finalize()
 
@@ -189,21 +183,19 @@ def test_fence():
     tpb = 256
     bpg = (n + tpb - 1) // tpb
 
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            scale_kernel[bpg, tpb, nb_stream](dX, 5.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        scale_kernel[bpg, tpb, nb_stream](dX, 5.0)
 
     # Fence synchronizes back to host
     fence_stream = ctx.fence()
     assert fence_stream is not None
 
-    with ctx.graph_scope():
-        with ctx.task(lX.rw()) as t:
-            nb_stream = cuda.external_stream(t.stream_ptr())
-            dX = numba_arguments(t)
-            add_kernel[bpg, tpb, nb_stream](dX, 3.0)
+    with ctx.graph_scope(), ctx.task(lX.rw()) as t:
+        nb_stream = cuda.external_stream(t.stream_ptr())
+        dX = numba_arguments(t)
+        add_kernel[bpg, tpb, nb_stream](dX, 3.0)
 
     ctx.finalize()
 

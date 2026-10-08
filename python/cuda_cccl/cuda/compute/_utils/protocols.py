@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -102,7 +103,7 @@ def get_dtype(arr: DeviceArrayLike | GpuStruct | np.ndarray) -> np.dtype:
         return np.dtype(typestr)
 
 
-def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
+def get_shape(arr: DeviceArrayLike) -> tuple[int]:
     try:
         # TODO: this is a fast path for CuPy until
         # we have a more general solution.
@@ -201,11 +202,11 @@ def is_c_contiguous(arr: DeviceArrayLike) -> bool:
 
 
 def compute_c_contiguous_strides_in_bytes(
-    shape: Tuple[int], itemsize: int
-) -> Tuple[int, ...]:
+    shape: tuple[int], itemsize: int
+) -> tuple[int, ...]:
     """Return C-contiguous strides in bytes for a given shape and itemsize (compatible with NumPy .strides)."""
 
-    strides: List[int] = []
+    strides: list[int] = []
     acc = itemsize
 
     for dim in reversed(shape):
@@ -215,7 +216,7 @@ def compute_c_contiguous_strides_in_bytes(
     return tuple(strides)
 
 
-def validate_and_get_stream(stream) -> Optional[int]:
+def validate_and_get_stream(stream) -> int | None:
     # null stream is allowed
     if stream is None:
         return None

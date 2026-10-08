@@ -115,6 +115,8 @@ _CCCL_HOST_DEVICE_API void log_dispatch([[maybe_unused]] const char* device_alg,
 } // namespace detail
 CUB_NAMESPACE_END
 
+// clang-format 23 collapses macro bodies containing `, ##__VA_ARGS__` onto a single line
+// clang-format off
 #ifdef CUB_DEBUG_LOG
 #  define _CUB_LOG_KERNEL_LAUNCH(                                                             \
     kernel_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim, smem_bytes, stream, fmt, ...) \
@@ -139,3 +141,4 @@ CUB_NAMESPACE_END
       reinterpret_cast<long long>(stream),                                                    \
       ##__VA_ARGS__)
 #endif // !CUB_DEBUG_LOG
+// clang-format on

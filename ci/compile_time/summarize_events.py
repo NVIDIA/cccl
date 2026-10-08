@@ -9,10 +9,11 @@ import os
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Callable, Iterator
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any
 
 DEFAULT_SCOPE_FILTER = r"(^|[^A-Za-z0-9_:])(?:::)?(?:cuda|thrust|cub|cccl)::"
 SYMBOL_SCOPE_EVENT_NAMES = {
@@ -906,7 +907,7 @@ def sorted_rows(
     )
 
 
-def seconds(us: float | int) -> str:
+def seconds(us: float) -> str:
     return f"{us / 1_000_000.0:.6f}"
 
 

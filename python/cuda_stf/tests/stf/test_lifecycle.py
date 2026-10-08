@@ -29,7 +29,7 @@ import pytest
 
 # Skip if the compiled CUDASTF bindings are unavailable (e.g. Windows wheels).
 pytest.importorskip("cuda.stf._experimental._stf_bindings")
-import cuda.stf._experimental as stf  # noqa: E402
+import cuda.stf._experimental as stf
 
 # ---------------------------------------------------------------------------
 # context (non-stackable)
@@ -185,9 +185,8 @@ def _make_stackable_ctx_and_leak():
 
 
 def _exercise_stackable_repeat_scope():
-    with stf.stackable_context() as sctx:
-        with sctx.repeat(1):
-            pass
+    with stf.stackable_context() as sctx, sctx.repeat(1):
+        pass
 
 
 def test_stackable_logical_data_outlives_explicit_finalize():
@@ -229,7 +228,7 @@ def _device_reset_repeat_worker():
     module (a reset in-process would tear down contexts and streams that
     later tests rely on).
     """
-    import numba.cuda as nbcuda  # noqa: PLC0415
+    import numba.cuda as nbcuda
 
     _exercise_stackable_repeat_scope()
     nbcuda.get_current_device().reset()
@@ -239,7 +238,7 @@ def _device_reset_repeat_worker():
 def test_stackable_repeat_after_device_reset():
     """A device reset must not leave pooled STF streams pointing at a dead context."""
     pytest.importorskip("numba.cuda")
-    import multiprocessing as mp  # noqa: PLC0415
+    import multiprocessing as mp
 
     mp_ctx = mp.get_context("spawn")
     proc = mp_ctx.Process(target=_device_reset_repeat_worker)

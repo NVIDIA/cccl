@@ -54,18 +54,14 @@ class BaseRunner:
                 results = bench.run(ct_workload, rt_values, self.estimator, False)
                 for subbench in results:
                     for point in results[subbench]:
-                        bench_name = "{}.{}-{}".format(
-                            bench.algorithm_name(), subbench, point
-                        )
+                        bench_name = f"{bench.algorithm_name()}.{subbench}-{point}"
                         bench_name = bench_name.replace(" ", "___")
                         bench_name = "".join(
                             c if c.isalnum() else "_" for c in bench_name
                         )
                         elapsed_time = results[subbench][point]
                         if elapsed_time_looks_good(elapsed_time):
-                            print(
-                                "&&&& PERF {} {} -sec".format(bench_name, elapsed_time)
-                            )
+                            print(f"&&&& PERF {bench_name} {elapsed_time} -sec")
             finally:
                 self.timings[algname].append(
                     {
@@ -121,7 +117,7 @@ def print_timing_summary(report):
             report["total_benchmark_seconds"]
         )
     )
-    print("  * timing report: {}".format(TIMING_REPORT_PATH))
+    print(f"  * timing report: {TIMING_REPORT_PATH}")
 
 
 def main():

@@ -68,7 +68,7 @@ if os.name == "nt":
             # alive for the lifetime of this module (and thus, keeps the DLL
             # directory in the search path).
             try:
-                _cccl_dll_dir_handle = os.add_dll_directory(dll_dir)  # noqa: F841
+                _cccl_dll_dir_handle = os.add_dll_directory(dll_dir)
             except Exception:
                 pass
 

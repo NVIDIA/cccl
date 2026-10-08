@@ -58,7 +58,7 @@ struct explicit_dynamic_resource
   friend constexpr cuda::mr::__memory_accessibility
   get_property(const explicit_dynamic_resource&, cuda::mr::dynamic_accessibility_property) noexcept
   {
-    return cuda::mr::__memory_accessibility ::__device;
+    return cuda::mr::__memory_accessibility::__device;
   }
 };
 
@@ -68,13 +68,13 @@ static_assert(cuda::has_property<host_device_resource, cuda::mr::dynamic_accessi
 static_assert(cuda::has_property<explicit_dynamic_resource, cuda::mr::dynamic_accessibility_property>);
 
 static_assert(get_property(host_only_resource{}, cuda::mr::dynamic_accessibility_property{})
-              == cuda::mr::__memory_accessibility ::__host);
+              == cuda::mr::__memory_accessibility::__host);
 static_assert(get_property(device_only_resource{}, cuda::mr::dynamic_accessibility_property{})
-              == cuda::mr::__memory_accessibility ::__device);
+              == cuda::mr::__memory_accessibility::__device);
 static_assert(get_property(host_device_resource{}, cuda::mr::dynamic_accessibility_property{})
-              == cuda::mr::__memory_accessibility ::__host_device);
+              == cuda::mr::__memory_accessibility::__host_device);
 static_assert(get_property(explicit_dynamic_resource{}, cuda::mr::dynamic_accessibility_property{})
-              == cuda::mr::__memory_accessibility ::__device);
+              == cuda::mr::__memory_accessibility::__device);
 
 int main(int, char**)
 {
