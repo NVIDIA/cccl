@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
