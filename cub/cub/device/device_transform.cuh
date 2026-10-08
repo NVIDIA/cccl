@@ -112,6 +112,18 @@ CUB_NAMESPACE_BEGIN
 //!      :dedent:
 //!      :start-after: example-begin transform-tuning
 //!      :end-before: example-end transform-tuning
+//!
+//! The tile size is chosen at runtime so that every SM keeps at least ``min_bytes_in_flight`` bytes of loads in
+//! flight; the value comes from the tuning for the current architecture, which assumes a launch that owns the whole
+//! device. When that is not the case (for example, a stream created from a green context that owns a subset of the
+//! SMs), or when an autotuner wants to try values without instantiating a kernel per value, the target can be
+//! overridden per call with ``cuda::execution::min_bytes_in_flight``:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_transform_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin transform-min-bytes-in-flight
+//!      :end-before: example-end transform-min-bytes-in-flight
 //! @endrst
 struct DeviceTransform
 {
@@ -167,6 +179,7 @@ struct DeviceTransform
       }
 
       const auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env).get();
+      const int min_bytes_in_flight_override = ::cuda::__call_or(::cuda::execution::__get_min_bytes_in_flight, 0, env);
 
       using tuning_env = ::cuda::std::execution::
         __query_result_or_t<Env, ::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>>;
@@ -190,7 +203,10 @@ struct DeviceTransform
         ::cuda::std::move(predicate),
         ::cuda::std::move(transform_op),
         stream,
-        policy_selector{});
+        policy_selector{},
+        {},
+        {},
+        min_bytes_in_flight_override);
     }
   }
 
