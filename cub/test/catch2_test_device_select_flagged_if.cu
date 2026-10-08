@@ -11,6 +11,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
@@ -172,7 +173,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  const is_even_t<flag_type> is_even{};
+  const is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -424,7 +425,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  const is_even_t<flag_type> is_even{};
+  const is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -452,7 +453,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  const is_even_t<flag_type> is_even{};
+  const is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
