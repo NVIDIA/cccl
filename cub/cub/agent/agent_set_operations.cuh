@@ -492,6 +492,25 @@ struct agent_set_op
     }
   }
 
+  // Loads only the first @p count1 logical items from a single input range into registers (blocked layout), leaving the
+  // remaining register slots untouched. Used for the value load of operations whose output comes exclusively from the
+  // first input (set difference/intersection): the second input's values are never gathered, so its buffer must not be
+  // read - it may legitimately be shorter than the second key range (e.g. Thrust's by-key difference/intersection pass
+  // the first input's values as a placeholder second value range).
+  template <typename T, typename It1>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void gmem_to_reg_first(T (&output)[items_per_thread], It1 input1, int count1)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < items_per_thread; ++item)
+    {
+      const int idx = block_threads * item + threadIdx.x;
+      if (idx < count1)
+      {
+        output[item] = static_cast<T>(input1[idx]);
+      }
+    }
+  }
+
   template <typename T, typename It>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[items_per_thread])
   {
@@ -625,9 +644,18 @@ struct agent_set_op
     if constexpr (has_values)
     {
       const auto values1_load = detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
-      const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
       value_type values_loc[items_per_thread];
-      gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
+      // Set difference and intersection emit values exclusively from the first input.
+      if constexpr (::cuda::std::is_same_v<SetOp, serial_set_difference>
+                    || ::cuda::std::is_same_v<SetOp, serial_set_intersection>)
+      {
+        gmem_to_reg_first(values_loc, values1_load + keys1_beg, num_keys1);
+      }
+      else
+      {
+        const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
+        gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
+      }
       __syncthreads();
 
       reg_to_shared(&storage.load_storage.values_shared[0], values_loc);
