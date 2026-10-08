@@ -27,7 +27,6 @@ class CXXCompiler(object):
         compile_flags=None,
         link_flags=None,
         warning_flags=None,
-        verify_supported=None,
         verify_flags=None,
         use_verify=False,
         treat_warnings_as_errors=False,
@@ -47,11 +46,9 @@ class CXXCompiler(object):
         self.compile_flags = list(compile_flags or [])
         self.link_flags = list(link_flags or [])
         self.warning_flags = list(warning_flags or [])
-        self.verify_supported = verify_supported
         self.use_verify = use_verify
         self.treat_warnings_as_errors = treat_warnings_as_errors
         self.verify_flags = list(verify_flags or [])
-        assert not use_verify or verify_supported
         assert not use_verify or verify_flags is not None
         self.modules_flags = list(modules_flags or [])
         self.use_modules = use_modules
@@ -69,19 +66,8 @@ class CXXCompiler(object):
             self._initTypeAndVersion()
 
     def isVerifySupported(self):
-        if self.verify_supported is None:
-            self.verify_supported = self.hasCompileFlag(
-                ["-Xclang", "-verify-ignore-unexpected"]
-            )
-            if self.verify_supported:
-                self.verify_flags = [
-                    "-Xclang",
-                    "-verify",
-                    "-Xclang",
-                    "-verify-ignore-unexpected=note",
-                    "-ferror-limit=1024",
-                ]
-        return self.verify_supported
+        # todo: add support for other compilers
+        return self.type == "clang"
 
     def useVerify(self, value=True):
         self.use_verify = value
