@@ -710,6 +710,8 @@ def test_provider_symbols_and_cached_lto_are_bound_to_the_compilation_target(
     compile_context: _nvrtc.CompileContext,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # Simulate a target switch with all GPUs hidden by the fixture.
+    # These are compiler identities, not devices required on the test runner.
     current_cc = [(9, 0)]
 
     monkeypatch.setattr(
@@ -728,10 +730,14 @@ def test_provider_symbols_and_cached_lto_are_bound_to_the_compilation_target(
 
     assert sm90_source != sm80_source
     assert sm90_symbol != sm80_symbol
-    assert sm90._provider_compile_identity[:3] == (90, True, "lto")
-    assert sm80._provider_compile_identity[:3] == (80, True, "lto")
+    for algorithm, cc in ((sm90, 90), (sm80, 80)):
+        identity = algorithm._provider_compile_identity
+        assert identity.cc == cc
+        assert identity.rdc is True
+        assert identity.code == "lto"
 
     with pytest.raises(RuntimeError, match="different compute capability"):
+        # Reject reuse before NVRTC compilation or any attempt to launch code.
         sm90.get_lto_ir()
 
 

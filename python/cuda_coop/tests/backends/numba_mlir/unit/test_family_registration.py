@@ -293,6 +293,7 @@ def test_generated_synchronization_uses_metadata_not_struct_names(
 
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir import _types
+    from cuda.coop.numba_mlir._compiler._nvrtc import CompilerIdentity
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
 
     scope = SynchronizationScope(scope_name)
@@ -313,7 +314,9 @@ def test_generated_synchronization_uses_metadata_not_struct_names(
         algorithm.block_threads = 64
 
     source = algorithm._source_code(
-        compile_identity=(90, True, "lto", (), "test-toolchain")
+        compile_identity=CompilerIdentity(
+            cc=90, rdc=True, code="lto", compiler_options=()
+        )
     )[0]
     mangled_name = algorithm.mangled_name(algorithm.parameters[0])
     alloc_body = source.split(f"void {mangled_name}_alloc(", 1)[1].split(
@@ -332,7 +335,9 @@ def test_generated_synchronization_uses_metadata_not_struct_names(
         assert "[__coop_thread_rank / 32]" in source
     assert scope.value in repr(
         algorithm._make_lto_ir_cache_key(
-            compile_identity=(90, True, "lto", (), "test-toolchain")
+            compile_identity=CompilerIdentity(
+                cc=90, rdc=True, code="lto", compiler_options=()
+            )
         )
     )
 
@@ -342,6 +347,7 @@ def test_group_synchronization_scope_fails_with_stable_diagnostic():
 
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir import _types
+    from cuda.coop.numba_mlir._compiler._nvrtc import CompilerIdentity
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
 
     algorithm = _types.Algorithm(
@@ -361,7 +367,9 @@ def test_group_synchronization_scope_fails_with_stable_diagnostic():
         NotImplementedError, match="scope 'group' has no emitter"
     ):
         algorithm._source_code(
-            compile_identity=(90, True, "lto", (), "test-toolchain")
+            compile_identity=CompilerIdentity(
+                cc=90, rdc=True, code="lto", compiler_options=()
+            )
         )
 
 
@@ -370,6 +378,7 @@ def test_storage_free_provider_uses_default_constructor_and_zero_storage():
 
     from cuda.coop._core import SynchronizationScope
     from cuda.coop.numba_mlir import _types
+    from cuda.coop.numba_mlir._compiler._nvrtc import CompilerIdentity
     from cuda.coop.numba_mlir._compiler._operations import StorageABI
 
     algorithm = _types.Algorithm(
@@ -385,7 +394,9 @@ def test_storage_free_provider_uses_default_constructor_and_zero_storage():
         template_arguments={},
     )
     source, _, storage_symbols, _ = algorithm._source_code(
-        compile_identity=(90, True, "lto", (), "test-toolchain")
+        compile_identity=CompilerIdentity(
+            cc=90, rdc=True, code="lto", compiler_options=()
+        )
     )
 
     assert "StorageFreeProvider().Run" not in source

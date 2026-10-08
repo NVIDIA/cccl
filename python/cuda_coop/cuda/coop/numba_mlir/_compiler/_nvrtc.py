@@ -102,6 +102,20 @@ class CompileContext:
         return digest.hexdigest()[:16]
 
 
+@dataclass(frozen=True)
+class CompilerIdentity:
+    """Identify the target and options shared by compatible providers.
+
+    The options include ordered header paths. Callers retain the corresponding
+    ``CompileContext`` separately for its library and header-content identity.
+    """
+
+    cc: int
+    rdc: bool
+    code: str
+    compiler_options: tuple[bytes, ...]
+
+
 def _load_nvrtc():
     """Import CUDA bindings after the selected toolkit is preloaded."""
 
@@ -202,20 +216,20 @@ def _compiler_options(
 
 def compiler_identity(
     *, context: CompileContext, cc: int, rdc: bool, code: str
-) -> tuple[int, bool, str, tuple[bytes, ...]]:
+) -> CompilerIdentity:
     """Identify target and options that qualify provider symbols.
 
     The options include the context's ordered header paths. Providers also use
-    this tuple to group compatible specializations into one compilation. The
+    this identity to group compatible specializations into one compilation. The
     complete identity also needs the context's library and header-content
     identities, which callers retain separately.
     """
 
-    return (
-        int(cc),
-        bool(rdc),
-        str(code),
-        _compiler_options(
+    return CompilerIdentity(
+        cc=int(cc),
+        rdc=bool(rdc),
+        code=str(code),
+        compiler_options=_compiler_options(
             cc=int(cc),
             rdc=bool(rdc),
             code=str(code),
