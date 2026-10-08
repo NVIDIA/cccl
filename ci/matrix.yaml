@@ -168,6 +168,10 @@ workflows:
     # (no JIT backend) work against a v2 wheel.
     - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: ['3.14', '3.14t'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: '13.X', py_version: ['3.14', '3.14t'], gpu: 'l4', cxx: 'gcc13'}
+    # Oldest-supported-12.x smoke coverage (see #10778); single py_version,
+    # no minimal row, to keep the PR job count down. Nightly/weekly sweep the
+    # full 12.0/12.X/13.0/13.X matrix instead.
+    - {jobs: ['test'], project: 'python_v2', ctk: '12.0', py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # c.experimental.stf-- pinned to gcc13 to match python
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: ['12.X', '13.X'], cxx: 'gcc13', gpu: 't4'}
     - {jobs: ['test'], project: 'cccl_c_stf', ctk: '13.X', cxx: 'gcc13', gpu: ['l4', 'h100']}
@@ -377,10 +381,12 @@ workflows:
     # cuda.stf._experimental -- pinned to gcc13, Linux only
     - {jobs: ['test_py_stf'], project: 'python', ctk: ['12.X', '13.X'], py_version: ['3.10', '3.14'], gpu: 'l4', cxx: 'gcc13'}
     - {jobs: ['test_py_stf'], project: 'python', ctk: '13.X', py_version: '3.14', gpu: 'h100', cxx: 'gcc13'}
-    # Python against c.parallel v2 (HostJIT-based), GIL and free-threaded,
-    # full and minimal extras.
-    - {jobs: ['test'], project: 'python_v2', ctk: '13.X', py_version: ['3.14', '3.14t'], gpu: 'l4', cxx: 'gcc13'}
-    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: '13.X', py_version: ['3.14', '3.14t'], gpu: 'l4', cxx: 'gcc13'}
+    # Python against c.parallel v2 (HostJIT-based): full 12.0/12.X/13.0/13.X
+    # CTK sweep (see #10778), full and minimal extras. Single py_version here
+    # -- Python-version breadth is weekly's job (py3.14t); CTK breadth is the
+    # interesting axis for v2.
+    - {jobs: ['test'], project: 'python_v2', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14', gpu: 'l4', cxx: 'gcc13'}
     # Minimal extra, GIL and free-threaded -- wider than the pull_request rows so
     # regressions (e.g. from dependency bumps) surface between PRs. The
     # free-threaded lanes also run the free-threading stress suite and the
@@ -494,6 +500,12 @@ workflows:
     - {jobs: ['test'],  project: ['cccl_c_parallel'], ctk: '13.X', cxx: ['gcc13', 'msvc2022'], gpu: ['rtx2080', 'l4', 'h100']}
     # RTX PRO 6000 coverage (limited due to small number of runners):
     - {jobs: ['test'], project: 'cccl_c_parallel', ctk: '13.X', cxx: ['gcc13'], gpu: ['rtxpro6000']}
+    # Python against c.parallel v2 (HostJIT-based): full 12.0/12.X/13.0/13.X
+    # CTK sweep (see #10778), full and minimal extras. py3.14t here
+    # complements nightly's py3.14, so both get swept weekly without
+    # doubling either workflow's job count.
+    - {jobs: ['test'], project: 'python_v2', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
+    - {jobs: ['test_py_compute_minimal'], project: 'python_v2', ctk: ['12.0', '12.X', '13.0', '13.X'], py_version: '3.14t', gpu: 'l4', cxx: 'gcc13'}
     # c.experimental.stf -- pinned to gcc13 to match python
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '12.X', cxx: 'gcc13', gpu: ['rtx2080']}
     - {jobs: ['test'],  project: ['cccl_c_stf'], ctk: '13.X', cxx: 'gcc13', gpu: ['t4', 'l4', 'h100']}
