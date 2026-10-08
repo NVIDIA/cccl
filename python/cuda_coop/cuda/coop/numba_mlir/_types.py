@@ -2669,8 +2669,10 @@ def prepare_ltoir_bundle(
 
     src = buf.getvalue() + "\n".join(bodies)
 
-    # Only representatives with scratch contribute queries. Type names keep
-    # their layouts associated with the right provider after coalescing.
+    # Query CUB TempStorage types, not kernel argument types. For example, a
+    # transpose Load -> Store contributes two types, even when both calls share
+    # one explicit TempStorage; direct/striped providers contribute none.
+    # Compiler-allocated scratch needs the same layouts as explicit scratch.
     layout_types = tuple(
         storage_type
         for rep in reps
