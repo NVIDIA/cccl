@@ -207,7 +207,7 @@ def test_common_cub_controls_fail_closed_before_delegation(
         with pytest.raises(ValueError, match="scalar values only"):
             function(this_block(), _ThreadData(), valid_items=1)
         with pytest.raises(ValueError, match="scalar values only"):
-            function(this_warp(), _ThreadData())
+            function(this_warp(), _ThreadData(), valid_items=1)
         with pytest.raises(ValueError, match="requires a block group"):
             function(this_warp(), np.int32(1), temp_storage=object())
         with pytest.raises(ValueError, match="requires a block group"):

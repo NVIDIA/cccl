@@ -133,16 +133,10 @@ def _validate_common_reduce_options(
             "reduction requires hidden per-launch workspace"
         )
     _validate_common_operation_group(operation, group)
-    if group.kind != "block":
-        if temp_storage is not None:
-            raise ValueError(
-                f"cuda.coop.{operation} temp_storage requires a block group"
-            )
-        if isinstance(value, _ReadableThreadDataLike):
-            raise ValueError(
-                f"cuda.coop.{operation} warp reductions support "
-                "scalar values only"
-            )
+    if group.kind != "block" and temp_storage is not None:
+        raise ValueError(
+            f"cuda.coop.{operation} temp_storage requires a block group"
+        )
     if valid_items is not None:
         static_valid_items = _validate_common_integer_value(
             operation,

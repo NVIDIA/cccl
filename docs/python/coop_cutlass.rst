@@ -470,11 +470,14 @@ Built-in Reduce and Sum
 -----------------------
 
 ``reduce(group, value, ...)`` and ``sum(group, value, ...)`` use CUB for block,
-physical-warp, and logical-warp reductions. Blocks accept a scalar or a fixed
-per-thread ``ThreadData`` payload. Warps accept one scalar per lane. Logical
-warp widths are 1, 2, 4, 8, 16, or 32, and the enclosing block must contain
-complete physical warps. All members of a participating group must call the
-primitive.
+physical-warp, and logical-warp reductions. Each member supplies a scalar or
+a fixed per-thread ``ThreadData`` payload; every payload item contributes to
+the group's result. Logical warp widths are 1, 2, 4, 8, 16, or 17 through
+32, and the enclosing block must contain complete physical warps. For widths
+17 through 31, construct the group with ``exhaustive=False`` and guard the
+call with ``group.is_member()`` to exclude trailing lanes. CUB requires a
+non-power-of-two group to be the only logical group in its physical warp.
+All members of a participating group must call the primitive.
 
 The built-in operators are sum, product, minimum, maximum, bitwise AND,
 bitwise OR, and bitwise XOR. For example, ``binary_op="max"`` selects maximum,
@@ -500,6 +503,8 @@ a valid prefix:
      - A block algorithm and ``temp_storage``, without ``valid_items``
    * - Physical or logical warp scalar
      - ``valid_items``, without an algorithm selector
+   * - Physical or logical warp multi-item payload
+     - No ``valid_items``, algorithm selector, or explicit ``temp_storage``
 
 Block algorithm names are ``raking_commutative_only``, ``raking``, and
 ``warp_reductions`` (the default). A valid prefix contains from one through

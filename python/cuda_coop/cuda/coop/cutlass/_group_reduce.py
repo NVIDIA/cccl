@@ -136,10 +136,10 @@ def reduce(
 
     Notes
     -----
-    Every reduction uses CUB. Blocks accept scalars or per-thread payloads;
-    warps accept one scalar per lane. A ``valid_items`` prefix counts
-    contributing members, requires scalar input, and does not reduce required
-    participation. Block reductions accept ``temp_storage`` with the same
+    Every reduction uses CUB. Blocks and warps accept scalars or per-thread
+    payloads. A ``valid_items`` prefix counts contributing members, requires
+    scalar input, and does not reduce required participation. Block reductions
+    accept ``temp_storage`` with the same
     sharing, capacity, alignment, and synchronization policies as Load/Store.
 
     See Also

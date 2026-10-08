@@ -154,8 +154,13 @@ def test_dynamic_prefix_compile(dtype, warp):
             "requires a block, physical warp, or logical warp group",
         ),
         ("cluster", "requires a block, physical warp, or logical warp group"),
-        ("warp_array", "WarpReduce planning supports scalar operands only"),
+        ("warp_array_prefix", "valid_items is not supported for array inputs"),
+        (
+            "warp_array_runtime_prefix",
+            "valid_items is not supported for array inputs",
+        ),
         ("warp_storage", "TempStorage is supported only for block groups"),
+        ("non_power_partition", "only one non-power-of-two group"),
         ("undersized_storage", "(?i)(capacity|size|smaller)"),
         ("warp_algorithm", "BlockReduce|block group"),
         ("bitwise_float", "integer dtype"),
@@ -189,13 +194,23 @@ def test_invalid_controls(case, expected):
             cutlass_coop.sum(group.group_by(2), value)
         elif cutlass.const_expr(case == "cluster"):
             cutlass_coop.sum(cutlass_coop.this_cluster(), value)
-        elif cutlass.const_expr(case == "warp_array"):
+        elif cutlass.const_expr(
+            case in ("warp_array_prefix", "warp_array_runtime_prefix")
+        ):
+            count = 1
+            if cutlass.const_expr(case == "warp_array_runtime_prefix"):
+                count = cutlass.Int32(1)
             cutlass_coop.sum(
                 cutlass_coop.this_warp(),
                 cutlass_coop.ThreadData(
                     items_per_thread=1, dtype=cutlass.Int32, values=[value]
                 ),
+                valid_items=count,
             )
+        elif cutlass.const_expr(case == "non_power_partition"):
+            lanes = cutlass_coop.this_warp().group_by(12, exhaustive=False)
+            if lanes.is_member():
+                cutlass_coop.sum(lanes, value)
         elif cutlass.const_expr(case == "warp_storage"):
             cutlass_coop.sum(
                 cutlass_coop.this_warp(),
@@ -281,3 +296,41 @@ def test_register_payload_boundary(ssa, api):
             cute.compile[(GPUArch("sm_80"),)](launch, _pointer())
     else:
         assert cute.compile[(GPUArch("sm_80"),)](launch, _pointer()) is not None
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("width", [8, 32])
+@pytest.mark.parametrize(
+    "form", ["thread_data", "register_tensor", "tensor_ssa"]
+)
+def test_warp_payload_forms(items_per_thread, width, form):
+    """Compile CUB warp-array overloads and qualified register conversions."""
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        group = cutlass_coop.this_warp()
+        if cutlass.const_expr(width != 32):
+            group = group.group_by(width)
+        payload = cutlass_coop.ThreadData(items_per_thread)
+        cutlass_coop.load(group, memory, payload)
+        if cutlass.const_expr(form == "register_tensor"):
+            values = payload.to_register_tensor()
+        elif cutlass.const_expr(form == "tensor_ssa"):
+            values = payload.to_tensor_ssa()
+        else:
+            values = payload
+        total = cutlass_coop.sum(group, values)
+        largest = cutlass_coop.reduce(group, values, binary_op="max")
+        if group.rank() == 0:
+            cute.make_tensor(memory, cute.make_layout(64))[
+                cutlass_coop.this_block().rank()
+            ] = total + largest
+
+    @cute.jit
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=64)
+
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, _pointer(), items_per_thread)
+        is not None
+    )

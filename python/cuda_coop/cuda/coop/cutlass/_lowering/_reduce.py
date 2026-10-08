@@ -391,9 +391,9 @@ def _warp_instances(plan: GroupLoweringPlan) -> tuple[int, int]:
     )
     if not isinstance(logical_width, int) or logical_width < 1:
         raise ValueError("WarpReduce plan requires a static logical warp width")
-    if block_threads < logical_width or block_threads % logical_width != 0:
-        raise ValueError("WarpReduce plan requires complete logical warps")
-    return block_threads // logical_width, logical_width
+    if block_threads < 32 or block_threads % 32 != 0:
+        raise ValueError("WarpReduce plan requires complete physical warps")
+    return (block_threads // 32) * (32 // logical_width), logical_width
 
 
 def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
@@ -467,12 +467,11 @@ def _render_cub_reduce(request: _CubReduceRequest) -> list[str]:
         _, logical_width = _warp_instances(request.plan)
         storage_lines.extend(
             [
+                "  unsigned int thread_rank = threadIdx.x + blockDim.x *",
+                "      (threadIdx.y + blockDim.y * threadIdx.z);",
                 "  unsigned int storage_instance =",
-                (
-                    "      (threadIdx.x + blockDim.x * "
-                    "(threadIdx.y + blockDim.y * threadIdx.z)) / "
-                    f"{logical_width}u;"
-                ),
+                f"      (thread_rank / 32u) * {32 // logical_width}u +",
+                f"      (thread_rank % 32u) / {logical_width}u;",
             ]
         )
         instance = "storage_instance"
