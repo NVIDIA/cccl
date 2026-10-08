@@ -363,6 +363,20 @@ struct Transforms
       }
     }
   };
+
+  // Cast byte samples to nonnegative private bins and back to the sample type before output decoding.
+  template <typename TransformT, typename CastT>
+  struct sample_cast_transform : TransformT
+  {
+    template <CacheLoadModifier LoadModifier, typename Sample>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(Sample sample, int& bin, bool valid) const
+    {
+      if (valid)
+      {
+        TransformT::template BinSelect<LoadModifier>(static_cast<CastT>(sample), bin, valid);
+      }
+    }
+  };
 };
 
 /******************************************************************************
