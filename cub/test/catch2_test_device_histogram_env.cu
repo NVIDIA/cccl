@@ -1786,15 +1786,6 @@ CUB_TEST("Histogram architecture policies carry their dynamic shared-memory budg
   constexpr auto sm90_policy  = selector_t{}(cuda::compute_capability{9, 0});
   constexpr auto sm100_policy = selector_t{}(cuda::compute_capability{10, 0});
   constexpr auto sm120_policy = selector_t{}(cuda::compute_capability{12, 0});
-  constexpr auto sm100_range_u32_policy =
-    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
-      cuda::compute_capability{10, 0});
-  constexpr auto sm100_range_f64_policy =
-    cub::detail::histogram::policy_selector_from_types<double, unsigned int, 1, 1, false>{}(
-      cuda::compute_capability{10, 0});
-  constexpr auto sm100_range_wide_counter_policy =
-    cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, false>{}(
-      cuda::compute_capability{10, 0});
   constexpr auto sm100_wide_counter_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, true>{}(
       cuda::compute_capability{10, 0});
@@ -1834,9 +1825,6 @@ CUB_TEST("Histogram architecture policies carry their dynamic shared-memory budg
 
   constexpr auto sm100_multi_range_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
-      cuda::compute_capability{10, 0});
-  constexpr auto sm100_multi_range_f64_policy =
-    cub::detail::histogram::policy_selector_from_types<double, unsigned int, 4, 3, false>{}(
       cuda::compute_capability{10, 0});
   constexpr auto sm100_even_2ch_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 2, 2, true>{}(
