@@ -90,6 +90,15 @@ CUB_NAMESPACE_BEGIN
 //!
 //!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
 //!
+//! Warp Vote Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For ``bool`` inputs and power-of-two ``LogicalWarpThreads``, ``WarpReduce`` uses a single warp vote instruction on
+//! all architectures, including partially-full warp reductions:
+//!
+//! - ``cuda::std::logical_or``: ``__any_sync``
+//! - ``cuda::std::logical_and``: ``__all_sync``
+//!
 //! Simple Examples
 //! +++++++++++++++
 //!

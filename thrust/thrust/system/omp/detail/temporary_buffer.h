@@ -13,4 +13,4 @@
 #  pragma system_header
 #endif // no system header
 
-// this system has no special temporary buffer functions
+// omp system has no special temporary buffer functions
