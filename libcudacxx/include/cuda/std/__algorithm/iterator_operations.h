@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/iter_swap.h>
-#include <cuda/std/__algorithm/ranges_iterator_concept.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/incrementable_traits.h>

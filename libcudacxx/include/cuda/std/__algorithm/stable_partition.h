@@ -22,13 +22,13 @@
 
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/rotate.h>
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__new_>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
