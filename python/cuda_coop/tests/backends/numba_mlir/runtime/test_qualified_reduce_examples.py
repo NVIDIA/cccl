@@ -57,16 +57,22 @@ def test_qualified_sum_example():
     import cuda.coop.numba_mlir as coop
 
     @cuda.jit
-    def warp_totals(source, destination):
+    def warp_totals(source, destination, items_per_thread):
         group = coop.this_warp().group_by(8)
         thread = cuda.threadIdx.x
-        total = coop.sum(group, source[thread])
+        items = coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            items[item] = source[thread * items_per_thread + item]
+        total = coop.sum(group, items)
         if group.rank() == 0:
             destination[thread // 8] = total
 
-    values = np.arange(64, dtype=np.int32) % 7
-    destination = cuda.device_array(8, dtype=np.int32)
-    warp_totals[1, 64](cuda.to_device(values), destination)
-    expected = values.reshape(8, 8).sum(axis=1)
-    np.testing.assert_array_equal(destination.copy_to_host(), expected)
+    for items_per_thread in (1, 4):
+        values = np.arange(64 * items_per_thread, dtype=np.int32) % 7
+        destination = cuda.device_array(8, dtype=np.int32)
+        warp_totals[1, 64](
+            cuda.to_device(values), destination, items_per_thread
+        )
+        expected = values.reshape(8, 8 * items_per_thread).sum(axis=1)
+        np.testing.assert_array_equal(destination.copy_to_host(), expected)
     # qualified-sum-example-end
