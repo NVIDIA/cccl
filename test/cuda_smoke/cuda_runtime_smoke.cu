@@ -43,10 +43,7 @@ TEST_CASE("cudaMallocManaged round-trip works", "[cuda_smoke][managed_memory]")
 
   int managed_supported = 0;
   CUDART_REQUIRE(cudaDeviceGetAttribute(&managed_supported, cudaDevAttrManagedMemory, 0));
-  if (!managed_supported)
-  {
-    SKIP("Device does not support managed memory (cudaDevAttrManagedMemory == 0).");
-  }
+  REQUIRE(managed_supported); // CCCL tests require managed memory
 
   constexpr int n = 256;
   int* p          = nullptr;
