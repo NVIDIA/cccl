@@ -20,6 +20,10 @@
 
 #include <cstdio>
 
+#include "cub_non_catch2_test_memory.h"
+
+CUB_TEST_MEMORY_CLASS(CUB_SMALL);
+
 #define STRINGIFY_(...) #__VA_ARGS__
 #define STRINGIFY(...)  STRINGIFY_(__VA_ARGS__)
 

@@ -13,11 +13,9 @@ if (NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
   return()
 endif()
 
-set(arch_demote_target cub.test.arch_demote)
-set(arch_demote_other_target cub.test.arch_demote.other)
-
 # Compiled for the lowest virtual architecture only. The test never runs its code, but device-linking it into the test
 # executable, which is compiled for the architectures of the test suite, lowers the virtual architecture of the module.
+set(arch_demote_other_target cub.test.arch_demote.other)
 add_library(${arch_demote_other_target} OBJECT other.cu)
 cccl_configure_target(${arch_demote_other_target})
 target_link_libraries(
@@ -29,27 +27,9 @@ set_target_properties(
   PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES 75-virtual
 )
 
-cccl_add_executable(
+cub_add_test(arch_demote_target arch_demote "" main.cu 0)
+cub_configure_cuda_target(${arch_demote_target} RDC ON)
+target_sources(
   ${arch_demote_target}
-  SOURCES main.cu $<TARGET_OBJECTS:${arch_demote_other_target}>
-  METATARGET_PATH cub.test.device.arch_demote
-)
-target_link_libraries(${arch_demote_target} PRIVATE cub.compiler_interface)
-set_target_properties(
-  ${arch_demote_target}
-  PROPERTIES CUDA_SEPARABLE_COMPILATION ON
-)
-target_compile_definitions(${arch_demote_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
-
-rapids_test_add(
-  NAME ${arch_demote_target}
-  # gersemi: off
-  COMMAND
-    "${CMAKE_COMMAND}"
-       "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
-       "-DTEST=$<TARGET_FILE:${arch_demote_target}>"
-       -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
-  # gersemi: on
-  GPUS 1
-  PERCENT ${CCCL_TEST_GPU_PERCENT_SMALL}
+  PRIVATE $<TARGET_OBJECTS:${arch_demote_other_target}>
 )
