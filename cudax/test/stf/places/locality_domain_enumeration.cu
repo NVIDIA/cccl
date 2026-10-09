@@ -112,7 +112,15 @@ int main()
   // Equal views hash equal
   EXPECT(hash<locality_domain_view>{}(v00) == hash<locality_domain_view>{}(locality_domain_view(0, 0)));
 
-  // ==== Data place identity (no hardware requirement) ====
+  // ==== Data place identity ====
+  // Building a data place validates the ordinal against the topology (strictly
+  // under CUDASTF_FAKE_LOCALITY_DOMAINS), so this section needs two domains on
+  // device 0; a one-domain topology skips it.
+  if (locality_domain_count(0) < 2)
+  {
+    printf("device 0 has a single locality domain: skipping the data-place identity checks\n");
+    return 0;
+  }
 
   data_place dp = data_place::locality_domain(0, 1);
   EXPECT(dp.is_resolved());

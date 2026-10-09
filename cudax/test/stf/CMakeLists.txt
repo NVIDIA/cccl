@@ -101,6 +101,7 @@ set(
   places/place_partition.cu
   places/recursion.cu
   places/execution_policy_kernel_launch_test.cu
+  places/sharded_task_view.cu
   reclaiming/graph.cu
   reclaiming/graph_2.cu
   reclaiming/graph_real_oom.cu
