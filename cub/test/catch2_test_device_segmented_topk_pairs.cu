@@ -11,6 +11,7 @@
 #include <cub/device/device_batched_topk.cuh>
 #include <cub/device/dispatch/dispatch_batched_topk.cuh> // topk_policy / make_baseline_policy (cross-tuning test)
 
+#include <thrust/copy.h>
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/equal.h>
@@ -29,6 +30,7 @@
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 
 #include <algorithm>
 #include <functional>
@@ -1132,6 +1134,16 @@ struct float_bitwise_equal_op
   }
 };
 
+// Reads a segment's keys through a transform iterator, which is not contiguous, so the cluster agent takes its generic
+// load path instead of bulk copies
+struct wrap_segment_keys_op
+{
+  __host__ __device__ auto operator()(const float* keys) const
+  {
+    return cuda::make_transform_iterator(keys, cuda::std::identity{});
+  }
+};
+
 // -0.0 and +0.0 compare equal, so a tie-break among zeros at the k-th boundary must follow the index preference
 // alone, as in the host reference (which ranks with `operator<`). Keys are drawn from {-1, -0, +0, 1}, and every k
 // selects and rejects zeros of both signs, so a ranking that orders -0.0 below +0.0 selects the wrong indices.
@@ -1161,8 +1173,14 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break treats -0.0 
   // min. That is exactly the case a ranking that separates -0.0 from +0.0 gets wrong.
   const segment_size_t k = GENERATE_COPY(values({segment_size * 3 / 8, segment_size / 2, segment_size * 5 / 8}));
   const segment_size_t num_items = num_segments * segment_size;
+  // How the keys reach the agent: 0 contiguous from an aligned buffer; 1 contiguous but 17 elements (68 bytes) past the
+  // buffer's alignment, so segments start and end off any load alignment the agent allows (16 bytes or more) and both
+  // unaligned edges hold several keys (15 and 17 for 128-byte alignment); 2 through a non-contiguous iterator (generic
+  // load path).
+  const int input_kind              = GENERATE(0, 1, 2);
+  const segment_size_t input_offset = input_kind == 1 ? 17 : 0;
 
-  CAPTURE(segment_size, k, num_segments, direction, prefer_larger);
+  CAPTURE(segment_size, k, num_segments, direction, prefer_larger, input_kind);
 
   thrust::default_random_engine rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
   c2h::host_vector<key_t> h_keys(static_cast<cuda::std::size_t>(num_items));
@@ -1183,10 +1201,11 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break treats -0.0 
       }
     }
   }
-  c2h::device_vector<key_t> keys_in_buffer(h_keys);
+  c2h::device_vector<key_t> keys_in_buffer(num_items + input_offset);
+  thrust::copy(h_keys.begin(), h_keys.end(), keys_in_buffer.begin() + input_offset);
 
-  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
-  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+  const key_t* d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data()) + input_offset;
+  auto d_keys_in             = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
 
   c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
   auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
@@ -1202,16 +1221,27 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break treats -0.0 
     cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   const auto k_arg  = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
   const auto ns_arg = cuda::args::immediate{num_segments};
-  skip_unless_batched_topk_pairs_supported<direction, determinism, tie_break>(
-    static_max_segment_size, d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
-  batched_topk_pairs<direction, determinism, tie_break>(
-    d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
+  const auto run    = [&](auto keys_in) {
+    skip_unless_batched_topk_pairs_supported<direction, determinism, tie_break>(
+      static_max_segment_size, keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
+    batched_topk_pairs<direction, determinism, tie_break>(
+      keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
+  };
+  if (input_kind == 2)
+  {
+    run(cuda::make_transform_iterator(d_keys_in, wrap_segment_keys_op{}));
+  }
+  else
+  {
+    run(d_keys_in);
+  }
 
   const c2h::host_vector<val_t> ref =
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
   // Output keys keep their sign: each selected key is bitwise the input key at the selected index
-  auto expected_keys_it = cuda::make_permutation_iterator(keys_in_buffer.cbegin(), values_out_buffer.cbegin());
+  auto expected_keys_it =
+    cuda::make_permutation_iterator(keys_in_buffer.cbegin() + input_offset, values_out_buffer.cbegin());
   const bool keys_bitwise_equal =
     thrust::equal(keys_out_buffer.cbegin(), keys_out_buffer.cend(), expected_keys_it, float_bitwise_equal_op{});
   REQUIRE(keys_bitwise_equal);
