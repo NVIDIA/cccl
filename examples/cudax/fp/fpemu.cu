@@ -64,12 +64,11 @@
 #include <cstdio>
 #include <exception>
 
-// The CCCL FP component lives in cuda::experimental (later cuda::),
-// abbreviated here rather than pulled in with a using-directive. Type names
-// carry the cudax:: prefix; the standard-named math functions are left
+// The CCCL FP component lives in namespace cuda, and its names are qualified
+// here rather than pulled in with a using-directive. Type names
+// carry the cuda:: prefix; the standard-named math functions are left
 // unqualified and found by argument-dependent lookup, so a body of double
 // code keeps its call sites when the type underneath is swapped.
-namespace cudax = cuda::experimental;
 
 // The accumulation demo below adds this many copies of this term onto 1.0. One
 // ulp of 1.0 is about 2.22e-16, so a single term is some twenty times too small
@@ -112,23 +111,23 @@ __host__ __device__ void fpemu_packed_operations(fpemu_results* out)
   // Construction. The packed form holds the same bit pattern a double would, so
   // every built-in arithmetic type converts implicitly, exactly as it would to
   // double.
-  const cudax::fp64emu a = fpemu_input_a;
-  const cudax::fp64emu b = fpemu_input_b;
-  const cudax::fp64emu c = cuda::std::numbers::e_v<float>;
-  const cudax::fp64emu d = 5u;
+  const cuda::fp64emu a = fpemu_input_a;
+  const cuda::fp64emu b = fpemu_input_b;
+  const cuda::fp64emu c = cuda::std::numbers::e_v<float>;
+  const cuda::fp64emu d = 5u;
 
   // Arithmetic. An operation on two fp64emu values yields an fp64emu, so
   // results stay in the emulated type and can feed further operations without a
   // conversion in between.
-  const cudax::fp64emu sum  = a + b;
-  const cudax::fp64emu diff = a - b;
-  const cudax::fp64emu prod = a * b;
-  const cudax::fp64emu quot = a / b;
+  const cuda::fp64emu sum  = a + b;
+  const cuda::fp64emu diff = a - b;
+  const cuda::fp64emu prod = a * b;
+  const cuda::fp64emu quot = a / b;
 
   // Unqualified on purpose: ADL finds the fpemu overloads, so a call site
   // written for double needs no edit when the type underneath it changes.
-  const cudax::fp64emu sqrt_d  = sqrt(d);
-  const cudax::fp64emu fma_abc = fma(a, b, c);
+  const cuda::fp64emu sqrt_d  = sqrt(d);
+  const cuda::fp64emu fma_abc = fma(a, b, c);
 
   // Comparisons return plain bool.
   const bool is_gt = a > b;
@@ -138,37 +137,37 @@ __host__ __device__ void fpemu_packed_operations(fpemu_results* out)
   // Mixed-type operations. An fpemu value combines directly with the built-in
   // arithmetic types, on either side, without building a temporary by hand. The
   // result is still an fp64emu, not a double.
-  const cudax::fp64emu mixed_add = a + 0.9876543210987654;
-  const cudax::fp64emu mixed_mul = a * 3;
-  const cudax::fp64emu mixed_lhs = 2 * a;
+  const cuda::fp64emu mixed_add = a + 0.9876543210987654;
+  const cuda::fp64emu mixed_mul = a * 3;
+  const cuda::fp64emu mixed_lhs = 2 * a;
 
   // Compound assignment takes a bare scalar here, since the conversion is
   // implicit.
-  cudax::fp64emu acc = a;
+  cuda::fp64emu acc = a;
   acc += 0.5;
 
   // Accuracy levels. Only the type differs; the expressions are the same. high
   // is correctly rounded, mid gives up a low bit or two, and low trades away
   // enough of the mantissa to be visible in the seventh decimal place.
-  const cudax::fp64emu_high a_high = fpemu_input_a;
-  const cudax::fp64emu_mid a_mid   = fpemu_input_a;
-  const cudax::fp64emu_low a_low   = fpemu_input_a;
-  const cudax::fp64emu_high b_high = fpemu_input_b;
-  const cudax::fp64emu_mid b_mid   = fpemu_input_b;
-  const cudax::fp64emu_low b_low   = fpemu_input_b;
+  const cuda::fp64emu_high a_high = fpemu_input_a;
+  const cuda::fp64emu_mid a_mid   = fpemu_input_a;
+  const cuda::fp64emu_low a_low   = fpemu_input_a;
+  const cuda::fp64emu_high b_high = fpemu_input_b;
+  const cuda::fp64emu_mid b_mid   = fpemu_input_b;
+  const cuda::fp64emu_low b_low   = fpemu_input_b;
 
-  const cudax::fp64emu_high diff_high = a_high - b_high;
-  const cudax::fp64emu_mid diff_mid   = a_mid - b_mid;
-  const cudax::fp64emu_low diff_low   = a_low - b_low;
-  const cudax::fp64emu_high prod_high = a_high * b_high;
-  const cudax::fp64emu_mid prod_mid   = a_mid * b_mid;
-  const cudax::fp64emu_low prod_low   = a_low * b_low;
+  const cuda::fp64emu_high diff_high = a_high - b_high;
+  const cuda::fp64emu_mid diff_mid   = a_mid - b_mid;
+  const cuda::fp64emu_low diff_low   = a_low - b_low;
+  const cuda::fp64emu_high prod_high = a_high * b_high;
+  const cuda::fp64emu_mid prod_mid   = a_mid * b_mid;
+  const cuda::fp64emu_low prod_low   = a_low * b_low;
 
   // Accumulation. The packed form rounds to the storage format after every
   // operation, so each term vanishes on its own and the total never leaves 1.0
   // — the same outcome a plain double gives, which is what being bit-compatible
   // with double means here.
-  cudax::fp64emu drift = 1.0;
+  cuda::fp64emu drift = 1.0;
   for (int i = 0; i < fpemu_drift_terms; ++i)
   {
     drift += fpemu_drift_term;
@@ -176,8 +175,8 @@ __host__ __device__ void fpemu_packed_operations(fpemu_results* out)
 
   // Converting to the other representation and back. Both directions are
   // explicit.
-  const cudax::fp64emu_unpacked as_unpacked{a};
-  const cudax::fp64emu round_trip{as_unpacked};
+  const cuda::fp64emu_unpacked as_unpacked{a};
+  const cuda::fp64emu round_trip{as_unpacked};
 
   // Everything above stayed in the emulated type. Converting to double happens
   // here, in one place, only because the host has to be handed something it can
@@ -224,21 +223,21 @@ __host__ __device__ void fpemu_unpacked_operations(fpemu_results* out)
   // rather than in a double's layout, so it does not pretend to be a built-in
   // number: every conversion in is written out. Braces read best, and a cast
   // does the same job.
-  const cudax::fp64emu_unpacked a{fpemu_input_a};
-  const cudax::fp64emu_unpacked b{fpemu_input_b};
-  const cudax::fp64emu_unpacked c{cuda::std::numbers::e_v<float>};
-  const cudax::fp64emu_unpacked d{5u};
+  const cuda::fp64emu_unpacked a{fpemu_input_a};
+  const cuda::fp64emu_unpacked b{fpemu_input_b};
+  const cuda::fp64emu_unpacked c{cuda::std::numbers::e_v<float>};
+  const cuda::fp64emu_unpacked d{5u};
 
   // Arithmetic, as on the packed form: the result of every operation is another
   // fp64emu_unpacked. Keeping it in this type is the whole point here, since
   // that is what holds the guard bits back from being rounded away.
-  const cudax::fp64emu_unpacked sum  = a + b;
-  const cudax::fp64emu_unpacked diff = a - b;
-  const cudax::fp64emu_unpacked prod = a * b;
-  const cudax::fp64emu_unpacked quot = a / b;
+  const cuda::fp64emu_unpacked sum  = a + b;
+  const cuda::fp64emu_unpacked diff = a - b;
+  const cuda::fp64emu_unpacked prod = a * b;
+  const cuda::fp64emu_unpacked quot = a / b;
 
-  const cudax::fp64emu_unpacked sqrt_d  = sqrt(d);
-  const cudax::fp64emu_unpacked fma_abc = fma(a, b, c);
+  const cuda::fp64emu_unpacked sqrt_d  = sqrt(d);
+  const cuda::fp64emu_unpacked fma_abc = fma(a, b, c);
 
   const bool is_gt = a > b;
   const bool is_lt = a < b;
@@ -247,47 +246,47 @@ __host__ __device__ void fpemu_unpacked_operations(fpemu_results* out)
   // Mixed-type operations work as they do for the packed form: the binary
   // operators take a built-in scalar on either side, with no cast needed at the
   // call site.
-  const cudax::fp64emu_unpacked mixed_add = a + 0.9876543210987654;
-  const cudax::fp64emu_unpacked mixed_mul = a * 3;
-  const cudax::fp64emu_unpacked mixed_lhs = 2 * a;
+  const cuda::fp64emu_unpacked mixed_add = a + 0.9876543210987654;
+  const cuda::fp64emu_unpacked mixed_mul = a * 3;
+  const cuda::fp64emu_unpacked mixed_lhs = 2 * a;
 
   // Compound assignment is the exception, and follows from construction being
   // explicit: there is no scalar overload, and the fp64emu_unpacked one cannot
   // be reached from a double implicitly, so the scalar is cast.
-  cudax::fp64emu_unpacked acc = a;
-  acc += cudax::fp64emu_unpacked{0.5};
+  cuda::fp64emu_unpacked acc = a;
+  acc += cuda::fp64emu_unpacked{0.5};
 
   // Accuracy levels, as above on the other representation. high and mid can
   // agree here where the packed ones did not: the guard bits absorb the
   // difference between the two algorithms before it reaches the stored value.
-  const cudax::fp64emu_unpacked_high a_high{fpemu_input_a};
-  const cudax::fp64emu_unpacked_mid a_mid{fpemu_input_a};
-  const cudax::fp64emu_unpacked_low a_low{fpemu_input_a};
-  const cudax::fp64emu_unpacked_high b_high{fpemu_input_b};
-  const cudax::fp64emu_unpacked_mid b_mid{fpemu_input_b};
-  const cudax::fp64emu_unpacked_low b_low{fpemu_input_b};
+  const cuda::fp64emu_unpacked_high a_high{fpemu_input_a};
+  const cuda::fp64emu_unpacked_mid a_mid{fpemu_input_a};
+  const cuda::fp64emu_unpacked_low a_low{fpemu_input_a};
+  const cuda::fp64emu_unpacked_high b_high{fpemu_input_b};
+  const cuda::fp64emu_unpacked_mid b_mid{fpemu_input_b};
+  const cuda::fp64emu_unpacked_low b_low{fpemu_input_b};
 
-  const cudax::fp64emu_unpacked_high diff_high = a_high - b_high;
-  const cudax::fp64emu_unpacked_mid diff_mid   = a_mid - b_mid;
-  const cudax::fp64emu_unpacked_low diff_low   = a_low - b_low;
-  const cudax::fp64emu_unpacked_high prod_high = a_high * b_high;
-  const cudax::fp64emu_unpacked_mid prod_mid   = a_mid * b_mid;
-  const cudax::fp64emu_unpacked_low prod_low   = a_low * b_low;
+  const cuda::fp64emu_unpacked_high diff_high = a_high - b_high;
+  const cuda::fp64emu_unpacked_mid diff_mid   = a_mid - b_mid;
+  const cuda::fp64emu_unpacked_low diff_low   = a_low - b_low;
+  const cuda::fp64emu_unpacked_high prod_high = a_high * b_high;
+  const cuda::fp64emu_unpacked_mid prod_mid   = a_mid * b_mid;
+  const cuda::fp64emu_unpacked_low prod_low   = a_low * b_low;
 
   // Accumulation, and the reason this representation exists. The 9 guard bits
   // sit exactly where each term would otherwise be rounded off, so the terms
   // keep contributing while the value stays unpacked; the single rounding
   // happens on the way out. A double and a packed fpemu both round after every
   // operation and so never leave 1.0.
-  cudax::fp64emu_unpacked drift{1.0};
+  cuda::fp64emu_unpacked drift{1.0};
   for (int i = 0; i < fpemu_drift_terms; ++i)
   {
-    drift += cudax::fp64emu_unpacked{fpemu_drift_term};
+    drift += cuda::fp64emu_unpacked{fpemu_drift_term};
   }
 
   // Converting to the other representation and back.
-  const cudax::fp64emu as_packed{a};
-  const cudax::fp64emu_unpacked round_trip{as_packed};
+  const cuda::fp64emu as_packed{a};
+  const cuda::fp64emu_unpacked round_trip{as_packed};
 
   // The single conversion point, as in the packed kernel. For this
   // representation it is also where the one rounding to the 53-bit significand

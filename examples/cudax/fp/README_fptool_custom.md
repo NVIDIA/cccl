@@ -74,7 +74,7 @@ result** — and **never on construction**:
 So a freshly constructed value still holds whatever `double` it was given:
 
 ```c++
-cudax::fp64_custom<8, 23> x{1.0 / 3.0};
+cuda::fp64_custom<8, 23> x{1.0 / 3.0};
 static_cast<double>(x);          // still the full double 1/3, unreduced
 static_cast<double>(x + zero);   // now rounded to 23 mantissa bits
 ```
@@ -117,8 +117,8 @@ Compile-time or run-time sizes
 The sizes can come from the template arguments or from a variable:
 
 ```c++
-using fp_dynamic = cudax::fp64_custom<cudax::fp_custom_dynamic_size,
-                                      cudax::fp_custom_dynamic_size>;
+using fp_dynamic = cuda::fp64_custom<cuda::fp_custom_dynamic_size,
+                                      cuda::fp_custom_dynamic_size>;
 ```
 
 `fp_custom_dynamic_size` can be used on either axis or both, so one axis can stay fixed
@@ -185,14 +185,10 @@ across translation units.
 #include <cuda/fptool>     // one header for the whole feature
 ```
 
-```c++
-namespace cudax = cuda::experimental;
-```
-
-Everything this feature names is specific to the component and carries the prefix. Unlike the
-`fpmp` and `fpemu` types, there is nothing here to find by argument-dependent lookup: the
-setters and getters take only an `int` and a stream, so there is no operand of a component
-type to look in.
+Everything this feature names is specific to the component and carries the `cuda::` prefix.
+Unlike the `fpmp` and `fpemu` types, there is nothing here to find by argument-dependent
+lookup: the setters and getters take only an `int` and a stream, so there is no operand of a
+component type to look in.
 
 ### Construction and conversion
 

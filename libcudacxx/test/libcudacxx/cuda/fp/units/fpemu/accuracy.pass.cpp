@@ -22,36 +22,34 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Computes across all three accuracy levels and verifies the aggregate result is
 // finite, non-zero and reasonably bounded. Returns true on success.
 TEST_HOST_DEVICE_FUNC void test(double x)
 {
   // high accuracy: builtins deduce the accuracy level from the argument type.
-  cudax::fp64emu_high acc_x = x;
-  auto acc_r                = cudax::__dadd_rn(acc_x, acc_x);
-  acc_r                     = cudax::__dmul_rn(acc_r, acc_x);
-  acc_r                     = cudax::__dsub_rn(acc_r, acc_x);
-  acc_r                     = cudax::__ddiv_rn(acc_r, acc_x);
-  acc_r                     = cudax::__fma_rn(acc_r, acc_x, acc_x);
-  acc_r                     = cudax::__dsqrt_rn(acc_r);
+  cuda::fp64emu_high acc_x = x;
+  auto acc_r               = cuda::__dadd_rn(acc_x, acc_x);
+  acc_r                    = cuda::__dmul_rn(acc_r, acc_x);
+  acc_r                    = cuda::__dsub_rn(acc_r, acc_x);
+  acc_r                    = cuda::__ddiv_rn(acc_r, acc_x);
+  acc_r                    = cuda::__fma_rn(acc_r, acc_x, acc_x);
+  acc_r                    = cuda::__dsqrt_rn(acc_r);
 
   // default accuracy: fp64emu is fpemu<double, fpemu_accuracy::def> (== high).
-  cudax::fp64emu def_x = x;
-  auto def_r           = cudax::__dadd_rn(def_x, def_x);
-  def_r                = cudax::__dmul_rn(def_r, def_x);
-  def_r                = cudax::__dsub_rn(def_r, def_x);
-  def_r                = cudax::__ddiv_rn(def_r, def_x);
-  def_r                = cudax::__fma_rn(def_r, def_x, def_x);
-  def_r                = cudax::__dsqrt_rn(def_r);
+  cuda::fp64emu def_x = x;
+  auto def_r          = cuda::__dadd_rn(def_x, def_x);
+  def_r               = cuda::__dmul_rn(def_r, def_x);
+  def_r               = cuda::__dsub_rn(def_r, def_x);
+  def_r               = cuda::__ddiv_rn(def_r, def_x);
+  def_r               = cuda::__fma_rn(def_r, def_x, def_x);
+  def_r               = cuda::__dsqrt_rn(def_r);
 
   // low accuracy: builtins deduce the accuracy level from the argument type.
-  cudax::fp64emu_low fast_x = x;
-  auto fast_r               = cudax::__dadd_rn(fast_x, fast_x);
-  fast_r                    = cudax::__dmul_rn(fast_r, fast_x);
-  fast_r                    = cudax::__dsub_rn(fast_r, fast_x);
-  fast_r                    = cudax::__ddiv_rn(fast_r, fast_x);
+  cuda::fp64emu_low fast_x = x;
+  auto fast_r              = cuda::__dadd_rn(fast_x, fast_x);
+  fast_r                   = cuda::__dmul_rn(fast_r, fast_x);
+  fast_r                   = cuda::__dsub_rn(fast_r, fast_x);
+  fast_r                   = cuda::__ddiv_rn(fast_r, fast_x);
 
   const double r = (double) acc_r + (double) def_r + (double) fast_r;
 

@@ -140,16 +140,14 @@ Using the types
 
     #include <cuda/fpemu>
 
-The component lives in ``cuda::experimental``, to be promoted to ``cuda::`` later. Type names carry
-the namespace; the standard-named math functions are left **unqualified** and found by
+The component lives in the ``cuda`` namespace. Type names carry the namespace; the
+standard-named math functions are left **unqualified** and found by
 argument-dependent lookup, so a body of ``double`` code keeps its call sites when the type
 underneath is swapped:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fp64emu x = 2.0;   // implicit, as it would be to double
+    cuda::fp64emu x = 2.0;   // implicit, as it would be to double
     auto r           = sqrt(x);   // unqualified: ADL finds the fpemu overload
 
 .. _libcudacxx-extended-api-fp-fpemu-conversions:
@@ -194,7 +192,7 @@ drop-in — including the integer constructors, which are implicit at 64 bits as
 same principle that makes ``long`` to ``double`` implicit despite its potential loss. The unpacked
 form asks for the cast on the way **in**, since entering it is a change of representation rather
 than only of type; the practical consequence is that ``acc += 0.5`` becomes
-``acc += cudax::fp64emu_unpacked{0.5}``.
+``acc += cuda::fp64emu_unpacked{0.5}``.
 
 Conversions **out** are those of ``double``: ``float`` and the integer types are reachable without
 a cast from either form. The unpacked form rounds to ``double`` as it goes, which is the deferred

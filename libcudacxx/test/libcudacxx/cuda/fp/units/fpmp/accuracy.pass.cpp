@@ -23,8 +23,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 TEST_HOST_DEVICE_FUNC void run_test()
 {
   // Near-cancelling pair for add/sub; normal-range values for mul/div/fma/mad.
@@ -34,52 +32,52 @@ TEST_HOST_DEVICE_FUNC void run_test()
   const double y = 2.345678901234567;
   const double z = 0.567890123456789;
 
-  cudax::fp32mp2 ad(a), bd(b), xd(x), yd(y), zd(z);
-  cudax::fp32mp2_low af(a), bf(b), xf(x), yf(y), zf(z);
-  cudax::fp32mp2_high aa(a), ba(b), xa(x), ya(y), za(z);
+  cuda::fp32mp2 ad(a), bd(b), xd(x), yd(y), zd(z);
+  cuda::fp32mp2_low af(a), bf(b), xf(x), yf(y), zf(z);
+  cuda::fp32mp2_high aa(a), ba(b), xa(x), ya(y), za(z);
 
   // add<m> vs operator+ on the equivalently-tagged type.
-  assert((double) cudax::add<cudax::fpmp2_accuracy::def>(ad, bd) == (double) (ad + bd));
-  assert((double) cudax::add<cudax::fpmp2_accuracy::low>(ad, bd) == (double) (af + bf));
-  assert((double) cudax::add<cudax::fpmp2_accuracy::high>(ad, bd) == (double) (aa + ba));
+  assert((double) cuda::add<cuda::fpmp2_accuracy::def>(ad, bd) == (double) (ad + bd));
+  assert((double) cuda::add<cuda::fpmp2_accuracy::low>(ad, bd) == (double) (af + bf));
+  assert((double) cuda::add<cuda::fpmp2_accuracy::high>(ad, bd) == (double) (aa + ba));
 
   // sub<m> vs operator-.
-  assert((double) cudax::sub<cudax::fpmp2_accuracy::def>(ad, -bd) == (double) (ad - (-bd)));
-  assert((double) cudax::sub<cudax::fpmp2_accuracy::low>(ad, -bd) == (double) (af - (-bf)));
-  assert((double) cudax::sub<cudax::fpmp2_accuracy::high>(ad, -bd) == (double) (aa - (-ba)));
+  assert((double) cuda::sub<cuda::fpmp2_accuracy::def>(ad, -bd) == (double) (ad - (-bd)));
+  assert((double) cuda::sub<cuda::fpmp2_accuracy::low>(ad, -bd) == (double) (af - (-bf)));
+  assert((double) cuda::sub<cuda::fpmp2_accuracy::high>(ad, -bd) == (double) (aa - (-ba)));
 
   // mul<m> vs operator*.
-  assert((double) cudax::mul<cudax::fpmp2_accuracy::def>(xd, yd) == (double) (xd * yd));
-  assert((double) cudax::mul<cudax::fpmp2_accuracy::low>(xd, yd) == (double) (xf * yf));
+  assert((double) cuda::mul<cuda::fpmp2_accuracy::def>(xd, yd) == (double) (xd * yd));
+  assert((double) cuda::mul<cuda::fpmp2_accuracy::low>(xd, yd) == (double) (xf * yf));
   // There is no dedicated accurate multiplication, so high resolves to the default path.
-  assert((double) cudax::mul<cudax::fpmp2_accuracy::high>(xd, yd) == (double) (xd * yd));
+  assert((double) cuda::mul<cuda::fpmp2_accuracy::high>(xd, yd) == (double) (xd * yd));
 
   // div<m> vs operator/.
-  assert((double) cudax::div<cudax::fpmp2_accuracy::def>(xd, yd) == (double) (xd / yd));
-  assert((double) cudax::div<cudax::fpmp2_accuracy::low>(xd, yd) == (double) (xf / yf));
-  assert((double) cudax::div<cudax::fpmp2_accuracy::high>(xd, yd) == (double) (xa / ya));
+  assert((double) cuda::div<cuda::fpmp2_accuracy::def>(xd, yd) == (double) (xd / yd));
+  assert((double) cuda::div<cuda::fpmp2_accuracy::low>(xd, yd) == (double) (xf / yf));
+  assert((double) cuda::div<cuda::fpmp2_accuracy::high>(xd, yd) == (double) (xa / ya));
 
   // fma<m> vs fma().
-  assert((double) cudax::fma<cudax::fpmp2_accuracy::def>(xd, yd, zd) == (double) fma(xd, yd, zd));
-  assert((double) cudax::fma<cudax::fpmp2_accuracy::low>(xd, yd, zd) == (double) fma(xf, yf, zf));
-  assert((double) cudax::fma<cudax::fpmp2_accuracy::high>(xd, yd, zd) == (double) fma(xa, ya, za));
+  assert((double) cuda::fma<cuda::fpmp2_accuracy::def>(xd, yd, zd) == (double) fma(xd, yd, zd));
+  assert((double) cuda::fma<cuda::fpmp2_accuracy::low>(xd, yd, zd) == (double) fma(xf, yf, zf));
+  assert((double) cuda::fma<cuda::fpmp2_accuracy::high>(xd, yd, zd) == (double) fma(xa, ya, za));
 
   // mad<m> vs mad().
-  assert((double) cudax::mad<cudax::fpmp2_accuracy::def>(xd, yd, zd) == (double) cudax::mad(xd, yd, zd));
-  assert((double) cudax::mad<cudax::fpmp2_accuracy::low>(xd, yd, zd) == (double) cudax::mad(xf, yf, zf));
-  assert((double) cudax::mad<cudax::fpmp2_accuracy::high>(xd, yd, zd) == (double) cudax::mad(xa, ya, za));
+  assert((double) cuda::mad<cuda::fpmp2_accuracy::def>(xd, yd, zd) == (double) cuda::mad(xd, yd, zd));
+  assert((double) cuda::mad<cuda::fpmp2_accuracy::low>(xd, yd, zd) == (double) cuda::mad(xf, yf, zf));
+  assert((double) cuda::mad<cuda::fpmp2_accuracy::high>(xd, yd, zd) == (double) cuda::mad(xa, ya, za));
 
   // Cross-accuracy: op<m> on a differently-tagged operand.
-  assert((double) cudax::sub<cudax::fpmp2_accuracy::high>(af, -bf) == (double) (aa - (-ba)));
-  assert((double) cudax::add<cudax::fpmp2_accuracy::def>(af, bf) == (double) (ad + bd));
-  assert((double) cudax::fma<cudax::fpmp2_accuracy::high>(xf, yf, zf) == (double) fma(xa, ya, za));
+  assert((double) cuda::sub<cuda::fpmp2_accuracy::high>(af, -bf) == (double) (aa - (-ba)));
+  assert((double) cuda::add<cuda::fpmp2_accuracy::def>(af, bf) == (double) (ad + bd));
+  assert((double) cuda::fma<cuda::fpmp2_accuracy::high>(xf, yf, zf) == (double) fma(xa, ya, za));
 
   // Large cancellation: high accuracy must be at least as good as low.
   {
-    cudax::fp32mp2_low ca(a), cb(b);
+    cuda::fp32mp2_low ca(a), cb(b);
     const double exact = a + b;
-    const double efast = ::cuda::std::fabs((double) cudax::add<cudax::fpmp2_accuracy::low>(ca, cb) - exact);
-    const double eacc  = ::cuda::std::fabs((double) cudax::add<cudax::fpmp2_accuracy::high>(ca, cb) - exact);
+    const double efast = ::cuda::std::fabs((double) cuda::add<cuda::fpmp2_accuracy::low>(ca, cb) - exact);
+    const double eacc  = ::cuda::std::fabs((double) cuda::add<cuda::fpmp2_accuracy::high>(ca, cb) - exact);
     assert(eacc <= efast);
   }
 }

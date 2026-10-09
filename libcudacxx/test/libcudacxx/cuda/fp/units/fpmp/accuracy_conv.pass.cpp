@@ -30,84 +30,82 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // ---------------------------------------------------------------------------
 // Compile-time contract for fp32mp2 (FpType == float).
 // ---------------------------------------------------------------------------
 // explicit construction across accuracy levels is allowed ...
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2_low, cudax::fp32mp2_high>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2_low, cudax::fp32mp2>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2, cudax::fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2, cudax::fp32mp2_high>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2_high, cudax::fp32mp2>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2_high, cudax::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2_low, cuda::fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2_low, cuda::fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2, cuda::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2, cuda::fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2_high, cuda::fp32mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2_high, cuda::fp32mp2_low>::value, "");
 
 // ... but implicit conversion across accuracy levels is NOT.
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_high, cudax::fp32mp2_low>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2, cudax::fp32mp2_low>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp32mp2>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_high, cudax::fp32mp2>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2, cudax::fp32mp2_high>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2_high, cuda::fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2, cuda::fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2_low, cuda::fp32mp2>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2_high, cuda::fp32mp2>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2, cuda::fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2_low, cuda::fp32mp2_high>::value, "");
 
 // Same-type implicit conversion (copy) is unaffected.
-static_assert(::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_convertible<cudax::fp32mp2, cudax::fp32mp2>::value, "");
-static_assert(::cuda::std::is_convertible<cudax::fp32mp2_high, cudax::fp32mp2_high>::value, "");
+static_assert(::cuda::std::is_convertible<cuda::fp32mp2_low, cuda::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_convertible<cuda::fp32mp2, cuda::fp32mp2>::value, "");
+static_assert(::cuda::std::is_convertible<cuda::fp32mp2_high, cuda::fp32mp2_high>::value, "");
 
 // Cross-FpType conversion contract: upconvert implicit, downconvert honors the
 // CCCL_FPMP_EXPLICIT_CASTS knob. Both hold only while the accuracy tag is
 // preserved (fpmp2_accuracy::def aliases mid, so fp32mp2 -> fp64mp2 counts as
 // tag-preserving).
-static_assert(::cuda::std::is_convertible<cudax::fp32mp2, cudax::fp64mp2>::value,
+static_assert(::cuda::std::is_convertible<cuda::fp32mp2, cuda::fp64mp2>::value,
               "fp32mp2 -> fp64mp2 must be implicit (lossless upconvert)");
-static_assert(::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp64mp2_low>::value, "");
-static_assert(::cuda::std::is_convertible<cudax::fp32mp2_high, cudax::fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_convertible<cuda::fp32mp2_low, cuda::fp64mp2_low>::value, "");
+static_assert(::cuda::std::is_convertible<cuda::fp32mp2_high, cuda::fp64mp2_high>::value, "");
 #if CCCL_FPMP_EXPLICIT_CASTS == 1
-static_assert(!::cuda::std::is_convertible<cudax::fp64mp2, cudax::fp32mp2>::value,
+static_assert(!::cuda::std::is_convertible<cuda::fp64mp2, cuda::fp32mp2>::value,
               "fp64mp2 -> fp32mp2 must be explicit under EXPLICIT_CASTS=1");
 #else
-static_assert(::cuda::std::is_convertible<cudax::fp64mp2, cudax::fp32mp2>::value,
+static_assert(::cuda::std::is_convertible<cuda::fp64mp2, cuda::fp32mp2>::value,
               "fp64mp2 -> fp32mp2 implicit by default (matches double -> fp32mp2)");
 #endif
 
 // Switching the accuracy tag stays explicit-only when the precision changes too,
 // so the rule above holds for every conversion into fpmp2, not just the
 // same-precision one. cross_prec.pass.cpp pins the full matrix.
-static_assert(::cuda::std::is_constructible<cudax::fp64mp2_high, cudax::fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp32mp2_low, cudax::fp64mp2_high>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp32mp2_low, cudax::fp64mp2_high>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp64mp2_high, cudax::fp32mp2_low>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp64mp2_high&, cudax::fp32mp2_low>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_low&, cudax::fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp64mp2_high, cuda::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp32mp2_low, cuda::fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp32mp2_low, cuda::fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp64mp2_high, cuda::fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp64mp2_high&, cuda::fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2_low&, cuda::fp64mp2_high>::value, "");
 
 // Assignment side of the contract: cross-accuracy assignment must fail (the
 // explicit ctor is not visible to copy-assignment); same-type assignment works.
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_low&, cudax::fp32mp2_high>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_low&, cudax::fp32mp2>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2&, cudax::fp32mp2_low>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2&, cudax::fp32mp2_high>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_high&, cudax::fp32mp2>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp32mp2_high&, cudax::fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_assignable<cudax::fp32mp2_low&, cudax::fp32mp2_low>::value, "");
-static_assert(::cuda::std::is_assignable<cudax::fp32mp2&, cudax::fp32mp2>::value, "");
-static_assert(::cuda::std::is_assignable<cudax::fp32mp2_high&, cudax::fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2_low&, cuda::fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2_low&, cuda::fp32mp2>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2&, cuda::fp32mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2&, cuda::fp32mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2_high&, cuda::fp32mp2>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp32mp2_high&, cuda::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<cuda::fp32mp2_low&, cuda::fp32mp2_low>::value, "");
+static_assert(::cuda::std::is_assignable<cuda::fp32mp2&, cuda::fp32mp2>::value, "");
+static_assert(::cuda::std::is_assignable<cuda::fp32mp2_high&, cuda::fp32mp2_high>::value, "");
 
 // The new ctor preserves result type (no type inference surprises).
-static_assert(::cuda::std::is_same<decltype(cudax::fp32mp2_low(::cuda::std::declval<cudax::fp32mp2_high>())),
-                                   cudax::fp32mp2_low>::value,
+static_assert(::cuda::std::is_same<decltype(cuda::fp32mp2_low(::cuda::std::declval<cuda::fp32mp2_high>())),
+                                   cuda::fp32mp2_low>::value,
               "");
 
 // ---------------------------------------------------------------------------
 // Compile-time contract for fp64mp2 (FpType == double).
 // ---------------------------------------------------------------------------
-static_assert(::cuda::std::is_constructible<cudax::fp64mp2_low, cudax::fp64mp2_high>::value, "");
-static_assert(::cuda::std::is_constructible<cudax::fp64mp2_high, cudax::fp64mp2>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp64mp2_high, cudax::fp64mp2_low>::value, "");
-static_assert(!::cuda::std::is_convertible<cudax::fp64mp2, cudax::fp64mp2_low>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp64mp2_low&, cudax::fp64mp2_high>::value, "");
-static_assert(!::cuda::std::is_assignable<cudax::fp64mp2_low&, cudax::fp64mp2>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp64mp2_low, cuda::fp64mp2_high>::value, "");
+static_assert(::cuda::std::is_constructible<cuda::fp64mp2_high, cuda::fp64mp2>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp64mp2_high, cuda::fp64mp2_low>::value, "");
+static_assert(!::cuda::std::is_convertible<cuda::fp64mp2, cuda::fp64mp2_low>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp64mp2_low&, cuda::fp64mp2_high>::value, "");
+static_assert(!::cuda::std::is_assignable<cuda::fp64mp2_low&, cuda::fp64mp2>::value, "");
 
 // ---------------------------------------------------------------------------
 // Runtime value checks.
@@ -163,12 +161,12 @@ TEST_HOST_DEVICE_FUNC void run_test()
   };
   for (int i = 0; i < 4; ++i)
   {
-    cudax::fp32mp2 sd(f32[i][0], f32[i][1]);
-    assert(bit_exact<cudax::fp32mp2_low>(sd) && bit_exact<cudax::fp32mp2_high>(sd));
-    cudax::fp32mp2_low sl(f32[i][0], f32[i][1]);
-    assert(value_exact<cudax::fp32mp2>(sl) && value_exact<cudax::fp32mp2_high>(sl));
-    cudax::fp32mp2_high sh(f32[i][0], f32[i][1]);
-    assert(bit_exact<cudax::fp32mp2>(sh) && bit_exact<cudax::fp32mp2_low>(sh));
+    cuda::fp32mp2 sd(f32[i][0], f32[i][1]);
+    assert(bit_exact<cuda::fp32mp2_low>(sd) && bit_exact<cuda::fp32mp2_high>(sd));
+    cuda::fp32mp2_low sl(f32[i][0], f32[i][1]);
+    assert(value_exact<cuda::fp32mp2>(sl) && value_exact<cuda::fp32mp2_high>(sl));
+    cuda::fp32mp2_high sh(f32[i][0], f32[i][1]);
+    assert(bit_exact<cuda::fp32mp2>(sh) && bit_exact<cuda::fp32mp2_low>(sh));
   }
 
   const double f64[4][2] = {
@@ -179,10 +177,10 @@ TEST_HOST_DEVICE_FUNC void run_test()
   };
   for (int i = 0; i < 4; ++i)
   {
-    cudax::fp64mp2_high sh(f64[i][0], f64[i][1]);
-    assert(bit_exact<cudax::fp64mp2_low>(sh));
-    cudax::fp64mp2 sd(f64[i][0], f64[i][1]);
-    assert(bit_exact<cudax::fp64mp2_low>(sd));
+    cuda::fp64mp2_high sh(f64[i][0], f64[i][1]);
+    assert(bit_exact<cuda::fp64mp2_low>(sh));
+    cuda::fp64mp2 sd(f64[i][0], f64[i][1]);
+    assert(bit_exact<cuda::fp64mp2_low>(sd));
   }
 
   // The case the renormalization exists for: pairs whose components overlap, as
@@ -198,13 +196,13 @@ TEST_HOST_DEVICE_FUNC void run_test()
     };
     for (int i = 0; i < 4; ++i)
     {
-      cudax::fp32mp2_low src(overlapping[i][0], overlapping[i][1]);
+      cuda::fp32mp2_low src(overlapping[i][0], overlapping[i][1]);
       assert(!normalized(src));
-      assert(renormalizing<cudax::fp32mp2>(src));
-      assert(renormalizing<cudax::fp32mp2_high>(src));
+      assert(renormalizing<cuda::fp32mp2>(src));
+      assert(renormalizing<cuda::fp32mp2_high>(src));
       // Entering low leaves an overlap alone: it is the fast regime's business.
-      cudax::fp32mp2_high overlapping_high(overlapping[i][0], overlapping[i][1]);
-      assert(bit_exact<cudax::fp32mp2_low>(overlapping_high));
+      cuda::fp32mp2_high overlapping_high(overlapping[i][0], overlapping[i][1]);
+      assert(bit_exact<cuda::fp32mp2_low>(overlapping_high));
     }
 
     const double overlapping64[2][2] = {
@@ -213,9 +211,9 @@ TEST_HOST_DEVICE_FUNC void run_test()
     };
     for (int i = 0; i < 2; ++i)
     {
-      cudax::fp64mp2_low src(overlapping64[i][0], overlapping64[i][1]);
+      cuda::fp64mp2_low src(overlapping64[i][0], overlapping64[i][1]);
       assert(!normalized(src));
-      cudax::fp64mp2 dst(src);
+      cuda::fp64mp2 dst(src);
       assert(normalized(dst));
       assert(dst.hi() + dst.lo() == src.hi() + src.lo());
     }
@@ -223,14 +221,14 @@ TEST_HOST_DEVICE_FUNC void run_test()
 
   // Every explicit-conversion shape routes through the same ctor.
   {
-    cudax::fp32mp2_high src(0x1.23p+4f, 0x1.0p-20f);
-    cudax::fp32mp2_low a(src); // direct-init
-    cudax::fp32mp2_low b = cudax::fp32mp2_low(src); // functional cast in copy-init
-    cudax::fp32mp2_low c = static_cast<cudax::fp32mp2_low>(src); // static_cast in copy-init
-    cudax::fp32mp2_low d;
-    d = cudax::fp32mp2_low(src); // explicit assign (functional)
-    cudax::fp32mp2_low e;
-    e = static_cast<cudax::fp32mp2_low>(src); // explicit assign (static_cast)
+    cuda::fp32mp2_high src(0x1.23p+4f, 0x1.0p-20f);
+    cuda::fp32mp2_low a(src); // direct-init
+    cuda::fp32mp2_low b = cuda::fp32mp2_low(src); // functional cast in copy-init
+    cuda::fp32mp2_low c = static_cast<cuda::fp32mp2_low>(src); // static_cast in copy-init
+    cuda::fp32mp2_low d;
+    d = cuda::fp32mp2_low(src); // explicit assign (functional)
+    cuda::fp32mp2_low e;
+    e = static_cast<cuda::fp32mp2_low>(src); // explicit assign (static_cast)
     assert((a.hi() == src.hi() && a.lo() == src.lo()) && (b.hi() == src.hi() && b.lo() == src.lo())
            && (c.hi() == src.hi() && c.lo() == src.lo()) && (d.hi() == src.hi() && d.lo() == src.lo())
            && (e.hi() == src.hi() && e.lo() == src.lo()));
@@ -241,14 +239,14 @@ TEST_HOST_DEVICE_FUNC void run_test()
   // the tag change because that step is exact: both routes present the same
   // number to the precision conversion, which is itself exact.
   {
-    cudax::fp32mp2_low src{1.2345678f, 0x1.0p-30f};
-    cudax::fp64mp2_high wide{src};
-    cudax::fp64mp2_high wide_ref{cudax::fp32mp2_high{src}};
+    cuda::fp32mp2_low src{1.2345678f, 0x1.0p-30f};
+    cuda::fp64mp2_high wide{src};
+    cuda::fp64mp2_high wide_ref{cuda::fp32mp2_high{src}};
     assert(wide.hi() == wide_ref.hi() && wide.lo() == wide_ref.lo());
 
-    cudax::fp64mp2_low src64{1.234567890123456, 1.0e-18};
-    cudax::fp32mp2_high narrow{src64};
-    cudax::fp32mp2_high narrow_ref{cudax::fp64mp2_high{src64}};
+    cuda::fp64mp2_low src64{1.234567890123456, 1.0e-18};
+    cuda::fp32mp2_high narrow{src64};
+    cuda::fp32mp2_high narrow_ref{cuda::fp64mp2_high{src64}};
     assert(narrow.hi() == narrow_ref.hi() && narrow.lo() == narrow_ref.lo());
   }
 }

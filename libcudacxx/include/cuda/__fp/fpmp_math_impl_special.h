@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -35,8 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 
 /*
@@ -239,11 +238,11 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
   __ffloat __poly;
   if (__abs_a.hi() < __x_star)
   {
-    __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, __dc_left);
+    __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, __dc_left);
   }
   else
   {
-    __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, __dc_right);
+    __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, __dc_right);
   }
 #  else // _CCCL_FPMP_USE_FAST_ERF == 0
   /* Default: uniform degree-23 Remez polynomial over [0, 5.92],
@@ -278,7 +277,7 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
 
   constexpr __ffloat dc[24] = {
     d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15, d16, d17, d18, d19, d20, d21, d22, d23, d24};
-  __ffloat __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, dc);
+  __ffloat __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__abs_a, dc);
 #  endif // _CCCL_FPMP_USE_FAST_ERF == 0
 
   /* arg = |x| * P(|x|) + |x| (replaces polyHi/polyLo splitting) */
@@ -287,8 +286,8 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
   /* Compute -expm1(-arg): argument reduction */
   __ffloat __neg_arg  = -__arg;
   float __neg_arg_l2e = (__neg_arg * __L2E).hi();
-  int __n             = __fpmp_fp2int_rn(__neg_arg_l2e);
-  __ffloat __fn       = __fpmp_int2fp_rn<float>(__n);
+  int __n             = ::cuda::__fpmp_fp2int_rn(__neg_arg_l2e);
+  __ffloat __fn       = ::cuda::__fpmp_int2fp_rn<float>(__n);
   __ffloat __r        = __neg_arg - __fn * __ln2_hi;
 
   /* Evaluate u(r) = m2 + m3*r + ... + m11*r^9 via the mixed-precision
@@ -297,7 +296,7 @@ __internal_fpmp2_erf(const float __x_hi, const float __x_lo, float* __res_hi, fl
    * because the high terms contribute below the noise floor and
    * don't need error tracking.
    */
-  __ffloat __u = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__r, __m_c);
+  __ffloat __u = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 4>(__r, __m_c);
 
   /* expm1(r) = u*r^2 + r (no separate alo needed, r carries full precision) */
   __u = __u * __r;
@@ -345,7 +344,7 @@ __internal_fpmp2_erf(const double __x_hi, const double __x_lo, double* __res_hi,
 #  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1) && _CCCL_FPMP_FP128_QUAD_ERF
   _CCCL_FPMP_CALL_FP64MP2_MATH(erf, _CCCL_FPMP_ERFQ, __x_hi, __x_lo, __res_hi, __res_lo);
 #  else
-  __fpmp2_from_double(::cuda::std::erf(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(::cuda::std::erf(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 #  endif
 }
 
@@ -471,7 +470,7 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
   __t2          = (__t2 * __t1 + __t3);
 
   // Chebyshev polynomial: 7 high-order terms in float, remaining 16 in ff
-  __t1 = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__t2, __cheb);
+  __t1 = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 7>(__t2, __cheb);
 
   /* (1+2*a)*exp(a^2)*erfc(a) / (1+2*a) -> exp(a^2)*erfc(a) = erfcx */
   __t2 = (__ffloat(2.0) * __a + __ffloat(1.0));
@@ -486,12 +485,12 @@ __internal_fpmp2_erfc(const float __x_hi, const float __x_lo, float* __res_hi, f
 
   /* i = round(xx * L2E); t = exp_mantissa(xx); t3 = accurate_scale(t, i) */
   float __prod_hi   = (__xx * __L2E).hi();
-  int __i           = __fpmp_fp2int_rn(__prod_hi);
-  __ffloat __t_rint = __fpmp_int2fp_rn<float>(__i);
+  int __i           = ::cuda::__fpmp_fp2int_rn(__prod_hi);
+  __ffloat __t_rint = ::cuda::__fpmp_int2fp_rn<float>(__i);
   __ffloat __z      = renormalize(__xx - __t_rint * __ln2_hi - __t_rint * __LN2_LO);
 
   // exp polynomial: 5 high-order terms in float, remaining 7 in ff
-  __ffloat __t = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
+  __ffloat __t = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 5>(__z, __exp_c);
 
   /* accurate_scale(t, i): t * 2^i in fp32mp2 (split exponent for large |i|)*/
   int __k   = __i / 2;
@@ -535,7 +534,7 @@ __internal_fpmp2_erfc(const double __x_hi, const double __x_lo, double* __res_hi
 #  if (_CCCL_FPMP_FP128_MATH_FALLBACK == 1) && _CCCL_FPMP_FP128_QUAD_ERF
   _CCCL_FPMP_CALL_FP64MP2_MATH(erfc, _CCCL_FPMP_ERFCQ, __x_hi, __x_lo, __res_hi, __res_lo);
 #  else
-  __fpmp2_from_double(::cuda::std::erfc(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(::cuda::std::erfc(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 #  endif
 }
 
@@ -619,7 +618,7 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
       __ffloat(0x1.03356d73ab25fp-45),
       __ffloat(0x1.887a5d0c86047p-52),
       __ffloat(0x1.07f3442d6af1ep-52)};
-    __ffloat __v = __fpmp_poly_eval<__fpmp_poly_method::horner_comp, 4>(__x, __c);
+    __ffloat __v = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp, 4>(__x, __c);
     *__res_hi    = __v.hi();
     *__res_lo    = __v.lo();
     return;
@@ -686,7 +685,7 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
     __ffloat(0x1.3f351ae8d044ap46),
     __ffloat(-0x1.ba4d5cfd521a5p50),
     __ffloat(-0x1.6d64bf85e3416p50)};
-  __ffloat __v      = __fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__x, __c);
+  __ffloat __v      = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_comp>(__x, __c);
   __r               = __r * __ffloat(0x1.c5bf8ap-1);
   __ffloat __result = __v * __r;
   _CCCL_FPMP_RENORMALIZE(__result);
@@ -703,7 +702,7 @@ __internal_fpmp2_boys_f0(const float __a_hi, const float __a_lo, float* __res_hi
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_boys_f0(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  double __x = __fpmp2_to_double(__x_hi, __x_lo);
+  double __x = ::cuda::__fpmp2_to_double(__x_hi, __x_lo);
   double __r;
   if (__x < 1e-15)
   {
@@ -714,7 +713,7 @@ __internal_fpmp2_boys_f0(const double __x_hi, const double __x_lo, double* __res
     __r = 0.5 * ::cuda::std::sqrt(::cuda::std::__numbers<double>::__pi() / __x)
         * ::cuda::std::erf(::cuda::std::sqrt(__x));
   }
-  __fpmp2_from_double(__r, __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(__r, __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(boys_f0)
@@ -888,7 +887,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
 
   float __log_hi;
   float __log_lo;
-  __fpmp2_log(__arg.hi(), __arg.lo(), &__log_hi, &__log_lo);
+  ::cuda::__fpmp2_log(__arg.hi(), __arg.lo(), &__log_hi, &__log_lo);
   __ffloat __w = -__ffloat(__log_hi, __log_lo);
 
   /* Central region (w < 6.125, |z| < ~3.3 sigma, >99.9% of inputs):
@@ -896,7 +895,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
    * (9 high-order float coeffs c0..c8, 14 low-order ff coeffs c9..c22).
    */
   __ffloat __tc   = __w - __ffloat(3.125f);
-  __ffloat __poly = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tc, __rc_c);
+  __ffloat __poly = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tc, __rc_c);
 
   /* Tail regions (w >= 6.125): branched since <0.1% of inputs.
    * sqrt(w) is also deferred into this branch.
@@ -905,7 +904,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
   {
     float __sw_hi;
     float __sw_lo;
-    __fpmp2_sqrt(__w.hi(), __w.lo(), &__sw_hi, &__sw_lo);
+    ::cuda::__fpmp2_sqrt(__w.hi(), __w.lo(), &__sw_hi, &__sw_lo);
     __ffloat __sw(__sw_hi, __sw_lo);
 
     /* Tail 1 (6.125 <= w < 16, |z| ~ 3.3 to 5.5 sigma):
@@ -913,7 +912,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
      * (9 high-order float coeffs t0..t8, 10 low-order ff coeffs t9..t18).
      */
     __ffloat __tt = __sw - __ffloat(3.25f);
-    __poly        = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tt, __rt_c);
+    __poly        = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 9>(__tt, __rt_c);
 
     /* Tail 2 (w >= 16, |z| > 5.5 sigma):
      * Horner in tt2 = sqrt(w) - 7.25 via the dispatcher
@@ -928,7 +927,7 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
     if (__w.hi() >= 16.0f)
     {
       __ffloat __tt2 = __sw - __ffloat(7.25f);
-      __poly         = __fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__tt2, __rt2_c);
+      __poly         = ::cuda::__fpmp_poly_eval<__fpmp_poly_method::horner_mixed, 13>(__tt2, __rt2_c);
     }
   }
 
@@ -947,19 +946,19 @@ __internal_fpmp2_normcdfinv(const float __x_hi, const float __x_lo, float* __res
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_normcdfinv(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  double __p = __fpmp2_to_double(__x_hi, __x_lo);
+  double __p = ::cuda::__fpmp2_to_double(__x_hi, __x_lo);
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     ({
       // Hardcoded value since M_SQRT2 is not guaranteed to be defined on all platforms
       constexpr double __sqrt2_v = 1.41421356237309504880;
-      __fpmp2_from_double(-__sqrt2_v * ::erfcinv(2.0 * __p), __res_hi, __res_lo);
+      ::cuda::__fpmp2_from_double(-__sqrt2_v * ::erfcinv(2.0 * __p), __res_hi, __res_lo);
     }),
     ({
       // Not implemented yet: double precision normcdfinv fallback to float precision
       float __f_hi;
       float __f_lo;
-      __internal_fpmp2_normcdfinv(static_cast<float>(__p), 0.0f, &__f_hi, &__f_lo);
+      ::cuda::__internal_fpmp2_normcdfinv(static_cast<float>(__p), 0.0f, &__f_hi, &__f_lo);
       *__res_hi = static_cast<double>(__f_hi) + static_cast<double>(__f_lo);
       *__res_lo = 0.0;
     }))
@@ -998,7 +997,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_icdf(uint32_t __x, float* __res_hi, float* __re
   float __p_hi = __hi + __lo;
   float __p_lo = __lo - (__p_hi - __hi);
 
-  __fpmp2_normcdfinv(__p_hi, __p_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_normcdfinv(__p_hi, __p_lo, __res_hi, __res_lo);
   /* Clamp to +-FLT_MAX for safe Gaussian variate generation (no infinities) */
   if (*__res_hi >= 0x1.fffffep+127f)
   {
@@ -1037,7 +1036,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_icdf(uint64_t __x, float* __res_hi, float* __re
   float __p_hi = __hi + __lo;
   float __p_lo = __lo - (__p_hi - __hi);
 
-  __fpmp2_normcdfinv(__p_hi, __p_lo, __res_hi, __res_lo);
+  ::cuda::__fpmp2_normcdfinv(__p_hi, __p_lo, __res_hi, __res_lo);
   /* Clamp to +-FLT_MAX for safe Gaussian variate generation (no infinities) */
   if (*__res_hi >= 0x1.fffffep+127f)
   {
@@ -1074,7 +1073,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A(lgamma)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_lgamma(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  __fpmp2_from_double(::cuda::std::lgamma(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(::cuda::std::lgamma(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(lgamma)
@@ -1100,7 +1099,7 @@ _CCCL_FPMP_MATH_FALLBACK_1A(tgamma)
 _CCCL_FPMP_CORE_API void
 __internal_fpmp2_tgamma(const double __x_hi, const double __x_lo, double* __res_hi, double* __res_lo) noexcept
 {
-  __fpmp2_from_double(::cuda::std::tgamma(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_double(::cuda::std::tgamma(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(tgamma)
@@ -1142,12 +1141,13 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_j0(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::j0(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      _CCCL_ASSERT(false, "j0: no host fallback, returning 0");
-      *__res_hi = 0.0;
-      *__res_lo = 0.0;
-    }))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::__fpmp2_from_double(::j0(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+                    ({
+                      _CCCL_ASSERT(false, "j0: no host fallback, returning 0");
+                      *__res_hi = 0.0;
+                      *__res_lo = 0.0;
+                    }))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(j0)
@@ -1187,12 +1187,13 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_j1(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::j1(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      _CCCL_ASSERT(false, "j1: no host fallback, returning 0");
-      *__res_hi = 0.0;
-      *__res_lo = 0.0;
-    }))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::__fpmp2_from_double(::j1(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+                    ({
+                      _CCCL_ASSERT(false, "j1: no host fallback, returning 0");
+                      *__res_hi = 0.0;
+                      *__res_lo = 0.0;
+                    }))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(j1)
@@ -1232,12 +1233,13 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_y0(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::y0(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      _CCCL_ASSERT(false, "y0: no host fallback, returning 0");
-      *__res_hi = 0.0;
-      *__res_lo = 0.0;
-    }))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::__fpmp2_from_double(::y0(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+                    ({
+                      _CCCL_ASSERT(false, "y0: no host fallback, returning 0");
+                      *__res_hi = 0.0;
+                      *__res_lo = 0.0;
+                    }))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(y0)
@@ -1277,12 +1279,13 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_y1(
   double* __res_hi,
   double* __res_lo) noexcept
 {
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::y1(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
-      _CCCL_ASSERT(false, "y1: no host fallback, returning 0");
-      *__res_hi = 0.0;
-      *__res_lo = 0.0;
-    }))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (::cuda::__fpmp2_from_double(::y1(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+                    ({
+                      _CCCL_ASSERT(false, "y1: no host fallback, returning 0");
+                      *__res_hi = 0.0;
+                      *__res_lo = 0.0;
+                    }))
 }
 
 _CCCL_FPMP_MATH_DISPATCH_1A(y1)
@@ -1325,7 +1328,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_cyl_bessel_i0(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::cyl_bessel_i0(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::cyl_bessel_i0(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "cyl_bessel_i0: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1370,7 +1375,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_cyl_bessel_i1(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::cyl_bessel_i1(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::cyl_bessel_i1(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "cyl_bessel_i1: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1422,7 +1429,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_jn(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::jn(__n, __fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::jn(__n, ::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "jn: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1472,7 +1481,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_yn(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::yn(__n, __fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::yn(__n, ::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "yn: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1518,14 +1529,15 @@ __internal_fpmp2_normcdf(const double __x_hi, const double __x_lo, double* __res
   // halving do not discard the precision the quad erfc just produced. 1/sqrt(2) comes
   // from the backend's own sqrt rather than a literal, which keeps this free of the
   // fp128 literal-suffix spelling differences between backends.
-  const __fpmp_fp128 __xq  = __fpmp2_to_quad(__x_hi, __x_lo);
+  const __fpmp_fp128 __xq  = ::cuda::__fpmp2_to_quad(__x_hi, __x_lo);
   const __fpmp_fp128 __two = (__fpmp_fp128) 2;
-  __fpmp2_from_quad(_CCCL_FPMP_ERFCQ(-__xq / _CCCL_FPMP_SQRTQ(__two)) / __two, __res_hi, __res_lo);
+  ::cuda::__fpmp2_from_quad(_CCCL_FPMP_ERFCQ(-__xq / _CCCL_FPMP_SQRTQ(__two)) / __two, __res_hi, __res_lo);
 #  else
-  double __xd = __fpmp2_to_double(__x_hi, __x_lo);
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (__fpmp2_from_double(::normcdf(__xd), __res_hi, __res_lo);),
-                    (__fpmp2_from_double(0.5 * ::cuda::std::erfc(-__xd * 0.70710678118654752440), __res_hi, __res_lo);))
+  double __xd = ::cuda::__fpmp2_to_double(__x_hi, __x_lo);
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::normcdf(__xd), __res_hi, __res_lo);),
+    (::cuda::__fpmp2_from_double(0.5 * ::cuda::std::erfc(-__xd * 0.70710678118654752440), __res_hi, __res_lo);))
 #  endif
 }
 
@@ -1571,7 +1583,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_erfcinv(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::erfcinv(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::erfcinv(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "erfcinv: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1616,7 +1630,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_erfinv(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::erfinv(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::erfinv(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "erfinv: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1661,7 +1677,9 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_erfcx(
   double* __res_lo) noexcept
 {
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, (__fpmp2_from_double(::erfcx(__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);), ({
+    NV_IS_DEVICE,
+    (::cuda::__fpmp2_from_double(::erfcx(::cuda::__fpmp2_to_double(__x_hi, __x_lo)), __res_hi, __res_lo);),
+    ({
       _CCCL_ASSERT(false, "erfcx: no host fallback, returning 0");
       *__res_hi = 0.0;
       *__res_lo = 0.0;
@@ -1671,7 +1689,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_erfcx(
 _CCCL_FPMP_MATH_DISPATCH_1A(erfcx)
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 

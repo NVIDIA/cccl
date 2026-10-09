@@ -101,13 +101,12 @@
 #include <cuda/std/span>
 #include <cuda/stream>
 
-// The CCCL FP component lives in cuda::experimental (later cuda::),
-// abbreviated here rather than pulled in with a using-directive. Type names
+// The CCCL FP component lives in namespace cuda, and its names are qualified
+// here rather than pulled in with a using-directive. Type names
 // and the component's own entry points - here the reset and read functions,
 // which take only a stream and so cannot be found by argument-dependent
-// lookup at all - carry the cudax:: prefix; the standard-named math functions
+// lookup at all - carry the cuda:: prefix; the standard-named math functions
 // are left unqualified.
-namespace cudax = cuda::experimental;
 
 // Terms of the geometric series the measured computation sums.
 static constexpr int fptool_stat_series_terms = 64;
@@ -132,10 +131,10 @@ __host__ __device__ void float_float_series(fptool_stat_results* out)
   // question the record can answer. Everything else stays plain fp32mp2 and so
   // stays out of the record - the term progression below is a sequence of exact
   // powers of two with nothing to learn from it.
-  cudax::fp32mp2 sum{0.0f};
-  cudax::fp32mp2_stat compensation{0.0f};
-  cudax::fp32mp2 term{1.0f};
-  const cudax::fp32mp2 ratio{0.5f};
+  cuda::fp32mp2 sum{0.0f};
+  cuda::fp32mp2_stat compensation{0.0f};
+  cuda::fp32mp2 term{1.0f};
+  const cuda::fp32mp2 ratio{0.5f};
 
   // Kahan summation of a partial geometric series. An operation is counted when
   // either of its operands is instrumented, and its result carries the
@@ -154,10 +153,10 @@ __host__ __device__ void float_float_series(fptool_stat_results* out)
   // width, so 64 - 24 = 40 of them.
   for (int i = 0; i < fptool_stat_series_terms; ++i)
   {
-    const cudax::fp32mp2_stat y = term - compensation;
-    const cudax::fp32mp2_stat t = sum + y;
-    compensation                = (t - sum) - y;
-    sum                         = t;
+    const cuda::fp32mp2_stat y = term - compensation;
+    const cuda::fp32mp2_stat t = sum + y;
+    compensation               = (t - sum) - y;
+    sum                        = t;
 
     // Plain on both sides, so this multiplication never reaches the record: mul
     // stays at 0 however many terms the loop runs. That is the whole point of
@@ -167,7 +166,7 @@ __host__ __device__ void float_float_series(fptool_stat_results* out)
 
   // Applying the correction the loop left pending, which is what finalizes a
   // Kahan sum. It touches compensation, so it is counted.
-  const cudax::fp32mp2_stat total = sum - compensation;
+  const cuda::fp32mp2_stat total = sum - compensation;
 
   // A division, and a transcendental to show what is not counted: exp()
   // contributes nothing to the record, while the division and the addition
@@ -175,8 +174,8 @@ __host__ __device__ void float_float_series(fptool_stat_results* out)
   // therefore account for exactly the instrumented operators written here: 64 +
   // 1 additions, 3 x 64 + 1 subtractions, 1 division, and no multiplications at
   // all.
-  const cudax::fp32mp2_stat scaled = total / cudax::fp32mp2{3.0f};
-  const cudax::fp32mp2_stat value  = scaled + exp(ratio);
+  const cuda::fp32mp2_stat scaled = total / cuda::fp32mp2{3.0f};
+  const cuda::fp32mp2_stat value  = scaled + exp(ratio);
 
   // The single conversion point, as in the other fp examples.
   out->hi = static_cast<double>(value.hi());
@@ -192,23 +191,23 @@ __host__ __device__ void double_double_series(fptool_stat_results* out)
   // numbers are the ones to compare: partial cancellation drops to 64 - 53 =
   // 11, one limb here being 53 bits rather than 24, and the limb gaps widen to
   // match.
-  cudax::fp64mp2 sum{0.0};
-  cudax::fp64mp2_stat compensation{0.0};
-  cudax::fp64mp2 term{1.0};
-  const cudax::fp64mp2 ratio{0.5};
+  cuda::fp64mp2 sum{0.0};
+  cuda::fp64mp2_stat compensation{0.0};
+  cuda::fp64mp2 term{1.0};
+  const cuda::fp64mp2 ratio{0.5};
 
   for (int i = 0; i < fptool_stat_series_terms; ++i)
   {
-    const cudax::fp64mp2_stat y = term - compensation;
-    const cudax::fp64mp2_stat t = sum + y;
-    compensation                = (t - sum) - y;
-    sum                         = t;
-    term                        = term * ratio;
+    const cuda::fp64mp2_stat y = term - compensation;
+    const cuda::fp64mp2_stat t = sum + y;
+    compensation               = (t - sum) - y;
+    sum                        = t;
+    term                       = term * ratio;
   }
 
-  const cudax::fp64mp2_stat total  = sum - compensation;
-  const cudax::fp64mp2_stat scaled = total / cudax::fp64mp2{3.0};
-  const cudax::fp64mp2_stat value  = scaled + exp(ratio);
+  const cuda::fp64mp2_stat total  = sum - compensation;
+  const cuda::fp64mp2_stat scaled = total / cuda::fp64mp2{3.0};
+  const cuda::fp64mp2_stat value  = scaled + exp(ratio);
 
   out->hi = static_cast<double>(value.hi());
   out->lo = static_cast<double>(value.lo());
@@ -226,7 +225,7 @@ __global__ void double_double_kernel(fptool_stat_results* out)
 
 // Every counted operation feeds one value into each slot, so the operation
 // count is the total these shares are shares of.
-static void print_value_slot(const char* name, const cudax::fpmp2_stat_value& slot, unsigned long long total)
+static void print_value_slot(const char* name, const cuda::fpmp2_stat_value& slot, unsigned long long total)
 {
   if (total == 0)
   {
@@ -291,7 +290,7 @@ static void print_results(
   const char* type_name,
   const char* description,
   const fptool_stat_results& r,
-  const cudax::fpmp2_stat_data* stats)
+  const cuda::fpmp2_stat_data* stats)
 {
   printf("\n");
   printf("====================================================================="
@@ -435,21 +434,21 @@ try
   // cleared record, which is what makes its counts attributable to fp64mp2_stat
   // alone; without the clear the two runs would accumulate together, since the
   // counters are shared.
-  cudax::fpmp2_stat_reset_device_data(stream);
+  cuda::fpmp2_stat_reset_device_data(stream);
 
   // Run the float-float kernel on the device.
   cuda::launch(stream, config, float_float_kernel, float_float.data());
   read_results(stream, float_float, device_float_float);
 
-  const cudax::fpmp2_stat_data float_float_record = cudax::fpmp2_stat_read_device_data(stream);
+  const cuda::fpmp2_stat_data float_float_record = cuda::fpmp2_stat_read_device_data(stream);
 
-  cudax::fpmp2_stat_reset_device_data(stream);
+  cuda::fpmp2_stat_reset_device_data(stream);
 
   // Run the double-double kernel on the device.
   cuda::launch(stream, config, double_double_kernel, double_double.data());
   read_results(stream, double_double, device_double_double);
 
-  const cudax::fpmp2_stat_data double_double_record = cudax::fpmp2_stat_read_device_data(stream);
+  const cuda::fpmp2_stat_data double_double_record = cuda::fpmp2_stat_read_device_data(stream);
 
   print_results("device", "fp32mp2_stat", "instruments fp32mp2, float-float", device_float_float, &float_float_record);
   print_results(

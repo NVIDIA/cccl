@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -35,8 +35,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 #if !(defined _CCCL_FPMP_USE_LIB)
 /*
  * --------------------------------------------------------------------
@@ -142,7 +141,7 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_double(const double __x, _FpType* __res_hi
       // Required because round-to-nearest on r can leave |lo|
       // exactly at ulp(hi)/2; if hi has an odd low mantissa bit,
       // fl(hi+lo) would otherwise round away from hi.
-      *__res_hi = __fpmp_fast_two_sum(*__res_hi, *__res_lo, __res_lo);
+      *__res_hi = ::cuda::__fpmp_fast_two_sum(*__res_hi, *__res_lo, __res_lo);
     }
   }
   else if constexpr (__fpmp2_is_fp64_v<_FpType>)
@@ -182,8 +181,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_double(const double __x, _FpType* __res_hi
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_int(const int32_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  *__res_hi = __fpmp_int2fp_rz<_FpType>(__i);
-  *__res_lo = __fpmp_int2fp_rz<_FpType>(__i - __fpmp_fp2int_rz(*__res_hi));
+  *__res_hi = ::cuda::__fpmp_int2fp_rz<_FpType>(__i);
+  *__res_lo = ::cuda::__fpmp_int2fp_rz<_FpType>(__i - ::cuda::__fpmp_fp2int_rz(*__res_hi));
 }
 
 // uint -> (hi, lo) conversions
@@ -192,10 +191,10 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_int(const int32_t __i, _FpType* __res_hi, 
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_uint(const uint32_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  *__res_hi = __fpmp_uint2fp_rz<_FpType>(__i);
+  *__res_hi = ::cuda::__fpmp_uint2fp_rz<_FpType>(__i);
   // Compute residual using signed arithmetic to handle case where hi rounds up
-  int32_t __residual = static_cast<int32_t>(__i) - static_cast<int32_t>(__fpmp_fp2uint_rz(*__res_hi));
-  *__res_lo          = __fpmp_int2fp_rz<_FpType>(__residual);
+  int32_t __residual = static_cast<int32_t>(__i) - static_cast<int32_t>(::cuda::__fpmp_fp2uint_rz(*__res_hi));
+  *__res_lo          = ::cuda::__fpmp_int2fp_rz<_FpType>(__residual);
 }
 
 // ll -> (hi, lo) conversions
@@ -204,8 +203,8 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_uint(const uint32_t __i, _FpType* __res_hi
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_ll(const int64_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  *__res_hi = __fpmp_ll2fp_rz<_FpType>(__i);
-  *__res_lo = __fpmp_ll2fp_rz<_FpType>(__i - __fpmp_fp2ll_rz(*__res_hi));
+  *__res_hi = ::cuda::__fpmp_ll2fp_rz<_FpType>(__i);
+  *__res_lo = ::cuda::__fpmp_ll2fp_rz<_FpType>(__i - ::cuda::__fpmp_fp2ll_rz(*__res_hi));
 }
 
 // ull -> (hi, lo) conversions
@@ -214,10 +213,10 @@ _CCCL_FPMP_CORE_API void __fpmp2_from_ll(const int64_t __i, _FpType* __res_hi, _
 template <typename _FpType>
 _CCCL_FPMP_CORE_API void __fpmp2_from_ull(const uint64_t __i, _FpType* __res_hi, _FpType* __res_lo) noexcept
 {
-  *__res_hi = __fpmp_ull2fp_rz<_FpType>(__i);
+  *__res_hi = ::cuda::__fpmp_ull2fp_rz<_FpType>(__i);
   // Residual is always non-negative and fits in int64_t (< 2^53 for double)
-  uint64_t __residual = __i - __fpmp_fp2ull_rz(*__res_hi);
-  *__res_lo           = __fpmp_ull2fp_rz<_FpType>(__residual);
+  uint64_t __residual = __i - ::cuda::__fpmp_fp2ull_rz(*__res_hi);
+  *__res_lo           = ::cuda::__fpmp_ull2fp_rz<_FpType>(__residual);
 }
 
 // (hi, lo) -> double conversions
@@ -283,7 +282,7 @@ _CCCL_FPMP_CORE_API double __fpmp2_to_double(const _FpType __x_hi_in, const _FpT
     // path to be safe on non-canonical pairs (e.g. produced by
     // add_fast / long FAST accumulator chains).
     float __x_lo;
-    float __x_hi = __fpmp_two_sum(__x_hi_in, __x_lo_in, &__x_lo);
+    float __x_hi = ::cuda::__fpmp_two_sum(__x_hi_in, __x_lo_in, &__x_lo);
 
     uint32_t __hi_bits = ::cuda::std::bit_cast<uint32_t>(__x_hi);
     uint32_t __sign_a  = __hi_bits >> 31;
@@ -312,7 +311,7 @@ _CCCL_FPMP_CORE_API double __fpmp2_to_double(const _FpType __x_hi_in, const _FpT
     // r exactly represents lo at hi's mantissa scale (signed). For
     // canonical fp32mp2 (|lo| <= ulp(hi)/2) the multiplication is
     // exact (power-of-two scaling) and |r| <= 2^28.
-    int32_t __r = __fpmp_fp2int_rn(__x_lo * __scale);
+    int32_t __r = ::cuda::__fpmp_fp2int_rn(__x_lo * __scale);
 
     // M = (hi's 53-bit mantissa with implicit 1, at bit 52)
     //     + (signed lo contribution at the same scale).
@@ -350,21 +349,21 @@ _CCCL_FPMP_CORE_API _FpType __fpmp2_to_float(const _FpType __x_hi, const _FpType
 template <typename _FpType>
 _CCCL_FPMP_CORE_API int32_t __fpmp2_to_int(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
-  _FpType __abs_hi = __fpmp_internal_fabs(__x_hi);
+  _FpType __abs_hi = ::cuda::__fpmp_internal_fabs(__x_hi);
   // Check threshold BEFORE computing sum - for large values, addition loses precision
   // 2^24 for float, 2^53 for double
   _FpType __threshold = __fpmp2_is_fp32_v<_FpType> ? 0x1.0p24f : 0x1.0p53;
   if (__abs_hi < __threshold)
   {
     // Small value: use round-toward-zero addition
-    _FpType __res = __fpmp_add_rz(__x_hi, __x_lo);
-    return __fpmp_fp2int_rz(__res);
+    _FpType __res = ::cuda::__fpmp_add_rz(__x_hi, __x_lo);
+    return ::cuda::__fpmp_fp2int_rz(__res);
   }
   else
   {
     // Large value: use integer addition to preserve exactness
-    int32_t __hi_int = __fpmp_fp2int_rz(__x_hi);
-    int32_t __lo_int = __fpmp_fp2int_rz(__x_lo);
+    int32_t __hi_int = ::cuda::__fpmp_fp2int_rz(__x_hi);
+    int32_t __lo_int = ::cuda::__fpmp_fp2int_rz(__x_lo);
     return __hi_int + __lo_int;
   }
 } // __fpmp2_to_int
@@ -379,14 +378,14 @@ _CCCL_FPMP_CORE_API uint32_t __fpmp2_to_uint(const _FpType __x_hi, const _FpType
   if (__x_hi < __threshold)
   {
     // Small value: use round-toward-zero addition
-    _FpType __res = __fpmp_add_rz(__x_hi, __x_lo);
-    return __fpmp_fp2uint_rz(__res);
+    _FpType __res = ::cuda::__fpmp_add_rz(__x_hi, __x_lo);
+    return ::cuda::__fpmp_fp2uint_rz(__res);
   }
   else
   {
     // Large value: use integer addition to preserve exactness
-    uint32_t __hi_uint = __fpmp_fp2uint_rz(__x_hi);
-    int32_t __lo_int   = __fpmp_fp2int_rz(__x_lo);
+    uint32_t __hi_uint = ::cuda::__fpmp_fp2uint_rz(__x_hi);
+    int32_t __lo_int   = ::cuda::__fpmp_fp2int_rz(__x_lo);
     return __hi_uint + __lo_int;
   }
 } // __fpmp2_to_uint
@@ -395,21 +394,21 @@ _CCCL_FPMP_CORE_API uint32_t __fpmp2_to_uint(const _FpType __x_hi, const _FpType
 template <typename _FpType>
 _CCCL_FPMP_CORE_API int64_t __fpmp2_to_ll(const _FpType __x_hi, const _FpType __x_lo) noexcept
 {
-  _FpType __abs_hi = __fpmp_internal_fabs(__x_hi);
+  _FpType __abs_hi = ::cuda::__fpmp_internal_fabs(__x_hi);
   // Check threshold BEFORE computing sum
   // 2^24 for float, 2^53 for double
   _FpType __threshold = __fpmp2_is_fp32_v<_FpType> ? 0x1.0p24f : 0x1.0p53;
   if (__abs_hi < __threshold)
   {
     // Small value: use round-toward-zero addition
-    _FpType __res = __fpmp_add_rz(__x_hi, __x_lo);
-    return __fpmp_fp2ll_rz(__res);
+    _FpType __res = ::cuda::__fpmp_add_rz(__x_hi, __x_lo);
+    return ::cuda::__fpmp_fp2ll_rz(__res);
   }
   else
   {
     // Large value: use integer addition to preserve exactness
-    int64_t __hi_ll = __fpmp_fp2ll_rz(__x_hi);
-    int64_t __lo_ll = __fpmp_fp2ll_rz(__x_lo);
+    int64_t __hi_ll = ::cuda::__fpmp_fp2ll_rz(__x_hi);
+    int64_t __lo_ll = ::cuda::__fpmp_fp2ll_rz(__x_lo);
     return __hi_ll + __lo_ll;
   }
 } // __fpmp2_to_ll
@@ -424,14 +423,14 @@ _CCCL_FPMP_CORE_API uint64_t __fpmp2_to_ull(const _FpType __x_hi, const _FpType 
   if (__x_hi < __threshold)
   {
     // Small value: use round-toward-zero addition
-    _FpType __res = __fpmp_add_rz(__x_hi, __x_lo);
-    return __fpmp_fp2ull_rz(__res);
+    _FpType __res = ::cuda::__fpmp_add_rz(__x_hi, __x_lo);
+    return ::cuda::__fpmp_fp2ull_rz(__res);
   }
   else
   {
     // Large value: use integer addition to preserve exactness
-    uint64_t __hi_ull = __fpmp_fp2ull_rz(__x_hi);
-    int64_t __lo_ll   = __fpmp_fp2ll_rz(__x_lo);
+    uint64_t __hi_ull = ::cuda::__fpmp_fp2ull_rz(__x_hi);
+    int64_t __lo_ll   = ::cuda::__fpmp_fp2ll_rz(__x_lo);
     return __hi_ull + __lo_ll;
   }
 } // __fpmp2_to_ull
@@ -521,57 +520,57 @@ _CCCL_FPMP_FP128_API inline __fpmp_fp128 __fpmp2_to_quad(const _Tp __x_hi, const
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_from_double<float>(const double __x, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_from_double(__x, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_from_double(__x, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_from_int<float>(const int32_t __i, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_from_int(__i, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_from_int(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_from_uint<float>(const uint32_t __i, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_from_uint(__i, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_from_uint(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_from_ll<float>(const int64_t __i, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_from_ll(__i, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_from_ll(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_from_ull<float>(const uint64_t __i, float* __res_hi, float* __res_lo) noexcept
 {
-  __fp32mp2_from_ull(__i, __res_hi, __res_lo);
+  ::cuda::__fp32mp2_from_ull(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline double __fpmp2_to_double<float>(const float __x_hi, const float __x_lo) noexcept
 {
-  return __fp32mp2_to_double(__x_hi, __x_lo);
+  return ::cuda::__fp32mp2_to_double(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline float __fpmp2_to_float<float>(const float __x_hi, const float __x_lo) noexcept
 {
-  return __fp32mp2_to_float(__x_hi, __x_lo);
+  return ::cuda::__fp32mp2_to_float(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline int32_t __fpmp2_to_int<float>(const float __x_hi, const float __x_lo) noexcept
 {
-  return __fp32mp2_to_int(__x_hi, __x_lo);
+  return ::cuda::__fp32mp2_to_int(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline uint32_t __fpmp2_to_uint<float>(const float __x_hi, const float __x_lo) noexcept
 {
-  return __fp32mp2_to_uint(__x_hi, __x_lo);
+  return ::cuda::__fp32mp2_to_uint(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline int64_t __fpmp2_to_ll<float>(const float __x_hi, const float __x_lo) noexcept
 {
-  return __fp32mp2_to_ll(__x_hi, __x_lo);
+  return ::cuda::__fp32mp2_to_ll(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline uint64_t __fpmp2_to_ull<float>(const float __x_hi, const float __x_lo) noexcept
 {
-  return __fp32mp2_to_ull(__x_hi, __x_lo);
+  return ::cuda::__fp32mp2_to_ull(__x_hi, __x_lo);
 }
 
 // -- fp64 template specializations --
@@ -579,77 +578,77 @@ template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_from_double<double>(const double __x, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_from_double(__x, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_from_double(__x, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_from_int<double>(const int32_t __i, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_from_int(__i, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_from_int(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_from_uint<double>(const uint32_t __i, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_from_uint(__i, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_from_uint(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void __fpmp2_from_ll<double>(const int64_t __i, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_from_ll(__i, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_from_ll(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline void
 __fpmp2_from_ull<double>(const uint64_t __i, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_from_ull(__i, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_from_ull(__i, __res_hi, __res_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline double __fpmp2_to_double<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_double(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_double(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline float __fpmp2_to_float<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_float(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_float(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline int32_t __fpmp2_to_int<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_int(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_int(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline uint32_t __fpmp2_to_uint<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_uint(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_uint(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline int64_t __fpmp2_to_ll<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_ll(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_ll(__x_hi, __x_lo);
 }
 template <>
 _CCCL_HOST_DEVICE_API inline uint64_t __fpmp2_to_ull<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_ull(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_ull(__x_hi, __x_lo);
 }
 #  if _CCCL_FPMP_FP128_ENABLE == 1
 template <>
 _CCCL_FPMP_FP128_API inline void
 __fpmp2_from_quad<double>(const __fpmp_fp128 __x, double* __res_hi, double* __res_lo) noexcept
 {
-  __fp64mp2_from_quad(__x, __res_hi, __res_lo);
+  ::cuda::__fp64mp2_from_quad(__x, __res_hi, __res_lo);
 }
 template <>
 _CCCL_FPMP_FP128_API inline __fpmp_fp128 __fpmp2_to_quad<double>(const double __x_hi, const double __x_lo) noexcept
 {
-  return __fp64mp2_to_quad(__x_hi, __x_lo);
+  return ::cuda::__fp64mp2_to_quad(__x_hi, __x_lo);
 }
 #  endif // _CCCL_FPMP_FP128_ENABLE == 1
 
 #endif // _CCCL_FPMP_USE_LIB
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
