@@ -200,6 +200,7 @@ def layout_temp_storage_uses(
 ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
     """Lay out scratch for each call and group instance.
 
+    Permanent reservations follow primitive scratch in distinct domains.
     Exclusive sharing gives each use a distinct domain. Shared placement
     reuses a domain only when ``_temp_storage_domain_key`` permits it.
     Within a domain, reserve the largest per-instance requirement and
@@ -230,7 +231,9 @@ def layout_temp_storage_uses(
         plan keyed by the object identity of each call assignment.
     """
 
-    ordered_uses = sorted(uses, key=lambda entry: entry.order)
+    ordered_uses = sorted(
+        uses, key=lambda entry: (entry.permanent, entry.order)
+    )
     required_alignment = max(
         _MIN_TEMP_STORAGE_ALIGNMENT,
         *(max(1, int(entry.alignment)) for entry in ordered_uses),
@@ -238,7 +241,9 @@ def layout_temp_storage_uses(
     domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
     for entry in ordered_uses:
         domain_key = (
-            ("exclusive", entry.order)
+            ("reservation", entry.order)
+            if entry.permanent
+            else ("exclusive", entry.order)
             if sharing == "exclusive"
             else temp_storage_domain_key(entry)
         )
@@ -259,9 +264,9 @@ def layout_temp_storage_uses(
         # 32-thread warps in a 128-thread block need four separate slots.
         # Calls in a reuse domain agree on that count, so the first plan
         # is sufficient; an exclusive domain contains only one call.
-        # Legacy block providers have no topology and need one slot. The
-        # aligned instance_stride spaces groups' slots apart, while
-        # compatible calls reuse the same set of slots.
+        # Legacy block providers and typed reservations have no topology
+        # and need one slot. The aligned instance_stride spaces groups'
+        # slots apart, while compatible calls reuse the same set of slots.
         first_plan = domain_uses[0].lowering_plan
         instances = (
             1

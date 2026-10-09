@@ -71,6 +71,7 @@ from ._scalar_provenance import (
 if TYPE_CHECKING:
     from .._types import Algorithm
     from ._rewrite import CoopSinglePhaseRewrite
+    from ._rewrite_reserve import _TempStorageReservation
 
 
 class _ProvenanceRewrite(Rewrite):
@@ -104,6 +105,10 @@ class _ProvenanceRewrite(Rewrite):
         self._rewrite_started = False
         self._factory_argument_cleanup_candidates: set[ir.Assign] = set()
         self._payload_callee_cleanup_names: set[str] = set()
+        self._temp_storage_reservations: dict[
+            ir.Assign, _TempStorageReservation
+        ] = {}
+        self._temp_storage_reserve_methods: set[ir.Assign] = set()
         self._temp_storage_assigns: set[ir.Assign] = set()
         self._temp_storage_func_vars: set[str] = set()
         self._temp_storage_ctor_specifications: dict[
@@ -1286,10 +1291,11 @@ class _ProvenanceRewrite(Rewrite):
         """Finalize the storage layout for one ``TempStorage`` variable.
 
         Requirement collection has already recorded the constructor options
-        and the bytes needed by each primitive using this variable. Turn
-        those requirements into a plan for its shared memory: the total size,
-        alignment, and slice assigned to each call. The constructor's
-        ``sharing`` setting controls which calls may reuse the same bytes.
+        and the bytes needed by each primitive or ``reserve()`` call using
+        this variable. Turn those requirements into a plan for its shared
+        memory: the total size, alignment, and slice assigned to each call.
+        The constructor's ``sharing`` setting controls which calls may reuse
+        the same bytes.
 
         Infer an omitted ``size_in_bytes`` from the layout, or check that an
         explicit size is large enough. Choose an alignment that satisfies the
@@ -1324,8 +1330,8 @@ class _ProvenanceRewrite(Rewrite):
         Notes
         -----
         Whole-function validation separately rejects constructors with no
-        primitive consumer. An explicit size alone does not make an unused
-        descriptor valid.
+        primitive or ``reserve()`` consumer. An explicit size alone does not
+        make an unused descriptor valid.
         """
 
         var_name = self._canonical_temp_storage_ctor_key(var_name)
@@ -1375,7 +1381,8 @@ class _ProvenanceRewrite(Rewrite):
         if required_size > 0 and size_in_bytes < required_size:
             raise CoopSinglePhaseRewriteError(
                 "TempStorage size_in_bytes is smaller than required by "
-                f"primitive uses ({size_in_bytes} < {required_size})."
+                "primitive and reserve uses "
+                f"({size_in_bytes} < {required_size})."
             )
         if ctor_specification.alignment is None:
             alignment = _default_temp_storage_alignment(required_alignment)

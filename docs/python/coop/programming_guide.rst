@@ -814,6 +814,46 @@ Scratch lasts for the kernel's execution on that block. It cannot carry
 state between blocks or kernel launches. For running scan state within a
 block, use a separate payload as in the prefix-callback example below.
 
+Numba-CUDA-MLIR also supports typed reservations for application data and
+device libraries:
+
+.. code-block:: python
+
+   scratch = coop.TempStorage()
+   our_smem_chunk = scratch.reserve(128, types.float32, alignment=32)
+
+Here ``types`` is imported from ``numba_cuda_mlir``. The element count and
+integer, floating-point, or complex scalar dtype must be known during
+compilation. The result is an ordinary one-dimensional shared array that
+supports indexing and can be passed to
+device functions accepting arrays. Compilation replaces the reservation with
+an aligned typed view of the planner's shared backing; there is no runtime
+allocator.
+
+Each reservation call site owns a disjoint region for the block's kernel
+execution. Reservations do not overlap one another or primitive scratch,
+including with ``sharing="shared"``. Executing a call site again reuses its
+region. Explicit descriptor capacity includes the reservations and alignment
+padding as well as primitive scratch.
+
+A descriptor used with ``reserve()`` must have ``auto_sync=False`` or
+``auto_sync=None``. The compiler rejects ``auto_sync=True``, including uses
+through aliases and inlined helpers. Synchronize application accesses and
+follow each device library's completion and release requirements. A separate
+descriptor used only for cooperative primitives may still enable automatic
+synchronization.
+
+The runnable :download:`nvmath FFT example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_fft.py>` reserves scratch
+for ``fft.execute()`` and application data alongside a cooperative reduction.
+The :download:`nvmath and NVSHMEM example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_nvshmem.py>` also reserves
+NVSHMEM communication scratch and explicitly registers and releases it.
+See the :download:`example instructions
+<../../../python/cuda_coop/examples/numba_mlir/README.md>` for dependencies and
+launch commands. These libraries receive ordinary arrays or pointers into the
+reserved regions; they do not need to understand ``TempStorage``.
+
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in
 limit. Numba-CUDA-MLIR automatically includes those required bytes in the
