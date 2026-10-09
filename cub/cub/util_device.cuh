@@ -58,11 +58,11 @@ namespace detail
 // influenced by other kernels or global (__constant__ or alignas() extern __shared__) variables in the same translation
 // unit.
 template <typename T>
-_CCCL_KERNEL_ATTRIBUTES void
+_CCCL_KERNEL_ATTRIBUTES
 #  if _CCCL_PTX_ARCH() != 0
 __launch_bounds__(_CCCL_PTX_ARCH() / 10) // must not use _CCCL_LAUNCH_BOUNDS, which is disabled with RDC
 #  endif // _CCCL_PTX_ARCH() != 0
-  EmptyKernel()
+  void EmptyKernel()
 {}
 } // namespace detail
 
