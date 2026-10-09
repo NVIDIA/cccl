@@ -143,6 +143,8 @@ def temp_storage_domain_key(
         its storage instances disagree with its topology.
     """
 
+    if entry.reservation:
+        return ("caller-storage",)
     lowering_plan = entry.lowering_plan
     if lowering_plan is None:
         return ("legacy-provider",)
@@ -200,9 +202,9 @@ def layout_temp_storage_uses(
 ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
     """Lay out scratch for each call and group instance.
 
-    Permanent reservations follow primitive scratch in distinct domains.
     Exclusive sharing gives each use a distinct domain. Shared placement
-    reuses a domain only when ``_temp_storage_domain_key`` permits it.
+    reuses a domain only when ``_temp_storage_domain_key`` permits it;
+    typed reservations join the descriptor's caller-owned scratch domain.
     Within a domain, reserve the largest per-instance requirement and
     align its stride for every consumer. Multiple group instances receive
     separate strides; compatible calls reuse those same instance slots.
@@ -232,18 +234,16 @@ def layout_temp_storage_uses(
     """
 
     ordered_uses = sorted(
-        uses, key=lambda entry: (entry.permanent, entry.order)
+        uses, key=lambda entry: (entry.reservation, entry.order)
     )
     required_alignment = max(
         _MIN_TEMP_STORAGE_ALIGNMENT,
         *(max(1, int(entry.alignment)) for entry in ordered_uses),
     )
     domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
-    for entry in ordered_uses:
+    for index, entry in enumerate(ordered_uses):
         domain_key = (
-            ("reservation", entry.order)
-            if entry.permanent
-            else ("exclusive", entry.order)
+            ("exclusive", index)
             if sharing == "exclusive"
             else temp_storage_domain_key(entry)
         )

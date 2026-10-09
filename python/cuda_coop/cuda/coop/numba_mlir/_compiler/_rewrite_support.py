@@ -307,8 +307,8 @@ class _TempStorageUseRequirement:
     Size and alignment are in bytes. ``call_assign`` retains the original IR
     identity for slice lookup; ``order`` is the whole-function scan order, not
     runtime execution order. ``lowering_plan`` supplies group instances and
-    reuse rules when the shared planner produced the call. Permanent
-    reservations remain disjoint from every primitive and other reservation.
+    reuse rules when the shared planner produced the call. ``reservation``
+    identifies a typed array that follows its descriptor's sharing policy.
     """
 
     call_assign: ir.Assign
@@ -316,7 +316,7 @@ class _TempStorageUseRequirement:
     size_in_bytes: int
     alignment: int
     lowering_plan: GroupLoweringPlan | None = None
-    permanent: bool = False
+    reservation: bool = False
 
 
 @dataclass
