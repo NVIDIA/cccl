@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +34,22 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
+
+#if !_CCCL_COMPILER(NVRTC)
+// Bootstrap errors cannot depend on cuGetErrorString being available.
+template <int _Error>
+[[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
+  const char* __msg,
+  const char* __api                         = nullptr,
+  const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
+
+[[noreturn]] _CCCL_HOST_API void __throw_cuda_error(
+  const int __error,
+  const char* __msg,
+  const char* __api                         = nullptr,
+  const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current());
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_HAS_CTK()
 using __cuda_error_t = ::cudaError_t;
