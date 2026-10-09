@@ -30,10 +30,8 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/make_nbit_int.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_signed.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/num_bits.h> // IWYU pragma: keep
 #include <cuda/std/__utility/cmp.h> // IWYU pragma: keep
 #include <cuda/std/cstdint>
 
@@ -285,9 +283,6 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
 
   // Host fallback + device implementation.
 #if _CCCL_CUDA_COMPILATION() || !defined(_CCCL_BUILTIN_ADD_OVERFLOW) || (_CCCL_COMPILER(NVHPC) && _CCCL_HAS_INT128())
-  using ::cuda::std::__make_nbit_int_t;
-  using ::cuda::std::__make_nbit_uint_t;
-  using ::cuda::std::__num_bits_v;
   using ::cuda::std::is_signed_v;
   using ::cuda::std::is_unsigned_v;
   using _CommonAll                             = ::cuda::std::common_type_t<_Common, _ActualResult>;
@@ -304,7 +299,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   // * int + int -> int
   else if constexpr (is_signed_v<_Lhs> && is_signed_v<_Rhs> && is_signed_v<_ActualResult>) // all signed
   {
-    using _Sp         = __make_nbit_int_t<__num_bits_v<_CommonAll>>;
+    using _Sp         = ::cuda::std::make_signed_t<_CommonAll>;
     const auto __lhs1 = static_cast<_Sp>(__lhs);
     const auto __rhs1 = static_cast<_Sp>(__rhs);
     const auto __sum  = ::cuda::__add_overflow_uniform_type(__lhs1, __rhs1);
@@ -318,7 +313,7 @@ _CCCL_API constexpr overflow_result<_ActualResult> add_overflow(const _Lhs __lhs
   // * int >= 0 + int >= 0 -> _ActualResult=unsigned (_ActualResult=signed already handled above) (run-time check)
   else if (__is_lhs_ge_zero && __is_rhs_ge_zero)
   {
-    using _Up         = __make_nbit_uint_t<__num_bits_v<_CommonAll>>;
+    using _Up         = ::cuda::std::make_unsigned_t<_CommonAll>;
     const auto __lhs1 = static_cast<_Up>(__lhs);
     const auto __rhs1 = static_cast<_Up>(__rhs);
     const auto __sum  = ::cuda::__add_overflow_uniform_type(__lhs1, __rhs1);
