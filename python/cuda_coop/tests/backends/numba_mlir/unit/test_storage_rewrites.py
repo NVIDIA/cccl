@@ -1598,7 +1598,7 @@ def test_registered_provider_inherits_reservation_sharing(
     provider = _register_leading_pointer_provider(invocable)
 
     def kernel(value):
-        storage = coop.TempStorage(capacity, sharing=sharing)
+        storage = common_coop.TempStorage(capacity, sharing=sharing)
         values = storage.reserve(16, types.int32)
         result = provider(value, temp_storage=storage)
         cuda.syncthreads()

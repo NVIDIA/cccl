@@ -30,7 +30,7 @@ def TempStorage(
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
     ``descriptor.reserve(num_elems, dtype, alignment=...)`` also obtains typed
-    shared arrays for application or library data in supported backends.
+    shared arrays or tensors for application or library data.
     See :ref:`temporary storage <coop-common-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
@@ -67,7 +67,7 @@ def TempStorage(
     -------
     cuda.coop.TempStorageLike
         Compiler-recognized scratch descriptor. Primitive scratch is opaque;
-        ``reserve()`` returns typed shared arrays that follow the descriptor's
+        ``reserve()`` returns typed shared views that follow the descriptor's
         sharing policy. Use separate descriptors or ``sharing="exclusive"``
         for buffers whose contents must remain live simultaneously. The caller
         synchronizes their accesses and completes asynchronous operations

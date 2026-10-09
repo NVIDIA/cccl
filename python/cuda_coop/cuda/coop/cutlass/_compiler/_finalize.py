@@ -11,7 +11,7 @@ from typing import Any
 
 from cutlass.base_dsl.common import DSLRuntimeError
 
-from . import _bundle, _cache, _rendering, _state, _target
+from . import _bundle, _cache, _rendering, _state, _storage, _target
 
 ROOT_SCOPE = "cuda.coop.cutlass"
 
@@ -84,6 +84,12 @@ def _trace_finalize_hook(dsl, module, function_name):
     if session is None or session.is_empty():
         return
     requests = session.request_list()
+    if not requests:
+        plans = _storage.plan_deferred_temp_storage_events(
+            session.deferred_temp_storage_event_list(), {}
+        )
+        _storage.materialize_deferred_temp_storage_plans(plans)
+        return
     source = _rendering.render_bundle_source(requests)
     arch = _target.resolve_nvrtc_arch(
         ROOT_SCOPE, lambda: _target.configured_gpu_arch(lambda: dsl)
@@ -91,24 +97,23 @@ def _trace_finalize_hook(dsl, module, function_name):
     headers = tuple(_rendering.registered_bundle_headers().values())
     probes = _rendering.bundle_scratch_layout_probes(requests)
     if probes:
-        from . import _storage
-
         compilation = _bundle.compile_bundle_source_with_layouts(
             source,
             arch=arch,
             required_headers=headers,
             layout_probes=tuple(probes.values()),
         )
-        plans = _storage.plan_deferred_temp_storage_events(
-            session.deferred_temp_storage_event_list(),
-            compilation.layouts,
-        )
-        _storage.materialize_deferred_temp_storage_plans(plans)
+        layouts = compilation.layouts
         path = compilation.path
     else:
+        layouts = {}
         path = _bundle.compile_bundle_source(
             source, arch=arch, required_headers=headers
         )
+    plans = _storage.plan_deferred_temp_storage_events(
+        session.deferred_temp_storage_event_list(), layouts
+    )
+    _storage.materialize_deferred_temp_storage_plans(plans)
     _bundle.append_link_library_attr(module, path)
 
 

@@ -102,6 +102,8 @@ class DeferredTempStorageEvent:
     own the allocation. ``requirement_key`` selects its compiled C++ layout.
     Sharing, synchronization, and capacity fields capture descriptor policy
     at the call. The planner checks that later uses retain the same policy.
+    A typed reservation supplies ``reservation_layout`` directly instead of
+    a C++ layout probe.
 
     ``smem_addr_placeholder`` and ``size_placeholder`` are MLIR values to
     replace after allocation. ``kernel_name``, ``primitive_name``, and
@@ -121,6 +123,7 @@ class DeferredTempStorageEvent:
     smem_addr_placeholder: Any
     size_placeholder: Any
     location: str
+    reservation_layout: ScratchLayout | None = None
 
 
 @dataclass(frozen=True)
