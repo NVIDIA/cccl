@@ -1053,18 +1053,19 @@ private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
     -> ReduceByKeyLookbackPolicy
   {
-    constexpr int nominal_4B_items_per_thread = 6;
+    // from the former Thrust implementation of reduce_by_key
+    constexpr int nominal_4B_items_per_thread = 9;
     const int combined_input_bytes            = key_size + accum_size;
     const int max_input_bytes                 = (::cuda::std::max) (key_size, accum_size);
     const int items_per_thread =
       (max_input_bytes <= 8)
-        ? 6
+        ? nominal_4B_items_per_thread
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     return ReduceByKeyLookbackPolicy{
-      128,
+      256,
       items_per_thread,
-      BLOCK_LOAD_DIRECT,
+      BLOCK_LOAD_WARP_TRANSPOSE,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
       default_reduce_by_key_delay_constructor_policy(
