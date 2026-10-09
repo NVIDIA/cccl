@@ -191,16 +191,30 @@ using predefined_op_list = c2h::type_list<cuda::std::plus<>, cuda::maximum<>, cu
 using predefined_min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
 
 // clang-format off
-using unsigned_type_list = c2h::type_list<
+using bitwise_type_list = c2h::type_list<
+  int32_t,
   uint32_t,
+  int64_t,
   uint64_t
 #if TEST_INT128()
+  , __int128_t
+  , __uint128_t
+#endif // TEST_INT128()
+>;
+
+using wide_integer_type_list = c2h::type_list<
+  int64_t,
+  uint64_t
+#if TEST_INT128()
+  , __int128_t
   , __uint128_t
 #endif // TEST_INT128()
 >;
 // clang-format on
 
 using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
+
+using bool_op_list = c2h::type_list<cuda::std::logical_or<>, cuda::std::logical_and<>>;
 
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
 
@@ -272,6 +286,31 @@ CUB_TEST("WarpReduce::Sum, full_type_list",
   verify_results(h_out, d_out);
 }
 
+CUB_TEST("WarpReduce::Reduce, wide integers",
+         "[reduce][warp][predefined_op][redux]",
+         CUB_SMALL,
+         wide_integer_type_list,
+         predefined_op_list)
+{
+  using T                            = c2h::get<0, TestType>;
+  using predefined_op                = c2h::get<1, TestType>;
+  constexpr int logical_warp_threads = 32;
+  const int valid_items              = GENERATE(1, 17, 31, 32);
+  constexpr auto input_size          = total_warps * warp_size;
+  constexpr auto output_size         = total_warps;
+  CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), valid_items);
+
+  c2h::device_vector<T> d_in(input_size);
+  c2h::device_vector<T> d_out(output_size);
+  c2h::gen(C2H_SEED(10), d_in);
+  warp_reduce_launch<logical_warp_threads, true>(d_in, d_out, warp_reduce_t<predefined_op, T>{}, valid_items);
+
+  const c2h::host_vector<T> h_in = d_in;
+  c2h::host_vector<T> h_out(output_size);
+  compute_host_reference<predefined_op>(h_in, h_out, 1, logical_warp_threads, valid_items);
+  verify_results(h_out, d_out);
+}
+
 CUB_TEST("WarpReduce::Sum/Max/Min, builtin types",
          "[reduce][warp][predefined_op][full]",
          CUB_SMALL,
@@ -325,10 +364,11 @@ CUB_TEST("WarpReduce::Max/Min, floating-point redux types",
   }
 }
 
-CUB_TEST("WarpReduce::Reduce, unsigned bitwise types",
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 internal compiler error in test code only
+CUB_TEST("WarpReduce::Reduce, bitwise types",
          "[reduce][warp][predefined_op][redux]",
          CUB_SMALL,
-         unsigned_type_list,
+         bitwise_type_list,
          bitwise_op_list,
          logical_warp_threads)
 {
@@ -346,6 +386,48 @@ CUB_TEST("WarpReduce::Reduce, unsigned bitwise types",
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results_exact(h_out, d_out);
+}
+
+#endif // _CCCL_COMPILER(GCC, >=, 8)
+
+CUB_TEST(
+  "WarpReduce::Reduce, bool", "[reduce][warp][predefined_op][vote]", CUB_SMALL, bool_op_list, logical_warp_threads)
+{
+  using predefined_op                           = c2h::get<0, TestType>;
+  constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
+  auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
+  const unsigned valid_items = GENERATE_COPY(logical_warp_threads, take(2, random(1u, logical_warp_threads)));
+  // sparse inputs exercise __any_sync (true is rare), dense inputs exercise __all_sync (false is rare)
+  const bool sparse = GENERATE(false, true);
+  CAPTURE(c2h::type_name<predefined_op>(), logical_warp_threads, valid_items, sparse);
+
+  c2h::device_vector<uint8_t> d_rand(input_size);
+  c2h::gen(C2H_SEED(5), d_rand);
+  const c2h::host_vector<uint8_t> h_rand = d_rand;
+  c2h::host_vector<bool> h_in(input_size);
+
+  // generate true values with probability 1/logical_warp_threads
+  constexpr auto uint8_total    = cuda::std::numeric_limits<uint8_t>::max() + 1;
+  constexpr auto true_threshold = cuda::ceil_div(uint8_total, logical_warp_threads);
+  for (unsigned i = 0; i < input_size; ++i)
+  {
+    h_in[i] = (h_rand[i] < true_threshold) == sparse;
+  }
+  c2h::device_vector<bool> d_in = h_in;
+  c2h::device_vector<bool> d_out(output_size);
+  if (valid_items == logical_warp_threads)
+  {
+    warp_reduce_launch<logical_warp_threads>(d_in, d_out, warp_reduce_t<predefined_op, bool>{});
+  }
+  else
+  {
+    warp_reduce_launch<logical_warp_threads, true>(
+      d_in, d_out, warp_reduce_t<predefined_op, bool>{}, static_cast<int>(valid_items));
+  }
+
+  c2h::host_vector<bool> h_out(output_size);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
+  verify_results(h_out, d_out);
 }
 
 CUB_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", CUB_SMALL, full_type_list, logical_warp_threads)
@@ -392,10 +474,12 @@ CUB_TEST("WarpReduce::Sum/Max/Min Partial",
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("WarpReduce::Reduce, unsigned bitwise types, partial",
+#if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 internal compiler error in test code only
+
+CUB_TEST("WarpReduce::Reduce, bitwise types, partial",
          "[reduce][warp][predefined_op][redux][partial]",
          CUB_SMALL,
-         unsigned_type_list,
+         bitwise_type_list,
          bitwise_op_list,
          logical_warp_threads)
 {
@@ -415,6 +499,8 @@ CUB_TEST("WarpReduce::Reduce, unsigned bitwise types, partial",
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
   verify_results_exact(h_out, d_out);
 }
+
+#endif // _CCCL_COMPILER(GCC, >=, 8)
 
 CUB_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", CUB_SMALL, full_type_list, logical_warp_threads)
 {

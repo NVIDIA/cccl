@@ -2,6 +2,10 @@
 
 This document provides guidelines for building, testing, and contributing to the CCCL repository. It is primarily written for agentic AIs, but the information is also useful for CCCL developers.
 
+For `cuda.coop` work, including `python/cuda_coop/**` and
+`docs/python/coop*`, read [python/cuda_coop/AGENTS.md](python/cuda_coop/AGENTS.md)
+and apply its API, behavior, and example conventions.
+
 ---
 
 ## Overview
@@ -71,7 +75,7 @@ Common options:
 Example:
 
 ```bash
-.devcontainer/launch.sh -d --cuda 13.3 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.4 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`

@@ -313,6 +313,7 @@ jobs:
       - dispatch-groups-linux-standalone
       - dispatch-groups-windows-standalone
     permissions:
+      actions: read
       contents: read
       pull-requests: write # Posts a comment back to the PR.
     runs-on: ubuntu-latest

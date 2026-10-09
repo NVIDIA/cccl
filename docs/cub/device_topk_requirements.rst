@@ -126,6 +126,9 @@ across GPUs, so it requires ``determinism::gpu_to_gpu``. Pairing it with ``run_t
 specified together (or both omitted to take the default). Use ``tie_break::unspecified`` to leave the
 boundary policy to the implementation, for example alongside ``not_guaranteed`` or ``run_to_run``.
 
+For floating-point keys, -0.0 and +0.0 compare equal. Under ``prefer_smaller_index`` and
+``prefer_larger_index`` the index preference decides between them.
+
 .. list-table::
    :header-rows: 1
    :widths: 30 70

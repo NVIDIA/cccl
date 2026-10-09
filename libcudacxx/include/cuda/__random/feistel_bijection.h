@@ -23,10 +23,8 @@
 
 #include <cuda/__fwd/random.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

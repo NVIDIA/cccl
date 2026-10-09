@@ -16,7 +16,9 @@
 #include <cuda/__cccl_config>
 #include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/algorithm>
 #include <cuda/std/cstddef>
@@ -85,7 +87,7 @@ struct iota_pair
 };
 
 template <class Pair>
-_CCCL_KERNEL_ATTRIBUTES void mark_erased_slots(
+_CCCL_KERNEL_ATTRIBUTES void mark_erased_slots_kernel(
   Pair* slots,
   ::cuda::std::size_t capacity,
   typename Pair::first_type empty_key_sentinel,
@@ -107,9 +109,14 @@ _CCCL_HOST_API void mark_erased_slots(Map& map, ::cuda::stream_ref stream)
   constexpr int block_size = 128;
   const auto grid_size     = static_cast<unsigned>((map.capacity() + block_size - 1) / block_size);
 
-  mark_erased_slots<<<grid_size, block_size, 0, stream.get()>>>(
-    map.data(), map.capacity(), map.empty_key_sentinel(), map.erased_key_sentinel());
-  REQUIRE(::cudaGetLastError() == ::cudaSuccess);
+  cuda::launch(
+    stream,
+    cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims<block_size>()),
+    mark_erased_slots_kernel<typename Map::value_type>,
+    map.data(),
+    map.capacity(),
+    map.empty_key_sentinel(),
+    map.erased_key_sentinel());
 }
 
 template <class Key, class Mapped>

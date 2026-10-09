@@ -334,7 +334,7 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
   // Operates directly on the fully-accurate unpacked operands (no operand
   // pack, no legacy packed kernel). The full unpack has already normalized
   // denormals and encoded inf/nan in the exponent band, so the significand
-  // is mantissa>>EXTRA_BITS (implicit bit at 52) and the exponent is the
+  // is mantissa>>_CCCL_FPEMU_EXTRA_BITS (implicit bit at 52) and the exponent is the
   // IEEE-biased value -- no subnormal renormalization needed. The proven
   // fixed-point reciprocal quotient is computed exactly as the packed core,
   // then expressed on the universal unpacked scale (implicit bit at 61, a
@@ -388,8 +388,8 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
   }
 
   // ---- finite / finite : fixed-point reciprocal division --------------
-  uint64_t __mant_a = __x.mantissa >> EXTRA_BITS; // 53-bit significand, implicit bit at 52
-  uint64_t __mant_b = __y.mantissa >> EXTRA_BITS;
+  uint64_t __mant_a = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS; // 53-bit significand, implicit bit at 52
+  uint64_t __mant_b = __y.mantissa >> _CCCL_FPEMU_EXTRA_BITS;
   int32_t __exp_z   = __exp_x - __exp_y + 0x3FE;
 
   if (__mant_a < __mant_b)
@@ -433,7 +433,7 @@ __internal_fp64emu_ddiv_unpacked(__fpbits64_unpacked __x, __fpbits64_unpacked __
   }
 
   // round_pack expects the leading significand bit at 62 and exp == biased-1.
-  // The universal unpacked scale puts the implicit bit at 61 with EXTRA_BITS
+  // The universal unpacked scale puts the implicit bit at 61 with _CCCL_FPEMU_EXTRA_BITS
   // round bits and exponent == IEEE-biased (== exp_z + 1); shift the leading
   // bit down one place (preserving the dropped bit as sticky) and let the
   // full pack round + emit subnormal / saturate to inf.

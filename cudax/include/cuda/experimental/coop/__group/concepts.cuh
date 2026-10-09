@@ -25,6 +25,7 @@
 #include <cuda/__warp/lane_mask.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/cstdint>
@@ -69,14 +70,18 @@ template <class _Tp>
 _CCCL_CONCEPT __group_mapping_result = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __v)(
   requires(::cuda::std::is_copy_constructible_v<_Tp>),
   _Same_as(::cuda::std::size_t) _Tp::static_group_count(),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_group_count()>::value),
   _Same_as(::cuda::std::uint32_t) __v.group_count(),
   _Same_as(::cuda::std::uint32_t) __v.group_rank(),
   _Same_as(::cuda::std::size_t) _Tp::static_unit_count(),
+  (::cuda::std::integral_constant<::cuda::std::size_t, _Tp::static_unit_count()>::value),
   _Same_as(::cuda::std::uint32_t) __v.unit_count(),
   _Same_as(::cuda::std::uint32_t) __v.unit_rank(),
   _Same_as(::cuda::device::lane_mask) __v.lane_mask(),
   _Same_as(bool) _Tp::is_always_exhaustive(),
-  _Same_as(bool) _Tp::is_always_contiguous());
+  (::cuda::std::bool_constant<_Tp::is_always_exhaustive()>::value),
+  _Same_as(bool) _Tp::is_always_contiguous(),
+  (::cuda::std::bool_constant<_Tp::is_always_contiguous()>::value));
 } // namespace cuda::experimental::coop
 
 #endif // !_CCCL_DOXYGEN_INVOKED

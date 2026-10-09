@@ -268,23 +268,25 @@
 //! meant for analysis runs rather than production ones.
 
 #include <cuda/__fp/fpmp.h>
-#include <cuda/__fp/fpmp_limits.h>
+#include <cuda/__fp/fpmp_limits.h> // IWYU pragma: keep
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 // The host side of the record: a stream-ordered copy to and from the device global
+#  include <cuda/__algorithm/copy.h>
 #  include <cuda/__memory/get_device_address.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/span>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
@@ -432,18 +434,16 @@ _CCCL_DEVICE fpmp2_stat_data __fpmp2_stat_device_data = __fpmp2_stat_cleared_dat
 //! @throws cuda::cuda_error if the copy cannot be enqueued
 _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __stream)
 {
-  // A pageable host-to-device copy consumes its source before returning, so the cleared
-  // record does not have to outlive the call.
   const fpmp2_stat_data __cleared = __fpmp2_stat_cleared_data();
   fpmp2_stat_data* __data_ptr     = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to clear the fpmp2_stat device record",
-    __data_ptr,
-    &__cleared,
-    sizeof(fpmp2_stat_data),
-    ::cudaMemcpyHostToDevice,
-    __stream.get());
+  // The copy has to consume the cleared record before returning rather than at a later
+  // point of its own choosing, so that the record does not have to outlive the call.
+  ::cuda::copy_configuration __config;
+  __config.src_access_order = ::cuda::source_access_order::during_api_call;
+  ::cuda::copy_bytes(__stream,
+                     ::cuda::std::span<const fpmp2_stat_data, 1>{&__cleared, 1},
+                     ::cuda::std::span<fpmp2_stat_data, 1>{__data_ptr, 1},
+                     __config);
 }
 
 //! @brief Copy the device record to the host
@@ -458,14 +458,9 @@ _CCCL_HOST_API inline void fpmp2_stat_reset_device_data(::cuda::stream_ref __str
 {
   fpmp2_stat_data __dst{};
   const fpmp2_stat_data* __data_ptr = ::cuda::get_device_address(__fpmp2_stat_device_data<>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to read the fpmp2_stat device record",
-    &__dst,
-    __data_ptr,
-    sizeof(fpmp2_stat_data),
-    ::cudaMemcpyDeviceToHost,
-    __stream.get());
+  ::cuda::copy_bytes(__stream,
+                     ::cuda::std::span<const fpmp2_stat_data, 1>{__data_ptr, 1},
+                     ::cuda::std::span<fpmp2_stat_data, 1>{&__dst, 1});
   __stream.sync();
   return __dst;
 }

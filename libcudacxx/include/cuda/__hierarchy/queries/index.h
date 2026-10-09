@@ -29,10 +29,9 @@
 #  include <cuda/__hierarchy/queries/extents.h>
 #  include <cuda/__hierarchy/traits.h>
 #  include <cuda/std/__cstddef/types.h>
-#  include <cuda/std/__mdspan/extents.h>
 
 #  if _CCCL_CUDA_COMPILATION()
-#    include <cuda/__ptx/instructions/get_sreg.h>
+#    include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #  endif // _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>

@@ -13,4 +13,4 @@
 #  pragma system_header
 #endif // no system header
 
-// this system has no special temporary buffer functions
+// cpp system has no special temporary buffer functions

@@ -7,9 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// todo(dabayer): Enable constant_wrapper for msvc.
-// UNSUPPORTED: msvc
-
 // nvcc generates different symbol on host and device leading to kernel launch failure. Seems to be working with gcc as
 // the host compiler.
 // UNSUPPORTED: nvcc && (nvhpc || clang || msvc)
@@ -42,7 +39,7 @@ TEST_GLOBAL_VARIABLE int rhs[8]{8, 7, 6, 5, 4, 3, 2, 1};
 
 void test_host()
 {
-  test_kernel<<<1, 1>>>(cuda::std::__cw<lhs>, cuda::std::__cw<rhs>);
+  test_kernel<<<1, 1>>>(cuda::std::cw<lhs>, cuda::std::cw<rhs>);
   assert(cudaDeviceSynchronize() == cudaSuccess);
 }
 

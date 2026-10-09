@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory/address_space.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

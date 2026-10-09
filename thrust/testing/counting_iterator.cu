@@ -96,6 +96,53 @@ TEST_CASE("TestCountingIteratorCopyConstructor", "[counting_iterator]")
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value);
 static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value);
 
+template <typename TargetSystem,
+          typename Incrementable,
+          typename System,
+          typename Traversal,
+          typename Difference,
+          typename StrideHolder>
+void test_counting_iterator_converting_constructor(
+  const thrust::counting_iterator<Incrementable, System, Traversal, Difference, StrideHolder>& source)
+{
+  using target_iterator = thrust::counting_iterator<Incrementable, TargetSystem, Traversal, Difference, StrideHolder>;
+  target_iterator iter{source};
+
+  REQUIRE(*iter == *source);
+  REQUIRE(iter[3] == source[3]);
+  ++iter;
+  REQUIRE(*iter == source[1]);
+  --iter;
+  REQUIRE(*iter == *source);
+  iter += 4;
+  REQUIRE(*iter == source[4]);
+  iter -= 2;
+  REQUIRE(*iter == source[2]);
+}
+
+TEST_CASE("TestCountingIteratorConvertingConstructorDynamicStride", "[counting_iterator]")
+{
+  const auto stride = GENERATE(-3, 0, 1, 3);
+  const auto source = thrust::make_counting_iterator(10, stride);
+  test_counting_iterator_converting_constructor<thrust::host_system_tag>(source);
+  test_counting_iterator_converting_constructor<thrust::device_system_tag>(source);
+
+  const auto float_source = thrust::make_counting_iterator(1.0f, 0.5f);
+  test_counting_iterator_converting_constructor<thrust::host_system_tag>(float_source);
+  test_counting_iterator_converting_constructor<thrust::device_system_tag>(float_source);
+}
+
+TEST_CASE("TestCountingIteratorConvertingConstructorStaticStride", "[counting_iterator]")
+{
+  const auto source = thrust::make_counting_iterator<3>(10);
+  test_counting_iterator_converting_constructor<thrust::host_system_tag>(source);
+  test_counting_iterator_converting_constructor<thrust::device_system_tag>(source);
+
+  const auto reverse_source = thrust::make_counting_iterator<-3>(10);
+  test_counting_iterator_converting_constructor<thrust::host_system_tag>(reverse_source);
+  test_counting_iterator_converting_constructor<thrust::device_system_tag>(reverse_source);
+}
+
 TEST_CASE("TestCountingIteratorIncrement", "[counting_iterator]")
 {
   thrust::counting_iterator<int> iter(0);

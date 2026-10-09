@@ -28,9 +28,9 @@
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__utility/basic_any.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__optional/optional.h>
 #  include <cuda/std/__utility/delegate_constructors.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/optional>
 
 #  include <cuda/std/__cccl/prologue.h>
 

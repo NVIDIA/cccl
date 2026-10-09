@@ -28,8 +28,8 @@
 #  include <cuda/__event/event_ref.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__utility/to_underlying.h>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 

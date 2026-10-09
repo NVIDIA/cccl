@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/mask.h>
 #include <cuda/std/__floating_point/native_type.h>
 #include <cuda/std/__floating_point/storage.h>

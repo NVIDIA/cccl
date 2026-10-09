@@ -25,6 +25,7 @@
 #include <jit_templates/templates/input_iterator.h>
 #include <jit_templates/templates/operation.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/user_source_prelude.h>
 #include <util/build_utils.h>
 #include <util/context.h>
 #include <util/errors.h>
@@ -131,7 +132,7 @@ CUresult cccl_device_binary_search_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   if (d_data.type == cccl_iterator_kind_t::CCCL_ITERATOR)
@@ -252,9 +253,10 @@ extern "C" __device__ void binary_search_transform_op(void* state, const void* v
 
   if (user_defined_comparator && op.code_type == CCCL_OP_CPP_SOURCE && op.code_size != 0)
   {
+    const std::string comparator_src = with_user_source_prelude(op.code);
     auto [lto_size, lto_buf] =
       begin_linking_nvrtc_program(num_lto_args, lopts)
-        ->add_program(nvrtc_translation_unit{op.code, op.name})
+        ->add_program(nvrtc_translation_unit{comparator_src.c_str(), op.name})
         ->compile_program({args.data(), args.size()})
         ->get_program_ltoir();
     comparator_ltoir = std::move(lto_buf);
@@ -320,7 +322,7 @@ CUresult cccl_device_binary_search_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_binary_search_compile(
     build_ptr,

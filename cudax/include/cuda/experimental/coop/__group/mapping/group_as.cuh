@@ -32,6 +32,7 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/coop/__group/fwd.cuh>
+#include <cuda/experimental/coop/__group/mapping/common.cuh>
 #include <cuda/experimental/coop/__group/mapping/mapping_result.cuh>
 #include <cuda/experimental/coop/__group/queries.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
@@ -100,6 +101,8 @@ public:
   [[nodiscard]] _CCCL_DEVICE_API auto
   map(const _Unit&, const _ParentGroup&, const _PrevMappingResult& __prev_mapping_result) const noexcept
   {
+    constexpr ::cuda::std::uint32_t __unit_counts[]{static_cast<::cuda::std::uint32_t>(_StaticUnitCounts)...};
+
     constexpr auto __static_prev_ngroups = _PrevMappingResult::static_group_count();
     constexpr auto __static_prev_nunits  = _PrevMappingResult::static_unit_count();
     constexpr auto __static_curr_ngroups = sizeof...(_StaticUnitCounts);
@@ -160,7 +163,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
     {
-      const auto __i_count = unit_count(__i);
+      const auto __i_count = __unit_counts[__i];
       if (__prev_unit_rank < __sum + __i_count)
       {
         const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
@@ -287,7 +290,7 @@ public:
     _CCCL_PRAGMA_UNROLL_FULL()
     for (::cuda::std::uint32_t __i = 0; __i < __curr_ngroups; ++__i)
     {
-      const auto __i_count = unit_count(__i);
+      const auto __i_count = __unit_counts_[__i];
       if (__prev_unit_rank < __sum + __i_count)
       {
         const auto __group_rank = __prev_mapping_result.group_rank() * __curr_ngroups + __i;
