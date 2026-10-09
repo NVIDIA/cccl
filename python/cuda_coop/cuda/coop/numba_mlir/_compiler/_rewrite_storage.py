@@ -1631,8 +1631,9 @@ class _StorageRewrite:
         check every use. Allow simple alias, cast, and phi assignments and
         one ``temp_storage=`` keyword on a recognized primitive.
         Subscripted-provider syntax and other call arguments are not
-        accepted descriptor uses. Every canonical constructor must have a
-        primitive consumer, so an otherwise unused
+        accepted descriptor uses. Recognized reserve methods are validated
+        separately. Every canonical constructor must have a primitive or
+        reservation consumer, so an otherwise unused
         ``storage = coop.TempStorage()`` is also rejected.
 
         Validation runs after device-helper inlining. Passing a descriptor
@@ -1663,7 +1664,7 @@ class _StorageRewrite:
         CoopSinglePhaseRewriteError
             A storage argument lacks local constructor provenance, a
             descriptor has an unsupported use, or a constructor has no
-            primitive consumer.
+            primitive or reservation consumer.
 
         Examples
         --------
@@ -1694,7 +1695,10 @@ class _StorageRewrite:
                     )
             return
 
-        consumed_ctor_keys: set[str] = set()
+        consumed_ctor_keys = {
+            rewrite._canonical_temp_storage_ctor_key(reservation.ctor_key)
+            for reservation in rewrite._temp_storage_reservations.values()
+        }
         for label in sorted(func_ir.blocks):
             scan_block = func_ir.blocks[label]
             self._block = scan_block
@@ -1704,6 +1708,8 @@ class _StorageRewrite:
                 if isinstance(inst, ir.Assign)
             }
             for inst in scan_block.body:
+                if inst in rewrite._temp_storage_reserve_methods:
+                    continue
                 used_vars = list(inst.list_vars())
                 if isinstance(inst, ir.Assign):
                     used_vars = [
@@ -1789,7 +1795,8 @@ class _StorageRewrite:
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage values are opaque compile-time descriptors "
                     "and may only be passed as temp_storage= to a "
-                    "registered cooperative primitive; a use involving "
+                    "registered cooperative primitive or used with reserve(); "
+                    "a use involving "
                     f"{names!r} would escape to runtime."
                 )
 
@@ -1807,8 +1814,8 @@ class _StorageRewrite:
             raise CoopSinglePhaseRewriteError(
                 "TempStorage values are opaque compile-time descriptors and "
                 "must be passed as temp_storage= to a registered "
-                f"cooperative primitive; constructor(s) {names!r} have no "
-                "primitive consumer."
+                "cooperative primitive or used with reserve(); "
+                f"constructor(s) {names!r} have no consumer."
             )
 
     def _collect_temp_storage_uses(
@@ -1911,6 +1918,7 @@ class _StorageRewrite:
                     lowering_plan=match.lowering_plan,
                 )
             )
+        rewrite._add_temp_storage_reservations(requirements)
         return requirements
 
 
