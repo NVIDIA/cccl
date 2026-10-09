@@ -1251,9 +1251,9 @@ class _StorageRewrite:
         """Choose the explicit scratch view passed to one provider call.
 
         ``apply`` uses the function-wide storage plan to replace a descriptor
-        operand with the call's assigned region. Shared storage at offset zero
-        can reuse the descriptor view. Exclusive storage or a nonzero offset
-        needs a narrower view so the provider receives the planned region.
+        operand with the call's assigned region. The provider receives its own
+        byte extent even when a reservation or another primitive requires a
+        larger shared region.
 
         Parameters
         ----------
@@ -1289,6 +1289,7 @@ class _StorageRewrite:
             if (
                 temp_storage_plan.sharing == "exclusive"
                 or slice_info.offset != 0
+                or slice_info.size_in_bytes != temp_storage_plan.size_in_bytes
             ):
                 sliced_var = ir.Var(
                     call_assign.target.scope,
@@ -1573,8 +1574,9 @@ class _StorageRewrite:
         assignments and one ``temp_storage=`` keyword on a recognized
         primitive; descriptor values cannot be ordinary runtime operands,
         returned objects, or arbitrary call arguments. Subscripted-provider
-        syntax is not an accepted descriptor use. Every canonical constructor
-        must have a primitive consumer.
+        syntax is not an accepted descriptor use. Recognized reserve methods
+        are validated separately. Every canonical constructor must have a
+        primitive or reservation consumer.
 
         Validation runs after device-helper inlining. If a call that passes a
         descriptor to a helper remains, report that the helper was not
@@ -1612,7 +1614,10 @@ class _StorageRewrite:
                     )
             return
 
-        consumed_ctor_keys: set[str] = set()
+        consumed_ctor_keys = {
+            rewrite._canonical_temp_storage_ctor_key(reservation.ctor_key)
+            for reservation in rewrite._temp_storage_reservations.values()
+        }
         for label in sorted(func_ir.blocks):
             scan_block = func_ir.blocks[label]
             self._block = scan_block
@@ -1622,6 +1627,8 @@ class _StorageRewrite:
                 if isinstance(inst, ir.Assign)
             }
             for inst in scan_block.body:
+                if inst in rewrite._temp_storage_reserve_methods:
+                    continue
                 used_vars = list(inst.list_vars())
                 if isinstance(inst, ir.Assign):
                     used_vars = [
@@ -1707,7 +1714,8 @@ class _StorageRewrite:
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage values are opaque compile-time descriptors "
                     "and may only be passed as temp_storage= to a "
-                    "registered cooperative primitive; a use involving "
+                    "registered cooperative primitive or used with reserve(); "
+                    "a use involving "
                     f"{names!r} would escape to runtime."
                 )
 
@@ -1725,8 +1733,8 @@ class _StorageRewrite:
             raise CoopSinglePhaseRewriteError(
                 "TempStorage values are opaque compile-time descriptors and "
                 "must be passed as temp_storage= to a registered "
-                f"cooperative primitive; constructor(s) {names!r} have no "
-                "primitive consumer."
+                "cooperative primitive or used with reserve(); "
+                f"constructor(s) {names!r} have no consumer."
             )
 
     def _collect_temp_storage_uses(
@@ -1829,6 +1837,7 @@ class _StorageRewrite:
                     lowering_plan=match.lowering_plan,
                 )
             )
+        rewrite._add_temp_storage_reservations(requirements)
         return requirements
 
 

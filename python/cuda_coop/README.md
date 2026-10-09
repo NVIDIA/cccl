@@ -344,10 +344,10 @@ request capacity and alignment. Both explicit and omitted storage
 participate in the shared-memory plan and launch accounting. The provider
 determines the required byte count and alignment.
 
-A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
-every call that passes the same descriptor on one region, while
-`"exclusive"` gives each call site its own slice. A call site inside a loop
-reuses its slice under either layout, so `auto_sync` is independent of
+A descriptor's `sharing` selects the primitive scratch layout: `"shared"`
+overlaps primitive calls that pass the same descriptor on one region, while
+`"exclusive"` gives each primitive call site its own slice. A call site inside
+a loop reuses its slice under either layout, so `auto_sync` is independent of
 `sharing` and defaults to `False` for both.
 
 Exclusive slices use more shared memory to avoid barriers needed solely for
@@ -366,6 +366,28 @@ kernel's own shared-memory traffic. With `auto_sync=False`, the caller issues
 `cuda.syncthreads()` between consecutive uses, and a call site inside a loop
 counts as a reuse on every iteration. Compiler-owned storage always
 synchronizes.
+
+Numba-CUDA-MLIR also supports `storage.reserve(num_elems, dtype, alignment=None)`
+inside a kernel. It returns an ordinary one-dimensional shared array for
+application data or another device library. The count, integer/float/complex
+scalar dtype, and optional byte alignment must be compile-time constants.
+Reservations inherit the descriptor's sharing policy. The default
+`sharing="shared"` aliases reservations and primitive scratch within the same
+descriptor, using their maximum size and alignment requirements.
+`sharing="exclusive"` separates every primitive and reservation call site.
+Different descriptors always have separate storage. Use separate descriptors
+or exclusive storage for simultaneously live buffers. Repeating a reservation
+call site reuses its region. Explicit capacity must cover the selected layout
+and any alignment padding.
+
+Descriptors used with `reserve()` must have `auto_sync=False` or `None`;
+`auto_sync=True` is rejected. The caller supplies synchronization and each
+library's completion and release operations. The runnable
+[nvmath FFT](examples/numba_mlir/nvmath_fft.py) and
+[nvmath + NVSHMEM](examples/numba_mlir/nvmath_nvshmem.py) examples demonstrate
+the array and pointer consumers. Their
+[instructions](examples/numba_mlir/README.md) cover dependencies and launch
+commands.
 
 All descriptors and compiler-owned requirements of a kernel share one
 shared-memory backing. Up to 48 KiB, the compiler uses static shared memory
