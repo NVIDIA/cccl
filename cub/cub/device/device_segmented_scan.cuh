@@ -28,10 +28,190 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_segmented_scan.cuh>
 
+#include <cuda/__execution/tune.h>
+#include <cuda/__functional/call_or.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail::segmented_scan
+{
+struct get_segmented_scan_num_items_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class EnvT)
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_num_items_t>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const EnvT& env) const noexcept
+  {
+    static_assert(noexcept(env.query(*this)));
+    return env.query(*this);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool query(::cuda::std::execution::forwarding_query_t) noexcept
+  {
+    return true;
+  }
+};
+
+struct get_segmented_scan_load_balancing_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class EnvT)
+  _CCCL_REQUIRES(::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_load_balancing_t>)
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(const EnvT& env) const noexcept
+  {
+    static_assert(noexcept(env.query(*this)));
+    return env.query(*this);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr bool query(::cuda::std::execution::forwarding_query_t) noexcept
+  {
+    return true;
+  }
+};
+
+struct load_balancing_t
+{};
+
+template <ForceInclusive EnforceInclusive,
+          bool ReuseInputBegin,
+          typename EnvT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorInputT,
+          typename EndOffsetIteratorInputT,
+          typename BeginOffsetIteratorOutputT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename PolicySelector>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
+  const EnvT& env,
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ::cuda::std::int64_t num_segments,
+  BeginOffsetIteratorInputT input_begin_offsets,
+  EndOffsetIteratorInputT input_end_offsets,
+  BeginOffsetIteratorOutputT output_begin_offsets,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  cudaStream_t stream,
+  PolicySelector policy_selector)
+{
+  if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_load_balancing_t>)
+  {
+    ::cuda::std::optional<::cuda::std::int64_t> num_items;
+    if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_num_items_t>)
+    {
+      num_items = get_segmented_scan_num_items_t{}(env);
+    }
+
+    using accum_t = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>;
+    using tuning_env_t =
+      ::cuda::__call_result_or_t<::cuda::execution::__get_tuning_t, ::cuda::std::execution::env<>, EnvT>;
+    using default_load_balanced_policy_selector_t = load_balanced_policy_selector_from_types<accum_t>;
+    using load_balanced_policy_selector_t         = ::cuda::std::execution::
+      __query_result_or_t<tuning_env_t, SegmentedScanLoadBalancedPolicy, default_load_balanced_policy_selector_t>;
+
+    if constexpr (ReuseInputBegin)
+    {
+      return dispatch_load_balanced<EnforceInclusive>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        general_segments<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>{input_begin_offsets, input_end_offsets, {}},
+        scan_op,
+        init_value,
+        num_items,
+        stream,
+        policy_selector,
+        load_balanced_policy_selector_t{});
+    }
+    else
+    {
+      return dispatch_load_balanced<EnforceInclusive>(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        general_segments<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>{
+          input_begin_offsets, input_end_offsets, output_begin_offsets},
+        scan_op,
+        init_value,
+        num_items,
+        stream,
+        policy_selector,
+        load_balanced_policy_selector_t{});
+    }
+  }
+  else if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_num_items_t>)
+  {
+    return dispatch_with_num_items<EnforceInclusive>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      input_begin_offsets,
+      input_end_offsets,
+      output_begin_offsets,
+      scan_op,
+      init_value,
+      get_segmented_scan_num_items_t{}(env),
+      stream,
+      policy_selector);
+  }
+  else
+  {
+    return dispatch<EnforceInclusive>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      input_begin_offsets,
+      input_end_offsets,
+      output_begin_offsets,
+      scan_op,
+      init_value,
+      1,
+      worker::block,
+      stream,
+      policy_selector);
+  }
+}
+} // namespace detail::segmented_scan
+
+//! @rst
+//! Creates an environment property that supplies the total number of items in all segments. The total is
+//! ``sum(max(end[i] - begin[i], 0))``. When the mean segment length is at most half of a block's tile, supplying the
+//! total lets one block scan ``floor(2 * tile size / mean segment length)`` consecutive segments, capped by the
+//! active :cpp:struct:`cub::SegmentedScanPolicy`; the tile size is ``block.threads_per_block`` times
+//! ``block.items_per_thread``. Supplying it is optional, but a supplied value must equal the total; otherwise the
+//! behavior is undefined. A negative value returns ``cudaErrorInvalidValue``.
+//!
+//! .. versionadded:: 3.6.0
+//! @endrst
+[[nodiscard]] CUB_RUNTIME_FUNCTION inline auto segmented_scan_num_items(::cuda::std::int64_t num_items)
+{
+  return ::cuda::std::execution::prop{detail::segmented_scan::get_segmented_scan_num_items_t{}, num_items};
+}
+
+//! @rst
+//! Environment property that opts into load balancing for skewed segment lengths, where a few segments contain most of
+//! the items. It adds a pass over the segment offsets, kernel launches, and temporary storage, so it pays off for
+//! moderate skew on large inputs, but on small inputs only under heavy skew.
+//!
+//! .. versionadded:: 3.6.0
+//! @endrst
+_CCCL_GLOBAL_CONSTANT auto segmented_scan_load_balancing = ::cuda::std::execution::prop{
+  detail::segmented_scan::get_segmented_scan_load_balancing_t{}, detail::segmented_scan::load_balancing_t{}};
 
 //! @rst
 //! DeviceSegmentedScan provides device-wide, parallel operations for computing a
@@ -59,6 +239,40 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @cdp_class{DeviceSegmentedScan}
 //!
+//! Choosing how segments are scheduled
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! By default, each segment is scanned by one thread block. This is the best choice when segment lengths are similar
+//! or the input is small.
+//!
+//! - If the total number of items in all segments is known, pass it in the environment with
+//!   ``cub::segmented_scan_num_items(n)``. When the mean segment length is at most half of a block's tile, one block
+//!   scans ``floor(2 * tile size / mean segment length)`` consecutive segments, capped by the active policy. The
+//!   tile size is ``block.threads_per_block`` times ``block.items_per_thread``. The value must equal the total;
+//!   otherwise the behavior is undefined. A negative value returns ``cudaErrorInvalidValue``.
+//! - If a few segments contain most of the items, opt into load balancing with
+//!   ``cub::segmented_scan_load_balancing``. Items are divided evenly among thread blocks regardless of segment
+//!   boundaries, so one long segment does not hold up the scan. This path costs an extra pass over the segment
+//!   offsets, one or two extra kernel launches, and temporary storage of about ``num_segments`` offsets. Because of
+//!   this fixed cost, it pays off for moderate skew on large inputs, but on small inputs only under heavy skew.
+//!   ``num_items`` is optional on this path; supplying it trims the launch and temporary storage, and a supplied
+//!   value must equal the total.
+//! - With load balancing, a segment's floating-point sum may be grouped differently depending on the GPU and input
+//!   size.
+//! - Output segments must not overlap. Input segments may.
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-num-items
+//!      :end-before: example-end segmented-scan-num-items
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-load-balancing
+//!      :end-before: example-end segmented-scan-load-balancing
+//!
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -77,6 +291,22 @@ CUB_NAMESPACE_BEGIN
 //!      :dedent:
 //!      :start-after: example-begin segmented-scan-tuning
 //!      :end-before: example-end segmented-scan-tuning
+//!
+//! With ``cub::segmented_scan_load_balancing`` in the environment, the load-balanced algorithm is tuned by a policy
+//! selector that returns a :cpp:struct:`cub::SegmentedScanLoadBalancedPolicy`. Pass it to ``cuda::execution::tune``,
+//! alone or together with a selector returning a :cpp:struct:`cub::SegmentedScanPolicy`:
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-load-balanced-policy-selector
+//!      :end-before: example-end segmented-scan-load-balanced-policy-selector
+//!
+//!  .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_scan_env_api.cu
+//!      :language: c++
+//!      :dedent:
+//!      :start-after: example-begin segmented-scan-load-balanced-tuning
+//!      :end-before: example-end segmented-scan-load-balanced-tuning
 //!
 //! @endrst
 struct DeviceSegmentedScan
@@ -315,6 +545,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -346,7 +578,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, true>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -357,8 +590,6 @@ public:
           d_in_begin_offsets,
           scan_op,
           detail::InputValue<init_value_t>(init_value),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -572,6 +803,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -607,7 +840,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, false>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -618,8 +852,6 @@ public:
           d_out_begin_offsets,
           scan_op,
           detail::InputValue<init_value_t>(init_value),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -839,6 +1071,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -868,7 +1102,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, true>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -879,8 +1114,6 @@ public:
           d_in_begin_offsets,
           scan_op,
           detail::InputValue<InitValueT>(init_value),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -1113,6 +1346,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1146,7 +1381,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, false>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -1157,8 +1393,6 @@ public:
           d_out_begin_offsets,
           scan_op,
           detail::InputValue<InitValueT>(init_value),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -1347,6 +1581,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1374,7 +1610,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, true>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -1385,8 +1622,6 @@ public:
           d_in_begin_offsets,
           scan_op,
           NullType(),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -1602,6 +1837,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1633,7 +1870,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, false>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -1644,8 +1882,6 @@ public:
           d_out_begin_offsets,
           scan_op,
           NullType(),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -1834,6 +2070,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -1860,7 +2098,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, true>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -1871,8 +2110,6 @@ public:
           d_in_begin_offsets,
           scan_op,
           NullType(),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -2101,6 +2338,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -2131,7 +2370,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::No, false>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -2142,8 +2382,6 @@ public:
           d_out_begin_offsets,
           scan_op,
           NullType(),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -2365,6 +2603,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -2395,7 +2635,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::Yes, true>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -2406,8 +2647,6 @@ public:
           d_in_begin_offsets,
           scan_op,
           detail::InputValue<InitValueT>(init_value),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });
@@ -2643,6 +2882,8 @@ public:
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
+  //!   Accepts ``cub::segmented_scan_num_items`` and ``cub::segmented_scan_load_balancing``, described under
+  //!   "Choosing how segments are scheduled" in the class documentation.
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
@@ -2677,7 +2918,8 @@ public:
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
-        return cub::detail::segmented_scan::dispatch<ForceInclusive::Yes>(
+        return cub::detail::segmented_scan::dispatch_from_env<ForceInclusive::Yes, false>(
+          env,
           d_temp_storage,
           temp_storage_bytes,
           d_in,
@@ -2688,8 +2930,6 @@ public:
           d_out_begin_offsets,
           scan_op,
           detail::InputValue<InitValueT>(init_value),
-          1,
-          detail::segmented_scan::worker::block,
           stream,
           policy_selector);
       });

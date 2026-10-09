@@ -9,6 +9,7 @@
 #include <thrust/tabulate.h>
 
 #include <cuda/iterator>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits> // std::integral_constant
 
 #include <cstdint>
@@ -224,6 +225,20 @@ struct constant_value_op
   }
 };
 } // namespace
+
+#if TEST_LAUNCH == 0
+CUB_TEST("Segmented scan selects segments per block from the mean", "[multi_segment][segmented][scan]", CUB_SMALL)
+{
+  using cub::detail::segmented_scan::segments_per_block_for_mean;
+  constexpr auto int64_max = cuda::std::numeric_limits<cuda::std::int64_t>::max();
+
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 11, 3072) == 1);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 12, 3072) == 4);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 16, 3072) == 5);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 1024, 2048) == 16);
+  STATIC_REQUIRE(segments_per_block_for_mean(2, 512, int64_max, int64_max) == 4);
+}
+#endif // TEST_LAUNCH == 0
 
 CUB_TEST("segmented inclusive scan works correctly for pairs with noncommutative op",
          "[multi_segment][segmented][scan]",
