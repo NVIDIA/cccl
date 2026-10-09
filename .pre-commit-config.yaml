@@ -38,6 +38,12 @@ repos:
         exclude_types: [python]
       - id: check-yaml
 
+  # Switch to upstream rhysd/actionlint once it supports the $/ self-repository syntax.
+  - repo: https://github.com/chuckatkins/actionlint
+    rev: fd81d12
+    hooks:
+      - id: actionlint
+
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:
