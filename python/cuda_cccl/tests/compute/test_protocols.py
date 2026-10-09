@@ -1,0 +1,138 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+import gc
+import weakref
+
+import pytest
+
+from cuda.compute._utils import protocols
+
+
+class _CountingStream:
+    def __init__(self, handle):
+        self.handle = handle
+        self.calls = 0
+
+    def __cuda_stream__(self):
+        self.calls += 1
+        return (0, self.handle)
+
+
+def test_validate_and_get_stream_caches_handle_by_identity():
+    stream = _CountingStream(123)
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert stream.calls == 1
+
+
+def test_validate_and_get_stream_revalidates_closed_stream():
+    class ClosableStream(_CountingStream):
+        def __init__(self, handle):
+            super().__init__(handle)
+            self.is_closed = False
+
+        def close(self):
+            self.is_closed = True
+
+        def __cuda_stream__(self):
+            self.calls += 1
+            if self.is_closed:
+                raise RuntimeError("stream is closed")
+            return (0, self.handle)
+
+    stream = ClosableStream(123)
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert stream.calls == 1
+
+    stream.close()
+    with pytest.raises(RuntimeError, match="stream is closed"):
+        protocols.validate_and_get_stream(stream)
+
+    assert stream.calls == 2
+    assert protocols._LAST_STREAM_HANDLE_CACHE is None
+
+
+def test_validate_and_get_stream_does_not_confuse_equal_objects():
+    class EqualStream(_CountingStream):
+        def __eq__(self, other):
+            return isinstance(other, EqualStream)
+
+        def __hash__(self):
+            return 1
+
+    first = EqualStream(123)
+    second = EqualStream(456)
+
+    assert first == second
+    assert protocols.validate_and_get_stream(first) == 123
+    assert protocols.validate_and_get_stream(second) == 456
+    assert protocols.validate_and_get_stream(first) == 123
+    # The one-entry MRU is replaced by the intervening stream, so the first
+    # stream is revalidated rather than confused with the equal second object.
+    assert first.calls == 2
+    assert second.calls == 1
+
+
+def test_stream_handle_cache_does_not_extend_stream_lifetime():
+    stream = _CountingStream(123)
+    stream_ref = weakref.ref(stream)
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols._LAST_STREAM_HANDLE_CACHE is not None
+
+    del stream
+    gc.collect()
+
+    assert stream_ref() is None
+    assert protocols._LAST_STREAM_HANDLE_CACHE[0]() is None
+
+
+def test_non_weakrefable_stream_remains_supported_without_caching():
+    class NonWeakrefableStream:
+        __slots__ = ("calls",)
+
+        def __init__(self):
+            self.calls = 0
+
+        def __cuda_stream__(self):
+            self.calls += 1
+            return (0, 123)
+
+    stream = NonWeakrefableStream()
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert stream.calls == 2
+
+
+def test_is_closed_probe_error_falls_back_to_protocol_validation():
+    class ProbeErrorStream(_CountingStream):
+        @property
+        def is_closed(self):
+            raise RuntimeError("probe failed")
+
+    stream = ProbeErrorStream(123)
+
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert protocols.validate_and_get_stream(stream) == 123
+    assert stream.calls == 2
+
+
+def test_invalid_stream_is_not_cached():
+    class InvalidStream(_CountingStream):
+        def __cuda_stream__(self):
+            self.calls += 1
+            return (0, None)
+
+    stream = InvalidStream(0)
+
+    with pytest.raises(TypeError, match="invalid stream handle"):
+        protocols.validate_and_get_stream(stream)
+    with pytest.raises(TypeError, match="invalid stream handle"):
+        protocols.validate_and_get_stream(stream)
+    assert stream.calls == 2
