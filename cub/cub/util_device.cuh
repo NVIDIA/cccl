@@ -43,6 +43,11 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace experimental
+{
+class DeviceDescription;
+} // namespace experimental
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
@@ -774,6 +779,29 @@ struct KernelConfig
     items_per_thread  = agent_policy.items_per_thread;
     tile_size         = threads_per_block * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
+  }
+
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory,
+            // This is always experimental::DeviceDescription, but we must make it a template
+            // argument to stop compilers type-checking on incomplete types, because we don't
+            // want to include the whole header for it here.
+            //
+            // The translation units that call this overload will already include the
+            // appropriate header anyways.
+            typename DeviceDescriptionT = experimental::DeviceDescription>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init(
+    KernelPtrT kernel_ptr,
+    AgentPolicyT agent_policy,
+    const LauncherFactory& launcher_factory,
+    const DeviceDescriptionT& device_descr,
+    const void* d_temp_storage)
+  {
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return device_descr.__occupancy(kernel_ptr, launcher_factory, d_temp_storage, threads_per_block, 0, sm_occupancy);
   }
 };
 
