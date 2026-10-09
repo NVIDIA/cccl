@@ -25,6 +25,6 @@
     _CCCL_HOST_DEVICE static yes_type test(typename S::nested_type_name*); \
     template <typename S>                                                  \
     _CCCL_HOST_DEVICE static no_type test(...);                            \
-    static bool const value = sizeof(test<T>(0)) == sizeof(yes_type);      \
-    using type              = ::cuda::std::integral_constant<bool, value>; \
+    static bool constexpr value = sizeof(test<T>(0)) == sizeof(yes_type);  \
+    using type                  = ::cuda::std::bool_constant<value>;       \
   };

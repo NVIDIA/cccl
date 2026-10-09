@@ -135,5 +135,5 @@ THRUST_NAMESPACE_END
                                                                                                                        \
   public:                                                                                                              \
     static const bool value = impl<trait_name##_has_member<T, Signature>::value, Signature>::value;                    \
-    using type              = ::cuda::std::integral_constant<bool, value>;                                             \
+    using type              = ::cuda::std::bool_constant<value>;                                                       \
   };
