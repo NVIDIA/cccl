@@ -22,6 +22,8 @@
 #include <type_traits>
 #include <vector>
 
+#include <cuda_runtime_api.h>
+
 #include <c2h/catch2_main.h>
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_allocator.cuh>
