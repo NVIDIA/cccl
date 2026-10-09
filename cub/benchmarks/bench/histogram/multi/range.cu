@@ -3,6 +3,7 @@
 
 #include <thrust/sequence.h>
 
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 #include <nvbench_helper.cuh>
@@ -31,30 +32,30 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const int num_levels_g = num_levels_r;
   const int num_levels_b = num_levels_g;
 
-  const SampleT lower_level = 0;
-  const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
-
+  // Skip invalid configurations where LevelT (= SampleT) cannot represent the number of bins
   if constexpr (cuda::std::is_integral_v<SampleT>)
   {
-    if (num_bins > upper_level - lower_level)
+    if (num_bins > static_cast<int64_t>(cuda::std::numeric_limits<SampleT>::max()))
     {
-      state.skip("Number of bins exceeds the integer sample range");
+      state.skip("Number of bins exceeds what LevelT (= SampleT) can represent");
       return;
     }
   }
 
-  using level_t      = cuda::std::common_type_t<SampleT, int>;
-  const level_t step = static_cast<level_t>(upper_level - lower_level) / static_cast<level_t>(num_bins);
-  thrust::device_vector<level_t> levels_r(num_bins + 1);
+  const SampleT lower_level = 0;
+  const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
+
+  const SampleT step = (upper_level - lower_level) / num_bins;
+  thrust::device_vector<SampleT> levels_r(num_bins + 1);
 
   // TODO Extract sequence to the helper TU
-  thrust::sequence(levels_r.begin(), levels_r.end(), static_cast<level_t>(lower_level), step);
-  thrust::device_vector<level_t> levels_g = levels_r;
-  thrust::device_vector<level_t> levels_b = levels_g;
+  thrust::sequence(levels_r.begin(), levels_r.end(), lower_level, step);
+  thrust::device_vector<SampleT> levels_g = levels_r;
+  thrust::device_vector<SampleT> levels_b = levels_g;
 
-  level_t* d_levels_r = thrust::raw_pointer_cast(levels_r.data());
-  level_t* d_levels_g = thrust::raw_pointer_cast(levels_g.data());
-  level_t* d_levels_b = thrust::raw_pointer_cast(levels_b.data());
+  SampleT* d_levels_r = thrust::raw_pointer_cast(levels_r.data());
+  SampleT* d_levels_g = thrust::raw_pointer_cast(levels_g.data());
+  SampleT* d_levels_b = thrust::raw_pointer_cast(levels_b.data());
 
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
@@ -86,7 +87,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       d_input,
       cuda::std::array<CounterT*, num_active_channels>{d_histogram_r, d_histogram_g, d_histogram_b},
       cuda::std::array<int, num_active_channels>{num_levels_r, num_levels_g, num_levels_b},
-      cuda::std::array<const level_t*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
+      cuda::std::array<const SampleT*, num_active_channels>{d_levels_r, d_levels_g, d_levels_b},
       static_cast<OffsetT>(elements),
       env);
   });
