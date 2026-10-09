@@ -258,7 +258,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     const auto kernel_num_items = [=] {
       if constexpr (::cuda::args::__traits<OffsetT>::is_deferred)
       {
-        return detail::reduce::make_num_items_kernel_arg(num_items);
+        return detail::make_num_items_kernel_arg(num_items);
       }
       else
       {
@@ -334,7 +334,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
                 DeterministicAccumT>,
               d_block_reductions,
               d_out,
-              detail::reduce::make_num_items_kernel_arg(num_items),
+              detail::make_num_items_kernel_arg(num_items),
               reduce_grid_size,
               reduction_op,
               init,
@@ -380,7 +380,7 @@ template <typename InputIteratorT,
           typename TransformOpT          = ::cuda::std::identity,
           typename AccumT                = accum_t<InitValueT, InputIteratorT, TransformOpT>,
           typename PolicySelector        = policy_selector_from_types<AccumT,
-                                                                      reduce::num_items_offset_t<OffsetT>,
+                                                                      detail::num_items_offset_t<OffsetT>,
                                                                       deterministic_sum_t<AccumT>,
                                                                       __determinism_t::__gpu_to_gpu>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>

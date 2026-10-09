@@ -16,14 +16,34 @@
 #include <cub/detail/choose_offset.cuh>
 
 #include <cuda/__argument/argument.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+template <typename NumItemsT>
+using num_items_offset_t = choose_offset_t<typename ::cuda::args::__traits<NumItemsT>::element_type>;
+
 #if !_CCCL_COMPILER(NVRTC)
+template <typename NumItemsT>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto num_items_upper_bound(NumItemsT num_items) noexcept
+{
+  using offset_t = num_items_offset_t<NumItemsT>;
+
+  if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
+  {
+    return static_cast<offset_t>(::cuda::args::__highest_(num_items));
+  }
+  else
+  {
+    return static_cast<offset_t>(::cuda::args::__unwrap(num_items));
+  }
+}
+
 // Preserve deferred problem sizes for dispatch and canonicalize immediate values to CUB's offset type.
 template <typename NumItemsT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto make_num_items_dispatch_arg(NumItemsT num_items) noexcept
@@ -62,6 +82,24 @@ template <typename TargetT, typename ParameterT>
 
 template <typename TargetT, typename ParameterT>
 using parameter_from_host_t = decltype(parameter_from_host<TargetT>(::cuda::std::declval<ParameterT>()));
+
+template <typename NumItemsT>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto
+make_num_items_kernel_arg(NumItemsT num_items) noexcept
+{
+  using args_traits_t = ::cuda::args::__traits<NumItemsT>;
+  using element_t     = typename args_traits_t::element_type;
+
+  if constexpr (args_traits_t::is_deferred)
+  {
+    static_assert(args_traits_t::is_single_value, "num_items must be a single value wrapped in cuda::args::deferred");
+    static_assert(::cuda::std::__cccl_is_integer_v<element_t>, "the num_items element type must be an integer");
+    static_assert(
+      sizeof(element_t) == sizeof(::cuda::std::int32_t) || sizeof(element_t) == sizeof(::cuda::std::int64_t));
+  }
+
+  return parameter_from_host<num_items_offset_t<NumItemsT>>(num_items);
+}
 #endif // !_CCCL_COMPILER(NVRTC)
 
 // Forms a value from a kernel parameter, reading element zero when the parameter is a deferred source.
