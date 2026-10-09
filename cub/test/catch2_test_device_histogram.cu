@@ -882,6 +882,139 @@ CUB_TEST_LIST(
 }
 #endif // TEST_LAUNCH == 0
 
+struct low_byte_of_index
+{
+  __host__ __device__ unsigned char operator()(uint64_t i) const
+  {
+    return static_cast<uint8_t>(i % 256);
+  }
+};
+
+// Sample i is i % 256, so n samples put n / 256 into each of 256 unit-wide bins when n is a multiple of 256
+static auto low_byte_samples()
+{
+  return cuda::transform_iterator(cuda::counting_iterator<uint64_t>{0}, low_byte_of_index{});
+}
+
+using large_offset_types = c2h::type_list<int32_t, int64_t>;
+
+// 64-bit sizes this small are down-converted to int, so both offset types run the int kernel here
+CUB_TEST(
+  "DeviceHistogram::Histogram* sample count close to INT_MAX", "[histogram][device]", CUB_SMALL, large_offset_types)
+{
+  using offset_t                 = c2h::get<0, TestType>;
+  constexpr offset_t num_samples = cs::numeric_limits<int32_t>::max() - 65535;
+  const auto expected            = c2h::host_vector<int>(256, static_cast<int>(num_samples / 256));
+
+  c2h::device_vector<int> d_histogram(256, thrust::no_init);
+  histogram_even(low_byte_samples(), thrust::raw_pointer_cast(d_histogram.data()), 257, 0, 256, num_samples);
+  CHECK(d_histogram == expected);
+
+  const c2h::device_vector<int> d_levels(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{257});
+  histogram_range(
+    low_byte_samples(),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    257,
+    thrust::raw_pointer_cast(d_levels.data()),
+    num_samples);
+  CHECK(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram::MultiHistogram* sample positions exceed INT_MAX", "[histogram][device]", CUB_SMALL)
+{
+  // The pixel count fits in int, but the 2^31 sample positions do not
+  constexpr int num_pixels      = 1 << 29;
+  constexpr int channels        = 4;
+  constexpr int active_channels = 3;
+
+  // Channel c sees (4 * pixel + c) % 256, the 64 values congruent to c modulo 4, each num_pixels / 64 times
+  const auto expected = [](int channel) {
+    c2h::host_vector<int> h(256, 0);
+    for (int value = channel; value < 256; value += 4)
+    {
+      h[value] = num_pixels / 64;
+    }
+    return h;
+  };
+
+  auto d_histogram = array<c2h::device_vector<int>, active_channels>();
+  for (auto& h : d_histogram)
+  {
+    h.resize(256, thrust::no_init);
+  }
+  const auto num_levels = array<int, active_channels>{257, 257, 257};
+
+  multi_histogram_even<channels, active_channels>(
+    low_byte_samples(),
+    to_array_of_ptrs(d_histogram),
+    num_levels,
+    array<int, active_channels>{0, 0, 0},
+    array<int, active_channels>{256, 256, 256},
+    num_pixels);
+  for (int c = 0; c < active_channels; ++c)
+  {
+    CHECK(d_histogram[c] == expected(c));
+  }
+
+  const c2h::device_vector<int> d_levels(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{257});
+  const int* levels = thrust::raw_pointer_cast(d_levels.data());
+  multi_histogram_range<channels, active_channels>(
+    low_byte_samples(),
+    to_array_of_ptrs(d_histogram),
+    num_levels,
+    array<const int*, active_channels>{levels, levels, levels},
+    num_pixels);
+  for (int c = 0; c < active_channels; ++c)
+  {
+    CHECK(d_histogram[c] == expected(c));
+  }
+}
+
+// Positions below 2^33 map to bins 0..255 by bits 25..32; anything larger (e.g. a wrapped offset) maps to bin 255
+struct upper_bits_of_index
+{
+  __host__ __device__ unsigned char operator()(uint64_t i) const
+  {
+    return static_cast<uint8_t>(cs::min<uint64_t>(i >> 25, 255));
+  }
+};
+
+CUB_TEST("DeviceHistogram::Histogram* rows starting beyond INT_MAX", "[histogram][device]", CUB_SMALL)
+{
+  // Each size fits in int, but the last rows start past INT_MAX. The padding keeps the rows from being merged into one.
+  constexpr int row_samples      = 40000;
+  constexpr int num_rows         = 110000;
+  constexpr int row_stride_bytes = 50000;
+
+  c2h::host_vector<int> expected(256, 0);
+  for (uint64_t row = 0; row < num_rows; ++row)
+  {
+    const uint64_t begin = row * row_stride_bytes;
+    const uint64_t end   = begin + row_samples;
+    for (uint64_t bin = begin >> 25; bin <= (end - 1) >> 25; ++bin)
+    {
+      expected[bin] += static_cast<int>(std::min(end, (bin + 1) << 25) - std::max(begin, bin << 25));
+    }
+  }
+
+  const auto samples = cuda::transform_iterator(cuda::counting_iterator<uint64_t>{0}, upper_bits_of_index{});
+  c2h::device_vector<int> d_histogram(256, thrust::no_init);
+  histogram_even(
+    samples, thrust::raw_pointer_cast(d_histogram.data()), 257, 0, 256, row_samples, num_rows, size_t{row_stride_bytes});
+  CHECK(d_histogram == expected);
+
+  const c2h::device_vector<int> d_levels(cuda::counting_iterator<int>{0}, cuda::counting_iterator<int>{257});
+  histogram_range(
+    samples,
+    thrust::raw_pointer_cast(d_histogram.data()),
+    257,
+    thrust::raw_pointer_cast(d_levels.data()),
+    row_samples,
+    num_rows,
+    size_t{row_stride_bytes});
+  CHECK(d_histogram == expected);
+}
+
 // Regression test for https://github.com/NVIDIA/cub/issues/489: integer rounding errors lead to incorrect bin detection
 CUB_TEST("DeviceHistogram::HistogramEven bin calculation regression", "[histogram_even][device]", CUB_SMALL)
 {

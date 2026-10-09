@@ -26,9 +26,11 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -556,26 +558,31 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
     OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
+    // Unsigned, so that stepping one grid stride past the end of the row cannot overflow
+    using step_offset_t = ::cuda::std::make_unsigned_t<::cuda::std::common_type_t<OffsetT, int>>;
+
     for (int row = static_cast<int>(blockIdx.y); row < num_rows; row += static_cast<int>(gridDim.y))
     {
-      OffsetT row_begin   = row * row_stride_samples;
-      OffsetT row_end     = row_begin + (num_row_pixels * NumChannels);
-      OffsetT tile_offset = row_begin + (blockIdx.x * tile_samples);
+      // no conversion needed. We make sure that every row start fits in OffsetT before launching the kernel
+      const step_offset_t row_begin = row * row_stride_samples;
+      const step_offset_t row_end   = row_begin + (num_row_pixels * NumChannels);
+      step_offset_t tile_offset     = row_begin + (static_cast<step_offset_t>(blockIdx.x) * tile_samples);
 
       while (tile_offset < row_end)
       {
-        OffsetT num_remaining = row_end - tile_offset;
+        const step_offset_t num_remaining = row_end - tile_offset;
 
-        if (num_remaining < tile_samples)
+        if (num_remaining < step_offset_t{tile_samples})
         {
           // Consume partial tile
-          ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
+          ConsumeTile<IsAligned, false>(static_cast<OffsetT>(tile_offset), static_cast<int>(num_remaining));
           break;
         }
 
         // Consume full tile
-        ConsumeTile<IsAligned, true>(tile_offset, tile_samples);
-        tile_offset += gridDim.x * tile_samples;
+        ConsumeTile<IsAligned, true>(static_cast<OffsetT>(tile_offset), tile_samples);
+        // gridDim.x refers to the number of resident blocks, so the multiplication cannot overflow
+        tile_offset += static_cast<step_offset_t>(gridDim.x) * tile_samples;
       }
     }
   }
