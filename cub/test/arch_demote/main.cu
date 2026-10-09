@@ -18,21 +18,6 @@
 
 int main()
 {
-  // This binary contains sm_80 SASS, which runs natively on GPUs with compute capability 8.x. On any other GPU it
-  // would only run by JIT-compiling PTX, which fails if the driver is older than the CUDA Toolkit.
-  int device_cc_major = 0;
-  _CCCL_TRY_RUNTIME_API(
-    cudaDeviceGetAttribute,
-    "cudaDeviceGetAttribute failed",
-    &device_cc_major,
-    cudaDevAttrComputeCapabilityMajor,
-    cub::CurrentDevice());
-  if (device_cc_major != 8)
-  {
-    std::printf("SKIPPED: this test requires a GPU with compute capability 8.x\n");
-    return 0;
-  }
-
 #ifdef __CUDA_ARCH_LIST__
   std::printf("__CUDA_ARCH_LIST__=%s\n", STRINGIFY(__CUDA_ARCH_LIST__));
 #endif // __CUDA_ARCH_LIST__

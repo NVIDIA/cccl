@@ -37,12 +37,6 @@ set_source_files_properties(
     COMPILE_OPTIONS "--generate-code=arch=compute_75,code=[compute_75,sm_75]"
 )
 target_compile_definitions(${arch_demote_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
-# Without an architecture, the device link step defaults to sm_75 and the sm_80 SASS is not linked into a loadable
-# image, so the test would only run by JIT-compiling PTX, which fails if the driver is older than the toolkit.
-target_link_options(
-  ${arch_demote_target}
-  PRIVATE $<DEVICE_LINK:--generate-code=arch=compute_80$<COMMA>code=sm_80>
-)
 
 rapids_test_add(
   NAME ${arch_demote_target}
@@ -87,11 +81,6 @@ set_source_files_properties(
 target_compile_definitions(
   ${arch_native_mismatch_target}
   PRIVATE CCCL_ENABLE_ASSERTIONS
-)
-# See above: give the device link step the architecture of the SASS, so no PTX JIT compilation is needed.
-target_link_options(
-  ${arch_native_mismatch_target}
-  PRIVATE $<DEVICE_LINK:--generate-code=arch=compute_80$<COMMA>code=sm_86>
 )
 
 rapids_test_add(
