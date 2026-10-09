@@ -24,6 +24,50 @@
         "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
         "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION": "0",
         "CUDA_COOP_ENABLE_CACHE": "0",
+        "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-temp-storage-sources",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "PYTHONPATH": "${workspaceFolder}/python/cuda_coop"
+      },
+      "justMyCode": false,
+      "name": "cuda.coop: Temp storage (dynamic first)",
+      "program": "${workspaceFolder}/docs/python/coop/debugger_walkthrough_temp_storage.py",
+      "request": "launch",
+      "type": "debugpy",
+      "args": [
+        "--case",
+        "dynamic"
+      ],
+      "subProcess": false
+    },
+    {
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
+        "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION": "0",
+        "CUDA_COOP_ENABLE_CACHE": "0",
+        "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-temp-storage-sources",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "PYTHONPATH": "${workspaceFolder}/python/cuda_coop"
+      },
+      "justMyCode": false,
+      "name": "cuda.coop: Temp storage (choose case)",
+      "program": "${workspaceFolder}/docs/python/coop/debugger_walkthrough_temp_storage.py",
+      "request": "launch",
+      "type": "debugpy",
+      "args": [
+        "--case",
+        "${input:coopTempStorageCase}"
+      ],
+      "subProcess": false
+    },
+    {
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
+        "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION": "0",
+        "CUDA_COOP_ENABLE_CACHE": "0",
         "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-debug-sources",
         "CUDA_VISIBLE_DEVICES": "0",
         "PYTHONPATH": "${workspaceFolder}/python/cuda_coop"
@@ -46,5 +90,21 @@
       "type": "cuda-gdb"
     }
   ],
-  "version": "0.2.0"
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "coopTempStorageCase",
+      "type": "pickString",
+      "description": "Temporary storage walkthrough case",
+      "options": [
+        "dynamic",
+        "shared-auto",
+        "shared-manual",
+        "exclusive",
+        "independent",
+        "all"
+      ],
+      "default": "dynamic"
+    }
+  ]
 }
