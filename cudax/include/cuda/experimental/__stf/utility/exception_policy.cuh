@@ -133,6 +133,15 @@ struct nullval final
  */
 namespace exception_policies
 {
+// A selecting policy's answer to "would your hook take the active exception?" (see the claim
+// protocol in `detail` below): yes, no, or unknown from the funnel pointer alone.
+enum class __claim : unsigned char
+{
+  __no,
+  __yes,
+  __unknown
+};
+
 /**
  * @brief A suppressing handler policy that reports an exception and resumes (`std::ignore`).
  *
@@ -487,24 +496,33 @@ struct when_t
   using __exception_sink_tag = void;
   _Pred __pred_;
 
-  template <class _Fn>
+  // The claim is the predicate. It is not pure: a composite asks it only where the hook would
+  // have run, and after a yes the hook body (`__claimed`) has nothing left to do, so the
+  // predicate is evaluated exactly once either way.
   // maybe_unused: when the predicate is nullary, only the discarded constexpr
   // branch reads __exception; gcc 9 reports it as set-but-unused.
-  void operator()([[maybe_unused]] const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&)
+  __claim __claims([[maybe_unused]] const ::std::exception* __exception)
   {
     if constexpr (::cuda::std::is_invocable_v<_Pred&, const ::std::exception*>)
     {
-      if (__pred_(__exception))
-      {
-        return;
-      }
+      return __pred_(__exception) ? __claim::__yes : __claim::__no;
     }
     else
     {
-      if (__pred_())
-      {
-        return;
-      }
+      return __pred_() ? __claim::__yes : __claim::__no;
+    }
+  }
+
+  template <class _Fn>
+  void __claimed(const ::std::exception*, const ::cuda::std::source_location, _Fn&) noexcept
+  {}
+
+  template <class _Fn>
+  void operator()(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&)
+  {
+    if (__claims(__exception) == __claim::__yes)
+    {
+      return;
     }
     _CCCL_RETHROW; // decline: the guard does not apply
   }
@@ -525,6 +543,24 @@ struct translate_t
                 "translate: the target type must derive from std::exception");
 
   using __exception_sink_tag = void;
+  using __pure_claim_tag     = void;
+
+  // The funnel pointer decides the claim for std-derived exceptions; a non-std exception is
+  // re-observed by the hook.
+  __claim __claims(const ::std::exception* __e) const noexcept
+  {
+    if (__e)
+    {
+      return dynamic_cast<const _From*>(__e) != nullptr ? __claim::__yes : __claim::__no;
+    }
+    return __claim::__unknown;
+  }
+
+  template <class _Fn>
+  [[noreturn]] nullval __claimed(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
+  {
+    __throw_translated(*dynamic_cast<const _From*>(__e)); // the claim was answered yes: the cast holds
+  }
 
   template <class _Fn>
   [[noreturn]] nullval operator()(const ::std::exception* __e, const ::cuda::std::source_location, _Fn&) const
@@ -1031,6 +1067,49 @@ inline constexpr bool __has_exception_hook =
 template <class _P, class _Fn = void (&)()>
 using __hook_answer_t = __exception_hook_of<::cuda::std::remove_reference_t<_P>, _Fn>;
 
+// Capability 1b: the claim protocol. A policy that selects on the active exception may expose
+// `__claims(const std::exception*)`, answering whether its hook would take the exception
+// (`__yes`), decline it (`__no`), or cannot tell from the funnel pointer alone (`__unknown`: a
+// non-std exception the funnel cannot name, or a listed non-class type). Beside it,
+// `__claimed(e, loc, fn)` is the hook body to run once the claim was answered `__yes`, so the
+// selection is made once and a predicate is evaluated once. `|` and `*` ask the claim before
+// invoking the arm: a `__no` sends the exception to the next arm by return, where the hook would
+// have declined by `throw;`, at one unwind per declined arm. A claim marked pure
+// (`__pure_claim_tag`) depends on the exception's type alone, so a composite may ask it ahead
+// of its position; a predicate's claim is not pure and is asked only where the hook would have
+// run, after the effects that precede it. The `__claim` enumeration itself is declared at the
+// top of `exception_policies`, since the predicate and translator policies answer it before
+// this namespace opens.
+
+template <class _P>
+using __claims_of = decltype(::cuda::std::declval<_P&>().__claims(::cuda::std::declval<const ::std::exception*>()));
+
+template <class _P>
+inline constexpr bool __has_claim =
+  ::cuda::std::_IsValidExpansion<__claims_of, ::cuda::std::remove_reference_t<_P>>::value;
+
+template <class _P>
+using __pure_claim_tag_of = typename _P::__pure_claim_tag;
+
+template <class _P>
+inline constexpr bool __has_pure_claim =
+  __has_claim<_P> && ::cuda::std::_IsValidExpansion<__pure_claim_tag_of, ::cuda::std::remove_reference_t<_P>>::value;
+
+// Runs the hook body of a policy whose claim was answered `__yes`. Shaped like a policy so the
+// answer interpreter reads its answer type the usual way.
+template <class _P>
+struct __claimed_view
+{
+  _P& __p_;
+
+  template <class _Fn>
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return __p_.__claimed(__exception, __loc, __fn);
+  }
+};
+
 // Capability 2a: the success hook `p.on_success(R&&)` for a given result type.
 template <class _P, class _R>
 using __on_success_with_of = decltype(::cuda::std::declval<_P&>().on_success(::cuda::std::declval<_R>()));
@@ -1173,15 +1252,38 @@ inline constexpr bool __catch_only_pack_ok<_Head, _Tail...> =
   (!__claims<_Head, _Tail> && ...) && (!__claims<_Tail, _Head> && ...) && __catch_only_pack_ok<_Tail...>;
 
 // `catch_only<E1, E2, ...>(p)`: run `p`'s exception path when the active exception matches ANY
-// listed type by catch-clause rules (same or publicly derived), else decline by rethrowing.
-// The listed types may be anything catchable, std::exception heritage or not; matching is by
-// re-observation, since a pack cannot expand into sibling catch clauses. Native C++ has no
-// multi-type catch clause; this adds expressivity the language lacks. Policy parameter leads
-// so the exception-type pack trails.
+// listed type by catch-clause rules (same or publicly derived), else decline: by a returned
+// claim when `|` or `*` asks first, by rethrowing when invoked directly. The listed types may
+// be anything catchable, std::exception heritage or not; matching is by re-observation, since
+// a pack cannot expand into sibling catch clauses. Native C++ has no multi-type catch clause;
+// this adds expressivity the language lacks. Policy parameter leads so the exception-type pack
+// trails.
 template <class _P, class... _Es>
 struct __catch_only_t : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
+  using __pure_claim_tag     = void;
+
+  // The claim is decided by the funnel pointer alone when every listed type is a class and the
+  // active exception is std-derived; otherwise unknown, and the hook re-observes.
+  __claim __claims([[maybe_unused]] const ::std::exception* __exception) const noexcept
+  {
+    if constexpr ((::cuda::std::is_class_v<_Es> && ...))
+    {
+      if (__exception)
+      {
+        return ((dynamic_cast<const _Es*>(__exception) != nullptr) || ...) ? __claim::__yes : __claim::__no;
+      }
+    }
+    return __claim::__unknown;
+  }
+
+  template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
+  _CCCL_FORCEINLINE decltype(auto)
+  __claimed(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return this->__p_(__exception, __loc, __fn);
+  }
 
   // Does the active exception match any listed type? A recursive ladder of re-observations;
   // the binding must be named for the no-exceptions expansion of _CCCL_CATCH.
@@ -1232,7 +1334,8 @@ struct __catch_only_t : __forwards_success<_P>
   }
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     if (__matches_active<_Es...>(__exception))
     {
@@ -1266,11 +1369,27 @@ template <class _P, class... _Es>
 struct __catch_exactly_t : __forwards_success<_P>
 {
   using __exception_sink_tag = void;
+  using __pure_claim_tag     = void;
+
+  // Exact matching reads typeid through the funnel, so the claim is always decided: a null
+  // funnel is a non-std exception, which this guard declines.
+  __claim __claims(const ::std::exception* __exception) const noexcept
+  {
+    return (__exception != nullptr && ((typeid(*__exception) == typeid(_Es)) || ...)) ? __claim::__yes : __claim::__no;
+  }
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  __claimed(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    if (__exception != nullptr && ((typeid(*__exception) == typeid(_Es)) || ...))
+    return this->__p_(__exception, __loc, __fn);
+  }
+
+  template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    if (__claims(__exception) == __claim::__yes)
     {
       return this->__p_(__exception, __loc, __fn);
     }
@@ -1287,7 +1406,8 @@ struct __as_policy : __forwards_success<_P>
   using __exception_sink_tag = void;
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     return this->__p_(__exception, __loc, __fn);
   }
@@ -1398,7 +1518,8 @@ struct __policy_and : __composite_hooks<_L, _R>
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> || __has_exception_hook<_RR>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     if constexpr (__has_exception_hook<_L>)
     {
@@ -1409,15 +1530,53 @@ struct __policy_and : __composite_hooks<_L, _R>
       return this->__r_(__exception, __loc, __fn);
     }
   }
+
+  // The sequence's claim is its first element's: a first element that declines declines the
+  // whole sequence before anything has run, and it is the only element that runs nothing before
+  // deciding. A later selector is asked in its own position, after the effects before it.
+  template <class _LL = _L, ::cuda::std::enable_if_t<__has_claim<_LL>, int> = 0>
+  __claim __claims(const ::std::exception* __exception)
+  {
+    return this->__l_.__claims(__exception);
+  }
+
+  template <class _Fn, class _LL = _L, ::cuda::std::enable_if_t<__has_claim<_LL>, int> = 0>
+  _CCCL_FORCEINLINE decltype(auto)
+  __claimed(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    static_cast<void>(this->__l_.__claimed(__exception, __loc, __fn));
+    if constexpr (__has_exception_hook<_R>)
+    {
+      return this->__r_(__exception, __loc, __fn);
+    }
+  }
 };
 
 template <class _L, class _R>
 __policy_and(_L, _R) -> __policy_and<_L, _R>;
 
+template <class _L, class _R>
+inline constexpr bool __has_pure_claim<__policy_and<_L, _R>> = __has_pure_claim<_L>;
+
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
-_Expr __interpret_answer(
+_CCCL_FORCEINLINE _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
+
+// The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
+// resume tag for a void callable. The composites below spell it as their declared return type
+// rather than `decltype(auto)`. The difference matters for the capability probes
+// (`__has_exception_hook`, `__hook_answer_t`), which call a hook with the `void (&)()` archetype:
+// a deduced return type forces the body to be instantiated under that archetype, and the body's
+// `__interpret_answer<void>` of a value-answering arm is a hard static_assert, not a substitution
+// failure. With the type declared, the probe reads the declaration and the body is instantiated
+// only at a real guard. Without this, `notify & (catch_only<E>(subst(1)) | subst(2))` and any
+// three-arm `a | b | subst(v)` fail to compile while the same alternation outermost compiles.
+template <class _Fn>
+using __composite_answer_t =
+  ::cuda::std::conditional_t<::cuda::std::is_void_v<decltype(::cuda::std::declval<_Fn&>()())>,
+                             decltype(::std::ignore),
+                             decltype(::cuda::std::declval<_Fn&>()())>;
 
 // The left arm of `|` provably starves the right when both are catch_only wrappers, the left's
 // guard list claims every type the right lists, and the left's inner policy never declines a
@@ -1442,9 +1601,12 @@ template <class _P1, class... _As, class _P2, class... _Bs>
 inline constexpr bool __right_arm_starved<__catch_exactly_t<_P1, _As...>, __catch_exactly_t<_P2, _Bs...>> =
   __exception_path_nothrow_v<_P1> && (__listed_exactly<_Bs, _As...> && ...);
 
-// The alternation composite `_L | _R`: `_L` claims first; if it declines by throwing, `_R`
-// handles the original (re-observed) exception. Each arm is called at the uniform 3-arg shape;
-// acceptance is interpreted at `decltype(fn())`.
+// The alternation composite `_L | _R`: `_L` claims first; if it declines, `_R` handles the
+// original exception. A left arm that selects on the exception (a type guard, a translator, a
+// predicate, or a composite headed by one) is asked for its claim before it is invoked, so its
+// decline is a returned `__no` and `_R` runs with the funnel pointer already in hand; any other
+// decline is a `throw;`, caught once here and re-observed for `_R`. Each arm is called at the
+// uniform 3-arg shape; acceptance is interpreted at `decltype(fn())`.
 template <class _L, class _R>
 struct __policy_or : __composite_hooks<_L, _R>
 {
@@ -1462,65 +1624,123 @@ struct __policy_or : __composite_hooks<_L, _R>
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> && __has_exception_hook<_RR>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
-    using _Raw = decltype(__fn());
+    // A selecting left arm is asked first. `__no` is the decline, by return: the right arm runs
+    // with the same funnel pointer and nothing is thrown. `__yes` runs the arm's hook body past
+    // its selection. `__unknown` (a non-std exception, or a non-class listed type) takes the
+    // general path, where the arm re-observes and declines by rethrowing.
+    [[maybe_unused]] bool __use_claimed = false;
+    if constexpr (__has_claim<_L>)
+    {
+      const __claim __c = this->__l_.__claims(__exception);
+      if (__c == __claim::__no)
+      {
+        return __right(__exception, __loc, __fn);
+      }
+      __use_claimed = (__c == __claim::__yes);
+    }
 
-    const auto __right = [&](const ::std::exception* __cur) -> _Raw {
-      return __interpret_answer<_Raw>(this->__r_, __cur, __loc, __fn);
-    };
-    const auto __reobserve_right = [&]() -> _Raw {
-      _CCCL_TRY
-      {
-        _CCCL_RETHROW;
-      }
-      _CCCL_CATCH (const ::std::exception& __e)
-      {
-        return __right(&__e);
-      }
-      _CCCL_CATCH_ALL
-      {
-        return __right(nullptr);
-      }
-    };
-
-    // Interpret both arms at the callable's result type. Void callables surface ignore so
-    // this composite can still sit as a top-level policy.
+    // Typed catch clauses on this try: a declined exception is caught once, with its
+    // `std::exception` funnel pointer recovered by the clause itself, instead of caught by a
+    // catch-all, rethrown, and caught again to recover it. One unwind per declined arm
+    // instead of two. No lambdas here: with the hooks inlined, a lambda-free body lets the
+    // compiler keep the policy, the location and the callable in registers on the path
+    // where nothing throws, which brings a composite guard to the same code as a hand-written
+    // try/catch.
     _CCCL_TRY
     {
-      if constexpr (::cuda::std::is_void_v<_Raw>)
+      if constexpr (__has_claim<_L>)
       {
-        __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
-        return ::std::ignore;
+        if (__use_claimed)
+        {
+          __claimed_view<_L> __claimed_left{this->__l_};
+          return __answer<_Fn>(__claimed_left, __exception, __loc, __fn);
+        }
       }
-      else
-      {
-        return __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
-      }
+      return __answer<_Fn>(this->__l_, __exception, __loc, __fn);
+    }
+    _CCCL_CATCH (const ::std::exception& __e)
+    {
+      return __right(&__e, __loc, __fn);
     }
     _CCCL_CATCH_ALL
     {
-      if constexpr (::cuda::std::is_void_v<_Raw>)
-      {
-        __reobserve_right();
-        return ::std::ignore;
-      }
-      else
-      {
-        return __reobserve_right();
-      }
+      return __right(nullptr, __loc, __fn);
     }
+  }
+
+  // The alternation's own claim, so it can head a larger `|` or `*`: yes if either arm claims,
+  // no if both decline, unknown otherwise. Only when both arms' claims are pure, since the
+  // composite asks ahead of position; `__claimed` then takes the general path, where the arms'
+  // type tests are repeated at the price of a dynamic_cast each, not of an unwind.
+  template <class _LL                                                                     = _L,
+            class _RR                                                                     = _R,
+            ::cuda::std::enable_if_t<__has_pure_claim<_LL> && __has_pure_claim<_RR>, int> = 0>
+  __claim __claims(const ::std::exception* __exception)
+  {
+    const __claim __l = this->__l_.__claims(__exception);
+    if (__l == __claim::__yes)
+    {
+      return __claim::__yes;
+    }
+    const __claim __r = this->__r_.__claims(__exception);
+    if (__r == __claim::__yes)
+    {
+      return __claim::__yes;
+    }
+    return (__l == __claim::__no && __r == __claim::__no) ? __claim::__no : __claim::__unknown;
+  }
+
+  template <class _Fn,
+            class _LL                                                                     = _L,
+            class _RR                                                                     = _R,
+            ::cuda::std::enable_if_t<__has_pure_claim<_LL> && __has_pure_claim<_RR>, int> = 0>
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  __claimed(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return (*this)(__exception, __loc, __fn);
+  }
+
+private:
+  // One arm's answer at the composite's answer type (the resume tag for a void callable).
+  template <class _Fn, class _Arm>
+  static _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  __answer(_Arm& __arm, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    using _Raw = decltype(__fn());
+    if constexpr (::cuda::std::is_void_v<_Raw>)
+    {
+      __interpret_answer<_Raw>(__arm, __exception, __loc, __fn);
+      return ::std::ignore;
+    }
+    else
+    {
+      return __interpret_answer<_Raw>(__arm, __exception, __loc, __fn);
+    }
+  }
+
+  template <class _Fn>
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  __right(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return __answer<_Fn>(this->__r_, __exception, __loc, __fn);
   }
 };
 
 template <class _L, class _R>
 __policy_or(_L, _R) -> __policy_or<_L, _R>;
 
+template <class _L, class _R>
+inline constexpr bool __has_pure_claim<__policy_or<_L, _R>> = __has_pure_claim<_L> && __has_pure_claim<_R>;
+
 // `p * n`: behaviorally the n-fold `|` of p with itself. One stored policy, invoked up to n
-// times; the active exception is re-observed between iterations exactly as `__policy_or` does
-// between arms. `n == 0` declines immediately (the empty fold is rethrow). The stored policy's
-// hook is invoked up to n times; with the inventory now stateless this needs no copying --
-// user-defined policies should likewise tolerate re-invocation.
+// times; a selecting policy is asked for its claim before each repetition exactly as
+// `__policy_or` asks its left arm, and otherwise the active exception is caught once per
+// iteration exactly as `__policy_or` does between arms. `n == 0` declines immediately (the empty fold is rethrow). The
+// stored policy's hook is invoked up to n times; with the inventory now stateless this needs no copying -- user-defined
+// policies should likewise tolerate re-invocation.
 template <class _P>
 struct __policy_pow : __forwards_success<_P>
 {
@@ -1533,7 +1753,8 @@ struct __policy_pow : __forwards_success<_P>
                 "the repeated policy never declines; repetitions after the first are unreachable");
 
   template <class _Fn>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Expr = decltype(__fn());
     if (__n_ == 0)
@@ -1541,19 +1762,59 @@ struct __policy_pow : __forwards_success<_P>
       _CCCL_RETHROW; // empty fold: decline with the still-active exception
     }
 
-    // Recurse inside the catch so the re-observed exception pointer stays alive for the
-    // next arm (same lifetime rule as `__policy_or`). The recursion is bounded: `__left`
-    // decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's
-    // -Winfinite-recursion is blind to exceptional exits and misreads instantiations whose
-    // only normal returns are the recursive calls (e.g. a never-returning repeated policy).
+    // Recurse inside the catch so the exception pointer the clause recovered stays alive for
+    // the next arm (same lifetime rule as `__policy_or`); typed clauses catch once per arm. The recursion is bounded:
+    // `__left` decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's -Winfinite-recursion is
+    // blind to exceptional exits and misreads instantiations whose only normal returns are the recursive calls (e.g. a
+    // never-returning repeated policy).
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_GCC("-Wpragmas") // gcc < 12 does not know the warning below; without this
                                          // line the unknown name itself trips -Werror=pragmas
     _CCCL_DIAG_SUPPRESS_GCC("-Winfinite-recursion")
     const auto __go = [&](auto& __self, const ::std::exception* __cur, int __left) -> _Expr {
+      // A selecting policy is asked before each repetition. A type-based (pure) claim that says
+      // no would say no to every repetition, so the whole repetition declines at once; a
+      // predicate's no declines this repetition only, since the predicate may have state.
+      [[maybe_unused]] bool __use_claimed = false;
+      if constexpr (__has_claim<_P>)
+      {
+        const __claim __c = this->__p_.__claims(__cur);
+        if (__c == __claim::__no)
+        {
+          if constexpr (__has_pure_claim<_P>)
+          {
+            _CCCL_RETHROW;
+          }
+          else
+          {
+            if (__left == 1)
+            {
+              _CCCL_RETHROW;
+            }
+            return __self(__self, __cur, __left - 1);
+          }
+        }
+        __use_claimed = (__c == __claim::__yes);
+      }
       _CCCL_TRY
       {
+        if constexpr (__has_claim<_P>)
+        {
+          if (__use_claimed)
+          {
+            __claimed_view<_P> __claimed_policy{this->__p_};
+            return __interpret_answer<_Expr>(__claimed_policy, __cur, __loc, __fn);
+          }
+        }
         return __interpret_answer<_Expr>(this->__p_, __cur, __loc, __fn);
+      }
+      _CCCL_CATCH (const ::std::exception& __e)
+      {
+        if (__left == 1)
+        {
+          _CCCL_RETHROW;
+        }
+        return __self(__self, &__e, __left - 1);
       }
       _CCCL_CATCH_ALL
       {
@@ -1561,18 +1822,7 @@ struct __policy_pow : __forwards_success<_P>
         {
           _CCCL_RETHROW;
         }
-        _CCCL_TRY
-        {
-          _CCCL_RETHROW;
-        }
-        _CCCL_CATCH (const ::std::exception& __e)
-        {
-          return __self(__self, &__e, __left - 1);
-        }
-        _CCCL_CATCH_ALL
-        {
-          return __self(__self, nullptr, __left - 1);
-        }
+        return __self(__self, nullptr, __left - 1);
       }
     };
     if constexpr (::cuda::std::is_void_v<_Expr>)
@@ -1586,7 +1836,25 @@ struct __policy_pow : __forwards_success<_P>
     }
     _CCCL_DIAG_POP
   }
+
+  // The repetition's claim is the repeated policy's, when pure: a no is a no for every
+  // repetition.
+  template <class _PP = _P, ::cuda::std::enable_if_t<__has_pure_claim<_PP>, int> = 0>
+  __claim __claims(const ::std::exception* __exception)
+  {
+    return this->__p_.__claims(__exception);
+  }
+
+  template <class _Fn, class _PP = _P, ::cuda::std::enable_if_t<__has_pure_claim<_PP>, int> = 0>
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  __claimed(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return (*this)(__exception, __loc, __fn);
+  }
 };
+
+template <class _P>
+inline constexpr bool __has_pure_claim<__policy_pow<_P>> = __has_pure_claim<_P>;
 
 // --- The conversion law (SPEC-ADDENDUM-7 commit 4) -----------------------------------------
 //
@@ -1653,7 +1921,7 @@ inline constexpr bool __value_preserving_v =
 
 // Interpret the final element's answer as the expression's value, converting to `_Expr`.
 template <class _Expr, class _P, class _Fn>
-_Expr __interpret_answer(
+_CCCL_FORCEINLINE _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
 {
   using _Answer = __hook_answer_t<_P, _Fn>;
@@ -1707,10 +1975,11 @@ _Expr __interpret_answer(
 // interpret. The parameters go unread in the propagate instantiation, which gcc 9 flags
 // without the attribute.
 template <class _Expr, class _P, class _Fn>
-_Expr __on_exception(_P& __policy,
-                     [[maybe_unused]] const ::std::exception* __exception,
-                     [[maybe_unused]] const ::cuda::std::source_location __loc,
-                     [[maybe_unused]] _Fn& __fn)
+_CCCL_FORCEINLINE _Expr __on_exception(
+  _P& __policy,
+  [[maybe_unused]] const ::std::exception* __exception,
+  [[maybe_unused]] const ::cuda::std::source_location __loc,
+  [[maybe_unused]] _Fn& __fn)
 {
   if constexpr (!__has_exception_hook<_P, _Fn>)
   {
@@ -1822,7 +2091,8 @@ decltype(auto) operator<<([[maybe_unused]] __on_throw_policy<_Reaction> __policy
 /**
  * @brief Restricts a policy to exceptions matching any of `E1, E2, ...`: `catch_only<E...>(p)`
  * runs `p`'s exception path when the active exception matches any listed type by catch-clause
- * rules (same or publicly derived), and otherwise declines by rethrowing. The listed types may
+ * rules (same or publicly derived), and otherwise declines: by a returned claim when it is an
+ * arm of `|` or `*`, by rethrowing when invoked directly. The listed types may
  * be anything catchable -- std::exception derivatives, user structs, even `int`. Native C++
  * has no multi-type catch clause; this adds that expressivity. A matching exception that does
  * not derive from `std::exception` reaches `p`'s hook as a null pointer. A pack where one type
@@ -2707,8 +2977,9 @@ exception_sink type_erase(_P&& __p)
  * "circuit_breaker", and @ref exception_policies::always. Guards decline what they do not
  * claim; translators decline with a different exception; delay/backoff/retry re-run; remember serves the last success.
  * Policies compose with `&` (sequence; the last element answers; non-final answers are
- * discarded) and `|` (alternation; the left may decline by throwing), and with `*` (n-fold
- * `|`).
+ * discarded) and `|` (alternation; the left may decline: a guard, translator or predicate on
+ * the left declines by a returned claim, at no cost beyond its own test; any other policy
+ * declines by throwing, at one unwind), and with `*` (n-fold `|`).
  *
  * For backward compatibility `on_throw` also accepts non-policy reactions: `std::ignore`
  * resumes with a default-constructed result; and anything else is taken as a substitution
@@ -3502,6 +3773,240 @@ UNITTEST("policy algebra")
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("alternation and repetition nested under & and |")
+{
+  // Regression: a value-answering `|` (or `*`) as a non-outermost operand. The capability probes
+  // call composite hooks with a `void (&)()` archetype; with a deduced return type that
+  // instantiated the body, whose `__interpret_answer<void>` of a `subst` arm hard-failed. The
+  // same expressions written with the alternation outermost always compiled, which is why the
+  // documented forms (`notify & retry * 3 | subst(-1)`) never exposed it.
+  using namespace ::cuda::experimental::stf::exception_policies;
+  struct key : ::std::logic_error
+  {
+    key()
+        : logic_error("key")
+    {}
+  };
+  struct boom : ::std::runtime_error
+  {
+    boom()
+        : runtime_error("boom")
+    {}
+  };
+  const auto throw_boom = []() -> int {
+    throw boom();
+  };
+  const auto throw_key = []() -> int {
+    throw key();
+  };
+  const auto throw_other = []() -> int {
+    throw ::std::overflow_error("other");
+  };
+  ::std::ostringstream quiet;
+
+  // `|` with a value answer as the right operand of `&` (the paper's figure shape).
+  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_boom) == 2);
+  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_key) == 1);
+
+  // Three arms, both associations.
+  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_boom) == 2);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_other) == 3);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_key) == 1);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_other) == 3);
+
+  // `*` with a value-answering fallback, nested under `&`.
+  int n = 0;
+  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << [&]() -> int {
+           if (++n < 3)
+           {
+             throw boom();
+           }
+           return n;
+         })
+         == 3);
+  n = 0;
+  EXPECT((on_throw(notify(quiet) & (retry * 1 | subst(-1))) << [&]() -> int {
+           ++n;
+           throw boom();
+         })
+         == -1);
+
+  // An alternation of two sequences, each ending in a value answer.
+  int effects     = 0;
+  const auto tick = when(
+    [&](const ::std::exception*) {
+      ++effects;
+      return true;
+    },
+    noop);
+  EXPECT((on_throw((tick & catch_only<key>(subst(1))) | (tick & subst(2))) << throw_boom) == 2);
+  EXPECT(effects == 2);
+
+  // The outermost forms that always worked still do.
+  EXPECT((on_throw(notify(quiet) & catch_only<key>(subst(1)) | subst(2)) << throw_boom) == 2);
+  EXPECT((on_throw(retry * 2 | subst(-1)) << throw_boom) == -1);
+
+  // Reference results keep their reference answer through a nested alternation.
+  static int cell = 7;
+  int& r          = on_throw(notify(quiet) & (catch_only<key>(cell) | cell)) << []() -> int& {
+    throw boom();
+  };
+  EXPECT(&r == &cell);
+};
+
+UNITTEST("selecting arms decline by return")
+{
+  // A type guard, an exact guard, a translator or a predicate on the left of `|` (or under `*`)
+  // is asked for its claim before it is invoked, so its decline is a returned no rather than a
+  // `throw;`. The observable behaviour is unchanged on every path; what the test pins down is
+  // the claim itself, the fallbacks to re-observation, and that predicates run exactly once.
+  using namespace ::cuda::experimental::stf::exception_policies;
+  using detail::__has_claim;
+  using detail::__has_pure_claim;
+  struct key : ::std::logic_error
+  {
+    key()
+        : logic_error("key")
+    {}
+  };
+  struct boom : ::std::runtime_error
+  {
+    boom()
+        : runtime_error("boom")
+    {}
+  };
+  const auto throw_boom = []() -> int {
+    throw boom();
+  };
+  const auto throw_key = []() -> int {
+    throw key();
+  };
+  const auto throw_other = []() -> int {
+    throw ::std::overflow_error("other");
+  };
+  const auto throw_int = []() -> int {
+    throw 42;
+  };
+  const key k;
+  const boom b;
+
+  // The claims of the selecting policies.
+  auto only = catch_only<key>(subst(1));
+  EXPECT(only.__claims(&k) == __claim::__yes);
+  EXPECT(only.__claims(&b) == __claim::__no);
+  EXPECT(only.__claims(nullptr) == __claim::__unknown); // a non-std exception: re-observe
+  auto only_int = catch_only<int>(subst(1));
+  EXPECT(only_int.__claims(&k) == __claim::__unknown); // a non-class listed type: re-observe
+  auto exact = catch_exactly<key>(subst(1));
+  EXPECT(exact.__claims(&k) == __claim::__yes);
+  EXPECT(exact.__claims(&b) == __claim::__no);
+  EXPECT(exact.__claims(nullptr) == __claim::__no); // exact matching declines what it cannot name
+  auto conv = translate<key, boom>;
+  EXPECT(conv.__claims(&k) == __claim::__yes);
+  EXPECT(conv.__claims(&b) == __claim::__no);
+  EXPECT(conv.__claims(nullptr) == __claim::__unknown);
+
+  // Composites: an alternation of pure claims has one; a sequence has its head's; a predicate's
+  // is not pure, so a composite does not ask it ahead of its position.
+  auto two = catch_only<key>(subst(1)) | catch_only<boom>(subst(2));
+  static_assert(__has_pure_claim<decltype(two)>);
+  EXPECT(two.__claims(&k) == __claim::__yes);
+  EXPECT(two.__claims(&b) == __claim::__yes);
+  const ::std::overflow_error other("other");
+  EXPECT(two.__claims(&other) == __claim::__no);
+  auto guarded = when(
+    [](const ::std::exception*) {
+      return true;
+    },
+    subst(1));
+  static_assert(__has_claim<decltype(guarded)>);
+  static_assert(!__has_pure_claim<decltype(guarded)>);
+  static_assert(!__has_claim<decltype(notify & subst(1))>);
+  static_assert(!__has_claim<decltype(subst(1))>);
+  static_assert(__has_pure_claim<decltype(catch_only<key>(subst(1)) * 2)>);
+
+  // Behaviour on every path of a ladder, the non-std exception included.
+  const auto ladder =
+    catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | catch_exactly<::std::overflow_error>(subst(3)) | subst(0);
+  EXPECT((on_throw(ladder) << throw_key) == 1);
+  EXPECT((on_throw(ladder) << throw_boom) == 2);
+  EXPECT((on_throw(ladder) << throw_other) == 3);
+  EXPECT((on_throw(ladder) << throw_int) == 0);
+  EXPECT((on_throw(catch_only<int>(subst(1)) | catch_only<key>(subst(2)) | subst(0)) << throw_int) == 1);
+  EXPECT((on_throw(catch_only<int>(subst(1)) | catch_only<key>(subst(2)) | subst(0)) << throw_key) == 2);
+  EXPECT((on_throw(catch_only<int>(subst(1)) | catch_only<key>(subst(2)) | subst(0)) << throw_boom) == 0);
+
+  // A translator on the left: a claimed exception is translated and the next arm sees the
+  // translation; anything else passes untouched.
+  EXPECT((on_throw(translate<key, boom> | catch_only<boom>(subst(5)) | subst(0)) << throw_key) == 5);
+  EXPECT((on_throw(translate<key, boom> | catch_only<boom>(subst(5)) | subst(0)) << throw_boom) == 5);
+  EXPECT((on_throw(translate<key, boom> | catch_only<boom>(subst(5)) | subst(0)) << throw_other) == 0);
+
+  // A predicate is evaluated exactly once, whether it claims or declines.
+  int evals = 0;
+  EXPECT((on_throw(when(
+                     [&](const ::std::exception*) {
+                       ++evals;
+                       return false;
+                     },
+                     subst(1))
+                   | subst(2))
+          << throw_boom)
+         == 2);
+  EXPECT(evals == 1);
+  evals = 0;
+  EXPECT((on_throw(when(
+                     [&](const ::std::exception*) {
+                       ++evals;
+                       return true;
+                     },
+                     subst(1))
+                   | subst(2))
+          << throw_boom)
+         == 1);
+  EXPECT(evals == 1);
+
+  // An effect ahead of a selecting arm still runs when that arm declines: the sequence's claim
+  // is its head's, and `notify` has none.
+  ::std::ostringstream out;
+  EXPECT((on_throw(notify(out) & catch_only<key>(subst(1)) | subst(2)) << throw_boom) == 2);
+  EXPECT(!out.str().empty());
+
+  // Repetition: a type claim declines every repetition at once; a predicate is asked per
+  // repetition and may claim on a later one.
+  EXPECT((on_throw(catch_only<key>(subst(1)) * 3 | subst(0)) << throw_boom) == 0);
+  int asked = 0;
+  EXPECT((on_throw(when(
+                     [&](const ::std::exception*) {
+                       return ++asked >= 3;
+                     },
+                     subst(7))
+                     * 5
+                   | subst(0))
+          << throw_boom)
+         == 7);
+  EXPECT(asked == 3);
+
+  // The inner policy of a claimed guard may still decline, by throwing, and the next arm sees it.
+  EXPECT((on_throw(catch_only<boom>(retry * 1) | subst(9)) << throw_boom) == 9);
+
+  // Void callables through the same paths.
+  ::std::ostringstream quiet;
+  int ran = 0;
+  on_throw(catch_only<key>(notify(quiet))
+           | catch_only<boom>(when(
+             [&](const ::std::exception*) {
+               ++ran;
+               return true;
+             },
+             notify(quiet))))
+    << [] {
+         throw boom();
+       };
+  EXPECT(ran == 1);
+  EXPECT(!quiet.str().empty());
 };
 
 UNITTEST("policy inventory")
