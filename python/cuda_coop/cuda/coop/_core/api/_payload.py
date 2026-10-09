@@ -12,7 +12,7 @@ This lets the common API describe inputs without importing compiler types.
 from __future__ import annotations
 
 import operator
-from typing import Protocol, SupportsIndex, TypeVar, runtime_checkable
+from typing import Any, Protocol, SupportsIndex, TypeVar, runtime_checkable
 
 _ItemT = TypeVar("_ItemT")
 
@@ -58,14 +58,10 @@ class TempStorageLike(Protocol):
     auto_sync: bool
     sharing: str
 
-    def release(self, dtype: object | None = None) -> object:
-        """Consume the descriptor and return its complete native shared array.
-
-        An omitted dtype returns bytes. An explicit dtype must fit the
-        region's existing capacity and alignment. No allocation or barrier is
-        added. Every alias becomes unavailable for subsequent primitive,
-        reservation, or release calls on any reachable control-flow path.
-        """
+    def reserve(
+        self, num_elems: int, dtype: object, *, alignment: int | None = None
+    ) -> Any:
+        """Return the supporting compiler's typed shared array."""
         ...
 
 

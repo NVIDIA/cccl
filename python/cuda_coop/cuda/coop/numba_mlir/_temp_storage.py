@@ -12,6 +12,7 @@ import operator
 from enum import Enum
 
 from .._core.api._payload import _normalize_alignment
+from .._core.thread_group import CoopCompilerContextRequiredError
 
 
 class TempStorage:
@@ -23,11 +24,11 @@ class TempStorage:
     for the Numba-CUDA-MLIR planner. ``auto_sync=None`` becomes ``False``.
     Set ``auto_sync=True`` to request automatic reuse barriers.
 
-    Only supported block algorithms accept an explicit descriptor. The
-    planner determines capacity and alignment from its uses. ``release()``
-    hands the complete region to user code after its final cooperative use.
-    See :ref:`temporary storage <coop-temp-storage>`
-    for shared versus exclusive slices and manual reuse synchronization.
+    Supported block algorithms accept the descriptor as ``temp_storage``.
+    :meth:`reserve` obtains typed shared arrays for application or library
+    data. The planner includes both uses when determining capacity and
+    alignment. See :ref:`temporary storage <coop-temp-storage>` for shared
+    versus exclusive slices and manual reuse synchronization.
     """
 
     def __init__(
@@ -76,26 +77,41 @@ class TempStorage:
         # The caller synchronizes before reuse unless auto_sync=True.
         self.auto_sync = False if auto_sync is None else auto_sync
 
-    def release(self, dtype=None):
-        """Consume this descriptor and return its complete shared-memory region.
+    def reserve(self, num_elems, dtype, *, alignment=None):
+        """Reserve a contiguous one-dimensional shared array in the kernel.
 
-        ``dtype=None`` returns a one-dimensional byte array. A supplied
-        compile-time numeric dtype must divide the region's byte capacity and
-        satisfy its existing alignment. Release does not initialize the returned
-        memory, allocate memory, or synchronize.
-        Finish previous accesses and required asynchronous operations before
-        using it. Automatic barriers on preceding primitive calls are retained.
+        Parameters
+        ----------
+        num_elems : int
+            Positive compile-time number of elements.
+        dtype
+            Compile-time fixed-size integer, floating-point, or complex
+            scalar dtype.
+        alignment : int, optional
+            Minimum byte alignment, expressed as a positive power of two.
+            The planner also satisfies the element type's alignment.
 
-        Every alias of this descriptor is consumed. A subsequent primitive,
-        reservation, or release on any reachable control-flow path is a compile
-        error, including reuse through a loop backedge. A new construction in
-        a loop creates a new instance but reuses the same physical region, so
-        the caller must finish accesses and synchronize before that reuse.
+        Returns
+        -------
+        shared array
+            An ordinary compiler array with the requested dtype and extent.
+            Its elements are uninitialized and shared by the block's threads.
+
+        Notes
+        -----
+        Each reservation call site receives a disjoint region that remains
+        allocated for the kernel's execution on that block. It does not
+        overlap another reservation or the descriptor's primitive scratch,
+        regardless of ``sharing``. Repeated execution of a call site returns
+        the same region; it does not allocate again.
+
+        A descriptor used for reservations must have ``auto_sync=False``
+        (or ``None``). The caller supplies synchronization and any completion
+        or release operations required by consumers. Reserving storage does
+        not infer when a foreign library has finished using it.
         """
-        from .._core.thread_group import CoopCompilerContextRequiredError
-
         raise CoopCompilerContextRequiredError(
-            "TempStorage.release must be called from a supported GPU kernel."
+            "TempStorage.reserve must be called from a supported GPU kernel."
         )
 
 

@@ -74,7 +74,7 @@ from ._scalar_provenance import (
 if TYPE_CHECKING:
     from .._types import Algorithm
     from ._rewrite import CoopSinglePhaseRewrite
-    from ._rewrite_release import _TempStorageRelease
+    from ._rewrite_reserve import _TempStorageReservation
 
 
 class _ProvenanceRewrite(Rewrite):
@@ -108,10 +108,12 @@ class _ProvenanceRewrite(Rewrite):
         self._rewrite_started = False
         self._factory_argument_cleanup_candidates: set[ir.Assign] = set()
         self._payload_callee_cleanup_names: set[str] = set()
+        self._temp_storage_reservations: dict[
+            ir.Assign, _TempStorageReservation
+        ] = {}
+        self._temp_storage_reserve_methods: set[ir.Assign] = set()
         self._temp_storage_assigns: set[ir.Assign] = set()
         self._temp_storage_func_vars: set[str] = set()
-        self._temp_storage_releases: dict[ir.Assign, _TempStorageRelease] = {}
-        self._temp_storage_release_methods: set[ir.Assign] = set()
         self._temp_storage_ctor_specifications: dict[
             str, _TempStorageCtorSpecification
         ] = {}
@@ -1361,6 +1363,7 @@ class _ProvenanceRewrite(Rewrite):
     ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
         """Lay out scratch for each call and group instance.
 
+        Permanent reservations follow primitive scratch in distinct domains.
         Exclusive sharing gives each use a distinct domain. Shared placement
         reuses a domain only when ``_temp_storage_domain_key`` permits it.
         Within a domain, reserve the largest per-instance requirement and
@@ -1391,7 +1394,9 @@ class _ProvenanceRewrite(Rewrite):
             plan keyed by the object identity of each call assignment.
         """
 
-        ordered_uses = sorted(uses, key=lambda entry: entry.order)
+        ordered_uses = sorted(
+            uses, key=lambda entry: (entry.permanent, entry.order)
+        )
         required_alignment = max(
             _MIN_TEMP_STORAGE_ALIGNMENT,
             *(max(1, int(entry.alignment)) for entry in ordered_uses),
@@ -1399,7 +1404,9 @@ class _ProvenanceRewrite(Rewrite):
         domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
         for entry in ordered_uses:
             domain_key = (
-                ("exclusive", entry.order)
+                ("reservation", entry.order)
+                if entry.permanent
+                else ("exclusive", entry.order)
                 if sharing == "exclusive"
                 else self._temp_storage_domain_key(entry)
             )
@@ -1420,9 +1427,9 @@ class _ProvenanceRewrite(Rewrite):
             # 32-thread warps in a 128-thread block need four separate slots.
             # Calls in a reuse domain agree on that count, so the first plan
             # is sufficient; an exclusive domain contains only one call.
-            # Legacy block providers have no topology and need one slot. The
-            # aligned instance_stride spaces groups' slots apart, while
-            # compatible calls reuse the same set of slots.
+            # Legacy block providers and typed reservations have no topology
+            # and need one slot. The aligned instance_stride spaces groups'
+            # slots apart, while compatible calls reuse the same set of slots.
             first_plan = domain_uses[0].lowering_plan
             instances = (
                 1
@@ -1452,10 +1459,11 @@ class _ProvenanceRewrite(Rewrite):
         """Finalize the storage layout for one ``TempStorage`` variable.
 
         Requirement collection has already recorded the constructor options
-        and the bytes needed by each primitive using this variable. Turn
-        those requirements into a plan for its shared memory: the total size,
-        alignment, and slice assigned to each call. The constructor's
-        ``sharing`` setting controls which calls may reuse the same bytes.
+        and the bytes needed by each primitive or ``reserve()`` call using
+        this variable. Turn those requirements into a plan for its shared
+        memory: the total size, alignment, and slice assigned to each call.
+        The constructor's ``sharing`` setting controls which calls may reuse
+        the same bytes.
 
         Infer an omitted ``size_in_bytes`` from the layout, or check that an
         explicit size is large enough. Choose an alignment that satisfies the
@@ -1490,8 +1498,8 @@ class _ProvenanceRewrite(Rewrite):
         Notes
         -----
         Whole-function validation separately rejects constructors with no
-        primitive consumer. An explicit size alone does not make an unused
-        descriptor valid.
+        primitive or ``reserve()`` consumer. An explicit size alone does not
+        make an unused descriptor valid.
         """
 
         var_name = self._canonical_temp_storage_ctor_key(var_name)
@@ -1541,7 +1549,8 @@ class _ProvenanceRewrite(Rewrite):
         if required_size > 0 and size_in_bytes < required_size:
             raise CoopSinglePhaseRewriteError(
                 "TempStorage size_in_bytes is smaller than required by "
-                f"primitive uses ({size_in_bytes} < {required_size})."
+                "primitive and reserve uses "
+                f"({size_in_bytes} < {required_size})."
             )
         if ctor_specification.alignment is None:
             alignment = _default_temp_storage_alignment(required_alignment)
@@ -1559,15 +1568,7 @@ class _ProvenanceRewrite(Rewrite):
             if ctor_specification.auto_sync is None
             else ctor_specification.auto_sync
         )
-        released = any(
-            self._canonical_temp_storage_ctor_key(release.ctor_key) == var_name
-            for release in getattr(self, "_temp_storage_releases", {}).values()
-        )
-        if (
-            not uses
-            and not released
-            and (ctor_specification.sharing != "shared" or auto_sync)
-        ):
+        if not uses and (ctor_specification.sharing != "shared" or auto_sync):
             raise CoopSinglePhaseRewriteError(
                 "TempStorage non-default sharing or auto_sync requires a "
                 "cooperative primitive to consume the storage descriptor."

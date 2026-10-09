@@ -27,6 +27,8 @@ def TempStorage(
 
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
+    In Numba-CUDA-MLIR, ``descriptor.reserve(num_elems, dtype, alignment=...)``
+    also obtains typed shared arrays for application or library data.
     See :ref:`temporary storage <coop-temp-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
@@ -35,7 +37,8 @@ def TempStorage(
     size_in_bytes : int, optional
         Positive compile-time capacity in bytes. ``None`` lets the compiler
         determine the capacity from all uses. An explicit capacity must be
-        large enough for those operations; undersized storage is rejected.
+        large enough for those operations and any typed reservations;
+        undersized storage is rejected.
     alignment : int, optional
         Compile-time minimum alignment in bytes, expressed as a positive
         power of two. ``None`` lets the compiler choose. The allocation
@@ -45,7 +48,8 @@ def TempStorage(
         Defaults to ``False``; ``None`` also disables automatic reuse
         synchronization. The caller must synchronize before reusing the
         scratch, including on the next iteration of a loop. Pass ``True``
-        to request automatic reuse barriers.
+        to request automatic reuse barriers. Descriptors used with
+        ``reserve()`` cannot enable automatic synchronization.
     sharing : {"shared", "exclusive"}, optional
         Compile-time allocation policy, default ``"shared"``. Calls using
         the same descriptor can reuse one scratch slice. ``"exclusive"``
@@ -58,14 +62,11 @@ def TempStorage(
     Returns
     -------
     cuda.coop.TempStorageLike
-        Compiler-recognized scratch descriptor. After its last cooperative
-        use, ``storage.release(dtype=None)`` returns the complete region as a
-        native shared array (bytes by default), consuming every descriptor
-        alias. Later primitive, reservation, or release calls are rejected
-        along every reachable control-flow path. Release preserves preceding
-        automatic barriers and adds no barrier itself. Release does not
-        initialize the returned memory; the caller owns synchronization and
-        completion.
+        Compiler-recognized scratch descriptor. Primitive scratch is opaque;
+        ``reserve()`` returns separate typed shared arrays. Reservations have
+        disjoint regions for the kernel's execution on each block, including
+        when ``sharing="shared"``. The caller synchronizes their accesses and
+        completes any asynchronous operations that use them.
 
     Examples
     --------

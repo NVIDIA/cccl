@@ -726,8 +726,8 @@ synchronization, and allocation sharing. The active compiler backend must
 recognize the descriptor.
 
 An explicit descriptor lets several supported block calls reuse an
-allocation. Its contents are opaque during cooperative use. After the last
-such use, ``release()`` hands the region to application code as a shared array.
+allocation. Its contents are opaque; keep application values in
+``ThreadData`` or your own arrays.
 
 .. list-table::
    :header-rows: 1
@@ -814,36 +814,45 @@ Scratch lasts for the kernel's execution on that block. It cannot carry
 state between blocks or kernel launches. For running scan state within a
 block, use a separate payload as in the prefix-callback example below.
 
-Handing scratch to application code
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Numba-CUDA-MLIR also supports typed reservations for application data and
+device libraries:
 
-``storage.release(dtype=None)`` consumes the descriptor and returns a native
-one-dimensional shared array spanning its complete planned region. The default
-dtype is unsigned bytes. A compile-time numeric dtype, such as ``types.int32``
-in Numba-CUDA-MLIR, must divide the byte capacity. The region's alignment must
-be at least the dtype's element size.
-An uninferred empty descriptor cannot be released; an explicit positive
-``size_in_bytes`` can supply its capacity.
+.. code-block:: python
 
-The returned region includes all exclusive slices and their padding. Release
-creates no new allocation and keeps independent descriptors disjoint. Release
-does not initialize the returned memory. Automatic trailing barriers on
-preceding primitive calls remain in place; release adds no barrier. Finish
-prior accesses and any
-asynchronous operations before using the returned array, then synchronize
-application reads and writes as for any shared array.
+   scratch = coop.TempStorage()
+   our_smem_chunk = scratch.reserve(128, types.float32, alignment=32)
 
-Every alias of the descriptor is consumed. Later primitive, reservation, or
-release calls are compile errors if a path from an earlier release reaches
-them. Releasing in one runtime branch prevents later use after the branches
-join. Separate terminal releases in mutually exclusive branches are valid.
-Releasing a selection that merges distinct constructor sites is rejected;
-construct one descriptor before selecting its uses instead. A constructor or
-bound release method must exist on every path reaching the call.
-A descriptor created before a loop cannot be released repeatedly through its
-backedge. Constructing inside the loop gives each iteration a fresh descriptor,
-but reuses physical storage: finish accessing the previous returned array and
-synchronize before that reuse.
+Here ``types`` is imported from ``numba_cuda_mlir``. The element count and
+integer, floating-point, or complex scalar dtype must be known during
+compilation. The result is an ordinary one-dimensional shared array that
+supports indexing and can be passed to
+device functions accepting arrays. Compilation replaces the reservation with
+an aligned typed view of the planner's shared backing; there is no runtime
+allocator.
+
+Each reservation call site owns a disjoint region for the block's kernel
+execution. Reservations do not overlap one another or primitive scratch,
+including with ``sharing="shared"``. Executing a call site again reuses its
+region. Explicit descriptor capacity includes the reservations and alignment
+padding as well as primitive scratch.
+
+A descriptor used with ``reserve()`` must have ``auto_sync=False`` or
+``auto_sync=None``. The compiler rejects ``auto_sync=True``, including uses
+through aliases and inlined helpers. Synchronize application accesses and
+follow each device library's completion and release requirements. A separate
+descriptor used only for cooperative primitives may still enable automatic
+synchronization.
+
+The runnable :download:`nvmath FFT example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_fft.py>` reserves scratch
+for ``fft.execute()`` and application data alongside a cooperative reduction.
+The :download:`nvmath and NVSHMEM example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_nvshmem.py>` also reserves
+NVSHMEM communication scratch and explicitly registers and releases it.
+See the :download:`example instructions
+<../../../python/cuda_coop/examples/numba_mlir/README.md>` for dependencies and
+launch commands. These libraries receive ordinary arrays or pointers into the
+reserved regions; they do not need to understand ``TempStorage``.
 
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in

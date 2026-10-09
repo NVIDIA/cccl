@@ -7,7 +7,7 @@ from typing import Any
 from .._typing import TempStorageSharing
 
 class TempStorage:
-    """Explicit opaque byte scratch for planned shared-memory operations."""
+    """Explicit scratch and typed reservations planned in shared memory."""
 
     size_in_bytes: int | None
     alignment: int | None
@@ -24,7 +24,9 @@ class TempStorage:
     ) -> None:
         """Configure scratch size, alignment, synchronization, and sharing."""
 
-    def release(self, dtype: object | None = None) -> Any:
-        """Consume the descriptor and return its complete shared array."""
+    def reserve(
+        self, num_elems: int, dtype: object, *, alignment: int | None = None
+    ) -> Any:
+        """Return a compiler shared array; requires manual synchronization."""
 
 __all__ = ["TempStorage"]

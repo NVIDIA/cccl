@@ -248,8 +248,10 @@ class TempStorageLike(Protocol):
     auto_sync: bool
     sharing: TempStorageSharing
 
-    def release(self, dtype: object | None = None) -> Any:
-        """Consume the descriptor and return its complete shared array."""
+    def reserve(
+        self, num_elems: int, dtype: object, *, alignment: int | None = None
+    ) -> Any:
+        """Reserve a compiler shared array with manual synchronization."""
 
 __all__ = [
     "BlockExchangeMode",

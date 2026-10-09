@@ -42,7 +42,7 @@ from ._rewrite_invocables import _InvocableRewrite
 from ._rewrite_launch import _LaunchRewrite
 from ._rewrite_payload import _PayloadRewrite
 from ._rewrite_provenance import _ProvenanceRewrite
-from ._rewrite_release import _ReleaseRewrite
+from ._rewrite_reserve import _ReservationRewrite
 from ._rewrite_storage import _StorageRewrite
 from ._rewrite_support import (
     _GLOBAL_NAME_COUNTER,
@@ -71,7 +71,7 @@ class CoopSinglePhaseRewrite(
     _PayloadRewrite,
     _InvocableRewrite,
     _StorageRewrite,
-    _ReleaseRewrite,
+    _ReservationRewrite,
     Rewrite,
 ):
     """Prepare and rewrite cooperative calls across one function.
@@ -117,9 +117,9 @@ class CoopSinglePhaseRewrite(
             or bool(self._thread_data_func_vars)
             or bool(self._typed_group_payload_func_vars)
             or bool(self._thread_data_extents)
-            or any(inst in self._temp_storage_releases for inst in block.body)
             or any(
-                inst in self._temp_storage_release_methods
+                inst in self._temp_storage_reservations
+                or inst in self._temp_storage_reserve_methods
                 for inst in block.body
             )
         )
@@ -170,19 +170,16 @@ class CoopSinglePhaseRewrite(
         self._prebundled_specializations = {}
         try:
             matches = self._collect_function_calls(func_ir)
-            self._collect_temp_storage_releases(func_ir)
-            self._validate_temp_storage_lifetimes(func_ir, matches)
             # Invalid ownership or escaping descriptors must fail before
             # provider compilation. The retained calls serve both stages.
+            self._collect_temp_storage_reservations(func_ir)
             storage_uses = self._collect_temp_storage_uses(func_ir, matches)
-            self._validate_released_region_owners()
             self._prepare_ltoir_bundle_for_matches(list(matches.values()))
             # Sizes and alignments require concrete provider layouts; the
             # semantic lowering plans alone do not supply them.
             self._func_temp_storage_requirements = (
                 self._compute_func_temp_storage_requirements(storage_uses)
             )
-            self._prepare_temp_storage_release_plans()
         except _DeferredCoopRewrite:
             self._func_temp_storage_requirements = {}
             return False
@@ -445,10 +442,10 @@ class CoopSinglePhaseRewrite(
 
         new_block = ir.Block(self._block.scope, self._block.loc)
         for inst in self._block.body:
-            if inst in self._temp_storage_releases:
-                self._emit_temp_storage_release(new_block, inst)
+            if inst in self._temp_storage_reservations:
+                self._emit_temp_storage_reservation(new_block, inst)
                 continue
-            if inst in self._temp_storage_release_methods:
+            if inst in self._temp_storage_reserve_methods:
                 new_block.append(
                     ir.Assign(ir.Const(None, inst.loc), inst.target, inst.loc)
                 )
