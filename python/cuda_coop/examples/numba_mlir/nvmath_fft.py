@@ -86,7 +86,9 @@ def fft_energy_kernel(data, normalized_power, total_energy):
 # docs: end nvmath-fft-kernel
 
 
-def run_example() -> tuple[np.ndarray, np.ndarray, float]:
+def run_example(
+    kernel=fft_energy_kernel,
+) -> tuple[np.ndarray, np.ndarray, float]:
     """Return the FFTs, normalized bin powers, and combined spectral energy."""
 
     rng = np.random.default_rng(42)
@@ -98,7 +100,7 @@ def run_example() -> tuple[np.ndarray, np.ndarray, float]:
     normalized_power = cuda.device_array(shape, dtype=np.float32)
     total_energy = cuda.device_array(1, dtype=np.float32)
 
-    fft_energy_kernel[1, fft.block_dim](data, normalized_power, total_energy)
+    kernel[1, fft.block_dim](data, normalized_power, total_energy)
     actual_fft = data.copy_to_host()
     actual_power = normalized_power.copy_to_host()
     actual_energy = float(total_energy.copy_to_host()[0])
