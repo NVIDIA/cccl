@@ -1279,8 +1279,8 @@ class _ProvenanceRewrite(Rewrite):
     ) -> tuple[object, ...]:
         """Identify storage uses that may reuse one region.
 
-        Legacy block providers share one domain. Caller-owned storage also
-        uses one domain, preserving its explicit reuse contract; its
+        Legacy block providers and caller-owned storage use one domain,
+        preserving the explicit reuse contract with typed reservations; its
         block-only restriction is checked by storage-plan validation.
         Implementation-owned storage instead partitions uses by group topology
         and reuse-barrier scope so incompatible group instances cannot alias.
@@ -1310,7 +1310,10 @@ class _ProvenanceRewrite(Rewrite):
             return ("caller-storage",)
         lowering_plan = entry.lowering_plan
         if lowering_plan is None:
-            return ("legacy-provider",)
+            # Explicit descriptors and implicit scratch are laid out
+            # separately. A legacy block provider using a descriptor shares
+            # its region with that descriptor's other callers.
+            return ("caller-storage",)
         if lowering_plan.unsupported is not None:
             raise CoopSinglePhaseRewriteError(
                 "cooperative provider storage received an unsupported group "

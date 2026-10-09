@@ -371,11 +371,14 @@ Numba-CUDA-MLIR also supports `storage.reserve(num_elems, dtype, alignment=None)
 inside a kernel. It returns an ordinary one-dimensional shared array for
 application data or another device library. The count, integer/float/complex
 scalar dtype, and optional byte alignment must be compile-time constants.
-Each reservation has a disjoint region for the block's kernel execution,
-separate from all primitive scratch and other reservations under either sharing
-policy.
-Explicit capacity includes these regions and their alignment padding.
-Repeating a reservation call site reuses its region.
+Reservations inherit the descriptor's sharing policy. The default
+`sharing="shared"` aliases reservations and primitive scratch within the same
+descriptor, using their maximum size and alignment requirements.
+`sharing="exclusive"` separates every primitive and reservation call site.
+Different descriptors always have separate storage. Use separate descriptors
+or exclusive storage for simultaneously live buffers. Repeating a reservation
+call site reuses its region. Explicit capacity must cover the selected layout
+and any alignment padding.
 
 Descriptors used with `reserve()` must have `auto_sync=False` or `None`;
 `auto_sync=True` is rejected. The caller supplies synchronization and each
