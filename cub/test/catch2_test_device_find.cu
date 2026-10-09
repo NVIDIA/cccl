@@ -374,7 +374,7 @@ CUB_TEST("DeviceFind::UpperBound works", "[find][device][binary-search]", CUB_SM
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::LowerBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
@@ -392,7 +392,7 @@ CUB_TEST("DeviceFind::LowerBound really large input",
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::UpperBound really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
