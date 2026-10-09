@@ -197,9 +197,6 @@ for side in base test; do
   # this file, and a symlink would point it at the current checkout instead of the
   # worktree.
   cp "${repo_root}/CMakePresets.json" "${side_path[${side}]}/CMakePresets.json"
-  # Older refs also need to generate the object lists consumed by this script.
-  cp "${repo_root}/cub/benchmarks/CMakeLists.txt" \
-    "${side_path[${side}]}/cub/benchmarks/CMakeLists.txt"
 done
 
 # ============================================================================
@@ -232,7 +229,7 @@ for side in base test; do
   run_side "${side}" configure_preset "SASS ${side}" "${PRESET}"
   # The preset's binaryDir; `run_side` only reads these, never assigns them.
   # shellcheck disable=SC2031
-  preset_dir[${side}]="${side_path[${side}]}/build/${CCCL_BUILD_INFIX:-}/${PRESET}"
+  preset_dir[${side}]="${side_path[${side}]}/build/${CCCL_BUILD_INFIX:+${CCCL_BUILD_INFIX}/}${PRESET}"
 done
 
 # Per cub/benchmarks/CMakeLists.txt: <path>/<stem>.cu -> cub.<path>.<stem>.base.
@@ -260,8 +257,32 @@ fi
 echo "Selected ${#targets[@]} benchmark target(s)."
 
 for side in base test; do
+  object_targets=()
+
+  # The build phase is somewhat unorthodox. For the purposes of SASS comparison we do not
+  # actually need a fully linked binary, the intermediate object files will already
+  # contain the embedded SASS (and in fact we *don't* want a full link, see dump_side()
+  # for why).
+  #
+  # As a result, we also don't want to spend time building the binary, only the object
+  # files. So we need to parse out the targets for them explicitly from the list we left
+  # behind at configure-time.
+  for target in "${targets[@]}"; do
+    mapfile -t objects < "${preset_dir[${side}]}/cub/benchmarks/objects/${target}.objects"
+
+    if [[ "${#objects[@]}" -eq 0 ]]; then
+      echo "No object files listed for benchmark target: ${target}" >&2
+      exit 1
+    fi
+
+    for object in "${objects[@]}"; do
+      # Ninja needs paths relative to the build directory to select objects without linking.
+      object_targets+=("${object#"${preset_dir[${side}]}/"}")
+    done
+  done
+
   # shellcheck disable=SC2031  # `build_common.sh` shadows PRESET locally.
-  run_side "${side}" build_preset "SASS ${side}" "${PRESET}" --target "${targets[@]}"
+  run_side "${side}" build_preset "SASS ${side}" "${PRESET}" --target "${object_targets[@]}"
 done
 
 # ============================================================================
