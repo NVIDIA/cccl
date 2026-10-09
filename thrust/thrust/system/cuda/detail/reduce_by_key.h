@@ -68,13 +68,6 @@ namespace cuda_cub
 {
 namespace __reduce_by_key
 {
-template <bool>
-struct is_true : thrust::detail::false_type
-{};
-template <>
-struct is_true<true> : thrust::detail::true_type
-{};
-
 template <int BlockThreads,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,

@@ -74,15 +74,16 @@ template <typename Alloc>
 struct allocator_system
 {
   // the type of the allocator's system
-  using type = typename eval_if<allocator_traits_detail::has_system_type<Alloc>,
-                                allocator_traits_detail::nested_system_type<Alloc>,
-                                thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
+  using type = typename ::cuda::std::conditional_t<
+    allocator_traits_detail::has_system_type<Alloc>,
+    allocator_traits_detail::nested_system_type<Alloc>,
+    thrust::iterator_system<typename ::cuda::std::allocator_traits<Alloc>::pointer>>::type;
 
   // the type that get returns
   using get_result_type =
-    typename eval_if<allocator_traits_detail::has_member_system<Alloc>,
-                     ::cuda::std::add_lvalue_reference<type>,
-                     ::cuda::std::type_identity<type>>::type;
+    typename ::cuda::std::conditional_t<allocator_traits_detail::has_member_system<Alloc>,
+                                        ::cuda::std::add_lvalue_reference<type>,
+                                        ::cuda::std::type_identity<type>>::type;
 
   _CCCL_HOST_DEVICE inline static get_result_type get(Alloc& a)
   {
