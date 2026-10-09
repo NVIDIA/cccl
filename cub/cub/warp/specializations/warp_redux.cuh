@@ -360,7 +360,7 @@ warp_redux(const T input, const ::cuda::std::uint32_t mask, ReductionOp reductio
     const auto input_int1  = ::cuda::std::isnan(input) ? nan_int : input_int;
     if (const auto output = cub::detail::warp_redux(input_int1, mask, generalized_op_t{}))
     {
-      return cub::detail::comparable_int_to_floating_point<T>(*output); // IWYU pragma: keep
+      return cub::detail::comparable_int_to_floating_point<T>(*output);
     }
   }
   return ::cuda::std::nullopt;
