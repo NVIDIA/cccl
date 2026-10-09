@@ -521,7 +521,6 @@ run_python_compare_target() {
     compare_log="$(compare_log_path_for_display "${target_name}" "${display}")"
     compare_cmd=(
       "${compare_bin}"
-      --no-color
       "${NVBENCH_COMPARE_ARGS[@]}"
       --display
       "${display}"
@@ -545,7 +544,6 @@ run_python_compare_target() {
   if [[ -n "${legacy_compare_bin}" ]]; then
     compare_cmd=(
       "${legacy_compare_bin}"
-      --no-color
       "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
       "${base_json}"
       "${test_json}"
@@ -869,7 +867,6 @@ run_compare_target() {
     compare_cmd=(
       "${compare_python}"
       "${robust_compare_script}"
-      --no-color
       "${NVBENCH_COMPARE_ARGS[@]}"
       --display
       "${display}"
@@ -894,7 +891,6 @@ run_compare_target() {
     compare_cmd=(
       "${compare_python}"
       "${legacy_compare_script}"
-      --no-color
       "${NVBENCH_COMPARE_LEGACY_ARGS[@]}"
       "${base_json}"
       "${test_json}"
