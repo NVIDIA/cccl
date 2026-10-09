@@ -73,9 +73,10 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 {
+  // The environment overload takes streams by const reference, including when selected through a function pointer.
   template <class _Tp>
   using _DeviceRadixSort =
-    cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, cudaStream_t);
+    cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, const cudaStream_t&);
 
   template <class _Tp, class _BinaryPredicate>
   [[nodiscard]] static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp> __select_radix_impl() noexcept
