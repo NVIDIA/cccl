@@ -30,21 +30,22 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_reduce.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
 #  include <cuda/__iterator/discard_iterator.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__algorithm/max_element.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
@@ -52,6 +53,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/cstdint>
 #  include <cuda/std/tuple>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -75,7 +77,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
 
     // Determine temporary device storage requirements for max_element
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceReduce::ArgMax,
       "__pstl_cuda_max_element: determination of device storage for cub::DeviceReduce::ArgMax failed",
       static_cast<void*>(nullptr),
@@ -91,7 +93,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
       __temporary_storage<size_t> __storage{__policy, __num_bytes, 1};
 
       // Run the reduction
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceReduce::ArgMax,
         "__pstl_cuda_max_element: kernel launch of cub::DeviceReduce::ArgMax failed",
         __storage.__get_temp_storage(),
@@ -104,7 +106,7 @@ struct __pstl_dispatch<__pstl_algorithm::__max_element, __execution_backend::__c
         __policy);
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_max_element: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),

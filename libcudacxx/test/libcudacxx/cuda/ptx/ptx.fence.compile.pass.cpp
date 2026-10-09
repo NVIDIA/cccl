@@ -10,16 +10,18 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/fence.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/fence.h>
 
 #include "generated/fence.h"
 #include "generated/fence_mbarrier_init.h"
 #include "generated/fence_proxy_alias.h"
 #include "generated/fence_proxy_async.h"
 #include "generated/fence_proxy_async_generic_sync_restrict.h"
+#include "generated/fence_proxy_fabric_fabric_alias.h"
+#include "generated/fence_proxy_fabric_generic_alias.h"
+#include "generated/fence_proxy_generic_fabric_alias.h"
 #include "generated/fence_proxy_tensormap_generic.h"
 #include "generated/fence_sync_restrict.h"
 

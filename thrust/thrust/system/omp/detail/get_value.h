@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits get_value
+// omp system inherits get_value
 #include <thrust/system/cpp/detail/get_value.h>

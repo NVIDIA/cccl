@@ -28,6 +28,7 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__utility/move.h>
 #  include <cuda/stream>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -62,7 +63,7 @@ struct synchronous_resource_adapter
   {}
 
   _CCCL_HOST_API synchronous_resource_adapter(_Resource&& __resource) noexcept
-      : __resource(__resource)
+      : __resource(::cuda::std::move(__resource))
   {}
 
   [[nodiscard]] _CCCL_HOST_API void*
@@ -92,7 +93,8 @@ struct synchronous_resource_adapter
     }
     else
     {
-      ::cuda::__driver::__streamSynchronizeNoThrow(__stream.get());
+      _CCCL_ASSERT_DRIVER_API(
+        ::cuda::__driver::__streamSynchronizeNoThrow, "Failed to synchronizer stream", __stream.get());
       __resource.deallocate_sync(__ptr, __bytes, __alignment);
     }
   }

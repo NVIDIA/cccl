@@ -23,6 +23,10 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  gpu_count:
+    description: "Number of GPUs on the runner (0 for CPU-only jobs). Used to decide GPU device passthrough."
+    required: false
+    default: '0'
 
 runs:
 
@@ -76,7 +80,7 @@ runs:
         echo "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX=cccl-preprocessor-cache" | tee -a "${GITHUB_ENV}"
 
     - name: Install GPU driver
-      if: ${{ contains(inputs.runner, '-gpu-') }}
+      if: ${{ inputs.gpu_count != '0' }}
       shell: powershell
       env:
         RUNNER: ${{ runner.name }}
@@ -172,7 +176,7 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         GH_TOKEN: ${{ github.token }}
-        ENABLE_GPU: ${{ contains(inputs.runner, '-gpu-') && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
+        ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
       run: |
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
         $ErrorActionPreference = 'Stop'
@@ -236,7 +240,6 @@ runs:
           --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
           --env "GITHUB_SHA=$GITHUB_SHA" \
           --env "JOB_ID=${{inputs.id}}" \
-          --env "NVCC_APPEND_FLAGS=-t=100" \
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \

@@ -46,7 +46,7 @@ CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]",
   c2h::gen(C2H_SEED(2), in);
 
   // Just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Run test
   c2h::device_vector<int> num_selected_out(1, 0);

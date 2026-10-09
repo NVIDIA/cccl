@@ -10,7 +10,7 @@
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_TRANSPOSE trp 0:1:1
+// %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -28,7 +28,8 @@ struct bench_policy_selector
     return {cub::SelectAlgorithm::lookback,
             {TUNE_THREADS_PER_BLOCK,
              TUNE_ITEMS_PER_THREAD,
-             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT : cub::BLOCK_LOAD_WARP_TRANSPOSE),
+             (TUNE_TRANSPOSE == 0 ? cub::BLOCK_LOAD_DIRECT
+                                  : (TUNE_TRANSPOSE == 1 ? cub::BLOCK_LOAD_WARP_TRANSPOSE : cub::BLOCK_LOAD_VECTORIZE)),
              (TUNE_LOAD == 0 ? cub::LOAD_DEFAULT : cub::LOAD_CA),
              cub::BLOCK_SCAN_WARP_SCANS,
              lookback_delay_policy,
@@ -57,7 +58,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
   thrust::device_vector<T> out(selected_elements, thrust::no_init);
 
   T* d_in                  = thrust::raw_pointer_cast(in.data());
-  T* d_out                 = thrust::raw_pointer_cast(out.data());
+  T* d_out                 = thrust::raw_pointer_cast(out.data()); // NOLINT(misc-const-correctness)
   const bool* d_flags      = thrust::raw_pointer_cast(flags.data());
   offset_t* d_num_selected = thrust::raw_pointer_cast(num_selected.data());
 
@@ -79,7 +80,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     );
     if constexpr (InPlace::value)
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Flagged,
         "DeviceSelect::Flagged failed",
         d_in,
@@ -90,7 +91,7 @@ void select(nvbench::state& state, nvbench::type_list<T, InPlace>)
     }
     else
     {
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         cub::DeviceSelect::Flagged,
         "DeviceSelect::Flagged failed",
         static_cast<const T*>(d_in),

@@ -18,6 +18,12 @@ __global__ void add_relaxed_device_pointer_non_volatile(int** data, int** out, i
   *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
 }
 
+__global__ void add_relaxed_cluster_pointer_non_volatile(int** data, int** out, int n)
+{
+  auto ref = cuda::atomic_ref<int*, cuda::thread_scope_cluster>{*data};
+  *out     = ref.fetch_add(n, cuda::std::memory_order_relaxed);
+}
+
 __global__ void add_relaxed_system_pointer_non_volatile(int** data, int** out, int n)
 {
   auto ref = cuda::atomic_ref<int*, cuda::thread_scope_system>{*data};
@@ -43,6 +49,18 @@ __global__ void add_relaxed_system_pointer_non_volatile(int** data, int** out, i
 ; SMXX-LABEL: .visible .entry {{_.*add_relaxed_device_pointer_non_volatile.*}}(
 ; SMXX: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
 ; SMXX: ret;
+
+; NOT-SM90-PLUS-LABEL: .visible .entry {{_.*add_relaxed_cluster_pointer_non_volatile.*}}(
+; NOT-SM90-PLUS-NOT: {{.*}}atom{{.*}}.cluster{{.*}}
+; NOT-SM90-PLUS: {{.*}}atom.add.relaxed.gpu.u64{{.*}}
+; NOT-SM90-PLUS-NOT: {{.*}}atom{{.*}}.cluster{{.*}}
+; NOT-SM90-PLUS: ret;
+
+; SM90-PLUS-LABEL: .visible .entry {{_.*add_relaxed_cluster_pointer_non_volatile.*}}(
+; SM90-PLUS-NOT: {{.*}}atom{{.*}}.gpu{{.*}}
+; SM90-PLUS: {{.*}}atom.add.relaxed.cluster.u64{{.*}}
+; SM90-PLUS-NOT: {{.*}}atom{{.*}}.gpu{{.*}}
+; SM90-PLUS: ret;
 
 ; SMXX-LABEL: .visible .entry {{_.*add_relaxed_system_pointer_non_volatile.*}}(
 ; SMXX: {{.*}}atom.add.relaxed.sys.u64{{.*}}

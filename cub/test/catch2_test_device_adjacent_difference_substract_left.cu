@@ -6,16 +6,17 @@
 #include <cub/device/device_adjacent_difference.cuh>
 
 #include <cuda/buffer>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
 #include <algorithm>
 #include <numeric>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeft, adjacent_difference_subtract_left);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractLeftCopy, adjacent_difference_subtract_left_copy);
@@ -68,7 +69,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy does not change the input",
   c2h::device_vector<type> in(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
   adjacent_difference_subtract_left_copy(in.begin(), cuda::discard_iterator(), num_items, cuda::std::minus<>{});
 
   REQUIRE(reference == in);
@@ -119,47 +120,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with user provided memory
     REQUIRE(reference == in);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_subtract_left(stream.get());
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_subtract_left(stream);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_subtract_left(stream_ref);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_subtract_left(env);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_subtract_left(policy);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_subtract_left(policy);
-  }
+  test_with_custom_streams(test_subtract_left);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -227,47 +188,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with user provided me
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_subtract_left_copy(stream.get());
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_subtract_left_copy(stream);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_subtract_left_copy(stream_ref);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_subtract_left_copy(env);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_subtract_left_copy(policy);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_subtract_left_copy(policy);
-  }
+  test_with_custom_streams(test_subtract_left_copy);
 }
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy accepts cuda::device_buffer input",
@@ -276,8 +197,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy accepts cuda::device_buffer
 {
   using type = std::int32_t;
 
-  cuda::stream stream{cuda::devices[0]};
-  auto input = cuda::make_device_buffer<type>(stream, cuda::devices[0], {2, 5, 9, 14, 20});
+  const cuda::stream stream = c2h::make_current_device_stream();
+  auto input                = cuda::make_device_buffer<type>(stream, c2h::current_device(), {2, 5, 9, 14, 20});
   c2h::device_vector<type> output(input.size(), thrust::no_init);
   const auto output_it = thrust::raw_pointer_cast(output.data());
 

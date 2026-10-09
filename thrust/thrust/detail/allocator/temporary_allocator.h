@@ -63,7 +63,7 @@ public:
 
   _CCCL_HOST_DEVICE pointer allocate(size_type cnt)
   {
-    pointer_and_size result = thrust::get_temporary_buffer<T>(system(), cnt);
+    const pointer_and_size result = thrust::get_temporary_buffer<T>(system(), cnt);
 
     // handle failure
     if (result.second < cnt)
@@ -97,7 +97,7 @@ public:
     // Deallocate must be noexcept to be safe in destructors and during exception unwinding.
     // Clear CUDA error state and leak the memory rather than propagating exception.
     // Memory is leaked, but this matches standard allocator behavior when deallocation fails.
-    _CCCL_CATCH (std::exception & e)
+    _CCCL_CATCH (const std::exception& e)
     {
       // if we have some context about the thrown exception, log it
       NV_IF_TARGET(NV_IS_HOST, {

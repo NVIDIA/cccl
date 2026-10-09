@@ -111,7 +111,7 @@ def test_import_numba_raises(raise_on_numba_import):
     with pytest.raises(
         ImportError, match="This test is marked 'no_numba' but attempted to import it"
     ):
-        import numba.cuda  # noqa: F401
+        import numba_cuda_mlir  # noqa: F401
 
 
 def test_reduce_well_known_plus():

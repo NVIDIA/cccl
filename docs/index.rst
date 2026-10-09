@@ -5,7 +5,7 @@ CUDA Core Compute Libraries
    :hidden:
    :maxdepth: 3
 
-   cpp
+   cccl/index
    python/index
    contributors/index
    maintainers/index

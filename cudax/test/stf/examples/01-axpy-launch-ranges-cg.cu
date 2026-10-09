@@ -39,8 +39,8 @@ int main()
 
   const double alpha = 3.14;
 
-  auto handle_X = ctx.logical_data(X, {N});
-  auto handle_Y = ctx.logical_data(Y, {N});
+  auto handle_X = ctx.logical_data(X, N);
+  auto handle_Y = ctx.logical_data(Y, N);
 
   auto number_devices = 4;
   auto all_devs       = exec_place::repeat(exec_place::device(0), number_devices);

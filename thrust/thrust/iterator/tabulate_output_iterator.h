@@ -36,6 +36,9 @@ public:
       , index(index)
   {}
 
+  // Write-only proxy: assignment invokes fun with the index and the assigned value.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
   _CCCL_HOST_DEVICE tabulate_output_iterator_proxy operator=(const T& x)
@@ -43,6 +46,7 @@ public:
     fun(index, x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   BinaryFunction fun;

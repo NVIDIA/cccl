@@ -24,8 +24,6 @@
 // int32 would be rejected, as its type maximum exceeds the cap).
 using segment_size_t = cuda::std::int32_t;
 
-namespace
-{
 enum class pattern_kind : int
 {
   random = 0,
@@ -35,7 +33,7 @@ enum class pattern_kind : int
   pivot_tie
 };
 
-[[nodiscard]] pattern_kind string_to_pattern(const std::string& pattern)
+[[nodiscard]] inline pattern_kind string_to_pattern(const std::string& pattern)
 {
   if (pattern == "random")
   {
@@ -152,7 +150,6 @@ gen_data(int num_segments, pattern_kind pattern, const segment_size_t* d_seg_siz
 
   return d_keys;
 }
-} // namespace
 
 const std::vector<std::string> valid_patterns = {
   "random", "quantized_random", "relu_quantized", "tie_heavy", "pivot_tie"};

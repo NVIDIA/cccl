@@ -14,7 +14,7 @@ CUB_TEST("Device inclusive scan works", "[scan][device]", CUB_SMALL)
   thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};
   thrust::device_vector<int> out(input.size());
 
-  int init = 1;
+  const int init = 1;
   size_t temp_storage_bytes{};
 
   cub::DeviceScan::InclusiveScanInit(
@@ -33,7 +33,7 @@ CUB_TEST("Device inclusive scan works", "[scan][device]", CUB_SMALL)
     init,
     static_cast<int>(input.size()));
 
-  thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
+  const thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
   // example-end device-inclusive-scan
 
   REQUIRE(expected == out);
@@ -171,7 +171,7 @@ CUB_TEST("cub::DeviceScan::InclusiveScanInit args::deferred non-env overload wor
     deferred_init,
     static_cast<int>(input.size()));
 
-  thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
+  const thrust::host_vector<int> expected{1, 1, 2, 2, 4, 4, 6};
   // example-end device-inclusive-scan-init-deferred
 
   REQUIRE(expected == out);

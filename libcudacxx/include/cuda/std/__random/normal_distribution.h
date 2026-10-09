@@ -210,7 +210,7 @@ public:
     result_type __vp = 0;
     int __v_hot_int  = 0;
     __is >> __mean >> __stddev >> __v_hot_int;
-    bool __v_hot = __v_hot_int != 0;
+    const bool __v_hot = __v_hot_int != 0;
     if (__v_hot)
     {
       __is >> __vp;

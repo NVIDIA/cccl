@@ -100,6 +100,28 @@ void test_static_codegen_parity(stream_ctx& ctx, const exec_place& grid)
   };
 }
 
+// make_partition / make_partition_descriptor accept a shape object (anything
+// exposing dim4 get_data_dims()) in place of an explicit dim4, and produce the
+// same partition
+void test_make_partition_from_shape(const exec_place& grid)
+{
+  const size_t nx = 48, ny = 20;
+  const auto shape      = shape_of<slice<size_t, 2>>(nx, ny);
+  const auto from_dims  = make_partition(shape.get_data_dims(), partition_spec{whole, blocked<0>}, grid.get_dims());
+  const auto from_shape = make_partition(shape, partition_spec{whole, blocked<0>}, grid.get_dims());
+  EXPECT(from_shape == from_dims);
+  EXPECT(from_shape.true_dims() == dim4(nx, ny));
+  for (size_t y = 0; y < ny; y++)
+  {
+    EXPECT(from_shape.owner(pos4(0, y)) == from_dims.owner(pos4(0, y)));
+    EXPECT(from_shape.owner(pos4(nx - 1, y)) == from_dims.owner(pos4(nx - 1, y)));
+  }
+
+  const ::std::vector<dim_spec> spec{dim_spec{}, dim_spec{dim_policy::blocked, 0, 0}};
+  EXPECT(make_partition_descriptor(shape, spec, grid.get_dims())
+         == make_partition_descriptor(shape.get_data_dims(), spec, grid.get_dims()));
+}
+
 void test_cute_graph_backend(const exec_place& grid)
 {
   const size_t n = 1023;
@@ -135,6 +157,7 @@ int main()
 
   test_cute_composite_cache(grid);
   test_static_codegen_parity(ctx, grid);
+  test_make_partition_from_shape(grid);
 
   // 1-D: dimension 0 blocked over the grid
   {
@@ -231,7 +254,7 @@ int main()
       e(x, y) = 7;
     };
 
-    box interior({1ul, nx - 1}, {1ul, ny - 1});
+    const box interior({1ul, nx - 1}, {1ul, ny - 1});
     ctx.parallel_for(part, grid, interior, lE.rw())->*[] _CCCL_DEVICE(size_t x, size_t y, auto e) {
       e(x, y) = 100 + x + y;
     };
@@ -270,7 +293,7 @@ int main()
     };
 
     // Face update: classic iteration over the thin box, same placement
-    box face({0ul, nx}, {0ul, 1ul});
+    const box face({0ul, nx}, {0ul, 1ul});
     ctx.parallel_for(blocked_partition(), grid, face, lF.rw(dist))->*[] _CCCL_DEVICE(size_t x, size_t y, auto f) {
       f(x, y) = 42;
     };

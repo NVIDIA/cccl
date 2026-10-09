@@ -253,7 +253,7 @@ inline cccl_type_info read_type_info(buffer_reader& r)
   t.size            = static_cast<size_t>(r.read_pod<uint64_t>());
   t.alignment       = static_cast<size_t>(r.read_pod<uint64_t>());
   const auto type_v = r.read_pod<uint32_t>();
-  if (type_v > static_cast<uint32_t>(CCCL_BOOLEAN))
+  if (type_v > static_cast<uint32_t>(CCCL_BFLOAT16))
   {
     throw std::runtime_error(std::format("serialization blob: invalid type enum ({})", type_v));
   }

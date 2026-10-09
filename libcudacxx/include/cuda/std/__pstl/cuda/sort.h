@@ -33,30 +33,36 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  include <cub/device/device_merge_sort.cuh>
 #  include <cub/device/device_radix_sort.cuh>
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
+#  include <cub/util_type.cuh>
 
 _CCCL_DIAG_POP
 
 #  include <cuda/__cmath/round_up.h>
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__algorithm/sort.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_one_of.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/climits>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -98,7 +104,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 
     // Determine temporary device storage requirements for device_sort
     size_t __num_bytes = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       __device_radix_sort,
       "__pstl_cuda_sort: determination of device storage for cub::DeviceRadixSort::SortKeys failed",
       static_cast<void*>(nullptr),
@@ -114,7 +120,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
       __buffer.d_buffers[1] = __storage.template __get_raw_ptr<0>();
 
       // Run the kernel
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         __device_radix_sort,
         "__pstl_cuda_sort: kernel launch of cub::DeviceRadixSort::SortKeys failed",
         __storage.__get_temp_storage(),
@@ -128,7 +134,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
       // Need to copy the memory back
       if (__buffer.selector != 0)
       {
-        _CCCL_TRY_CUDA_API(
+        _CCCL_TRY_RUNTIME_API(
           CUB_NS_QUALIFIER::DeviceTransform::TransformIf,
           "__pstl_cuda_sort: kernel launch of cub::DeviceTransform::TransformIf failed",
           tuple{__storage.template __get_raw_ptr<0>()},
@@ -151,7 +157,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
     auto __stream      = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{::cudaStream_t{}}, __policy);
 
     // Run the kernel
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceMergeSort::SortKeys,
       "__pstl_cuda_sort: kernel launch of cub::DeviceMergeSort::SortKeys failed",
       ::cuda::std::move(__first),

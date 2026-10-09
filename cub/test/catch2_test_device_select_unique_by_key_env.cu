@@ -7,12 +7,12 @@
 
 #include <thrust/detail/raw_pointer_cast.h>
 
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
 
 template <class T>
@@ -163,47 +163,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with user provided memory and environm
     REQUIRE(reference_vals == vals_out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::UniqueByKey works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique_by_key(stream.get());
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique_by_key(stream);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_unique_by_key(stream_ref);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_unique_by_key(env);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique_by_key(policy);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique_by_key(policy);
-  }
+  test_with_custom_streams(test_unique_by_key);
 }
 
 CUB_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory and environment",
@@ -295,45 +255,5 @@ CUB_TEST("DeviceSelect::UniqueByKey works with user provided operator, memory an
     REQUIRE(reference_vals == vals_out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::UniqueByKey works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique_by_key(stream.get());
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_unique_by_key(stream);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_unique_by_key(stream_ref);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_unique_by_key(env);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique_by_key(policy);
-  }
-
-  SECTION("DeviceSelect::UniqueByKey works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique_by_key(policy);
-  }
+  test_with_custom_streams(test_unique_by_key);
 }

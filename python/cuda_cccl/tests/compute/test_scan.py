@@ -5,7 +5,7 @@
 
 import numpy as np
 import pytest
-from _utils.device_array import DeviceArray, get_compute_capability
+from _utils.device_array import DeviceArray
 
 import cuda.compute
 from cuda.compute import (
@@ -57,30 +57,10 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     "force_inclusive",
     [True, False],
 )
-def test_scan_array_input(force_inclusive, input_array, monkeypatch):
-    cc_major, _ = get_compute_capability()
-    # Skip sass verification if input is complex
-    # as LDL/STL instructions are emitted for complex types.
-    # Also skip for:
-    # * uint8-True
-    # * int8-True
-    # * float64-False
-    # Also skip for CC 9.0+, due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
-    if (
-        np.issubdtype(input_array.dtype, np.complexfloating)
-        or (force_inclusive and np.isdtype(input_array.dtype, (np.uint8, np.int8)))
-        or (not force_inclusive and input_array.dtype == np.float64)
-        or cc_major >= 9
-    ):
-        import cuda.compute._cccl_interop
-
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
-
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_scan_array_input(force_inclusive, input_array):
     def op(a, b):
         return a + b
 
@@ -239,18 +219,10 @@ def test_exclusive_scan_well_known_plus():
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
-def test_inclusive_scan_well_known_plus(monkeypatch):
-    cc_major, _ = get_compute_capability()
-    # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
-    if cc_major >= 9:
-        import cuda.compute._cccl_interop as cccl_interop
-
-        monkeypatch.setattr(
-            cccl_interop,
-            "_check_sass",
-            False,
-        )
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_inclusive_scan_well_known_plus():
 
     dtype = np.int32
     h_init = np.array([0], dtype=dtype)
@@ -367,18 +339,10 @@ def test_inclusive_scan_add():
     np.testing.assert_equal(d_output.copy_to_host(), expected)
 
 
-def test_reverse_input_iterator(monkeypatch):
-    cc_major, _ = get_compute_capability()
-    # Skip SASS check for CC 9.0+, due to a bug in NVRTC.
-    # TODO: add NVRTC version check, ref nvbug 5243118
-    if cc_major >= 9:
-        import cuda.compute._cccl_interop as cccl_interop
-
-        monkeypatch.setattr(
-            cccl_interop,
-            "_check_sass",
-            False,
-        )
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_reverse_input_iterator():
 
     def add_op(a, b):
         return a + b
@@ -446,21 +410,13 @@ def test_future_init_value(force_inclusive):
     np.testing.assert_array_equal(expected, got)
 
 
-def test_no_init_value(monkeypatch):
+@pytest.mark.no_verify_sass(
+    reason="Known SASS local-memory spill; the check is opt-in via conftest.check_ldl_stl_in_sass."
+)
+def test_no_init_value():
     force_inclusive = True
     num_items = 1024
     dtype = np.dtype("int32")
-
-    # Skip SASS check for CC 9.0 due to LDL/STL CI failure.
-    cc_major, _ = get_compute_capability()
-    if cc_major >= 9:
-        import cuda.compute._cccl_interop
-
-        monkeypatch.setattr(
-            cuda.compute._cccl_interop,
-            "_check_sass",
-            False,
-        )
 
     h_input = np.random.randint(0, 256, num_items, dtype=dtype)
     d_input = DeviceArray.from_numpy(h_input)
@@ -603,6 +559,9 @@ def test_serialize_deserialize_inclusive_scan_round_trip():
     np.testing.assert_array_equal(d_out.copy_to_host(), np.cumsum(h_in))
 
 
+@pytest.mark.thread_unsafe(
+    reason="Calls clear_all_caches() mid-test, which is unsupported concurrently with other factory calls."
+)
 @pytest.mark.serialization
 def test_deserialize_after_jit_matches_jit_result():
     """Serialize a JITed scan, deserialize, and confirm output matches a fresh JIT."""

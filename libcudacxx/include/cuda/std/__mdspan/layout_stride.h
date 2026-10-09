@@ -28,6 +28,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__numeric/add_overflow.h>
 #include <cuda/std/__fwd/mdspan.h>
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
@@ -119,8 +120,7 @@ private:
   [[nodiscard]] _CCCL_API static constexpr bool
   __add_overflow(index_type __x, index_type __y, index_type* __res) noexcept
   {
-    *__res = __x + __y;
-    return *__res < __y;
+    return ::cuda::add_overflow(*__res, __x, __y);
   }
 
   template <class _OtherIndexType>

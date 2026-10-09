@@ -10,11 +10,11 @@
 int main()
 {
   // allocate memory buffer to store 10 integers on the device
-  thrust::device_ptr<int> d_ptr = thrust::device_malloc<int>(10);
+  const thrust::device_ptr<int> d_ptr = thrust::device_malloc<int>(10);
 
   // device_ptr supports pointer arithmetic
-  thrust::device_ptr<int> first = d_ptr;
-  thrust::device_ptr<int> last  = d_ptr + 10;
+  const thrust::device_ptr<int> first = d_ptr;
+  const thrust::device_ptr<int> last  = d_ptr + 10;
   std::cout << "device array contains " << cuda::std::distance(first, last) << " values\n";
 
   // algorithms work as expected
@@ -32,7 +32,7 @@ int main()
   // note: raw_ptr cannot necessarily be accessed by the host!
 
   // conversely, raw pointers can be wrapped
-  [[maybe_unused]] thrust::device_ptr<int> wrapped_ptr = thrust::device_pointer_cast(raw_ptr);
+  [[maybe_unused]] const thrust::device_ptr<int> wrapped_ptr = thrust::device_pointer_cast(raw_ptr);
 
   // back to where we started
   assert(wrapped_ptr == d_ptr);

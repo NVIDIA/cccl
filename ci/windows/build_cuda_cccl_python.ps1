@@ -15,8 +15,10 @@
     yields a `cu13` build.
 
     Upon completion of the `cu13` build, the outer 12.9 container merges both
-    `cu12` and `cu13` wheels into a single cuda-cccl wheel, and uploads that
-    via the standard CCCL CI artifact upload mechanisms.
+    `cu12` and `cu13` wheels into a single cuda-cccl wheel, repairs it with
+    delvewheel so it carries its own MSVC C++ runtime (see
+    Repair-CudaCcclWheel), and uploads the result via the standard CCCL CI
+    artifact upload mechanisms.
 
 .PARAMETER PyVersion
     **Required.** The Python version to use for building the wheel, expressed
@@ -25,7 +27,9 @@
 
 .PARAMETER OnlyCudaMajor
     Optional. Restricts the build to a single CUDA major version (`12` or `13`).
-    When set, only that version is built and the *merge* step is skipped.
+    When set, only that version is built and both the *merge* and the
+    delvewheel *repair* steps are skipped, so the wheel still depends on the
+    system msvcp140.dll (see Repair-CudaCcclWheel).
 
 .PARAMETER Cuda13Image
     Optional. The Docker image name used for a nested build of the CUDA 13
@@ -310,6 +314,65 @@ function Build-CudaCcclWheel {
     }
 }
 
+function Repair-CudaCcclWheel {
+    <#
+    .SYNOPSIS
+        Bundle the MSVC C++ runtime into the merged wheel. This is the Windows
+        counterpart of the auditwheel repair in ../build_cuda_cccl_python.sh.
+
+    .DESCRIPTION
+        cccl.c.parallel.dll links msvcp140.dll dynamically, and Python ships
+        only vcruntime140*.dll, so an unrepaired wheel takes whatever
+        msvcp140.dll the user's machine has.
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory)] [string] $Wheelhouse,
+        [Parameter(Mandatory)] [string] $RepoRoot,
+        [Parameter(Mandatory)] [string] $PythonExe
+    )
+
+    $wheel = Get-OnePathMatch -Path $Wheelhouse -Pattern '^cuda_cccl-.*\.whl' -File
+
+    Invoke-Checked { & $PythonExe -m pip install 'delvewheel>=1.13.1' | Write-Host } 'Failed to install delvewheel'
+
+    # Vendor the System32 msvcp140.dll, the copy the Visual Studio installer put
+    # there alongside this image's toolset. Passed via --add-path so delvewheel
+    # takes this copy rather than the first one it meets on PATH.
+    $systemMsvcp = Join-Path $env:SystemRoot 'System32\msvcp140.dll'
+    Write-Host "System msvcp140.dll is $((Get-Item $systemMsvcp).VersionInfo.FileVersion)"
+
+    $repairedDir = Join-Path $RepoRoot 'wheelhouse_repaired'
+    ${null} = New-Item -ItemType Directory -Path $repairedDir -Force
+
+    # cccl.c.parallel*.dll / libnvcc.dll: already in the wheel, loaded via
+    # os.add_dll_directory in _bindings.py; unexcluded, delvewheel looks for
+    # them on PATH and fails.
+    # --analyze-existing: also read the import tables of DLLs already in the
+    # wheel. Without it only the .pyd files are analysed, the repair succeeds,
+    # and msvcp140.dll is still imported from the system.
+    # --namespace-pkg cuda: never create cuda/__init__.py (shared namespace
+    # with cuda-bindings and cuda-core); the loader patch lands in each direct
+    # subpackage instead (cuda/compute/__init__.py and cuda/cccl/__init__.py).
+    $delvewheelArgs = @(
+        '-m', 'delvewheel', 'repair', $wheel,
+        '-w', $repairedDir,
+        '--analyze-existing',
+        '--namespace-pkg', 'cuda',
+        '--exclude', ('cccl.c.parallel*.dll;libnvcc.dll;' +
+            'nvrtc64_*.dll;nvrtc-builtins64_*.dll;nvJitLink_*.dll;nvfatbin*.dll;' +
+            'cudart64_*.dll;nvcuda.dll;dbghelp.dll'),
+        '--add-path', (Split-Path -Parent $systemMsvcp)
+    )
+    Write-Host ("python " + ($delvewheelArgs -join ' '))
+    Invoke-Checked { & $PythonExe @delvewheelArgs } 'delvewheel repair failed'
+
+    $repaired = Get-OnePathMatch -Path $repairedDir -Pattern '^cuda_cccl-.*\.whl' -File
+    Remove-Item -Force $wheel
+    Move-Item -Force $repaired $Wheelhouse
+    Remove-Item $repairedDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 # Main build entry code.
 Push-Location (Join-Path $RepoRoot 'python/cuda_cccl')
 try {
@@ -384,6 +447,11 @@ if ($DoMerge) {
     Remove-Item (Join-Path $RepoRoot 'wheelhouse_cu13') `
         -Recurse -Force -ErrorAction SilentlyContinue
 
+    Repair-CudaCcclWheel `
+        -Wheelhouse $Wheelhouse `
+        -RepoRoot $RepoRoot `
+        -PythonExe $PythonExe
+
     Write-Host 'Final wheels in wheelhouse:'
     Get-ChildItem $Wheelhouse -Filter '*.whl' |
     ForEach-Object {
@@ -391,17 +459,13 @@ if ($DoMerge) {
     }
 }
 
-# If it turns out we need delvewheel, we'd handle it here, after the merging
-# of wheels.  The two DLLs that seem like they might be problematic are
-# msvc140p.dll, and dbghelp.dll.  The former comes from llvmlite, upon which
-# we depend.  Dbghelp.dll ships in C:\Windows\System32, but that will often
-# be a much older version compared to the one used by Visual Studio.  We only
-# use one symbol from Dbghelp.dll: UnDecorateSymbolName, which is used by
-# nvrtc.  If we encounter weird issues with c.parallel jit compilation and
-# nvrtc in the wild on Windows, an out-of-date Dbghelp.dll could possibly be
-# the culprit.
-#
-# For now, though, it doesn't appear to be necessary.
+# dbghelp.dll is never bundled: delvewheel treats it as a Windows system DLL,
+# and the --exclude above states that intent explicitly since delvewheel is not
+# pinned. It comes from C:\Windows\System32, whose copy is often much older
+# than the one Visual Studio ships. We use a single symbol from it,
+# UnDecorateSymbolName (via nvrtcGetTypeName). If c.parallel JIT compilation
+# ever misbehaves in the wild on Windows, an out-of-date dbghelp.dll is a
+# possible culprit.
 
 # Optionally upload the wheel artifact.
 if ($env:GITHUB_ACTIONS -and -not $SkipUpload) {

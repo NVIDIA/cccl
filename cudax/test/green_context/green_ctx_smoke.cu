@@ -29,7 +29,7 @@ C2H_TEST("Green context", "[green_context]")
     INFO("Can create a green context");
     {
       {
-        [[maybe_unused]] cudax::green_context ctx(cuda::devices[0]);
+        [[maybe_unused]] const cudax::green_context ctx(cuda::devices[0]);
       }
       {
         cudax::green_context ctx(cuda::devices[0]);
@@ -40,13 +40,13 @@ C2H_TEST("Green context", "[green_context]")
 
     INFO("Can create streams under green context");
     {
-      cudax::green_context green_ctx_dev0(cuda::devices[0]);
-      cudax::stream stream_under_green_ctx(green_ctx_dev0);
+      const cudax::green_context green_ctx_dev0(cuda::devices[0]);
+      const cudax::stream stream_under_green_ctx(green_ctx_dev0);
       REQUIRE(stream_under_green_ctx.device() == 0);
       if (cuda::devices.size() > 1)
       {
-        cudax::green_context green_ctx_dev1(cuda::devices[1]);
-        cudax::stream stream_dev1(green_ctx_dev1);
+        const cudax::green_context green_ctx_dev1(cuda::devices[1]);
+        const cudax::stream stream_dev1(green_ctx_dev1);
         REQUIRE(stream_dev1.device() == 1);
       }
 
@@ -54,7 +54,7 @@ C2H_TEST("Green context", "[green_context]")
       {
         auto ldev1 = stream_under_green_ctx.logical_device();
         REQUIRE(ldev1.kind() == cudax::logical_device::kinds::green_context);
-        cudax::stream side_stream(ldev1);
+        const cudax::stream side_stream(ldev1);
         REQUIRE(side_stream.device() == 0);
         auto ldev2 = side_stream.logical_device();
         REQUIRE(ldev2.kind() == cudax::logical_device::kinds::green_context);

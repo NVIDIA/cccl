@@ -22,7 +22,7 @@ namespace
 {
 C2H_TEST("simple task_scheduler test", "[scheduler][task_scheduler]")
 {
-  ex::task_scheduler sched{dummy_scheduler{}};
+  const ex::task_scheduler sched{dummy_scheduler{}};
   STATIC_CHECK(ex::scheduler<decltype(sched)>);
   auto sndr = sched.schedule();
   STATIC_CHECK(ex::sender<decltype(sndr)>);
@@ -34,7 +34,7 @@ C2H_TEST("simple task_scheduler test", "[scheduler][task_scheduler]")
 C2H_TEST("task_scheduler starts work on the correct execution context", "[scheduler][task_scheduler]")
 {
   ex::thread_context ctx;
-  ex::task_scheduler sched{ctx.get_scheduler()};
+  const ex::task_scheduler sched{ctx.get_scheduler()};
   auto sndr  = ex::starts_on(sched, ex::just() | ex::then([] {
                                      return ::std::this_thread::get_id();
                                     }));
@@ -74,7 +74,7 @@ struct test_domain
 
 C2H_TEST("bulk_unchunked dispatches correctly through task_scheduler", "[scheduler][task_scheduler]")
 {
-  ex::task_scheduler sched{dummy_scheduler<test_domain>{}};
+  const ex::task_scheduler sched{dummy_scheduler<test_domain>{}};
   auto sndr  = ex::on(sched, ex::just(-1) | ex::bulk_chunked(ex::par_unseq, 100, [](int, int, int&) {}));
   g_called   = false;
   auto [val] = ex::sync_wait(cuda::std::move(sndr)).value();
@@ -84,7 +84,7 @@ C2H_TEST("bulk_unchunked dispatches correctly through task_scheduler", "[schedul
 
 C2H_TEST("bulk dispatches correctly through task_scheduler", "[scheduler][task_scheduler]")
 {
-  ex::task_scheduler sched{dummy_scheduler<test_domain>{}};
+  const ex::task_scheduler sched{dummy_scheduler<test_domain>{}};
   auto sndr  = ex::on(sched, ex::just(-1) | ex::bulk(ex::par_unseq, 100, [](int, int&) {}));
   g_called   = false;
   auto [val] = ex::sync_wait(cuda::std::move(sndr)).value();

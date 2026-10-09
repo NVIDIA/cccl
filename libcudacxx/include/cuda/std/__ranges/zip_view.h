@@ -199,7 +199,7 @@ public:
     else if constexpr (__zip_all_random_access</*const*/ false, _Views...>)
     {
       // MSVC cannot deal with iter_difference_t here
-      using __diff_t _CCCL_NODEBUG_ALIAS = common_type_t<range_difference_t<_Views>...>;
+      using __diff_t _CCCL_NODEBUG = common_type_t<range_difference_t<_Views>...>;
 
       return begin() + static_cast<__diff_t>(size());
     }

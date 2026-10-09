@@ -25,6 +25,10 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_HAS_BUILTIN(__is_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(15)
+#  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__is_pointer) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)

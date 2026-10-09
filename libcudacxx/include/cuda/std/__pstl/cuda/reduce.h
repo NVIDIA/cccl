@@ -31,34 +31,29 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 
 #  include <cub/device/device_reduce.cuh>
+#  include <cub/util_namespace.cuh>
 
 _CCCL_DIAG_POP
 
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/call_or.h>
-#  include <cuda/__iterator/tabulate_output_iterator.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__host_stdlib/new>
-#  include <cuda/std/__host_stdlib/stdexcept>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/__memory/addressof.h>
-#  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__numeric/reduce.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -85,7 +80,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
     // Determine temporary device storage requirements for reduce
     void* __temp_storage = nullptr;
     size_t __num_bytes   = 0;
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceReduce::Reduce,
       "__pstl_cuda_reduce: determination of device storage for cub::DeviceReduce::Reduce failed",
       __temp_storage,
@@ -100,7 +95,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, 1};
 
       // Run the reduction
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         CUB_NS_QUALIFIER::DeviceReduce::Reduce,
         "__pstl_cuda_reduce: kernel launch of cub::DeviceReduce::Reduce failed",
         __storage.__get_temp_storage(),
@@ -113,7 +108,7 @@ struct __pstl_dispatch<__pstl_algorithm::__reduce, __execution_backend::__cuda>
         __stream.get());
 
       // Copy the result back from storage
-      _CCCL_TRY_CUDA_API(
+      _CCCL_TRY_RUNTIME_API(
         ::cudaMemcpyAsync,
         "__pstl_cuda_reduce: copy of result from device to host failed",
         ::cuda::std::addressof(__ret),

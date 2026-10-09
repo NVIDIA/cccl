@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__complex/vector_support.h>
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
-#include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -38,7 +36,6 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -301,16 +298,16 @@ template <class _Tp>
   // Avoid floating point operations that are invalid during constant evaluation
   _CCCL_IF_CONSTEVAL
   {
-    bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
-    bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
-    bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
-    bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
-    bool __z_nan  = !__z_inf
-                 && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b)) || (::cuda::std::isnan(__a) && __b == _Tp(0))
-                     || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
-    bool __w_nan  = !__w_inf
-                 && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d)) || (::cuda::std::isnan(__c) && __d == _Tp(0))
-                     || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
+    const bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
+    const bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
+    const bool __z_inf  = ::cuda::std::isinf(__a) || ::cuda::std::isinf(__b);
+    const bool __w_inf  = ::cuda::std::isinf(__c) || ::cuda::std::isinf(__d);
+    const bool __z_nan  = !__z_inf
+                       && ((::cuda::std::isnan(__a) && ::cuda::std::isnan(__b))
+                           || (::cuda::std::isnan(__a) && __b == _Tp(0)) || (__a == _Tp(0) && ::cuda::std::isnan(__b)));
+    const bool __w_nan  = !__w_inf
+                       && ((::cuda::std::isnan(__c) && ::cuda::std::isnan(__d))
+                           || (::cuda::std::isnan(__c) && __d == _Tp(0)) || (__c == _Tp(0) && ::cuda::std::isnan(__d)));
     if (__z_nan || __w_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -323,8 +320,8 @@ template <class _Tp>
       }
       return complex<_Tp>(numeric_limits<_Tp>::infinity(), numeric_limits<_Tp>::infinity());
     }
-    bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
-    bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
+    const bool __z_nonzero_nan = !__z_inf && !__z_nan && (::cuda::std::isnan(__a) || ::cuda::std::isnan(__b));
+    const bool __w_nonzero_nan = !__w_inf && !__w_nan && (::cuda::std::isnan(__c) || ::cuda::std::isnan(__d));
     if (__z_nonzero_nan || __w_nonzero_nan)
     {
       return complex<_Tp>(numeric_limits<_Tp>::quiet_NaN(), _Tp(0));
@@ -704,20 +701,7 @@ template <class _Tp, class _CharT, class _Traits>
 }
 #endif // _CCCL_HOSTED()
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for both std::complex and cuda::std::complex
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::complex<_Tp>> : integral_constant<size_t, 2>
-{};
-
-template <size_t _Ip, class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::complex<_Tp>>
-{
-  static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::complex
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<complex<_Tp>> : integral_constant<size_t, 2>
@@ -727,7 +711,7 @@ template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in cuda::std::tuple_element<cuda::std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -744,7 +728,7 @@ template <::cuda::std::size_t _Ip, class _Tp>
 struct tuple_element<_Ip, ::cuda::std::complex<_Tp>>
 {
   static_assert(_Ip < 2, "Index out of bounds in std::tuple_element<cuda::std::complex<_Tp>>");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD

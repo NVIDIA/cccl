@@ -502,21 +502,7 @@ to_array(_Tp (&&__arr)[_Size]) noexcept(is_nothrow_move_constructible_v<_Tp>)
   return ::cuda::std::__to_array_rvalue_impl(::cuda::std::move(__arr), make_index_sequence<_Size>());
 }
 
-// specialize cuda::std::tuple_size and cuda::std::tuple_element for both std::array and cuda::std::array
-
-#if _CCCL_HAS_HOST_STD_LIB()
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<::std::array<_Tp, _Np>> : integral_constant<size_t, _Np>
-{};
-
-template <size_t _Ip, class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::std::array<_Tp, _Np>>
-{
-  static_assert(_Ip < _Np, "Index out of bounds in cuda::std::tuple_element<> (std::array)");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
-};
-#endif // _CCCL_HAS_HOST_STD_LIB()
-
+// specialize cuda::std::tuple_size and cuda::std::tuple_element for cuda::std::array
 template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<array<_Tp, _Np>> : integral_constant<size_t, _Np>
 {};
@@ -525,7 +511,7 @@ template <size_t _Ip, class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, array<_Tp, _Np>>
 {
   static_assert(_Ip < _Np, "Index out of bounds in cuda::std::tuple_element<> (cuda::std::array)");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
@@ -543,7 +529,7 @@ template <::cuda::std::size_t _Ip, class _Tp, ::cuda::std::size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, ::cuda::std::array<_Tp, _Np>>
 {
   static_assert(_Ip < _Np, "Index out of bounds in std::tuple_element<> (cuda::std::array)");
-  using type _CCCL_NODEBUG_ALIAS = _Tp;
+  using type _CCCL_NODEBUG = _Tp;
 };
 
 _CCCL_END_NAMESPACE_STD

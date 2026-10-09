@@ -15,7 +15,7 @@
 #include <cuda/std/ranges>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/reduce.h>
+#include <cuda/experimental/mgmn/reduce>
 
 #include <numeric>
 #include <vector>
@@ -71,7 +71,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default init, op, ident (all)")
   {
-    cudax::reduce(
+    cudax::mgmn::reduce(
       cudax::broadcasted,
       comms,
       envs,
@@ -87,7 +87,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default op, ident")
   {
-    cudax::reduce(
+    cudax::mgmn::reduce(
       cudax::broadcasted,
       comms,
       envs,
@@ -104,7 +104,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default ident")
   {
-    cudax::reduce(
+    cudax::mgmn::reduce(
       cudax::broadcasted,
       comms,
       envs,
@@ -122,7 +122,7 @@ MULTI_GPU_TEST("reduce, range overloads default values", )
 
   SECTION("Default none")
   {
-    cudax::reduce(
+    cudax::mgmn::reduce(
       cudax::broadcasted,
       comms,
       envs,

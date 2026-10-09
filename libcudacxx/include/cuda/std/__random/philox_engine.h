@@ -265,9 +265,9 @@ public:
       {
         break;
       }
-      result_type __new_x_j = (__x_[__j] + (__increment & max()) + __carry) & max();
-      __carry               = (__new_x_j < __x_[__j]) ? 1 : 0;
-      __x_[__j]             = __new_x_j;
+      const result_type __new_x_j = (__x_[__j] + (__increment & max()) + __carry) & max();
+      __carry                     = (__new_x_j < __x_[__j]) ? 1 : 0;
+      __x_[__j]                   = __new_x_j;
       if constexpr (word_size < 64)
       {
         __increment >>= word_size;

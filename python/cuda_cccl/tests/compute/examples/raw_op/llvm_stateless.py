@@ -6,10 +6,10 @@
 # example's imports so the imports stay grouped at the start of the example
 # body (after `# example-begin`).
 
-# Skip cleanly on v1 — the LLVM-bitcode code-path (DeviceCode(kind="llvm_ir"))
+# Skip cleanly on v1 — the LLVM-IR code-path (DeviceCode(kind="llvm_ir"))
 # requires cccl.c.parallel built with CCCL_PYTHON_USE_V2=ON. On a v1 wheel the
-# binding silently treats it as LTO-IR and nvJitLink rejects the bitcode bytes
-# as malformed LTO-IR.
+# binding silently treats it as LTO-IR and nvJitLink rejects the bytes as
+# malformed LTO-IR.
 import sys
 
 try:
@@ -23,16 +23,15 @@ if not USING_V2:
 
 # example-begin
 """
-Create a custom operator from LLVM bitcode using RawOp.
+Create a custom operator from LLVM IR using RawOp.
 
-This example demonstrates how to supply pre-compiled LLVM bitcode to RawOp,
-which is the preferred path for cccl.parallel v2 because the bitcode is
-linked into the CUB module at the LLVM IR level and the optimizer inlines
-the operator through kernel inner loops.
+This example demonstrates how to supply pre-written LLVM IR to RawOp, which is
+the preferred path for cccl.parallel v2 because the IR is linked into the CUB
+module at the LLVM IR level and the optimizer inlines the operator through
+kernel inner loops.
 """
 
 import cupy as cp
-import llvmlite.binding as llvm
 import numpy as np
 
 import cuda.compute
@@ -40,9 +39,8 @@ from cuda.compute._device_code import DeviceCode
 from cuda.compute.op import RawOp
 
 # Hand-written LLVM IR for an extern "C" multiply operator with the
-# void(void*, void*, void*) ABI RawOp expects. llvmlite parses the text and
-# serializes it to LLVM bitcode (the binary form, starting with magic "BC")
-# that the v2 backend's LLVM linker accepts.
+# void(void*, void*, void*) ABI RawOp expects. The v2 backend's LLVM linker
+# reads the textual form directly, so it is handed over as-is.
 llvm_ir = """
 target triple = "nvptx64-nvidia-cuda"
 
@@ -56,15 +54,11 @@ entry:
 }
 """
 
-mod = llvm.parse_assembly(llvm_ir)
-mod.verify()
-bitcode = bytes(mod.as_bitcode())
-
-# Wrap the bitcode in DeviceCode so RawOp knows to treat it as LLVM bitcode
-# rather than the default LTO-IR. (Raw `bytes` is accepted too and treated
-# as LTO-IR — the legacy form.)
+# Wrap the IR in DeviceCode so RawOp knows to treat it as LLVM IR rather than
+# the default LTO-IR. (Raw `bytes` is accepted too and treated as LTO-IR — the
+# legacy form.)
 multiply_op = RawOp(
-    ltoir=DeviceCode(op_bytes=bitcode, kind="llvm_ir"),
+    ltoir=DeviceCode(op_bytes=llvm_ir.encode("utf-8"), kind="llvm_ir"),
     name="multiply_op",
 )
 

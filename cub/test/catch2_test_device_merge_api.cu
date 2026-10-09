@@ -41,7 +41,7 @@ CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]", CUB_SMALL)
     static_cast<int>(keys2.size()),
     result.begin());
 
-  c2h::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const c2h::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys
   CHECK(result == expected);
 }
@@ -86,8 +86,8 @@ CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]", CUB_SMALL)
     result_keys.begin(),
     result_values.begin());
 
-  c2h::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  c2h::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const c2h::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const c2h::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs
   CHECK(result_keys == expected_keys);
   CHECK(result_values == expected_values);

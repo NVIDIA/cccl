@@ -34,8 +34,8 @@
 
 #include <cuda/std/source_location>
 
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 #include <cuda/experimental/__utility/meyers_singleton.cuh>
 
@@ -107,7 +107,8 @@ public:
   {
     // Calibration is diagnostic only; allocation failures must not interfere
     // with task teardown.
-    on_throw(notify, loc) << [&] {
+    ON_THROW(notify, loc)
+    {
       auto key = ::std::pair{t.get_symbol(), get_data_footprint(t)};
 
       auto it = statistics.find(key);

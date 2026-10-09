@@ -163,11 +163,11 @@ public:
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator
   {
-    using value_type _CCCL_NODEBUG_ALIAS        = _Item*;
-    using difference_type _CCCL_NODEBUG_ALIAS   = ::cuda::std::ptrdiff_t;
-    using pointer _CCCL_NODEBUG_ALIAS           = _Item* const*;
-    using reference _CCCL_NODEBUG_ALIAS         = _Item* const&;
-    using iterator_category _CCCL_NODEBUG_ALIAS = ::cuda::std::forward_iterator_tag;
+    using value_type _CCCL_NODEBUG        = _Item*;
+    using difference_type _CCCL_NODEBUG   = ::cuda::std::ptrdiff_t;
+    using pointer _CCCL_NODEBUG           = _Item* const*;
+    using reference _CCCL_NODEBUG         = _Item* const&;
+    using iterator_category _CCCL_NODEBUG = ::cuda::std::forward_iterator_tag;
 
     _CCCL_HIDE_FROM_ABI iterator() noexcept = default;
 

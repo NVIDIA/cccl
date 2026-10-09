@@ -151,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     template <class _Tag, class... _As>
     _CCCL_HOST_DEVICE_API void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using __tupl_t _CCCL_NODEBUG_ALIAS = ::cuda::std::__tuple<_Tag, decay_t<_As>...>;
+      using __tupl_t _CCCL_NODEBUG = ::cuda::std::__tuple<_Tag, decay_t<_As>...>;
       _CCCL_TRY
       {
         __state_->__result_.template __emplace<__tupl_t>(_Tag{}, static_cast<_As&&>(__as)...);
@@ -197,9 +197,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   template <class _Sch, class _CvSndr, class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    using operation_state_concept             = operation_state_t;
-    using __completions_t _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
-    using __results_t _CCCL_NODEBUG_ALIAS =
+    using operation_state_concept       = operation_state_t;
+    using __completions_t _CCCL_NODEBUG = completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>;
+    using __results_t _CCCL_NODEBUG =
       typename __completions_t::template __transform_q<::cuda::std::__decayed_tuple, __variant>;
     using __rcvr_t       = continues_on_t::__rcvr_t<_Rcvr, __results_t>;
     using __stash_rcvr_t = continues_on_t::__stash_rcvr_t<_Sch, _Rcvr, __results_t>;

@@ -113,14 +113,14 @@ struct topk_backend_selector
 #  elif TUNE_BLOCK_LOAD_ALGORITHM == 2
     constexpr auto load_alg = cub::BLOCK_LOAD_VECTORIZE;
 #  endif
-    const auto baseline = cub::detail::batched_topk::baseline_topk_policy{{{
+    const auto baseline = cub::detail::batched_topk::baseline_topk_policy{{
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
       cub::detail::batched_topk::worker_policy{TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD, load_alg, store_alg},
-    }}};
+    }};
 #else
     const auto baseline = cub::detail::batched_topk::make_baseline_policy();
 #endif
@@ -250,7 +250,7 @@ void fixed_seg_size_topk_keys(
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     const auto env = cub_bench_env(alloc, launch);
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       batched_topk_keys,
       "batched topk failed",
       d_keys_in,

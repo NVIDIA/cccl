@@ -107,7 +107,7 @@ CUB_TEST(
   message_t* d_tile_data = thrust::raw_pointer_cast(tile_data.data());
 
   c2h::gen(C2H_SEED(2), tile_data);
-  c2h::host_vector<message_t> reference = compute_reference(tile_data);
+  const c2h::host_vector<message_t> reference = compute_reference(tile_data);
 
   // Query temporary storage requirements
   std::size_t temp_storage_bytes{};
@@ -119,7 +119,7 @@ CUB_TEST(
 
   // Initialize temporary storage
   scan_tile_state_t tile_status;
-  cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
+  const cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
   REQUIRE(status == cudaSuccess);
 
   constexpr unsigned int threads_in_init_block = 256;

@@ -19,6 +19,8 @@
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/std/__type_traits/always_false.h>
+
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
 #  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
@@ -129,6 +131,12 @@ template <typename PolicySelector>
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
   if constexpr (policy.algorithm == ScanAlgorithm::lookahead)
   {
+#  if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_DEBUG__) && _CCCL_HAS_RDC()
+    // Keep the assertion dependent so it only fires when a lookahead policy is instantiated.
+    static_assert(::cuda::std::__always_false_v<PolicySelector>,
+                  "CUB DeviceScan warpspeed/lookahead scan is unsupported with nvcc -G and RDC. Compile without -G, "
+                  "disable RDC/separable compilation, or define CCCL_DISABLE_WARPSPEED_SCAN.");
+#  endif // _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_DEBUG__) && _CCCL_HAS_RDC()
     return num_total_threads(policy.lookahead);
   }
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)

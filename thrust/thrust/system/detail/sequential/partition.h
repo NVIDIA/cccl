@@ -54,7 +54,7 @@ partition(sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, F
   }
 
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (wrapped_pred(*first))
   {
@@ -94,7 +94,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
   }
 
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   while (wrapped_pred(*stencil_first))
   {
@@ -136,7 +136,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   }
 
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -178,7 +178,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   using T = thrust::detail::it_value_t<ForwardIterator>;
 
@@ -227,7 +227,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   for (; first != last; ++first)
   {
@@ -263,7 +263,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> stable_par
   Predicate pred)
 {
   // wrap pred
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
 
   for (; first != last; ++first, (void) ++stencil)
   {

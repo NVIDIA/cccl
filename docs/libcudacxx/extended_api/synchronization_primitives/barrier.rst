@@ -23,6 +23,8 @@ Defined in header ``<cuda/barrier>``:
 The class template ``cuda::barrier`` is an extended form of `cuda::std::barrier <https://en.cppreference.com/w/cpp/thread/barrier>`_
 that takes an additional :ref:`cuda::thread_scope <libcudacxx-extended-api-memory-model-thread-scopes>` argument.
 
+``Scope`` shall not be ``cuda::thread_scope_cluster``.
+
 If ``!(scope == cuda::thread_block_scope && cuda::device::is_address_from(this, cuda::device::address_space::shared))``, then the semantics are the same as
 `cuda::std::barrier <https://en.cppreference.com/w/cpp/thread/barrier>`_, otherwise, see below.
 
@@ -94,7 +96,7 @@ regardless of memory characteristics.
 
 Under CUDA Compute Capability 8 (Ampere) or above, when an object of type ``cuda::barrier<thread_scope_block>`` is
 placed in ``__shared__`` memory, the member function ``arrive`` performs a reduction of the arrival count among
-`coalesced threads <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#coalesced-group-cg>`_ followed
+`coalesced threads <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/device-callable-apis.html#class-coalesced-group>`_ followed
 by the arrival operation in one thread. Programs shall ensure that this transformation would not introduce errors,
 for example relative to the requirements of `thread.barrier.class paragraph 12 <https://eel.is/c++draft/thread.barrier.class#12>`_
 of ISO/IEC IS 14882 (the C++ Standard).
@@ -294,4 +296,4 @@ This example can be found in :ref:`libcudacxx-extended-api-asynchronous-operatio
 .. rubric:: Example: 1D TMA load and store using `cuda::memcpy_async` (sm90+)
 
 This example can be found in the
-`CUDA programming guide <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#using-tma-to-transfer-one-dimensional-arrays>`__.
+`CUDA programming guide <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-copies.html#using-tma-to-transfer-one-dimensional-arrays>`__.

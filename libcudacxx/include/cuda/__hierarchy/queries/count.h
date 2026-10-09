@@ -25,6 +25,9 @@
 
 #  include <cuda/__fwd/hierarchy.h>
 #  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__fwd/span.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/declval.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -66,7 +69,7 @@ struct __count_query_native<block_level, cluster_level>
   template <class _Tp>
   [[nodiscard]] _CCCL_DEVICE_API static _Tp __call() noexcept
   {
-    unsigned __count = 1;
+    unsigned __count = 1; // NOLINT(misc-const-correctness)
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__count = ::__clusterSizeInBlocks();))
     return static_cast<_Tp>(__count);
   }
@@ -81,6 +84,21 @@ struct __count_query_native<block_level, grid_level>
     return static_cast<_Tp>(static_cast<_Tp>(gridDim.x) * gridDim.y * gridDim.z);
   }
 };
+
+// native static hierarchy queries
+
+template <class _Unit, class _Level>
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t __static_count_query_native() noexcept
+{
+  if constexpr (::cuda::std::is_same_v<_Unit, thread_level> && ::cuda::std::is_same_v<_Level, warp_level>)
+  {
+    return 32;
+  }
+  else
+  {
+    return ::cuda::std::dynamic_extent;
+  }
+}
 
 _CCCL_DIAG_POP
 #  endif // _CCCL_CUDA_COMPILATION()
@@ -103,6 +121,29 @@ struct __count_query
     return __ret;
   }
 };
+
+// static hierarchy queries
+
+template <class _Unit, class _Level, class _Hierarchy>
+[[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t __static_count_query() noexcept
+{
+  using _Exts =
+    decltype(__extents_query<_Unit, _Level>::template __call<::cuda::std::size_t>(::cuda::std::declval<_Hierarchy>()));
+
+  if constexpr (_Exts::rank_dynamic() == 0)
+  {
+    ::cuda::std::size_t __ret{1};
+    for (::cuda::std::size_t __i = 0; __i < _Exts::rank(); ++__i)
+    {
+      __ret *= _Exts::static_extent(__i);
+    }
+    return __ret;
+  }
+  else
+  {
+    return ::cuda::std::dynamic_extent;
+  }
+}
 
 _CCCL_END_NAMESPACE_CUDA
 

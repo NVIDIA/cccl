@@ -49,7 +49,7 @@ class __fmt_formatted_size_buffer : __fmt_output_buffer<_CharT>
   }
 
 public:
-  using _Base _CCCL_NODEBUG_ALIAS = __fmt_output_buffer<_CharT>;
+  using _Base _CCCL_NODEBUG = __fmt_output_buffer<_CharT>;
 
   _CCCL_HOST_DEVICE_API constexpr __fmt_formatted_size_buffer() noexcept
       : _Base{nullptr, 0, __prepare_write, &__max_output_size_}

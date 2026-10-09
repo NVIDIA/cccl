@@ -90,7 +90,7 @@ public:
       res *= (ends[d] - begins[d] + strides[d] - 1) / strides[d];
     }
 
-    return res;
+    return static_cast<::std::ptrdiff_t>(res);
   }
 
   // Overload the equality operator to check if two shapes are equal
@@ -216,9 +216,9 @@ public:
   template <size_t dimensions>
   _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
-    ::std::array<size_t, dimensions> begins;
-    ::std::array<size_t, dimensions> ends;
-    ::std::array<size_t, dimensions> strides;
+    ::std::array<size_t, dimensions> begins{};
+    ::std::array<size_t, dimensions> ends{};
+    ::std::array<size_t, dimensions> strides{};
     for (size_t d = 0; d < dimensions; d++)
     {
       begins[d]  = in.get_begin(d) + place_position.get(d);
@@ -322,14 +322,14 @@ UNITTEST("empty cyclic_shape<1>")
 
 UNITTEST("apply cyclic ")
 {
-  box<3> e({{0, 7}, {1, 5}, {10, 20}});
+  const box<3> e({{0, 7}, {1, 5}, {10, 20}});
 
-  size_t dim0 = 2;
-  size_t dim1 = 2;
+  const size_t dim0 = 2;
+  const size_t dim1 = 2;
 
   size_t cnt = 0;
 
-  size_t expected_cnt = 7 * 4 * 10;
+  const size_t expected_cnt = 7 * 4 * 10;
 
   for (size_t i0 = 0; i0 < dim0; i0++)
   {
@@ -361,7 +361,7 @@ UNITTEST("cyclic get_executor is the inverse of apply")
 {
   // Zero-based box so that apply and get_executor use the same coordinate
   // origin: apply assigns coordinate c to place (c % grid extent) per dimension.
-  box<3> e({{0, 7}, {0, 5}, {0, 20}});
+  const box<3> e({{0, 7}, {0, 5}, {0, 20}});
 
   const size_t dim0 = 2;
   const size_t dim1 = 3;

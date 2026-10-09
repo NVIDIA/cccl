@@ -10,7 +10,7 @@ from typing import Union
 
 import numpy as np
 
-from .. import _bindings
+from .. import _bindings, types
 from .. import _cccl_interop as cccl
 from .._caching import cache_build_results, cache_with_registered_key_functions
 from .._cccl_interop import set_cccl_iterator_state, to_cccl_value_state
@@ -229,11 +229,23 @@ def make_histogram_even(
         )
     level_dtype = h_lower_level.dtype
 
+    sample_value_type = cccl.get_value_type(d_samples)
+
+    if _bindings.TypeEnum.BFLOAT16 in (
+        sample_value_type.info.typenum,
+        types.from_numpy_dtype(level_dtype).info.typenum,
+    ):
+        raise NotImplementedError(
+            "histogram_even is disabled for bfloat16 samples and levels: a "
+            "known CUB bug produces incorrect bins for bfloat16; "
+            "see https://github.com/NVIDIA/cccl/issues/10940"
+        )
+
     # Mirrors v1 c/parallel/src/histogram.cu offset_cpp selection:
     # (num_rows * row_stride_samples * sample_size) < INT_MAX selects int,
     # otherwise long long. cuda.compute currently builds one-row histograms,
     # so row_stride_samples is num_samples.
-    sample_size = cccl.get_value_type(d_samples).size
+    sample_size = sample_value_type.size
     int_max = np.iinfo(np.int32).max
     uses_64bit_offset = num_samples * sample_size >= int_max
 

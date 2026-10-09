@@ -30,7 +30,7 @@
 #include <cuda/std/source_location>
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <algorithm>
 #include <cstdint>
@@ -55,10 +55,7 @@ inline auto& managed_pool()
 }
 
 // maximum number of entries in the host-allocated pool
-enum : size_t
-{
-  maxPoolEntries = 16 * 1024
-};
+inline constexpr size_t maxPoolEntries = 16 * 1024;
 } // namespace reserved
 
 /**
@@ -85,7 +82,8 @@ inline void* allocateHostMemory(size_t sz)
     // the next call).
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try<cudaFreeHost>(entry);
@@ -123,7 +121,8 @@ inline void* allocateManagedMemory(size_t sz)
     // leaks at most the in-flight pointer, never causes a double-free.
     while (!pool.empty())
     {
-      const auto it     = pool.begin();
+      const auto it = pool.begin();
+      // NOLINTNEXTLINE(misc-const-correctness) -- the free call takes void*
       void* const entry = it->second;
       pool.erase(it);
       cuda_try(cudaFree(entry));
@@ -148,6 +147,7 @@ inline void deallocateHostMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::host_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -169,7 +169,10 @@ inline void deallocateHostMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFreeHost(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::host_pool().insert(::std::make_pair(sz, p));
@@ -187,6 +190,7 @@ inline void deallocateManagedMemory(
   void* p, size_t sz, const ::cuda::std::source_location loc = ::cuda::std::source_location::current()) noexcept
 {
   ::std::ignore = loc;
+  // NOLINTNEXTLINE(bugprone-assert-side-effect) -- the lambda only reports; it changes no state
   assert([&] {
     auto r = reserved::managed_pool().equal_range(sz);
     for (auto i = r.first; i != r.second; ++i)
@@ -208,7 +212,10 @@ inline void deallocateManagedMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFree(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::managed_pool().insert(::std::make_pair(sz, p));
@@ -227,8 +234,11 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFreeHost(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   };
   // Own the heap pair until the launch succeeds; release ownership to the
   // callback only after cuda_try returns without throwing, so a failed
@@ -238,13 +248,15 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
     stream,
     [](void* vp) {
       // The CUDA runtime calls this back, so an exception must not leave it.
-      on_throw(::std::abort) << [vp] {
+      ON_THROW(abort)
+      {
         auto args = static_cast<::std::pair<size_t, void*>*>(vp);
         deallocateHostMemory(args->second, args->first);
         delete args;
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -260,20 +272,25 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFree(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   };
   auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   cuda_try(cudaLaunchHostFunc(
     stream,
     [](void* vp) {
-      on_throw(::std::abort) << [vp] {
+      ON_THROW(abort)
+      {
         auto args = static_cast<::std::pair<size_t, void*>*>(vp);
         deallocateManagedMemory(args->second, args->first);
         delete args;
       };
     },
     args.get()));
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
 }
 
@@ -297,7 +314,8 @@ inline cudaGraphNode_t deallocateHostMemory(
   const cudaHostNodeParams params = {
     .fn =
       [](void* vp) {
-        on_throw(::std::abort) << [vp] {
+        ON_THROW(abort)
+        {
           auto args = static_cast<::std::pair<size_t, void*>*>(vp);
           deallocateHostMemory(args->second, args->first);
           delete args;
@@ -305,6 +323,7 @@ inline cudaGraphNode_t deallocateHostMemory(
       },
     .userData = args.get()};
   const auto result = cuda_try<cudaGraphAddHostNode>(graph, pDependencies, numDependencies, &params);
+  // NOLINTNEXTLINE(bugprone-unused-return-value) -- ownership went to the host callback registered above
   args.release();
   return result;
 }
@@ -345,9 +364,17 @@ cudaError_t pin_memory(T* p, size_t n)
   // We cast to (void *) because T may be a const type : we are not going
   // to modify the content, so this is legit ...
   using NonConstT = typename std::remove_const<T>::type;
-  cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
-  // Fetch the result and clear the last error
-  return cudaGetLastError();
+  // Report the result of THIS call only. cudaGetLastError() would return the
+  // sticky error of any earlier failed CUDA call on this thread (e.g. an
+  // expected probe failure or a caught allocation error), misattributing it
+  // to this registration.
+  const cudaError_t res = cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
+  if (res != cudaSuccess)
+  {
+    // Consume the sticky error state so it is not re-reported elsewhere.
+    cudaGetLastError();
+  }
+  return res;
 }
 
 /**
@@ -361,15 +388,15 @@ void unpin_memory(T* p)
 {
   assert(p);
 
-  // Make sure no one did a mistake before ignoring the one that may come !
-  cuda_try(cudaGetLastError());
-
   // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
   using NonConstT = typename std::remove_const<T>::type;
-  if (cudaHostUnregister(const_cast<NonConstT*>(p)) == cudaErrorHostMemoryNotRegistered)
+  if (cudaHostUnregister(const_cast<NonConstT*>(p)) != cudaSuccess)
   {
-    // Ignore that error, we probably also ignored an error about registering that buffer too !
+    // Tolerate unregister failures (e.g. the matching registration was
+    // skipped or failed) and consume the sticky error state so it is not
+    // misattributed to a later, unrelated call. This runs on cleanup paths
+    // (including destructors), so it must not throw.
     cudaGetLastError();
   }
 }
@@ -431,6 +458,25 @@ UNITTEST("pin_memory const")
   unpin_memory(ca);
 
   EXPECT(!address_is_pinned(ca));
+};
+
+UNITTEST("pin_memory ignores stale sticky errors")
+{
+  // A failed CUDA call earlier on the thread (here an impossible allocation,
+  // as an STF allocator would attempt before reporting an OOM) leaves a
+  // sticky last-error. pin/unpin of an unrelated buffer must not report it
+  // as their own failure.
+  void* p = nullptr;
+  EXPECT(cudaMalloc(&p, size_t(1) << 46) != cudaSuccess);
+
+  ::std::vector<double> a(1024);
+  EXPECT(pin_memory(&a[0], 1024) == cudaSuccess);
+  EXPECT(address_is_pinned(&a[0]));
+  unpin_memory(&a[0]);
+  EXPECT(!address_is_pinned(&a[0]));
+
+  // Consume whatever is left so this test does not poison the next one.
+  cudaGetLastError();
 };
 
 #endif // UNITTESTED_FILE
@@ -858,7 +904,7 @@ public:
     {
       if (small_length < small_cap)
       {
-        new (small_begin() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(::cuda::std::move(value));
         ++small_length;
         return;
       }
@@ -866,7 +912,7 @@ public:
       assert(!is_small());
       // fall through to big case
     }
-    big().push_back(mv(value));
+    big().push_back(::cuda::std::move(value));
   }
 
   template <class... Args>
@@ -1071,7 +1117,7 @@ private:
 
   void adopt_big_vector(::std::vector<T>&& vec)
   {
-    new (&big())::std::vector<T>(mv(vec));
+    new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
@@ -1104,7 +1150,7 @@ private:
 
   union
   {
-    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(T) unsigned char small_[sizeof(T) * small_cap]{};
     alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;

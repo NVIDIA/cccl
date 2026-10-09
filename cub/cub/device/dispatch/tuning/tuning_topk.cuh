@@ -17,10 +17,12 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
@@ -84,11 +86,45 @@ concept topk_policy_selector = policy_selector<T, topk_policy>;
 struct policy_selector
 {
   int key_size;
+  int value_size; // 0 when selecting keys only
+  int offset_size;
+  int out_offset_size;
+  type_t key_type; // distinguishes same-sized key types (e.g. float vs. int32), which take different tunings
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
     constexpr int nominal_4b_items_per_thread = 4;
     const int bits_per_pass                   = calc_bits_per_pass(key_size);
+
+    // tunings from cub/benchmarks/bench/topk/keys.cu. These are raw measured values; items_per_thread already
+    // accounts for the key size. Only configurations that won for their exact key type and offset width during
+    // verification are encoded; everything else intentionally falls through.
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && value_size == 0)
+    {
+      if (offset_size == 8)
+      {
+        if (key_type == type_t::float64)
+        {
+          // ipt_9.tpb_128.ld_0
+          return topk_policy{128, 4, BLOCK_LOAD_DIRECT, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+        if (key_type == type_t::float32)
+        {
+          // ipt_6.tpb_320.ld_0
+          return topk_policy{320, 6, BLOCK_LOAD_DIRECT, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+        if (key_type == type_t::int8 || key_type == type_t::uint8)
+        {
+          // ipt_3.tpb_384.ld_2
+          return topk_policy{384, 12, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+      }
+      if (offset_size == 4 && key_type == type_t::int128)
+      {
+        // ipt_9.tpb_480.ld_2
+        return topk_policy{480, 2, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+      }
+    }
 
     if (cc >= ::cuda::compute_capability{9, 0})
     {
@@ -108,12 +144,14 @@ struct policy_selector
 static_assert(topk_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <typename KeyT>
+template <typename KeyT, typename ValueT, typename OffsetT, typename OutOffsetT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    constexpr auto policies = policy_selector{int{sizeof(KeyT)}};
+    constexpr int value_size = ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)};
+    constexpr auto policies  = policy_selector{
+      int{sizeof(KeyT)}, value_size, int{sizeof(OffsetT)}, int{sizeof(OutOffsetT)}, classify_type<KeyT>};
     return policies(cc);
   }
 };

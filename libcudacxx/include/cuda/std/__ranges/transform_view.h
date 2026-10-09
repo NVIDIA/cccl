@@ -43,6 +43,8 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/maybe_const.h>
@@ -63,7 +65,7 @@ _CCCL_CONCEPT __transform_view_constraints = _CCCL_REQUIRES_EXPR((_View, _Fn))(
   requires(view<_View>),
   requires(is_object_v<_Fn>),
   requires(regular_invocable<_Fn&, range_reference_t<_View>>),
-  requires(__can_reference<invoke_result_t<_Fn&, range_reference_t<_View>>>));
+  requires(__referenceable<invoke_result_t<_Fn&, range_reference_t<_View>>>));
 
 template <class, class, class = void>
 struct __transform_view_iterator_category_base
@@ -121,6 +123,8 @@ public:
     friend class __sentinel;
 
   public:
+    // Non-member friend operators of __sentinel require access.
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     iterator_t<_Base> __current_ = iterator_t<_Base>();
 
     using iterator_concept =
@@ -522,7 +526,7 @@ struct __fn
   [[nodiscard]] _CCCL_API constexpr auto
   _CCCL_STATIC_CALL_OPERATOR(_Fn&& __f) noexcept(is_nothrow_constructible_v<decay_t<_Fn>, _Fn>)
   {
-    return __pipeable(::cuda::std::__bind_back(__fn{}, ::cuda::std::forward<_Fn>(__f)));
+    return ::cuda::std::ranges::__pipeable_bind_back(__fn{}, ::cuda::std::forward<_Fn>(__f));
   }
 };
 _CCCL_END_NAMESPACE_CPO

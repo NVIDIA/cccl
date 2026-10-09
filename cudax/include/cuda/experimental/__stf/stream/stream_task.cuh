@@ -33,7 +33,7 @@
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
-#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <deque>
 
@@ -208,7 +208,8 @@ public:
     auto& dot = ctx.get_dot();
     // DOT tracing and set_ready_prereqs must not leave the task half-started;
     // abort instead of letting an exception escape.
-    on_throw(::std::abort) << [&] {
+    ON_THROW(abort)
+    {
       if (dot->is_tracing())
       {
         dot->template add_vertex<task, logical_data_untyped>(*this);
@@ -246,32 +247,44 @@ public:
   }
 
   /* End the task, but do not clear its data structures yet */
-  stream_task<>& end_uncleared()
+  //! \brief Finish the task without clearing it. Never throws.
+  //!
+  //! Resuming after a failure here is not an option: acquire() has locked this task's
+  //! logical-data mutexes, and release() below is what unlocks them, so returning early would
+  //! leave them held and deadlock the next task touching that data. The failures available are
+  //! an allocation failure (the standing ruling is to abort) or a CUDA error from
+  //! insert_dependency / event creation, which in practice means a sticky error has poisoned
+  //! the context. Report and abort.
+  stream_task<>& end_uncleared() noexcept
   {
-    assert(get_task_phase() == task::phase::running);
-
-    event_list end_list;
-
-    const auto& e_place = get_exec_place();
-
-    if (e_place.size() > 1)
+    ON_THROW(abort)
     {
-      // s0 depends on all other streams
-      for (size_t i = 1; i < stream_grid.size(); i++)
+      assert(get_task_phase() == task::phase::running);
+
+      event_list end_list;
+
+      const auto& e_place = get_exec_place();
+
+      if (e_place.size() > 1)
       {
-        stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        // s0 depends on all other streams
+        for (size_t i = 1; i < stream_grid.size(); i++)
+        {
+          stream_and_event::insert_dependency(stream_grid[0].stream, stream_grid[i].stream);
+        }
       }
-    }
 
-    auto se = submitted_events.end_as_event(ctx);
-    end_list.add(se);
+      auto se = submitted_events.end_as_event(ctx);
+      end_list.add(se);
 
-    release(ctx, end_list);
+      release(ctx, end_list);
+    };
 
     return *this;
   }
 
-  stream_task<>& end()
+  //! \brief Finish the task. Never throws, because neither of its steps does.
+  stream_task<>& end() noexcept
   {
     end_uncleared();
     clear();
@@ -294,15 +307,24 @@ public:
   {
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 
@@ -335,7 +357,7 @@ public:
       clear();
     };
 
-    // And if they don't, just end the task.
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
     SCOPE(fail)
     {
       end();
@@ -433,8 +455,12 @@ private:
       const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
       SCOPE(exit)
       {
-        // Asynchronously destroy the event to avoid a memory leak.
-        cuda_safe_call(cudaEventDestroy(sync_event));
+        // Asynchronously destroy the event to avoid a memory leak. A failing destroy leaks it and
+        // is reported; the guard is noexcept, so it cannot become a second exception.
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(sync_event);
+        };
       };
 
       cuda_try<cudaEventRecord>(sync_event, streams[0].stream);
@@ -544,15 +570,24 @@ public:
   {
     cudaEvent_t start_event = nullptr, end_event = nullptr;
 
+    // The timing events are released on every path. A failing destroy leaks that event and is
+    // reported; the guard is noexcept, so it cannot become a second exception. One policy per
+    // release, so a failure on the first does not skip the second.
     SCOPE(exit)
     {
       if (start_event)
       {
-        cuda_safe_call(cudaEventDestroy(start_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(start_event);
+        };
       }
       if (end_event)
       {
-        cuda_safe_call(cudaEventDestroy(end_event));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(end_event);
+        };
       }
     };
 
@@ -592,7 +627,7 @@ public:
       clear();
     };
 
-    // And if they don't, just end the task.
+    // And if they don't, just end the task. end() is noexcept, so no wrap is needed here.
     SCOPE(fail)
     {
       end();

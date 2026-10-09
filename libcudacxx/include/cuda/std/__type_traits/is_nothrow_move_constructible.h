@@ -42,11 +42,11 @@ inline constexpr bool is_nothrow_move_constructible_v =
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_nothrow_move_constructible : public is_nothrow_constructible<_Tp, add_rvalue_reference_t<_Tp>>
+is_nothrow_move_constructible : bool_constant<is_nothrow_constructible_v<_Tp, add_rvalue_reference_t<_Tp>>>
 {};
 
 template <class _Tp>
-inline constexpr bool is_nothrow_move_constructible_v = is_nothrow_move_constructible<_Tp>::value;
+inline constexpr bool is_nothrow_move_constructible_v = is_nothrow_constructible_v<_Tp, add_rvalue_reference_t<_Tp>>;
 
 #endif // No builtin
 

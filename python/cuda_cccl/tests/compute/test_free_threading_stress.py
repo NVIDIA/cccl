@@ -18,7 +18,18 @@ from cuda.core import Device
 
 pytestmark = [
     pytest.mark.free_threading,
-    pytest.mark.no_numba,
+    # These suites spawn and barrier-synchronize their own worker threads, and
+    # each iteration calls clear_all_caches() to arm a cold-build race. Running
+    # a second copy of the same test concurrently (which is what
+    # pytest-run-parallel does) means one copy wipes the process-global cache
+    # while the other's workers are mid-build, so assertions like "all workers
+    # share exactly one build result" fail intermittently. Nothing here is
+    # broken -- the tests own the global cache for their duration by design,
+    # which clear_all_caches() documents as the caller's responsibility.
+    #
+    # They already get their concurrency from their own workers; raise
+    # STRESS_THREADS if more pressure is wanted.
+    pytest.mark.thread_unsafe,
     pytest.mark.no_verify_sass(
         reason="Free-threading stress tests intentionally run concurrent workers."
     ),
@@ -29,8 +40,15 @@ STRESS_ITERATIONS = 10
 # and richer interleavings than a single winner/waiter pair.
 STRESS_THREADS = 4
 TRANSFORM_NATIVE_CACHE_THREADS = 4
-# Each iteration compiles one distinct specialization per worker, so iterations
-# are capped well below STRESS_ITERATIONS to bound native-compile time.
+# gpu_struct registration is the cheapest thing under test (no per-worker
+# operator compile dominates it) and the window between registering into the
+# global registries and refresh_contexts() completing is narrow, so widen the
+# field for those tests.
+STRUCT_REGISTRATION_THREADS = 8
+# Each iteration compiles one distinct specialization per worker (a native
+# build, and on the JIT paths a numba-cuda-mlir compile as well), so iterations
+# are capped well below STRESS_ITERATIONS to bound compile time. Same-key storms
+# coalesce to one compile per iteration and can afford STRESS_ITERATIONS.
 DISTINCT_KEY_STORM_ITERATIONS = 3
 
 
@@ -71,6 +89,25 @@ def compute_module():
         cc.clear_all_caches()
 
 
+def _require_jit_backend() -> None:
+    """Skip when the JIT backend is absent, as on the minimal extras."""
+    pytest.importorskip(
+        "numba_cuda_mlir",
+        reason="Python-callable operators require numba-cuda-mlir",
+    )
+
+
+@pytest.fixture
+def jit_compute_module(compute_module):
+    """compute_module for the tests that need a JIT backend.
+
+    Kept separate from compute_module so the no_numba tests above stay runnable
+    on the minimal extras, where numba-cuda-mlir is deliberately not installed.
+    """
+    _require_jit_backend()
+    return compute_module
+
+
 def _make_stream():
     # cuda.core streams implement __cuda_stream__, so one object serves both
     # as the allocation/synchronization handle and the per-call stream arg.
@@ -80,8 +117,10 @@ def _make_stream():
 
 
 def _run_threaded(workers: list[Callable[[threading.Barrier], None]]) -> None:
-    # The default timeout turns a worker that dies before reaching the barrier
-    # into a BrokenBarrierError in its peers instead of hanging the CI job.
+    # The timeout turns a worker that dies before reaching the barrier into a
+    # BrokenBarrierError in its peers instead of hanging the CI job. Every
+    # worker reaches this barrier before doing any real work, so it only has to
+    # cover thread start-up.
     barrier = threading.Barrier(len(workers), timeout=60)
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(workers)) as executor:
         futures = [executor.submit(worker, barrier) for worker in workers]
@@ -681,6 +720,7 @@ SHARED_ALGORITHM_CASES = [
 ]
 
 
+@pytest.mark.no_numba
 def test_free_threaded_import_keeps_gil_disabled(compute_module):
     """True first-import smoke for the PR's headline claim.
 
@@ -729,6 +769,7 @@ assert not sys._is_gil_enabled(), "the GIL is enabled after running a cuda.compu
     _assert_gil_disabled("after the first-import smoke subprocess")
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
 def test_thread_local_algorithm_objects_share_build_result(compute_module, case):
     cc = compute_module
@@ -736,6 +777,7 @@ def test_thread_local_algorithm_objects_share_build_result(compute_module, case)
     _run_thread_local_algorithm_case(cc, case)
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize("case", SHARED_ALGORITHM_CASES, ids=str)
 def test_concurrent_deserialize_and_execute(compute_module, case):
     cc = compute_module
@@ -786,6 +828,7 @@ def test_concurrent_deserialize_and_execute(compute_module, case):
         )
 
 
+@pytest.mark.no_numba
 def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_module):
     cc = compute_module
     _require_serialization_backend()
@@ -832,6 +875,7 @@ def test_free_threaded_aot_factory_shares_compile_and_first_load(compute_module)
     assert _get_build_result(algorithms[0])._loaded
 
 
+@pytest.mark.no_numba
 def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_module):
     cc = compute_module
     _require_serialization_backend()
@@ -883,6 +927,7 @@ def test_free_threaded_aot_blob_concurrent_deserialize_and_load(compute_module):
     assert not source_build_result._loaded
 
 
+@pytest.mark.no_numba
 def test_free_threaded_multi_cc_blob_concurrent_deserialize_and_execute(
     compute_module,
 ):
@@ -997,6 +1042,7 @@ def _cache_miss_binary_transform(cc, worker_id, iteration):
     return transformer
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize(
     "factory",
     [_cache_miss_reduce, _cache_miss_unary_transform, _cache_miss_binary_transform],
@@ -1117,6 +1163,7 @@ _DISTINCT_KEY_STORM_FACTORIES = [
 ]
 
 
+@pytest.mark.no_numba
 def test_distinct_key_cold_build_storm(compute_module):
     """Force truly concurrent native compilations.
 
@@ -1150,6 +1197,7 @@ def test_distinct_key_cold_build_storm(compute_module):
         assert len(build_ids) == len(_DISTINCT_KEY_STORM_FACTORIES)
 
 
+@pytest.mark.no_numba
 def test_shared_raw_op_object_direct_algorithm_stress(compute_module):
     cc = compute_module
 
@@ -1273,6 +1321,7 @@ def _run_cold_transform_native_cache_case(cc, case: _ColdTransformCase) -> None:
         )
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize(
     "case",
     [
@@ -1439,6 +1488,7 @@ def _run_concurrent_cold_llvm_initialization():
     ) == len(returned_algorithms)
 
 
+@pytest.mark.no_numba
 def test_v2_concurrent_cold_llvm_initialization():
     from cuda.compute._build_info import USING_V2
 
@@ -1476,6 +1526,7 @@ def test_v2_concurrent_cold_llvm_initialization():
     )
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize("case", _V2_FIRST_CALL_CASES, ids=str)
 def test_v2_first_call_gate_stress(compute_module, case):
     cc = compute_module
@@ -1540,6 +1591,7 @@ ITERATOR_FACTORIES = [
 ]
 
 
+@pytest.mark.no_numba
 @pytest.mark.parametrize(
     "make_iterator",
     ITERATOR_FACTORIES,
@@ -1590,6 +1642,7 @@ def test_shared_iterator_object_stress(compute_module, make_iterator):
         _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
 
 
+@pytest.mark.no_numba
 def test_runtime_ownership_isolation(compute_module):
     cc = compute_module
 
@@ -1668,3 +1721,506 @@ def test_runtime_ownership_isolation(compute_module):
 
     for _ in range(STRESS_ITERATIONS):
         _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+
+# ---------------------------------------------------------------------------
+# JIT (Python-callable operator) path
+#
+# Everything above runs on the minimal extras and is marked no_numba. The tests
+# below need a JIT backend, so they take the jit_compute_module fixture, which
+# skips when numba-cuda-mlir is absent. They cover what the no_numba tests
+# structurally cannot: Python callables, gpu_struct types and unannotated
+# TransformIterators.
+#
+# Arming these races takes care. cuda.compute coalesces same-key work through
+# _cache_single_flight, so N threads compiling the *same* operator never overlap
+# in the backend. Each test that targets concurrent compilation therefore gives
+# every worker a *distinct* operator; where the target is shared process-wide
+# state (gpu_struct registration), the workers use distinct operators that all
+# reference the *same* struct, so the ops cannot coalesce but the registration
+# they trigger still collides.
+# ---------------------------------------------------------------------------
+
+
+def _make_clamped_max_op(k):
+    """max(a, b, k) with a per-worker k that dominates every input.
+
+    The reduction result is therefore exactly k however CUB shapes the tree, so
+    a wrong value is unambiguous evidence that one worker's operator or build
+    leaked into another's -- unlike a sum, where contamination can coincide.
+    """
+
+    def clamped_max(a, b):
+        m = a if a > b else b
+        return m if m > k else k
+
+    return clamped_max
+
+
+def _make_add_const_op(k):
+    def add_const(x):
+        return x + k
+
+    return add_const
+
+
+def test_free_threaded_jit_import_keeps_gil_disabled():
+    """The headline claim: JIT-compiling a Python operator keeps the GIL off.
+
+    This is what numba-cuda could not do -- importing it re-enabled the GIL
+    process-wide, which is why the minimal-extra stress suite exists at all.
+    Asserting in-process cannot prove it: sibling test modules already imported
+    the backend at collection time. A fresh interpreter gives the
+    assert -> import -> compile -> assert sequence real first-import semantics.
+    """
+    _require_free_threaded_python()
+    _require_jit_backend()
+
+    import os
+    import subprocess
+
+    tests_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    code = f"""
+import sys
+
+assert not sys._is_gil_enabled(), "the GIL is enabled at interpreter start"
+sys.path.insert(0, {tests_dir!r})
+import numpy as np
+from _utils.device_array import DeviceArray
+
+import cuda.compute as cc
+
+assert not sys._is_gil_enabled(), "the GIL is enabled after importing cuda.compute"
+
+# Importing the backend is not enough: the JIT frontend, the MLIR bindings and
+# the target contexts are all reached lazily on the first Python-callable op.
+def add_op(a, b):
+    return a + b
+
+h_in = np.arange(8, dtype=np.int32)
+d_in = DeviceArray.from_numpy(h_in)
+d_out = DeviceArray.empty(1, dtype=np.int32)
+h_init = np.array([0], dtype=np.int32)
+cc.reduce_into(d_in=d_in, d_out=d_out, num_items=h_in.size, op=add_op, h_init=h_init)
+assert int(d_out.copy_to_host()[0]) == int(h_in.sum())
+assert not sys._is_gil_enabled(), "the GIL is enabled after JIT-compiling a Python operator"
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        timeout=900,
+    )
+    assert result.returncode == 0, (
+        f"JIT first-import GIL smoke subprocess failed (exit {result.returncode})\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    _assert_gil_disabled("after the JIT first-import smoke subprocess")
+
+
+def test_shared_python_op_object_stress(jit_compute_module):
+    """One Python callable shared by every thread must coalesce to one build.
+
+    All workers hash the same function concurrently -- CachableFunction walks
+    bytecode, constants and closures on every factory call -- and race the same
+    cache key. Exactly one build must result, with one wrapper per thread.
+    """
+    cc = jit_compute_module
+
+    def add(a, b):
+        return a + b
+
+    for iteration in range(STRESS_ITERATIONS):
+        cc.clear_all_caches()
+        returned_reducers = [None] * STRESS_THREADS
+
+        def make_thread(worker_id):
+            stream = _make_stream()
+            h_in = np.arange(32, dtype=np.int32) + worker_id * 31 + iteration
+            h_init = np.array([worker_id + 5], dtype=np.int32)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(1, dtype=np.int32)
+
+            def thread(barrier):
+                # cuda.core device state is per-thread; initialize explicitly
+                # rather than relying on DeviceArray-construction side effects.
+                Device().set_current()
+                barrier.wait()
+                reducer = cc.make_reduce_into(
+                    d_in=d_in, d_out=d_out, op=add, h_init=h_init
+                )
+                returned_reducers[worker_id] = reducer
+                _call_with_temp(
+                    reducer,
+                    d_in=d_in,
+                    d_out=d_out,
+                    op=add,
+                    h_init=h_init,
+                    num_items=h_in.size,
+                    stream=stream,
+                )
+                stream.sync()
+                expected = int(h_in.sum(dtype=np.int64)) + int(h_init[0])
+                assert int(d_out.copy_to_host()[0]) == expected
+
+            return thread
+
+        _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+        assert len({id(reducer) for reducer in returned_reducers}) == STRESS_THREADS
+        assert (
+            len({id(_get_build_result(reducer)) for reducer in returned_reducers}) == 1
+        )
+
+
+def test_distinct_op_cold_build_storm(jit_compute_module):
+    """Force genuinely simultaneous numba-cuda-mlir compilations.
+
+    Distinct closure constants give each worker its own cache key, so
+    _cache_single_flight elects a separate builder per thread and the backend
+    compiles run in parallel rather than coalescing. This is the test that
+    exercises whether numba-cuda-mlir's compile pipeline -- MLIR contexts,
+    lowering registries, the NVVM path -- tolerates concurrent entry, and
+    whether _compile_op_impl's non-coalescing lru_cache is safe under it.
+    """
+    cc = jit_compute_module
+
+    num_items = 64
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
+        cc.clear_all_caches()
+        returned_reducers = [None] * STRESS_THREADS
+
+        def make_thread(worker_id):
+            k = 10_000 + worker_id * 7 + iteration
+            op = _make_clamped_max_op(k)
+            stream = _make_stream()
+            h_in = np.arange(num_items, dtype=np.int64) + worker_id
+            h_init = np.array([0], dtype=np.int64)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(1, dtype=np.int64)
+
+            def thread(barrier):
+                Device().set_current()
+                barrier.wait()
+                reducer = cc.make_reduce_into(
+                    d_in=d_in, d_out=d_out, op=op, h_init=h_init
+                )
+                returned_reducers[worker_id] = reducer
+                _call_with_temp(
+                    reducer,
+                    d_in=d_in,
+                    d_out=d_out,
+                    op=op,
+                    h_init=h_init,
+                    num_items=num_items,
+                    stream=stream,
+                )
+                stream.sync()
+                assert int(d_out.copy_to_host()[0]) == k
+
+            return thread
+
+        _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+        # Distinct keys must not share builds: one build result per worker.
+        build_ids = {id(_get_build_result(r)) for r in returned_reducers}
+        assert len(build_ids) == STRESS_THREADS
+
+
+def test_concurrent_cold_gpu_struct_registration(jit_compute_module):
+    """Race the first registration of one gpu_struct from many threads.
+
+    gpu_struct classes are inert until an operator referencing them is compiled:
+    struct.py never imports _jit, and registration happens via
+    _ensure_function_structs_registered on the compile path. So defining the
+    class here leaves it cold, and the threads below perform the first
+    registration concurrently.
+
+    Each worker gets a *distinct* operator on purpose. Identical operators would
+    coalesce through _cache_single_flight to one builder thread, which would
+    serialize the registration and make this test vacuous. Distinct operators
+    referencing the same struct elect one builder each, so all of them reach
+    _register_struct_with_numba -> _make_struct_type cold and simultaneously.
+
+    That path registers into numba-cuda-mlir's global registries
+    (as_numba_type, typeof_impl, register_model, overload, lower_cast) and then
+    calls refresh_contexts(), which rebuilds the process-wide typing and target
+    contexts. functools.lru_cache does not coalesce concurrent misses, so
+    without serialization several threads run that body at once, and a thread
+    whose as_numba_type probe lands mid-registration skips registering and
+    types its operator against a half-registered struct.
+    """
+    cc = jit_compute_module
+
+    info = np.iinfo(np.int32)
+    num_items = 64
+
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
+        cc.clear_all_caches()
+
+        # A fresh class every iteration re-arms the cold-registration race:
+        # _make_struct_type is keyed on the class object and its lru_cache is
+        # not reachable from clear_all_caches(), so reusing one class would
+        # make every iteration after the first a warm cache hit.
+        @cc.gpu_struct
+        class MinMax:
+            min_val: np.int32
+            max_val: np.int32
+
+        h_pairs = np.stack(
+            [
+                np.arange(num_items, dtype=np.int32),
+                np.arange(num_items, dtype=np.int32) * 2,
+            ],
+            axis=1,
+        )
+
+        def make_thread(worker_id):
+            # Distinct closure constant -> distinct cache key -> its own
+            # builder thread, so the struct registration below is not
+            # serialized behind a single elected builder.
+            floor = worker_id
+
+            def minmax_op(a, b):
+                c_min = min(a.min_val, b.min_val)
+                c_max = max(a.max_val, b.max_val)
+                return MinMax(c_min if c_min > floor else floor, c_max)
+
+            stream = _make_stream()
+            d_in = DeviceArray.from_numpy(h_pairs.view(MinMax.dtype))
+            d_out = DeviceArray.empty(1, MinMax.dtype)
+            h_init = MinMax(info.max, info.min)
+
+            def thread(barrier):
+                Device().set_current()
+                barrier.wait()
+                cc.reduce_into(
+                    d_in=d_in,
+                    d_out=d_out,
+                    op=minmax_op,
+                    h_init=h_init,
+                    num_items=num_items,
+                    stream=stream,
+                )
+                stream.sync()
+                result = d_out.copy_to_host()
+                expected_min = max(int(h_pairs[:, 0].min()), floor)
+                assert int(result["min_val"][0]) == expected_min
+                assert int(result["max_val"][0]) == int(h_pairs[:, 1].max())
+
+            return thread
+
+        _run_threaded(
+            [make_thread(worker_id) for worker_id in range(STRUCT_REGISTRATION_THREADS)]
+        )
+
+
+def test_concurrent_distinct_gpu_struct_registration(jit_compute_module):
+    """Register several *different* struct types at the same instant.
+
+    Distinct struct types touch distinct entries of the global registries but
+    share the one process-wide typing/target context that refresh_contexts()
+    rebuilds, so the collision here is on the refresh itself rather than on a
+    single lru_cache key. A lost update would surface as a later worker's
+    operator failing to type its own struct.
+    """
+    cc = jit_compute_module
+
+    num_items = 32
+
+    for iteration in range(DISTINCT_KEY_STORM_ITERATIONS):
+        cc.clear_all_caches()
+
+        def make_thread(worker_id):
+            # A distinct struct type per worker, freshly defined so its
+            # registration is cold.
+            @cc.gpu_struct
+            class Pair:
+                first: np.int32
+                second: np.int32
+
+            offset = worker_id + 1
+
+            def pair_sum_op(a, b):
+                return Pair(a.first + b.first, a.second + b.second)
+
+            stream = _make_stream()
+            h_pairs = np.stack(
+                [
+                    np.full(num_items, offset, dtype=np.int32),
+                    np.full(num_items, offset * 2, dtype=np.int32),
+                ],
+                axis=1,
+            )
+            d_in = DeviceArray.from_numpy(h_pairs.view(Pair.dtype))
+            d_out = DeviceArray.empty(1, Pair.dtype)
+            h_init = Pair(0, 0)
+
+            def thread(barrier):
+                Device().set_current()
+                barrier.wait()
+                cc.reduce_into(
+                    d_in=d_in,
+                    d_out=d_out,
+                    op=pair_sum_op,
+                    h_init=h_init,
+                    num_items=num_items,
+                    stream=stream,
+                )
+                stream.sync()
+                result = d_out.copy_to_host()
+                assert int(result["first"][0]) == offset * num_items
+                assert int(result["second"][0]) == offset * 2 * num_items
+
+            return thread
+
+        _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+
+def test_concurrent_unannotated_transform_iterator_inference(jit_compute_module):
+    """Race _infer_return_type, which compiles during iterator construction.
+
+    A TransformIterator without an explicit value_type infers its return type by
+    compiling the operator, and _infer_return_type caches that in a plain dict
+    with a check-then-set. Distinct operators per worker keep the cache cold so
+    every thread runs the inference itself, concurrently.
+    """
+    cc = jit_compute_module
+
+    num_items = 32
+
+    for iteration in range(STRESS_ITERATIONS):
+        cc.clear_all_caches()
+
+        def make_thread(worker_id):
+            k = np.int32(worker_id + 1 + iteration * STRESS_THREADS)
+            op = _make_add_const_op(k)
+            stream = _make_stream()
+            h_init = np.array([0], dtype=np.int64)
+            d_out = DeviceArray.empty(1, dtype=np.int64)
+
+            def thread(barrier):
+                Device().set_current()
+                barrier.wait()
+                # Constructing the iterator is itself the racy step: value_type
+                # is omitted, so this runs the inference compile inline.
+                d_in = cc.TransformIterator(cc.CountingIterator(np.int32(0)), op)
+                cc.reduce_into(
+                    d_in=d_in,
+                    d_out=d_out,
+                    op=cc.OpKind.PLUS,
+                    h_init=h_init,
+                    num_items=num_items,
+                    stream=stream,
+                )
+                stream.sync()
+                expected = sum(i + int(k) for i in range(num_items))
+                assert int(d_out.copy_to_host()[0]) == expected
+
+            return thread
+
+        _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+
+def test_shared_python_op_transform_iterator_stress(jit_compute_module):
+    """Share one Python-operator TransformIterator instance across threads.
+
+    test_free_threading_stress.py covers shared iterators, but only with RawOp
+    transforms. Here the shared instance carries a JIT-compiled operator, so the
+    per-instance lazy Op construction guarded by IteratorBase._op_lock races
+    against the JIT frontend rather than against a prebuilt LTO-IR blob.
+
+    The iterator is rebuilt every iteration because that lazy construction is
+    only racy while the per-instance caches are cold.
+    """
+    cc = jit_compute_module
+
+    num_items = 32
+
+    for iteration in range(STRESS_ITERATIONS):
+        cc.clear_all_caches()
+
+        def double(x):
+            return x * 2
+
+        shared_iterator = cc.TransformIterator(cc.CountingIterator(np.int32(0)), double)
+        expected_sum = sum(i * 2 for i in range(num_items))
+
+        def make_thread(worker_id):
+            stream = _make_stream()
+            h_init = np.array([worker_id], dtype=np.int64)
+            d_out = DeviceArray.empty(1, dtype=np.int64)
+
+            def thread(barrier):
+                Device().set_current()
+                barrier.wait()
+                cc.reduce_into(
+                    d_in=shared_iterator,
+                    d_out=d_out,
+                    op=cc.OpKind.PLUS,
+                    h_init=h_init,
+                    num_items=num_items,
+                    stream=stream,
+                )
+                stream.sync()
+                assert int(d_out.copy_to_host()[0]) == expected_sum + worker_id
+
+            return thread
+
+        _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+
+def test_concurrent_stateful_closure_ops_isolate_state(jit_compute_module):
+    """Same operator code, different captured device arrays, one per thread.
+
+    The captured array does not change the cache key -- the stateful-op
+    machinery updates pointers per call -- so all threads share one build while
+    each wrapper must carry its own captured-state pointer. Broken isolation
+    shows up directly as one thread computing with another thread's offset.
+    """
+    cc = jit_compute_module
+
+    num_items = 64
+
+    def make_adder(arr):
+        def add_offset(x):
+            return x + arr[0]
+
+        return add_offset
+
+    for iteration in range(STRESS_ITERATIONS):
+        cc.clear_all_caches()
+        returned_transformers = [None] * STRESS_THREADS
+
+        def make_thread(worker_id):
+            offset = worker_id * 10 + iteration
+            d_offset = DeviceArray.from_numpy(np.array([offset], dtype=np.int32))
+            op = make_adder(d_offset)
+            stream = _make_stream()
+            h_in = np.arange(num_items, dtype=np.int32)
+            d_in = DeviceArray.from_numpy(h_in)
+            d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+            def thread(barrier):
+                Device().set_current()
+                barrier.wait()
+                transformer = cc.make_unary_transform(d_in=d_in, d_out=d_out, op=op)
+                returned_transformers[worker_id] = transformer
+                transformer(
+                    d_in=d_in,
+                    d_out=d_out,
+                    op=op,
+                    num_items=num_items,
+                    stream=stream,
+                )
+                stream.sync()
+                np.testing.assert_array_equal(
+                    d_out.copy_to_host(), h_in + np.int32(offset)
+                )
+
+            return thread
+
+        _run_threaded([make_thread(worker_id) for worker_id in range(STRESS_THREADS)])
+
+        assert len({id(t) for t in returned_transformers}) == STRESS_THREADS
+        assert len({id(_get_build_result(t)) for t in returned_transformers}) == 1

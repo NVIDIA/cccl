@@ -2,17 +2,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
+
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct mod_3
@@ -68,19 +61,19 @@ void TestCopyIfDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
 
     d_new_end = d_new_end_vec[0];
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 
   // test with Predicate that returns a non-bool
@@ -92,38 +85,35 @@ void TestCopyIfDevice(ExecutionPolicy exec)
 
     copy_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), mod_3<int>(), d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
 
     d_new_end = d_new_end_vec[0];
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 
-void TestCopyIfDeviceSeq()
+TEST_CASE("TestCopyIfDeviceSeq", "[copy_if]")
 {
   TestCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceSeq);
 
-void TestCopyIfDeviceDevice()
+TEST_CASE("TestCopyIfDeviceDevice", "[copy_if]")
 {
   TestCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceDevice);
 
-void TestCopyIfDeviceNoSync()
+TEST_CASE("TestCopyIfDeviceNoSync", "[copy_if]")
 {
   TestCopyIfDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestCopyIfCudaStreams(ExecutionPolicy policy)
+void test_copy_if_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -133,27 +123,26 @@ void TestCopyIfCudaStreams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
+  const Vector::iterator end =
+    thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
-  ASSERT_EQUAL(end - result.begin(), 2);
+  REQUIRE(end - result.begin() == 2);
   result.resize(end - result.begin());
-  Vector ref{2, 2};
-  ASSERT_EQUAL(result, ref);
+  const Vector ref{2, 2};
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
 
-void TestCopyIfCudaStreamsSync()
+TEST_CASE("TestCopyIfCudaStreamsSync", "[copy_if]")
 {
-  TestCopyIfCudaStreams(thrust::cuda::par);
+  test_copy_if_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCopyIfCudaStreamsSync);
 
-void TestCopyIfCudaStreamsNoSync()
+TEST_CASE("TestCopyIfCudaStreamsNoSync", "[copy_if]")
 {
-  TestCopyIfCudaStreams(thrust::cuda::par_nosync);
+  test_copy_if_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfCudaStreamsNoSync);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -196,19 +185,19 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
 
     d_new_end = d_new_end_vec[0];
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 
   // test with Predicate that returns a non-bool
@@ -220,38 +209,35 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
 
     copy_if_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), mod_3<int>(), d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
 
     d_new_end = d_new_end_vec[0];
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
 
-    ASSERT_EQUAL(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }
 
-void TestCopyIfStencilDeviceSeq()
+TEST_CASE("TestCopyIfStencilDeviceSeq", "[copy_if]")
 {
   TestCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceSeq);
 
-void TestCopyIfStencilDeviceDevice()
+TEST_CASE("TestCopyIfStencilDeviceDevice", "[copy_if]")
 {
   TestCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceDevice);
 
-void TestCopyIfStencilDeviceNoSync()
+TEST_CASE("TestCopyIfStencilDeviceNoSync", "[copy_if]")
 {
   TestCopyIfStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
+void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -265,99 +251,95 @@ void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  Vector::iterator end =
+  const Vector::iterator end =
     thrust::copy_if(policy.on(s), data.begin(), data.end(), stencil.begin(), result.begin(), ::cuda::std::identity{});
 
-  ASSERT_EQUAL(end - result.begin(), 2);
+  REQUIRE(end - result.begin() == 2);
   result.resize(end - result.begin());
 
-  Vector ref{2, 2};
-  ASSERT_EQUAL(result, ref);
+  const Vector ref{2, 2};
+  REQUIRE(result == ref);
 
   cudaStreamDestroy(s);
 }
 
-void TestCopyIfStencilCudaStreamsSync()
+TEST_CASE("TestCopyIfStencilCudaStreamsSync", "[copy_if]")
 {
-  TestCopyIfStencilCudaStreams(thrust::cuda::par);
+  test_copy_if_stencil_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsSync);
 
-void TestCopyIfStencilCudaStreamsNoSync()
+TEST_CASE("TestCopyIfStencilCudaStreamsNoSync", "[copy_if]")
 {
-  TestCopyIfStencilCudaStreams(thrust::cuda::par_nosync);
+  test_copy_if_stencil_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsNoSync);
 
-void TestCopyIfWithMagnitude(int magnitude)
+void test_copy_if_with_magnitude(int magnitude)
 {
   using offset_t = std::size_t;
 
   // Prepare input
-  offset_t num_items = offset_t{1ull} << magnitude;
-  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const offset_t num_items = offset_t{1ull} << magnitude;
+  const thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + static_cast<std::ptrdiff_t>(num_items);
-  ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
+  REQUIRE(static_cast<offset_t>(::cuda::std::distance(begin, end)) == num_items);
 
   // Run algorithm on large number of items
-  offset_t match_every_nth     = 1000000;
-  offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
+  const offset_t match_every_nth     = 1000000;
+  const offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
   thrust::device_vector<offset_t> copied_out(expected_num_copied);
   auto selected_out_end = thrust::copy_if(begin, end, copied_out.begin(), mod_n<offset_t>{match_every_nth});
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
-  ASSERT_EQUAL(num_selected_out, expected_num_copied);
+  const offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
+  REQUIRE(num_selected_out == expected_num_copied);
   copied_out.resize(expected_num_copied);
 
   // Ensure selected items are correct
-  auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
-  bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
-  ASSERT_EQUAL(all_results_correct, true);
+  auto expected_out_it           = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+  const bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
+  REQUIRE(all_results_correct);
 }
 
-void TestCopyIfWithLargeNumberOfItems()
+TEST_CASE("TestCopyIfWithLargeNumberOfItems", "[copy_if]")
 {
-  TestCopyIfWithMagnitude(30);
-  TestCopyIfWithMagnitude(31);
-  TestCopyIfWithMagnitude(32);
-  TestCopyIfWithMagnitude(33);
+  test_copy_if_with_magnitude(30);
+  test_copy_if_with_magnitude(31);
+  test_copy_if_with_magnitude(32);
+  test_copy_if_with_magnitude(33);
 }
-DECLARE_UNITTEST(TestCopyIfWithLargeNumberOfItems);
 
-void TestCopyIfStencilWithMagnitude(int magnitude)
+void test_copy_if_stencil_with_magnitude(int magnitude)
 {
   using offset_t = std::size_t;
 
   // Prepare input
-  offset_t num_items = offset_t{1ull} << magnitude;
-  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  const offset_t num_items = offset_t{1ull} << magnitude;
+  const thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + static_cast<std::ptrdiff_t>(num_items);
-  thrust::counting_iterator<offset_t> stencil(offset_t{0});
-  ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
+  const thrust::counting_iterator<offset_t> stencil(offset_t{0});
+  REQUIRE(static_cast<offset_t>(::cuda::std::distance(begin, end)) == num_items);
 
   // Run algorithm on large number of items
-  offset_t match_every_nth     = 1000000;
-  offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
+  const offset_t match_every_nth     = 1000000;
+  const offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
   thrust::device_vector<offset_t> copied_out(expected_num_copied);
   auto selected_out_end = thrust::copy_if(begin, end, stencil, copied_out.begin(), mod_n<offset_t>{match_every_nth});
 
   // Ensure number of selected items are correct
-  offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
-  ASSERT_EQUAL(num_selected_out, expected_num_copied);
+  const offset_t num_selected_out = static_cast<offset_t>(::cuda::std::distance(copied_out.begin(), selected_out_end));
+  REQUIRE(num_selected_out == expected_num_copied);
   copied_out.resize(expected_num_copied);
 
   // Ensure selected items are correct
-  auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
-  bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
-  ASSERT_EQUAL(all_results_correct, true);
+  auto expected_out_it           = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+  const bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
+  REQUIRE(all_results_correct);
 }
 
-void TestCopyIfStencilWithLargeNumberOfItems()
+TEST_CASE("TestCopyIfStencilWithLargeNumberOfItems", "[copy_if]")
 {
-  TestCopyIfStencilWithMagnitude(30);
-  TestCopyIfStencilWithMagnitude(31);
-  TestCopyIfStencilWithMagnitude(32);
-  TestCopyIfStencilWithMagnitude(33);
+  test_copy_if_stencil_with_magnitude(30);
+  test_copy_if_stencil_with_magnitude(31);
+  test_copy_if_stencil_with_magnitude(32);
+  test_copy_if_stencil_with_magnitude(33);
 }
-DECLARE_UNITTEST(TestCopyIfStencilWithLargeNumberOfItems);

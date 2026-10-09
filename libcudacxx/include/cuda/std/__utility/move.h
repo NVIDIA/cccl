@@ -46,6 +46,12 @@
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
 #endif // _CCCL_ENABLE_FREESTANDING
 
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#if defined(__CUDACC_TILE__)
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif // defined(__CUDACC_TILE__)
+
 #if _CCCL_COMPILER(CLANG, >=, 15)
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 1
 #else // ^^^ has builtin std::move_if_noexcept ^^^ / vvv no builtin std::move_if_noexcept vvv
@@ -63,6 +69,12 @@
 #  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
 #  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
 #endif // _CCCL_FREESTANDING()
+
+// In tile mode the builtin is tile annotated which can have unintended consequences in SIMT code with e.g int128
+#if defined(__CUDACC_TILE__)
+#  undef _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT
+#  define _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT() 0
+#endif // defined(__CUDACC_TILE__)
 
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_MOVE() || _CCCL_HAS_BUILTIN_STD_MOVE_IF_NOEXCEPT()

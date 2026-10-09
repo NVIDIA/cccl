@@ -199,10 +199,10 @@ private:
   // static mapping of indices to the position in the dynamic values array
   using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
 
-  template <size_t... Indices>
-  [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
+  template <size_t... _Indices>
+  [[nodiscard]] _CCCL_API static constexpr _DynamicValues __zeros(index_sequence<_Indices...>) noexcept
   {
-    return _DynamicValues{((void) Indices, 0)...};
+    return _DynamicValues{((void) _Indices, 0)...};
   }
 
 public:
@@ -257,7 +257,7 @@ public:
       : _DynamicValues{}
   {
     static_assert((sizeof...(_DynVals) == __size_), "Invalid number of values.");
-    _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
+    const _TDynamic __values[__size_] = {static_cast<_TDynamic>(__vals)...};
     for (size_t __i = 0; __i < __size_; __i++)
     {
       _TStatic __static_val = _StaticValues::__get(__i);

@@ -32,8 +32,8 @@ struct my_transform_functor
 {
   __host__ __device__ int operator()(const cuda::std::tuple<int, char>& t) const
   {
-    int a  = cuda::std::get<0>(t);
-    char b = cuda::std::get<1>(t);
+    const int a  = cuda::std::get<0>(t);
+    const char b = cuda::std::get<1>(t);
     return a + static_cast<int>(b); // Example operation
   }
 };
@@ -47,7 +47,7 @@ void thrust_algorithm(context& ctx, ZippedIt& first, ZippedIt& last, OutIt& outp
   /*
    * Interpret Thrust data structures as logical data
    */
-  size_t num_elements = cuda::std::distance(first, last);
+  const size_t num_elements = cuda::std::distance(first, last);
 
   // Extract underlying iterators from the zip iterator
   auto itA = cuda::std::get<0>(first.get_iterator_tuple());
@@ -65,12 +65,12 @@ void thrust_algorithm(context& ctx, ZippedIt& first, ZippedIt& last, OutIt& outp
   /* Important : result C will only be valid once we finalize the context or introduce a task fence ! */
   ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t stream, auto dA, auto dB, auto dC) {
     // Reconstruct a zipped iterator from the data instances passed to the lambda function
-    size_t num_elements = dA.size();
-    auto dfirst         = thrust::make_zip_iterator(cuda::std::tuple(dA.data_handle(), dB.data_handle()));
-    auto dlast          = dfirst + num_elements;
+    const size_t num_elements = dA.size();
+    auto dfirst               = thrust::make_zip_iterator(cuda::std::tuple(dA.data_handle(), dB.data_handle()));
+    auto dlast                = dfirst + num_elements;
 
     // Create a device pointer from the raw pointer
-    thrust::device_ptr<int> dout = thrust::device_pointer_cast(dC.data_handle());
+    const thrust::device_ptr<int> dout = thrust::device_pointer_cast(dC.data_handle());
 
     thrust::transform(thrust::cuda::par_nosync.on(stream), dfirst, dlast, dout, my_transform_functor());
   };

@@ -251,7 +251,9 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::segmented_radix_sort::dispatch<SortOrder::Ascending, SegmentSizeT>(
@@ -572,7 +574,9 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -904,7 +908,9 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::segmented_radix_sort::dispatch<SortOrder::Descending, SegmentSizeT>(
@@ -1228,7 +1234,9 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
@@ -1547,6 +1555,7 @@ public:
     using SegmentSizeT = ::cuda::std::int32_t;
 
     // Null value type
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
@@ -1848,6 +1857,7 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
@@ -2154,6 +2164,7 @@ public:
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
@@ -2452,6 +2463,7 @@ public:
 
     using SegmentSizeT = ::cuda::std::int32_t;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 

@@ -19,7 +19,7 @@ int main()
 {
   _CCCL_NVTX_RANGE_SCOPE("main");
 
-  cuda::counting_iterator<int> it{0};
+  const cuda::counting_iterator<int> it{0};
   cub::DeviceFor::ForEach(it, it + 16, ::cuda::std::negate<int>{});
   cudaDeviceSynchronize();
 }

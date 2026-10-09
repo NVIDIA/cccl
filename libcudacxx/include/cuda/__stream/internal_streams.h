@@ -41,7 +41,7 @@ inline ::cuda::stream_ref __cccl_allocation_stream() noexcept
 {
   // Intentionally leak the stream here to avoid stream destruction when the program exits, which is not guaraneed to
   // work.
-  static ::cuda::stream_ref __stream = []() {
+  static const ::cuda::stream_ref __stream = []() {
     ::cuda::stream __str{::cuda::device_ref{0}};
     return __str.release();
   }();

@@ -75,17 +75,17 @@ public:
       }
       else
       {
-        __s_        = ::cuda::std::sqrt(__mean_);
-        __d_        = 6 * __mean_ * __mean_;
-        __l_        = ::cuda::std::trunc(__mean_ - 1.1484);
-        __omega_    = .3989423 / __s_;
-        double __b1 = .4166667E-1 / __mean_;
-        double __b2 = .3 * __b1 * __b1;
-        __c3_       = .1428571 * __b1 * __b2;
-        __c2_       = __b2 - 15. * __c3_;
-        __c1_       = __b1 - 6. * __b2 + 45. * __c3_;
-        __c0_       = 1. - __b1 + 3. * __b2 - 15. * __c3_;
-        __c_        = .1069 / __mean_;
+        __s_              = ::cuda::std::sqrt(__mean_);
+        __d_              = 6 * __mean_ * __mean_;
+        __l_              = ::cuda::std::trunc(__mean_ - 1.1484);
+        __omega_          = .3989423 / __s_;
+        double __b1       = .4166667E-1 / __mean_;
+        const double __b2 = .3 * __b1 * __b1;
+        __c3_             = .1428571 * __b1 * __b2;
+        __c2_             = __b2 - 15. * __c3_;
+        __c1_             = __b1 - 6. * __b2 + 45. * __c3_;
+        __c0_             = 1. - __b1 + 3. * __b2 - 15. * __c3_;
+        __c_              = .1069 / __mean_;
       }
     }
 
@@ -165,7 +165,7 @@ public:
   {
     static_assert(__cccl_random_is_valid_urng<_URNG>);
     double __tx = 0;
-    uniform_real_distribution<double> __urd{};
+    uniform_real_distribution<double> __urd{}; // NOLINT(misc-const-correctness)
     if (__pr.__mean_ < 10)
     {
       for (double __p = __urd(__urng); __p > __pr.__l_; ++__tx)
@@ -223,7 +223,7 @@ public:
         {
           double __del = .8333333E-1 / __tx;
           __del -= 4.8 * __del * __del * __del;
-          double __v = __difmuk / __tx;
+          const double __v = __difmuk / __tx;
           if (::cuda::std::abs(__v) > 0.25)
           {
             __px = __tx * ::cuda::std::log(1 + __v) - __difmuk - __del;
@@ -241,9 +241,9 @@ public:
           }
           __py = .3989423 / ::cuda::std::sqrt(__tx);
         }
-        double __r  = (0.5 - __difmuk) / __pr.__s_;
-        double __r2 = __r * __r;
-        double __fx = -0.5 * __r2;
+        double __r        = (0.5 - __difmuk) / __pr.__s_;
+        double __r2       = __r * __r;
+        const double __fx = -0.5 * __r2;
         double __fy = __pr.__omega_ * (((__pr.__c3_ * __r2 + __pr.__c2_) * __r2 + __pr.__c1_) * __r2 + __pr.__c0_);
         if (__using_exp_dist)
         {

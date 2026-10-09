@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 import numpy as np
+import pytest
 from _utils.device_array import DeviceArray
 
 import cuda.compute
@@ -169,6 +170,9 @@ def test_unary_transform_of_permutation_iterator():
     np.testing.assert_array_equal(d_out.copy_to_host(), expected)
 
 
+@pytest.mark.thread_unsafe(
+    reason="Clears and counts hits on the process-wide compile cache, which a concurrent instance perturbs."
+)
 def test_caching_permutation_iterator():
     """Test that iterator compilation is cached across instances with the same structure."""
     from cuda.compute._cpp_compile import compile_cpp_op_code

@@ -115,7 +115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT aligned_storage
 };
 
 template <size_t _Len, size_t _Align = __find_max_align<__all_types, _Len>::value>
-using aligned_storage_t _CCCL_NODEBUG_ALIAS = typename aligned_storage<_Len, _Align>::type;
+using aligned_storage_t _CCCL_NODEBUG = typename aligned_storage<_Len, _Align>::type;
 
 #define _CREATE_ALIGNED_STORAGE_SPECIALIZATION(n)               \
   template <size_t _Len>                                        \

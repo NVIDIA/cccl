@@ -27,13 +27,12 @@
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/from_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
+#include <cuda/std/__system_error/errc.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
@@ -114,8 +113,8 @@ from_chars(const char* __first, const char* __last, _Tp& __value, int __base = 1
 
   if constexpr (is_signed_v<_Tp>)
   {
-    bool __neg = (__first < __last && *__first == '-');
-    __ret      = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
+    const bool __neg = (__first < __last && *__first == '-');
+    __ret            = ::cuda::std::__from_chars_int_generic(__first + __neg, __last, __result, __base);
     if (__ret.ec == errc{})
     {
       const auto __max = ::cuda::uabs((__neg) ? numeric_limits<_Tp>::min() : numeric_limits<_Tp>::max());

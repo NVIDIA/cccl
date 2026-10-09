@@ -149,12 +149,12 @@ template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAcc
   random_access_iterator_tag)
 {
   // Take advantage of knowing source and pattern lengths.  Stop short when source is smaller than pattern
-  __iter_diff_t<_RandomAccessIterator2> __len2 = __last2 - __first2;
+  const __iter_diff_t<_RandomAccessIterator2> __len2 = __last2 - __first2;
   if (__len2 == 0)
   {
     return __last1;
   }
-  __iter_diff_t<_RandomAccessIterator1> __len1 = __last1 - __first1;
+  const __iter_diff_t<_RandomAccessIterator1> __len1 = __last1 - __first1;
   if (__len1 < __len2)
   {
     return __last1;

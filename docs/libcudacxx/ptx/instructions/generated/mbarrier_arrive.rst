@@ -205,3 +205,71 @@ mbarrier.arrive.relaxed.cluster.shared::cluster.b64
      cuda::ptx::scope_cluster_t,
      cuda::ptx::space_cluster_t,
      uint64_t* addr);
+
+mbarrier.arrive.release.cluster.shared::cluster.multicast::cluster::32b.b64
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // mbarrier.arrive.sem.scope.space.multicast::cluster::32b.b64 _, [addr], count, ctaMask; // PTX ISA 94, SM_107a, SM_107f
+   // .sem       = { .release, .relaxed }
+   // .scope     = { .cluster }
+   // .space     = { .shared::cluster }
+   template <cuda::ptx::dot_sem Sem>
+   __device__ static inline void mbarrier_arrive_multicast_32b(
+     cuda::ptx::sem_t<Sem> sem,
+     cuda::ptx::scope_cluster_t,
+     cuda::ptx::space_cluster_t,
+     uint64_t* addr,
+     const uint32_t& count,
+     uint32_t ctaMask);
+
+mbarrier.arrive.relaxed.cluster.shared::cluster.multicast::cluster::32b.b64
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // mbarrier.arrive.sem.scope.space.multicast::cluster::32b.b64 _, [addr], count, ctaMask; // PTX ISA 94, SM_107a, SM_107f
+   // .sem       = { .release, .relaxed }
+   // .scope     = { .cluster }
+   // .space     = { .shared::cluster }
+   template <cuda::ptx::dot_sem Sem>
+   __device__ static inline void mbarrier_arrive_multicast_32b(
+     cuda::ptx::sem_t<Sem> sem,
+     cuda::ptx::scope_cluster_t,
+     cuda::ptx::space_cluster_t,
+     uint64_t* addr,
+     const uint32_t& count,
+     uint32_t ctaMask);
+
+mbarrier.arrive.expect_tx.release.cluster.shared::cluster.multicast::cluster::32b.b64
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // mbarrier.arrive.expect_tx.sem.scope.space.multicast::cluster::32b.b64 _, [addr], txCount, ctaMask; // PTX ISA 94, SM_107a, SM_107f
+   // .sem       = { .release, .relaxed }
+   // .scope     = { .cluster }
+   // .space     = { .shared::cluster }
+   template <cuda::ptx::dot_sem Sem>
+   __device__ static inline void mbarrier_arrive_expect_tx_multicast_32b(
+     cuda::ptx::sem_t<Sem> sem,
+     cuda::ptx::scope_cluster_t,
+     cuda::ptx::space_cluster_t,
+     uint64_t* addr,
+     const uint32_t& txCount,
+     uint32_t ctaMask);
+
+mbarrier.arrive.expect_tx.relaxed.cluster.shared::cluster.multicast::cluster::32b.b64
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: cuda
+
+   // mbarrier.arrive.expect_tx.sem.scope.space.multicast::cluster::32b.b64 _, [addr], txCount, ctaMask; // PTX ISA 94, SM_107a, SM_107f
+   // .sem       = { .release, .relaxed }
+   // .scope     = { .cluster }
+   // .space     = { .shared::cluster }
+   template <cuda::ptx::dot_sem Sem>
+   __device__ static inline void mbarrier_arrive_expect_tx_multicast_32b(
+     cuda::ptx::sem_t<Sem> sem,
+     cuda::ptx::scope_cluster_t,
+     cuda::ptx::space_cluster_t,
+     uint64_t* addr,
+     const uint32_t& txCount,
+     uint32_t ctaMask);

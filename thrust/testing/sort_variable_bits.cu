@@ -4,8 +4,6 @@
 
 #include <unittest/unittest.h>
 
-using namespace unittest;
-
 using UnsignedIntegerTypes =
   unittest::type_list<unittest::uint8_t, unittest::uint16_t, unittest::uint32_t, unittest::uint64_t>;
 
@@ -18,7 +16,7 @@ struct TestSortVariableBits
     {
       thrust::host_vector<T> h_keys = unittest::random_integers<T>(n);
 
-      size_t mask = (1 << num_bits) - 1;
+      const size_t mask = (1 << num_bits) - 1;
       for (size_t i = 0; i < n; i++)
       {
         h_keys[i] &= mask;
@@ -32,9 +30,9 @@ struct TestSortVariableBits
       thrust::sort(h_keys.begin(), h_keys.end());
       thrust::sort(d_keys.begin(), d_keys.end());
 
-      ASSERT_EQUAL(reference, h_keys);
-      ASSERT_EQUAL(h_keys, d_keys);
+      REQUIRE(reference == h_keys);
+      REQUIRE(h_keys == d_keys);
     }
   }
 };
-VariableUnitTest<TestSortVariableBits, UnsignedIntegerTypes> TestSortVariableBitsInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortVariableBits, UnsignedIntegerTypes);

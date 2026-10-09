@@ -160,8 +160,8 @@ public:
                 "The current implementation is NOT ABI-compatible with the previous implementation for this "
                 "configuration");
 
-  using _Base1 _CCCL_NODEBUG_ALIAS = __compressed_pair_elem<_T1, 0>;
-  using _Base2 _CCCL_NODEBUG_ALIAS = __compressed_pair_elem<_T2, 1>;
+  using _Base1 _CCCL_NODEBUG = __compressed_pair_elem<_T1, 0>;
+  using _Base2 _CCCL_NODEBUG = __compressed_pair_elem<_T2, 1>;
 
   _CCCL_EXEC_CHECK_DISABLE
   template <bool _Dummy = true,

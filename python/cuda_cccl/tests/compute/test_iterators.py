@@ -18,6 +18,8 @@ from cuda.compute.iterators import (
     CountingIterator,
     ReverseIterator,
     TransformIterator,
+    TransformOutputIterator,
+    ZipIterator,
 )
 
 
@@ -220,4 +222,107 @@ def test_transform_iterator_with_zip_iterator():
     result = d_output.copy_to_host()[0]
     expected = (h_a + h_b).sum()
 
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_transform_output_iterator_with_stateful_closure():
+    """Numba-path counterpart of test_raw_op.py's
+    test_cpp_stateful_op_with_transform_output_iterator: a stateful Python
+    callable (closing over a device array) used as a TransformOutputIterator's
+    transform op must receive its state."""
+    scale_factor = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_by_state(x):
+        return x * scale_factor[0]
+
+    num_items = 10
+    h_input = np.arange(num_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    output_iterator = TransformOutputIterator(
+        d_output, scale_by_state, output_value_type=cuda.compute.types.int32
+    )
+
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=d_input,
+        d_out=output_iterator,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int(np.sum(h_input)) * 3
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_transform_iterator_with_stateful_closure():
+    """Numba-path counterpart of test_raw_op.py's
+    test_cpp_stateful_op_with_transform_input_iterator."""
+    scale_factor = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_by_state(x):
+        return x * scale_factor[0]
+
+    num_items = 10
+    h_input = np.arange(num_items, dtype=np.int32)
+    d_input = DeviceArray.from_numpy(h_input)
+    d_output = DeviceArray.empty(1, np.int32)
+
+    transform_iter = TransformIterator(
+        d_input, scale_by_state, value_type=cuda.compute.types.int32
+    )
+
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=transform_iter,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int(np.sum(h_input)) * 3
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+def test_transform_iterator_stateful_closure_nested_in_zip():
+    """Numba-path counterpart of test_raw_op.py's
+    test_cpp_stateful_op_transform_nested_in_zip: a stateful TransformIterator
+    nested inside ZipIterator, which treats its children's state opaquely."""
+    scale_factor = DeviceArray.from_numpy(np.array([3], dtype=np.int32))
+
+    def scale_by_state(x):
+        return x * scale_factor[0]
+
+    def add_pair(pair):
+        return pair[0] + pair[1]
+
+    num_items = 10
+    h_x = np.arange(num_items, dtype=np.int32)
+    h_y = np.arange(num_items, dtype=np.int32) * 100
+    d_x = DeviceArray.from_numpy(h_x)
+    d_y = DeviceArray.from_numpy(h_y)
+
+    scaled_x = TransformIterator(
+        d_x, scale_by_state, value_type=cuda.compute.types.int32
+    )
+    zipped = ZipIterator(scaled_x, d_y)
+    combined = TransformIterator(zipped, add_pair)
+
+    d_output = DeviceArray.empty(1, np.int32)
+    h_init = np.array(0, dtype=np.int32)
+    cuda.compute.reduce_into(
+        d_in=combined,
+        d_out=d_output,
+        num_items=num_items,
+        op=OpKind.PLUS,
+        h_init=h_init,
+    )
+
+    result = d_output.copy_to_host()[0]
+    expected = int((h_x * 3 + h_y).sum())
     assert result == expected, f"Expected {expected}, got {result}"

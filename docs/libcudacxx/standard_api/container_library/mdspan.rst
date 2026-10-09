@@ -20,3 +20,4 @@ Restrictions
 ------------
 
 -  On device no exceptions are thrown in case of a bad access.
+-  ``operator[]`` is disabled even in C++23 mode because it is not yet fully supported by the ``nvcc`` compiler.

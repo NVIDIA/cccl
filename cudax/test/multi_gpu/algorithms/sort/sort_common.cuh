@@ -11,6 +11,7 @@
 #ifndef CUDAX_TEST_MULTI_GPU_ALGORITHMS_SORT_SORT_COMMON_CUH
 #define CUDAX_TEST_MULTI_GPU_ALGORITHMS_SORT_SORT_COMMON_CUH
 
+#include <cuda/algorithm>
 #include <cuda/buffer>
 #include <cuda/memory_resource>
 #include <cuda/std/cstddef>
@@ -23,6 +24,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <algorithm_common.h>
 #include <nccl_test_common.h>
 
 #include <c2h/catch2_test_helper.h>
@@ -37,6 +39,9 @@ using custom_key_t =
                      c2h::lexicographical_greater_comparable_t>;
 using sort_types = c2h::type_list<int, cuda::std::int64_t, double, custom_key_t>;
 
+// `sort` uses `custom_key_t` rather than the `custom_value` of the other algorithms, so it needs
+// its own `make_value` overload set. The scalar cases match the shared one in
+// `algorithm_common.h`.
 template <class T>
 [[nodiscard]] inline T make_value(const cuda::std::int64_t key, const cuda::std::int64_t)
 {
@@ -55,14 +60,10 @@ template <>
   return result;
 }
 
-[[nodiscard]] inline cuda::std::minstd_rand make_rng(const c2h::seed_t& seed)
-{
-  return cuda::std::minstd_rand(static_cast<cuda::std::minstd_rand::result_type>(seed.get()));
-}
-
 template <class T, class RNG>
 void fill_random(std::vector<T>& local, cuda::std::size_t count, RNG& rng)
 {
+  // NOLINTNEXTLINE(misc-const-correctness)
   cuda::std::uniform_int_distribution<cuda::std::int64_t> dist{
     cuda::std::numeric_limits<cuda::std::int64_t>::lowest(), cuda::std::numeric_limits<cuda::std::int64_t>::max()};
 
@@ -84,7 +85,7 @@ template <class T>
 // One device buffer per local rank, each allocated on that rank's device and stream.
 template <class T>
 [[nodiscard]] std::vector<cuda::device_buffer<T>> make_device_inputs(
-  cuda::std::span<cudax::nccl_communicator_ref> comms,
+  cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
   cuda::std::span<const cuda::stream_ref> streams,
   const std::vector<std::vector<T>>& inputs)
 {
@@ -102,8 +103,8 @@ template <class T>
 // Concatenate the per-rank results in rank order. `sort` leaves the global sequence sorted when
 // the ranks are read back to back, so the concatenation is what we compare against the reference.
 template <class T>
-[[nodiscard]] std::vector<T>
-gather_outputs(cuda::std::span<cudax::nccl_communicator_ref> comms, const std::vector<cuda::device_buffer<T>>& inputs)
+[[nodiscard]] std::vector<T> gather_outputs(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
+                                            const std::vector<cuda::device_buffer<T>>& inputs)
 {
   std::vector<T> ret(total_size(inputs));
 
@@ -142,7 +143,7 @@ template <class T, class Compare>
 
 // `sort` must not change how many elements a rank owns, only which elements those are.
 template <class T>
-void check_rank_sizes(cuda::std::span<cudax::nccl_communicator_ref> comms,
+void check_rank_sizes(cuda::std::span<cudax::mgmn::nccl_communicator_ref> comms,
                       const std::vector<cuda::device_buffer<T>>& device_vec,
                       const std::vector<std::vector<T>>& host_inputs)
 {

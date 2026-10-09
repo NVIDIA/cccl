@@ -497,3 +497,28 @@ def test_struct_field_order_matters():
     assert len(cache) == 2
     assert cache[SumAndCount._type_descriptor] == "sum_first"
     assert cache[CountAndSum._type_descriptor] == "count_first"
+
+
+def test_struct_field_accepts_a_struct_with_narrower_fields():
+    """A struct field accepts another struct whose fields convert to its own.
+
+    The value is rebuilt field by field; converting the aggregate as a whole has
+    no lowering, so this used to type cleanly and then report a compiler bug.
+    Sign has to survive the per-field widening.
+    """
+    Narrow = gpu_struct({"p": np.int32, "q": np.int32})
+    Wide = gpu_struct({"p": np.int64, "q": np.int64})
+    Outer = gpu_struct({"n": Wide})
+
+    def pack(x):
+        return Outer(Narrow(x, x))
+
+    h_in = np.array([-1, -2147483648, 7], dtype=np.int32)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, Outer.dtype)
+
+    cuda.compute.unary_transform(d_in=d_in, d_out=d_out, op=pack, num_items=h_in.size)
+
+    nested = d_out.copy_to_host()["n"]
+    np.testing.assert_array_equal(nested["p"], h_in.astype(np.int64))
+    np.testing.assert_array_equal(nested["q"], h_in.astype(np.int64))

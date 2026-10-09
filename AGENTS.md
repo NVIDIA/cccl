@@ -2,6 +2,10 @@
 
 This document provides guidelines for building, testing, and contributing to the CCCL repository. It is primarily written for agentic AIs, but the information is also useful for CCCL developers.
 
+For `cuda.coop` work, including `python/cuda_coop/**` and
+`docs/python/coop*`, read [python/cuda_coop/AGENTS.md](python/cuda_coop/AGENTS.md)
+and apply its API, behavior, and example conventions.
+
 ---
 
 ## Overview
@@ -71,7 +75,7 @@ Common options:
 Example:
 
 ```bash
-.devcontainer/launch.sh -d --cuda 13.3 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.4 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`
@@ -324,6 +328,7 @@ Tags appended to the commit summary (case-sensitive) control CI behavior:
 * `[skip-vdc]`: Skip "Verify Devcontainer" jobs. Safe unless CI or devcontainer infra is modified.
 * `[skip-docs]`: Skip doc tests/previews. Safe if docs are unaffected.
 * `[skip-compile-time-bench]`: Skip informational compile-time benchmark telemetry. Safe if compile-time benchmark scripts/configuration are unaffected.
+* `[skip-sass-diff]`: Skip the informational CUB benchmark SASS comparison. The job already runs only when `ci/inspect_changes.py` marks CUB dirty, either directly or through a dependency such as libcudacxx or Thrust, so this tag is only necessary to skip a comparison that would otherwise run.
 * `[skip-third-party-testing]` / `[skip-tpt]`: Skip third-party smoke tests (MatX, PyTorch, RAPIDS).
 * `[skip-matx]`: Skip building the MatX third-party smoke test.
 * `[skip-pytorch]`: Skip building the PyTorch third-party smoke test.

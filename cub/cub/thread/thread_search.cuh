@@ -25,6 +25,7 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__type_traits/is_same.h>
 
 #include <nv/target>
 
@@ -120,82 +121,27 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
   while (num_items > 0)
   {
     OffsetT half = num_items >> 1;
-    if (val < input[retval + half])
-    {
-      num_items = half;
-    }
-    else
-    {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
-    }
-  }
 
-  return retval;
-}
-
+    bool lt;
 #if _CCCL_HAS_NVFP16()
-/**
- * @param[in] input
- *   Input sequence
- *
- * @param[in] num_items
- *   Input sequence length
- *
- * @param[in] val
- *   Search key
- */
-template <typename InputIteratorT, typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
-{
-  OffsetT retval = 0;
-  while (num_items > 0)
-  {
-    OffsetT half = num_items >> 1;
-
-    bool lt;
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
-                      (lt = __hlt(val, input[retval + half]);),
-                      (lt = __half2float(val) < __half2float(input[retval + half]);));
-
-    if (lt)
+    if constexpr (::cuda::std::is_same_v<T, __half>)
     {
-      num_items = half;
+      lt = __hlt(val, input[retval + half]);
     }
     else
-    {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
-    }
-  }
-
-  return retval;
-}
 #endif // _CCCL_HAS_NVFP16()
-
 #if _CCCL_HAS_NVBF16()
-/**
- * @param[in] input
- *   Input sequence
- *
- * @param[in] num_items
- *   Input sequence length
- *
- * @param[in] val
- *   Search key
- */
-template <typename InputIteratorT, typename OffsetT>
-_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __nv_bfloat16 val)
-{
-  OffsetT retval = 0;
-  while (num_items > 0)
-  {
-    OffsetT half = num_items >> 1;
-
-    bool lt;
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (lt = __hlt(val, input[retval + half]);),
-                      (lt = __bfloat162float(val) < __bfloat162float(input[retval + half]);));
+      if constexpr (::cuda::std::is_same_v<T, __nv_bfloat16>)
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                        (lt = __hlt(val, input[retval + half]);),
+                        (lt = __bfloat162float(val) < __bfloat162float(input[retval + half]);));
+    }
+    else
+#endif // _CCCL_HAS_NVBF16()
+    {
+      lt = val < input[retval + half];
+    }
 
     if (lt)
     {
@@ -210,6 +156,5 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 
   return retval;
 }
-#endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_END

@@ -29,7 +29,7 @@ _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n)
 template <typename T>
 _CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n)
 {
-  pointer<void> raw_ptr = thrust::cuda_cub::malloc(sizeof(T) * n);
+  const pointer<void> raw_ptr = thrust::cuda_cub::malloc(sizeof(T) * n);
   return pointer<T>(reinterpret_cast<T*>(raw_ptr.get()));
 } // end malloc()
 
