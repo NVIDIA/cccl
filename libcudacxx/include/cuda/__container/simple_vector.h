@@ -130,6 +130,13 @@ public:
     return static_cast<size_type>(__end_ - __begin_);
   }
 
+  //! @brief Returns the maximum number of elements.
+  //! @return The maximum number of elements.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_type max_size() const noexcept
+  {
+    return __capacity_;
+  }
+
   //! @brief Returns whether the vector holds no elements.
   //! @return @c true if @c size() is zero, otherwise @c false.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool empty() const noexcept

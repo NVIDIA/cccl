@@ -25,6 +25,7 @@
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__ranges/access.h>
@@ -40,8 +41,6 @@
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/ideal_rank_fn.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/merge_k_way.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/sorter.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -141,7 +140,7 @@ inline constexpr ::cuda::std::size_t __h_num_columns        = 4;
 
 //! @brief Returns local rank `__rank_idx`'s `__col` column of `__h_counts`.
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::span<::cuda::std::size_t> __h_column(
-  ::std::vector<::cuda::std::size_t>& __h_counts,
+  ::cuda::__simple_vector<::cuda::std::size_t>& __h_counts,
   ::cuda::std::size_t __comm_size,
   ::cuda::std::size_t __rank_idx,
   ::cuda::std::size_t __col) noexcept
@@ -154,7 +153,7 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 //! @brief Compute, per destination rank, how many local keys it is owed and where they land.
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange, class _InputIterRange, class _SizeTRange>
-_CCCL_HOST_API ::std::vector<
+_CCCL_HOST_API ::cuda::__simple_vector<
   typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __resizable_buffer_type<::cuda::std::size_t>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
   const __local_setup_result_type& __setup,
@@ -163,14 +162,14 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
   _InputIterRange&& __input_iters,
   _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp,
-  const ::std::vector<__per_comm_histogramming_result_type>& __hist_results,
-  ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets)
+  const ::cuda::__simple_vector<__per_comm_histogramming_result_type>& __hist_results,
+  ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::uint64_t>>* __local_current_offsets)
 {
   const auto __comm_size = __setup.__comm_size;
   const auto __N         = __setup.__N;
   const auto __num_local = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__resizable_buffer_type<::cuda::std::size_t>> __local_counts;
+  ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::size_t>> __local_counts{__num_local, ::cuda::no_init};
 
   // The send and recv counts are the same size, live on the same device, and are used on the
   // same stream, so they share one allocation per rank instead of two: the send counts occupy
@@ -182,9 +181,6 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
     return __counts.subspan(__comm_size, __comm_size);
   };
 
-  __local_counts.reserve(__num_local);
-  __local_current_offsets->reserve(__num_local);
-
   {
     auto __comm_it      = ::cuda::std::ranges::begin(__comms);
     auto __env_it       = ::cuda::std::ranges::begin(__envs);
@@ -194,9 +190,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local;
          (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
     {
-      const auto& __hist   = __hist_results[__idx].__hist;
-      const auto& __I_j    = __hist_results[__idx].__splitters.__I_j;
-      const auto& __probes = __hist_results[__idx].__splitters.__probes;
+      const auto& __hist   = __hist_results.data()[__idx].__hist;
+      const auto& __I_j    = __hist_results.data()[__idx].__splitters.__I_j;
+      const auto& __probes = __hist_results.data()[__idx].__splitters.__probes;
 
       auto& __counts = __local_counts.emplace_back(
         __I_j.stream(),
@@ -283,10 +279,10 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__comm_it)
     {
-      auto* const __send_ptr = __send_span(__local_counts[__idx]).data();
-      auto* const __recv_ptr = __recv_span(__local_counts[__idx]).data();
+      auto* const __send_ptr = __send_span(__local_counts.data()[__idx]).data();
+      auto* const __recv_ptr = __recv_span(__local_counts.data()[__idx]).data();
 
-      __comm_it->all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __local_counts[__idx].stream());
+      __comm_it->all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __local_counts.data()[__idx].stream());
     }
   }
 
@@ -295,13 +291,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
 
 template <class _Tp, class _Env, class _BinaryOp>
 template <class _CommRange, class _EnvRange>
-_CCCL_HOST_API ::std::vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __resizable_buffer_type<_Tp>>
+_CCCL_HOST_API ::cuda::__simple_vector<typename _HSSSorter<_Tp, _Env, _BinaryOp>::template __resizable_buffer_type<_Tp>>
 _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
   _CommRange&& __comms,
   _EnvRange&& __envs,
   ::cuda::std::size_t __comm_size,
-  const ::std::vector<__resizable_buffer_type<::cuda::std::size_t>>& __local_counts,
-  ::std::vector<::cuda::std::size_t>* __h_counts)
+  const ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::size_t>>& __local_counts,
+  ::cuda::__simple_vector<::cuda::std::size_t>* __h_counts)
 {
   const auto __num_local = ::cuda::std::ranges::size(__comms);
   {
@@ -315,17 +311,16 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
       static_assert(__h_recv_counts_column == __h_send_counts_column + 1,
                     "The fused counts copy requires the send and recv count columns to be adjacent");
       ::cuda::copy_bytes(
-        __local_counts[__idx].stream(),
-        __local_counts[__idx],
+        __local_counts.data()[__idx].stream(),
+        __local_counts.data()[__idx],
         ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * __h_send_counts.size()},
-        ::cuda::copy_configuration{
-          __local_counts[__idx].stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
+        ::cuda::copy_configuration{__local_counts.data()[__idx].stream().device(),
+                                   ::cuda::host_memory_location,
+                                   ::cuda::source_access_order::stream});
     }
   }
 
-  ::std::vector<__resizable_buffer_type<_Tp>> __local_recvd;
-
-  __local_recvd.reserve(__num_local);
+  ::cuda::__simple_vector<__resizable_buffer_type<_Tp>> __local_recvd{__num_local, ::cuda::no_init};
 
   {
     auto __env_it = ::cuda::std::ranges::begin(__envs);
@@ -333,7 +328,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__env_it)
     {
       // All streams are the same, so any suffices
-      __local_counts[__idx].stream().sync();
+      __local_counts.data()[__idx].stream().sync();
 
       const auto __h_send_counts = __h_column(*__h_counts, __comm_size, __idx, __h_send_counts_column);
       const auto __h_recv_counts = __h_column(*__h_counts, __comm_size, __idx, __h_recv_counts_column);
@@ -352,8 +347,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
       const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
 
       __local_recvd.emplace_back(
-        __local_counts[__idx].stream(),
-        __local_counts[__idx].memory_resource(),
+        __local_counts.data()[__idx].stream(),
+        __local_counts.data()[__idx].memory_resource(),
         __total_recv,
         ::cuda::no_init,
         ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
@@ -377,13 +372,20 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   _InputIterRange&& __input_iters,
   _SizeTRange&& __num_items_range,
   const _BinaryOp& __cmp,
-  const ::std::vector<__per_comm_histogramming_result_type>& __hist_results)
+  const ::cuda::__simple_vector<__per_comm_histogramming_result_type>& __hist_results)
 {
   const auto __comm_size = __setup.__comm_size;
   const auto __num_local = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__resizable_buffer_type<::cuda::std::uint64_t>> __local_current_offsets;
-  ::std::vector<::cuda::std::size_t> __local_h_counts(__num_local * __h_num_columns * __comm_size);
+  ::cuda::__simple_vector<__resizable_buffer_type<::cuda::std::uint64_t>> __local_current_offsets{
+    __num_local, ::cuda::no_init};
+  ::cuda::__simple_vector<::cuda::std::size_t> __local_h_counts{
+    __num_local * __h_num_columns * __comm_size, ::cuda::no_init};
+
+  for (::cuda::std::size_t __i = 0; __i < __local_h_counts.max_size(); ++__i)
+  {
+    __local_h_counts.emplace_back(0);
+  }
 
   auto __local_recvd = [&] {
     const auto __local_counts = __compute_send_counts_and_offsets(
@@ -404,10 +406,10 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
         ::cuda::std::to_address(*__input_it),
         __h_column(__local_h_counts, __comm_size, __idx, __h_send_counts_column).data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_send_displs_column).data(),
-        __local_recvd[__idx].data(),
+        __local_recvd.data()[__idx].data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_counts_column).data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_displs_column).data(),
-        __local_recvd[__idx].stream());
+        __local_recvd.data()[__idx].stream());
     }
   }
 
@@ -418,9 +420,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
   // enqueued above, and writing them here would alias that in-flight collective. The caller's
   // storage is written exactly once, at the very end of the rebalance phase, when nothing is in
   // flight.
-  ::std::vector<__resizable_buffer_type<_Tp>> __local_merged;
-
-  __local_merged.reserve(__num_local);
+  ::cuda::__simple_vector<__resizable_buffer_type<_Tp>> __local_merged{__num_local, ::cuda::no_init};
 
   {
     auto __env_it = ::cuda::std::ranges::begin(__envs);
@@ -428,13 +428,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__env_it)
     {
       auto& __merged = __local_merged.emplace_back(
-        __local_recvd[__idx].stream(),
-        __local_recvd[__idx].memory_resource(),
+        __local_recvd.data()[__idx].stream(),
+        __local_recvd.data()[__idx].memory_resource(),
         ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
 
       __merge_k_way(
         *__env_it,
-        __local_recvd[__idx],
+        __local_recvd.data()[__idx],
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_counts_column),
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_displs_column),
         __cmp,

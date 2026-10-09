@@ -26,6 +26,7 @@
 #include <cub/device/device_transform.cuh>
 
 #include <cuda/__algorithm/copy.h>
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
@@ -38,8 +39,6 @@
 
 #include <cuda/experimental/mgmn/__algorithm/common.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/sorter.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -142,7 +141,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   const auto __N                = __setup.__N;
   const auto __num_local_inputs = ::cuda::std::ranges::size(__comms);
 
-  ::std::vector<__resizable_buffer_type<_Tp>> __local_rebalanced;
+  ::cuda::__simple_vector<__resizable_buffer_type<_Tp>> __local_rebalanced{__num_local_inputs, ::cuda::no_init};
 
   constexpr ::cuda::std::size_t __send_counts_column = 0;
   constexpr ::cuda::std::size_t __send_displs_column = 1;
@@ -150,19 +149,24 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
   constexpr ::cuda::std::size_t __recv_displs_column = 3;
   constexpr ::cuda::std::size_t __num_columns        = 4;
 
-  ::std::vector<::cuda::std::size_t> __local_h_counts(__num_local_inputs * __num_columns * __comm_size);
+  ::cuda::__simple_vector<::cuda::std::size_t> __local_h_counts{
+    __num_local_inputs * __num_columns * __comm_size, ::cuda::no_init};
+
+  for (::cuda::std::size_t __i = 0; __i < __local_h_counts.max_size(); ++__i)
+  {
+    __local_h_counts.emplace_back(0);
+  }
 
   const auto __column = [__comm_size](auto& __counts, ::cuda::std::size_t __col) {
     return __counts.subspan(__col * __comm_size, __comm_size);
   };
   const auto __h_column =
-    [__comm_size](
-      ::std::vector<::cuda::std::size_t>& __h_counts, ::cuda::std::size_t __rank_idx, ::cuda::std::size_t __col) {
+    [__comm_size](::cuda::__simple_vector<::cuda::std::size_t>& __h_counts,
+                  ::cuda::std::size_t __rank_idx,
+                  ::cuda::std::size_t __col) {
       return ::cuda::std::span<::cuda::std::size_t>{
         __h_counts.data() + ((__rank_idx * __num_columns) + __col) * __comm_size, __comm_size};
     };
-
-  __local_rebalanced.reserve(__num_local_inputs);
 
   {
     auto __comm_it      = ::cuda::std::ranges::begin(__comms);
@@ -173,8 +177,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
          (void) ++__idx, (void) ++__comm_it, (void) ++__num_items_it, (void) ++__env_it)
     {
       auto __counts = ::cuda::make_buffer<::cuda::std::size_t>(
-        __exchange_results.__local_current_offsets[__idx].stream(),
-        __exchange_results.__local_current_offsets[__idx].memory_resource(),
+        __exchange_results.__local_current_offsets.data()[__idx].stream(),
+        __exchange_results.__local_current_offsets.data()[__idx].memory_resource(),
         __num_columns * __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
@@ -189,8 +193,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
         static_cast<::cuda::std::uint64_t>(__comm_it->rank()),
         static_cast<::cuda::std::uint64_t>(__comm_size),
         __N,
-        __exchange_results.__local_current_offsets[__idx].data(),
-        __setup.__all_local_offsets[__idx].data()};
+        __exchange_results.__local_current_offsets.data()[__idx].data(),
+        __setup.__all_local_offsets.data()[__idx].data()};
 
       __CUDAX_MULTI_GPU_DISPATCH(
         __counts.stream(),
@@ -232,17 +236,17 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
       // Wait for DtoH above to finish
-      __local_rebalanced[__idx].stream().sync();
+      __local_rebalanced.data()[__idx].stream().sync();
 
       __comm_it->all_to_all_v(
         __guard,
-        __exchange_results.__local_merged[__idx].data(),
+        __exchange_results.__local_merged.data()[__idx].data(),
         __h_column(__local_h_counts, __idx, __send_counts_column).data(),
         __h_column(__local_h_counts, __idx, __send_displs_column).data(),
-        __local_rebalanced[__idx].data(),
+        __local_rebalanced.data()[__idx].data(),
         __h_column(__local_h_counts, __idx, __recv_counts_column).data(),
         __h_column(__local_h_counts, __idx, __recv_displs_column).data(),
-        __local_rebalanced[__idx].stream());
+        __local_rebalanced.data()[__idx].stream());
     }
   }
 
@@ -256,12 +260,12 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__rebalance_to_original_co
     {
       const auto __n = *__num_items_it;
 
-      _CCCL_VERIFY(__n == __local_rebalanced[__idx].size(), "Incorrect sizing for temp storage");
+      _CCCL_VERIFY(__n == __local_rebalanced.data()[__idx].size(), "Incorrect sizing for temp storage");
 
       __CUDAX_MULTI_GPU_DISPATCH(
-        __local_rebalanced[__idx].stream(),
+        __local_rebalanced.data()[__idx].stream(),
         CUB_NS_QUALIFIER::DeviceCopy::Copy,
-        ::cuda::std::mdspan{__local_rebalanced[__idx].data(), __local_rebalanced[__idx].size()},
+        ::cuda::std::mdspan{__local_rebalanced.data()[__idx].data(), __local_rebalanced.data()[__idx].size()},
         ::cuda::std::mdspan{::cuda::std::to_address(*__input_it), __n},
         *__env_it);
     }
