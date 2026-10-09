@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/move.h>
 #include <cuda/std/__algorithm/move_backward.h>
-#include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/swap.h>
 

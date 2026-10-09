@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -29,8 +31,8 @@
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>

@@ -22,6 +22,7 @@
 
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -30,6 +31,8 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring> // memmove
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
