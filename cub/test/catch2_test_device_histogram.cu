@@ -697,6 +697,23 @@ CUB_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogra
   }
 }
 
+CUB_TEST("DeviceHistogram::HistogramEven accepts an empty integral range", "[histogram_even][device]", CUB_SMALL)
+{
+  constexpr int num_levels = 258;
+  c2h::device_vector<int> samples{0, 1, 2, 3};
+  c2h::device_vector<int> histogram(num_levels - 1);
+
+  histogram_even(
+    thrust::raw_pointer_cast(samples.data()),
+    thrust::raw_pointer_cast(histogram.data()),
+    num_levels,
+    1,
+    1,
+    static_cast<int>(samples.size()));
+
+  CHECK(histogram == c2h::host_vector<int>(num_levels - 1, 0));
+}
+
 CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_range][device]", CUB_SMALL)
 {
   constexpr int num_levels = 7;
@@ -768,20 +785,25 @@ catch (const std::exception& e)
 
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not
 // overflow using uint64_t arithmetic. In case of overflow, we expect cudaErrorInvalidValue to be returned.
-CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow",
-              "[histogram_even][device]",
-              CUB_SMALL,
-              uint8_t,
-              uint16_t,
-              uint32_t,
-              uint64_t)
+CUB_TEST_LIST(
+  "DeviceHistogram::HistogramEven bin computation does not overflow",
+  "[histogram_even][device]",
+  CUB_SMALL,
+  int8_t,
+  int16_t,
+  int32_t,
+  int64_t,
+  uint8_t,
+  uint16_t,
+  uint32_t,
+  uint64_t)
 {
   using sample_t                 = TestType;
   using counter_t                = uint32_t;
-  constexpr sample_t lower_level = 0;
+  constexpr sample_t lower_level = cs::numeric_limits<sample_t>::min();
   constexpr sample_t upper_level = cs::numeric_limits<sample_t>::max();
   constexpr auto num_samples     = 1000;
-  auto d_samples                 = cuda::counting_iterator<sample_t>{0UL};
+  auto d_samples                 = cuda::constant_iterator<sample_t>{lower_level};
   auto d_histo_out               = c2h::device_vector<counter_t>(1024);
   const auto num_bins            = GENERATE(1, 2);
 
@@ -818,6 +840,11 @@ CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   // types, hence we expect cudaErrorInvalidValue to be returned to indicate of a potential overflow
   // Ensure we do not return an error on querying temporary storage requirements
   CHECK(error2 == (num_bins == 1 || sizeof(sample_t) <= 4UL ? cudaSuccess : cudaErrorInvalidValue));
+
+  if (error2 == cudaSuccess && sizeof(sample_t) > 1)
+  {
+    CHECK(c2h::host_vector<counter_t>(d_histo_out)[0] == num_samples);
+  }
 }
 
 // When the number of bins exceeds what LevelT can represent, the bin computation will overflow
