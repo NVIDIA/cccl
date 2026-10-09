@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/functions/host_backend.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -184,7 +184,7 @@ _CCCL_HOST_API void __cuda_atomic_exchange(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<!is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
+          enable_if_t<!::cuda::is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
                         && (_Operand::__size <= 64),
                       bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_add(
@@ -202,7 +202,7 @@ _CCCL_HOST_API void __cuda_atomic_fetch_add(
 
 template <class _Type,
           class _Operand,
-          enable_if_t<!is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
+          enable_if_t<!::cuda::is_floating_point_v<__unv<_Type>> && (_Operand::__op != __cuda_atomic_operand::_f)
                         && (_Operand::__size <= 64),
                       bool> = false>
 _CCCL_HOST_API void __cuda_atomic_fetch_sub(

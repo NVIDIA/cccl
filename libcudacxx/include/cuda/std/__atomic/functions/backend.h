@@ -21,11 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
@@ -276,7 +275,7 @@ using __cuda_atomic_deduce_bitwise_tag_t = typename decltype(__cuda_atomic_deduc
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_arithmetic_impl() noexcept
 {
-  constexpr bool __is_floating = is_floating_point_v<_Type> || __is_extended_floating_point_v<_Type>;
+  constexpr bool __is_floating = ::cuda::is_floating_point_v<_Type>;
   constexpr auto __op =
     __is_floating ? __cuda_atomic_operand::_f
                   : (is_signed_v<_Type> && sizeof(_Type) != 8 ? __cuda_atomic_operand::_s : __cuda_atomic_operand::_u);
@@ -300,7 +299,7 @@ using __cuda_atomic_deduce_arithmetic_tag_t = typename decltype(__cuda_atomic_de
 template <class _Type>
 [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __cuda_atomic_deduce_minmax_impl() noexcept
 {
-  constexpr bool __is_floating = is_floating_point_v<_Type> || __is_extended_floating_point_v<_Type>;
+  constexpr bool __is_floating = ::cuda::is_floating_point_v<_Type>;
   constexpr auto __op = __is_floating ? __cuda_atomic_operand::_f
                                       : (is_signed_v<_Type> ? __cuda_atomic_operand::_s : __cuda_atomic_operand::_u);
   using __tag         = __cuda_atomic_operand_tag<__op, sizeof(_Type) * CHAR_BIT>;

@@ -5,6 +5,7 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_macro.cuh>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/functional>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
@@ -167,14 +168,14 @@ using cub_operator_fp_list =
  **********************************************************************************************************************/
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((cuda::std::is_floating_point_v<T>) )
+_CCCL_REQUIRES((::cuda::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
 }
 
 _CCCL_TEMPLATE(typename T)
-_CCCL_REQUIRES((!cuda::std::is_floating_point_v<T>) )
+_CCCL_REQUIRES((!::cuda::is_floating_point_v<T>) )
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == test_results);

@@ -55,7 +55,7 @@ template <typename InitValueT, typename InputIteratorT, typename TransformOpT>
 using accum_t = ::cuda::std::
   __accumulator_t<::cuda::std::plus<>, InitValueT, transformed_input_t<TransformOpT, it_value_t<InputIteratorT>>>;
 
-template <typename FloatType = float, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
+template <typename FloatType = float, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
 {
   using DeterministicAcc = ReproducibleFloatingAccumulator<FloatType>;

@@ -56,7 +56,15 @@ template <class _Tp, class _Up>
 struct __common_type_extended_floating_point<
   _Tp,
   _Up,
-  enable_if_t<__is_extended_floating_point_v<remove_cvref_t<_Tp>> && is_arithmetic_v<remove_cvref_t<_Up>>>>
+  enable_if_t<__is_extended_floating_point_v<remove_cvref_t<_Tp>>
+              && is_arithmetic_v<remove_cvref_t<_Up>>
+              // Need this extra qualification because is_arithmetic_v is defined in terms of
+              // is_floating_point_v which includes the extended floating point types.
+              //
+              // Without this (and the same below), these specializations become ambiguous for
+              // common_type<__nv_bfloat16, __half> because __half and __nv_bfloat16 are both
+              // arithmetic *and* extended floating point types.
+              && !__is_extended_floating_point_v<remove_cvref_t<_Up>>>>
 {
   using type = common_type_t<__copy_cvref_t<_Tp, float>, _Up>;
 };
@@ -65,7 +73,15 @@ template <class _Tp, class _Up>
 struct __common_type_extended_floating_point<
   _Tp,
   _Up,
-  enable_if_t<is_arithmetic_v<remove_cvref_t<_Tp>> && __is_extended_floating_point_v<remove_cvref_t<_Up>>>>
+  enable_if_t<is_arithmetic_v<remove_cvref_t<_Tp>>
+              // Need this extra qualification because is_arithmetic_v is defined in terms of
+              // is_floating_point_v which includes the extended floating point types.
+              //
+              // Without this (and the same above), these specializations become ambiguous for
+              // common_type<__nv_bfloat16, __half> because __half and __nv_bfloat16 are both
+              // arithmetic *and* extended floating point types.
+              && !__is_extended_floating_point_v<remove_cvref_t<_Tp>>
+              && __is_extended_floating_point_v<remove_cvref_t<_Up>>>>
 {
   using type = common_type_t<_Tp, __copy_cvref_t<_Up, float>>;
 };

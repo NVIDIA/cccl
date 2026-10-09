@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_signed_integer.h>
@@ -44,7 +44,7 @@ template <class _Tp>
 _CCCL_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
 template <class _Tp>
-_CCCL_CONCEPT floating_point = is_floating_point_v<_Tp>;
+_CCCL_CONCEPT floating_point = ::cuda::is_floating_point_v<_Tp>;
 
 template <class _Tp>
 _CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer_v<_Tp>;

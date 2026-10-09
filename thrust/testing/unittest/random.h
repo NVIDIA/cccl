@@ -4,6 +4,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/random.h>
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -41,7 +42,8 @@ struct generate_random_integer
       THRUST_NS_QUALIFIER::uniform_int_distribution<T> dist(min, max);
       return static_cast<T>(dist(rng));
     }
-    else if constexpr (::cuda::std::is_floating_point_v<T>)
+    // __half may overflow in some tests with uniform_real_distribution
+    else if constexpr (::cuda::std::is_floating_point_v<T>) // NOLINT(cccl-prefer-cuda-traits)
     {
       T const min = ::cuda::std::numeric_limits<T>::lowest();
       T const max = ::cuda::std::numeric_limits<T>::max();

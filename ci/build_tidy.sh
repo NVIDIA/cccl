@@ -18,6 +18,12 @@ CMAKE_OPTIONS+=("-DTHRUST_MULTICONFIG_ENABLE_SYSTEM_OMP=OFF")
 # Cannot use configure_and_build_preset because that does not allow us to pass additional
 # arguments to the build command.
 configure_preset "${BUILD_NAME}" "${PRESET}" "${CMAKE_OPTIONS[@]}"
+
+# clang-tidy is a bit wonky. "Build" is a misnomer, it doesn't actually build anything it
+# just runs clang-tidy. "Test" runs the tests over the plugins, which we should do before
+# we attempt to run clang-tidy itself.
+test_preset "${BUILD_NAME}" "${PRESET}" false # GPU_REQUIRED=false
+
 # Keep going after errors, we want CI to unearth all clang-tidy errors in one go
 BUILD_OPTIONS=(-- -k 0)
 build_preset "${BUILD_NAME}" "${PRESET}" "${BUILD_OPTIONS[@]}"

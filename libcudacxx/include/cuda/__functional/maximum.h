@@ -24,7 +24,6 @@
 #include <cuda/__functional/minimum_maximum_common.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__type_traits/common_type.h>
-#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__utility/ctad_support.h>
 
@@ -39,6 +38,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum
   [[nodiscard]] _CCCL_API constexpr _Tp _CCCL_STATIC_CALL_OPERATOR(const _Tp& __lhs, const _Tp& __rhs) noexcept(
     __is_maximum_minimum_noexcept_v<_Tp, _Tp, _Tp>)
   {
+    // cuda::is_floating_point_v allows the user to opt in to making their type a floating
+    // point (by specializing the _v template). But they don't necessarily add the various math
+    // function overloads for their type, or they provide ambiguous conversion operators, so
+    // chances are the fmax() call below ends up not compiling.
+    //
+    // In this case it's easier to just fall back to the naive less-than implementation.
+    //
+    // NOLINTNEXTLINE(cccl-prefer-cuda-traits)
     if constexpr (::cuda::std::is_floating_point_v<_Tp> || ::cuda::std::__is_extended_floating_point_v<_Tp>)
     {
       return ::cuda::std::fmax(__lhs, __rhs);
@@ -59,6 +66,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
   [[nodiscard]] _CCCL_API constexpr _Common _CCCL_STATIC_CALL_OPERATOR(const _Tp& __lhs, const _Up& __rhs) noexcept(
     __is_maximum_minimum_noexcept_v<_Tp, _Up, _Common>)
   {
+    // cuda::is_floating_point_v allows the user to opt in to making their type a floating
+    // point (by specializing the _v template). But they don't necessarily add the various math
+    // function overloads for their type, or they provide ambiguous conversion operators, so
+    // chances are the fmax() call below ends up not compiling.
+    //
+    // In this case it's easier to just fall back to the naive less-than implementation.
+    //
+    // NOLINTNEXTLINE(cccl-prefer-cuda-traits)
     if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {
       return ::cuda::std::fmax(static_cast<_Common>(__lhs), static_cast<_Common>(__rhs));

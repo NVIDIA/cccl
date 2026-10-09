@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/expected>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -39,7 +40,6 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_enum.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -1615,13 +1615,13 @@ constexpr bool __value_preserving_impl()
   using _F = typename __integral_base<::cuda::std::remove_cvref_t<_From>>::type;
   using _T = ::cuda::std::remove_cvref_t<_To>;
   if constexpr (!::cuda::std::is_arithmetic_v<_F> || !::cuda::std::is_arithmetic_v<_T>
-                || ::cuda::std::is_floating_point_v<_T>)
+                || ::cuda::is_floating_point_v<_T>)
   {
     // Non-arithmetic pairs: the is_convertible baseline is the whole law. A floating target:
     // precision loss is tolerated where range loss is not.
     return true;
   }
-  else if constexpr (::cuda::std::is_floating_point_v<_F>)
+  else if constexpr (::cuda::is_floating_point_v<_F>)
   {
     return false; // floating never converts to integral
   }
@@ -2182,7 +2182,7 @@ private:
     {
       return answer_kind::integral;
     }
-    else if constexpr (::cuda::std::is_floating_point_v<_T>)
+    else if constexpr (::cuda::is_floating_point_v<_T>)
     {
       return answer_kind::floating;
     }
@@ -2414,7 +2414,7 @@ private:
     }
     else if (__kind == answer_kind::integral)
     {
-      if constexpr (::cuda::std::is_floating_point_v<_T>)
+      if constexpr (::cuda::is_floating_point_v<_T>)
       {
         return;
       }
@@ -2429,7 +2429,7 @@ private:
     }
     else if (__kind == answer_kind::floating)
     {
-      if constexpr (::cuda::std::is_floating_point_v<_T>)
+      if constexpr (::cuda::is_floating_point_v<_T>)
       {
         return;
       }
@@ -2502,12 +2502,12 @@ private:
         }
         if (const _Stored* __p = ::std::any_cast<_Stored>(&__box))
         {
-          if constexpr (::cuda::std::is_floating_point_v<typename detail::__integral_base<_T>::type>)
+          if constexpr (::cuda::is_floating_point_v<typename detail::__integral_base<_T>::type>)
           { // NOLINT(bugprone-branch-clone) -- same body as the fits() arm, for a different reason
             __out = static_cast<_T>(*__p); // anything -> floating: by fiat
             __hit = true;
           }
-          else if constexpr (::cuda::std::is_floating_point_v<_Stored>)
+          else if constexpr (::cuda::is_floating_point_v<_Stored>)
           { // NOLINT(bugprone-branch-clone) -- same outcome as the last arm for a different reason; one arm is
             // constexpr
             __found_lossy = true; // floating never converts to integral

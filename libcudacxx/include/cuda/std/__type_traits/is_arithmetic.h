@@ -29,7 +29,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-inline constexpr bool is_arithmetic_v = is_integral_v<_Tp> || is_floating_point_v<_Tp>;
+inline constexpr bool is_arithmetic_v =
+  is_integral_v<_Tp> || is_floating_point_v<_Tp>; // NOLINT(cccl-prefer-cuda-traits)
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_arithmetic : public bool_constant<is_arithmetic_v<_Tp>>

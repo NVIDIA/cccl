@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_null_pointer.h>
 #include <cuda/std/__type_traits/is_object.h>
@@ -69,7 +69,7 @@ template <typename _Fp>
 }
 
 template <class _Fp>
-[[nodiscard]] _CCCL_API constexpr enable_if_t<is_floating_point_v<_Fp>, _Fp> midpoint(_Fp __a, _Fp __b) noexcept
+[[nodiscard]] _CCCL_API constexpr enable_if_t<::cuda::is_floating_point_v<_Fp>, _Fp> midpoint(_Fp __a, _Fp __b) noexcept
 {
   constexpr _Fp __lo = numeric_limits<_Fp>::min() * 2;
   constexpr _Fp __hi = numeric_limits<_Fp>::max() / 2;

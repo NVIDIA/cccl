@@ -13,6 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
@@ -20,7 +21,6 @@
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/array>
 #include <cuda/std/climits>
@@ -44,7 +44,7 @@ static _CCCL_DEVICE FType* get_shared_bin_array()
 //!
 //! @param FType Floating-point data type; either `float` or `double
 //! @param Fold  Number of collectors in the binned number (K-fold), used for reproducible summation. Defaults to 3.
-template <class FType, int Fold = 3, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FType>>* = nullptr>
+template <class FType, int Fold = 3, ::cuda::std::enable_if_t<::cuda::is_floating_point_v<FType>>* = nullptr>
 class alignas(2 * sizeof(FType)) ReproducibleFloatingAccumulator
 {
 public:
