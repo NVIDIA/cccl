@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -63,6 +63,11 @@ void test_launch_kernel_replacement(CUlaunchConfig& config, CUfunction kernel, v
           case CU_LAUNCH_ATTRIBUTE_PRIORITY:
             CCCLRT_CHECK(expectedAttr.value.priority == actualAttr.value.priority);
             break;
+#if _CCCL_CTK_AT_LEAST(13, 2)
+          case CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE:
+            CCCLRT_CHECK(expectedAttr.value.sharedMemoryMode == actualAttr.value.sharedMemoryMode);
+            break;
+#endif // _CCCL_CTK_AT_LEAST(13, 2)
           default:
             CCCLRT_CHECK(false);
             break;
@@ -100,6 +105,21 @@ auto add_cluster(const dim3& cluster_dims, CUlaunchAttribute& attr)
 {
   attr.id               = CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION;
   attr.value.clusterDim = {cluster_dims.x, cluster_dims.y, cluster_dims.z};
+}
+
+void add_shared_memory_mode(bool non_portable)
+{
+#if _CCCL_CTK_AT_LEAST(13, 2)
+  if (cuda::__driver::__version_at_least(13, 2))
+  {
+    auto& attr = expectedConfig.attrs[expectedConfig.numAttrs++];
+    attr.id    = CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE;
+    attr.value.sharedMemoryMode =
+      non_portable ? CU_SHARED_MEMORY_MODE_ALLOW_NON_PORTABLE : CU_SHARED_MEMORY_MODE_REQUIRE_PORTABLE;
+  }
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 2) ^^^ / vvv _CCCL_CTK_BELOW(13, 2) vvv
+  (void) non_portable;
+#endif // _CCCL_CTK_AT_LEAST(13, 2)
 }
 
 template <bool HasCluster, typename... Dims>
@@ -142,7 +162,7 @@ auto configuration_test(
 
   SECTION("Priority and dynamic smem")
   {
-    CUlaunchAttribute attrs[2];
+    CUlaunchAttribute attrs[3];
     constexpr int priority = 42;
     constexpr int num_ints = 128;
     auto config =
@@ -156,18 +176,18 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[1]);
     }
+    add_shared_memory_mode(false);
     cuda::launch(stream, config, empty_kernel, 0);
   }
 
   SECTION("Large dynamic smem")
   {
     // Exceed the default 48kB of shared to check if its properly handled
-    // TODO move to launch option (available since CUDA 12.4)
     struct S
     {
       int arr[13 * 1024];
     };
-    CUlaunchAttribute attrs[1];
+    CUlaunchAttribute attrs[2];
     auto config                   = cuda::make_config(dims, cuda::dynamic_shared_memory<S>(cuda::non_portable));
     expectedConfig.sharedMemBytes = sizeof(S);
     expectedConfig.numAttrs       = HasCluster;
@@ -176,6 +196,7 @@ auto configuration_test(
     {
       add_cluster(cluster_dims, expectedConfig.attrs[0]);
     }
+    add_shared_memory_mode(true);
     cuda::launch(stream, config, empty_kernel, 0);
   }
   stream.sync();
