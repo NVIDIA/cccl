@@ -27,8 +27,8 @@ def TempStorage(
 
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
-    In Numba-CUDA-MLIR, ``descriptor.reserve(num_elems, dtype, alignment=...)``
-    also obtains typed shared arrays for application or library data.
+    ``descriptor.reserve(num_elems, dtype, alignment=...)`` also obtains typed
+    shared arrays for application or library data in supported backends.
     See :ref:`temporary storage <coop-temp-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
@@ -52,21 +52,24 @@ def TempStorage(
         ``reserve()`` cannot enable automatic synchronization.
     sharing : {"shared", "exclusive"}, optional
         Compile-time allocation policy, default ``"shared"``. Calls using
-        the same descriptor can reuse one scratch slice. ``"exclusive"``
-        gives distinct call sites separate slices, using more shared memory
+        the same descriptor reuse one scratch slice, including reservations.
+        ``"exclusive"`` gives distinct primitive and reservation call sites
+        separate slices, using more shared memory
         to avoid barriers needed solely for cross-call scratch reuse when
         ``auto_sync=False``. Repeated execution of one call site still reuses
         its slice and requires synchronization before reuse. Omitting
         ``temp_storage`` leaves layout and reuse barriers to the compiler.
+        Different descriptors always have separate storage.
 
     Returns
     -------
     cuda.coop.TempStorageLike
         Compiler-recognized scratch descriptor. Primitive scratch is opaque;
-        ``reserve()`` returns separate typed shared arrays. Reservations have
-        disjoint regions for the kernel's execution on each block, including
-        when ``sharing="shared"``. The caller synchronizes their accesses and
-        completes any asynchronous operations that use them.
+        ``reserve()`` returns typed shared arrays that follow the descriptor's
+        sharing policy. Use separate descriptors or ``sharing="exclusive"``
+        for buffers whose contents must remain live simultaneously. The caller
+        synchronizes their accesses and completes asynchronous operations
+        before reusing shared regions.
 
     Examples
     --------

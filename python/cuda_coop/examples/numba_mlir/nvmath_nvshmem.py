@@ -54,7 +54,9 @@ def make_kernel():
     # example-begin kernel
     @cuda.jit(lto=True)
     def fft_normalize_send(data, staging, received, total_energy, peer):
-        scratch = coop.TempStorage(auto_sync=False)
+        # Registered communication scratch and bin powers remain live across
+        # the math and cooperative calls, so give each call its own region.
+        scratch = coop.TempStorage(auto_sync=False, sharing="exclusive")
         fft_scratch = scratch.reserve(
             fft_scratch_elements, np.complex64, alignment=32
         )
