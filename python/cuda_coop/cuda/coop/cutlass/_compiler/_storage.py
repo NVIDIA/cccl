@@ -110,6 +110,7 @@ def register_deferred_temp_storage_event(
     *,
     primitive_name: str,
     requirement_key: Hashable,
+    reservation_layout: ScratchLayout | None = None,
     active_session_getter: Callable[[], BundleSession] = active_bundle_session,
 ) -> tuple[Any, Any, Any]:
     """Record one traced scratch use before its C++ layout is available.
@@ -126,6 +127,9 @@ def register_deferred_temp_storage_event(
         Operation name for diagnostics.
     requirement_key : hashable
         Key that matches this call to its compiled scratch-layout probe.
+    reservation_layout : ScratchLayout or None, optional
+        Known size and alignment for a typed reservation. Primitive calls
+        leave this unset and obtain their layout from the C++ probe.
     active_session_getter : callable, optional
         Supplies the active bundle session; tests can substitute a session.
 
@@ -173,6 +177,7 @@ def register_deferred_temp_storage_event(
             smem_addr_placeholder=smem_addr_placeholder,
             size_placeholder=size_placeholder,
             location=location,
+            reservation_layout=reservation_layout,
         )
     )
     return (
@@ -180,6 +185,70 @@ def register_deferred_temp_storage_event(
         Int32(size_placeholder),
         Int32(1 if temp_storage.auto_sync else 0),
     )
+
+
+def reserve_temp_storage_tensor(
+    temp_storage: Any,
+    num_elems: Any,
+    dtype: Any,
+    *,
+    alignment: Any = None,
+) -> Any:
+    """Expose a typed shared view whose address is resolved at finalization."""
+
+    import numpy as np
+    from cutlass import BFloat16, Float16, cute
+
+    from ..._core.api._payload import _normalize_alignment
+    from .._thread_data import _normalize_index_int
+    from ._types import ALL_PROVIDER_TYPES, canonical_dsl_type
+
+    count = (
+        None
+        if isinstance(num_elems, np.bool_)
+        else _normalize_index_int(num_elems)
+    )
+    if count is None:
+        raise TypeError(
+            "TempStorage.reserve num_elems must be a compile-time integer."
+        )
+    if count <= 0:
+        raise ValueError("TempStorage.reserve num_elems must be positive.")
+    if not isinstance(dtype, (type, np.dtype)):
+        raise TypeError(
+            "TempStorage.reserve dtype must be a compile-time scalar type."
+        )
+    value_type = canonical_dsl_type(dtype)
+    if dtype is np.float16 or dtype == np.dtype(np.float16):
+        value_type = Float16
+    if dtype in (Float16, BFloat16):
+        value_type = dtype
+    if value_type not in ALL_PROVIDER_TYPES | {Float16, BFloat16}:
+        raise TypeError(
+            "TempStorage.reserve dtype must be a supported fixed-width "
+            "integer or floating-point scalar type."
+        )
+    itemsize = value_type.width // 8
+    alignment = max(itemsize, _normalize_alignment(alignment) or 1)
+    if temp_storage.auto_sync:
+        raise ValueError(
+            "TempStorage.reserve requires auto_sync=False; callers must "
+            "synchronize reserved arrays and complete library operations "
+            "before reuse."
+        )
+    address, _, _ = register_deferred_temp_storage_event(
+        temp_storage,
+        primitive_name="reserve",
+        requirement_key=None,
+        reservation_layout=ScratchLayout(count * itemsize, alignment),
+    )
+    pointer = cute.make_ptr(
+        value_type,
+        address,
+        cute.AddressSpace.smem,
+        assumed_align=alignment,
+    )
+    return cute.make_tensor(pointer, cute.make_layout(count))
 
 
 def _align_up(value: int, alignment: int) -> int:
@@ -231,6 +300,13 @@ def plan_deferred_temp_storage_events(
     plans: list[DeferredTempStoragePlan] = []
     for group_events in grouped.values():
         first = group_events[0]
+        if any(
+            event.reservation_layout is not None for event in group_events
+        ) and any(event.auto_sync for event in group_events):
+            raise DSLRuntimeError(
+                "TempStorage.reserve requires auto_sync=False for every "
+                "use of its descriptor."
+            )
         for event in group_events[1:]:
             if (
                 event.sharing != first.sharing
@@ -244,7 +320,9 @@ def plan_deferred_temp_storage_events(
                 )
         event_layouts = []
         for event in group_events:
-            layout = layouts.get(event.requirement_key)
+            layout = event.reservation_layout or layouts.get(
+                event.requirement_key
+            )
             if layout is None:
                 raise DSLRuntimeError(
                     "No exact C++ scratch layout was registered for "

@@ -20,14 +20,16 @@ class TempStorage:
 
     Parameters, defaults, synchronization rules, and the executable reuse
     example follow :func:`cuda.coop.TempStorage`. Only supported block
-    algorithms accept an explicit descriptor. Its contents are opaque to user
-    code. See :ref:`temporary storage <coop-common-storage>` for allocation
-    lifetime and :ref:`the CUTLASS example <coop-cutlass-storage>` for reuse.
+    algorithms accept an explicit descriptor. ``reserve`` exposes typed arrays
+    for application and library code. See
+    :ref:`temporary storage <coop-common-storage>` for allocation lifetime
+    and :ref:`the CUTLASS example <coop-cutlass-storage>` for reuse.
 
     Attributes
     ----------
     size_in_bytes : int or None
-        Explicit positive capacity, or ``None`` to infer it from all uses.
+        Explicit positive capacity, or ``None`` to infer it from all uses,
+        including reserved arrays.
         An explicit capacity must cover the resolved allocation.
     alignment : int or None
         Optional minimum byte alignment, expressed as a power of two. The
@@ -37,8 +39,9 @@ class TempStorage:
         Defaults to ``False``; ``None`` is normalized to ``False``. Without
         automatic barriers, the caller must synchronize before scratch reuse.
     sharing : {"shared", "exclusive"}
-        Shared calls use one slice sized for the largest requirement.
-        Exclusive calls get separate slices in trace order. Repeated
+        Shared calls and reservations alias one slice sized for the largest
+        requirement. Exclusive calls and reservations get separate slices
+        in trace order. Repeated
         execution of one call site reuses its slice, including in a loop.
 
     Equal settings do not combine separate descriptors. Reuse the same object
@@ -113,6 +116,32 @@ class TempStorage:
         from cutlass.cute.arch import sync_threads
 
         sync_threads()
+
+    def reserve(self, num_elems, dtype, *, alignment=None):
+        """Return a one-dimensional CuTe shared tensor with a fixed extent.
+
+        ``num_elems``, ``dtype``, and optional byte ``alignment`` must be
+        compile-time constants. Supported dtypes are 8/16/32/64-bit signed
+        and unsigned integers, Float16, BFloat16, Float32, and Float64.
+        Ordinary NumPy scalar types and dtypes are accepted where available.
+
+        The descriptor's ``sharing`` policy applies to both reservations
+        and primitive scratch. Shared views alias the same bytes; exclusive
+        views occupy separate slices. Each traced call site has one view,
+        including when it executes repeatedly in a runtime loop. Separate
+        descriptors always own separate allocations.
+
+        Reservations require ``auto_sync=False``. The caller must finish
+        all accesses and asynchronous library operations before reusing
+        overlapping bytes, and synchronize participating threads as needed.
+        ``sync()`` is a block barrier, not an asynchronous completion wait.
+        """
+
+        from ._compiler._storage import reserve_temp_storage_tensor
+
+        return reserve_temp_storage_tensor(
+            self, num_elems, dtype, alignment=alignment
+        )
 
 
 __all__ = ["TempStorage"]
