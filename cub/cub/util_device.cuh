@@ -51,8 +51,8 @@ namespace detail
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
 // Encode __CUDA_ARCH__ / 10 as the maximum block size, so PtxVersionUncached() can read it back via
-// cudaFuncAttributes::maxThreadsPerBlock. Unlike ptxVersion, this is not clamped by nvlink with -rdc=true. See also
-// https://github.com/NVIDIA/cccl/issues/11403 and NVBug 6795210.
+// cudaFuncAttributes::maxThreadsPerBlock. Unlike reading cudaFuncAttributes::ptxVersion, this is not clamped by nvlink
+// with -rdc=true. See also https://github.com/NVIDIA/cccl/issues/11403 and NVBug 6795210.
 //
 // Unlike sharedSizeBytes, constSizeBytes, and localSizeBytes, it is a single integer that is neither padded nor
 // influenced by other kernels or global (__constant__ or alignas() extern __shared__) variables in the same translation
