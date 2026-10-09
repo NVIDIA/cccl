@@ -3,15 +3,24 @@ FPMP — Multi-Precision Arithmetic on Pairs of Floats
 
 An `fpmp2` value represents a number as the unevaluated sum of two IEEE-754 floats,
 `value = hi + lo`, which roughly doubles the available mantissa. The pair is stored
-directly in the object and every operation is an error-free transformation on the two
-limbs, so the extra precision comes from arithmetic the hardware already does fast rather
-than from a wider format the hardware does not have.
+directly in the object, and each operation is built from error-free transformations —
+primitives such as `two_sum` that recover the rounding error of a single hardware operation
+exactly — so the extra precision comes from arithmetic the hardware already does fast rather
+than from a wider format the hardware does not have. The exactness belongs to those
+primitives rather than to the operation composed from them: a pair addition or multiply
+carries a small error of its own, and how small is what the accuracy levels choose between.
 
 That matters in two places. Below `double`, GPUs typically have far more FP32 throughput
 than FP64, so a float pair can be both more precise than `float` and faster than native
 `double`. Above `double`, there is usually no IEEE-754 binary128 hardware at all, and a
-double pair reaches 104 mantissa bits out of FP64 operations for far less than a software
-binary128 costs.
+double pair reaches 104 mantissa bits out of ordinary FP64 operations.
+
+Which of the two applies is decided by the rate at which the part runs FP64 against FP32 —
+1:2 on B200 against 1:32 on B300 and RTX PRO 6000 Blackwell. `fp64mp2` spends FP64
+throughput, so it is the cheap route to quad-like precision where FP64 runs close to FP32,
+and a costly one where FP64 is rationed: a software binary128 is integer code and is not
+competing for the units `fp64mp2` needs. `fp32mp2` is the mirror image, and wins exactly
+where `fp64mp2` struggles.
 
 For the example set, see the [examples README](README.md).
 

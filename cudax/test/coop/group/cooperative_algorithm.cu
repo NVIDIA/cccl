@@ -193,12 +193,12 @@ struct TestKernel
     test_cooperative_algorithm(cudax::coop::generic_group{
       cuda::gpu_thread,
       cudax::coop::this_block{config},
-      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 2>{}},
+      cudax::coop::group_by{cuda::std::cw<2>},
       cudax::coop::lane_synchronizer{}});
     test_cooperative_algorithm(cudax::coop::generic_group{
       cuda::gpu_thread,
       cudax::coop::this_block{config},
-      cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 16>{}},
+      cudax::coop::group_by{cuda::std::cw<2>},
       cudax::coop::lane_synchronizer{}});
   }
 };

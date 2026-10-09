@@ -26,7 +26,7 @@
 #include <cuda/std/__floating_point/cast.h> // IWYU pragma: keep
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -42,25 +42,27 @@ namespace detail
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_op_supported_sm80 =
-  ::cuda::std::is_integral_v<T> && sizeof(T) <= sizeof(unsigned)
+  ::cuda::std::__cccl_is_integer_v<T> && sizeof(T) <= sizeof(unsigned)
   && (is_cuda_minimum_maximum_v<ReduceOp, T> || ::cuda::__is_cuda_std_plus_v<ReduceOp, T>
       || is_cuda_std_bitwise_v<ReduceOp, T>);
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_bitwise_large_supported =
-  ::cuda::std::is_integral_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_bitwise_v<ReduceOp, T>;
+  ::cuda::std::__cccl_is_integer_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_std_bitwise_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_min_max_large_supported =
-  ::cuda::std::is_integral_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_minimum_maximum_v<ReduceOp, T>;
+  ::cuda::std::__cccl_is_integer_v<T> && sizeof(T) > sizeof(unsigned) && is_cuda_minimum_maximum_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_plus_64bit_supported =
-  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 2) && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
+  ::cuda::std::__cccl_is_integer_v<T> && (sizeof(T) == sizeof(unsigned) * 2)
+  && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_plus_128bit_supported =
-  ::cuda::std::is_integral_v<T> && (sizeof(T) == sizeof(unsigned) * 4) && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
+  ::cuda::std::__cccl_is_integer_v<T> && (sizeof(T) == sizeof(unsigned) * 4)
+  && ::cuda::__is_cuda_std_plus_v<ReduceOp, T>;
 
 template <typename Op, typename T, typename ReduceOp = ::cuda::std::remove_cvref_t<Op>>
 inline constexpr bool is_warp_redux_min_max_f32_supported =

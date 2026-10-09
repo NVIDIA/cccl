@@ -24,6 +24,8 @@
 #include <cuda/__fwd/complex.h>
 #include <cuda/__utility/in_range.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/simd.h>
 #include <cuda/std/__iterator/default_sentinel.h>
@@ -32,11 +34,12 @@
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/concepts.h>
+#include <cuda/std/__simd/exposition.h>
 #include <cuda/std/__simd/flag.h>
 #include <cuda/std/__simd/iterator.h>
-#include <cuda/std/__simd/specializations/fixed_size_float_vec.h>
-#include <cuda/std/__simd/specializations/fixed_size_integral_vec.h>
-#include <cuda/std/__simd/specializations/fixed_size_vec.h>
+#include <cuda/std/__simd/specializations/fixed_size_float_vec.h> // IWYU pragma: keep
+#include <cuda/std/__simd/specializations/fixed_size_integral_vec.h> // IWYU pragma: keep
+#include <cuda/std/__simd/specializations/fixed_size_vec.h> // IWYU pragma: keep
 #include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__simd/utility.h>
 #include <cuda/std/__type_traits/enable_if.h>

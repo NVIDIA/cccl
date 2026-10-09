@@ -229,7 +229,8 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_80,
         ({ // NOTE: Inlined from warp_reduce_shfl
-          if constexpr (is_warp_redux_op_supported_sm80<ScanOpT, AccumT>)
+          if constexpr (is_warp_redux_op_supported_sm80<ScanOpT, AccumT>
+                        && ::cuda::has_identity_element_v<ScanOpT, AccumT>)
           {
             const bool use_value = lanemaskEq & warp_right_aggregates_mask;
             const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();

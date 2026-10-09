@@ -248,6 +248,10 @@ struct agent_batched_topk_cluster
   static constexpr bool is_tie_reversed =
     TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
 
+  // An explicit index tie-break picks among keys that compare equal, so -0.0 and +0.0 must rank equal. Without one,
+  // any set of tied keys is a valid result and the extra normalization is skipped.
+  static constexpr bool normalize_minus_zero = TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified;
+
   // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
   // leader at the last logical rank and scans ascending; every other config (deterministic-prefer-larger and the
@@ -1312,8 +1316,8 @@ private:
   template <detail::topk::select SelectDirection>
   struct det_filter_state
   {
-    using identify_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using identify_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     identify_op_t identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
@@ -2229,7 +2233,8 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(smem_keys_t& resident_keys)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
 
     extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
@@ -2907,9 +2912,10 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE int run_radix_passes(smem_keys_t resident_keys, key_prefix_t& kth_key_bits_local)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
@@ -3124,8 +3130,8 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void run()
   {
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     // Only read inside the `needs_set_determinism` branch below; unused otherwise.

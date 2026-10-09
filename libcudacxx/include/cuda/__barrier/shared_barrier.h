@@ -109,7 +109,7 @@ public:
         : __complete_(::cuda::std::exchange(__other.__complete_, false))
         , __report_predicate_(::cuda::std::exchange(__other.__report_predicate_, false))
         , __report_inspected_(::cuda::std::exchange(__other.__report_inspected_, true))
-        , __report_value_(::cuda::std::exchange(__other.__report_value_, 0))
+        , __report_value_(::cuda::std::exchange(__other.__report_value_, ::cuda::std::uint8_t{0}))
     {}
 
     //! @brief Move-assigns an operation status.
@@ -125,7 +125,7 @@ public:
       __complete_         = ::cuda::std::exchange(__other.__complete_, false);
       __report_predicate_ = ::cuda::std::exchange(__other.__report_predicate_, false);
       __report_inspected_ = ::cuda::std::exchange(__other.__report_inspected_, true);
-      __report_value_     = ::cuda::std::exchange(__other.__report_value_, 0);
+      __report_value_     = ::cuda::std::exchange(__other.__report_value_, ::cuda::std::uint8_t{0});
       return *this;
     }
 
@@ -168,6 +168,7 @@ public:
           return true;
       }
       _CCCL_UNREACHABLE();
+      return false; // NVCC with MSVC does not treat __assume(0) as a terminating path.
     }
 
     [[nodiscard]] _CCCL_DEVICE_API static ::cudaFabricOpStatusSource
@@ -179,6 +180,7 @@ public:
           return ::cudaFabricOpStatusSourceMbarrierV1;
       }
       _CCCL_UNREACHABLE();
+      return ::cudaFabricOpStatusSource{}; // NVCC with MSVC requires a return after __assume(0).
     }
 
     [[nodiscard]] _CCCL_DEVICE_API unsigned int __error_count(status_source __source) const noexcept
@@ -449,7 +451,7 @@ private:
   }
 
   template <class _WaitArg>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status __wait_status(_WaitArg __wait_arg) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status __wait_status([[maybe_unused]] _WaitArg __wait_arg) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __spin_wait_status(__wait_arg);))
 
@@ -457,7 +459,7 @@ private:
   }
 
   template <class _WaitArg>
-  _CCCL_HOST_DEVICE_API void __wait_ignoring_status(_WaitArg __wait_arg) const
+  _CCCL_HOST_DEVICE_API void __wait_ignoring_status([[maybe_unused]] _WaitArg __wait_arg) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__spin_wait_ignoring_status(__wait_arg); return;))
 
@@ -474,7 +476,8 @@ private:
     return test_wait(__phase, ignore_status);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool __test_wait_ignoring_status(__conditional_phase __phase) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  __test_wait_ignoring_status([[maybe_unused]] __conditional_phase __phase) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __poll_test_wait_ignoring_status(__phase);))
 
@@ -526,7 +529,8 @@ public:
   //!
   //! @param __b Pointer to a `shared_barrier` object in local shared memory.
   //! @param __expected Expected arrival count for each phase.
-  _CCCL_HOST_DEVICE_API friend void init(shared_barrier* __b, ::cuda::std::ptrdiff_t __expected)
+  _CCCL_HOST_DEVICE_API friend void
+  init([[maybe_unused]] shared_barrier* __b, [[maybe_unused]] ::cuda::std::ptrdiff_t __expected)
   {
     _CCCL_ASSERT(1 <= __expected, "Expected arrival count must be at least one.");
     _CCCL_ASSERT(__expected <= __max_expected_count(),
@@ -546,7 +550,7 @@ public:
   //!
   //! @param __update Arrival count update.
   //! @return An arrival token that can be waited on.
-  _CCCL_HOST_DEVICE_API arrival_token arrive(::cuda::std::ptrdiff_t __update = 1)
+  _CCCL_HOST_DEVICE_API arrival_token arrive([[maybe_unused]] ::cuda::std::ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__update <= __max_expected_count(),
@@ -560,7 +564,7 @@ public:
   //! @brief Increases the expected transaction count for the current phase.
   //!
   //! @param __transaction_count_update Transaction count update.
-  _CCCL_HOST_DEVICE_API void expect_tx(::cuda::std::ptrdiff_t __transaction_count_update)
+  _CCCL_HOST_DEVICE_API void expect_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
   {
     _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
     _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
@@ -578,8 +582,8 @@ public:
   //! @param __arrive_count_update Arrival count update.
   //! @param __transaction_count_update Transaction count update.
   //! @return An arrival token that can be waited on.
-  _CCCL_HOST_DEVICE_API arrival_token
-  arrive_tx(::cuda::std::ptrdiff_t __arrive_count_update, ::cuda::std::ptrdiff_t __transaction_count_update)
+  _CCCL_HOST_DEVICE_API arrival_token arrive_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __arrive_count_update,
+                                                [[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
   {
     _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__arrive_count_update <= __max_expected_count(),
@@ -600,7 +604,8 @@ public:
   //!
   //! @param __token Arrival token to test.
   //! @return Completion and report status for the wait operation.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status test_wait(arrival_token __token, return_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  test_wait([[maybe_unused]] arrival_token __token, return_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__test_wait_status(__token_value(__token)));))
 
@@ -613,7 +618,7 @@ public:
   //!
   //! @param __token Arrival token to test.
   //! @return `true` if the phase completed, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool test_wait(arrival_token __token, ignore_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool test_wait([[maybe_unused]] arrival_token __token, ignore_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait(__token_value(__token));))
 
@@ -626,7 +631,8 @@ public:
   //!
   //! @param __token Arrival token to wait on.
   //! @return Completion and report status for the wait operation.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status try_wait(arrival_token __token, return_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait([[maybe_unused]] arrival_token __token, return_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__try_wait_status(__token_value(__token)));))
 
@@ -639,7 +645,7 @@ public:
   //!
   //! @param __token Arrival token to wait on.
   //! @return `true` if the phase completed, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait(arrival_token __token, ignore_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait([[maybe_unused]] arrival_token __token, ignore_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait(__token_value(__token));))
 
@@ -691,7 +697,8 @@ public:
   //!
   //! @param __phase Primary phase value to test.
   //! @return Completion and report status for the wait operation.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status test_wait(::cuda::std::uint32_t __phase, return_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  test_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, return_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__test_wait_phase_status(__phase));))
 
@@ -704,7 +711,8 @@ public:
   //!
   //! @param __phase Primary phase value to test.
   //! @return `true` if the phase completed, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool test_wait(::cuda::std::uint32_t __phase, ignore_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  test_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, ignore_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait_phase(__phase);))
 
@@ -717,7 +725,8 @@ public:
   //!
   //! @param __phase Primary phase value to wait on.
   //! @return Completion and report status for the wait operation.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status try_wait(::cuda::std::uint32_t __phase, return_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
+  try_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, return_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__try_wait_phase_status(__phase));))
 
@@ -730,7 +739,8 @@ public:
   //!
   //! @param __phase Primary phase value to wait on.
   //! @return `true` if the phase completed, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait(::cuda::std::uint32_t __phase, ignore_status_t) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, ignore_status_t) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait_phase(__phase);))
 
@@ -760,7 +770,8 @@ public:
   //!
   //! @param __phase Conditional phase value to test.
   //! @return `true` if the conditional phase completed, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool test_wait_conditional_phase(::cuda::std::uint32_t __phase) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  test_wait_conditional_phase([[maybe_unused]] ::cuda::std::uint32_t __phase) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait_conditional_phase(__phase);))
 
@@ -773,7 +784,8 @@ public:
   //!
   //! @param __phase Conditional phase value to wait on.
   //! @return `true` if the conditional phase completed, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait_conditional_phase(::cuda::std::uint32_t __phase) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool
+  try_wait_conditional_phase([[maybe_unused]] ::cuda::std::uint32_t __phase) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait_conditional_phase(__phase);))
 

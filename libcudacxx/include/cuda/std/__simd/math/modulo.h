@@ -23,7 +23,10 @@
 
 #include <cuda/std/__cmath/modulo.h>
 #include <cuda/std/__cmath/remainder.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/math/common.h>
+#include <cuda/std/__simd/type_traits.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/array>
 
