@@ -12,10 +12,13 @@ backend installed. Each script checks its results against a host reference.
 
 ## Shared storage for device libraries
 
-The first two examples use `coop.TempStorage(auto_sync=False)`. Calls to
-`scratch.reserve(count, dtype, alignment=...)` return ordinary shared arrays.
-The compiler places each reservation in a separate region alongside the
-scratch used by `coop.sum`. Repeating a call site reuses its reservation.
+Calls to `scratch.reserve(count, dtype, alignment=...)` return ordinary shared
+arrays. In `nvmath_fft.py`, FFT and reduction reuse one descriptor's shared
+region in separate phases; application data has its own descriptor because
+it remains live across the reduction. `nvmath_nvshmem.py` uses
+`coop.TempStorage(auto_sync=False, sharing="exclusive")` to keep every
+reservation and primitive's scratch separate. Repeating a call site reuses
+its reservation.
 
 nvmath accepts its array directly. NVSHMEM's MLIR binding accepts a pointer
 and byte count; the example adapts the reserved byte array to that interface.
@@ -29,6 +32,10 @@ for pointer consumers on that compiler.
 
 Reservation counts, element types, and alignments are compile-time constants.
 Supported elements are integers, floating-point numbers, and complex numbers.
+The default `sharing="shared"` lets
+reservations alias one another and primitive scratch within the same descriptor;
+separate descriptors always have separate storage. Use separate descriptors or
+`sharing="exclusive"` for buffers that remain live across other calls.
 A descriptor that has reservations cannot use `auto_sync=True`: the compiler
 cannot infer when an external library has finished using those arrays.
 

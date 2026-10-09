@@ -61,7 +61,7 @@ class TempStorageLike(Protocol):
     def reserve(
         self, num_elems: int, dtype: object, *, alignment: int | None = None
     ) -> Any:
-        """Return the supporting compiler's typed shared array."""
+        """Return a typed array that follows the descriptor's sharing policy."""
         ...
 
 

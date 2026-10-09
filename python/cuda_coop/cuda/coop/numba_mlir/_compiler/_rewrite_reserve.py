@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Plan permanent typed shared-array reservations beside primitive scratch."""
+"""Plan typed shared-array reservations with their descriptor's scratch."""
 
 from __future__ import annotations
 
@@ -255,7 +255,7 @@ class _ReservationRewrite:
                     order=reservation.order,
                     size_in_bytes=reservation.size_in_bytes,
                     alignment=reservation.alignment,
-                    permanent=True,
+                    reservation=True,
                 )
             )
 

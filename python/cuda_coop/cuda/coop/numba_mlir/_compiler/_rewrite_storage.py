@@ -1251,9 +1251,9 @@ class _StorageRewrite:
         """Choose the explicit scratch view passed to one provider call.
 
         ``apply`` uses the function-wide storage plan to replace a descriptor
-        operand with the call's assigned region. Shared storage at offset zero
-        can reuse the descriptor view. Exclusive storage or a nonzero offset
-        needs a narrower view so the provider receives the planned region.
+        operand with the call's assigned region. The provider receives its own
+        byte extent even when a reservation or another primitive requires a
+        larger shared region.
 
         Parameters
         ----------
@@ -1289,6 +1289,7 @@ class _StorageRewrite:
             if (
                 temp_storage_plan.sharing == "exclusive"
                 or slice_info.offset != 0
+                or slice_info.size_in_bytes != temp_storage_plan.size_in_bytes
             ):
                 sliced_var = ir.Var(
                     call_assign.target.scope,

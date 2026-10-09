@@ -830,11 +830,18 @@ device functions accepting arrays. Compilation replaces the reservation with
 an aligned typed view of the planner's shared backing; there is no runtime
 allocator.
 
-Each reservation call site owns a disjoint region for the block's kernel
-execution. Reservations do not overlap one another or primitive scratch,
-including with ``sharing="shared"``. Executing a call site again reuses its
-region. Explicit descriptor capacity includes the reservations and alignment
-padding as well as primitive scratch.
+Reservations inherit the descriptor's ``sharing`` policy. With the default
+``sharing="shared"``, reservations and primitive scratch from the same
+descriptor alias one region sized and aligned for their largest requirements.
+Place a barrier between phases that reuse that region and complete any
+asynchronous library operations first. When a primitive reads values from an
+aliased reservation, load each thread's input into registers and synchronize
+the block before calling the primitive. With ``sharing="exclusive"``, each
+primitive and reservation call site receives a separate region. Different
+descriptors always have separate storage. Use separate descriptors or
+``sharing="exclusive"`` for buffers whose contents remain live simultaneously.
+Executing a call site again reuses its region. Explicit capacity must cover
+the selected layout, including alignment padding for exclusive slices.
 
 A descriptor used with ``reserve()`` must have ``auto_sync=False`` or
 ``auto_sync=None``. The compiler rejects ``auto_sync=True``, including uses

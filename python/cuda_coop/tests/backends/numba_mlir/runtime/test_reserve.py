@@ -58,8 +58,9 @@ def test_reservations_survive_scratch_reuse_and_accept_foreign_consumer(
     @cuda.jit
     def kernel(source, scanned, preserved, prefix, facts, items_per_thread):
         storage = coop.TempStorage(sharing=sharing)
-        small = storage.reserve(3, types.uint8)
-        values = storage.reserve(count, dtype, alignment=alignment)
+        persistent = coop.TempStorage(sharing="exclusive")
+        small = persistent.reserve(3, types.uint8)
+        values = persistent.reserve(count, dtype, alignment=alignment)
         thread = cuda.threadIdx.x
         if thread < 3:
             small[thread] = 201 + thread
@@ -119,7 +120,7 @@ def test_reserve_only_alias_passed_to_inlined_helper():
 
     @cuda.jit
     def kernel(output, facts):
-        storage = numba_coop.TempStorage()
+        storage = numba_coop.TempStorage(sharing="exclusive")
         prefix = storage.reserve(3, types.uint8)
         alias = storage
         values = allocate(alias)
@@ -171,12 +172,86 @@ def test_other_descriptor_can_automatically_synchronize_primitive_scratch():
     np.testing.assert_array_equal(sums, [source.sum(), 2 * source.sum()])
 
 
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+def test_shared_reservations_alias_with_manual_phases(items_per_thread):
+    cffi = pytest.importorskip("cffi")
+    ffi = cffi.FFI()
+    address = cuda.declare_device(
+        "reserved_array_address",
+        types.uint64(types.CPointer(types.int32)),
+        link=cuda.CUSource(
+            """
+            extern "C" __device__ unsigned long long
+            reserved_array_address(int* data) {
+                return (unsigned long long)data;
+            }
+            """
+        ),
+        abi="c",
+    )
+    count = 32 * items_per_thread
+    capacity = count * 4
+
+    @cuda.jit
+    def kernel(source, output, facts):
+        # Capacity covers the largest reservation, not their sum. Primitive
+        # scratch must share this region too for compilation to succeed.
+        storage = coop.TempStorage(capacity)
+        wide = storage.reserve(count, types.int32, alignment=64)
+        separate = coop.TempStorage()
+        live = separate.reserve(32, types.int32)
+        thread = cuda.threadIdx.x
+        live[thread] = 1000 + thread
+
+        for phase in range(2):
+            # Executing this reservation again returns the same region.
+            reserve = storage.reserve
+            narrow = reserve(32, types.int32)
+            for i in range(thread, count, cuda.blockDim.x):
+                wide[i] = source[i] + 100 * phase
+            cuda.syncthreads()
+            output[phase * 32 + thread] = narrow[31 - thread]
+            value = narrow[thread]
+            # Every thread must load its value before primitive scratch can
+            # overwrite the same shared array.
+            cuda.syncthreads()
+
+            total = coop.sum(coop.this_block(), value, temp_storage=storage)
+            if thread == 0:
+                output[64 + phase] = total
+                facts[phase] = address(ffi.from_buffer(narrow))
+            # Complete this phase before reusing the aliased region.
+            cuda.syncthreads()
+
+        output[66 + thread] = live[31 - thread]
+        if thread == 0:
+            facts[2] = address(ffi.from_buffer(wide))
+            facts[3] = address(ffi.from_buffer(live))
+            facts[4] = wide.size
+            facts[5] = narrow.size
+
+    source = np.arange(count, dtype=np.int32)
+    output = np.empty(98, dtype=np.int32)
+    facts = np.empty(6, dtype=np.uint64)
+    kernel[1, 32](source, output, facts)
+    np.testing.assert_array_equal(output[:32], source[:32][::-1])
+    np.testing.assert_array_equal(output[32:64], source[:32][::-1] + 100)
+    np.testing.assert_array_equal(
+        output[64:66], [source[:32].sum(), source[:32].sum() + 3200]
+    )
+    np.testing.assert_array_equal(output[66:], np.arange(1000, 1032)[::-1])
+    assert facts[0] == facts[1] == facts[2]
+    assert facts[2] != facts[3]
+    assert facts[2] % 64 == 0
+    np.testing.assert_array_equal(facts[4:], [count, 32])
+
+
 def test_large_reservations_survive_cooperative_scratch_reuse():
     count = 13 * 1024
 
     @cuda.jit
     def kernel(output):
-        storage = coop.TempStorage(alignment=16)
+        storage = coop.TempStorage(alignment=16, sharing="exclusive")
         own = storage.reserve(32, types.int32)
         reserved = storage.reserve(count, types.int32)
         thread = cuda.threadIdx.x
