@@ -521,17 +521,18 @@ CUB_TEST_CASE("Device radix sort pairs uses custom stream", "[radix_sort][device
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairs(
         keys_in.data().get(),
         keys_out.data().get(),
         values_in.data().get(),
         values_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         0,
         static_cast<int>(sizeof(int) * 8),
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -554,17 +555,18 @@ CUB_TEST_CASE("Device radix sort pairs descending uses custom stream", "[radix_s
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairsDescending(
         keys_in.data().get(),
         keys_out.data().get(),
         values_in.data().get(),
         values_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         0,
         static_cast<int>(sizeof(int) * 8),
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -585,15 +587,16 @@ CUB_TEST_CASE("Device radix sort keys uses custom stream", "[radix_sort][device]
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeys(
         keys_in.data().get(),
         keys_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         0,
         static_cast<int>(static_cast<int>(sizeof(int) * 8)),
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -612,15 +615,11 @@ CUB_TEST_CASE("Device radix sort keys descending uses custom stream", "[radix_so
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeysDescending(
-        keys_in.data().get(),
-        keys_out.data().get(),
-        static_cast<int>(keys_in.size()),
-        0,
-        static_cast<int>(sizeof(int) * 8),
-        env);
+        keys_in.data().get(), keys_out.data().get(), num_items, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -639,16 +638,17 @@ CUB_TEST_CASE("Device radix sort keys decomposer+bits uses custom stream", "[rad
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeys(
         keys_in.data().get(),
         keys_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         keys_decomposer_t{},
         0,
         static_cast<int>(sizeof(int) * 8),
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -666,10 +666,11 @@ CUB_TEST_CASE("Device radix sort keys decomposer uses custom stream", "[radix_so
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeys(
-        keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}, env);
+        keys_in.data().get(), keys_out.data().get(), num_items, keys_decomposer_t{}, env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -689,9 +690,10 @@ CUB_TEST_CASE("Device radix sort keys DB decomposer uses custom stream", "[radix
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortKeys(d_keys, num_items, keys_decomposer_t{}, env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -712,10 +714,11 @@ CUB_TEST_CASE("Device radix sort keys DB decomposer+bits uses custom stream", "[
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeys(
-        d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, static_cast<int>(sizeof(int) * 8), env);
+        d_keys, num_items, keys_decomposer_t{}, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -736,16 +739,17 @@ CUB_TEST_CASE("Device radix sort pairs decomposer uses custom stream", "[radix_s
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairs(
         keys_in.data().get(),
         keys_out.data().get(),
         values_in.data().get(),
         values_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         pairs_decomposer_t{},
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -767,18 +771,19 @@ CUB_TEST_CASE("Device radix sort pairs decomposer+bits uses custom stream", "[ra
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairs(
         keys_in.data().get(),
         keys_out.data().get(),
         values_in.data().get(),
         values_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         pairs_decomposer_t{},
         0,
         sizeof(int) * 8,
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -798,16 +803,17 @@ CUB_TEST_CASE("Device radix sort keys descending decomposer+bits uses custom str
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeysDescending(
         keys_in.data().get(),
         keys_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         keys_decomposer_t{},
         0,
         static_cast<int>(sizeof(int) * 8),
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -825,10 +831,11 @@ CUB_TEST_CASE("Device radix sort keys descending decomposer uses custom stream",
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeysDescending(
-        keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), keys_decomposer_t{}, env);
+        keys_in.data().get(), keys_out.data().get(), num_items, keys_decomposer_t{}, env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -848,10 +855,10 @@ CUB_TEST_CASE("Device radix sort keys descending DB decomposer uses custom strea
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortKeysDescending(
-        d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortKeysDescending(d_keys, num_items, keys_decomposer_t{}, env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -874,10 +881,11 @@ CUB_TEST_CASE("Device radix sort keys descending DB decomposer+bits uses custom 
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortKeysDescending(
-        d_keys, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, 0, static_cast<int>(sizeof(int) * 8), env);
+        d_keys, num_items, keys_decomposer_t{}, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -898,18 +906,19 @@ CUB_TEST_CASE("Device radix sort pairs descending decomposer+bits uses custom st
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairsDescending(
         keys_in.data().get(),
         keys_out.data().get(),
         values_in.data().get(),
         values_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         keys_decomposer_t{},
         0,
         static_cast<int>(sizeof(int) * 8),
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -931,16 +940,17 @@ CUB_TEST_CASE("Device radix sort pairs descending decomposer uses custom stream"
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairsDescending(
         keys_in.data().get(),
         keys_out.data().get(),
         values_in.data().get(),
         values_out.data().get(),
-        static_cast<int>(keys_in.size()),
+        num_items,
         keys_decomposer_t{},
         env);
     },
+    static_cast<int>(keys_in.size()),
     stream_ref);
 
   stream.sync();
@@ -965,10 +975,10 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer uses custom stre
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortPairsDescending(
-        d_keys, d_values, static_cast<int>(keys_buf0.size()), keys_decomposer_t{}, env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortPairsDescending(d_keys, d_values, num_items, keys_decomposer_t{}, env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -997,16 +1007,11 @@ CUB_TEST_CASE("Device radix sort pairs descending DB decomposer+bits uses custom
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairsDescending(
-        d_keys,
-        d_values,
-        static_cast<int>(keys_buf0.size()),
-        keys_decomposer_t{},
-        0,
-        static_cast<int>(sizeof(int) * 8),
-        env);
+        d_keys, d_values, num_items, keys_decomposer_t{}, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -1033,10 +1038,10 @@ CUB_TEST_CASE("Device radix sort pairs DB decomposer uses custom stream", "[radi
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortPairs(
-        d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortPairs(d_keys, d_values, num_items, pairs_decomposer_t{}, env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -1063,10 +1068,10 @@ CUB_TEST_CASE("Device radix sort pairs DB decomposer+bits uses custom stream", "
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortPairs(
-        d_keys, d_values, static_cast<int>(keys_buf0.size()), pairs_decomposer_t{}, 0, sizeof(int) * 8, env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortPairs(d_keys, d_values, num_items, pairs_decomposer_t{}, 0, sizeof(int) * 8, env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -1093,10 +1098,10 @@ CUB_TEST_CASE("Device radix sort pairs DB uses custom stream", "[radix_sort][dev
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortPairs(
-        d_keys, d_values, static_cast<int>(keys_buf0.size()), 0, static_cast<int>(sizeof(int) * 8), env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortPairs(d_keys, d_values, num_items, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -1124,10 +1129,11 @@ CUB_TEST_CASE("Device radix sort pairs descending DB uses custom stream", "[radi
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
+    [&](int num_items, auto env) {
       return cub::DeviceRadixSort::SortPairsDescending(
-        d_keys, d_values, static_cast<int>(keys_buf0.size()), 0, static_cast<int>(sizeof(int) * 8), env);
+        d_keys, d_values, num_items, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -1152,10 +1158,10 @@ CUB_TEST_CASE("Device radix sort keys DB uses custom stream", "[radix_sort][devi
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortKeys(
-        d_keys, static_cast<int>(keys_buf0.size()), 0, static_cast<int>(sizeof(int) * 8), env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortKeys(d_keys, num_items, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
@@ -1177,10 +1183,10 @@ CUB_TEST_CASE("Device radix sort keys descending DB uses custom stream", "[radix
   const cuda::stream_ref stream_ref{stream};
 
   launch_env(
-    [&](auto env) {
-      return cub::DeviceRadixSort::SortKeysDescending(
-        d_keys, static_cast<int>(keys_buf0.size()), 0, static_cast<int>(sizeof(int) * 8), env);
+    [&](int num_items, auto env) {
+      return cub::DeviceRadixSort::SortKeysDescending(d_keys, num_items, 0, static_cast<int>(sizeof(int) * 8), env);
     },
+    static_cast<int>(keys_buf0.size()),
     stream_ref);
 
   stream.sync();
