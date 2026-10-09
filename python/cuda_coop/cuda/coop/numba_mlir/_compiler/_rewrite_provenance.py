@@ -54,7 +54,6 @@ from ._rewrite_support import (
     _TempStorageGlobalPlan,
     _TempStoragePlan,
     _TempStorageRequirementSummary,
-    _TempStorageUseRequirement,
     _ThreadDataSpecification,
     _validate_temp_storage_alignment,
     ir,
@@ -66,6 +65,10 @@ from ._scalar_provenance import (
     scalar_expression_dtype,
     try_resolve_static_scalar,
     try_resolve_static_scalar_provenance,
+)
+from ._storage_layout import (
+    layout_temp_storage_uses,
+    temp_storage_domain_key,
 )
 
 if TYPE_CHECKING:
@@ -1270,19 +1273,9 @@ class _ProvenanceRewrite(Rewrite):
             rewrite._ensure_temp_storage_global_plan()
         return self._finalize_temp_storage_plan_for_var(key)
 
-    @staticmethod
-    def _temp_storage_domain_key(entry: _TempStorageUseRequirement):
-        """Delegate shared storage layout policy to both compiler pipelines."""
-        from ._storage_layout import temp_storage_domain_key
+    _temp_storage_domain_key = staticmethod(temp_storage_domain_key)
 
-        return temp_storage_domain_key(entry)
-
-    def _layout_temp_storage_uses(
-        self, uses: list[_TempStorageUseRequirement], *, sharing: str
-    ):
-        """Delegate shared storage layout policy to both compiler pipelines."""
-        from ._storage_layout import layout_temp_storage_uses
-
+    def _layout_temp_storage_uses(self, uses, *, sharing):
         return layout_temp_storage_uses(uses, sharing=sharing)
 
     def _finalize_temp_storage_plan_for_var(
