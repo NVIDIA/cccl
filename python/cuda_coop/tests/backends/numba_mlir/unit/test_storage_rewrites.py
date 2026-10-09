@@ -1581,6 +1581,39 @@ def test_equivalent_temp_storage_phi_escape_is_rejected_before_compile():
         rewrite.prepare_calls_and_storage(func_ir)
 
 
+@pytest.mark.parametrize(
+    "sharing, capacity, offsets",
+    [("shared", 64, [0, 0]), ("exclusive", 128, [0, 64])],
+)
+def test_registered_provider_inherits_reservation_sharing(
+    sharing, capacity, offsets
+):
+    invocable = _FakeInvocable(size_in_bytes=64, alignment=16)
+    provider = _register_leading_pointer_provider(invocable)
+
+    def kernel(value):
+        storage = coop.TempStorage(capacity, sharing=sharing)
+        values = storage.reserve(16, types.int32)
+        result = provider(value, temp_storage=storage)
+        cuda.syncthreads()
+        return provider(result) + values.size
+
+    _, rewrite, _ = _rewrite_registered_provider(kernel)
+    plan = rewrite._temp_storage_plans["storage"]
+    implicit = rewrite._implicit_temp_storage_plan
+
+    assert plan.size_in_bytes == capacity
+    assert sorted(info.offset for info in plan.slices_by_call_id.values()) == (
+        offsets
+    )
+    # The provider without a descriptor keeps independent compiler-owned
+    # scratch, even when its explicit call aliases the reservation.
+    assert implicit is not None
+    assert implicit.base_offset == capacity
+    assert implicit.size_in_bytes == 64
+    assert rewrite._temp_storage_global_plan.total_size == capacity + 64
+
+
 def test_leading_pointer_provider_stages_one_dynamic_backing(monkeypatch):
     from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
