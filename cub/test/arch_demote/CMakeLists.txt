@@ -5,6 +5,12 @@ if (NOT CUB_ENABLE_RDC_TESTS)
   return()
 endif()
 
+# These tests rely on nvcc's --generate-code option and on CUDA_ARCHITECTURES being OFF, neither of which works with
+# clang-cuda (CUDA_SEPARABLE_COMPILATION on Clang requires CUDA_ARCHITECTURES to be set).
+if (NOT "${CMAKE_CUDA_COMPILER_ID}" STREQUAL "NVIDIA")
+  return()
+endif()
+
 set(arch_demote_target cub.test.arch_demote)
 
 cccl_add_executable(
