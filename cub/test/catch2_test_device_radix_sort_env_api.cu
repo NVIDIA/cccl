@@ -86,17 +86,25 @@ CUB_TEST("cub::DeviceRadixSort::SortPairs env-based API", "[radix_sort][env]", C
   auto values_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = thrust::device_vector<int>(7);
 
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref env{stream};
+
   auto error = cub::DeviceRadixSort::SortPairs(
     keys_in.data().get(),
     keys_out.data().get(),
     values_in.data().get(),
     values_out.data().get(),
-    static_cast<int>(keys_in.size()));
+    static_cast<int>(keys_in.size()),
+    0,
+    sizeof(int) * 8,
+    env);
 
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortPairs failed with status: " << error << '\n';
   }
+
+  stream.sync();
 
   const thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   const thrust::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
@@ -115,17 +123,25 @@ CUB_TEST("cub::DeviceRadixSort::SortPairsDescending env-based API", "[radix_sort
   auto values_in  = thrust::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
   auto values_out = thrust::device_vector<int>(7);
 
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref env{stream};
+
   auto error = cub::DeviceRadixSort::SortPairsDescending(
     keys_in.data().get(),
     keys_out.data().get(),
     values_in.data().get(),
     values_out.data().get(),
-    static_cast<int>(keys_in.size()));
+    static_cast<int>(keys_in.size()),
+    0,
+    sizeof(int) * 8,
+    env);
 
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortPairsDescending failed with status: " << error << '\n';
   }
+
+  stream.sync();
 
   const thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
   const thrust::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
@@ -142,13 +158,18 @@ CUB_TEST("cub::DeviceRadixSort::SortKeys env-based API", "[radix_sort][env]", CU
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = thrust::device_vector<int>(7);
 
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref env{stream};
+
   auto error = cub::DeviceRadixSort::SortKeys(
-    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), 0, sizeof(int) * 8);
+    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), 0, sizeof(int) * 8, env);
 
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortKeys failed with status: " << error << '\n';
   }
+
+  stream.sync();
 
   const thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end radix-sort-keys-env
@@ -165,12 +186,17 @@ CUB_TEST("cub::DeviceRadixSort::SortKeys DoubleBuffer env-based API", "[radix_so
 
   cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
-  auto error = cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), 0, sizeof(int) * 8);
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref env{stream};
+
+  auto error = cub::DeviceRadixSort::SortKeys(d_keys, static_cast<int>(keys_buf0.size()), 0, sizeof(int) * 8, env);
 
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortKeys (DoubleBuffer) failed with status: " << error << '\n';
   }
+
+  stream.sync();
 
   const thrust::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
   // example-end radix-sort-keys-db-env
@@ -186,13 +212,18 @@ CUB_TEST("cub::DeviceRadixSort::SortKeysDescending env-based API", "[radix_sort]
   auto keys_in  = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
   auto keys_out = thrust::device_vector<int>(7);
 
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref env{stream};
+
   auto error = cub::DeviceRadixSort::SortKeysDescending(
-    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), 0, sizeof(int) * 8);
+    keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size()), 0, sizeof(int) * 8, env);
 
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortKeysDescending failed with status: " << error << '\n';
   }
+
+  stream.sync();
 
   const thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
   // example-end radix-sort-keys-descending-env
@@ -209,12 +240,18 @@ CUB_TEST("cub::DeviceRadixSort::SortKeysDescending DoubleBuffer env-based API", 
 
   cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
 
-  auto error = cub::DeviceRadixSort::SortKeysDescending(d_keys, static_cast<int>(keys_buf0.size()), 0, sizeof(int) * 8);
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref env{stream};
+
+  auto error =
+    cub::DeviceRadixSort::SortKeysDescending(d_keys, static_cast<int>(keys_buf0.size()), 0, sizeof(int) * 8, env);
 
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceRadixSort::SortKeysDescending (DoubleBuffer) failed with status: " << error << '\n';
   }
+
+  stream.sync();
 
   const thrust::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
   // example-end radix-sort-keys-descending-db-env
