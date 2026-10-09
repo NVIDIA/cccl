@@ -84,12 +84,15 @@ struct make_transform_input_output_iterator_base
 {
 private:
   using iterator_value_type = it_value_t<Iterator>;
+  // Doxygen 1.9.6 misparses the qualified trait when it appears directly inside
+  // iterator_adaptor's template arguments.
+  using value_type = ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>;
 
 public:
   using type =
     iterator_adaptor<transform_input_output_iterator<InputFunction, OutputFunction, Iterator>,
                      Iterator,
-                     ::cuda::std::invoke_result_t<InputFunction, iterator_value_type>,
+                     value_type,
                      use_default,
                      use_default,
                      transform_input_output_iterator_proxy<InputFunction, OutputFunction, Iterator>>;
