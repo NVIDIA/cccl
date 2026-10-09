@@ -20,6 +20,9 @@ namespace hostjit::codegen
 // Returns "" for CCCL_STORAGE (caller must handle custom types).
 std::string get_type_name(cccl_type_enum type);
 
+// True for the emulated floating-point types (CCCL_FP64EMU_*), whose C++ spelling lives in <cuda/fpemu>.
+bool is_fpemu_type(cccl_type_enum type);
+
 // Generates an aligned storage struct definition.
 // Example: "struct __align__(8) my_storage_t {\n  char data[16];\n};\n"
 std::string make_storage_type(const char* name, size_t size, size_t alignment);

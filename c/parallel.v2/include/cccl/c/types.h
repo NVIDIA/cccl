@@ -46,6 +46,12 @@ typedef enum cccl_type_enum
   CCCL_BOOLEAN  = 12,
   CCCL_BFLOAT16 = 13, // This may be unsupported if _CCCL_HAS_NVBF16() is false but we can't include the header to
                       // check that here
+  // Software-emulated IEEE-754 double (cuda::experimental::fpemu<double, accuracy>, from <cuda/fpemu>).
+  // Each is 8 bytes with 8-byte alignment and is bit-identical to a double. The suffix selects the
+  // fpemu_accuracy template argument.
+  CCCL_FP64EMU_HIGH = 14,
+  CCCL_FP64EMU_MID  = 15,
+  CCCL_FP64EMU_LOW  = 16,
 } cccl_type_enum;
 
 typedef struct cccl_type_info
