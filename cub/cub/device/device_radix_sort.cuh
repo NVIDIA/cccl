@@ -488,7 +488,7 @@ public:
   //!
   //! The code snippet below illustrates the env-based sorting of key-value pairs:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api_additional.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin radix-sort-pairs-env
@@ -1872,7 +1872,7 @@ public:
   //!
   //! The code snippet below illustrates the env-based descending sort of key-value pairs:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api_additional.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin radix-sort-pairs-descending-env
@@ -3148,7 +3148,7 @@ public:
   //!
   //! The code snippet below illustrates the env-based sorting of keys:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api_additional.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin radix-sort-keys-env
@@ -3773,7 +3773,7 @@ public:
   //!
   //! The code snippet below illustrates the env-based sorting of keys using DoubleBuffer:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api_additional.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin radix-sort-keys-db-env
@@ -4353,7 +4353,7 @@ public:
   //!
   //! The code snippet below illustrates the env-based descending sort of keys:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api_additional.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin radix-sort-keys-descending-env
@@ -4827,7 +4827,7 @@ public:
   //!
   //! The code snippet below illustrates the env-based descending sort of keys using DoubleBuffer:
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_radix_sort_env_api_additional.cu
   //!     :language: c++
   //!     :dedent:
   //!     :start-after: example-begin radix-sort-keys-descending-db-env

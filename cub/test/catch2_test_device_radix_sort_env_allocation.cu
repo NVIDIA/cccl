@@ -15,6 +15,7 @@ struct stream_registry_factory_t;
 
 #include "catch2_radix_sort_env_helper.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/vector.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortPairs, device_radix_sort_pairs);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortPairsDescending, device_radix_sort_pairs_descending);
@@ -26,6 +27,141 @@ DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortKeysDescending, device_radi
 #include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
+
+CUB_TEST("Device radix sort pairs uses environment", "[radix_sort][device]", CUB_SMALL)
+{
+  auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out   = c2h::device_vector<int>(7);
+  auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out = c2h::device_vector<int>(7);
+
+  size_t expected_bytes_allocated{};
+  // calculate expected_bytes_allocated - call CUB API directly, not through wrapper
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRadixSort::SortPairs(
+      nullptr,
+      expected_bytes_allocated,
+      keys_in.data().get(),
+      keys_out.data().get(),
+      values_in.data().get(),
+      values_out.data().get(),
+      static_cast<int>(keys_in.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_radix_sort_pairs(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    values_in.data().get(),
+    values_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    env);
+
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+  const c2h::device_vector<int> expected_values{5, 4, 3, 1, 2, 0, 6};
+
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+}
+
+CUB_TEST("Device radix sort pairs descending uses environment", "[radix_sort][device]", CUB_SMALL)
+{
+  auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out   = c2h::device_vector<int>(7);
+  auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+  auto values_out = c2h::device_vector<int>(7);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRadixSort::SortPairsDescending(
+      nullptr,
+      expected_bytes_allocated,
+      keys_in.data().get(),
+      keys_out.data().get(),
+      values_in.data().get(),
+      values_out.data().get(),
+      static_cast<int>(keys_in.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_radix_sort_pairs_descending(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    values_in.data().get(),
+    values_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    0,
+    static_cast<int>(sizeof(int) * 8),
+    env);
+
+  const c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+  const c2h::device_vector<int> expected_values{6, 0, 2, 1, 3, 4, 5};
+
+  REQUIRE(keys_out == expected_keys);
+  REQUIRE(values_out == expected_values);
+}
+
+CUB_TEST("Device radix sort keys uses environment", "[radix_sort][device]", CUB_SMALL)
+{
+  auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = c2h::device_vector<int>(7);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRadixSort::SortKeys(
+      nullptr, expected_bytes_allocated, keys_in.data().get(), keys_out.data().get(), static_cast<int>(keys_in.size())));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_radix_sort_keys(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    0,
+    static_cast<int>(static_cast<int>(sizeof(int) * 8)),
+    env);
+
+  const c2h::device_vector<int> expected_keys{0, 3, 5, 6, 7, 8, 9};
+
+  REQUIRE(keys_out == expected_keys);
+}
+
+CUB_TEST("Device radix sort keys descending uses environment", "[radix_sort][device]", CUB_SMALL)
+{
+  auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = c2h::device_vector<int>(7);
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRadixSort::SortKeysDescending(
+      nullptr,
+      expected_bytes_allocated,
+      keys_in.data().get(),
+      keys_out.data().get(),
+      static_cast<int>(keys_in.size()),
+      0,
+      static_cast<int>(static_cast<int>(sizeof(int) * 8))));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+
+  device_radix_sort_keys_descending(
+    keys_in.data().get(),
+    keys_out.data().get(),
+    static_cast<int>(keys_in.size()),
+    0,
+    static_cast<int>(static_cast<int>(sizeof(int) * 8)),
+    env);
+
+  const c2h::device_vector<int> expected_keys{9, 8, 7, 6, 5, 3, 0};
+
+  REQUIRE(keys_out == expected_keys);
+}
 
 CUB_TEST("Device radix sort keys decomposer+bits uses environment", "[radix_sort][device]", CUB_SMALL)
 {
