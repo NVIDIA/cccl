@@ -277,3 +277,23 @@ static_assert(
 static_assert(
   cuda::std::is_same_v<cuda::std::allocator_traits<device_char_allocator>::void_pointer, thrust::device_ptr<void>>,
   "allocator_traits::void_pointer should be device_ptr<void> for device_ptr-based allocators");
+
+// iterator_traits<device_ptr<T>>::pointer must be the type returned by device_ptr<T>::operator->(), instead of the
+// injected class name of device_ptr's base class. Otherwise adaptors like reverse_iterator fail to compile.
+// See GitHub issue #11489.
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::pointer, int*>);
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<const int>>::pointer, const int*>);
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<void>>::pointer, void*>);
+static_assert(
+  cuda::std::is_same_v<cuda::std::iterator_traits<thrust::pointer<int, thrust::device_system_tag>>::pointer, int*>);
+
+// the remaining member types are the ones of device_ptr
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::value_type, int>);
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::difference_type, ptrdiff_t>);
+static_assert(
+  cuda::std::is_same_v<cuda::std::iterator_traits<thrust::device_ptr<int>>::reference, thrust::device_reference<int>>);
+static_assert(cuda::std::random_access_iterator<thrust::device_ptr<int>>);
+
+using reverse_device_ptr = cuda::std::reverse_iterator<thrust::device_ptr<int>>;
+static_assert(cuda::std::is_same_v<cuda::std::iterator_traits<reverse_device_ptr>::pointer, int*>);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const reverse_device_ptr&>().operator->()), int*>);
