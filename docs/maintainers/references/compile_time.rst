@@ -121,10 +121,15 @@ Baseline comparisons
 --------------------
 
 Pass ``-baseline-ref <commit-ish>`` to compare the current tree state against a
-baseline commit. The wrapper creates a temporary detached worktree for the
-baseline, builds both the current tree and the baseline with the same preset,
-targets, and common build options, then runs the requested event slice as a
-baseline/current comparison:
+baseline commit. The wrapper creates fresh sibling detached worktrees on the
+same filesystem, preserves current working-tree changes in the current
+snapshot, and builds both with the same preset, targets, and common options.
+Each side warms one object, discards warm-up outputs, and then builds the
+measured targets. Build order alternates across CI run numbers/attempts and is
+baseline-first locally; ``-build-order current-first`` or ``baseline-first`` overrides
+it. The caller's source tree is preserved. Comparison mode requires fresh
+configure/build; replay saved traces using ``summarize_events.py`` instead of
+combining ``-baseline-ref`` with skip options:
 
 .. code-block:: bash
 
@@ -138,7 +143,7 @@ Comparison mode writes three subdirectories under
 - ``baseline/``: the normal report for the baseline traces
 - ``current/``: the normal report for the current traces
 - ``comparison/``: ``worse`` and ``better`` CSVs for the requested filter,
-  timing, exclusivity, sort, and top-N slice
+  timing, exclusivity, sort, and top-N slice, plus an uncensored ``all.csv``
 
 In multi-slice comparison mode, the same layout appears under each
 ``event_reports/<slice-id>/`` directory.
@@ -150,12 +155,38 @@ or newly appearing nested work remains visible as a parent cost change instead
 of being subtracted away. If there are no comparable event keys, the comparison
 CSVs are still written with headers and no rows.
 
-Pass ``--threshold <seconds>`` after the wrapper's ``--`` separator in
-comparison mode to omit ``worse`` / ``better`` rows whose total impact change is
-not greater than that threshold. Baseline/current reports use ``--sort`` for
-their own top-N ordering, but comparison reports are ranked by total impact
-across all matched traces so repeated small movements outrank a larger movement
-in only one trace.
+The wrapper enables ``--stability-filter``. All results use the initial
+baseline/current build data; no follow-up compilations or random resampling
+run. Whole-build compilation totals stay raw. Occurrences and trace fragments
+are first summed within each generated TU. Directional consistency is tested
+against a 75% minimum share of TU contexts using exact binomial tests. Both
+directions of every comparable diagnostic key in every slice enter a report-wide
+Holm correction before impact thresholds and top-N selection; the family
+significance level is 5%.
+
+This is a conditional test of cross-context consistency, assuming independent
+TU directions with a common probability. It cannot separate shared runner bias
+from revision effects or supply a confidence interval for the full build.
+Overlapping header-test contexts can violate independence; these limitations
+are documented in ``ci/compile_time/STATISTICS.md``.
+
+Diagnostic rankings additionally subtract the median proportional build shift,
+require agreement with the raw aggregate direction, and apply the configured
+seconds threshold. P-values use raw TU changes, without substituting the
+estimated drift into the null distribution. Per-occurrence median/MAD columns
+remain descriptive. Increased/decreased occurrence counts still affect impact.
+
+Common headers appear separately from the top five diagnostic regression
+candidates; the top three improvements are collapsed. Sparse or localized
+changes remain visible as inspection candidates without a consistency claim.
+Warnings and matched-corpus counts remain visible. ``all.csv`` retains filtered,
+unchanged, and common-header rows for every comparable key, together with raw
+and adjusted impacts, counts, and unadjusted/Holm-adjusted consistency p-values.
+
+Direct invocations of ``summarize_events.py`` without ``--stability-filter``
+keep the aggregate-only filtering policy. Per-side reports still use
+``--sort`` for their own top-N ordering. ``build_pair.json`` records the
+baseline/current revisions and build order, and is embedded in the summary.
 
 When ``-baseline-ref`` is used, the wrapper treats the invocation as an event
 comparison and skips the generated-TU CSV unless ``-tu-csv`` is provided

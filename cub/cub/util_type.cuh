@@ -47,6 +47,25 @@ CUB_NAMESPACE_BEGIN
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
+// DO NOT MERGE: intentional compile-time reporting regression.
+// Force 8,191 distinct template instantiations in every TU that includes this
+// header. Remove this validation block before merging the reporting changes.
+template <int Depth, int Node>
+struct compile_time_report_regression
+{
+  static constexpr int value = compile_time_report_regression<Depth - 1, 2 * Node>::value
+                             + compile_time_report_regression<Depth - 1, 2 * Node + 1>::value;
+};
+
+template <int Node>
+struct compile_time_report_regression<0, Node>
+{
+  static constexpr int value = 1;
+};
+
+template struct compile_time_report_regression<12, 1>;
+static_assert(compile_time_report_regression<12, 1>::value == 4096);
+
 // the following iterator helpers are not named iter_value_t etc, like the C++20 facilities, because they are defined in
 // terms of C++17 iterator_traits and not the new C++20 indirectly_readable trait etc. This allows them to detect nested
 // value_type, difference_type and reference aliases, which the new C+20 traits do not consider (they only consider
