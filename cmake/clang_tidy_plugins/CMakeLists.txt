@@ -76,7 +76,6 @@ function(cccl_create_clang_tidy_plugin TARGET)
   set_property(GLOBAL APPEND PROPERTY CCCL_TIDY_PLUGINS "${TARGET}")
 endfunction()
 
-# Reuse CCCLAddTidyTarget's executable, or find it for standalone builds.
 find_program(
   CCCL_FILECHECK
   NAMES
@@ -154,7 +153,7 @@ function(_cccl_parse_clang_tidy_config source_file out_var)
     elseif (line MATCHES "^[ \t]*//[ \t]*ExtraArgs[ \t]*:[ \t]*(.+)$")
       string(STRIP "${CMAKE_MATCH_1}" argument)
       string(JSON index LENGTH "${config}" ExtraArgs)
-      #string(JSON config SET "${config}" ExtraArgs ${index} "\"${argument}\"")
+      string(JSON config SET "${config}" ExtraArgs ${index} "\"${argument}\"")
     else()
       message(
         FATAL_ERROR
