@@ -69,6 +69,7 @@
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
@@ -251,6 +252,14 @@ struct agent_batched_topk_cluster
   // An explicit index tie-break picks among keys that compare equal, so -0.0 and +0.0 must rank equal. Without one,
   // any set of tied keys is a valid result and the extra normalization is skipped.
   static constexpr bool normalize_minus_zero = TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified;
+
+  // Under `normalize_minus_zero`, keys staged in SMEM once (resident chunks and boundary edges) are rewritten from -0.0
+  // to +0.0 while the first pass loads them, so the later passes and the final filter rank them without normalizing
+  // again. Keys re-read every pass (overflow chunks, the generic fallback's gmem reads) are still normalized by the
+  // ops. An output key that reads +0.0 is re-read from the input, so -0.0 still comes out as -0.0 (see `output_key`).
+  static constexpr bool stages_normalized_keys = normalize_minus_zero && ::cuda::is_floating_point_v<key_t>;
+  // The ops' normalization flag for staged keys, which are already normalized
+  static constexpr bool normalize_staged_keys = normalize_minus_zero && !stages_normalized_keys;
 
   // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
@@ -467,6 +476,33 @@ struct agent_batched_topk_cluster
     }
   };
 
+  [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE bool is_minus_zero([[maybe_unused]] const key_t& key)
+  {
+    if constexpr (stages_normalized_keys)
+    {
+      using bits_t = typename Traits<key_t>::UnsignedBits;
+      return ::cuda::std::bit_cast<bits_t>(key) == Traits<key_t>::HIGH_BIT;
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+  // A key as staged in SMEM: -0.0 becomes +0.0 under `stages_normalized_keys`, every other key is unchanged
+  [[nodiscard]] static _CCCL_DEVICE _CCCL_FORCEINLINE key_t staged_key(const key_t& key)
+  {
+    if constexpr (stages_normalized_keys)
+    {
+      using bits_t = typename Traits<key_t>::UnsignedBits;
+      return is_minus_zero(key) ? ::cuda::std::bit_cast<key_t>(bits_t{0}) : key;
+    }
+    else
+    {
+      return key;
+    }
+  }
+
   // Stage a small (`< num_load_align_items` items) unaligned run -- a boundary edge (head prefix / tail suffix) -- from
   // gmem `src` into SMEM `dst` and consume it into the first pass in one strided sweep:
   // each thread copies *and* consumes the same indices it owns (`local % policy.threads_per_block == threadIdx.x`),
@@ -489,7 +525,7 @@ struct agent_batched_topk_cluster
     for (int key_idx = tid; key_idx < num_keys; key_idx += policy.threads_per_block)
     {
       const key_t key = src[key_idx];
-      dst[key_idx]    = key;
+      dst[key_idx]    = staged_key(key);
       apply(key);
     }
   }
@@ -1318,8 +1354,12 @@ private:
   {
     using identify_op_t = detail::topk::
       identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using staged_identify_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_staged_keys>;
 
     identify_op_t identify_op;
+    // For the keys staged in SMEM (resident chunks and boundary edges)
+    staged_identify_op_t staged_identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
     out_offset_t num_cluster_tie_winners;
     out_offset_t num_local_selected;
@@ -1360,6 +1400,22 @@ private:
     }
   }
 
+  // The key to write for the input key at segment-local index `seg_idx`. A staged key (`Staged`) that reads +0.0 may
+  // have been -0.0 in the input (see `stages_normalized_keys`), so it is re-read from the input to keep its sign.
+  template <bool Staged>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE key_t output_key(const key_t& key, [[maybe_unused]] offset_t seg_idx)
+  {
+    if constexpr (Staged && stages_normalized_keys)
+    {
+      using bits_t = typename Traits<key_t>::UnsignedBits;
+      if (::cuda::std::bit_cast<bits_t>(key) == bits_t{0})
+      {
+        return layout.block_keys_in[static_cast<segment_size_val_t>(seg_idx)];
+      }
+    }
+    return key;
+  }
+
   // Per-item placement code stored in `flags[]` by the load/classify pass and reused by `place_tile`/`emit_indexed`, so
   // each key is classified exactly once.
   static constexpr offset_t flag_none      = 0; // rejected or out-of-range: no placement, absent from the tie scan
@@ -1391,7 +1447,7 @@ private:
   // returns the absolute output slot with no per-key offset. The uniform `out < k` guard drops losing candidates but
   // always accepts selected keys; pairs builds also copy the key's value from `seg_idx`. (Deterministic index-ordered
   // tie resolution goes through `emit_indexed` instead.)
-  template <typename KeyOutIt>
+  template <bool Staged, typename KeyOutIt>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   place_one(KeyOutIt block_keys_out, bool is_tied, const key_t& key, offset_t seg_idx)
   {
@@ -1401,7 +1457,7 @@ private:
     _CCCL_ASSERT(is_tied || out < k, "a strictly-selected key must always land within the top-k output");
     if (out < k)
     {
-      block_keys_out[out] = key;
+      block_keys_out[out] = output_key<Staged>(key, seg_idx);
       final_filter_write_value(out, seg_idx);
     }
   }
@@ -1439,7 +1495,7 @@ private:
   // the lazy crossing tile is overwritten in index order later. `do_arrival == false` (terminal tile only) skips
   // candidates here and leaves them to `emit_indexed`; the lazy path passes `true` and its crossing tile is later
   // overwritten by `emit_indexed`.
-  template <bool Reversed, bool Blocked, int ItemsPerThread, typename State>
+  template <bool Reversed, bool Blocked, bool Staged, int ItemsPerThread, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void place_tile(
     State& state,
     const key_t (&keys)[ItemsPerThread],
@@ -1459,7 +1515,7 @@ private:
       }
       const int pos          = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
       const offset_t seg_idx = seg_base + static_cast<offset_t>(Reversed ? (num_keys - 1 - pos) : pos);
-      place_one(state.block_keys_out, is_tied, keys[i], seg_idx);
+      place_one<Staged>(state.block_keys_out, is_tied, keys[i], seg_idx);
     }
   }
 
@@ -1468,7 +1524,7 @@ private:
   // `num_cluster_tie_winners`) lands at forward output slot `num_cluster_selected + rank`, matching `place_tile`.
   // Returns the tile's candidate total. Used where the K-boundary falls in this tile (terminal tile, or the lazy
   // path's crossing tile).
-  template <bool Reversed, int ItemsPerThread, typename State>
+  template <bool Reversed, bool Staged, int ItemsPerThread, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE offset_t emit_indexed(
     State& state,
     const key_t (&keys)[ItemsPerThread],
@@ -1502,7 +1558,7 @@ private:
           const int pos             = tile_item_pos<true, ItemsPerThread>(tile_base, i);
           const out_offset_t out    = static_cast<out_offset_t>(num_cluster_selected + global_rank);
           const offset_t seg_idx    = seg_base + static_cast<offset_t>(Reversed ? (num_keys - 1 - pos) : pos);
-          state.block_keys_out[out] = keys[i];
+          state.block_keys_out[out] = output_key<Staged>(keys[i], seg_idx);
           final_filter_write_value(out, seg_idx);
         }
       }
@@ -1512,8 +1568,9 @@ private:
 
   // Load and 3-way classify one tile's items into `keys`/`flags` (see `flag_*`), re-run by `place_tile`/`emit_indexed`
   // without touching `identify_op` again. `Blocked` picks the thread->element arrangement (`tile_item_pos`); the source
-  // is `smem_src` (folded in-region position) or gmem `block_keys_in`. Out-of-range lanes stay `flag_none`.
-  template <bool Blocked, int ItemsPerThread, bool FromSmem, bool Reversed, typename State>
+  // is `smem_src` (folded in-region position) or gmem `block_keys_in`. `Staged` marks keys staged in SMEM once (see
+  // `stages_normalized_keys`). Out-of-range lanes stay `flag_none`.
+  template <bool Blocked, int ItemsPerThread, bool FromSmem, bool Staged, bool Reversed, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void classify_tile(
     State& state,
     [[maybe_unused]] const key_t* smem_src,
@@ -1541,10 +1598,19 @@ private:
         {
           keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
         }
-        const auto cls = state.identify_op(keys[i]);
-        flags[i]       = (cls == detail::topk::candidate_class::candidate)
-                         ? flag_candidate
-                         : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+        const auto cls = [&] {
+          if constexpr (Staged)
+          {
+            return state.staged_identify_op(keys[i]);
+          }
+          else
+          {
+            return state.identify_op(keys[i]);
+          }
+        }();
+        flags[i] = (cls == detail::topk::candidate_class::candidate)
+                   ? flag_candidate
+                   : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
       }
     }
   }
@@ -1561,7 +1627,7 @@ private:
   // `Blocked` is the *entry* arrangement (`tile_item_pos`). The blocked deterministic path is two-phase: it loads
   // blocked only while ties remain (phase A, `emit_indexed`'s scan needs it) and switches once to striped for the
   // remaining strictly-selected/rejected keys (phase B).
-  template <int ItemsPerThread, bool FromSmem, bool Reversed, bool Deterministic, bool Blocked, typename State>
+  template <int ItemsPerThread, bool FromSmem, bool Staged, bool Reversed, bool Deterministic, bool Blocked, typename State>
   _CCCL_DEVICE _CCCL_FORCEINLINE void process_tiles(
     State& state,
     [[maybe_unused]] const key_t* smem_src,
@@ -1591,7 +1657,7 @@ private:
       {
         key_t keys[ItemsPerThread];
         offset_t flags[ItemsPerThread];
-        classify_tile</*Blocked=*/true, ItemsPerThread, FromSmem, Reversed>(
+        classify_tile</*Blocked=*/true, ItemsPerThread, FromSmem, Staged, Reversed>(
           state, smem_src, seg_base, num_keys, tile_base, keys, flags);
 
         // The boundary tile places its candidates via `emit_indexed` (arrival placement skipped, `do_arrival ==
@@ -1601,11 +1667,13 @@ private:
         //                           counter and, on the tile that crosses `num_cluster_tie_winners`, overwrites those
         //                           slots in index order.
         const bool is_terminal_tile = region_is_terminal && (tile_base + tile_size >= num_keys);
-        place_tile<Reversed, /*Blocked=*/true>(state, keys, flags, seg_base, num_keys, tile_base, !is_terminal_tile);
+        place_tile<Reversed, /*Blocked=*/true, Staged>(
+          state, keys, flags, seg_base, num_keys, tile_base, !is_terminal_tile);
 
         if (is_terminal_tile)
         {
-          state.running += emit_indexed<Reversed>(state, keys, flags, seg_base, num_keys, tile_base, state.running);
+          state.running +=
+            emit_indexed<Reversed, Staged>(state, keys, flags, seg_base, num_keys, tile_base, state.running);
           state.is_tie_active = false;
         }
         else
@@ -1624,7 +1692,7 @@ private:
           {
             // Crossing tile: overwrite this tile's arrival slots `{num_cluster_selected+state.running, ...}` with the
             // index-ordered winners (identical slot set, different candidate->slot mapping).
-            emit_indexed<Reversed>(state, keys, flags, seg_base, num_keys, tile_base, state.running);
+            emit_indexed<Reversed, Staged>(state, keys, flags, seg_base, num_keys, tile_base, state.running);
           }
           state.running = reached;
           if (state.running >= static_cast<offset_t>(state.num_cluster_tie_winners))
@@ -1645,9 +1713,10 @@ private:
       {
         key_t keys[ItemsPerThread];
         offset_t flags[ItemsPerThread];
-        classify_tile</*Blocked=*/false, ItemsPerThread, FromSmem, Reversed>(
+        classify_tile</*Blocked=*/false, ItemsPerThread, FromSmem, Staged, Reversed>(
           state, smem_src, seg_base, num_keys, tile_base, keys, flags);
-        place_tile<Reversed, /*Blocked=*/false>(state, keys, flags, seg_base, num_keys, tile_base, /*do_arrival=*/false);
+        place_tile<Reversed, /*Blocked=*/false, Staged>(
+          state, keys, flags, seg_base, num_keys, tile_base, /*do_arrival=*/false);
       }
     }
     else
@@ -1658,7 +1727,7 @@ private:
       {
         key_t keys[ItemsPerThread];
         offset_t flags[ItemsPerThread];
-        classify_tile<Blocked, ItemsPerThread, FromSmem, Reversed>(
+        classify_tile<Blocked, ItemsPerThread, FromSmem, Staged, Reversed>(
           state, smem_src, seg_base, num_keys, tile_base, keys, flags);
         if constexpr (Deterministic)
         {
@@ -1667,13 +1736,13 @@ private:
           _CCCL_ASSERT(state.block_selects_all_tied || !state.is_tie_active,
                        "striped deterministic tile must never need index-ordered tie resolution");
           const bool do_arrival = state.is_tie_active && state.block_selects_all_tied;
-          place_tile<Reversed, Blocked>(state, keys, flags, seg_base, num_keys, tile_base, do_arrival);
+          place_tile<Reversed, Blocked, Staged>(state, keys, flags, seg_base, num_keys, tile_base, do_arrival);
         }
         else
         {
           // Selected to the front, the first `num_cluster_tie_winners` candidates to the back via `place_one`'s `out <
           // k` guard.
-          place_tile<Reversed, Blocked>(state, keys, flags, seg_base, num_keys, tile_base, /*do_arrival=*/true);
+          place_tile<Reversed, Blocked, Staged>(state, keys, flags, seg_base, num_keys, tile_base, /*do_arrival=*/true);
         }
       }
     }
@@ -1690,6 +1759,7 @@ private:
       // Whole contiguous resident span staged in SMEM.
       process_tiles<tie_break_items_per_thread_clamped,
                     /*FromSmem=*/true,
+                    /*Staged=*/true,
                     /*Reversed=*/is_residency_reversed,
                     /*Deterministic=*/true,
                     Blocked>(
@@ -1714,6 +1784,7 @@ private:
         // per-tile boundary detection handles any boundary), so pass `false`.
         process_tiles<tie_break_items_per_thread_clamped,
                       /*FromSmem=*/true,
+                      /*Staged=*/true,
                       /*Reversed=*/is_residency_reversed,
                       /*Deterministic=*/true,
                       Blocked>(
@@ -1763,6 +1834,7 @@ private:
         // is one barrier on one tile.
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/true,
+                      /*Staged=*/false,
                       /*Reversed=*/is_tie_reversed,
                       /*Deterministic=*/true,
                       Blocked>(state, keys.data(), base_off, static_cast<int>(keys.size()), false);
@@ -1772,6 +1844,7 @@ private:
         // FromSmem=false: `smem_src` is unread, so pass nullptr.
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/false,
+                      /*Staged=*/false,
                       /*Reversed=*/is_tie_reversed,
                       /*Deterministic=*/true,
                       Blocked>(state, nullptr, chunk.offset, chunk.num_items, false);
@@ -1800,7 +1873,7 @@ private:
     if constexpr (use_block_load_to_shared)
     {
       _CCCL_ASSERT(num_keys >= 0 && num_keys <= num_load_align_items, "a boundary edge must fit in its edge_keys slot");
-      process_tiles<1, /*FromSmem=*/true, /*Reversed=*/is_tie_reversed, /*Deterministic=*/true, Blocked>(
+      process_tiles<1, /*FromSmem=*/true, /*Staged=*/true, /*Reversed=*/is_tie_reversed, /*Deterministic=*/true, Blocked>(
         state, keys, seg_base, num_keys, is_terminal);
     }
   }
@@ -1905,10 +1978,12 @@ private:
   // `process_tiles<..., Deterministic=false>` (arrival-order placement, no scan/tie-state/barrier). Since order is
   // irrelevant, `write_nondeterministic_topk` consumes the resident keys as the overflow stream's `overlap_work`
   // (overlapping the first reloads) and bails out of the overflow stream once its contribution is fully placed.
-  template <typename IdentifyOp, typename KeyOutIt>
+  template <typename IdentifyOp, typename StagedIdentifyOp, typename KeyOutIt>
   struct nondet_filter_state
   {
     IdentifyOp identify_op;
+    // For the keys staged in SMEM (resident chunks and boundary edges)
+    StagedIdentifyOp staged_identify_op;
     KeyOutIt block_keys_out;
     out_offset_t num_cluster_tie_winners;
     offset_t selected_prefix;
@@ -1921,8 +1996,9 @@ private:
   // `overlap_work` so they overlap the first overflow reloads. Placement uses order-independent atomics into slots
   // disjoint from the streaming slots, so this never races the overflow apply. Each chunk's `chunk.offset` is passed as
   // the region's segment base (used for the pair value fetch; elided in keys-only).
-  template <typename IdentifyOp, typename KeyOutIt>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void nondet_consume_resident(nondet_filter_state<IdentifyOp, KeyOutIt>& state)
+  template <typename IdentifyOp, typename StagedIdentifyOp, typename KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  nondet_consume_resident(nondet_filter_state<IdentifyOp, StagedIdentifyOp, KeyOutIt>& state)
   {
     if constexpr (use_block_load_to_shared)
     {
@@ -1941,6 +2017,7 @@ private:
                     layout.num_cluster_head_items);
         process_tiles<tie_break_items_per_thread_clamped,
                       /*FromSmem=*/true,
+                      /*Staged=*/true,
                       /*Reversed=*/false,
                       /*Deterministic=*/false,
                       /*Blocked=*/false>(
@@ -1952,12 +2029,12 @@ private:
       // `segment_size - num_local_tail_edge_items`).
       if (layout.num_local_head_edge_items > 0)
       {
-        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false, /*Blocked=*/false>(
+        process_tiles<1, /*FromSmem=*/true, /*Staged=*/true, /*Reversed=*/false, /*Deterministic=*/false, /*Blocked=*/false>(
           state, temp_storage.edge_keys, offset_t{0}, layout.num_local_head_edge_items, false);
       }
       if (layout.num_local_tail_edge_items > 0)
       {
-        process_tiles<1, /*FromSmem=*/true, /*Reversed=*/false, /*Deterministic=*/false, /*Blocked=*/false>(
+        process_tiles<1, /*FromSmem=*/true, /*Staged=*/true, /*Reversed=*/false, /*Deterministic=*/false, /*Blocked=*/false>(
           state,
           temp_storage.edge_keys + num_load_align_items,
           layout.segment_size - static_cast<offset_t>(layout.num_local_tail_edge_items),
@@ -1981,6 +2058,7 @@ private:
                                      layout.num_cluster_head_items);
         process_tiles<tie_break_items_per_thread_clamped,
                       /*FromSmem=*/true,
+                      /*Staged=*/true,
                       /*Reversed=*/false,
                       /*Deterministic=*/false,
                       /*Blocked=*/false>(
@@ -1998,9 +2076,9 @@ private:
   // `tie_offset_counter`); overflow keys then stream through `run_overflow_pass` (resident keys consumed as its
   // `overlap_work`) and place into block-local SMEM atomics. `run_overflow_pass` breaks the stream once this CTA's
   // contribution is fully placed (all its selected keys in the front, and its tie counter reached the region end `k`).
-  template <typename IdentifyOp, typename KeyOutIt>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  write_nondeterministic_topk(IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
+  template <typename IdentifyOp, typename StagedIdentifyOp, typename KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void write_nondeterministic_topk(
+    IdentifyOp identify_op, StagedIdentifyOp staged_identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
     // Leader's remaining tie count after the passes, pulled while every block is still coupled to the pass loop's final
     // cluster barrier (a later re-read could touch an already-returned leader) in one 64-bit `size`-pair load. Only
@@ -2037,8 +2115,14 @@ private:
         ? (num_cluster_selected - selected_prefix)
         : num_local_selected_for_scan;
 
-    nondet_filter_state<IdentifyOp, KeyOutIt> state{
-      identify_op, block_keys_out, num_cluster_tie_winners, selected_prefix, num_local_selected, resident_keys};
+    nondet_filter_state<IdentifyOp, StagedIdentifyOp, KeyOutIt> state{
+      identify_op,
+      staged_identify_op,
+      block_keys_out,
+      num_cluster_tie_winners,
+      selected_prefix,
+      num_local_selected,
+      resident_keys};
 
     // The nondet stop poll opens with a block barrier, so `consume_overflow_visit` drops its slot-reuse barrier.
     run_overflow_pass</*PollLeadsWithBarrier=*/true>(
@@ -2052,6 +2136,7 @@ private:
             .offset;
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/true,
+                      /*Staged=*/false,
                       /*Reversed=*/false,
                       /*Deterministic=*/false,
                       /*Blocked=*/false>(state, keys.data(), base_off, static_cast<int>(keys.size()), false);
@@ -2060,6 +2145,7 @@ private:
       [&](const auto& chunk) {
         process_tiles<tie_break_items_streamed,
                       /*FromSmem=*/false,
+                      /*Staged=*/false,
                       /*Reversed=*/false,
                       /*Deterministic=*/false,
                       /*Blocked=*/false>(state, nullptr, chunk.offset, chunk.num_items, false);
@@ -2092,9 +2178,9 @@ private:
   // on the single boundary-crossing (straddling) CTA. `prime_placement_counters` gives this block its disjoint
   // selected/tie bases and lets it detect whether all/none/some of its candidates win. This member computes the
   // `det_filter_state` inputs and hands them to `run_filter`, which drives the per-region sweeps.
-  template <detail::topk::select SelectDirection, typename IdentifyOp, typename KeyOutIt>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  write_deterministic_topk(IdentifyOp identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
+  template <detail::topk::select SelectDirection, typename IdentifyOp, typename StagedIdentifyOp, typename KeyOutIt>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void write_deterministic_topk(
+    IdentifyOp identify_op, StagedIdentifyOp staged_identify_op, KeyOutIt block_keys_out, smem_keys_t resident_keys)
   {
     // Cache the leader's final `size` pair now, while every block is still tightly coupled to the pass loop's final
     // cluster barrier -- a post-scan re-read of the leader's `state` could touch an already-returned leader (barrier
@@ -2198,6 +2284,7 @@ private:
     // CTA's candidates sort past the boundary).
     det_filter_state<SelectDirection> state{
       identify_op,
+      staged_identify_op,
       block_keys_out,
       num_cluster_tie_winners,
       num_local_selected,
@@ -2235,6 +2322,8 @@ private:
   {
     using extract_bin_op_t =
       detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using staged_extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_staged_keys>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
 
     extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
@@ -2247,6 +2336,13 @@ private:
     offset_t* const hist = detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
     auto add_first_pass  = [&](const key_t& key) {
       const int bucket = extract_op(key);
+      _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
+      atomicAdd(hist + bucket, offset_t{1});
+    };
+    // For a key already staged (see `stages_normalized_keys`)
+    staged_extract_bin_op_t staged_extract_op(0, total_bits, decomposer_t{});
+    auto add_staged_first_pass = [&](const key_t& key) {
+      const int bucket = staged_extract_op(key);
       _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
       atomicAdd(hist + bucket, offset_t{1});
     };
@@ -2597,8 +2693,37 @@ private:
         _CCCL_ASSERT(!consume_is_resident || local_chunk_idx + offset_t{1} == layout.num_local_resident_chunks
                        || consume_chunk_desc.num_items == max_chunk_items,
                      "only the last resident chunk may carry a short aligned bulk");
-        for_each_chunk_key<histogram_items_per_thread_clamped>(
-          consume_src, consume_chunk_desc.num_items, add_first_pass);
+        const auto consume_raw = [&] {
+          for_each_chunk_key<histogram_items_per_thread_clamped>(
+            consume_src, consume_chunk_desc.num_items, add_first_pass);
+        };
+        if constexpr (stages_normalized_keys)
+        {
+          if (consume_is_resident)
+          {
+            // Rewrite -0.0 to +0.0 in place (see `stages_normalized_keys`). Each thread rewrites only keys it read
+            // itself, and later readers are behind the pass-boundary barrier. No bulk copy targets a resident slot
+            // again.
+            key_t* const resident_src = ::cuda::ptr_rebind<key_t>(key_slots + consume_slot_idx * policy.chunk_bytes);
+            for_each_chunk_key_impl<histogram_items_per_thread_clamped>(
+              resident_src, consume_chunk_desc.num_items, [&](const key_t& key, int key_idx) {
+                const key_t staged = staged_key(key);
+                if (is_minus_zero(key))
+                {
+                  resident_src[key_idx] = staged;
+                }
+                add_staged_first_pass(staged);
+              });
+          }
+          else
+          {
+            consume_raw();
+          }
+        }
+        else
+        {
+          consume_raw();
+        }
 
         // Refill: issue this stage's next copy. A resident successor lands at its dense slot; either stream case (a
         // first-wave re-arm or a reload) lands at this stage's stream slot.
@@ -2685,8 +2810,9 @@ private:
           {
             const key_t key =
               layout.block_keys_in[static_cast<segment_size_val_t>(chunk.offset + static_cast<offset_t>(item_idx))];
-            chunk_keys[item_idx] = key;
-            add_first_pass(key);
+            const key_t staged   = staged_key(key);
+            chunk_keys[item_idx] = staged;
+            add_staged_first_pass(staged);
           }
         }
       }
@@ -2916,6 +3042,10 @@ private:
       detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
     using identify_candidates_op_t = detail::topk::
       identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using staged_extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_staged_keys>;
+    using staged_identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_staged_keys>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
@@ -2931,20 +3061,25 @@ private:
       // filtering (all keys are candidates), so it is handled by the fused first-pass load above.
       if (!is_first_pass)
       {
-        identify_candidates_op_t identify_op(&kth_key_bits_local, pass, total_bits, decomposer_t{});
-        extract_bin_op_t extract_op(pass, total_bits, decomposer_t{});
-
         // Step 1: block-private histogram. Same pinned 32-bit base + `.gpu`-scope `atomicAdd` as
-        // `load_and_histogram_first_pass` (see there for the addressing/scope rationale).
-        offset_t* const hist = detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
-        auto add_hist        = [&](const key_t& key) {
-          if (identify_op(key) == detail::topk::candidate_class::candidate)
-          {
-            const int bucket = extract_op(key);
-            _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
-            atomicAdd(hist + bucket, offset_t{1});
-          }
+        // `load_and_histogram_first_pass` (see there for the addressing/scope rationale). Keys staged in SMEM
+        // (resident chunks and boundary edges) take the staged ops (see `stages_normalized_keys`).
+        offset_t* const hist     = detail::warpspeed::optimizeSmemPtr(temp_storage.hist);
+        const auto make_add_hist = [hist](auto identify_op, auto extract_op) {
+          return [hist, identify_op, extract_op](const key_t& key) {
+            if (identify_op(key) == detail::topk::candidate_class::candidate)
+            {
+              const int bucket = extract_op(key);
+              _CCCL_ASSERT(bucket >= 0 && bucket < num_buckets, "histogram bucket index out of range");
+              atomicAdd(hist + bucket, offset_t{1});
+            }
+          };
         };
+        auto add_hist = make_add_hist(identify_candidates_op_t(&kth_key_bits_local, pass, total_bits, decomposer_t{}),
+                                      extract_bin_op_t(pass, total_bits, decomposer_t{}));
+        auto add_staged_hist =
+          make_add_hist(staged_identify_candidates_op_t(&kth_key_bits_local, pass, total_bits, decomposer_t{}),
+                        staged_extract_bin_op_t(pass, total_bits, decomposer_t{}));
 
         // Resident-chunk histogram, deferred into the overflow stream so it overlaps the stream's in-flight first
         // reload wave (see `consume_overflow_keys`). The histogram is order-independent, so consuming resident keys
@@ -2953,7 +3088,7 @@ private:
           if constexpr (use_block_load_to_shared)
           {
             for_each_chunk_key<histogram_items_per_thread_clamped>(
-              resident_keys.data(), static_cast<int>(resident_keys.size()), add_hist);
+              resident_keys.data(), static_cast<int>(resident_keys.size()), add_staged_hist);
           }
           else
           {
@@ -2967,7 +3102,7 @@ private:
               for_each_chunk_key<histogram_items_per_thread_clamped>(
                 ::cuda::ptr_rebind<key_t>(key_slots + static_cast<int>(local_resident_chunk_idx) * policy.chunk_bytes),
                 chunk.num_items,
-                add_hist);
+                add_staged_hist);
             }
           }
         };
@@ -2981,7 +3116,7 @@ private:
         // the resident and overflow keys. Keeps every owner's per-bucket counts (the source of its
         // `num_local_strictly_selected` and `num_local_candidates`, the cross-CTA scan inputs) inclusive of its edge
         // candidates.
-        consume_boundary_edges(layout.num_local_head_edge_items, layout.num_local_tail_edge_items, add_hist);
+        consume_boundary_edges(layout.num_local_head_edge_items, layout.num_local_tail_edge_items, add_staged_hist);
       }
 
       // Local barrier is enough here: all Step 1 / Step 2 writes to `hist[]` are atomic at compatible scopes (see Step
@@ -3132,6 +3267,8 @@ private:
   {
     using identify_candidates_op_t = detail::topk::
       identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using staged_identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_staged_keys>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     // Only read inside the `needs_set_determinism` branch below; unused otherwise.
@@ -3193,6 +3330,8 @@ private:
     // break, only the first `num_executed_passes` digits of the splitter were folded; comparing all bits would treat
     // the (still-zero) trailing digits as smaller and erroneously reject candidates that share the identified prefix.
     identify_candidates_op_t identify_op(&kth_key_bits_local, num_executed_passes, total_bits, decomposer_t{});
+    staged_identify_candidates_op_t staged_identify_op(
+      &kth_key_bits_local, num_executed_passes, total_bits, decomposer_t{});
 
     // Publish the final pass's per-rank `num_local_strictly_selected`/`num_local_candidates` (written by one lane after
     // the last cluster barrier) block-wide before the final-filter scan below reads them. Each filter loads the
@@ -3201,11 +3340,11 @@ private:
     __syncthreads();
     if constexpr (needs_set_determinism)
     {
-      write_deterministic_topk<SelectDirection>(identify_op, block_keys_out, resident_keys);
+      write_deterministic_topk<SelectDirection>(identify_op, staged_identify_op, block_keys_out, resident_keys);
     }
     else
     {
-      write_nondeterministic_topk(identify_op, block_keys_out, resident_keys);
+      write_nondeterministic_topk(identify_op, staged_identify_op, block_keys_out, resident_keys);
     }
 
     // No cluster barrier after the final filter pass: both filter paths place output via block-local SMEM atomics into
