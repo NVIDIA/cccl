@@ -27,7 +27,11 @@
 
 /// In device code, _CCCL_PTX_ARCH() expands to the PTX version for which we are compiling.
 /// In host code, _CCCL_PTX_ARCH()'s value is implementation defined.
-#if !defined(__CUDA_ARCH__)
+#if _CCCL_CUDA_COMPILER(NVHPC)
+// NV_TARGET_MINIMUM_SM_INTEGER is the oldest target PTX version, and is defined when compiling both host code and
+// device code.
+#  define _CCCL_PTX_ARCH() (NV_TARGET_MINIMUM_SM_INTEGER * 10)
+#elif !defined(__CUDA_ARCH__)
 #  define _CCCL_PTX_ARCH() 0
 #else
 #  define _CCCL_PTX_ARCH() __CUDA_ARCH__
