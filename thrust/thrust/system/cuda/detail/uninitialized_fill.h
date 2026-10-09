@@ -14,10 +14,12 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION()
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/fill.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/uninitialized_fill.h>
 
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__new/device_new.h>
@@ -45,8 +47,39 @@ struct functor
     ::new (static_cast<void*>(&out)) value_type(value);
   }
 };
+
+// Like functor, but reads the value through a pointer, see __fill::pass_value_in_device_memory
+template <class Iterator, class T>
+struct construct_from_pointer
+{
+  Iterator items;
+  const T* value;
+
+  using value_type = thrust::detail::it_value_t<Iterator>;
+
+  template <class Size>
+  void _CCCL_DEVICE_API _CCCL_FORCEINLINE operator()(Size idx)
+  {
+    value_type& out = raw_reference_cast(items[idx]);
+    ::new (static_cast<void*>(&out)) value_type(*value);
+  }
+};
+
+template <class Derived, class Iterator, class Size, class T>
+_CCCL_HOST void
+uninitialized_fill_n_from_device_copy(execution_policy<Derived>& policy, Iterator first, Size count, const T& value)
+{
+  if (count == 0)
+  {
+    return;
+  }
+
+  const __fill::device_copy<T, Derived> device_value(policy, value);
+  cuda_cub::parallel_for(policy, construct_from_pointer<Iterator, T>{first, device_value.get()}, count);
+}
 } // namespace __uninitialized_fill
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class Iterator, class Size, class T>
 Iterator _CCCL_HOST_DEVICE
 uninitialized_fill_n(execution_policy<Derived>& policy, Iterator first, Size count, T const& x)
@@ -60,6 +93,11 @@ uninitialized_fill_n(execution_policy<Derived>& policy, Iterator first, Size cou
                 && ::cuda::std::is_trivially_assignable_v<value_t, T const&>)
   {
     cuda_cub::fill_n(policy, first, count, x);
+  }
+  else if constexpr (__fill::pass_value_in_device_memory<T>)
+  {
+    THRUST_CDP_DISPATCH((__uninitialized_fill::uninitialized_fill_n_from_device_copy(policy, first, count, x);),
+                        (thrust::uninitialized_fill_n(cvt_to_seq(derived_cast(policy)), first, count, x);));
   }
   else
   {
