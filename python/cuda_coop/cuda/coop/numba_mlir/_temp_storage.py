@@ -11,6 +11,7 @@ Constructing it does not allocate shared memory or synchronize threads.
 from enum import Enum
 
 from .._core.api._payload import _normalize_alignment
+from .._core.thread_group import CoopCompilerContextRequiredError
 
 
 class TempStorage:
@@ -22,10 +23,11 @@ class TempStorage:
     for the Numba-CUDA-MLIR planner. ``auto_sync=None`` becomes ``False``.
     Set ``auto_sync=True`` to request automatic reuse barriers.
 
-    Only supported block algorithms accept an explicit descriptor. The
-    planner determines capacity and alignment from its uses; its contents
-    are opaque to user code. See :ref:`temporary storage <coop-temp-storage>`
-    for shared versus exclusive slices and manual reuse synchronization.
+    Supported block algorithms accept the descriptor as ``temp_storage``.
+    :meth:`reserve` obtains typed shared arrays for application or library
+    data. The planner includes both uses when determining capacity and
+    alignment. See :ref:`temporary storage <coop-temp-storage>` for shared
+    versus exclusive slices and manual reuse synchronization.
     """
 
     def __init__(
@@ -69,6 +71,43 @@ class TempStorage:
         # Sharing selects the slice layout; synchronization is independent.
         # The caller synchronizes before reuse unless auto_sync=True.
         self.auto_sync = False if auto_sync is None else auto_sync
+
+    def reserve(self, num_elems, dtype, *, alignment=None):
+        """Reserve a contiguous one-dimensional shared array in the kernel.
+
+        Parameters
+        ----------
+        num_elems : int
+            Positive compile-time number of elements.
+        dtype
+            Compile-time fixed-size integer, floating-point, or complex
+            scalar dtype.
+        alignment : int, optional
+            Minimum byte alignment, expressed as a positive power of two.
+            The planner also satisfies the element type's alignment.
+
+        Returns
+        -------
+        shared array
+            An ordinary compiler array with the requested dtype and extent.
+            Its elements are uninitialized and shared by the block's threads.
+
+        Notes
+        -----
+        Each reservation call site receives a disjoint region that remains
+        allocated for the kernel's execution on that block. It does not
+        overlap another reservation or the descriptor's primitive scratch,
+        regardless of ``sharing``. Repeated execution of a call site returns
+        the same region; it does not allocate again.
+
+        A descriptor used for reservations must have ``auto_sync=False``
+        (or ``None``). The caller supplies synchronization and any completion
+        or release operations required by consumers. Reserving storage does
+        not infer when a foreign library has finished using it.
+        """
+        raise CoopCompilerContextRequiredError(
+            "TempStorage.reserve must be called from a supported GPU kernel."
+        )
 
 
 __all__ = ["TempStorage"]

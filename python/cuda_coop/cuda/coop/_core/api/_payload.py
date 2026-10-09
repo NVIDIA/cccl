@@ -12,7 +12,7 @@ This lets the common API describe inputs without importing compiler types.
 from __future__ import annotations
 
 import operator
-from typing import Protocol, SupportsIndex, TypeVar, runtime_checkable
+from typing import Any, Protocol, SupportsIndex, TypeVar, runtime_checkable
 
 _ItemT = TypeVar("_ItemT")
 
@@ -57,6 +57,12 @@ class TempStorageLike(Protocol):
     alignment: int | None
     auto_sync: bool
     sharing: str
+
+    def reserve(
+        self, num_elems: int, dtype: object, *, alignment: int | None = None
+    ) -> Any:
+        """Return the supporting compiler's typed shared array."""
+        ...
 
 
 def _normalize_alignment(alignment: SupportsIndex | None) -> int | None:

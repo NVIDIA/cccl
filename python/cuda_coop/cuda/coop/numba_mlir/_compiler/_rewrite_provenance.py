@@ -74,6 +74,7 @@ from ._scalar_provenance import (
 if TYPE_CHECKING:
     from .._types import Algorithm
     from ._rewrite import CoopSinglePhaseRewrite
+    from ._rewrite_reserve import _TempStorageReservation
 
 
 class _ProvenanceRewrite(Rewrite):
@@ -107,6 +108,10 @@ class _ProvenanceRewrite(Rewrite):
         self._rewrite_started = False
         self._factory_argument_cleanup_candidates: set[ir.Assign] = set()
         self._payload_callee_cleanup_names: set[str] = set()
+        self._temp_storage_reservations: dict[
+            ir.Assign, _TempStorageReservation
+        ] = {}
+        self._temp_storage_reserve_methods: set[ir.Assign] = set()
         self._temp_storage_assigns: set[ir.Assign] = set()
         self._temp_storage_func_vars: set[str] = set()
         self._temp_storage_ctor_specifications: dict[
@@ -1358,6 +1363,7 @@ class _ProvenanceRewrite(Rewrite):
     ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
         """Lay out scratch for each call and group instance.
 
+        Permanent reservations follow primitive scratch in distinct domains.
         Exclusive sharing gives each use a distinct domain. Shared placement
         reuses a domain only when ``_temp_storage_domain_key`` permits it.
         Within a domain, reserve the largest per-instance requirement and
@@ -1388,7 +1394,9 @@ class _ProvenanceRewrite(Rewrite):
             plan keyed by the object identity of each call assignment.
         """
 
-        ordered_uses = sorted(uses, key=lambda entry: entry.order)
+        ordered_uses = sorted(
+            uses, key=lambda entry: (entry.permanent, entry.order)
+        )
         required_alignment = max(
             _MIN_TEMP_STORAGE_ALIGNMENT,
             *(max(1, int(entry.alignment)) for entry in ordered_uses),
@@ -1396,7 +1404,9 @@ class _ProvenanceRewrite(Rewrite):
         domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
         for entry in ordered_uses:
             domain_key = (
-                ("exclusive", entry.order)
+                ("reservation", entry.order)
+                if entry.permanent
+                else ("exclusive", entry.order)
                 if sharing == "exclusive"
                 else self._temp_storage_domain_key(entry)
             )
@@ -1451,7 +1461,7 @@ class _ProvenanceRewrite(Rewrite):
         adds its base offset. A descriptor with no uses needs an explicit
         capacity and the default sharing/synchronization policy here;
         whole-function descriptor validation separately rejects constructors
-        without primitive consumers.
+        without primitive or reservation consumers.
 
         Parameters
         ----------
@@ -1518,7 +1528,8 @@ class _ProvenanceRewrite(Rewrite):
         if required_size > 0 and size_in_bytes < required_size:
             raise CoopSinglePhaseRewriteError(
                 "TempStorage size_in_bytes is smaller than required by "
-                f"primitive uses ({size_in_bytes} < {required_size})."
+                "primitive and reserve uses "
+                f"({size_in_bytes} < {required_size})."
             )
         if ctor_specification.alignment is None:
             alignment = _default_temp_storage_alignment(required_alignment)
