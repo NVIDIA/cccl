@@ -85,10 +85,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto* const __ptr = __all_local_sizes.data()[__idx].data();
+      auto* const __ptr = __all_local_sizes[__idx].data();
 
-      __comm_it->all_gather(
-        __guard, __ptr + __comm_it->rank(), __ptr, /*__count=*/1, __all_local_sizes.data()[__idx].stream());
+      __comm_it->all_gather(__guard, __ptr + __comm_it->rank(), __ptr, /*__count=*/1, __all_local_sizes[__idx].stream());
     }
   }
 
@@ -107,8 +106,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
          (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
     {
       auto& __offsets = __all_local_offsets.emplace_back(
-        __all_local_sizes.data()[__idx].stream(),
-        __all_local_sizes.data()[__idx].memory_resource(),
+        __all_local_sizes[__idx].stream(),
+        __all_local_sizes[__idx].memory_resource(),
         __comm_size,
         ::cuda::no_init,
         ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
@@ -116,9 +115,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
       __CUDAX_MULTI_GPU_DISPATCH(
         __offsets.stream(),
         CUB_NS_QUALIFIER::DeviceScan::ExclusiveSum,
-        __all_local_sizes.data()[__idx].begin(),
+        __all_local_sizes[__idx].begin(),
         __offsets.begin(),
-        __all_local_sizes.data()[__idx].size(),
+        __all_local_sizes[__idx].size(),
         *__env_it);
 
       if (__idx == 0)
@@ -129,17 +128,17 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__local_setup(
         }
 
         ::cuda::copy_bytes(
-          __all_local_sizes.data()[__idx].stream(),
-          __all_local_sizes.data()[__idx],
+          __all_local_sizes[__idx].stream(),
+          __all_local_sizes[__idx],
           __h_sizes,
-          ::cuda::copy_configuration{__all_local_sizes.data()[__idx].stream().device(),
+          ::cuda::copy_configuration{__all_local_sizes[__idx].stream().device(),
                                      ::cuda::host_memory_location,
                                      ::cuda::source_access_order::stream});
       }
     }
   }
 
-  __all_local_sizes.data()[0].stream().sync();
+  __all_local_sizes[0].stream().sync();
 
   const auto __N = ::cuda::std::accumulate(__h_sizes.begin(), __h_sizes.end(), ::cuda::std::uint64_t{0});
 

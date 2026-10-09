@@ -190,9 +190,9 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local;
          (void) ++__idx, (void) ++__comm_it, (void) ++__env_it, (void) ++__input_it, (void) ++__num_items_it)
     {
-      const auto& __hist   = __hist_results.data()[__idx].__hist;
-      const auto& __I_j    = __hist_results.data()[__idx].__splitters.__I_j;
-      const auto& __probes = __hist_results.data()[__idx].__splitters.__probes;
+      const auto& __hist   = __hist_results[__idx].__hist;
+      const auto& __I_j    = __hist_results[__idx].__splitters.__I_j;
+      const auto& __probes = __hist_results[__idx].__splitters.__probes;
 
       auto& __counts = __local_counts.emplace_back(
         __I_j.stream(),
@@ -279,10 +279,10 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_send_counts_and_offsets(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__comm_it)
     {
-      auto* const __send_ptr = __send_span(__local_counts.data()[__idx]).data();
-      auto* const __recv_ptr = __recv_span(__local_counts.data()[__idx]).data();
+      auto* const __send_ptr = __send_span(__local_counts[__idx]).data();
+      auto* const __recv_ptr = __recv_span(__local_counts[__idx]).data();
 
-      __comm_it->all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __local_counts.data()[__idx].stream());
+      __comm_it->all_to_all(__guard, __send_ptr, __recv_ptr, /*__count=*/1, __local_counts[__idx].stream());
     }
   }
 
@@ -311,12 +311,11 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
       static_assert(__h_recv_counts_column == __h_send_counts_column + 1,
                     "The fused counts copy requires the send and recv count columns to be adjacent");
       ::cuda::copy_bytes(
-        __local_counts.data()[__idx].stream(),
-        __local_counts.data()[__idx],
+        __local_counts[__idx].stream(),
+        __local_counts[__idx],
         ::cuda::std::span<::cuda::std::size_t>{__h_send_counts.data(), 2 * __h_send_counts.size()},
-        ::cuda::copy_configuration{__local_counts.data()[__idx].stream().device(),
-                                   ::cuda::host_memory_location,
-                                   ::cuda::source_access_order::stream});
+        ::cuda::copy_configuration{
+          __local_counts[__idx].stream().device(), ::cuda::host_memory_location, ::cuda::source_access_order::stream});
     }
   }
 
@@ -328,7 +327,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__env_it)
     {
       // All streams are the same, so any suffices
-      __local_counts.data()[__idx].stream().sync();
+      __local_counts[__idx].stream().sync();
 
       const auto __h_send_counts = __h_column(*__h_counts, __comm_size, __idx, __h_send_counts_column);
       const auto __h_recv_counts = __h_column(*__h_counts, __comm_size, __idx, __h_recv_counts_column);
@@ -347,8 +346,8 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__make_recv_buffers(
       const auto __total_recv = __h_recv_displs.back() + __h_recv_counts.back();
 
       __local_recvd.emplace_back(
-        __local_counts.data()[__idx].stream(),
-        __local_counts.data()[__idx].memory_resource(),
+        __local_counts[__idx].stream(),
+        __local_counts[__idx].memory_resource(),
         __total_recv,
         ::cuda::no_init,
         ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
@@ -406,10 +405,10 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
         ::cuda::std::to_address(*__input_it),
         __h_column(__local_h_counts, __comm_size, __idx, __h_send_counts_column).data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_send_displs_column).data(),
-        __local_recvd.data()[__idx].data(),
+        __local_recvd[__idx].data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_counts_column).data(),
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_displs_column).data(),
-        __local_recvd.data()[__idx].stream());
+        __local_recvd[__idx].stream());
     }
   }
 
@@ -428,13 +427,13 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__data_exchange(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local; (void) ++__idx, (void) ++__env_it)
     {
       auto& __merged = __local_merged.emplace_back(
-        __local_recvd.data()[__idx].stream(),
-        __local_recvd.data()[__idx].memory_resource(),
+        __local_recvd[__idx].stream(),
+        __local_recvd[__idx].memory_resource(),
         ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(*__env_it));
 
       __merge_k_way(
         *__env_it,
-        __local_recvd.data()[__idx],
+        __local_recvd[__idx],
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_counts_column),
         __h_column(__local_h_counts, __comm_size, __idx, __h_recv_displs_column),
         __cmp,

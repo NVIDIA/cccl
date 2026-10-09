@@ -193,7 +193,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
        (void) ++__idx, (void) ++__comm_it, (void) ++__input_it, (void) ++__num_items_it)
   {
     const auto __rank   = __comm_it->rank();
-    auto& __all_samples = __scratch.data()[__idx].__all_samples;
+    auto& __all_samples = __scratch[__idx].__all_samples;
 
     // Sized to hold every rank's slot at full capacity. The slots are ragged once the kernels
     // run, so the gather that follows sends only the true counts.
@@ -203,7 +203,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
     const auto __seed =
       (static_cast<::cuda::std::uint64_t>(__j) * 0x129381294235245ULL) ^ static_cast<::cuda::std::uint64_t>(__rank);
 
-    const auto& __I_j  = __local_hist_results.data()[__idx].__splitters.__I_j;
+    const auto& __I_j  = __local_hist_results[__idx].__splitters.__I_j;
     const auto* __keys = ::cuda::std::to_address(*__input_it);
 
     ::cuda::launch(
@@ -222,7 +222,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__local_sampling(
       // allgather them in place later
       __all_samples.subspan(__cap_displs[__rank], __cap_displs[__rank + 1] - __cap_displs[__rank]),
       // Likewise, write to our rank slot for an inplace allgather
-      __scratch.data()[__idx].__samples_size.data() + __rank);
+      __scratch[__idx].__samples_size.data() + __rank);
   }
 }
 
@@ -355,7 +355,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto& __samples_size = __local_scratch->data()[__idx].__samples_size;
+      auto& __samples_size = (*__local_scratch)[__idx].__samples_size;
       auto* const __ptr    = __samples_size.data();
 
       __comm_it->all_gather(__guard, __ptr + __comm_it->rank(), __ptr, /*__count=*/1, __samples_size.stream());
@@ -364,7 +364,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__exchange_sample_counts(
 
   // We need to copy only once here because the all gather above ensures all ranks have the
   // same samples-size entries
-  const auto& __samples_size = __local_scratch->data()[0].__samples_size;
+  const auto& __samples_size = (*__local_scratch)[0].__samples_size;
 
   ::cuda::copy_bytes(
     __samples_size.stream(),
@@ -399,7 +399,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto& __all_samples = __local_scratch->data()[__idx].__all_samples;
+      auto& __all_samples = (*__local_scratch)[__idx].__all_samples;
       const auto __rank   = __comm_it->rank();
 
       // A rank that overfills its slot means the capacity bound was too tight and the sampling
@@ -425,11 +425,11 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__gather_and_merge_probes(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__env_it)
     {
-      auto& __probes = __local_hist_results->data()[__idx].__splitters.__probes;
+      auto& __probes = (*__local_hist_results)[__idx].__splitters.__probes;
 
       __merge_k_way(
         *__env_it,
-        __local_scratch->data()[__idx].__all_samples,
+        (*__local_scratch)[__idx].__all_samples,
         __h_recvcounts,
         __h_cap_displs.first(__h_recvcounts.size()),
         __cmp,
@@ -459,8 +459,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs;
          (void) ++__idx, (void) ++__env_it, (void) ++__keys_it, (void) ++__num_items_it)
     {
-      auto& __hist               = __local_hist_results->data()[__idx].__hist;
-      auto& __probes             = __local_hist_results->data()[__idx].__splitters.__probes;
+      auto& __hist               = (*__local_hist_results)[__idx].__hist;
+      auto& __probes             = (*__local_hist_results)[__idx].__splitters.__probes;
       const auto __num_probes    = __probes.size();
       const auto __num_buckets   = __num_probes + 1;
       const auto* __keys_first   = ::cuda::std::to_address(*__keys_it);
@@ -490,7 +490,7 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__compute_histogram(
 
     for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it)
     {
-      auto& __hist      = __local_hist_results->data()[__idx].__hist;
+      auto& __hist      = (*__local_hist_results)[__idx].__hist;
       auto* const __ptr = __hist.data();
 
       __comm_it->all_reduce(__guard, __ptr, __ptr, __hist.size(), ::cuda::std::plus<>{}, __hist.stream());
@@ -515,8 +515,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__update_intervals(
   for (::cuda::std::size_t __idx = 0; __idx < __num_local_inputs; (void) ++__idx, (void) ++__comm_it, (void) ++__env_it)
   {
     const auto __comm_size = __comm_it->size();
-    auto& __splitters      = __local_hist_results->data()[__idx].__splitters;
-    const auto& __hist     = __local_hist_results->data()[__idx].__hist;
+    auto& __splitters      = (*__local_hist_results)[__idx].__splitters;
+    const auto& __hist     = (*__local_hist_results)[__idx].__hist;
     auto& __I_j            = __splitters.__I_j;
     auto& __probes         = __splitters.__probes;
 
@@ -614,7 +614,7 @@ _HSSSorter<_Tp, _Env, _BinaryOp>::__histogramming_phase(
       //
       // The kernel writes straight into this rank's slot of the combined sample buffer, so there
       // is no separate per-rank sample buffer to gather out of later.
-      const auto __cap = static_cast<::cuda::std::size_t>(__setup.__all_local_sizes.data()[__r] * __prob)
+      const auto __cap = static_cast<::cuda::std::size_t>(__setup.__all_local_sizes[__r] * __prob)
                        + static_cast<::cuda::std::size_t>(__comm_size - 1);
 
       __cap_displs[__r + 1] = __cap_displs[__r] + ::cuda::std::max(__cap, ::cuda::std::size_t{1});
