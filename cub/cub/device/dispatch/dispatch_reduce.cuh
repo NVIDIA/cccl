@@ -621,10 +621,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE void* get_device_ptr(void* ptr)
   return *reinterpret_cast<void**>(ptr);
 }
 
-//! @copydoc CUB_NS_QUALIFIER::detail::num_items_offset_t
-template <typename OffsetT>
-using num_items_offset_t = CUB_NS_QUALIFIER::detail::num_items_offset_t<OffsetT>;
-
 template <bool StableReductionOrder,
           typename AccumT,
           typename InputIteratorT,

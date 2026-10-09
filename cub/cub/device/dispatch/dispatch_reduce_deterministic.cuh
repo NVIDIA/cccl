@@ -380,7 +380,7 @@ template <typename InputIteratorT,
           typename TransformOpT          = ::cuda::std::identity,
           typename AccumT                = accum_t<InitValueT, InputIteratorT, TransformOpT>,
           typename PolicySelector        = policy_selector_from_types<AccumT,
-                                                                      reduce::num_items_offset_t<OffsetT>,
+                                                                      detail::num_items_offset_t<OffsetT>,
                                                                       deterministic_sum_t<AccumT>,
                                                                       __determinism_t::__gpu_to_gpu>,
           typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>

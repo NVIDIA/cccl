@@ -40,9 +40,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<int32_t>, int32_t>);
 using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
-static_assert(cuda::std::is_same_v<cub::detail::reduce::num_items_offset_t<deferred_count_t>, uint32_t>);
+static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
