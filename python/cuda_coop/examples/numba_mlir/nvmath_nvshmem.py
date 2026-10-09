@@ -136,7 +136,7 @@ def _source(rank):
     ).astype(np.complex64)
 
 
-def main(use_mpi=False):
+def main(use_mpi=False, *, kernel_factory=make_kernel):
     """Check FFT, reduction, and the payload received from the preceding PE."""
     rank, nranks, local_rank = 0, 1, 0
     if use_mpi:
@@ -176,7 +176,7 @@ def main(use_mpi=False):
         source = _source(rank)
         data = cuda.to_device(source)
         energy = cuda.to_device(np.zeros(1, dtype=np.float32))
-        kernel, block = make_kernel()
+        kernel, block = kernel_factory()
         kernel[1, block](data, staging, received, energy, (rank + 1) % nranks)
         device.sync()
         nvshmem.core.barrier_all(stream=stream)

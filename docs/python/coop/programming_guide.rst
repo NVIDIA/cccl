@@ -874,6 +874,17 @@ backing, including when ``temp_storage`` is omitted. The compatibility restricti
 until a released compiler with the shared-memory fix has passed the coexistence
 tests.
 
+Reservations are optional when ordinary static shared arrays and cooperative
+scratch fit together within the device's static shared-memory limit. The
+:download:`ordinary-array nvmath example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_fft_shared.py>` and
+:download:`ordinary-array nvmath/NVSHMEM example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_nvshmem_shared.py>` use
+``cuda.shared.array`` for library and application buffers, and implicit scratch
+for ``coop.sum``. They require no ``TempStorage`` descriptor or reservation.
+The kernel still supplies barriers for application data and the external
+libraries' completion and release calls.
+
 Extra shared memory can reduce resident blocks per multiprocessor. The
 default inferred allocation and unsized shared descriptor are sufficient
 for the kernels above; use an explicit capacity when you have a reason to
