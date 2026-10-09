@@ -37,15 +37,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD_VIEWS
 
 _CCCL_BEGIN_NAMESPACE_CPO(__all)
 
-template <class _Tp>
-_CCCL_CONCEPT __to_ref_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
-  requires(!::cuda::std::ranges::view<decay_t<_Tp>>), (::cuda::std::ranges::ref_view{::cuda::std::forward<_Tp>(__t)}));
+template <class _Range>
+_CCCL_CONCEPT __to_ref_view = _CCCL_REQUIRES_EXPR((_Range), _Range&& __r)(
+  requires(!::cuda::std::ranges::view<decay_t<_Range>>),
+  (::cuda::std::ranges::ref_view{::cuda::std::forward<_Range>(__r)}));
 
-template <class _Tp>
-_CCCL_CONCEPT __to_owning_view = _CCCL_REQUIRES_EXPR((_Tp), _Tp&& __t)(
-  requires(!::cuda::std::ranges::view<decay_t<_Tp>>),
-  requires(!__to_ref_view<_Tp>),
-  (::cuda::std::ranges::owning_view{::cuda::std::forward<_Tp>(__t)}));
+template <class _Range>
+_CCCL_CONCEPT __to_owning_view = _CCCL_REQUIRES_EXPR((_Range), _Range&& __r)(
+  requires(!::cuda::std::ranges::view<decay_t<_Range>>),
+  requires(!__to_ref_view<_Range>),
+  (::cuda::std::ranges::owning_view{::cuda::std::forward<_Range>(__r)}));
 
 struct __fn : __range_adaptor_closure<__fn>
 {
