@@ -8,6 +8,8 @@
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/ptx>
+#include <cuda/std/__floating_point/arithmetic.h>
+#include <cuda/std/__floating_point/cast.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
@@ -177,6 +179,7 @@ using builtin_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t>;
 // clang-format off
 using floating_point_redux_type_list = c2h::type_list<
 float
+, double
 #if TEST_HALF_T()
 , __half
 #endif // TEST_HALF_T()
@@ -362,6 +365,34 @@ CUB_TEST("WarpReduce::Max/Min, floating-point redux types",
   {
     verify_results(h_out, d_out);
   }
+}
+
+CUB_TEST("WarpReduce::Max/Min, floating-point NaN inputs are ignored",
+         "[reduce][warp][predefined_op][redux]",
+         CUB_SMALL,
+         floating_point_redux_type_list,
+         predefined_min_max_op_list)
+{
+  using T               = c2h::get<0, TestType>;
+  using predefined_op   = c2h::get<1, TestType>;
+  constexpr bool is_min = cuda::std::is_same_v<predefined_op, cuda::minimum<>>;
+  CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>());
+  // -NaN and +NaN are the lowest and highest values
+  const auto nan        = cuda::std::numeric_limits<T>::quiet_NaN();
+  const auto nan_per_op = is_min ? cuda::std::__fp_neg(nan) : nan;
+  c2h::host_vector<T> h_in(total_warps * warp_size);
+  for (unsigned i = 0; i < h_in.size(); ++i)
+  {
+    const auto lane = i % warp_size;
+    h_in[i]         = lane == 0 ? nan_per_op : cuda::std::__fp_cast<T>(static_cast<float>(lane));
+  }
+  c2h::device_vector<T> d_in = h_in;
+  c2h::device_vector<T> d_out(total_warps);
+  warp_reduce_launch<warp_size>(d_in, d_out, warp_reduce_t<predefined_op, T>{});
+
+  const auto expected = is_min ? 1.0f : warp_size - 1.0f;
+  const c2h::host_vector<T> h_expected(total_warps, cuda::std::__fp_cast<T>(expected));
+  verify_results_exact(h_expected, d_out);
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 internal compiler error in test code only

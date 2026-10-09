@@ -51,6 +51,8 @@ CUB_NAMESPACE_BEGIN
 //!   operator to compute a single aggregate from a list of input elements.
 //! - Supports "logical" warps smaller than the physical warp size (e.g., logical warps of 8 threads)
 //! - The number of entrant threads must be an multiple of ``LogicalWarpThreads``
+//! - For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
+//!   result is NaN.
 //!
 //! Performance Considerations
 //! ++++++++++++++++++++++++++
@@ -82,6 +84,8 @@ CUB_NAMESPACE_BEGIN
 //!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.min/max``
 //!     - 64-bit integers: 2x ``redux.sync.min/max``
 //!     - 128-bit integers: 4x ``redux.sync.min/max``
+//!     - ``__half``, ``__nv_bfloat16``, ``float``, ``double``, and ``__float128``: the values are mapped to integers
+//!       and reduced as above.
 //!
 //!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor``: N times ``redux.sync.<bit_op>``,
 //!     where N is ceil(sizeof(T) / sizeof(unsigned)))
@@ -482,6 +486,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
+  //! result is NaN.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -550,6 +557,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs are NaN, the
+  //! result is NaN.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -613,6 +623,9 @@ public:
   //!
   //! Supports non-commutative reduction operators
   //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs of a segment
+  //! are NaN, the result of that segment is NaN.
+  //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
   //!
@@ -674,6 +687,9 @@ public:
   //! (which always includes *lane*\ :sub:`0`).
   //!
   //! Supports non-commutative reduction operators
+  //!
+  //! For floating-point types, ``cuda::minimum`` and ``cuda::maximum`` ignore NaN inputs. If all inputs of a segment
+  //! are NaN, the result of that segment is NaN.
   //!
   //! .. versionadded:: 2.2.0
   //!    First appears in CUDA Toolkit 12.3.
