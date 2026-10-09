@@ -344,10 +344,10 @@ request capacity and alignment. Both explicit and omitted storage
 participate in the shared-memory plan and launch accounting. The provider
 determines the required byte count and alignment.
 
-A descriptor's `sharing` selects only the slice layout: `"shared"` overlaps
-every call that passes the same descriptor on one region, while
-`"exclusive"` gives each call site its own slice. A call site inside a loop
-reuses its slice under either layout, so `auto_sync` is independent of
+A descriptor's `sharing` selects the primitive scratch layout: `"shared"`
+overlaps primitive calls that pass the same descriptor on one region, while
+`"exclusive"` gives each primitive call site its own slice. A call site inside
+a loop reuses its slice under either layout, so `auto_sync` is independent of
 `sharing` and defaults to `False` for both.
 
 Exclusive slices use more shared memory to avoid barriers needed solely for
@@ -366,6 +366,25 @@ kernel's own shared-memory traffic. With `auto_sync=False`, the caller issues
 `cuda.syncthreads()` between consecutive uses, and a call site inside a loop
 counts as a reuse on every iteration. Compiler-owned storage always
 synchronizes.
+
+Numba-CUDA-MLIR also supports `storage.reserve(num_elems, dtype, alignment=None)`
+inside a kernel. It returns an ordinary one-dimensional shared array for
+application data or another device library. The count, integer/float/complex
+scalar dtype, and optional byte alignment must be compile-time constants.
+Each reservation has a disjoint region for the block's kernel execution,
+separate from all primitive scratch and other reservations under either sharing
+policy.
+Explicit capacity includes these regions and their alignment padding.
+Repeating a reservation call site reuses its region.
+
+Descriptors used with `reserve()` must have `auto_sync=False` or `None`;
+`auto_sync=True` is rejected. The caller supplies synchronization and each
+library's completion and release operations. The runnable
+[nvmath FFT](examples/numba_mlir/nvmath_fft.py) and
+[nvmath + NVSHMEM](examples/numba_mlir/nvmath_nvshmem.py) examples demonstrate
+the array and pointer consumers. Their
+[instructions](examples/numba_mlir/README.md) cover dependencies and launch
+commands.
 
 All descriptors and compiler-owned requirements of a kernel share one
 shared-memory backing. Up to 48 KiB, the compiler uses static shared memory
