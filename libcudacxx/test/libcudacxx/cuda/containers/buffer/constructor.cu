@@ -18,6 +18,7 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <stdexcept>
 
@@ -217,6 +218,62 @@ C2H_CCCLRT_TEST("cuda::buffer constructors", "[container][buffer]", test_types)
       CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
       CCCLRT_CHECK(buf.size() == 6);
       CCCLRT_CHECK(equal_range(buf));
+    }
+  }
+
+  SECTION("Initializer list source lifetime")
+  {
+    const auto alignment = cuda::mr::default_cuda_malloc_alignment / 2;
+    const auto env       = cuda::std::execution::prop{cuda::allocation_alignment, alignment};
+
+    // Each source expires before equal_range synchronizes the stream.
+    {
+      auto buf = [&] {
+        return Buffer{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}, env};
+      }();
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(equal_range(buf));
+    }
+    {
+      auto buf = [&] {
+        cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
+        return Buffer{stream, resource, cuda::std::move(input), env};
+      }();
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(equal_range(buf));
+    }
+    {
+      auto buf = [&] {
+        const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
+        return cuda::make_buffer<T>(stream, resource, cuda::std::move(input), env);
+      }();
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(equal_range(buf));
+    }
+    {
+      auto buf = [&] {
+        return cuda::make_buffer<T, cuda::mr::device_accessible>(
+          stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}, env);
+      }();
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(equal_range(buf));
+    }
+    {
+      cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
+      Buffer buf{stream, resource, input};
+      auto made = cuda::make_buffer<T>(stream, resource, input);
+      CCCLRT_CHECK(equal_range(buf));
+      CCCLRT_CHECK(equal_range(made));
+    }
+    {
+      Buffer buf{stream, resource, cuda::std::initializer_list<T>{}, env};
+      auto made = cuda::make_buffer<T, cuda::mr::device_accessible>(stream, resource, {}, env);
+      CCCLRT_CHECK(buf.empty());
+      CCCLRT_CHECK(buf.data() == nullptr);
+      CCCLRT_CHECK(buf.alignment() == alignment);
+      CCCLRT_CHECK(made.empty());
+      CCCLRT_CHECK(made.data() == nullptr);
+      CCCLRT_CHECK(made.alignment() == alignment);
     }
   }
 
@@ -594,6 +651,22 @@ C2H_CCCLRT_TEST("cuda::make_device_buffer", "[container][buffer]")
     CCCLRT_CHECK(equal_range(buf));
   }
 
+  SECTION("named initializer_list")
+  {
+    cuda::std::initializer_list<int> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_device_buffer<int>(stream, dev, input);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("const rvalue initializer_list source lifetime")
+  {
+    auto buf = [&] {
+      const cuda::std::initializer_list<int> input{1, 42, 1337, 0, 12, -1};
+      return cuda::make_device_buffer<int>(stream, dev, cuda::std::move(input));
+    }();
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
   stream.sync();
 }
 
@@ -695,6 +768,22 @@ C2H_CCCLRT_TEST("cuda::make_pinned_buffer", "[container][buffer]")
     CCCLRT_CHECK(equal_range(buf));
   }
 
+  SECTION("named initializer_list")
+  {
+    cuda::std::initializer_list<int> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_pinned_buffer<int>(stream, input);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("const rvalue initializer_list source lifetime")
+  {
+    auto buf = [&] {
+      const cuda::std::initializer_list<int> input{1, 42, 1337, 0, 12, -1};
+      return cuda::make_pinned_buffer<int>(stream, cuda::std::move(input));
+    }();
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
   stream.sync();
 }
 #endif // _CCCL_CTK_AT_LEAST(12, 9)
@@ -765,6 +854,22 @@ C2H_CCCLRT_TEST("cuda::make_managed_buffer", "[container][buffer]")
     CCCLRT_CHECK(buf.size() == 6);
     CCCLRT_CHECK(buf.alignment() == alignment);
     CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("named initializer_list")
+  {
+    cuda::std::initializer_list<int> input{1, 42, 1337, 0, 12, -1};
+    auto buf = cuda::make_managed_buffer<int>(stream, input);
+    CCCLRT_CHECK(equal_range(buf));
+  }
+
+  SECTION("const rvalue initializer_list source lifetime")
+  {
+    auto buf = [&] {
+      const cuda::std::initializer_list<int> input{1, 42, 1337, 0, 12, -1};
+      return cuda::make_managed_buffer<int>(stream, cuda::std::move(input));
+    }();
     CCCLRT_CHECK(equal_range(buf));
   }
 
