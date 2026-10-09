@@ -18,6 +18,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/uninitialized_fill.h>
 
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
