@@ -495,6 +495,8 @@ struct AgentScan
 
     __syncthreads();
 
+    // Thread 0 receives the inclusive prefix before it is read.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     AccumT tile_inclusive;
     if (batch_tile_idx == 0)
     {
