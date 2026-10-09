@@ -69,6 +69,33 @@ CUB_TEST_CASE("DeviceHistogram::HistogramEven works with default environment", "
   REQUIRE(d_histogram == expected);
 }
 
+CUB_TEST_CASE("DeviceHistogram::HistogramEven supports wide output counters with default tuning",
+              "[histogram][device]",
+              CUB_SMALL)
+{
+  using counter_t = unsigned long long;
+
+  const auto d_samples           = c2h::device_vector<unsigned int>{0, 2, 1, 0, 3, 4, 2, 1};
+  const int num_samples          = static_cast<int>(d_samples.size());
+  const int num_levels           = 6;
+  const unsigned int lower_level = 0;
+  const unsigned int upper_level = 5;
+  auto d_histogram               = c2h::device_vector<counter_t>(num_levels - 1, counter_t{0});
+
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::HistogramEven(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      lower_level,
+      upper_level,
+      num_samples));
+
+  const c2h::device_vector<counter_t> expected{2, 2, 2, 1, 1};
+  REQUIRE(d_histogram == expected);
+}
+
 CUB_TEST_CASE("DeviceHistogram::HistogramEven works with user provided memory and environment",
               "[histogram][device]",
               CUB_SMALL)
@@ -657,6 +684,65 @@ CUB_TEST("DeviceHistogram::MultiHistogramEven uses environment", "[histogram][de
   const c2h::device_vector<int> expected_r{1, 0, 0, 1};
   const c2h::device_vector<int> expected_g{0, 0, 1, 0};
   const c2h::device_vector<int> expected_b{0, 1, 1, 0};
+  REQUIRE(d_histogram_r == expected_r);
+  REQUIRE(d_histogram_g == expected_g);
+  REQUIRE(d_histogram_b == expected_b);
+}
+
+CUB_TEST("DeviceHistogram::MultiHistogramEven handles the device-launch dynamic-SMEM boundary",
+         "[histogram][device]",
+         CUB_SMALL)
+{
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  [[maybe_unused]] constexpr int num_channels = 4;
+  constexpr int num_active_channels           = 3;
+  // The direct-load kernel has no static shared-memory footprint, so 4,096
+  // three-channel counters exactly fill the B200's 48 KiB device-launch limit.
+  constexpr int num_bins   = 4096;
+  constexpr int num_levels = num_bins + 1;
+  auto d_samples           = c2h::device_vector<int>{0, 1, 2, 3};
+
+  const cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
+  const cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
+  const cuda::std::array<int, num_active_channels> upper_levels{num_bins, num_bins, num_bins};
+
+  auto d_histogram_r = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto d_histogram_g = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto d_histogram_b = c2h::device_vector<unsigned int>(num_bins, 0);
+  const cuda::std::array<unsigned int*, num_active_channels> d_histograms = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+
+  size_t expected_bytes_allocated{};
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>(
+      nullptr,
+      expected_bytes_allocated,
+      thrust::raw_pointer_cast(d_samples.data()),
+      d_histograms,
+      levels,
+      lower_levels,
+      upper_levels,
+      1));
+
+  auto env = stdexec::env{expected_allocation_size(expected_bytes_allocated)};
+  multi_histogram_even<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_samples.data()), d_histograms, levels, lower_levels, upper_levels, 1, env);
+
+  auto expected_r = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto expected_g = c2h::device_vector<unsigned int>(num_bins, 0);
+  auto expected_b = c2h::device_vector<unsigned int>(num_bins, 0);
+  expected_r[0]   = 1;
+  expected_g[1]   = 1;
+  expected_b[2]   = 1;
   REQUIRE(d_histogram_r == expected_r);
   REQUIRE(d_histogram_g == expected_g);
   REQUIRE(d_histogram_b == expected_b);
@@ -1469,9 +1555,125 @@ struct histogram_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
   {
-    return {BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, cub::SMEM, false, 0};
+    constexpr auto sweep =
+      cub::HistogramPrivatizationPolicy{BlockThreads, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    return {sweep, sweep, sweep, 256, 256 * sizeof(unsigned int), 0, 0, 0, 0, 0, 0, 0};
   }
 };
+
+template <cub::HistogramHighBinAlgorithm Algorithm,
+          cub::HistogramCacheAlgorithm Cache,
+          cub::HistogramSpillAlgorithm Spill,
+          cub::HistogramAggregationAlgorithm Aggregation,
+          int CacheBytesPerChannel = 6144>
+struct high_bin_histogram_tuning
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    auto policy                                      = histogram_tuning<128>{}(cc);
+    policy.high_bin_algorithm                        = Algorithm;
+    policy.high_bin_cache                            = Cache;
+    policy.high_bin_spill                            = Spill;
+    policy.high_bin_aggregation                      = Aggregation;
+    policy.high_bin_cache_bytes_per_channel          = CacheBytesPerChannel;
+    policy.high_bin_cache_count_replicas             = 2;
+    policy.high_bin_cache_cuckoo_max_histogram_bytes = 16384;
+    policy.high_bin_items_per_thread                 = 2;
+    policy.high_bin_threads_per_block                = 128;
+    policy.high_bin_min_histogram_bytes              = 0;
+    return policy;
+  }
+};
+
+struct wide_counter_cooperative_histogram_tuning
+    : high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced>
+{
+  using local_counter_type = unsigned long long;
+};
+
+struct cooperative_storage_histogram_tuning
+    : high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::single_probe,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::rle>
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    auto policy = high_bin_histogram_tuning::operator()(cc);
+    policy.gmem =
+      cub::HistogramPrivatizationPolicy{1024, 1, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    policy.high_bin_threads_per_block    = 128;
+    policy.high_bin_blocks_per_sm        = 4;
+    policy.high_bin_grid_items_per_block = 128;
+    return policy;
+  }
+};
+
+template <int BlockThreads, typename LocalCounterT>
+struct histogram_tuning_with_local_counter : histogram_tuning<BlockThreads>
+{
+  using local_counter_type = LocalCounterT;
+};
+
+struct mixed_counter_histogram_tuning
+{
+  using local_counter_type = unsigned int;
+
+  _CCCL_API constexpr auto operator()(cuda::compute_capability) const -> cub::HistogramPolicy
+  {
+    constexpr auto sweep =
+      cub::HistogramPrivatizationPolicy{128, 4, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, false, false};
+    return {
+      sweep,
+      sweep,
+      sweep,
+      256,
+      512 * sizeof(unsigned int),
+      228352,
+      0,
+      2048 * sizeof(unsigned int),
+      28544 * sizeof(unsigned int) * 2,
+      19029 * sizeof(unsigned int) * 3,
+      8192 * sizeof(unsigned int) * 4,
+      0};
+  }
+};
+
+static_assert(
+  cuda::std::is_same_v<
+    cub::detail::histogram::local_counter_t<histogram_tuning_with_local_counter<128, unsigned int>, unsigned long long>,
+    unsigned int>);
+static_assert(cuda::std::is_same_v<cub::detail::histogram::local_counter_t<histogram_tuning<128>, unsigned long long>,
+                                   unsigned long long>);
+
+CUB_TEST("DeviceHistogram supports narrower local counters than output counters", "[histogram][device]", CUB_SMALL)
+{
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  constexpr int num_samples = 4096;
+  constexpr int num_levels  = num_samples + 1;
+  auto d_histogram          = c2h::device_vector<unsigned long long>(num_samples, 0);
+  auto env                  = cuda::execution::tune(mixed_counter_histogram_tuning{});
+
+  histogram_even(
+    cuda::counting_iterator<unsigned int>(0),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    0u,
+    static_cast<unsigned int>(num_samples),
+    num_samples,
+    env);
+
+  REQUIRE(d_histogram == c2h::host_vector<unsigned long long>(num_samples, 1));
+}
 
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
@@ -1583,6 +1785,233 @@ CUB_TEST("DeviceHistogram::MultiHistogramRange can be tuned", "[histogram][devic
   REQUIRE(d_block_size[0] == target_block_size);
 }
 
+CUB_TEST("DeviceHistogram high-bin cooperative strategies can be tuned", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_levels  = 1026;
+  constexpr int num_samples = 32768;
+  c2h::host_vector<int> h_samples(num_samples);
+  c2h::host_vector<int> h_expected(num_levels - 1, 0);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    const int sample = i % (num_levels - 1);
+    h_samples[i]     = sample;
+    ++h_expected[sample];
+  }
+  const c2h::device_vector<int> d_samples = h_samples;
+  const c2h::device_vector<int> expected  = h_expected;
+
+  const auto run = [&](auto tuning) {
+    c2h::device_vector<int> d_histogram(num_levels - 1, 0);
+    auto env = cuda::execution::tune(tuning);
+    histogram_even(
+      thrust::raw_pointer_cast(d_samples.data()),
+      thrust::raw_pointer_cast(d_histogram.data()),
+      num_levels,
+      0,
+      num_levels - 1,
+      static_cast<int>(d_samples.size()),
+      env);
+    REQUIRE(d_histogram == expected);
+  };
+
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::global_memory_privatized,
+                                cub::HistogramCacheAlgorithm::none,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::direct>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::none,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::direct>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::single_probe,
+                                cub::HistogramSpillAlgorithm::global_memory_privatized,
+                                cub::HistogramAggregationAlgorithm::rle>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+  run(high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                                cub::HistogramCacheAlgorithm::cuckoo,
+                                cub::HistogramSpillAlgorithm::output,
+                                cub::HistogramAggregationAlgorithm::warp_coalesced,
+                                98304>{});
+  // The cooperative grid can require more privatized slabs than the ordinary
+  // sweep. The environment API queries and allocates exactly the reported size.
+  run(cooperative_storage_histogram_tuning{});
+}
+
+CUB_TEST("DeviceHistogram cooperative warp aggregation handles invalid lanes", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_levels  = 1026;
+  constexpr int num_samples = 257;
+  c2h::host_vector<int> h_samples(num_samples);
+  c2h::host_vector<unsigned long long> h_expected(num_levels - 1, 0);
+  for (int i = 0; i < num_samples; ++i)
+  {
+    const int sample = i % 7 == 0 ? -1 : i % (num_levels - 1);
+    h_samples[i]     = sample;
+    if (sample >= 0)
+    {
+      ++h_expected[sample];
+    }
+  }
+
+  const c2h::device_vector<int> d_samples               = h_samples;
+  c2h::device_vector<unsigned long long> d_histogram    = h_expected;
+  const c2h::device_vector<unsigned long long> expected = h_expected;
+  thrust::fill(d_histogram.begin(), d_histogram.end(), 0);
+  const auto env = cuda::execution::tune(wide_counter_cooperative_histogram_tuning{});
+
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    0,
+    num_levels - 1,
+    static_cast<long long>(d_samples.size()),
+    env);
+  REQUIRE(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram high-bin cooperative strategy handles strided rows", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  constexpr int num_levels          = 1026;
+  constexpr int num_row_pixels      = 512;
+  constexpr int num_rows            = 4;
+  constexpr int row_stride_pixels   = num_row_pixels + 8;
+  constexpr int row_stride_samples  = row_stride_pixels * num_channels;
+
+  c2h::host_vector<int> h_samples(row_stride_samples * num_rows, num_levels - 1);
+  cuda::std::array<c2h::host_vector<int>, num_active_channels> h_expected{
+    c2h::host_vector<int>(num_levels - 1, 0),
+    c2h::host_vector<int>(num_levels - 1, 0),
+    c2h::host_vector<int>(num_levels - 1, 0)};
+  for (int row = 0; row < num_rows; ++row)
+  {
+    for (int pixel = 0; pixel < num_row_pixels; ++pixel)
+    {
+      for (int channel = 0; channel < num_active_channels; ++channel)
+      {
+        const int sample = (row * num_row_pixels + pixel + channel) % (num_levels - 1);
+        h_samples[row * row_stride_samples + pixel * num_channels + channel] = sample;
+        ++h_expected[channel][sample];
+      }
+    }
+  }
+
+  const c2h::device_vector<int> d_samples = h_samples;
+  cuda::std::array<c2h::device_vector<int>, num_active_channels> d_histograms{
+    c2h::device_vector<int>(num_levels - 1, 0),
+    c2h::device_vector<int>(num_levels - 1, 0),
+    c2h::device_vector<int>(num_levels - 1, 0)};
+  cuda::std::array<int*, num_active_channels> histogram_ptrs{
+    thrust::raw_pointer_cast(d_histograms[0].data()),
+    thrust::raw_pointer_cast(d_histograms[1].data()),
+    thrust::raw_pointer_cast(d_histograms[2].data())};
+  constexpr cuda::std::array<int, num_active_channels> levels{num_levels, num_levels, num_levels};
+  constexpr cuda::std::array<int, num_active_channels> lower_levels{0, 0, 0};
+  constexpr cuda::std::array<int, num_active_channels> upper_levels{num_levels - 1, num_levels - 1, num_levels - 1};
+  const auto env = cuda::execution::tune(
+    high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                              cub::HistogramCacheAlgorithm::cuckoo,
+                              cub::HistogramSpillAlgorithm::output,
+                              cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+
+  multi_histogram_even<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_samples.data()),
+    histogram_ptrs,
+    levels,
+    lower_levels,
+    upper_levels,
+    num_row_pixels,
+    num_rows,
+    row_stride_samples * sizeof(int),
+    env);
+
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(d_histograms[channel] == h_expected[channel]);
+  }
+}
+
+CUB_TEST("DeviceHistogram high-bin cooperative RANGE uses cached search", "[histogram][device]", CUB_SMALL)
+{
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  constexpr int num_levels          = 1026;
+  constexpr int num_bins            = num_levels - 1;
+  constexpr int num_pixels          = 32768;
+
+  c2h::host_vector<int> h_levels(num_levels);
+  for (int level = 0; level < num_levels; ++level)
+  {
+    h_levels[level] = level * level;
+  }
+  const c2h::device_vector<int> d_levels_storage = h_levels;
+  const int* d_levels_ptr                        = thrust::raw_pointer_cast(d_levels_storage.data());
+
+  const auto env = cuda::execution::tune(
+    high_bin_histogram_tuning<cub::HistogramHighBinAlgorithm::cooperative,
+                              cub::HistogramCacheAlgorithm::cuckoo,
+                              cub::HistogramSpillAlgorithm::output,
+                              cub::HistogramAggregationAlgorithm::warp_coalesced>{});
+
+  c2h::host_vector<int> h_single_samples(num_pixels);
+  c2h::host_vector<int> h_single_expected(num_bins, 0);
+  for (int pixel = 0; pixel < num_pixels; ++pixel)
+  {
+    const int bin           = (pixel / 8) % num_bins;
+    h_single_samples[pixel] = h_levels[bin];
+    ++h_single_expected[bin];
+  }
+  const c2h::device_vector<int> d_single_samples = h_single_samples;
+  c2h::device_vector<int> d_single_histogram(num_bins, 0);
+  histogram_range(
+    thrust::raw_pointer_cast(d_single_samples.data()),
+    thrust::raw_pointer_cast(d_single_histogram.data()),
+    num_levels,
+    d_levels_ptr,
+    num_pixels,
+    env);
+  REQUIRE(d_single_histogram == h_single_expected);
+
+  c2h::host_vector<int> h_multi_samples(num_pixels * num_channels, h_levels.back());
+  cuda::std::array<c2h::host_vector<int>, num_active_channels> h_multi_expected{
+    c2h::host_vector<int>(num_bins, 0), c2h::host_vector<int>(num_bins, 0), c2h::host_vector<int>(num_bins, 0)};
+  for (int pixel = 0; pixel < num_pixels; ++pixel)
+  {
+    for (int channel = 0; channel < num_active_channels; ++channel)
+    {
+      const int bin                                   = (pixel + channel * 17) % num_bins;
+      h_multi_samples[pixel * num_channels + channel] = h_levels[bin];
+      ++h_multi_expected[channel][bin];
+    }
+  }
+  const c2h::device_vector<int> d_multi_samples = h_multi_samples;
+  cuda::std::array<c2h::device_vector<int>, num_active_channels> d_multi_histograms{
+    c2h::device_vector<int>(num_bins, 0), c2h::device_vector<int>(num_bins, 0), c2h::device_vector<int>(num_bins, 0)};
+  const cuda::std::array<int*, num_active_channels> d_multi_histogram_ptrs{
+    thrust::raw_pointer_cast(d_multi_histograms[0].data()),
+    thrust::raw_pointer_cast(d_multi_histograms[1].data()),
+    thrust::raw_pointer_cast(d_multi_histograms[2].data())};
+  constexpr cuda::std::array<int, num_active_channels> multi_num_levels{num_levels, num_levels, num_levels};
+  const cuda::std::array<const int*, num_active_channels> d_multi_levels{d_levels_ptr, d_levels_ptr, d_levels_ptr};
+
+  multi_histogram_range<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_multi_samples.data()),
+    d_multi_histogram_ptrs,
+    multi_num_levels,
+    d_multi_levels,
+    num_pixels,
+    env);
+  for (int channel = 0; channel < num_active_channels; ++channel)
+  {
+    REQUIRE(d_multi_histograms[channel] == h_multi_expected[channel]);
+  }
+}
+
 #endif // TEST_LAUNCH != 1
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
@@ -1593,20 +2022,52 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
 
   // aggregate init
   constexpr auto p1 = cub::HistogramPolicy{
-    128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, cub::SMEM, false, 2048};
+    {128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
+    {96, 3, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
+    {128, 7, 4, cub::BLOCK_LOAD_DIRECT, cub::CacheLoadModifier::LOAD_LDG, false, false},
+    256,
+    2052,
+    12345,
+    2,
+    1024,
+    4096,
+    8192,
+    16384,
+    2048};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::HistogramPolicy{
-    .threads_per_block                = 128,
-    .pixels_per_thread                = 7,
-    .vec_size                         = 4,
-    .load_algorithm                   = cub::BLOCK_LOAD_DIRECT,
-    .load_modifier                    = cub::CacheLoadModifier::LOAD_LDG,
-    .rle_compress                     = false,
-    .mem_preference                   = cub::SMEM,
-    .use_work_stealing                = false,
-    .init_kernel_pdl_trigger_max_bins = 2048};
+    .gmem                                                  = {.threads_per_block = 128,
+                                                              .items_per_thread  = 7,
+                                                              .vec_size          = 4,
+                                                              .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                                              .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                                              .rle_compress      = false,
+                                                              .work_stealing     = false},
+    .static_smem                                           = {.threads_per_block = 96,
+                                                              .items_per_thread  = 3,
+                                                              .vec_size          = 4,
+                                                              .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                                              .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                                              .rle_compress      = false,
+                                                              .work_stealing     = false},
+    .dynamic_smem                                          = {.threads_per_block = 128,
+                                                              .items_per_thread  = 7,
+                                                              .vec_size          = 4,
+                                                              .load_algorithm    = cub::BLOCK_LOAD_DIRECT,
+                                                              .load_modifier     = cub::CacheLoadModifier::LOAD_LDG,
+                                                              .rle_compress      = false,
+                                                              .work_stealing     = false},
+    .init_threads_per_block                                = 256,
+    .max_privatized_static_smem_single_channel_bytes       = 2052,
+    .max_privatized_dynamic_smem_single_channel_bytes      = 12345,
+    .static_smem_min_blocks_per_sm                         = 2,
+    .max_privatized_dynamic_smem_multi_channel_range_bytes = 1024,
+    .max_privatized_dynamic_smem_2_channel_even_bytes      = 4096,
+    .max_privatized_dynamic_smem_3_channel_even_bytes      = 8192,
+    .max_privatized_dynamic_smem_4_channel_even_bytes      = 16384,
+    .max_output_histogram_bytes_for_init_kernel_pdl        = 2048};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1620,9 +2081,190 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     os << p;
     return os.str();
   };
-  REQUIRE(to_string(p1)
-          == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
-             ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+  REQUIRE(to_string(p1) == to_string(p2));
+}
+
+CUB_TEST("Histogram architecture policies carry their dynamic shared-memory budgets", "[histogram][device]", CUB_SMALL)
+{
+  using selector_t = cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>;
+
+  constexpr auto sm90_policy  = selector_t{}(cuda::compute_capability{9, 0});
+  constexpr auto sm100_policy = selector_t{}(cuda::compute_capability{10, 0});
+  constexpr auto sm120_policy = selector_t{}(cuda::compute_capability{12, 0});
+  constexpr auto sm90_range_u32_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{9, 0});
+  constexpr auto sm100_range_u32_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_range_f64_policy =
+    cub::detail::histogram::policy_selector_from_types<double, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_range_wide_counter_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_wide_counter_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned long long, 1, 1, true>{}(
+      cuda::compute_capability{10, 0});
+  constexpr int expected_single_channel_policy_bytes = 228352;
+  constexpr int expected_single_channel_limit_bytes  = expected_single_channel_policy_bytes;
+
+  STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
+                   sm90_policy.max_privatized_static_smem_single_channel_bytes)
+                 == 256);
+  STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
+                   sm100_policy.max_privatized_static_smem_single_channel_bytes)
+                 == 256);
+  STATIC_REQUIRE(sm90_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
+  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_single_channel_bytes == expected_single_channel_policy_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 1>(sm100_policy) == expected_single_channel_limit_bytes);
+  STATIC_REQUIRE(sm100_wide_counter_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
+  STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
+                   sm100_policy.max_privatized_dynamic_smem_single_channel_bytes)
+                 == expected_single_channel_policy_bytes / int{sizeof(unsigned int)});
+  STATIC_REQUIRE(sm100_policy.max_privatized_dynamic_smem_multi_channel_range_bytes == 8192);
+  STATIC_REQUIRE(sm100_policy.gmem.threads_per_block == 768);
+  STATIC_REQUIRE(sm100_policy.gmem.items_per_thread == 12);
+  STATIC_REQUIRE(sm100_policy.static_smem == sm100_policy.gmem);
+
+  constexpr auto sm100_range_u64_policy =
+    cub::detail::histogram::policy_selector_from_types<long long, unsigned int, 1, 1, false>{}(
+      cuda::compute_capability{10, 0});
+  STATIC_REQUIRE(sm100_range_u64_policy.gmem.threads_per_block == 768);
+  STATIC_REQUIRE(sm100_range_u64_policy.gmem.items_per_thread == 6);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem.items_per_thread == 8);
+  STATIC_REQUIRE(sm100_range_u64_policy.static_smem_min_blocks_per_sm == 3);
+  STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
+                   sm100_range_u64_policy.max_privatized_static_smem_single_channel_bytes)
+                 == 256);
+
+  constexpr auto sm100_multi_range_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_multi_range_f64_policy =
+    cub::detail::histogram::policy_selector_from_types<double, unsigned int, 4, 3, false>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_even_2ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 2, 2, true>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_even_3ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 3, 3, true>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm100_even_4ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
+      cuda::compute_capability{10, 0});
+  constexpr auto sm120_even_2ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 2, 2, true>{}(
+      cuda::compute_capability{12, 0});
+  constexpr auto sm120_even_3ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 3, 3, true>{}(
+      cuda::compute_capability{12, 0});
+  constexpr auto sm120_even_4ch_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 4, true>{}(
+      cuda::compute_capability{12, 0});
+  constexpr int expected_even_2ch_policy_bytes = 65536;
+  constexpr int expected_even_3ch_policy_bytes = 98304;
+  constexpr int expected_even_4ch_policy_bytes = 131072;
+  constexpr int expected_even_2ch_limit_bytes  = expected_even_2ch_policy_bytes;
+  constexpr int expected_even_3ch_limit_bytes  = expected_even_3ch_policy_bytes;
+  constexpr int expected_even_4ch_limit_bytes  = expected_even_4ch_policy_bytes;
+  STATIC_REQUIRE(
+    sm100_even_2ch_policy.max_privatized_dynamic_smem_2_channel_even_bytes == expected_even_2ch_policy_bytes);
+  STATIC_REQUIRE(
+    sm100_even_3ch_policy.max_privatized_dynamic_smem_3_channel_even_bytes == expected_even_3ch_policy_bytes);
+  STATIC_REQUIRE(
+    sm100_even_4ch_policy.max_privatized_dynamic_smem_4_channel_even_bytes == expected_even_4ch_policy_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 2>(sm100_even_2ch_policy) == expected_even_2ch_limit_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 3>(sm100_even_3ch_policy) == expected_even_3ch_limit_bytes);
+  STATIC_REQUIRE(
+    cub::detail::histogram::dynamic_smem_limit_bytes<true, 4>(sm100_even_4ch_policy) == expected_even_4ch_limit_bytes);
+  constexpr int expected_sm120_dynamic_smem_bytes = 99 * 1024;
+  STATIC_REQUIRE(sm120_policy.max_privatized_dynamic_smem_single_channel_bytes == expected_sm120_dynamic_smem_bytes);
+  STATIC_REQUIRE(sm120_even_2ch_policy.max_privatized_dynamic_smem_2_channel_even_bytes == 65536);
+  STATIC_REQUIRE(sm120_even_3ch_policy.max_privatized_dynamic_smem_3_channel_even_bytes == 98304);
+  STATIC_REQUIRE(
+    sm120_even_4ch_policy.max_privatized_dynamic_smem_4_channel_even_bytes == expected_sm120_dynamic_smem_bytes);
+  STATIC_REQUIRE(sm100_multi_range_policy.gmem.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_multi_range_policy.gmem.items_per_thread == 5);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.threads_per_block == 384);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem.items_per_thread == 5);
+  STATIC_REQUIRE(sm100_multi_range_policy.static_smem_min_blocks_per_sm == 3);
+  STATIC_REQUIRE(cub::detail::histogram::max_privatized_smem_bins<unsigned int, 1>(
+                   sm100_multi_range_policy.max_privatized_static_smem_single_channel_bytes)
+                 == 256);
+
+  using cub::detail::histogram::privatization_mode;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_policy, 256)
+                 == privatization_mode::static_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_single_channel_max_dynamic_bins = expected_single_channel_limit_bytes / int{sizeof(unsigned int)};
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(
+                   sm100_policy, sm100_single_channel_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(
+                   sm100_policy, sm100_single_channel_max_dynamic_bins + 1)
+                 == privatization_mode::gmem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_range_u64_policy, 256)
+                 == privatization_mode::static_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<false, unsigned int, 1>(sm100_range_u64_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(
+    cub::detail::histogram::select_privatization_mode<false, unsigned int, 3>(sm100_multi_range_policy, 256)
+    == privatization_mode::static_smem);
+  STATIC_REQUIRE(
+    cub::detail::histogram::select_privatization_mode<false, unsigned int, 3>(sm100_multi_range_policy, 257)
+    == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(
+    cub::detail::histogram::select_privatization_mode<false, unsigned int, 3>(sm100_multi_range_policy, 2048)
+    == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(
+    cub::detail::histogram::select_privatization_mode<false, unsigned int, 3>(sm100_multi_range_policy, 2049)
+    == privatization_mode::gmem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 256)
+                 == privatization_mode::static_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(sm100_even_4ch_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_even_4ch_max_dynamic_bins = expected_even_4ch_limit_bytes / sizeof(unsigned int) / 4;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(
+                   sm100_even_4ch_policy, sm100_even_4ch_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 4>(
+                   sm100_even_4ch_policy, sm100_even_4ch_max_dynamic_bins + 1)
+                 == privatization_mode::gmem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(sm100_even_2ch_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_even_2ch_max_dynamic_bins = expected_even_2ch_limit_bytes / sizeof(unsigned int) / 2;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(
+                   sm100_even_2ch_policy, sm100_even_2ch_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 2>(
+                   sm100_even_2ch_policy, sm100_even_2ch_max_dynamic_bins + 1)
+                 == privatization_mode::gmem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(sm100_even_3ch_policy, 257)
+                 == privatization_mode::dynamic_smem);
+  constexpr int sm100_even_3ch_max_dynamic_bins = expected_even_3ch_limit_bytes / sizeof(unsigned int) / 3;
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(
+                   sm100_even_3ch_policy, sm100_even_3ch_max_dynamic_bins)
+                 == privatization_mode::dynamic_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode<true, unsigned int, 3>(
+                   sm100_even_3ch_policy, sm100_even_3ch_max_dynamic_bins + 1)
+                 == privatization_mode::gmem);
+  STATIC_REQUIRE(
+    cub::detail::histogram::select_privatization_mode<true, unsigned long long, 1>(sm100_wide_counter_policy, 128)
+    == privatization_mode::static_smem);
+  STATIC_REQUIRE(
+    cub::detail::histogram::select_privatization_mode<true, unsigned long long, 1>(sm100_wide_counter_policy, 129)
+    == privatization_mode::gmem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode_for_counter_size<true, 1>(
+                   sm100_policy, 128, sizeof(cuda::std::uint64_t))
+                 == privatization_mode::static_smem);
+  STATIC_REQUIRE(cub::detail::histogram::select_privatization_mode_for_counter_size<true, 1>(
+                   sm100_policy, 28545, sizeof(cuda::std::uint64_t))
+                 == privatization_mode::gmem);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

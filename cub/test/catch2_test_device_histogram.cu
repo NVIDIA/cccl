@@ -52,6 +52,26 @@ namespace cs = cuda::std;
 using cs::array;
 using cs::size_t;
 
+struct ordered_histogram_level
+{
+  int value{};
+
+  _CCCL_HOST_DEVICE ordered_histogram_level() = default;
+  _CCCL_HOST_DEVICE explicit ordered_histogram_level(int value_)
+      : value(value_)
+  {}
+
+  _CCCL_HOST_DEVICE explicit operator int() const
+  {
+    return value;
+  }
+
+  friend _CCCL_HOST_DEVICE bool operator<(ordered_histogram_level lhs, ordered_histogram_level rhs)
+  {
+    return lhs.value < rhs.value;
+  }
+};
+
 template <typename T>
 auto unwrap(T* p) -> T*
 {
@@ -644,6 +664,22 @@ CUB_TEST_LIST("DeviceHistogram::Histogram* channel configs",
   test_even_and_range<int, TestType::channels, TestType::active_channels, int, int, int>(256, 256 + 1, 128, 32);
 }
 
+CUB_TEST("DeviceHistogram::Histogram* dynamic shared-memory privatization", "[histogram][device]", CUB_SMALL)
+{
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  using counter_t      = unsigned int;
+  const int num_levels = GENERATE(1025, 4097, 8193);
+
+  test_even_and_range<int, 1, 1, counter_t>(num_levels - 1, num_levels, 4096, 4);
+  test_even_and_range<int, 4, 3, counter_t>(num_levels - 1, num_levels, 4096, 4);
+}
+
 // Testing only HistogramEven is fine, because HistogramRange shares the loading logic and the different binning
 // implementations are not affected by the iterator.
 CUB_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][device]", CUB_SMALL)
@@ -727,6 +763,128 @@ CUB_TEST("DeviceHistogram::HistogramRange levels/samples aliasing", "[histogram_
   }
 }
 
+CUB_TEST("DeviceHistogram::HistogramRange interpolation avoids signed overflow", "[histogram_range][device]", CUB_SMALL)
+{
+  cuda::compute_capability cc{};
+  REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
+  if (cc < cuda::compute_capability{10, 0})
+  {
+    SKIP("The runtime-sized shared-memory histogram policy is currently tuned for SM100");
+  }
+
+  using sample_t         = int;
+  constexpr int num_bins = 1024;
+
+  c2h::host_vector<sample_t> h_levels(num_bins + 1);
+  constexpr auto lo    = static_cast<int64_t>(cs::numeric_limits<sample_t>::lowest());
+  constexpr auto hi    = static_cast<int64_t>(cs::numeric_limits<sample_t>::max());
+  constexpr auto range = hi - lo;
+  for (int i = 0; i <= num_bins; ++i)
+  {
+    h_levels[i] = static_cast<sample_t>(lo + (range * i) / num_bins);
+  }
+
+  const c2h::host_vector<sample_t> h_samples{
+    cs::numeric_limits<sample_t>::lowest(), -1, 0, 1, cs::numeric_limits<sample_t>::max() - 1};
+  c2h::device_vector<sample_t> d_levels  = h_levels;
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const sample_t sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+  }
+  REQUIRE(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange supports ordered non-arithmetic levels",
+         "[histogram_range][device]",
+         CUB_SMALL)
+{
+  constexpr int num_bins = 512;
+  c2h::host_vector<ordered_histogram_level> h_levels(num_bins + 1);
+  for (int i = 0; i <= num_bins; ++i)
+  {
+    h_levels[i] = ordered_histogram_level{i * 2};
+  }
+
+  const c2h::host_vector<ordered_histogram_level> h_samples{
+    ordered_histogram_level{-1},
+    ordered_histogram_level{0},
+    ordered_histogram_level{1},
+    ordered_histogram_level{511},
+    ordered_histogram_level{1023},
+    ordered_histogram_level{1024}};
+  c2h::device_vector<ordered_histogram_level> d_levels  = h_levels;
+  c2h::device_vector<ordered_histogram_level> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const auto sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    if (upper != h_levels.begin() && upper != h_levels.end())
+    {
+      ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+    }
+  }
+  REQUIRE(d_histogram == expected);
+}
+
+CUB_TEST("DeviceHistogram::HistogramRange falls back for non-finite interpolation spans",
+         "[histogram_range][device]",
+         CUB_SMALL)
+{
+  using sample_t         = double;
+  constexpr int num_bins = 1024;
+  c2h::host_vector<sample_t> h_levels(num_bins + 1);
+  h_levels.front() = -cs::numeric_limits<sample_t>::max();
+  for (int i = 1; i < num_bins; ++i)
+  {
+    h_levels[i] = -1000.0 + 2000.0 * static_cast<double>(i - 1) / static_cast<double>(num_bins - 2);
+  }
+  h_levels.back() = cs::numeric_limits<sample_t>::max();
+
+  const c2h::host_vector<sample_t> h_samples{h_levels.front(), -999.5, -1.0, 0.0, 1.0, 999.5, h_levels.back()};
+  c2h::device_vector<sample_t> d_levels  = h_levels;
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    thrust::raw_pointer_cast(d_levels.data()),
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  for (const auto sample : h_samples)
+  {
+    const auto upper = std::upper_bound(h_levels.begin(), h_levels.end(), sample);
+    if (upper != h_levels.begin() && upper != h_levels.end())
+    {
+      ++expected[static_cast<size_t>(std::distance(h_levels.begin(), upper) - 1)];
+    }
+  }
+  REQUIRE(d_histogram == expected);
+}
+
 // Limit this large-memory reproducer to the host launch path.
 #if TEST_LAUNCH == 0
 CUB_TEST("DeviceHistogram::MultiHistogramEven large privatized offsets", "[histogram_even][device]", CUB_LARGE)
@@ -768,20 +926,25 @@ catch (const std::exception& e)
 
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not
 // overflow using uint64_t arithmetic. In case of overflow, we expect cudaErrorInvalidValue to be returned.
-CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow",
-              "[histogram_even][device]",
-              CUB_SMALL,
-              uint8_t,
-              uint16_t,
-              uint32_t,
-              uint64_t)
+CUB_TEST_LIST(
+  "DeviceHistogram::HistogramEven bin computation does not overflow",
+  "[histogram_even][device]",
+  CUB_SMALL,
+  int8_t,
+  int16_t,
+  int32_t,
+  int64_t,
+  uint8_t,
+  uint16_t,
+  uint32_t,
+  uint64_t)
 {
   using sample_t                 = TestType;
   using counter_t                = uint32_t;
-  constexpr sample_t lower_level = 0;
+  constexpr sample_t lower_level = cs::numeric_limits<sample_t>::min();
   constexpr sample_t upper_level = cs::numeric_limits<sample_t>::max();
   constexpr auto num_samples     = 1000;
-  auto d_samples                 = cuda::counting_iterator<sample_t>{0UL};
+  auto d_samples                 = cuda::constant_iterator<sample_t>{lower_level};
   auto d_histo_out               = c2h::device_vector<counter_t>(1024);
   const auto num_bins            = GENERATE(1, 2);
 
@@ -818,6 +981,11 @@ CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
   // types, hence we expect cudaErrorInvalidValue to be returned to indicate of a potential overflow
   // Ensure we do not return an error on querying temporary storage requirements
   CHECK(error2 == (num_bins == 1 || sizeof(sample_t) <= 4UL ? cudaSuccess : cudaErrorInvalidValue));
+
+  if (error2 == cudaSuccess && sizeof(sample_t) > 1)
+  {
+    CHECK(c2h::host_vector<counter_t>(d_histo_out)[0] == num_samples);
+  }
 }
 
 // When the number of bins exceeds what LevelT can represent, the bin computation will overflow
