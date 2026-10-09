@@ -402,6 +402,12 @@ void test_multicast()
 }
 } // namespace
 
+// Keep the binary successful when every hardware-dependent test case is skipped.
+C2H_TEST("direct fabric transfers dummy test", "[fabric]")
+{
+  SUCCEED();
+}
+
 C2H_CCCLRT_TEST("direct fabric unicast transfers and reductions", "[fabric]")
 {
   test_transfer<transfer_kind::put>();

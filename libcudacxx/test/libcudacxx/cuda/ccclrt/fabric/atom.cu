@@ -91,7 +91,6 @@ struct atom_kernel : fabric_case<T>
     NV_IF_TARGET(NV_PROVIDES_SM_100, {
       __shared__ cuda::fabric::atomic_block<T> operand;
       __shared__ cuda::fabric::atomic_block<T> old_value;
-      __shared__ cuda::fabric::compare_exchange_block<T> cas;
       auto& bar = make_barrier();
       for (cuda::std::uint64_t slot = 0; slot < (AllSlots ? 16 : 64); slot += (AllSlots ? sizeof(T) : 16))
       {
@@ -108,6 +107,7 @@ struct atom_kernel : fabric_case<T>
 
         if constexpr (cuda::std::is_integral_v<T>)
         {
+          __shared__ cuda::fabric::compare_exchange_block<T> cas;
           operand.store(offset, T{min_operand});
           cuda::fence_proxy_async<cuda::proxy_async_space::shared_cta>();
           // min(start + 3, 9) = 9; return start + 3.
@@ -385,6 +385,12 @@ void test_atom()
   run_unicast(atom_kernel<T, AllSlots>{});
 }
 } // namespace
+
+// Keep the binary successful when every hardware-dependent test case is skipped.
+C2H_TEST("direct fabric atom dummy test", "[fabric]")
+{
+  SUCCEED();
+}
 
 C2H_CCCLRT_TEST("direct fabric atom staging blocks at 16-byte-aligned endpoint offsets", "[fabric]")
 {
