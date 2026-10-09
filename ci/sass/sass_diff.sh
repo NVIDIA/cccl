@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
 
-# Compare the SASS of the CUB benchmarks between two git refs.
+# Compare CUB benchmark SASS between two git refs.
 #
-# The script adds a worktree for each ref, builds the selected benchmark targets
-# in both, dumps their CUDA object files with `cuobjdump -sass`,
-# and compares the result.
+# The script creates a worktree for each ref and builds the selected benchmark objects.
+# It dumps their SASS with `cuobjdump -sass` and compares the results.
 #
-# The exit status tells you only if the comparison ran. It is 0 when the script
-# wrote a report, and it is not 0 when the script did not write a report.
-#
-# The exit status does not tell you if the SASS changed. `set -e` ends the script
-# with the status of the command that failed, and a failed benchmark build gives
-# status 1. Thus status 1 cannot show a SASS change. To find the result, read
-# `any(.targets[].changed)` from result/report.json.
+# Exit status reports execution failures, not SASS changes. A successful comparison
+# returns 0 even when the SASS changes. Build failures can return 1, so that status
+# cannot identify a SASS change. Read `any(.targets[].changed)` from result/report.json
+# for the comparison result.
 set -euo pipefail
 
 usage()
@@ -55,8 +51,7 @@ fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly script_dir
-# can't make this readonly because pretty_printing.sh also declares a variable of the same
-# name...
+# Keep ci_dir writable because pretty_printing.sh also assigns it.
 ci_dir="$(cd "${script_dir}/.." && pwd)"
 repo_root="$(cd "${ci_dir}/.." && pwd)"
 readonly repo_root
@@ -71,8 +66,7 @@ RENDER=0
 TARGET_FILTERS=()
 declare -a common_args=()
 
-# Take the sass-specific options and leave the rest for `build_common.sh`, which
-# parses `$@` as its own.
+# build_common.sh parses the remaining options through its positional arguments.
 while (($#)); do
   case "$1" in
     -h|-help|--help)           usage; exit 0 ;;
@@ -85,11 +79,10 @@ while (($#)); do
       exit 1
       ;;
     -target-filters-json)
-      # The CI job has the filters as a JSON array, from ci/matrix.yaml. Taking them
-      # directly saves the workflow from unpacking them into flags. An empty array must
-      # not become one empty filter, which matches everything. `mapfile` does not see the
-      # exit status of jq, so an empty result covers both a parse error and an empty
-      # array.
+      # CI passes the JSON array from ci/matrix.yaml without converting it to flags.
+      # Keep an empty array distinct from an empty filter, which matches every target.
+      # mapfile does not propagate jq failures through process substitution.
+      # The length check rejects empty output from jq, including parse failures.
       mapfile -t json_filters < <(jq -er '.[]' <<< "$2")
       if [[ "${#json_filters[@]}" -eq 0 ]]; then
         echo "-target-filters-json needs a non-empty JSON array, got: $2" >&2
@@ -105,13 +98,12 @@ done
 if [[ "${#TARGET_FILTERS[@]}" -eq 0 ]]; then
   TARGET_FILTERS=('^cub\.bench\.')
 fi
-# One alternation, so a target is matched with a single grep.
+# Combine filters so each target needs one grep invocation.
 filter_regex="$(IFS='|'; echo "${TARGET_FILTERS[*]}")"
 readonly filter_regex
 
-# `build_common.sh` declares readonly globals, so it can only be sourced once per
-# process. Each side sources its own copy in `run_side`; the parent needs the
-# logging helpers only.
+# build_common.sh declares readonly globals and cannot be sourced twice in one process.
+# Each run_side subshell sources its own copy. The parent only needs logging helpers.
 # shellcheck source=ci/pretty_printing.sh
 source "${ci_dir}/pretty_printing.sh"
 
@@ -123,15 +115,15 @@ if [[ "${CI:-false}" != 'false' ]]; then
   run_command "🗜️  Install pytest for CI" python3 -m pip install -U pytest
 fi
 
-# Before the builds, because a broken script would otherwise be found only after them.
+# Catch script failures before starting the benchmark builds.
 run_command "🧪 Test SASS scripts" python3 -m pytest "${script_dir}"
 
 # ============================================================================
 # Set up both worktrees
 # ============================================================================
 
-# The base ref can be a remote branch that was not fetched yet. `rev-parse` does not name
-# the ref it rejected, so print both here.
+# The base ref can name a remote branch that is not available locally.
+# Print both refs because rev-parse does not identify invalid refs in its error message.
 git -C "${repo_root}" fetch --no-tags origin "${BASE_REF}" >/dev/null 2>&1 || true
 echo "Resolving ${BASE_REF} and ${TEST_REF}..."
 base_commit="$(git -C "${repo_root}" rev-parse --verify "${BASE_REF}^{commit}")"
@@ -141,10 +133,8 @@ mkdir -p "${OUTPUT_DIR}"/{base,test,result}
 artifact_dir="$(cd "${OUTPUT_DIR}" && pwd)"
 readonly artifact_dir
 
-# A fixed path, never `mktemp -d`. The path of the compilation unit reaches the
-# preprocessed source, so it is part of the sccache key. With a fresh random path
-# per run, no run could ever hit what an earlier run stored, and every object was
-# compiled cold on both sides.
+# Source paths appear in preprocessed output and affect sccache keys.
+# Fixed worktree paths allow cache reuse across runs; random paths from mktemp prevent it.
 readonly worktree_root="${repo_root}/build/sass-worktrees"
 readonly base_path="${worktree_root}/base"
 readonly test_path="${worktree_root}/test"
@@ -154,8 +144,8 @@ echo "Test ref:  ${TEST_REF} (${test_commit})"
 echo "Preset:    ${PRESET}"
 echo "Artifacts: ${artifact_dir}"
 
-# Remove the worktrees on a normal exit and on the signals CI sends when a job is
-# cancelled; without the signal traps a cancelled job leaves them registered.
+# The EXIT trap removes worktrees on normal exit. Signal traps also handle CI cancellation,
+# which otherwise leaves the worktrees registered.
 # shellcheck disable=SC2329  # Invoked indirectly by the traps below.
 cleanup()
 {
@@ -168,9 +158,8 @@ cleanup_all()
   cleanup "${base_path}"
   cleanup "${test_path}"
   rm -rf "${worktree_root}"
-  # The EXIT trap calls this with no argument, and the script then continues to its own
-  # exit. A signal trap gives the status to exit with. Remove the traps first, so that the
-  # exit below does not call this function a second time.
+  # The EXIT trap supplies no argument and preserves the script's exit status.
+  # Signal handlers supply an explicit status. Clear traps before exiting to avoid calling cleanup twice.
   if [[ "$#" -gt 0 ]]; then
     trap - EXIT HUP INT TERM
     exit "$1"
@@ -185,17 +174,16 @@ declare -A side_path=([base]="${base_path}" [test]="${test_path}")
 declare -A side_commit=([base]="${base_commit}" [test]="${test_commit}")
 
 for side in base test; do
-  # The path is fixed, so a run that was killed can have left it behind. The prune drops
-  # the registration that `rm -rf` leaves stale.
+  # SIGKILL can leave worktree files and registrations behind.
+  # Prune removes stale registrations after rm removes the files.
   cleanup "${side_path[${side}]}"
   rm -rf "${side_path[${side}]}"
   git -C "${repo_root}" worktree prune
   git -C "${repo_root}" worktree add --detach \
     "${side_path[${side}]}" "${side_commit[${side}]}" >/dev/null
-  # Pin the build configuration to the current tree, so a preset change is not measured as
-  # a code change. Copy, never symlink: CMake resolves ${sourceDir} from the real path of
-  # this file, and a symlink would point it at the current checkout instead of the
-  # worktree.
+  # Use identical presets to exclude configuration changes from the comparison.
+  # Copy the file because CMake resolves ${sourceDir} from its real path.
+  # A symlink points to the current checkout instead of the worktree.
   cp "${repo_root}/CMakePresets.json" "${side_path[${side}]}/CMakePresets.json"
 done
 
@@ -203,8 +191,8 @@ done
 # Build both sides
 # ============================================================================
 
-# `build_common.sh` derives its paths from where it is sourced. Never symlink
-# into a worktree: that resolves back to the current checkout.
+# build_common.sh derives its paths from its location in each worktree.
+# A symlink to the current checkout makes it use that checkout's paths.
 run_side()
 {
   local side="$1"
@@ -219,7 +207,7 @@ run_side()
   )
 }
 
-# Both sides use the same toolchain, so one report is enough.
+# Both sides use the same toolchain, so one environment report covers both builds.
 run_side base print_environment_details
 
 declare -A preset_dir=()
@@ -227,13 +215,13 @@ declare -A preset_dir=()
 for side in base test; do
   # shellcheck disable=SC2031  # `build_common.sh` shadows PRESET locally.
   run_side "${side}" configure_preset "SASS ${side}" "${PRESET}"
-  # The preset's binaryDir; `run_side` only reads these, never assigns them.
+  # The preset's binaryDir.
   # shellcheck disable=SC2031
   preset_dir[${side}]="${side_path[${side}]}/build/${CCCL_BUILD_INFIX:+${CCCL_BUILD_INFIX}/}${PRESET}"
 done
 
 # Per cub/benchmarks/CMakeLists.txt: <path>/<stem>.cu -> cub.<path>.<stem>.base.
-# Reading the source tree means no configured build tree is needed here.
+# Source paths provide target names without querying the configured build tree.
 matching_targets()
 {
   find "$1/cub/benchmarks" -name '*.cu' -printf '%P\n' \
@@ -242,14 +230,13 @@ matching_targets()
     | sort -u
 }
 
-# Only the targets both sides have can be compared. A target that only one side
-# has is reported separately by compare_sass.py.
+# A comparison requires the benchmark target in both refs.
 mapfile -t targets < <(
   comm -12 <(matching_targets "${side_path[base]}") \
            <(matching_targets "${side_path[test]}")
 )
-# An empty result is a successful `comm`, thus this code must find it. If it does not,
-# `--target` gets no target and the build makes all the targets.
+# comm succeeds for an empty intersection, so check the result explicitly.
+# Passing --target without names builds all targets.
 if [[ "${#targets[@]}" -eq 0 ]]; then
   echo "No CUB benchmark target common to both sides matched: ${filter_regex}" >&2
   exit 1
@@ -259,14 +246,10 @@ echo "Selected ${#targets[@]} benchmark target(s)."
 for side in base test; do
   object_targets=()
 
-  # The build phase is somewhat unorthodox. For the purposes of SASS comparison we do not
-  # actually need a fully linked binary, the intermediate object files will already
-  # contain the embedded SASS (and in fact we *don't* want a full link, see dump_side()
-  # for why).
-  #
-  # As a result, we also don't want to spend time building the binary, only the object
-  # files. So we need to parse out the targets for them explicitly from the list we left
-  # behind at configure-time.
+  # The intermediate objects already contain the SASS needed for comparison.
+  # Building object targets directly avoids the executable link step.
+  # CMake writes their paths to the manifests during generation.
+  # dump_side also uses these objects to exclude kernels from linked helper libraries.
   for target in "${targets[@]}"; do
     mapfile -t objects < "${preset_dir[${side}]}/cub/benchmarks/objects/${target}.objects"
 
@@ -276,7 +259,7 @@ for side in base test; do
     fi
 
     for object in "${objects[@]}"; do
-      # Ninja needs paths relative to the build directory to select objects without linking.
+      # Ninja names object targets relative to the build directory.
       object_targets+=("${object#"${preset_dir[${side}]}/"}")
     done
   done
@@ -289,17 +272,16 @@ done
 # Dump and compare
 # ============================================================================
 
-# `cu++filt` strips the path hash that nvcc puts in the name of an internal-linkage or
-# anonymous-namespace entity. Both differ between the two worktrees, so without it every
-# such kernel compares as changed.
+# nvcc includes path hashes in names for internal-linkage and anonymous-namespace entities.
+# These hashes differ between worktrees. cu++filt removes them to prevent false SASS differences.
 #
 # shellcheck disable=SC2329 # Invoked indirectly by `run_command`.
 dump_side() {
   local side="$1"
   # Linked binaries include nvbench_helper kernels unrelated to the benchmark.
-  # Restrict each dump to CUDA objects compiled for that benchmark target.
-  # `pipefail` again, because `bash -c` starts a fresh shell. Without it a failed
-  # `cuobjdump` writes an empty dump and still reports success.
+  # Dump only the CUDA objects for each benchmark target to exclude those kernels.
+  # bash -c starts a new shell, so it needs its own pipefail setting.
+  # Without pipefail, cu++filt can mask a cuobjdump failure and leave an empty dump.
   local dump_cmd
   # shellcheck disable=SC2016  # Variables expand in the child shell.
   printf -v dump_cmd '
@@ -321,8 +303,8 @@ for side in base test; do
   run_command "🔍 Dump SASS ${side}" dump_side "${side}"
 done
 
-# `render_report.py` cannot work out the refs that were compared and the architectures the
-# build really used.
+# render_report.py needs the git refs and the architecture list from the build configuration.
+# It cannot recover these from the SASS comparison report.
 report_arch="$(
   awk -F= '/^CMAKE_CUDA_ARCHITECTURES:/ {print $2}' "${preset_dir[test]}/CMakeCache.txt"
 )"
