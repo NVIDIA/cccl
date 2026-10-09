@@ -109,7 +109,7 @@ public:
         : __complete_(::cuda::std::exchange(__other.__complete_, false))
         , __report_predicate_(::cuda::std::exchange(__other.__report_predicate_, false))
         , __report_inspected_(::cuda::std::exchange(__other.__report_inspected_, true))
-        , __report_value_(::cuda::std::exchange(__other.__report_value_, 0))
+        , __report_value_(::cuda::std::exchange(__other.__report_value_, ::cuda::std::uint8_t{0}))
     {}
 
     //! @brief Move-assigns an operation status.
@@ -125,7 +125,7 @@ public:
       __complete_         = ::cuda::std::exchange(__other.__complete_, false);
       __report_predicate_ = ::cuda::std::exchange(__other.__report_predicate_, false);
       __report_inspected_ = ::cuda::std::exchange(__other.__report_inspected_, true);
-      __report_value_     = ::cuda::std::exchange(__other.__report_value_, 0);
+      __report_value_     = ::cuda::std::exchange(__other.__report_value_, ::cuda::std::uint8_t{0});
       return *this;
     }
 
