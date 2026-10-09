@@ -572,8 +572,9 @@ public:
       const bool use_ordinary_grid_tile  = num_active_channels == 1 && sample_size == 1;
       const int histocache_grid_items =
         num_active_channels == 1 ? 768 * t_scale(12) : 1024 * (is_even ? t_scale(8) : t_scale(16));
-      const int histocache_count_replicas  = num_active_channels > 1 ? 4 : 1;
-      const auto with_histocache_threshold = [=](HistogramPolicy policy) {
+      const int histocache_count_replicas    = num_active_channels > 1 ? 4 : 1;
+      const int histocache_threads_per_block = num_active_channels == 1 ? (is_even ? 768 : 512) : 1024;
+      const auto with_histocache_threshold   = [=](HistogramPolicy policy) {
         policy.histocache.min_histogram_bytes = histocache_min_histogram_bytes;
         policy.histocache.blocks_per_sm       = histocache_blocks_per_sm;
         policy.histocache.grid_items =
@@ -658,7 +659,7 @@ public:
             65536,
             1,
             4,
-            (is_even ? 769 : 513) * sample_size_bytes,
+            histocache_threads_per_block,
             0,
             0,
             0}});
@@ -685,7 +686,7 @@ public:
               * (int{sizeof(::cuda::std::uint32_t)} + histocache_count_replicas * counter_size),
             histocache_count_replicas,
             4,
-            1025 * sample_size_bytes,
+            histocache_threads_per_block,
             0,
             0,
             0}});

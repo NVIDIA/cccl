@@ -1931,6 +1931,8 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   constexpr auto sm100 = cuda::compute_capability{10, 0};
   constexpr auto single_channel_even_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, true>{}(sm100);
+  constexpr auto single_channel_range_policy =
+    cub::detail::histogram::policy_selector_from_types<int, unsigned int, 1, 1, false>{}(sm100);
   constexpr auto three_channel_even_policy =
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, true>{}(sm100);
   constexpr auto one_active_channel_even_policy =
@@ -1951,5 +1953,9 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
                  < three_channel_even_policy.histocache.min_histogram_bytes);
   STATIC_REQUIRE(one_active_channel_even_policy.histocache.cache_count_replicas == 1);
   STATIC_REQUIRE(three_channel_even_policy.histocache.cache_count_replicas == 4);
+  STATIC_REQUIRE(single_channel_even_policy.histocache.threads_per_block == 768);
+  STATIC_REQUIRE(single_channel_range_policy.histocache.threads_per_block == 512);
+  STATIC_REQUIRE(three_channel_even_policy.histocache.threads_per_block == 1024);
+  STATIC_REQUIRE(three_channel_range_policy.histocache.threads_per_block == 1024);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
