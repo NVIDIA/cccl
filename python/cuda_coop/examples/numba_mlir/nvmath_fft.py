@@ -35,12 +35,14 @@ POWER_STORAGE_ELEMENTS = SPECTRUM_SIZE + 1
 # docs: start nvmath-fft-kernel
 @cuda.jit
 def fft_energy_kernel(data, normalized_power, total_energy):
+    # FFT and reduction run in separate phases and reuse this region.
     storage = coop.TempStorage()
     fft_scratch = storage.reserve(
         FFT_SCRATCH_ELEMENTS, np.complex64, alignment=32
     )
     # Bin powers stay live across coop.sum; the final slot broadcasts its sum.
-    powers = storage.reserve(POWER_STORAGE_ELEMENTS, np.float32)
+    application = coop.TempStorage()
+    powers = application.reserve(POWER_STORAGE_ELEMENTS, np.float32)
     thread_data = cuda.local.array(
         fft.storage_size, fft.value_type, alignment=32
     )
@@ -53,6 +55,7 @@ def fft_energy_kernel(data, normalized_power, total_energy):
         index += fft.stride
 
     fft.execute(thread_data, fft_scratch)
+    # cuFFTDx does not supply a trailing barrier before scratch reuse.
     cuda.syncthreads()
 
     thread_energy = np.float32(0)

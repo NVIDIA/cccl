@@ -97,7 +97,7 @@ def test_reserve_rejects_invalid_alignment(alignment):
 def test_reserve_capacity_includes_alignment_padding():
     @cuda.jit(chip="sm_90")
     def kernel(output):
-        storage = coop.TempStorage(71)
+        storage = coop.TempStorage(71, sharing="exclusive")
         prefix = storage.reserve(3, types.uint8)
         values = storage.reserve(1, types.float64, alignment=64)
         output[0] = prefix[0] + values[0]
@@ -107,6 +107,17 @@ def test_reserve_capacity_includes_alignment_padding():
         match="TempStorage size_in_bytes is smaller than required",
     ):
         _compile(kernel, types.float64[::1])
+
+
+def test_shared_reserve_capacity_uses_largest_requirement():
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage(64)
+        prefix = storage.reserve(3, types.uint8)
+        values = storage.reserve(8, types.float64, alignment=64)
+        output[0] = prefix.size + values.size
+
+    _compile(kernel, types.float64[::1])
 
 
 @pytest.mark.parametrize("access", ["direct", "helper", "bound_method"])

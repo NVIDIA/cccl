@@ -94,11 +94,16 @@ class TempStorage:
 
         Notes
         -----
-        Each reservation call site receives a disjoint region that remains
-        allocated for the kernel's execution on that block. It does not
-        overlap another reservation or the descriptor's primitive scratch,
-        regardless of ``sharing``. Repeated execution of a call site returns
-        the same region; it does not allocate again.
+        Reservations inherit the descriptor's ``sharing`` policy. With
+        ``sharing="shared"``, they alias each other and the descriptor's
+        primitive scratch; capacity and alignment satisfy the largest
+        requirements. With ``sharing="exclusive"``, each primitive and
+        reservation call site receives a separate region. Different
+        descriptors always have separate storage. Repeated execution of a
+        call site returns the same region; it does not allocate again.
+
+        Use separate descriptors or ``sharing="exclusive"`` for buffers
+        whose contents must remain live simultaneously.
 
         A descriptor used for reservations must have ``auto_sync=False``
         (or ``None``). The caller supplies synchronization and any completion
