@@ -41,6 +41,7 @@
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/move.h>

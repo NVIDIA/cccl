@@ -43,6 +43,7 @@
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/new> // IWYU pragma: keep
+#include <cuda/std/__thread/poll.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>

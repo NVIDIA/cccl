@@ -28,14 +28,13 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__functional/operations_traits.h>
 #include <cuda/std/__fwd/simd.h>
-#include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__limits/numeric_limits_ext.h>
 #include <cuda/std/__simd/abi.h>
 #include <cuda/std/__simd/basic_mask.h>
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -33,12 +33,10 @@
 #include <cuda/std/__mdspan/concepts.h>
 #include <cuda/std/__mdspan/empty_base.h>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/integer_sequence.h>
-#include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 

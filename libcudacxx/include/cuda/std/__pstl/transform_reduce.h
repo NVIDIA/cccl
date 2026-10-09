@@ -27,10 +27,7 @@
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__functional/operations.h>
-#  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__numeric/transform_reduce.h>
@@ -40,7 +37,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/transform_reduce.h>
+#    include <cuda/std/__pstl/cuda/transform_reduce.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>

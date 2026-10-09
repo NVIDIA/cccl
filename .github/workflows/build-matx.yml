@@ -110,7 +110,7 @@ jobs:
 
           .devcontainer/launch.sh \
             --docker \
-            --cuda 13.3 \
+            --cuda 13.4 \
             --host gcc14 \
             --cuda-ext \
             --env "AWS_ROLE_ARN=" \

@@ -136,6 +136,7 @@ struct ScanLookbackPolicy
 // struct (used wherever a ScanLookaheadPolicy is copied or returned by value) trigger -Wdeprecated-declarations, so
 // we suppress it for the whole struct rather than only at the explicit uses of block_idx_stages further down.
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 struct ScanLookaheadPolicy
 {
   int reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
@@ -991,6 +992,9 @@ struct policy_selector
             }
             // wrps_2.lbi_7.ipt_88.lbs_-2.bis_-2 ()  1.032518  0.993770  1.029765  1.046025
             return ScanLookaheadPolicy{2, 88 - 1, 7, -2};
+          case 16:
+            // wrps_2.lbi_8.ipt_40.lbs_-1.bis_2 ()  0.997  1.012  1.088  1.116  1.122
+            return ScanLookaheadPolicy{2, 40 - 1, 8, -1};
           default:
             break;
         }

@@ -23,7 +23,6 @@
 #include <cuda/std/__algorithm/comp.h>
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/copy.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

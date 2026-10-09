@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/integral_constant.h>
 #if defined(_LIBCUDACXX_HAS_STRING)
 #  include <cuda/std/__type_traits/predicate_traits.h>
 #endif // _LIBCUDACXX_HAS_STRING

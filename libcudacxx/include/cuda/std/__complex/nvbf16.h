@@ -26,10 +26,11 @@
 #  include <cuda/std/__complex/complex.h>
 #  include <cuda/std/__complex/tuple.h>
 #  include <cuda/std/__complex/vector_support.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__floating_point/cuda_fp_types.h>
-#  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__utility/move.h>
 
 // todo: find a way to get rid of this include
 #  if _CCCL_HOSTED()
