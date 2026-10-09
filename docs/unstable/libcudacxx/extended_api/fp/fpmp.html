@@ -1,0 +1,1519 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>fpmp: Arithmetic on Pairs of Floats &#8212; CUDA Core Compute Libraries</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/nvidia-sphinx-theme.css?v=933278ad" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+
+
+    <script src="../../../_static/documentation_options.js?v=bbe6ed3a"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=5ceeb459"></script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'libcudacxx/extended_api/fp/fpmp';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.23.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://NVIDIA.github.io/cccl/nv-versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'unstable';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <script src="../../../_static/deduplicate_toc.js?v=abc5616f"></script>
+
+    <link rel="canonical" href="https://NVIDIA.github.io/cccl/libcudacxx/extended_api/fp/fpmp.html" />
+    <link rel="icon" href="../../../_static/favicon.png"/>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="fpmp: Examples" href="fpmp_example.html" />
+    <link rel="prev" title="FP Component" href="../fp.html" />
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="unstable" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+
+
+  </head>
+
+  <body data-default-mode="">
+
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/nvidia-logo-horiz-rgb-blk-for-screen.svg" class="logo__image only-light" alt="CUDA Core Compute Libraries - Home"/>
+    <img src="../../../_static/nvidia-logo-horiz-rgb-wht-for-screen.svg" class="logo__image only-dark pst-js-only" alt="CUDA Core Compute Libraries - Home"/>
+  
+  
+    <p class="title logo__title">CUDA Core Compute Libraries</p>
+  
+</a>
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NVIDIA/cccl" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Table of Contents">
+  <p class="bd-links__title" role="heading" aria-level="1">Table of Contents</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../cccl/index.html">CCCL C++ Libraries</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../../index.html">libcu++</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../setup.html">Setup</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../setup/getting.html">Getting libcu++</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../setup/building_and_testing.html">Building &amp; Testing libcu++</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../standard_api.html">Standard API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/algorithms_library.html">Algorithms Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/c_library.html">C Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/concepts_library.html">Concepts Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/container_library.html">Container Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/execution_library.html">Execution Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/numerics_library.html">Numerics Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/ranges_library.html">Ranges Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/synchronization_library.html">Synchronization Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/time_library.html">Time Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/type_support.html">Type Support Library</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../standard_api/utility_library.html">Utility Library</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../../extended_api.html">Extended API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../macros.html">Macros</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../bit.html">Bit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../execution_model.html">Execution model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../exceptions.html">Exception Handling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory_model.html">Memory model</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../thread_groups.html">Thread Groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../synchronization_primitives.html">Synchronization Primitives</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../asynchronous_operations.html">Asynchronous Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory_access_properties.html">Memory access properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../functional.html">Functional</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../iterators.html">Fancy Iterators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../type_traits.html">Type traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../vector_tuple_protocol.html">Vector Tuple Protocol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../numeric.html">Numeric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../simd.html">SIMD</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../random.html">Random</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory.html">Memory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../memory_resource.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../math.html">Math</a></li>
+<li class="toctree-l4 current active"><a class="reference internal" href="../fp.html">FP Component</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../mdspan.html">Mdspan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../warp.html">Warp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utility.html">Utility</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../work_stealing.html">Work stealing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../runtime.html">Runtime</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/cudart_interactions.html">CUDA Runtime interactions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/stream.html">Streams</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/event.html">Events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/algorithm.html">Algorithm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/device.html">Devices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/hierarchy.html">Hierarchy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/launch.html">Launch</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/buffer.html">Buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/memory_pools.html">Memory Pools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../runtime/legacy_resources.html">Legacy resources</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../ptx_api.html">PTX API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../ptx/examples.html">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../ptx/instructions.html">PTX Instructions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../ptx/pragmas.html">PTX Pragmas</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tile.html">CUDA Tile support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../cub/index.html">CUB</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/thread_level.html">Thread-level Primitives</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/warp_wide.html">Warp-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/api/warp.html">Warp-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/block_wide.html">Block-Wide “Collective” Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/api/block.html">Block-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/device_wide.html">Device-Wide Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/api/device.html">Device-wide Primitives</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/environment.html">Execution Environments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/determinism.html">Determinism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/benchmarking.html">Benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/tuning.html">Tunings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/tuning_infra.html">Automated Tuning Infrastructure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cub/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cub/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/thread_level.html">Thread-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/warp_level.html">Warp-level</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/block_scope.html">Block-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/device_scope.html">Device-scope</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cub/developer/test_overview.html">CUB Tests</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../thrust/index.html">Thrust</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../thrust/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/algorithms.html">Algorithms</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/copying.html">Copying</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/merging.html">Merging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/prefix_sum.html">Prefix sums</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/reductions.html">Reductions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/reordering.html">Reordering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/searching.html">Searching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/set_operations.html">Set Operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/sorting.html">Sorting</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/algorithms/transformations.html">Transformations</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/containers.html">Containers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/classthrust_1_1host__vector.html">thrust::host_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/classthrust_1_1device__vector.html">thrust::device_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__containers_1ga4a980d5c4f2e1843c6f2139216dac7fc.html">thrust::universal_host_pinned_vector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__containers_1ga74d92bb13ce59a1fa025cfb8dc4fbaa0.html">thrust::universal_vector</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/function_objects.html">Function Objects</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/function_objects/adaptors.html">Function Object Adaptors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/function_objects/placeholder.html">Placeholder Objects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/function_objects/predefined.html">Function Objects</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/iterators.html">Iterators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga1f3d8a73d04fa5823eadb68308d3d810.html">thrust::make_transform_input_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga2265d864e1e8bd7f297559eb7f08b8e8.html">thrust::make_constant_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga4f2edada3feda60b0abe3650dcea65ac.html">thrust::make_counting_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga549a86af93e685d3a6b539cc1b24f50e.html">thrust::make_permutation_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga56e698ac979cc389b19e089e345a2297.html">thrust::make_tabulate_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga5af828629716c6ea8f93e489470c4b02.html">thrust::make_strided_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga6bc8a980eab36d724ee7912c6d4e6d14.html">thrust::make_transform_output_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1ga999b5157d2e341f2c92be25a5bb85469.html">thrust::make_discard_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1gaa2438805284fb0ac36829328819d52f3.html">thrust::make_zip_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1gaad803009f6b4759363ec08a96de01cd8.html">thrust::make_transform_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__fancyiterator_1gab1e9bf724c638af51d3a02f3ff1d4e80.html">thrust::make_shuffle_iterator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga07227760c8422364daec7a72d21803cd.html">thrust::iterator_traversal_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga582d0a9dd09f407b743a8dcea3e5a7cb.html">thrust::iterator_system_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga6bbc4f5672e0638f4fb040db3a3ea90b.html">thrust::iterator_reference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga9410f26f50e2038f458b0274dd0a39cf.html">thrust::iterator_pointer_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1ga9768cd2705c09755d0dd2cf7a1cd84cc.html">thrust::iterator_traits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1gadffd965cb3b426d99eab1f6506c30ed6.html">thrust::iterator_difference_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__traits_1gae8bd11a16155201e9778f4c75680a299.html">thrust::iterator_value_t</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1ga20e12ff89385c6c4658f39316e91e7ab.html">thrust::bidirectional_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1ga52f67176b2139d334ad3fc1b93558fd6.html">thrust::random_access_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1gaaa2d3281a2028d43aa8a6ab49ec70f6d.html">thrust::output_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1gaaee0807fd12662c9c768a596c56224dd.html">thrust::input_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tags_1gaf265cb57247c2f8b81477cdac757f252.html">thrust::forward_host_iterator_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tag__utilities_1ga931a99cbb9d6073f2d1bca493dda5163.html">thrust::retag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__iterator__tag__utilities_1gad9db2309839c1adf493522c6e879d0f5.html">thrust::reinterpret_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1bidirectional__traversal__tag.html">thrust::bidirectional_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1forward__traversal__tag.html">thrust::forward_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1incrementable__traversal__tag.html">thrust::incrementable_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1no__traversal__tag.html">thrust::no_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1random__access__traversal__tag.html">thrust::random_access_traversal_tag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/structthrust_1_1single__pass__traversal__tag.html">thrust::single_pass_traversal_tag</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/memory_management.html">Memory Management</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/memory_management/allocators.html">Allocators</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/memory_management/memory_resources.html">Memory Resources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management.html">Memory Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga085f1930b39e9d7331267f39c75785a8.html">thrust::device_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga1a350740a6ade432f3781096df91f162.html">thrust::device_free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga1c393e01036d27ed0c0ab2a1750957dc.html">thrust::device_delete</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga45b46200ffdb02a4ef9191103e6f12b9.html">thrust::device_malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga50cdf0d543be6da1dd4d3f9ba3e38105.html">thrust::malloc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga72bb86f95d3b115663a0d9fb668165fa.html">thrust::return_temporary_buffer</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga85e62452603ffae3dc05c681841aefba.html">thrust::swap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga86a38bc1d1e0801e1a7b9abe186645ba.html">thrust::device_new</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1ga987c4cb56d112d9fbedee453df25bc31.html">thrust::free</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1gaa7bf641aa7af0b0dfccf11fc42bbfb6b.html">thrust::raw_pointer_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1gae72a6da67baf8579e17836fe2c31a641.html">thrust::raw_reference_cast</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__memory__management_1gafa54f974b47c05fc24814aa1eb28d584.html">thrust::get_temporary_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/numerics.html">Numerics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers.html">Complex Numbers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga040f9fbb88115eebdb8dd423c5e7e134.html">thrust::operator&lt;&lt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga0d00cfa41156151dc1dcd5e254c646be.html">thrust::sqrt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga10d992afe589adffa671b976a5225b3e.html">thrust::sinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga2402d40d11cc358cbd8a15f0d3e0a640.html">thrust::asin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga2ec4be34f6b564b8e143ea57e0fa9a94.html">thrust::cosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga2ffc507023dd15495760fee46cdbebf9.html">thrust::acosh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga35e716adc045312f862c2bf561f0f07e.html">thrust::abs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga43083869bf43ea7965c742797b2dde74.html">thrust::log10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4a3a56ebc4cd4390daf813feb058228f.html">thrust::atanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4aea440ee8f92a90b9c1cc5070349614.html">thrust::cos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4c8bdbf96d6533ba08aad19b8844205a.html">thrust::exp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga4d1b06b9e0ae6849982172915e04d70b.html">thrust::asinh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga564cffab4edc9458fbf036dbda49964e.html">thrust::pow</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga5c23c580733a912c4a782c4ec023c6b1.html">thrust::norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga6cdba0f86d026da897aed8d758298544.html">thrust::operator/</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga7038bbec1ad0891c7e84cf49691de669.html">thrust::arg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8224f8e3822afe73300642b65b339331.html">thrust::log</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8a71b59095aad09fb37a4d63df982320.html">thrust::operator*</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8afd023e30b61d23806633f29010bc69.html">thrust::proj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga8ff5d15853a4f98d229636510adcca97.html">thrust::tan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga93a39be3e9ec0ce730540be08267928e.html">thrust::operator&gt;&gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga969f3d40a0d9f7a2bcfdce2a83233edc.html">thrust::conj</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga992a76b40905fb6cddb8e4ff9bdd0306.html">thrust::polar</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga999d22f32e88807f5b629905eab61646.html">thrust::operator==</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1ga9a987acfaaa1f71722c2cc80426db066.html">thrust::operator-</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaa8228e3d100b0eb806d42b325f6a95d8.html">thrust::acos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaaa0d52f6873d7cc2cb39bfa64040c69b.html">thrust::operator!=</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gab608ce4c32a54c6e849ece60df42a036.html">thrust::tanh</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gae3cb9b2e1de24c92ea91a61eb9477c0e.html">thrust::atan</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaf838b7d375bd0bcf2e86938cdbe49aff.html">thrust::sin</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__complex__numbers_1gaf8d90cd8139cb521bbcdc3b4adcf2e03.html">thrust::operator+</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/parallel_execution_policies.html">Parallel Execution Policies</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__execution__policies.html">Parallel Execution Policies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__execution__policies_1ga61bff7f6dead1da5c85eaafa9f9f5ded.html">thrust::device</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/api/group__execution__policies_1gaebabcc1c0958344babfccdcf379915e5.html">thrust::host</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/random.html">Random Number Generators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/predefined.html">Random Number Engines with Predefined Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/distributions.html">Random Number Distributions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/engine.html">Random Number Engines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/random/engine_adaptors.html">Random Number Engine Adaptors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/system.html">System</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/system/systems.html">Systems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/system/diagnostics.html">System Diagnostics</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/utility.html">Utility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/utility/pair.html">Pair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/utility/tuple.html">Tuple</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/utility/type_traits.html">Type Traits</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../thrust/api/index.html">API reference</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../thrust/developer_overview.html">Developer Overview</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/developer/cmake_options.html">Developer CMake Options</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../thrust/developer/systems.html">Thrust systems</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../cudax/index.html">CUDA Experimental</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../cudax/index.html">Overview</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/container.html">Containers library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/classcuda_1_1experimental_1_1uninitialized__buffer.html">cuda::experimental::uninitialized_buffer</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/graph.html">Graphs library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph.html">cuda::experimental::graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__builder.html">cuda::experimental::graph_builder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__builder__ref.html">cuda::experimental::graph_builder_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__memory__resource.html">cuda::experimental::graph_memory_resource</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1graph__node__ref.html">cuda::experimental::graph_node_ref</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of.html">cuda::experimental::stf::graphed_interface_of</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01mdspan_3_01T_00_01P_8_8_8_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; mdspan&lt; T, P… &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01scalar__view_3_01T_01_4_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; scalar_view&lt; T &gt; &gt;</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/api/structcuda_1_1experimental_1_1stf_1_1graphed__interface__of_3_01void__interface_01_4.html">cuda::experimental::stf::graphed_interface_of&lt; void_interface &gt;</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cudax/places.html">Places</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cudax/stf.html">CUDASTF</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/stf/custom_data_interface.html">Implementation of the <code class="docutils literal notranslate"><span class="pre">matrix</span></code> class</a></li>
+
+
+
+
+
+<li class="toctree-l4"><a class="reference internal" href="../../../cudax/stf/lower_level_api.html">Lower-level API</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cudax/api/index.html">API reference</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/tma.html">Tensor Memory Accelerator (TMA)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/determinism.html">Determinism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/config_macros.html">CCCL configuration macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../cccl/3.0_migration_guide.html">CCCL 2.x ‐ CCCL 3.0 migration guide</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../cccl/development/index.html">CCCL Development Guide</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/coding_conventions.html">CCCL C++ Coding Conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/review_checks.html">CCCL Review Checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/macro.html">CCCL Internal Macros</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/testing.html">CCCL Testing Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/build_and_bisect_tools.html">Build and Bisect Utilities</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../cccl/development/visibility.html">Symbol Visibility</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../cccl/development/visibility/host_stub_visibility.html">Host Stub Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cccl/development/visibility/device_kernel_visibility.html">Device Kernel Visibility Issue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../cccl/development/visibility/different_architectures.html">Linking TUs compiled with different architectures</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../cccl/development/debugger_setup.html">General Debugging</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../python/index.html">CCCL Python Libraries</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../python/setup.html">Setup and Installation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../python/compute/index.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code>: Parallel Computing Primitives</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/compute/index.html">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/compute/developer_overview.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> Developer Overview</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../python/stf.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code>: Sequential Task Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../python/resources.html">Resources</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../python/api_reference.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/compute_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.compute</span></code> API Reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../python/stf_api.html"><code class="docutils literal notranslate"><span class="pre">cuda.stf._experimental</span></code> API Reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../contributors/index.html">Contributor Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../contributors/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/install_build_test.html">Install, Build, Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/targeted_builds.html">Build and run targeted tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/launching.html">Launching a container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/vscode_cmake_tools.html">Using CMake Presets via VS Code GUI extension</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/creating_a_pull_request.html">Creating a Pull Request</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/reproducing_ci.html">Reproducing CI locally</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/override_matrix.html">Override matrix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../contributors/how_tos/adding_build_target.html">Adding a build target</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributors/code_of_conduct.html">Code of Conduct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../contributors/license.html">License</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../maintainers/index.html">Maintainer Docs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../maintainers/how_tos/index.html">How Tos</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/backport_process.html">How to commit fixes to release branches (backport process)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/compile_time.html">Run compile-time benchmarks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/plan_work_with_github_issues.html">How To Plan Work with GitHub Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/adding_ci_coverage.html">Adding CI coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/how_tos/adding_new_devcontainer.html">Adding a new devcontainer toolchain</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../maintainers/references/index.html">References</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/branching_strategy.html">Git Methodology</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/coderabbit.html">CodeRabbit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maintainers/references/compile_time.html">Compile-time benchmark reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../infrastructure/index.html">Infrastructure</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../infrastructure/ci/references/index.html">CI Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/ci_overview.html">CI overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/change_detection.html">Change detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/matrix_yaml.html">matrix.yaml reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/ci_scripts.html">CI scripts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/ci_artifacts.html">Artifact system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/gha_workflows.html">GitHub Actions workflows</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/ci/references/skip_tags.html">Skip tags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../infrastructure/cmake/references/index.html">CMake Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/cmake/references/preset_reference.html">Preset reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/cmake/references/cmake_modules.html">CMake helper modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/cmake/references/architecture_flags.html">Architecture flags</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../infrastructure/devcontainer/references/index.html">Devcontainer Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/devcontainer/references/devcontainer_overview.html">Devcontainer overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../infrastructure/devcontainer/references/launch_sh_reference.html">launch.sh reference</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../cccl/index.html" class="nav-link">CCCL C++ Libraries</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">libcu++</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../extended_api.html" class="nav-link">Extended API</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../fp.html" class="nav-link">FP Component</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">fpmp: Arithmetic on Pairs of Floats</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="fpmp-arithmetic-on-pairs-of-floats">
+<span id="libcudacxx-extended-api-fp-fpmp"></span><h1>fpmp: Arithmetic on Pairs of Floats<a class="headerlink" href="#fpmp-arithmetic-on-pairs-of-floats" title="Link to this heading">#</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<p>An <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code> value represents a number as the unevaluated sum of two IEEE-754 floats,
+<code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">=</span> <span class="pre">hi</span> <span class="pre">+</span> <span class="pre">lo</span></code>, which roughly doubles the available mantissa. The pair is stored directly in
+the object, and each operation is built from error-free transformations — primitives such as
+<code class="docutils literal notranslate"><span class="pre">two_sum</span></code> that recover the rounding error of a single hardware operation exactly — so the extra
+precision comes from arithmetic the hardware already does fast rather than from a wider format the
+hardware does not have. The exactness belongs to those primitives rather than to the operation
+composed from them: a pair addition or multiply carries a small error of its own, and how small is
+what the <a class="reference internal" href="#libcudacxx-extended-api-fp-fpmp-accuracy"><span class="std std-ref">accuracy levels</span></a> choose between.</p>
+<p>That matters in two places. Below <code class="docutils literal notranslate"><span class="pre">double</span></code>, GPUs typically have far more FP32 throughput than
+FP64, so a float pair can be both more precise than <code class="docutils literal notranslate"><span class="pre">float</span></code> and faster than native <code class="docutils literal notranslate"><span class="pre">double</span></code>.
+Above <code class="docutils literal notranslate"><span class="pre">double</span></code>, there is usually no IEEE-754 binary128 hardware at all, and a double pair
+reaches 104 significand bits out of ordinary FP64 operations.</p>
+<p>Which of the two applies is decided by one number, the rate at which the part runs FP64 against
+FP32, and the <a class="reference internal" href="fpmp_spec.html"><span class="doc">specification</span></a> lists it for every platform measured — 1:2 on B200
+against 1:32 on B300. <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> spends FP64 throughput, so it is the cheap route to quad-like
+precision on a part where FP64 runs close to FP32, and a costly one where FP64 is rationed: a
+software binary128 is integer code and is not competing for the units <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> needs.
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is the mirror image, and wins exactly where <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> struggles.</p>
+<p>On the parts <a class="reference internal" href="#libcudacxx-extended-api-fp-fpmp-performance"><span class="std std-ref">measured below</span></a>, that comes to an
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> within a few digits of <code class="docutils literal notranslate"><span class="pre">double</span></code> at six to sixteen times its throughput, how many of
+each depending on the accuracy level asked for, and an <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> a couple of digits past
+<code class="docutils literal notranslate"><span class="pre">double</span></code> for roughly five times its time.</p>
+<section id="the-types">
+<h2>The types<a class="headerlink" href="#the-types" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 18.0%" />
+<col style="width: 22.0%" />
+<col style="width: 25.0%" />
+<col style="width: 20.0%" />
+<col style="width: 15.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Type</strong></p></th>
+<th class="head"><p><strong>Representation</strong></p></th>
+<th class="head"><p><strong>Significand</strong></p></th>
+<th class="head"><p><strong>Range</strong></p></th>
+<th class="head"><p><strong>Size</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></td>
+<td><p>float-float</p></td>
+<td><p>46 bits = 2×24 − 2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">float</span></code>’s, ~±10<sup>38</sup></p></td>
+<td><p>8 bytes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code></p></td>
+<td><p>double-double</p></td>
+<td><p>104 bits = 2×53 − 2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">double</span></code>’s, ~±10<sup>308</sup></p></td>
+<td><p>16 bytes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Significand counts on this page always <strong>include the implicit leading bit</strong>, the convention
+<code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits::digits</span></code> uses: <code class="docutils literal notranslate"><span class="pre">float</span></code> has 24 bits, 23 stored plus the implicit
+one, and <code class="docutils literal notranslate"><span class="pre">double</span></code> has 53. A non-overlapping pair guarantees 2p − 2 of them, hence 46 and 104.
+The two subtracted bits are what non-overlap costs — the halves must stay disjoint, so the pair
+carries that many <em>contiguous</em> bits rather than the 48 or 106 that its two component significands
+add up to. Read 46 as 2×24 − 2, not as 2×23: the arithmetic coincides, but the reasoning does not.</p>
+<p>The other convention — stored field widths, which exclude the implicit bit — is what the
+<code class="docutils literal notranslate"><span class="pre">fp_custom</span></code> template parameters use, since they name IEEE-754 layouts. Each page says which one
+it means.</p>
+<p>The two types share one interface and are used identically; only the component type differs. Note
+that a pair widens the significand but <strong>not</strong> the exponent range: <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> carries more
+precision than <code class="docutils literal notranslate"><span class="pre">float</span></code> while still overflowing where <code class="docutils literal notranslate"><span class="pre">float</span></code> overflows. Where the range
+matters as much as the precision, <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> is the one to reach for.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cuda::std::numeric_limits</span></code> is specialized for both, so generic code can query them as it does
+the built-in types. The reported characteristics follow from the pair model rather than from
+IEEE-754, so <code class="docutils literal notranslate"><span class="pre">is_iec559</span></code> is <code class="docutils literal notranslate"><span class="pre">false</span></code>:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 40.0%" />
+<col style="width: 30.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Property</strong></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">digits</span></code> / <code class="docutils literal notranslate"><span class="pre">digits10</span></code> / <code class="docutils literal notranslate"><span class="pre">max_digits10</span></code></p></td>
+<td><p>46 / 13 / 15</p></td>
+<td><p>104 / 31 / 33</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">min_exponent</span></code> / <code class="docutils literal notranslate"><span class="pre">max_exponent</span></code></p></td>
+<td><p>-101 / 128</p></td>
+<td><p>-968 / 1024</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">epsilon()</span></code></p></td>
+<td><p>2<sup>-45</sup></p></td>
+<td><p>2<sup>-103</sup></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">min()</span></code> / <code class="docutils literal notranslate"><span class="pre">max()</span></code></p></td>
+<td><p>2<sup>-102</sup> / <code class="docutils literal notranslate"><span class="pre">FLT_MAX</span></code></p></td>
+<td><p>2<sup>-969</sup> / <code class="docutils literal notranslate"><span class="pre">DBL_MAX</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The minimum exponent is raised relative to the component type because both halves have to stay
+normal for the pair to carry its full significand.</p>
+<section id="retiring-80-bit-cpu-code">
+<h3>Retiring 80-bit CPU code<a class="headerlink" href="#retiring-80-bit-cpu-code" title="Link to this heading">#</a></h3>
+<p>Computations written for x87 double-extended — <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> on Linux/x86 — carry a 64-bit
+significand. <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> carries 104 by the counting just given, so precision survives that move
+with room to spare. What does not survive is exponent range, which stays <code class="docutils literal notranslate"><span class="pre">double</span></code>’s
+±10<sup>308</sup> rather than x87’s ±10<sup>4932</sup>. Where the 80-bit format was chosen for its
+mantissa, this is a substitution; where it was chosen for its range, the code needs rescaling.</p>
+</section>
+</section>
+<section id="accuracy-levels">
+<span id="libcudacxx-extended-api-fp-fpmp-accuracy"></span><h2>Accuracy levels<a class="headerlink" href="#accuracy-levels" title="Link to this heading">#</a></h2>
+<p>Each width comes at a selectable accuracy level, which decides how much work goes into keeping
+the trailing limb correct. The level is part of the type:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 28.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Type</strong></p></th>
+<th class="head"><p><strong>Level</strong></p></th>
+<th class="head"><p><strong>What it does</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2_low</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fpmp2_accuracy::low</span></code></p></td>
+<td><p>Fast arithmetic with no renormalization; the limbs are allowed to drift into overlap</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2_mid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fpmp2_accuracy::mid</span></code></p></td>
+<td><p>Dekker-based splitting and error accumulation, normalizing the result</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2_high</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fpmp2_accuracy::high</span></code></p></td>
+<td><p>Thall-based splitting and error accumulation, also normalizing; the most accurate</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fpmp2_accuracy::def</span></code></p></td>
+<td><p>The default selector, equal to <code class="docutils literal notranslate"><span class="pre">mid</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>with the same four names for <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code>. Three points are easy to miss. The default is <code class="docutils literal notranslate"><span class="pre">mid</span></code>, so
+asking for <code class="docutils literal notranslate"><span class="pre">high</span></code> is a deliberate step up rather than the level you already have. The levels
+differ only in the trailing limb, so a result rounded to one <code class="docutils literal notranslate"><span class="pre">double</span></code> will often look identical
+across levels — comparing them means printing <code class="docutils literal notranslate"><span class="pre">hi</span></code> and <code class="docutils literal notranslate"><span class="pre">lo</span></code> separately.</p>
+<p>And the levels differ in the <em>state</em> they leave the result in, not only in its accuracy. <code class="docutils literal notranslate"><span class="pre">mid</span></code>
+and <code class="docutils literal notranslate"><span class="pre">high</span></code> finish every operation with a normalization step, so each result comes back with its
+limbs non-overlapping — <code class="docutils literal notranslate"><span class="pre">|lo|</span> <span class="pre">&lt;=</span> <span class="pre">ulp(hi)/2</span></code>, which for <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is <code class="docutils literal notranslate"><span class="pre">2^-24</span> <span class="pre">*</span> <span class="pre">|hi|</span></code> — the
+invariant the rest of the interface is written against. <code class="docutils literal notranslate"><span class="pre">low</span></code> omits that step — it is most of
+what makes it fast — so its results can carry overlapping limbs, and a chain of them drifts
+further from the invariant as it goes. That is what the <code class="docutils literal notranslate"><span class="pre">renormalize()</span></code> function is for, and why
+it is needed with <code class="docutils literal notranslate"><span class="pre">low</span></code> and not with the other two. Converting a value up to <code class="docutils literal notranslate"><span class="pre">mid</span></code> or <code class="docutils literal notranslate"><span class="pre">high</span></code>
+restores the invariant on its own, so what is left for the explicit call is a value that stays at
+<code class="docutils literal notranslate"><span class="pre">low</span></code> — see <a class="reference internal" href="#libcudacxx-extended-api-fp-fpmp-level-change"><span class="std std-ref">changing the accuracy level</span></a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="fptool_stat.html#libcudacxx-extended-api-fp-fptool-stat"><span class="std std-ref">fpmp2_stat</span></a> — the instrumented counterparts of
+these types, which <strong>measure the limb gap and count overlaps</strong> on real data. They are how to
+find out whether <code class="docutils literal notranslate"><span class="pre">low</span></code> is safe for a particular computation rather than assuming it.</p>
+</div>
+<p>The level can also be chosen per operation instead of per type, which is the point of the
+accuracy-explicit functions:</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="k">namespace</span><span class="w"> </span><span class="nn">cudax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cuda</span><span class="o">::</span><span class="nn">experimental</span><span class="p">;</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">ffloat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cudax</span><span class="o">::</span><span class="n">fp32mp2_low</span><span class="p">;</span><span class="w">              </span><span class="c1">// low accuracy for the bulk of the work</span>
+<span class="n">ffloat</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+
+<span class="n">ffloat</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cudax</span><span class="o">::</span><span class="n">add</span><span class="o">&lt;</span><span class="n">cudax</span><span class="o">::</span><span class="n">fpmp2_accuracy</span><span class="o">::</span><span class="n">high</span><span class="o">&gt;</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">);</span><span class="w">   </span><span class="c1">// this one step at high</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">add</span></code>, <code class="docutils literal notranslate"><span class="pre">sub</span></code>, <code class="docutils literal notranslate"><span class="pre">mul</span></code>, <code class="docutils literal notranslate"><span class="pre">div</span></code>, <code class="docutils literal notranslate"><span class="pre">fma</span></code> and <code class="docutils literal notranslate"><span class="pre">mad</span></code> all take the level this way. The result
+type is the operand type, so nothing else in the expression changes — useful where a low-accuracy
+type carries a whole kernel but one step, typically an argument reduction, needs more. These call
+the underlying scalar API on the <code class="docutils literal notranslate"><span class="pre">(hi,</span> <span class="pre">lo)</span></code> pairs directly rather than instantiating a second
+class specialization, which avoids the register pressure that mixing types on a GPU otherwise
+causes.</p>
+</section>
+<section id="using-the-types">
+<h2>Using the types<a class="headerlink" href="#using-the-types" title="Link to this heading">#</a></h2>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda/fpmp&gt;</span><span class="w">   </span><span class="c1">// types, operators, sqrt, rsqrt, fma, mad, and the math functions</span>
+</pre></div>
+</div>
+<p>One header carries the whole interface, the transcendental math functions included.</p>
+<p>The component lives in <code class="docutils literal notranslate"><span class="pre">cuda::experimental</span></code> namespace. Two spellings
+then appear, and the convention below is worth following even though, for most of these functions,
+either one compiles. The standard-named math functions are left <strong>unqualified</strong>, found by
+argument-dependent lookup. The component’s own functions have no counterpart for <code class="docutils literal notranslate"><span class="pre">double</span></code>, so
+they only occur in code written against the component to begin with, and naming the namespace says
+so:</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="k">namespace</span><span class="w"> </span><span class="nn">cudax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cuda</span><span class="o">::</span><span class="nn">experimental</span><span class="p">;</span>
+
+<span class="n">cudax</span><span class="o">::</span><span class="n">fp64mp2</span><span class="w"> </span><span class="n">x</span><span class="p">{</span><span class="mf">2.0</span><span class="p">};</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w">                  </span><span class="c1">// unqualified: ADL finds the fpmp2 overload</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cudax</span><span class="o">::</span><span class="n">renormalize</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w">    </span><span class="c1">// component-specific; renormalize(x) also compiles</span>
+</pre></div>
+</div>
+<p>Leaving the standard names unqualified is what lets an existing body of <code class="docutils literal notranslate"><span class="pre">double</span></code> code keep its
+call sites unchanged when the type underneath is swapped. <code class="docutils literal notranslate"><span class="pre">sqrt(x)</span></code> beats <code class="docutils literal notranslate"><span class="pre">::sqrt(double)</span></code> for
+an <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code> argument because taking the operand as-is is an exact match while reaching the
+<code class="docutils literal notranslate"><span class="pre">double</span></code> overload would cost a user-defined conversion.</p>
+<p>The one case where the choice is not free is the accuracy-selecting <code class="docutils literal notranslate"><span class="pre">add</span></code>, <code class="docutils literal notranslate"><span class="pre">sub</span></code>, <code class="docutils literal notranslate"><span class="pre">mul</span></code>,
+<code class="docutils literal notranslate"><span class="pre">div</span></code> and <code class="docutils literal notranslate"><span class="pre">fma</span></code>, called with their template argument spelled out. Under C++17,
+<code class="docutils literal notranslate"><span class="pre">add&lt;fpmp2_accuracy::high&gt;(a,</span> <span class="pre">b)</span></code> unqualified does not compile: ordinary lookup has to find the
+name for the <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> to parse as a template argument list rather than as less-than, and ADL does not
+help. C++20 lifted that, so the unqualified form works there. Qualifying them is therefore what
+keeps code portable across both.</p>
+</section>
+<section id="construction-and-conversion">
+<span id="libcudacxx-extended-api-fp-fpmp-conversions"></span><h2>Construction and conversion<a class="headerlink" href="#construction-and-conversion" title="Link to this heading">#</a></h2>
+<p>This is the one place where <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code> deliberately does not behave like a built-in type, and the
+first thing a new user is likely to hit. A conversion <strong>into</strong> the pair that cannot be represented
+exactly is a narrowing conversion, and by default it must be written out:</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">cudax</span><span class="o">::</span><span class="n">fp32mp2</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.2345678901234567</span><span class="p">;</span><span class="w">                                 </span><span class="c1">// error by default</span>
+<span class="n">cudax</span><span class="o">::</span><span class="n">fp32mp2</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">cudax</span><span class="o">::</span><span class="n">fp32mp2</span><span class="o">&gt;</span><span class="p">(</span><span class="mf">1.2345678901234567</span><span class="p">);</span><span class="w">    </span><span class="c1">// correct, and constexpr</span>
+</pre></div>
+</div>
+<p>The reason is that an implicit narrowing conversion has only one place to go — the single-limb
+constructor, which sets <code class="docutils literal notranslate"><span class="pre">lo</span></code> to zero and reports nothing. A value would silently arrive carrying
+<code class="docutils literal notranslate"><span class="pre">float</span></code> precision in a type that advertises 46 bits. Requiring the cast makes the conversion
+visible and routes it through the accurate two-limb path.</p>
+<p>What is exact for every value of the source type stays implicit, so ordinary code is not
+disturbed:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 46.0%" />
+<col style="width: 27.0%" />
+<col style="width: 27.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Source</strong></p></th>
+<th class="head"><p><strong>into</strong> <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></th>
+<th class="head"><p><strong>into</strong> <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">float</span></code></p></td>
+<td><p>implicit</p></td>
+<td><p>implicit</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+<td><p><strong>cast required</strong></p></td>
+<td><p>implicit</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bool</span></code>, <code class="docutils literal notranslate"><span class="pre">char</span></code>, <code class="docutils literal notranslate"><span class="pre">short</span></code>, <code class="docutils literal notranslate"><span class="pre">int32_t</span></code>, <code class="docutils literal notranslate"><span class="pre">uint32_t</span></code></p></td>
+<td><p>implicit</p></td>
+<td><p>implicit</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">int64_t</span></code>, <code class="docutils literal notranslate"><span class="pre">uint64_t</span></code></p></td>
+<td><p><strong>cast required</strong></p></td>
+<td><p>implicit</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>So <code class="docutils literal notranslate"><span class="pre">fp64mp2</span> <span class="pre">acc</span> <span class="pre">=</span> <span class="pre">0;</span></code> and <code class="docutils literal notranslate"><span class="pre">fp32mp2</span> <span class="pre">t</span> <span class="pre">=</span> <span class="pre">some_float;</span></code> compile as expected, while
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span> <span class="pre">t</span> <span class="pre">=</span> <span class="pre">some_double;</span></code> does not. The cast is <code class="docutils literal notranslate"><span class="pre">constexpr</span></code>, so full-precision coefficient
+tables can be built at compile time.</p>
+<p>The same rule governs the way <strong>out</strong>. <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> converts to <code class="docutils literal notranslate"><span class="pre">double</span></code> implicitly, because a
+<code class="docutils literal notranslate"><span class="pre">double</span></code> holds the whole pair; <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> does not, because the conversion drops the low limb.
+<code class="docutils literal notranslate"><span class="pre">float</span></code> and the integer types need the cast from either.</p>
+<p>Taken together that is the C++23 rule for extended floating-point types (P1467R9) — implicit
+where the conversion is value-preserving, written out where it is not — arrived at here from the
+IEEE-754 <code class="docutils literal notranslate"><span class="pre">float</span></code>-to-<code class="docutils literal notranslate"><span class="pre">double</span></code> analogy rather than from the paper. <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> stands to
+<code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> as <code class="docutils literal notranslate"><span class="pre">float</span></code> stands to <code class="docutils literal notranslate"><span class="pre">double</span></code>, and the conversions behave accordingly.</p>
+<p>Conversions are one thing and mixed arithmetic another. A binary operator between an <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code>
+and a built-in scalar converts the scalar <strong>into</strong> the pair and yields the pair, so
+<code class="docutils literal notranslate"><span class="pre">some_fp32mp2</span> <span class="pre">+</span> <span class="pre">some_double</span></code> compiles rather than being rejected as an expression over two
+types neither of which contains the other. The <code class="docutils literal notranslate"><span class="pre">double</span></code> is brought into <code class="docutils literal notranslate"><span class="pre">float</span></code> exponent
+range as it goes, so one too large for that arrives as infinity and the addition yields NaN.
+Mixing two accuracy levels, <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> with <code class="docutils literal notranslate"><span class="pre">fp32mp2_low</span></code>, matches no overload and falls back
+on built-in <code class="docutils literal notranslate"><span class="pre">double</span></code> arithmetic. Where the other operand is a <code class="docutils literal notranslate"><span class="pre">double</span></code> whose magnitude is not
+known to fit, convert deliberately — to <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> if the range is needed.</p>
+<p>Quad interchange sits outside that table. <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> converts both ways with the library’s
+128-bit type <code class="docutils literal notranslate"><span class="pre">__fpmp_fp128</span></code> — <code class="docutils literal notranslate"><span class="pre">__float128</span></code> on x86, IEEE <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> on aarch64. Both
+directions are explicit, and both are deleted on <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>: a double-float holds about 48
+significand bits, fewer than a <code class="docutils literal notranslate"><span class="pre">double</span></code>, so <code class="docutils literal notranslate"><span class="pre">double</span></code> is its interchange type and a quad image
+is asked for through one — <code class="docutils literal notranslate"><span class="pre">(__fpmp_fp128)</span> <span class="pre">(double)</span> <span class="pre">x</span></code> — which is exact for any pair meeting the
+double-float contract.</p>
+<p>On GCC, <code class="docutils literal notranslate"><span class="pre">_Float128</span></code> is frequently a <em>second</em> binary128 type: the same format as
+<code class="docutils literal notranslate"><span class="pre">__fpmp_fp128</span></code>, but a distinct type with no implicit conversion between the two spellings. The
+same explicit conversions therefore exist for <code class="docutils literal notranslate"><span class="pre">_Float128</span></code> wherever it is not already
+<code class="docutils literal notranslate"><span class="pre">__fpmp_fp128</span></code>, so a <code class="docutils literal notranslate"><span class="pre">static_cast&lt;_Float128&gt;</span></code> of an <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> compiles on aarch64 as well as
+on x86. This second spelling requires GCC 13, the first release to accept the token in C++; Clang
+offers no distinct type — it either rejects the token or aliases it to <code class="docutils literal notranslate"><span class="pre">long</span> <span class="pre">double</span></code> — so there
+the <code class="docutils literal notranslate"><span class="pre">__fpmp_fp128</span></code> conversions are the only ones.</p>
+<p>The same rule reaches the scalar accumulate path: <code class="docutils literal notranslate"><span class="pre">+=</span></code> and <code class="docutils literal notranslate"><span class="pre">-=</span></code> have an optimized overload
+taking a single component, worth about six operations over a full pair addition, and it is
+constrained the same way. <code class="docutils literal notranslate"><span class="pre">acc</span> <span class="pre">+=</span> <span class="pre">1.5f</span></code> on an <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is fine; <code class="docutils literal notranslate"><span class="pre">acc</span> <span class="pre">+=</span> <span class="pre">1.5</span></code> is not,
+because the <code class="docutils literal notranslate"><span class="pre">double</span></code> would be truncated to <code class="docutils literal notranslate"><span class="pre">float</span></code> before being accumulated.</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">CCCL_FPMP_EXPLICIT_CASTS=0</span></code> restores the fully implicit model, which is worth
+considering when <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code> is being dropped into a large existing <code class="docutils literal notranslate"><span class="pre">double</span></code> codebase and the edit
+churn matters more than the diagnostics. The conversion still takes the accurate two-limb path
+when it is allowed through — the macro decides whether the conversion is written out, not how
+precisely it is done.</p>
+<section id="changing-the-accuracy-level">
+<span id="libcudacxx-extended-api-fp-fpmp-level-change"></span><h3>Changing the accuracy level<a class="headerlink" href="#changing-the-accuracy-level" title="Link to this heading">#</a></h3>
+<p>Moving a value between accuracy levels is a conversion of its own, and always written out, in
+both directions — the level is part of the type, and it selects the algorithms downstream
+arithmetic will use, so it does not change by accident:</p>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="n">cudax</span><span class="o">::</span><span class="n">fp32mp2_low</span><span class="w"> </span><span class="n">fast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+<span class="n">cudax</span><span class="o">::</span><span class="n">fp32mp2</span><span class="w">     </span><span class="nf">safe</span><span class="p">(</span><span class="n">fast</span><span class="p">);</span><span class="w">      </span><span class="c1">// explicit; renormalizes on the way</span>
+</pre></div>
+</div>
+<p>Conversion <strong>out of</strong> <code class="docutils literal notranslate"><span class="pre">low</span></code> renormalizes. The reason is the state <code class="docutils literal notranslate"><span class="pre">low</span></code> leaves its results
+in: they can carry overlapping limbs, while the <code class="docutils literal notranslate"><span class="pre">mid</span></code> and <code class="docutils literal notranslate"><span class="pre">high</span></code> algorithms are written
+against the non-overlap invariant on their inputs. Handing them an overlapping pair compiles
+without complaint and quietly returns a worse answer, so the conversion repairs the invariant
+rather than leaving it to be remembered. That makes the mixed-accuracy pattern — <code class="docutils literal notranslate"><span class="pre">low</span></code> for the
+bulk of the work, a higher level across a critical stretch — correct as written.</p>
+<p>The step is one <code class="docutils literal notranslate"><span class="pre">fast_two_sum</span></code> and it is exact, so it changes how the number is stored and
+never the number itself. Conversions in the other direction, <strong>into</strong> <code class="docutils literal notranslate"><span class="pre">low</span></code>, are a plain limb
+copy: the pair already satisfies the invariant, and moving into <code class="docutils literal notranslate"><span class="pre">low</span></code> is a deliberate step into
+the fast regime. Where a pure retag is wanted, with no arithmetic at all, construct from the
+limbs instead — <code class="docutils literal notranslate"><span class="pre">fp32mp2{x.hi(),</span> <span class="pre">x.lo()}</span></code>.</p>
+<p>One consequence worth knowing: because the conversion out of <code class="docutils literal notranslate"><span class="pre">low</span></code> is arithmetic rather than a
+copy, it is not usable in a constant expression, while the level changes that copy still are.</p>
+</section>
+</section>
+<section id="operations">
+<h2>Operations<a class="headerlink" href="#operations" title="Link to this heading">#</a></h2>
+<p>Arithmetic <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">-</span> <span class="pre">*</span> <span class="pre">/</span></code> and unary negation, compound assignment, and all six comparisons.
+<code class="docutils literal notranslate"><span class="pre">sqrt</span></code>, <code class="docutils literal notranslate"><span class="pre">rsqrt</span></code>, <code class="docutils literal notranslate"><span class="pre">fma</span></code> and <code class="docutils literal notranslate"><span class="pre">mad</span></code> come with the core header. Mixed-type arithmetic works
+directly, so an <code class="docutils literal notranslate"><span class="pre">fpmp2</span></code> combines with a built-in scalar without a cast on the scalar side.</p>
+<p><code class="docutils literal notranslate"><span class="pre">renormalize(x)</span></code> restores the non-overlap invariant, <code class="docutils literal notranslate"><span class="pre">|lo|</span> <span class="pre">&lt;=</span> <span class="pre">ulp(hi)/2</span></code>, which only <code class="docutils literal notranslate"><span class="pre">low</span></code>
+accuracy can leave broken; see <a class="reference internal" href="#libcudacxx-extended-api-fp-fpmp-accuracy"><span class="std std-ref">accuracy levels</span></a>
+above. Converting up out of <code class="docutils literal notranslate"><span class="pre">low</span></code> applies it automatically, so the explicit call is for
+repairing a value that stays at <code class="docutils literal notranslate"><span class="pre">low</span></code> accuracy.</p>
+<p>The rest of the math surface arrives with the same header. Much of it is implemented directly in
+float-float arithmetic for <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, with no FP64 operation anywhere, which is the point on
+hardware where FP64 is rationed:</p>
+<ul class="simple">
+<li><p><strong>Exponentials and logarithms</strong> — <code class="docutils literal notranslate"><span class="pre">exp</span></code>, <code class="docutils literal notranslate"><span class="pre">exp2</span></code>, <code class="docutils literal notranslate"><span class="pre">exp10</span></code>, <code class="docutils literal notranslate"><span class="pre">expm1</span></code>, <code class="docutils literal notranslate"><span class="pre">log</span></code>, <code class="docutils literal notranslate"><span class="pre">log2</span></code>,
+<code class="docutils literal notranslate"><span class="pre">log10</span></code>, <code class="docutils literal notranslate"><span class="pre">log1p</span></code></p></li>
+<li><p><strong>Powers and roots</strong> — <code class="docutils literal notranslate"><span class="pre">pow</span></code>, <code class="docutils literal notranslate"><span class="pre">cbrt</span></code>, <code class="docutils literal notranslate"><span class="pre">rcbrt</span></code>, alongside the <code class="docutils literal notranslate"><span class="pre">sqrt</span></code> and <code class="docutils literal notranslate"><span class="pre">rsqrt</span></code>
+already named above</p></li>
+<li><p><strong>Trigonometric</strong> — <code class="docutils literal notranslate"><span class="pre">sin</span></code>, <code class="docutils literal notranslate"><span class="pre">cos</span></code>, <code class="docutils literal notranslate"><span class="pre">tan</span></code>, <code class="docutils literal notranslate"><span class="pre">sincos</span></code>, <code class="docutils literal notranslate"><span class="pre">asin</span></code>, <code class="docutils literal notranslate"><span class="pre">acos</span></code>, <code class="docutils literal notranslate"><span class="pre">atan</span></code>,
+<code class="docutils literal notranslate"><span class="pre">atan2</span></code>, and the pi-scaled <code class="docutils literal notranslate"><span class="pre">sinpi</span></code>, <code class="docutils literal notranslate"><span class="pre">cospi</span></code>, <code class="docutils literal notranslate"><span class="pre">sincospi</span></code>, which split the argument over
+the limb pair rather than reducing it against a radian multiple of pi</p></li>
+<li><p><strong>Hyperbolic</strong> — <code class="docutils literal notranslate"><span class="pre">sinh</span></code>, <code class="docutils literal notranslate"><span class="pre">cosh</span></code>, <code class="docutils literal notranslate"><span class="pre">tanh</span></code>, <code class="docutils literal notranslate"><span class="pre">asinh</span></code>, <code class="docutils literal notranslate"><span class="pre">acosh</span></code>, <code class="docutils literal notranslate"><span class="pre">atanh</span></code></p></li>
+<li><p><strong>Error functions</strong> — <code class="docutils literal notranslate"><span class="pre">erf</span></code>, <code class="docutils literal notranslate"><span class="pre">erfc</span></code></p></li>
+<li><p><strong>Rounding, magnitude and scaling</strong> — <code class="docutils literal notranslate"><span class="pre">ceil</span></code>, <code class="docutils literal notranslate"><span class="pre">floor</span></code>, <code class="docutils literal notranslate"><span class="pre">trunc</span></code>, <code class="docutils literal notranslate"><span class="pre">round</span></code>, <code class="docutils literal notranslate"><span class="pre">fabs</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ldexp</span></code>, <code class="docutils literal notranslate"><span class="pre">scalbn</span></code></p></li>
+<li><p><strong>Minimum, maximum and remainder</strong> — <code class="docutils literal notranslate"><span class="pre">fmin</span></code>, <code class="docutils literal notranslate"><span class="pre">fmax</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code>, <code class="docutils literal notranslate"><span class="pre">max</span></code>, <code class="docutils literal notranslate"><span class="pre">fmod</span></code>,
+<code class="docutils literal notranslate"><span class="pre">remainder</span></code></p></li>
+<li><p><strong>Probability</strong> — <code class="docutils literal notranslate"><span class="pre">normcdfinv</span></code>, and <code class="docutils literal notranslate"><span class="pre">icdf</span></code> for <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> only, which turns a 32- or 64-bit
+uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
+function here that ADL cannot find, so it has to be written <code class="docutils literal notranslate"><span class="pre">cudax::icdf(bits)</span></code>, and its
+accuracy level is a defaulted template parameter rather than a deduced one</p></li>
+<li><p><strong>Special</strong> — <code class="docutils literal notranslate"><span class="pre">boys_f0</span></code>, the zeroth-order Boys function</p></li>
+</ul>
+<p>The remaining names are present with the same signatures, but implemented generically rather than
+through a dedicated float-float path: <code class="docutils literal notranslate"><span class="pre">erfinv</span></code>, <code class="docutils literal notranslate"><span class="pre">erfcinv</span></code>, <code class="docutils literal notranslate"><span class="pre">erfcx</span></code>, <code class="docutils literal notranslate"><span class="pre">normcdf</span></code>, <code class="docutils literal notranslate"><span class="pre">tgamma</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lgamma</span></code>, the Bessel family <code class="docutils literal notranslate"><span class="pre">j0</span></code>, <code class="docutils literal notranslate"><span class="pre">j1</span></code>, <code class="docutils literal notranslate"><span class="pre">jn</span></code>, <code class="docutils literal notranslate"><span class="pre">y0</span></code>, <code class="docutils literal notranslate"><span class="pre">y1</span></code>, <code class="docutils literal notranslate"><span class="pre">yn</span></code>, <code class="docutils literal notranslate"><span class="pre">cyl_bessel_i0</span></code>
+and <code class="docutils literal notranslate"><span class="pre">cyl_bessel_i1</span></code>, the distances <code class="docutils literal notranslate"><span class="pre">hypot</span></code> and <code class="docutils literal notranslate"><span class="pre">rhypot</span></code>, the vector norms <code class="docutils literal notranslate"><span class="pre">norm3d</span></code>,
+<code class="docutils literal notranslate"><span class="pre">norm4d</span></code>, <code class="docutils literal notranslate"><span class="pre">rnorm3d</span></code> and <code class="docutils literal notranslate"><span class="pre">rnorm4d</span></code>, <code class="docutils literal notranslate"><span class="pre">rint</span></code>, <code class="docutils literal notranslate"><span class="pre">nearbyint</span></code>, <code class="docutils literal notranslate"><span class="pre">lrint</span></code>, <code class="docutils literal notranslate"><span class="pre">lround</span></code>,
+<code class="docutils literal notranslate"><span class="pre">llrint</span></code>, <code class="docutils literal notranslate"><span class="pre">llround</span></code>, <code class="docutils literal notranslate"><span class="pre">copysign</span></code>, <code class="docutils literal notranslate"><span class="pre">scalbln</span></code>, <code class="docutils literal notranslate"><span class="pre">frexp</span></code>, <code class="docutils literal notranslate"><span class="pre">modf</span></code>, <code class="docutils literal notranslate"><span class="pre">logb</span></code>, <code class="docutils literal notranslate"><span class="pre">ilogb</span></code>,
+<code class="docutils literal notranslate"><span class="pre">nextafter</span></code>, <code class="docutils literal notranslate"><span class="pre">fdim</span></code>, <code class="docutils literal notranslate"><span class="pre">remquo</span></code>, and the classification predicates. For the exact ones among
+these — the rounding, sign and decomposition family — that costs nothing, since an exact operation
+is exact however it is written; for the transcendentals it means evaluation through the backend
+covered in the next section.</p>
+<p>The predicates come in two spellings. <code class="docutils literal notranslate"><span class="pre">fpmp_isfinite</span></code>, <code class="docutils literal notranslate"><span class="pre">fpmp_isinf</span></code>, <code class="docutils literal notranslate"><span class="pre">fpmp_isnan</span></code> and
+<code class="docutils literal notranslate"><span class="pre">fpmp_signbit</span></code> are always available, while the standard names <code class="docutils literal notranslate"><span class="pre">isfinite</span></code>, <code class="docutils literal notranslate"><span class="pre">isinf</span></code>, <code class="docutils literal notranslate"><span class="pre">isnan</span></code>
+and <code class="docutils literal notranslate"><span class="pre">signbit</span></code> are exposed only where the platform has not already claimed them as macros, so the
+prefixed forms are the portable choice.</p>
+<p>Beyond the arithmetic, both types overload <code class="docutils literal notranslate"><span class="pre">atomicAdd</span></code> and <code class="docutils literal notranslate"><span class="pre">atomicSub</span></code> (<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> through
+64-bit <code class="docutils literal notranslate"><span class="pre">atomicCAS</span></code>, <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> through 128-bit <code class="docutils literal notranslate"><span class="pre">atomicCAS</span></code>, which needs compute capability
+9.0 or later), and the warp shuffles <code class="docutils literal notranslate"><span class="pre">__shfl_sync</span></code>, <code class="docutils literal notranslate"><span class="pre">__shfl_up_sync</span></code>, <code class="docutils literal notranslate"><span class="pre">__shfl_down_sync</span></code> and
+<code class="docutils literal notranslate"><span class="pre">__shfl_xor_sync</span></code> on sm_70 and later. Volatile objects are supported as storage only — loads,
+stores, copies and reading <code class="docutils literal notranslate"><span class="pre">hi()</span></code>/<code class="docutils literal notranslate"><span class="pre">lo()</span></code>, with a bit-preserving round-trip and trivial
+copyability retained. A volatile lvalue is not an operand: arithmetic takes <code class="docutils literal notranslate"><span class="pre">const</span> <span class="pre">fpmp2&amp;</span></code>, so
+compute on a non-volatile copy and store the result back, exactly as the compiler does for a
+built-in <code class="docutils literal notranslate"><span class="pre">volatile</span> <span class="pre">double</span></code>.</p>
+</section>
+<section id="math-function-accuracy">
+<h2>Math function accuracy<a class="headerlink" href="#math-function-accuracy" title="Link to this heading">#</a></h2>
+<p>How much precision a math function actually delivers depends on the type. Every dedicated
+<code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> implementation is pure float-float with no FP64 operations, which is the point on
+FP64-throttled hardware, and <code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code> is never limited by its backend: functions without a
+dedicated implementation evaluate in <code class="docutils literal notranslate"><span class="pre">double</span></code> and split into the pair, and binary64 already
+carries more significand than a float pair holds.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> is the different case, because a double pair asks for more precision than binary64
+can express. Those functions need a binary128 backend to be evaluated in, and whether one is
+active is decided per compilation pass rather than by an option:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 34.0%" />
+<col style="width: 22.0%" />
+<col style="width: 22.0%" />
+<col style="width: 22.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Function class</strong></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code><strong>, binary128</strong></p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code><strong>,</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Exact operations and predicates</p></td>
+<td><p>exact</p></td>
+<td><p>exact</p></td>
+<td><p>exact</p></td>
+</tr>
+<tr class="row-odd"><td><p>Transcendentals with a binary128 backend</p></td>
+<td><p>float-float</p></td>
+<td><p>binary128</p></td>
+<td><p>binary64</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">erf</span></code>, <code class="docutils literal notranslate"><span class="pre">erfc</span></code>, <code class="docutils literal notranslate"><span class="pre">normcdf</span></code></p></td>
+<td><p>float-float</p></td>
+<td><p>binary64</p></td>
+<td><p>binary64</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">atan2</span></code>, on the device</p></td>
+<td><p>float-float</p></td>
+<td><p>binary64</p></td>
+<td><p>binary64</p></td>
+</tr>
+<tr class="row-even"><td><p>Functions with no binary128 backend</p></td>
+<td><p>float-float</p></td>
+<td><p>binary64</p></td>
+<td><p>binary64</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">binary64</span></code> in an <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> column means only the high limb carries information and <code class="docutils literal notranslate"><span class="pre">lo</span></code> is
+zero: a correctly formed double-double holding no more than a <code class="docutils literal notranslate"><span class="pre">double</span></code> would. That is the one
+case where the type promises more than the function delivers, so it is worth knowing which column
+applies. A host-only compilation takes the binary128 column wherever <code class="docutils literal notranslate"><span class="pre">__float128</span></code> is available;
+a CUDA translation unit takes it in the device pass only, and only on architectures that can run
+<code class="docutils literal notranslate"><span class="pre">fp128</span></code>, so the two halves of one program can differ. Setting
+<code class="docutils literal notranslate"><span class="pre">CCCL_FPMP_FP128_MATH_FALLBACK=1</span></code> puts both on the quad path, at the cost of a quad-precision
+math dependency on hosts that need one.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="fpmp_spec.html"><span class="doc">Full fpmp specification</span></a> — the measured accuracy, special-value behavior and
+performance of every function, per type and accuracy level, which this page does not repeat.</p>
+</div>
+</section>
+<section id="measured-performance">
+<span id="libcudacxx-extended-api-fp-fpmp-performance"></span><h2>Measured performance<a class="headerlink" href="#measured-performance" title="Link to this heading">#</a></h2>
+<p>The figures below come from a midpoint-rule π integration — 2<sup>26</sup> terms, five arithmetic
+operations per term, no memory traffic worth speaking of — so they price arithmetic pipelines
+rather than bandwidth, and every type runs identical code. “Correct digits” means correct decimal
+digits of the computed integral, with every step carried out in the type being measured, the
+sequential reduction of the 131072 per-thread partials included: what is reported is therefore what
+a program written in that type costs end to end, not the loop in isolation. Native <code class="docutils literal notranslate"><span class="pre">double</span></code> is
+measured in the same run, as the baseline each row is reported against.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="fpmp_example.html#libcudacxx-extended-api-fp-fpmp-example"><span class="std std-ref">fpmp examples</span></a> — the program behind these
+figures, which selects the type it measures from the build line.</p>
+</div>
+<p><strong>Below</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code><strong>, where FP64 throughput is rationed.</strong> On these parts native FP64 runs at a
+small fraction of FP32, and a float pair rides the units that are plentiful. Accuracy is a property
+of the arithmetic rather than of the GPU — the three parts below agree on it to the last digit
+reported — so it is one column for all of them:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 16.0%" />
+<col style="width: 21.0%" />
+<col style="width: 21.0%" />
+<col style="width: 20.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Type</strong></p></th>
+<th class="head"><p><strong>Correct digits</strong></p></th>
+<th class="head"><p><strong>RTX 6000 Ada</strong></p></th>
+<th class="head"><p><strong>RTX PRO 6000 Blackwell</strong></p></th>
+<th class="head"><p><strong>B300</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">float</span></code></p></td>
+<td><p>3.1</p></td>
+<td><p>28.2×</p></td>
+<td><p>25.4×</p></td>
+<td><p>32.3×</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, <code class="docutils literal notranslate"><span class="pre">low</span></code></p></td>
+<td><p>9.5</p></td>
+<td><p><strong>15.8×</strong></p></td>
+<td><p><strong>11.5×</strong></p></td>
+<td><p><strong>16.0×</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, <code class="docutils literal notranslate"><span class="pre">mid</span></code></p></td>
+<td><p>12.0</p></td>
+<td><p><strong>9.9×</strong></p></td>
+<td><p><strong>8.6×</strong></p></td>
+<td><p><strong>10.8×</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fp32mp2</span></code>, <code class="docutils literal notranslate"><span class="pre">high</span></code></p></td>
+<td><p>12.7</p></td>
+<td><p><strong>6.1×</strong></p></td>
+<td><p><strong>5.5×</strong></p></td>
+<td><p><strong>6.7×</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+<td><p>14.8</p></td>
+<td><p>1.0×</p></td>
+<td><p>1.0×</p></td>
+<td><p>1.0×</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Each GPU column is speed relative to native <code class="docutils literal notranslate"><span class="pre">double</span></code> on that part, which is why the <code class="docutils literal notranslate"><span class="pre">double</span></code>
+row reads 1.0× in all of them. A float pair lands within three digits of <code class="docutils literal notranslate"><span class="pre">double</span></code> at several
+times its throughput, and the three levels do separate here — but they separate very unevenly, and
+the shape of that is worth reading rather than the numbers alone.</p>
+<p>The large step is from <code class="docutils literal notranslate"><span class="pre">low</span></code> to <code class="docutils literal notranslate"><span class="pre">mid</span></code>: 2.5 digits, for 1.6× the time. It is not cancellation
+that does it, since every term of this integrand is positive. It is that <code class="docutils literal notranslate"><span class="pre">low</span></code> is the one level
+that omits the closing renormalization, so its two limbs are free to overlap, and the overlap
+compounds along a chain of 131072 additions until part of the trailing limb is no longer carrying
+information. <code class="docutils literal notranslate"><span class="pre">mid</span></code> and <code class="docutils literal notranslate"><span class="pre">high</span></code> both restore the invariant on every operation, and neither drifts.</p>
+<p>The step from <code class="docutils literal notranslate"><span class="pre">mid</span></code> to <code class="docutils literal notranslate"><span class="pre">high</span></code> is small by comparison — 0.7 digits, for another 1.6× — and that
+is what to expect on a sum of same-signed values. Both levels normalize; what <code class="docutils literal notranslate"><span class="pre">high</span></code> adds is the
+recovery of the rounding error committed when the two trailing limbs are added, and that error only
+grows into the result when something amplifies it. Cancellation is the usual amplifier and there is
+none here, so <code class="docutils literal notranslate"><span class="pre">high</span></code> collects a fraction of a digit. On a computation that does cancel, the same
+0.7 digits can be several. Which is the reason to measure a given computation rather than to assume
+from a table, and the reason the program linked above takes its type from the build line.</p>
+<p>Plain <code class="docutils literal notranslate"><span class="pre">float</span></code> is not an alternative, and not merely because it is 11.7 digits behind here. Its
+accuracy gets <em>worse</em> as terms are added — 5.2 digits at 2<sup>20</sup> against 2.8 at
+2<sup>28</sup> — so the extra work buys less answer rather than more. With 24 significand bits it can
+neither place the grid points at that spacing nor carry the sum across that many additions.
+<code class="docutils literal notranslate"><span class="pre">double</span></code> holds near 14 digits over the same range. That divergence is the wall these types exist
+to get past.</p>
+<p><strong>Above</strong> <code class="docutils literal notranslate"><span class="pre">double</span></code><strong>.</strong> The same program run with <code class="docutils literal notranslate"><span class="pre">fp64mp2</span></code> reaches 17.2 digits where
+<code class="docutils literal notranslate"><span class="pre">double</span></code> reaches 14.8, and takes roughly five times <code class="docutils literal notranslate"><span class="pre">double</span></code>’s time on all three parts above: a
+pair operation is a run of operations on the limbs, and on these parts those are the rationed FP64
+ones.
+The digits past <code class="docutils literal notranslate"><span class="pre">double</span></code> are therefore bought at a real price, unlike the ones below it, and how
+bearable that price is follows from the FP64 throughput underneath.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<p>The arithmetic implements these algorithms:</p>
+<ol class="arabic simple">
+<li><p><strong>Dekker, T. (1971)</strong> “A floating-point technique for extending the available precision”,
+<em>Numerische Mathematik</em> 18, 224–242.
+<a class="reference external" href="https://doi.org/10.1007/BF01397083">DOI: 10.1007/BF01397083</a></p></li>
+<li><p><strong>Karp, A. H., &amp; Markstein, P. (1997)</strong> “High Precision Division and Square Root”,
+<em>ACM TOMS</em> 23(4), 561–589.
+<a class="reference external" href="https://doi.org/10.1145/279232.279237">DOI: 10.1145/279232.279237</a></p></li>
+<li><p><strong>Thall, A.</strong> “Extended-Precision Floating-Point Numbers for GPU Computation”.
+<a class="reference external" href="http://andrewthall.org/papers/df64_qf128.pdf">PDF</a></p></li>
+<li><p><strong>Nagai et al. (2008)</strong> “Fast Quadruple Precision Arithmetic Library on Parallel Computer
+SR11000/J2”, <em>ICCS ‘08</em>.</p></li>
+<li><p><strong>Ogita, T., Rump, S. M., &amp; Oishi, S. (2005)</strong> “Accurate Sum and Dot Product”,
+<em>SIAM J. Sci. Comput.</em> 26(6), 1955–1988.</p></li>
+</ol>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../fp.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">FP Component</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="fpmp_example.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">fpmp: Examples</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+
+
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-types">The types</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#retiring-80-bit-cpu-code">Retiring 80-bit CPU code</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#accuracy-levels">Accuracy levels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-the-types">Using the types</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#construction-and-conversion">Construction and conversion</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-the-accuracy-level">Changing the accuracy level</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operations">Operations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#math-function-accuracy">Math function accuracy</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#measured-performance">Measured performance</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+
+
+
+  <p class="copyright">
+    
+      Copyright © 2026, NVIDIA Corporation.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
+  </p>
+</div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
