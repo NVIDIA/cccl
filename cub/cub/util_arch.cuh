@@ -41,13 +41,7 @@ CUB_NAMESPACE_BEGIN
 /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
 #  ifndef CUB_PTX_ARCH
 // deprecated in 3.1
-#    if _CCCL_CUDA_COMPILER(NVHPC)
-// NV_TARGET_MINIMUM_SM_INTEGER is the oldest target PTX version, and is defined when compiling both host code and
-// device code.
-#      define CUB_PTX_ARCH (NV_TARGET_MINIMUM_SM_INTEGER * 10)
-#    else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
-#      define CUB_PTX_ARCH _CCCL_PTX_ARCH()
-#    endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
+#    define CUB_PTX_ARCH _CCCL_PTX_ARCH()
 #  endif
 
 /// Maximum number of devices supported.
