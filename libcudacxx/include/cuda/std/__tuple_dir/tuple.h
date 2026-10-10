@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
@@ -32,16 +34,19 @@
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/sfinae_traits.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/__utility/swap.h>
+#include <cuda/std/__utility/piecewise_construct.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

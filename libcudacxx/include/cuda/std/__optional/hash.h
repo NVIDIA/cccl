@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/hash.h>
-#include <cuda/std/__optional/optional.h>
+#include <cuda/std/__fwd/hash.h> // IWYU pragma: keep
+#include <cuda/std/__optional/optional.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

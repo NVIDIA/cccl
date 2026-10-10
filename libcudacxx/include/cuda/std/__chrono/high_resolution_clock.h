@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__chrono/steady_clock.h>
+#include <cuda/std/__chrono/steady_clock.h> // IWYU pragma: keep
 #include <cuda/std/__chrono/system_clock.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -25,7 +25,8 @@
 #include <cuda/std/__format/format_args.h>
 #include <cuda/std/__format/format_context.h>
 #include <cuda/std/__format/format_parse_context.h>
-#include <cuda/std/__format/format_string.h>
+#include <cuda/std/__format/format_string.h> // IWYU pragma: keep
+#include <cuda/std/__fwd/format.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/string_view>
 

@@ -20,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/concepts.h>
 #include <cuda/std/__format/format_arg.h>
-#include <cuda/std/__string/char_traits.h>
+#include <cuda/std/__fwd/char_traits.h>
+#include <cuda/std/__iterator/access.h>
+#include <cuda/std/__string/char_traits.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>

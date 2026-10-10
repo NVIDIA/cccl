@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/common.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

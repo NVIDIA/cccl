@@ -25,6 +25,7 @@
 #include <cuda/std/__atomic/functions/common.h>
 #include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/copy_cv.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>

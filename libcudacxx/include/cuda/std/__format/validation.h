@@ -26,6 +26,7 @@
 #include <cuda/std/__format/format_error.h>
 #include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/formatter.h>
+#include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>
 

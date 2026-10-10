@@ -29,7 +29,7 @@
 #  endif // ^^^ __cpp_lib_optional < 201606L ^^^
 #endif // _CCCL_HAS_EXCEPTIONS()
 
-#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
 
 #include <nv/target>
 
