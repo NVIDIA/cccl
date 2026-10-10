@@ -21,8 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__chrono/day.h>
-#include <cuda/std/__chrono/year.h>
+#include <cuda/std/__chrono/day.h> // IWYU pragma: keep
+#include <cuda/std/__chrono/duration.h>
+#include <cuda/std/__chrono/year.h> // IWYU pragma: keep
+#include <cuda/std/ratio>
 
 #include <cuda/std/__cccl/prologue.h>
 

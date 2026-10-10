@@ -25,8 +25,10 @@
 #include <cuda/std/__chrono/time_point.h>
 #include <cuda/std/ctime>
 
+#include <nv/target>
+
 #if _CCCL_HOSTED()
-#  include <chrono>
+#  include <chrono> // IWYU pragma: keep
 #endif // _CCCL_HOSTED()
 
 #include <cuda/std/__cccl/prologue.h>
