@@ -29,8 +29,8 @@
 #include <thrust/system/hpx/detail/contiguous_iterator.h>
 #include <thrust/system/hpx/detail/execution_policy.h>
 #include <thrust/system/hpx/detail/function.h>
-#include <hpx/parallel/algorithms/stable_sort.hpp>
 
+#include <hpx/parallel/algorithms/stable_sort.hpp>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -39,7 +39,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
 void stable_sort(
   execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
@@ -49,11 +48,11 @@ void stable_sort(
 
   if constexpr (::hpx::traits::is_random_access_iterator_v<RandomAccessIterator>)
   {
-      return ::hpx::stable_sort(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
-        wrapped_comp);
+    return ::hpx::stable_sort(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first),
+      detail::try_unwrap_contiguous_iterator(last),
+      wrapped_comp);
   }
   else
   {

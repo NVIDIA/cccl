@@ -36,7 +36,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename Executor, typename Parameters>
 struct parallel_policy_shim : basic_execution_policy<parallel_policy_shim, Executor, Parameters>
 {
@@ -45,20 +44,16 @@ struct parallel_policy_shim : basic_execution_policy<parallel_policy_shim, Execu
 
 using par_t = parallel_policy_shim<::hpx::execution::parallel_executor,
                                    ::hpx::traits::executor_parameters_type_t<::hpx::execution::parallel_executor>>;
-
 } // namespace detail
 
 _CCCL_GLOBAL_CONSTANT detail::par_t par;
-
 } // namespace hpx
 } // namespace system
 
 // alias par here
 namespace hpx
 {
-
 using thrust::system::hpx::par;
-
 } // namespace hpx
 THRUST_NAMESPACE_END
 
@@ -66,7 +61,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename Executor, typename Parameters>
 struct is_rebound_execution_policy<THRUST_NS_QUALIFIER::system::hpx::detail::parallel_policy_shim<Executor, Parameters>>
     : std::true_type
@@ -81,6 +75,5 @@ template <typename Executor, typename Parameters>
 struct is_parallel_execution_policy<THRUST_NS_QUALIFIER::system::hpx::detail::parallel_policy_shim<Executor, Parameters>>
     : std::true_type
 {};
-
 } // namespace detail
 } // namespace hpx

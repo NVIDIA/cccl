@@ -29,9 +29,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/system/hpx/detail/contiguous_iterator.h>
 #include <thrust/system/hpx/detail/execution_policy.h>
 #include <thrust/system/hpx/detail/function.h>
-#include <thrust/system/hpx/detail/contiguous_iterator.h>
 
 #include <hpx/parallel/algorithms/reduce.hpp>
 
@@ -42,7 +42,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
 OutputType reduce(execution_policy<DerivedPolicy>& exec,
                   InputIterator first,
@@ -55,12 +54,12 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
 
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
-      return ::hpx::reduce(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
-        init,
-        wrapped_binary_op);
+    return ::hpx::reduce(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first),
+      detail::try_unwrap_contiguous_iterator(last),
+      init,
+      wrapped_binary_op);
   }
   else
   {
@@ -68,7 +67,6 @@ OutputType reduce(execution_policy<DerivedPolicy>& exec,
     return ::hpx::reduce(first, last, init, wrapped_binary_op);
   }
 }
-
 } // end namespace detail
 } // end namespace hpx
 } // end namespace system

@@ -41,7 +41,6 @@ namespace system
 {
 namespace hpx
 {
-
 /*! Allocates an area of memory available to Thrust's <tt>hpx</tt> system.
  *  \param n Number of bytes to allocate.
  *  \return A <tt>hpx::pointer<void></tt> pointing to the beginning of the newly

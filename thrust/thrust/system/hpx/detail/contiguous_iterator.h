@@ -35,7 +35,6 @@ namespace hpx
 {
 namespace detail
 {
-
 using thrust::is_contiguous_iterator;
 using thrust::is_contiguous_iterator_v;
 
@@ -53,7 +52,6 @@ constexpr Iterator rewrap_contiguous_iterator(Iterator it, Iterator /*base*/)
 {
   return it;
 }
-
 } // namespace detail
 } // namespace hpx
 } // namespace system

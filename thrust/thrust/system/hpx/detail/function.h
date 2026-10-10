@@ -34,7 +34,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename Function>
 struct wrapped_function
 {
@@ -56,7 +55,6 @@ struct wrapped_function
     return m_f(thrust::raw_reference_cast(xs)...);
   }
 }; // end wrapped_function
-
 } // namespace detail
 } // namespace hpx
 } // namespace system

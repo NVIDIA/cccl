@@ -36,7 +36,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename Executor, typename Parameters>
 struct unsequenced_policy_shim : basic_execution_policy<unsequenced_policy_shim, Executor, Parameters>
 {
@@ -45,20 +44,16 @@ struct unsequenced_policy_shim : basic_execution_policy<unsequenced_policy_shim,
 
 using unseq_t = unsequenced_policy_shim<::hpx::execution::parallel_executor,
                                         ::hpx::traits::executor_parameters_type_t<::hpx::execution::parallel_executor>>;
-
 } // namespace detail
 
 _CCCL_GLOBAL_CONSTANT detail::unseq_t unseq;
-
 } // namespace hpx
 } // namespace system
 
 // alias unseq here
 namespace hpx
 {
-
 using thrust::system::hpx::unseq;
-
 } // namespace hpx
 THRUST_NAMESPACE_END
 
@@ -66,7 +61,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename Executor, typename Parameters>
 struct is_rebound_execution_policy<
   THRUST_NS_QUALIFIER::system::hpx::detail::unsequenced_policy_shim<Executor, Parameters>> : std::true_type
@@ -86,6 +80,5 @@ template <typename Executor, typename Parameters>
 struct is_unsequenced_execution_policy<
   THRUST_NS_QUALIFIER::system::hpx::detail::unsequenced_policy_shim<Executor, Parameters>> : std::true_type
 {};
-
 } // namespace detail
 } // namespace hpx

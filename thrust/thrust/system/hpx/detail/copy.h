@@ -41,19 +41,18 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
 OutputIterator
 copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
-      auto res = ::hpx::copy(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
-        detail::try_unwrap_contiguous_iterator(result));
-      return detail::rewrap_contiguous_iterator(res, result);
+    auto res = ::hpx::copy(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first),
+      detail::try_unwrap_contiguous_iterator(last),
+      detail::try_unwrap_contiguous_iterator(result));
+    return detail::rewrap_contiguous_iterator(res, result);
   }
   else
   {
@@ -67,12 +66,12 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
-      auto res = ::hpx::copy_n(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        n,
-        detail::try_unwrap_contiguous_iterator(result));
-      return detail::rewrap_contiguous_iterator(res, result);
+    auto res = ::hpx::copy_n(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first),
+      n,
+      detail::try_unwrap_contiguous_iterator(result));
+    return detail::rewrap_contiguous_iterator(res, result);
   }
   else
   {
@@ -80,7 +79,6 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
     return ::hpx::copy_n(first, n, result);
   }
 }
-
 } // end namespace detail
 } // end namespace hpx
 } // end namespace system

@@ -36,10 +36,8 @@ namespace system
 {
 namespace hpx
 {
-
 namespace detail
 {
-
 // XXX circular #inclusion problems cause the compiler to believe that cpp::malloc
 //     is not defined
 //     WAR the problem by using adl to call cpp::malloc, which requires it to depend
@@ -59,7 +57,6 @@ void free_workaround(Tag t, pointer<void> ptr)
 {
   free(t, ptr.get());
 } // end free_workaround()
-
 } // namespace detail
 
 inline pointer<void> malloc(std::size_t n)
@@ -88,7 +85,6 @@ inline void free(pointer<void> ptr)
   //
   detail::free_workaround(cpp::tag(), ptr);
 } // end free()
-
 } // namespace hpx
 } // namespace system
 THRUST_NAMESPACE_END

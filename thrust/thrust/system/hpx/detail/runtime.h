@@ -84,7 +84,6 @@ namespace hpx
 {
 namespace detail
 {
-
 struct init_runtime
 {
   ::hpx::manage_runtime runtime{};
@@ -134,7 +133,6 @@ inline decltype(auto) run_as_hpx_thread(const F& f)
 
   return ::hpx::run_as_hpx_thread(f);
 }
-
 } // end namespace detail
 } // end namespace hpx
 } // end namespace system

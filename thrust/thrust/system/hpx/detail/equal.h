@@ -42,17 +42,16 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
 bool equal(execution_policy<DerivedPolicy>& exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
                 && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
   {
-      return ::hpx::equal(hpx::detail::to_hpx_execution_policy(exec),
-                          detail::try_unwrap_contiguous_iterator(first1),
-                          detail::try_unwrap_contiguous_iterator(last1),
-                          detail::try_unwrap_contiguous_iterator(first2));
+    return ::hpx::equal(hpx::detail::to_hpx_execution_policy(exec),
+                        detail::try_unwrap_contiguous_iterator(first1),
+                        detail::try_unwrap_contiguous_iterator(last1),
+                        detail::try_unwrap_contiguous_iterator(first2));
   }
   else
   {
@@ -74,12 +73,12 @@ bool equal(execution_policy<DerivedPolicy>& exec,
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
                 && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
   {
-      return ::hpx::equal(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first1),
-        detail::try_unwrap_contiguous_iterator(last1),
-        detail::try_unwrap_contiguous_iterator(first2),
-        wrapped_binary_pred);
+    return ::hpx::equal(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first1),
+      detail::try_unwrap_contiguous_iterator(last1),
+      detail::try_unwrap_contiguous_iterator(first2),
+      wrapped_binary_pred);
   }
   else
   {
@@ -87,7 +86,6 @@ bool equal(execution_policy<DerivedPolicy>& exec,
     return ::hpx::equal(first1, last1, first2, wrapped_binary_pred);
   }
 }
-
 } // end namespace detail
 } // end namespace hpx
 } // end namespace system

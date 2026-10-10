@@ -40,11 +40,9 @@ namespace system
 {
 namespace hpx
 {
-
 //! \cond
 namespace detail
 {
-
 class topology_resource final : public mr::memory_resource<>
 {
 public:
@@ -93,7 +91,6 @@ using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \} // memory_resources
  */
-
 } // namespace hpx
 } // namespace system
 

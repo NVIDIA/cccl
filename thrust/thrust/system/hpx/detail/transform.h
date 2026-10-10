@@ -42,7 +42,6 @@ namespace hpx
 {
 namespace detail
 {
-
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
 OutputIterator transform(
   execution_policy<ExecutionPolicy>& exec,
@@ -56,13 +55,13 @@ OutputIterator transform(
 
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator>)
   {
-      auto res = ::hpx::transform(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first),
-        detail::try_unwrap_contiguous_iterator(last),
-        detail::try_unwrap_contiguous_iterator(result),
-        wrapped_op);
-      return detail::rewrap_contiguous_iterator(res, result);
+    auto res = ::hpx::transform(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first),
+      detail::try_unwrap_contiguous_iterator(last),
+      detail::try_unwrap_contiguous_iterator(result),
+      wrapped_op);
+    return detail::rewrap_contiguous_iterator(res, result);
   }
   else
   {
@@ -90,14 +89,14 @@ OutputIterator transform(
   if constexpr (::hpx::traits::is_forward_iterator_v<InputIterator1>
                 && ::hpx::traits::is_forward_iterator_v<InputIterator2>)
   {
-      auto res = ::hpx::transform(
-        hpx::detail::to_hpx_execution_policy(exec),
-        detail::try_unwrap_contiguous_iterator(first1),
-        detail::try_unwrap_contiguous_iterator(last1),
-        detail::try_unwrap_contiguous_iterator(first2),
-        detail::try_unwrap_contiguous_iterator(result),
-        wrapped_op);
-      return detail::rewrap_contiguous_iterator(res, result);
+    auto res = ::hpx::transform(
+      hpx::detail::to_hpx_execution_policy(exec),
+      detail::try_unwrap_contiguous_iterator(first1),
+      detail::try_unwrap_contiguous_iterator(last1),
+      detail::try_unwrap_contiguous_iterator(first2),
+      detail::try_unwrap_contiguous_iterator(result),
+      wrapped_op);
+    return detail::rewrap_contiguous_iterator(res, result);
   }
   else
   {
@@ -105,7 +104,6 @@ OutputIterator transform(
     return ::hpx::transform(first1, last1, first2, result, wrapped_op);
   }
 }
-
 } // end namespace detail
 } // end namespace hpx
 } // end namespace system

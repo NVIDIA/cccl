@@ -39,7 +39,6 @@ namespace system
 {
 namespace hpx
 {
-
 /*! \p hpx::pointer stores a pointer to an object allocated in memory accessible
  *  by the \p hpx system. This type provides type safety when dispatching
  *  algorithms on ranges resident in \p hpx memory.
@@ -98,7 +97,6 @@ using universal_pointer = thrust::pointer<T, thrust::system::hpx::tag, typename 
  */
 template <typename T>
 using reference = thrust::reference<T, thrust::system::hpx::tag>;
-
 } // namespace hpx
 } // namespace system
 

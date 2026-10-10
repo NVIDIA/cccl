@@ -40,7 +40,6 @@ namespace hpx
 {
 namespace detail
 {
-
 // this awkward sequence of definitions arise
 // from the desire both for tag to derive
 // from execution_policy and for execution_policy
@@ -238,22 +237,18 @@ auto to_hpx_execution_policy(const execution_policy<Derived>& exec) noexcept
     return ::hpx::execution::par;
   }
 }
-
 } // namespace detail
 
 // alias execution_policy and tag here
 using thrust::system::hpx::detail::execution_policy;
 using thrust::system::hpx::detail::tag;
-
 } // namespace hpx
 } // namespace system
 
 // alias items at top-level
 namespace hpx
 {
-
 using thrust::system::hpx::execution_policy;
 using thrust::system::hpx::tag;
-
 } // namespace hpx
 THRUST_NAMESPACE_END
