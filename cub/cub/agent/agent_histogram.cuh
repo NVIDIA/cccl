@@ -84,7 +84,7 @@ namespace detail
 {
 //! Parameterizable tuning policy type for AgentHistogram
 template <int ThreadsPerBlock,
-          int PixelsPerThread,
+          int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           bool RleCompress,
@@ -95,8 +95,10 @@ struct agent_histogram_policy
 {
   /// Threads per thread block
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
-  /// Pixels per thread (per tile of input)
-  static constexpr int PIXELS_PER_THREAD = PixelsPerThread;
+  /// Items per thread (per tile of input)
+  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  // TODO(bgruber): remove this compatibility alias in CCCL 4.0.
+  static constexpr int PIXELS_PER_THREAD = ItemsPerThread;
 
   /// Whether to perform localized RLE to compress samples before histogramming
   static constexpr bool IS_RLE_COMPRESS = RleCompress;
@@ -121,7 +123,7 @@ struct agent_histogram_policy
 
 //! Deprecated [Since 3.5]
 template <int ThreadsPerBlock,
-          int PixelsPerThread,
+          int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           bool RleCompress,
@@ -131,7 +133,7 @@ template <int ThreadsPerBlock,
 using AgentHistogramPolicy
   CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") = detail::agent_histogram_policy<
     ThreadsPerBlock,
-    PixelsPerThread,
+    ItemsPerThread,
     LoadAlgorithm,
     LoadModifier,
     RleCompress,
@@ -141,14 +143,14 @@ using AgentHistogramPolicy
 
 namespace detail::histogram
 {
-// Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
+// Return a native item pointer (specialized for CacheModifiedInputIterator types)
 template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(CacheModifiedInputIterator<Modifier, ValueT, OffsetT> itr)
 {
   return itr.ptr;
 }
 
-// Return a native pixel pointer (specialized for other types)
+// Return a native item pointer (specialized for other types)
 template <typename IteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 {
@@ -200,10 +202,10 @@ struct AgentHistogram
 {
   static constexpr int vec_size                    = AgentHistogramPolicyT::VEC_SIZE;
   static constexpr int threads_per_block           = AgentHistogramPolicyT::BLOCK_THREADS;
-  static constexpr int pixels_per_thread           = AgentHistogramPolicyT::PIXELS_PER_THREAD;
-  static constexpr int samples_per_thread          = pixels_per_thread * NumChannels;
+  static constexpr int items_per_thread            = AgentHistogramPolicyT::ITEMS_PER_THREAD;
+  static constexpr int samples_per_thread          = items_per_thread * NumChannels;
   static constexpr int vecs_per_thread             = samples_per_thread / vec_size;
-  static constexpr int tile_pixels                 = pixels_per_thread * threads_per_block;
+  static constexpr int tile_items                  = items_per_thread * threads_per_block;
   static constexpr int tile_samples                = samples_per_thread * threads_per_block;
   static constexpr bool is_rle_compress            = AgentHistogramPolicyT::IS_RLE_COMPRESS;
   static constexpr bool is_work_stealing           = AgentHistogramPolicyT::IS_WORK_STEALING;
@@ -212,7 +214,7 @@ struct AgentHistogram
     (PrivatizedSmemBins > 0) ? BlockHistogramMemoryPreference{AgentHistogramPolicyT::MEM_PREFERENCE} : GMEM;
 
   using SampleT = it_value_t<SampleIteratorT>;
-  using PixelT  = typename CubVector<SampleT, NumChannels>::Type;
+  using ItemT   = typename CubVector<SampleT, NumChannels>::Type;
   using VecT    = typename CubVector<SampleT, vec_size>::Type;
 
   /// Input iterator wrapper type (for applying cache modifier)
@@ -222,13 +224,12 @@ struct AgentHistogram
     ::cuda::std::_If<::cuda::std::is_pointer_v<SampleIteratorT>,
                      CacheModifiedInputIterator<load_modifier, SampleT, OffsetT>,
                      SampleIteratorT>;
-  using WrappedPixelIteratorT = CacheModifiedInputIterator<load_modifier, PixelT, OffsetT>;
-  using WrappedVecsIteratorT  = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
+  using WrappedItemIteratorT = CacheModifiedInputIterator<load_modifier, ItemT, OffsetT>;
+  using WrappedVecsIteratorT = CacheModifiedInputIterator<load_modifier, VecT, OffsetT>;
   using BlockLoadSampleT =
     BlockLoad<SampleT, threads_per_block, samples_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadPixelT =
-    BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
-  using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadItemT = BlockLoad<ItemT, threads_per_block, items_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadVecT  = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
   struct _TempStorage
   {
@@ -239,7 +240,7 @@ struct AgentHistogram
     union
     {
       typename BlockLoadSampleT::TempStorage sample_load;
-      typename BlockLoadPixelT::TempStorage pixel_load;
+      typename BlockLoadItemT::TempStorage item_load;
       typename BlockLoadVecT::TempStorage vec_load;
     };
   };
@@ -303,39 +304,39 @@ struct AgentHistogram
     }
   }
 
-  // Accumulate pixels.  Specialized for RLE compression.
+  // Accumulate items.  Specialized for RLE compression.
   template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
-    SampleT samples[pixels_per_thread][NumChannels],
-    bool is_valid[pixels_per_thread],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateItems(
+    SampleT samples[items_per_thread][NumChannels],
+    bool is_valid[items_per_thread],
     TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::true_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      // Bin pixels
-      int bins[pixels_per_thread];
+      // Bin items
+      int bins[items_per_thread];
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+      for (int item = 0; item < items_per_thread; ++item)
       {
-        bins[pixel] = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bins[pixel], is_valid[pixel]);
+        bins[item] = -1;
+        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[item][ch], bins[item], is_valid[item]);
       }
 
       CounterT accumulator = 1;
 
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int pixel = 0; pixel < pixels_per_thread - 1; ++pixel)
+      for (int item = 0; item < items_per_thread - 1; ++item)
       {
-        if (bins[pixel] != bins[pixel + 1])
+        if (bins[item] != bins[item + 1])
         {
-          if (bins[pixel] >= 0)
+          if (bins[item] >= 0)
           {
             NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                              (atomicAdd_block(privatized_histograms[ch] + bins[pixel], accumulator);),
-                              (atomicAdd(privatized_histograms[ch] + bins[pixel], accumulator);));
+                              (atomicAdd_block(privatized_histograms[ch] + bins[item], accumulator);),
+                              (atomicAdd(privatized_histograms[ch] + bins[item], accumulator);));
           }
 
           accumulator = 0;
@@ -343,32 +344,32 @@ struct AgentHistogram
         accumulator++;
       }
 
-      // Last pixel
-      if (bins[pixels_per_thread - 1] >= 0)
+      // Last item
+      if (bins[items_per_thread - 1] >= 0)
       {
         NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
-                          (atomicAdd_block(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);),
-                          (atomicAdd(privatized_histograms[ch] + bins[pixels_per_thread - 1], accumulator);));
+                          (atomicAdd_block(privatized_histograms[ch] + bins[items_per_thread - 1], accumulator);),
+                          (atomicAdd(privatized_histograms[ch] + bins[items_per_thread - 1], accumulator);));
       }
     }
   }
 
-  // Accumulate pixels.  Specialized for individual accumulation of each pixel.
+  // Accumulate items.  Specialized for individual accumulation of each item.
   template <typename TwoDimSubscriptableCounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
-    SampleT samples[pixels_per_thread][NumChannels],
-    bool is_valid[pixels_per_thread],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateItems(
+    SampleT samples[items_per_thread][NumChannels],
+    bool is_valid[items_per_thread],
     TwoDimSubscriptableCounterT& privatized_histograms,
     ::cuda::std::false_type is_rle_compress)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+    for (int item = 0; item < items_per_thread; ++item)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int ch = 0; ch < NumActiveChannels; ++ch)
       {
         int bin = -1;
-        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
+        privatized_decode_op[ch].template BinSelect<load_modifier>(samples[item][ch], bin, is_valid[item]);
         if (bin >= 0)
         {
           NV_IF_ELSE_TARGET(NV_PROVIDES_SM_60,
@@ -379,9 +380,9 @@ struct AgentHistogram
     }
   }
 
-  // Load full, aligned tile using pixel iterator
+  // Load full, aligned tile using item iterator
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[pixels_per_thread][NumChannels])
+  LoadFullAlignedTile(OffsetT block_offset, SampleT (&samples)[items_per_thread][NumChannels])
   {
     if constexpr (NumActiveChannels == 1)
     {
@@ -392,16 +393,16 @@ struct AgentHistogram
     }
     else
     {
-      using AliasedPixels = PixelT[pixels_per_thread];
-      const WrappedPixelIteratorT d_wrapped_pixels(reinterpret_cast<PixelT*>(d_native_samples + block_offset));
-      // Load using a wrapped pixel iterator
-      BlockLoadPixelT{temp_storage.pixel_load}.Load(d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples));
+      using AliasedItems = ItemT[items_per_thread];
+      const WrappedItemIteratorT d_wrapped_items(reinterpret_cast<ItemT*>(d_native_samples + block_offset));
+      // Load using a wrapped item iterator
+      BlockLoadItemT{temp_storage.item_load}.Load(d_wrapped_items, reinterpret_cast<AliasedItems&>(samples));
     }
   }
 
   template <bool IsFullTile, bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[pixels_per_thread][NumChannels])
+  LoadTile(OffsetT block_offset, int valid_samples, SampleT (&samples)[items_per_thread][NumChannels])
   {
     if constexpr (IsFullTile)
     {
@@ -421,14 +422,14 @@ struct AgentHistogram
     {
       if constexpr (IsAligned)
       {
-        // Load partially-full, aligned tile using the pixel iterator
-        using AliasedPixels = PixelT[pixels_per_thread];
-        const WrappedPixelIteratorT d_wrapped_pixels((PixelT*) (d_native_samples + block_offset));
-        const int valid_pixels = valid_samples / NumChannels;
+        // Load partially-full, aligned tile using the item iterator
+        using AliasedItems = ItemT[items_per_thread];
+        const WrappedItemIteratorT d_wrapped_items((ItemT*) (d_native_samples + block_offset));
+        const int valid_items = valid_samples / NumChannels;
 
-        // Load using a wrapped pixel iterator
-        BlockLoadPixelT{temp_storage.pixel_load}.Load(
-          d_wrapped_pixels, reinterpret_cast<AliasedPixels&>(samples), valid_pixels);
+        // Load using a wrapped item iterator
+        BlockLoadItemT{temp_storage.item_load}.Load(
+          d_wrapped_items, reinterpret_cast<AliasedItems&>(samples), valid_items);
       }
       else
       {
@@ -440,18 +441,18 @@ struct AgentHistogram
   }
 
   template <bool IsFullTile, bool IsStriped>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[pixels_per_thread], int valid_samples)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[items_per_thread], int valid_samples)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int pixel = 0; pixel < pixels_per_thread; ++pixel)
+    for (int item = 0; item < items_per_thread; ++item)
     {
       if constexpr (IsStriped)
       {
-        is_valid[pixel] = IsFullTile || (((threadIdx.x + threads_per_block * pixel) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || (((threadIdx.x + threads_per_block * item) * NumChannels) < valid_samples);
       }
       else
       {
-        is_valid[pixel] = IsFullTile || (((threadIdx.x * pixels_per_thread + pixel) * NumChannels) < valid_samples);
+        is_valid[item] = IsFullTile || (((threadIdx.x * items_per_thread + item) * NumChannels) < valid_samples);
       }
     }
   }
@@ -459,33 +460,33 @@ struct AgentHistogram
   //! @brief Consume a tile of data samples
   //!
   //! @tparam IsAligned
-  //!   Whether the tile offset is aligned (vec-aligned for single-channel, pixel-aligned for multi-channel)
+  //!   Whether the tile offset is aligned (vec-aligned for single-channel, item-aligned for multi-channel)
   //!
   //! @tparam IsFullTile
   //!  Whether the tile is full
   template <bool IsAligned, bool IsFullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT block_offset, int valid_samples)
   {
-    SampleT samples[pixels_per_thread][NumChannels];
-    bool is_valid[pixels_per_thread];
+    SampleT samples[items_per_thread][NumChannels];
+    bool is_valid[items_per_thread];
 
     LoadTile<IsFullTile, IsAligned>(block_offset, valid_samples, samples);
     MarkValid<IsFullTile, AgentHistogramPolicyT::LOAD_ALGORITHM == BLOCK_LOAD_STRIPED>(is_valid, valid_samples);
 
     if (prefer_smem)
     {
-      AccumulatePixels(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      AccumulateItems(samples, is_valid, temp_storage.histograms, ::cuda::std::bool_constant<is_rle_compress>{});
     }
     else
     {
-      AccumulatePixels(samples, is_valid, d_privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
+      AccumulateItems(samples, is_valid, d_privatized_histograms, ::cuda::std::bool_constant<is_rle_compress>{});
     }
   }
 
   //! @brief Consume row tiles. Specialized for work-stealing from queue
   //!
-  //! @param num_row_pixels
-  //!   The number of multi-channel pixels per row in the region of interest
+  //! @param num_row_items
+  //!   The number of multi-channel items per row in the region of interest
   //!
   //! @param num_rows
   //!   The number of rows in the region of interest
@@ -497,7 +498,7 @@ struct AgentHistogram
   //!   Number of image tiles per row
   template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
-    OffsetT num_row_pixels,
+    OffsetT num_row_items,
     OffsetT num_rows,
     OffsetT row_stride_samples,
     int tiles_per_row,
@@ -519,7 +520,7 @@ struct AgentHistogram
       if (col == tiles_per_row - 1)
       {
         // Consume a partially-full tile at the end of the row
-        OffsetT num_remaining = (num_row_pixels * NumChannels) - col_offset;
+        OffsetT num_remaining = (num_row_items * NumChannels) - col_offset;
         ConsumeTile<IsAligned, false>(tile_offset, num_remaining);
       }
       else
@@ -544,8 +545,8 @@ struct AgentHistogram
 
   //! @brief Consume row tiles.  Specialized for even-share (striped across thread blocks)
   //!
-  //! @param num_row_pixels
-  //!   The number of multi-channel pixels per row in the region of interest
+  //! @param num_row_items
+  //!   The number of multi-channel items per row in the region of interest
   //!
   //! @param num_rows
   //!   The number of rows in the region of interest
@@ -554,12 +555,12 @@ struct AgentHistogram
   //!   The number of samples between starts of consecutive rows in the region of interest
   template <bool IsAligned>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
-    OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
+    OffsetT num_row_items, OffsetT num_rows, OffsetT row_stride_samples, int, GridQueue<int>, ::cuda::std::false_type)
   {
     for (int row = static_cast<int>(blockIdx.y); row < num_rows; row += static_cast<int>(gridDim.y))
     {
       OffsetT row_begin   = row * row_stride_samples;
-      OffsetT row_end     = row_begin + (num_row_pixels * NumChannels);
+      OffsetT row_end     = row_begin + (num_row_items * NumChannels);
       OffsetT tile_offset = row_begin + (blockIdx.x * tile_samples);
 
       while (tile_offset < row_end)
@@ -644,8 +645,8 @@ struct AgentHistogram
 
   //! @brief Consume image
   //!
-  //! @param num_row_pixels
-  //!   The number of multi-channel pixels per row in the region of interest
+  //! @param num_row_items
+  //!   The number of multi-channel items per row in the region of interest
   //!
   //! @param num_rows
   //!   The number of rows in the region of interest
@@ -659,12 +660,12 @@ struct AgentHistogram
   //! @param tile_queue
   //!   Queue descriptor for assigning tiles of work to thread blocks
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(
-    OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
+    OffsetT num_row_items, OffsetT num_rows, OffsetT row_stride_samples, int tiles_per_row, GridQueue<int> tile_queue)
   {
-    // Check whether all row starting offsets are vec-aligned (in single-channel) or pixel-aligned (in multi-channel)
-    constexpr int vec_mask   = alignof(VecT) - 1;
-    constexpr int pixel_mask = alignof(PixelT) - 1;
-    const size_t row_bytes   = sizeof(SampleT) * row_stride_samples;
+    // Check whether all row starting offsets are vec-aligned (in single-channel) or item-aligned (in multi-channel)
+    constexpr int vec_mask  = alignof(VecT) - 1;
+    constexpr int item_mask = alignof(ItemT) - 1;
+    const size_t row_bytes  = sizeof(SampleT) * row_stride_samples;
 
     const bool vec_aligned_rows =
       (NumChannels == 1) && (samples_per_thread % vec_size == 0) && // Single channel
@@ -672,23 +673,23 @@ struct AgentHistogram
       ((num_rows == 1) || ((row_bytes & vec_mask) == 0)); // number of row-samples is a multiple of the alignment of the
                                                           // quad
 
-    const bool pixel_aligned_rows =
+    const bool item_aligned_rows =
       (NumChannels > 1) && // Multi channel
-      ((size_t(d_native_samples) & pixel_mask) == 0) && // ptr is pixel-aligned
-      ((row_bytes & pixel_mask) == 0); // number of row-samples is a multiple of the alignment of the pixel
+      ((size_t(d_native_samples) & item_mask) == 0) && // ptr is item-aligned
+      ((row_bytes & item_mask) == 0); // number of row-samples is a multiple of the alignment of the item
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // Whether rows are aligned and can be vectorized
-    if ((d_native_samples != nullptr) && (vec_aligned_rows || pixel_aligned_rows))
+    if ((d_native_samples != nullptr) && (vec_aligned_rows || item_aligned_rows))
     {
       ConsumeTiles<true>(
-        num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
+        num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     }
     else
     {
       ConsumeTiles<false>(
-        num_row_pixels, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
+        num_row_items, num_rows, row_stride_samples, tiles_per_row, tile_queue, bool_constant_v<is_work_stealing>);
     }
 
     _CCCL_PDL_TRIGGER_NEXT_LAUNCH(); // omitting makes no difference in cub.bench.histogram.even.base
