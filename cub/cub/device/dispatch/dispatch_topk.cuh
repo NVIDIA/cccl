@@ -29,6 +29,7 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
@@ -46,6 +47,39 @@ template <typename T, int BitsPerPass>
 {
   const int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
+}
+
+// Bit-ordering used by the top-k radix passes. Without `NormalizeMinusZero` this is `Traits<T>::TwiddleIn`. With it,
+// floating-point keys use a variant that negates (rather than complements) keys with the sign bit set. `TwiddleIn`
+// complements negative keys, which leaves -0.0 at `0x7FFF...`, one below +0.0's `0x8000...`. Negation is that
+// complement plus one, so it shifts the whole negative half up by one and -0.0 lands exactly on +0.0 with no separate
+// fix-up. Every sign-clear pattern is unchanged and every sign-set pattern moves by exactly +1, so relative order is
+// preserved everywhere (-NaN stays below -inf, +NaN above +inf) and the only new equivalence is the two zeros.
+// The spelling matters for codegen: this form compiles to the standard twiddle plus one integer add, whereas
+// `TwiddleIn(bits) + sign_bit` does not fold and measured about one percent slower.
+template <typename T, bool NormalizeMinusZero>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename Traits<T>::UnsignedBits
+twiddle_in_bits(typename Traits<T>::UnsignedBits bits)
+{
+  using bits_t = typename Traits<T>::UnsignedBits;
+  // Every FLOATING_POINT specialization of Traits asserts `is_floating_point_v<T>`, so this selects exactly the keys
+  // whose `TwiddleIn` is the floating-point one.
+  if constexpr (NormalizeMinusZero && ::cuda::is_floating_point_v<T>)
+  {
+    // 0 for sign-clear keys, ~0 for sign-set keys. Unsigned arithmetic only, so well-defined in every dialect.
+    const bits_t neg_mask = static_cast<bits_t>(bits_t{0} - static_cast<bits_t>(bits >> (8 * sizeof(bits_t) - 1)));
+    // `neg_mask | HIGH_BIT` is HIGH_BIT for sign-clear keys and ~0 for sign-set keys, which is exactly the mask that
+    // `Traits<T>::TwiddleIn` xors with. So `twiddled` is the standard twiddle: top bit set for non-negative keys,
+    // complement for negative keys.
+    const bits_t twiddled = static_cast<bits_t>(bits ^ static_cast<bits_t>(neg_mask | Traits<T>::HIGH_BIT));
+    // Subtracting ~0 adds one. Negative keys become `~bits + 1 == -bits`, non-negative keys are untouched. That +1 is
+    // what moves -0.0 (`0x7FFF...` after the complement) onto +0.0 (`0x8000...`).
+    return static_cast<bits_t>(twiddled - neg_mask);
+  }
+  else
+  {
+    return Traits<T>::TwiddleIn(bits);
+  }
 }
 
 // Get the bin ID from the value of element
@@ -76,12 +110,7 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeM
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (NormalizeMinusZero)
-    {
-      // Rank -0.0 as +0.0 so that both zeros compare equal, as in DeviceRadixSort and BlockTopK
-      bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(bits);
-    }
+    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits);
     if constexpr (SelectDirection != select::min)
     {
       bits = ~bits;
@@ -143,12 +172,7 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (NormalizeMinusZero)
-    {
-      // Must match the normalization in extract_bin_op_t, which produced kth_key_bits
-      bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(bits);
-    }
+    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits); // must match extract_bin_op_t, which built kth_key_bits
 
     if constexpr (SelectDirection != select::min)
     {
