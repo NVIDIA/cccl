@@ -49,4 +49,4 @@ using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, doubl
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")
   .set_type_axes_names({"T{ct}"})
-  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 18, 1));
+  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));
