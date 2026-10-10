@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__execution/property_query.h>
 #  include <cuda/__fwd/get_memory_resource.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -38,6 +39,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 template <class _Derived>
 struct memory_resource_base
 {
+  //! @brief Advertises that derived resources support the @c cuda::mr::get_memory_resource query.
+  using property_keys = ::cuda::execution::property_key_list<::cuda::mr::get_memory_resource_t>;
+
   [[nodiscard]] _CCCL_API constexpr const _Derived& query(const get_memory_resource_t&) const noexcept
   {
     return static_cast<const _Derived&>(*this);
