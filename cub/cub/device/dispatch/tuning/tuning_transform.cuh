@@ -333,6 +333,13 @@ tuned_vectorized_policy(::cuda::compute_capability cc, int store_size, bool fill
 {
   if (filling)
   {
+    // The tunings below stage up to 16 values per thread. Above 512 bytes, these can spill to local memory (17 KiB per
+    // thread for 1 KiB values on sm_90+), which the driver reserves for every thread the device can hold (#11758).
+    if (store_size > 512)
+    {
+      return TransformVectorizedPolicy{128, 1, 1};
+    }
+
     // manually tuned fill on RTX 5090
     if (cc >= ::cuda::compute_capability{12, 0})
     {
