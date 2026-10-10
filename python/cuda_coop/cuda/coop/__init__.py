@@ -1,0 +1,44 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Expose cooperative operations through a common CUDA Python interface.
+
+Compiler adapters translate these calls into device code. Importing the common
+interface does not load a compiler; :func:`register` loads a selected adapter
+when explicit registration is needed.
+"""
+
+import importlib.metadata
+from pkgutil import extend_path
+
+from ._registration import register
+
+__path__ = extend_path(__path__, __name__)
+
+from ._core import api as _common_api
+
+globals().update(
+    {name: getattr(_common_api, name) for name in _common_api.__all__}
+)
+
+
+def _package_version() -> str:
+    """Return the installed version or ``0+unknown`` without metadata."""
+
+    try:
+        return importlib.metadata.version("cuda-coop")
+    except importlib.metadata.PackageNotFoundError:
+        return "0+unknown"
+
+
+__version__ = _package_version()
+
+__all__ = ["__version__", "register"]
+__all__.extend(_common_api.__all__)
+
+
+def __dir__() -> list[str]:
+    """List public names for interactive completion."""
+
+    return sorted(__all__)

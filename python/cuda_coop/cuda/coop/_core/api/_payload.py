@@ -1,0 +1,65 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Define the payload and scratch interfaces used by common API annotations.
+
+Each compiler backend supplies concrete values with these attributes and
+operations. The backend must also recognize those values during compilation.
+This lets the common API describe inputs without importing compiler types.
+"""
+
+from __future__ import annotations
+
+from typing import Protocol, TypeVar, runtime_checkable
+
+_ItemT = TypeVar("_ItemT")
+
+
+@runtime_checkable
+class _ReadableThreadDataLike(Protocol[_ItemT]):
+    """Describe a fixed number of readable values owned by one thread.
+
+    ``items_per_thread`` is the fixed extent. ``dtype`` can remain unknown
+    until a supported producer establishes the element type. The compiler
+    backend supplies the storage and indexed access.
+    """
+
+    items_per_thread: int
+    dtype: object | None
+
+    def __len__(self) -> int: ...
+
+    def __getitem__(self, index: int) -> _ItemT: ...
+
+
+@runtime_checkable
+class ThreadDataLike(_ReadableThreadDataLike[_ItemT], Protocol[_ItemT]):
+    """Mutable fixed-size per-thread payload understood by supported backends.
+
+    See :ref:`per-thread payloads <coop-thread-data>` for construction, item
+    access, and dtype requirements.
+    """
+
+    def __setitem__(self, index: int, value: _ItemT) -> None: ...
+
+
+@runtime_checkable
+class TempStorageLike(Protocol):
+    """Explicit scratch descriptor understood by supported backends.
+
+    See :ref:`temporary storage <coop-temp-storage>` for construction,
+    allocation sharing, and synchronization.
+    """
+
+    size_in_bytes: int | None
+    alignment: int | None
+    auto_sync: bool
+    sharing: str
+
+
+__all__ = [
+    "TempStorageLike",
+    "ThreadDataLike",
+    "_ReadableThreadDataLike",
+]

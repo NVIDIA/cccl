@@ -8,9 +8,10 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
-# separate distributions that both contribute to the shared ``cuda`` namespace.
-for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
+# Add Python CCCL packages to path for autodoc. cuda-cccl, cuda-coop, and
+# cuda-stf are separate distributions that contribute to the shared ``cuda``
+# namespace.
+for _pkg in ("../python/cuda_cccl", "../python/cuda_coop", "../python/cuda_stf"):
     python_package_path = os.path.abspath(_pkg)
     if os.path.exists(python_package_path):
         sys.path.insert(0, python_package_path)
@@ -211,6 +212,33 @@ autodoc_default_options = {
 autodoc_type_hints = "description"
 autodoc_type_aliases = {
     "Operator": "Operator",
+    **{
+        name: name
+        for name in (
+            "BlockExchangeMode",
+            "BlockGroup",
+            "BlockLoadStoreAlgorithm",
+            "CommonNumericScalar",
+            "CommonShuffleMode",
+            "CommonThreadDataLike",
+            "IntegerValue",
+            "IntegralScalar",
+            "MemoryGroup",
+            "PortableNumericScalar",
+            "PortableThreadDataLike",
+            "ReduceAlgorithm",
+            "ReduceOperator",
+            "ReductionGroup",
+            "ScalarShuffleMode",
+            "ScanAlgorithm",
+            "ScanOperator",
+            "SignedIntegerScalar",
+            "ThreadDataLike",
+            "ValidItems",
+            "WarpGroup",
+            "WarpLoadStoreAlgorithm",
+        )
+    },
 }
 
 # Set Python domain primary for intersphinx
