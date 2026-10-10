@@ -231,7 +231,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }();
 
   const int threads_per_block = active_policy.threads_per_block;
-  const int items_per_thread  = active_policy.items_per_thread;
+  const int items_per_thread  = active_policy.pixels_per_thread;
 
   // Get SM count
   int sm_count;

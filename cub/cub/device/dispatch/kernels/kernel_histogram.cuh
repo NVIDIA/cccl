@@ -533,7 +533,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = agent_histogram_policy<
     hp.threads_per_block,
-    hp.items_per_thread,
+    hp.pixels_per_thread,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,
@@ -719,7 +719,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
   // Thread block type for compositing input tiles
   using AgentHistogramPolicyT = agent_histogram_policy<
     hp.threads_per_block,
-    hp.items_per_thread,
+    hp.pixels_per_thread,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,

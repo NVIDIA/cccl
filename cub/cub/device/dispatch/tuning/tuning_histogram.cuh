@@ -29,7 +29,8 @@ CUB_NAMESPACE_BEGIN
 struct HistogramPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
-  int items_per_thread; //!< Number of items processed per thread
+  // TODO(bgruber): rename to items_per_thread in CCCL 4.0.
+  int pixels_per_thread; //!< Number of multi-channel items processed per thread
   int vec_size; //!< Vectorization size for loading samples
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory
@@ -43,7 +44,7 @@ struct HistogramPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
         && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
@@ -60,8 +61,8 @@ struct HistogramPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
   {
     return os
-        << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
-        << p.items_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
+        << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
+        << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
         << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
