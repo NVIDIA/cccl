@@ -25,11 +25,134 @@
 
 CUB_NAMESPACE_BEGIN
 
+enum class HistogramHighBinAlgorithm
+{
+  global_memory_privatized,
+  histocache
+};
+
+enum class HistogramCacheAlgorithm
+{
+  none,
+  single_probe,
+  cuckoo
+};
+
+enum class HistogramSpillAlgorithm
+{
+  output,
+  global_memory_privatized
+};
+
+enum class HistogramAggregationAlgorithm
+{
+  direct,
+  warp_coalesced,
+  rle
+};
+
+namespace detail::histogram
+{
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(HistogramHighBinAlgorithm value) noexcept
+{
+  return value == HistogramHighBinAlgorithm::histocache
+         ? "HistogramHighBinAlgorithm::histocache"
+         : "HistogramHighBinAlgorithm::global_memory_privatized";
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(HistogramCacheAlgorithm value) noexcept
+{
+  return value == HistogramCacheAlgorithm::none ? "HistogramCacheAlgorithm::none"
+       : value == HistogramCacheAlgorithm::single_probe
+         ? "HistogramCacheAlgorithm::single_probe"
+         : "HistogramCacheAlgorithm::cuckoo";
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(HistogramSpillAlgorithm value) noexcept
+{
+  return value == HistogramSpillAlgorithm::output
+         ? "HistogramSpillAlgorithm::output"
+         : "HistogramSpillAlgorithm::global_memory_privatized";
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(HistogramAggregationAlgorithm value) noexcept
+{
+  return value == HistogramAggregationAlgorithm::direct ? "HistogramAggregationAlgorithm::direct"
+       : value == HistogramAggregationAlgorithm::warp_coalesced
+         ? "HistogramAggregationAlgorithm::warp_coalesced"
+         : "HistogramAggregationAlgorithm::rle";
+}
+} // namespace detail::histogram
+
+#if _CCCL_HOSTED()
+inline ::std::ostream& operator<<(::std::ostream& os, HistogramHighBinAlgorithm value)
+{
+  return os << detail::histogram::to_string(value);
+}
+
+inline ::std::ostream& operator<<(::std::ostream& os, HistogramCacheAlgorithm value)
+{
+  return os << detail::histogram::to_string(value);
+}
+
+inline ::std::ostream& operator<<(::std::ostream& os, HistogramSpillAlgorithm value)
+{
+  return os << detail::histogram::to_string(value);
+}
+
+inline ::std::ostream& operator<<(::std::ostream& os, HistogramAggregationAlgorithm value)
+{
+  return os << detail::histogram::to_string(value);
+}
+#endif // _CCCL_HOSTED()
+
+//! The tuning policy for the HistoCache high-bin histogram algorithm.
+struct HistoCachePolicy
+{
+  HistogramCacheAlgorithm cache; //!< Cache probing algorithm
+  HistogramSpillAlgorithm spill; //!< Destination for cache misses
+  HistogramAggregationAlgorithm aggregation; //!< Aggregation applied before spilling
+  int cache_bytes_per_channel; //!< Requested cache capacity per active channel in bytes
+  int cache_count_replicas; //!< Number of counter replicas per cache slot
+  int items_per_thread; //!< Number of items processed per thread
+  int threads_per_block; //!< Block size; zero inherits the ordinary histogram block size
+  int min_histogram_bytes; //!< Minimum output histogram size in bytes
+  int blocks_per_sm; //!< Target resident blocks per SM; zero uses occupancy
+  int grid_items; //!< Items represented by one grid block; zero uses the kernel tile size
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int threads(int default_threads_per_block) const noexcept
+  {
+    return threads_per_block != 0 ? threads_per_block : default_threads_per_block;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
+  operator==(const HistoCachePolicy& lhs, const HistoCachePolicy& rhs) noexcept
+  {
+    return lhs.cache == rhs.cache && lhs.spill == rhs.spill && lhs.aggregation == rhs.aggregation
+        && lhs.cache_bytes_per_channel == rhs.cache_bytes_per_channel
+        && lhs.cache_count_replicas == rhs.cache_count_replicas && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.threads_per_block == rhs.threads_per_block && lhs.min_histogram_bytes == rhs.min_histogram_bytes
+        && lhs.blocks_per_sm == rhs.blocks_per_sm && lhs.grid_items == rhs.grid_items;
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const HistoCachePolicy& p)
+  {
+    return os
+        << "HistoCachePolicy { .cache = " << p.cache << ", .spill = " << p.spill << ", .aggregation = " << p.aggregation
+        << ", .cache_bytes_per_channel = " << p.cache_bytes_per_channel
+        << ", .cache_count_replicas = " << p.cache_count_replicas << ", .items_per_thread = " << p.items_per_thread
+        << ", .threads_per_block = " << p.threads_per_block << ", .min_histogram_bytes = " << p.min_histogram_bytes
+        << ", .blocks_per_sm = " << p.blocks_per_sm << ", .grid_items = " << p.grid_items << " }";
+  }
+#endif // _CCCL_HOSTED()
+};
+
 //! The tuning policy for all algorithms in @ref DeviceHistogram.
 struct HistogramPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
-  int pixels_per_thread; //!< Number of pixels processed per thread
+  int items_per_thread; //!< Number of items processed per thread
   int vec_size; //!< Vectorization size for loading samples
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading samples from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading samples from global memory
@@ -39,15 +162,18 @@ struct HistogramPolicy
   bool use_work_stealing; //!< Whether to dequeue tiles from a global work queue
   int init_kernel_pdl_trigger_max_bins; //!< Maximum number of bins for the init kernel to trigger the histogram kernel
                                         //!< early using PDL
+  HistogramHighBinAlgorithm high_bin_algorithm;
+  HistoCachePolicy histocache;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const HistogramPolicy& lhs, const HistogramPolicy& rhs) noexcept
   {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.pixels_per_thread == rhs.pixels_per_thread
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.vec_size == rhs.vec_size && lhs.load_algorithm == rhs.load_algorithm
         && lhs.load_modifier == rhs.load_modifier && lhs.rle_compress == rhs.rle_compress
         && lhs.mem_preference == rhs.mem_preference && lhs.use_work_stealing == rhs.use_work_stealing
-        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins;
+        && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
+        && lhs.high_bin_algorithm == rhs.high_bin_algorithm && lhs.histocache == rhs.histocache;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -60,11 +186,12 @@ struct HistogramPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const HistogramPolicy& p)
   {
     return os
-        << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .pixels_per_thread = "
-        << p.pixels_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
+        << "HistogramPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .vec_size = " << p.vec_size << ", .load_algorithm = " << p.load_algorithm
         << ", .load_modifier = " << p.load_modifier << ", .rle_compress = " << p.rle_compress
         << ", .mem_preference = " << p.mem_preference << ", .use_work_stealing = " << p.use_work_stealing
-        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins << " }";
+        << ", .init_kernel_pdl_trigger_max_bins = " << p.init_kernel_pdl_trigger_max_bins
+        << ", .high_bin_algorithm = " << p.high_bin_algorithm << ", .histocache = " << p.histocache << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -290,6 +417,20 @@ struct policy_selector
   type_t sample_type;
 
 private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr auto default_histocache_policy() -> HistoCachePolicy
+  {
+    return {HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
+            16384,
+            1,
+            4,
+            0,
+            0,
+            0,
+            0};
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int t_scale(int nominal_items_per_thread) const
   {
     const int sample_scale = (sample_size_bytes + int{sizeof(int)} - 1) / int{sizeof(int)};
@@ -306,12 +447,34 @@ public:
         if (sample_size == 1)
         {
           // ipt_7.tpb_128.rle_0.ws_0.mem_1.ld_1.laid_2.vec_0 1.005  0.991  1.537  2.076
-          return HistogramPolicy{128, 7, 1, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+          return HistogramPolicy{
+            128,
+            7,
+            1,
+            BLOCK_LOAD_DIRECT,
+            LOAD_LDG,
+            false,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
         if (sample_size == 2)
         {
           // ipt_7.tpb_256.rle_1.ws_0.mem_1.ld_0.laid_0.vec_0 0.937  1.014  1.145  1.126
-          return HistogramPolicy{256, 7, 1, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
+          return HistogramPolicy{
+            256,
+            7,
+            1,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            true,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
       }
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && !is_even)
@@ -319,12 +482,34 @@ public:
         if (sample_size == 2)
         {
           // ipt_9.tpb_1024.rle_1.ws_0.mem_1.ld_0.laid_2.vec_2 1.035  1.036  1.064  1.051
-          return HistogramPolicy{1024, 9, 1 << 2, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+          return HistogramPolicy{
+            1024,
+            9,
+            1 << 2,
+            BLOCK_LOAD_STRIPED,
+            LOAD_DEFAULT,
+            true,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
         if (sample_size == 4 && sample_type != type_t::float32)
         {
           // ipt_9.tpb_992.rle_1.ws_0.mem_1.ld_0.laid_1.vec_1 1.684  1.426  1.392  1.170
-          return HistogramPolicy{992, 9, 1 << 1, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_DEFAULT, true, SMEM, false, 2048};
+          return HistogramPolicy{
+            992,
+            9,
+            1 << 1,
+            BLOCK_LOAD_WARP_TRANSPOSE,
+            LOAD_DEFAULT,
+            true,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
         // float32, 8-byte and 16-byte samples: no clean sm107 candidate, fall through
       }
@@ -338,28 +523,173 @@ public:
           if (sample_type == type_t::float64)
           {
             // ipt_16.tpb_512.rle_1.ws_0.mem_1.ld_0.laid_2.vec_0 0.974  0.995  1.138  1.181
-            return HistogramPolicy{512, 16, 1, BLOCK_LOAD_STRIPED, LOAD_DEFAULT, true, SMEM, false, 2048};
+            return HistogramPolicy{
+              512,
+              16,
+              1,
+              BLOCK_LOAD_STRIPED,
+              LOAD_DEFAULT,
+              true,
+              SMEM,
+              false,
+              2048,
+              HistogramHighBinAlgorithm::global_memory_privatized,
+              default_histocache_policy()};
           }
           // ipt_11.tpb_512.rle_1.ws_0.mem_1.ld_2.laid_2.vec_0 0.943  1.014  1.135  1.199
-          return HistogramPolicy{512, 11, 1, BLOCK_LOAD_STRIPED, LOAD_CA, true, SMEM, false, 2048};
+          return HistogramPolicy{
+            512,
+            11,
+            1,
+            BLOCK_LOAD_STRIPED,
+            LOAD_CA,
+            true,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
       }
     }
 
-    if (cc >= ::cuda::compute_capability{10, 0})
+    if (cc == ::cuda::compute_capability{10, 0})
     {
+      constexpr int sm100_smem_bytes             = 228352;
+      constexpr int range_smem_bytes_per_channel = 8192;
+      constexpr int even_smem_bytes_per_channel  = 32768;
+      // Preserve the raw selector's dynamic-SMEM region. Three-active-channel EVEN
+      // can use the full per-CTA capacity; four-channel EVEN and RANGE switch at
+      // their measured per-channel crossover budgets.
+      const bool use_full_smem_capacity = num_active_channels == 1 || (is_even && num_active_channels <= 3);
+      const int candidate_smem_bytes =
+        use_full_smem_capacity ? sm100_smem_bytes
+        : is_even              ? even_smem_bytes_per_channel * num_active_channels
+                               : range_smem_bytes_per_channel * num_active_channels;
+      const int histocache_min_histogram_bytes = (::cuda::std::min) (candidate_smem_bytes, sm100_smem_bytes);
+      // The raw occupancy-sized cache resolves to two resident blocks for four-byte multi-channel RANGE samples.
+      const int histocache_blocks_per_sm = num_active_channels == 1 || (!is_even && sample_size == 4) ? 2 : 1;
+      const bool use_ordinary_grid_tile  = num_active_channels == 1 && sample_size == 1;
+      const int histocache_grid_items =
+        num_active_channels == 1 ? 768 * t_scale(12) : 1024 * (is_even ? t_scale(8) : t_scale(16));
+      const int histocache_count_replicas    = num_active_channels > 1 ? 4 : 1;
+      const int histocache_threads_per_block = num_active_channels == 1 ? (is_even ? 768 : 512) : 1024;
+      const auto with_histocache_threshold   = [=](HistogramPolicy policy) {
+        policy.histocache.min_histogram_bytes = histocache_min_histogram_bytes;
+        policy.histocache.blocks_per_sm       = histocache_blocks_per_sm;
+        policy.histocache.grid_items =
+          use_ordinary_grid_tile ? policy.threads_per_block * policy.items_per_thread : histocache_grid_items;
+        return policy;
+      };
+
       if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
       {
         if (is_even)
         {
           // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-          return HistogramPolicy{928, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, false, SMEM, false, 2048};
+          return with_histocache_threshold(HistogramPolicy{
+            928,
+            12,
+            1 << 2,
+            BLOCK_LOAD_DIRECT,
+            LOAD_CA,
+            false,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::histocache,
+            HistoCachePolicy{
+              HistogramCacheAlgorithm::single_probe,
+              HistogramSpillAlgorithm::global_memory_privatized,
+              HistogramAggregationAlgorithm::rle,
+              65536,
+              1,
+              4,
+              0,
+              0,
+              0,
+              0}});
         }
         else
         {
           // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return HistogramPolicy{448, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+          return with_histocache_threshold(HistogramPolicy{
+            448,
+            12,
+            1 << 2,
+            BLOCK_LOAD_DIRECT,
+            LOAD_LDG,
+            false,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::histocache,
+            HistoCachePolicy{
+              HistogramCacheAlgorithm::single_probe,
+              HistogramSpillAlgorithm::global_memory_privatized,
+              HistogramAggregationAlgorithm::rle,
+              32768,
+              1,
+              4,
+              0,
+              0,
+              0,
+              0}});
         }
+      }
+
+      if (counter_size == 4 && sample_is_primitive && num_channels == 1 && num_active_channels == 1
+          && (sample_size == 4 || sample_size == 8))
+      {
+        return with_histocache_threshold(HistogramPolicy{
+          384,
+          t_scale(16),
+          4,
+          BLOCK_LOAD_DIRECT,
+          LOAD_LDG,
+          true,
+          SMEM,
+          false,
+          0,
+          HistogramHighBinAlgorithm::histocache,
+          HistoCachePolicy{
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
+            65536,
+            1,
+            4,
+            histocache_threads_per_block,
+            0,
+            0,
+            0}});
+      }
+
+      if (counter_size == 4 && sample_is_primitive && num_channels >= 2)
+      {
+        return with_histocache_threshold(HistogramPolicy{
+          384,
+          t_scale(16),
+          4,
+          BLOCK_LOAD_DIRECT,
+          LOAD_LDG,
+          true,
+          SMEM,
+          false,
+          0,
+          HistogramHighBinAlgorithm::histocache,
+          HistoCachePolicy{
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
+            (is_even || sample_size == 8 ? 2048 : 1024)
+              * (int{sizeof(::cuda::std::uint32_t)} + histocache_count_replicas * counter_size),
+            histocache_count_replicas,
+            4,
+            histocache_threads_per_block,
+            0,
+            0,
+            0}});
       }
 
       // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
@@ -372,17 +702,50 @@ public:
       {
         if (sample_size == 1)
         {
-          return HistogramPolicy{768, 12, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, false, SMEM, false, 2048};
+          return HistogramPolicy{
+            768,
+            12,
+            1 << 2,
+            BLOCK_LOAD_DIRECT,
+            LOAD_LDG,
+            false,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
         else if (sample_size == 2)
         {
-          return HistogramPolicy{960, 10, 1 << 2, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, true, SMEM, false, 2048};
+          return HistogramPolicy{
+            960,
+            10,
+            1 << 2,
+            BLOCK_LOAD_DIRECT,
+            LOAD_DEFAULT,
+            true,
+            SMEM,
+            false,
+            2048,
+            HistogramHighBinAlgorithm::global_memory_privatized,
+            default_histocache_policy()};
         }
       }
     }
 
     // fallback from SM50
-    return HistogramPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0};
+    return HistogramPolicy{
+      384,
+      t_scale(16),
+      4,
+      BLOCK_LOAD_DIRECT,
+      LOAD_LDG,
+      true,
+      SMEM,
+      false,
+      0,
+      HistogramHighBinAlgorithm::global_memory_privatized,
+      default_histocache_policy()};
   }
 };
 
