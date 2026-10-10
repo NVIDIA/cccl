@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 DETAIL_EVENT_NAMES = {
@@ -35,11 +36,11 @@ DETAIL_PREFIXES_TO_COLLAPSE = (
 
 
 def normalize_detail(detail: str, repo_root: Path) -> str:
-    detail_path = Path(detail)
-    if detail_path.is_absolute():
+    if detail and os.path.isabs(detail):
         try:
-            rel = detail_path.resolve(strict=False).relative_to(repo_root)
-            detail = rel.as_posix()
+            detail = (
+                Path(detail).resolve(strict=False).relative_to(repo_root).as_posix()
+            )
         except ValueError:
             pass
 

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
 import csv
 import json
 import os
@@ -9,18 +12,28 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from ci.compile_time import summarize_tus
+from ci.compile_time import (
+    collect_traces,
+    combine_pr_comments,
+    render_pr_comment,
+    summarize_events,
+    summarize_tus,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SUMMARY_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "summarize_events.py"
 PREPARE_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "prepare_traces.py"
+COLLECT_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "collect_traces.py"
 PARSE_MATRIX_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "parse_matrix.py"
 RENDER_COMMENT_SCRIPT = REPO_ROOT / "ci" / "compile_time" / "render_pr_comment.py"
 WRAPPER_SCRIPT = REPO_ROOT / "ci" / "build_compile_time_bench.sh"
 PULL_REQUEST_WORKFLOW = (
     REPO_ROOT / ".github" / "workflows" / "ci-workflow-pull-request.yml"
 )
+COMPILE_TIME_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "compile-time-bench.yml"
+MATRIX_PATH = REPO_ROOT / "ci" / "matrix.yaml"
 
 
 def csv_rows(path: Path) -> list[dict[str, str]]:
@@ -389,6 +402,37 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             completed.stderr,
         )
 
+    def test_primary_template_grouping_requires_template_filter(self) -> None:
+        traces = self.work / "traces"
+        same = self.traces.project_detail("libcudacxx/include/cuda/std/same.h")
+        self.traces.write_trace(
+            traces / "target" / "same.json",
+            [self.traces.event("Processing Header File", same, 0, 10)],
+            "same",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-f",
+                "file-processing",
+                "--group-by",
+                "primary-template",
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn(
+            "primary-template grouping requires a built-in template instantiation filter",
+            completed.stderr,
+        )
+
     def test_file_processing_same_filter_keeps_unmatched_child_in_parent_cost(
         self,
     ) -> None:
@@ -492,6 +536,345 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         )
         parent_row = next(row for row in rows if row["event_key"].endswith("parent.h"))
         self.assertEqual(parent_row["selected_total_s"], "0.000100")
+
+    def test_file_processing_excludes_nested_project_build_directories(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+        source = self.traces.project_detail("cudf/cpp/include/source.hpp")
+        generated = self.traces.project_detail("cudf/cpp/build/generated.hpp")
+        fetched = self.traces.project_detail(
+            "matx/build/_deps/cccl-src/libcudacxx/include/cuda/std/tuple"
+        )
+        fetched_generated = self.traces.project_detail(
+            "matx/build/_deps/cccl-src/build/generated.hpp"
+        )
+        dependency_build = self.traces.project_detail(
+            "matx/build/_deps/cccl-build/generated.hpp"
+        )
+        nested_fetched = self.traces.project_detail(
+            "matx/build/_deps/raft-src/build/_deps/cccl-src/cub/cub.cuh"
+        )
+        self.traces.write_trace(
+            traces / "cudf" / "source.cu.o.json",
+            [
+                self.traces.event("Processing Header File", source, 0, 10),
+                self.traces.event("Processing Header File", generated, 20, 10),
+                self.traces.event("Processing Header File", fetched, 40, 10),
+                self.traces.event("Processing Header File", fetched_generated, 60, 10),
+                self.traces.event("Processing Header File", dependency_build, 80, 10),
+                self.traces.event("Processing Header File", nested_fetched, 100, 10),
+            ],
+            "source",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "file-processing",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(output / "top-5-file-processing-inclusive-by-total.csv")
+        self.assertEqual(
+            [row["event_key"] for row in rows],
+            [
+                "cudf/cpp/include/source.hpp",
+            ],
+        )
+
+    def test_third_party_headers_are_cccl_only_and_repository_relative(self) -> None:
+        for project, prefix in (
+            ("matx", "build/ct/matx"),
+            ("pytorch", "build/ct/pytorch"),
+            ("rapids-cudf", "cudf/cpp"),
+            ("rapids-cuvs", "cuvs/cpp"),
+            ("rapids-cugraph", "cugraph/cpp"),
+            ("rapids-cuopt", "cuopt/cpp"),
+        ):
+            with self.subTest(project=project):
+                root = self.work / project
+                traces = TraceBuilder(root)
+                cuda_root = "cuda/targets/x86_64-linux/include/cccl"
+                source_root = "build/conda/cuda-13.3/release/_deps/cccl-src"
+                if project == "pytorch":
+                    cub_path = f"{cuda_root}/cub/device/device_reduce.cuh"
+                    std_path = f"{cuda_root}/cuda/std/tuple"
+                else:
+                    cub_path = (
+                        f"{prefix}/{source_root}/cub/cub/device/device_reduce.cuh"
+                    )
+                    std_path = (
+                        f"{prefix}/{source_root}/libcudacxx/include/cuda/std/tuple"
+                    )
+                path = root / "traces/source.cu.o.json"
+                traces.write_trace(
+                    path,
+                    [
+                        traces.event(
+                            "Processing Header File",
+                            traces.project_detail(p),
+                            index * 100,
+                            10,
+                        )
+                        for index, p in enumerate(
+                            (
+                                cub_path,
+                                std_path,
+                                f"{prefix}/include/consumer.hpp",
+                                f"{prefix}/build/_deps/pybind11-src/include/pybind11.h",
+                                ".conda/envs/rapids/targets/x86_64-linux/include/cccl/cuda/std/tuple",
+                                f"{prefix}/{source_root}/build/generated.hpp",
+                            )
+                        )
+                    ],
+                    "source",
+                )
+                events = summarize_events.read_trace_events(path, root, cccl_only=True)
+                headers = [e.project_file for e in events if e.project_file is not None]
+                self.assertEqual(
+                    headers,
+                    [
+                        "cub/cub/device/device_reduce.cuh",
+                        "libcudacxx/include/cuda/std/tuple",
+                    ],
+                )
+                config = summarize_events.ReportConfig(
+                    "files",
+                    "Files",
+                    summarize_events.builtin_filters()["file-processing"],
+                    "inclusive",
+                    "same-filter",
+                    "total",
+                    15,
+                    "event",
+                    None,
+                )
+                identities = [
+                    summarize_events.report_event_identity(e, config, root)
+                    for e in events
+                ]
+                self.assertEqual([i[1] for i in identities if i is not None], headers)
+
+    def test_cccl_checkouts_compare_across_distinct_dependency_build_roots(
+        self,
+    ) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        output = self.work / "reports"
+        for directory, dependency, duration in (
+            (baseline, "rmm", 10),
+            (current, "cudf", 30),
+        ):
+            traces = TraceBuilder(directory)
+            traces.write_trace(
+                directory / "raw/shared.json",
+                [
+                    traces.event(
+                        "Processing Header File",
+                        traces.project_detail(
+                            f"{dependency}/build/_deps/cccl-src/libcudacxx/include/cuda/std/tuple"
+                        ),
+                        0,
+                        duration,
+                    ),
+                    traces.event(
+                        "Processing Header File",
+                        traces.project_detail(f"{dependency}/include/consumer.hpp"),
+                        100,
+                        1000,
+                    ),
+                ],
+                "shared",
+            )
+        self.run_summary(
+            current / "raw",
+            baseline / "raw",
+            output,
+            "--repo-root",
+            current.as_posix(),
+            "--cccl-only",
+            "-f",
+            "file-processing",
+            "-i",
+            "--jobs",
+            "2",
+            baseline_repo_root=baseline,
+        )
+        row = csv_rows(next((output / "comparison").glob("*-worse.csv")))[0]
+        self.assertEqual(row["event_key"], "libcudacxx/include/cuda/std/tuple")
+        self.assertEqual(row["impact_delta_s"], "0.000020")
+
+    def test_added_and_removed_occurrences_exclude_matched_cohorts(self) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        output = self.work / "reports"
+        name = "Instantiating Template Class"
+        for directory, filename, details in (
+            (baseline, "a.json", [("cuda::Old", 20)]),
+            (current, "a.json", [("cuda::New", 10)]),
+            (baseline, "b.json", [("cuda::Old", 30), ("cuda::New", 40)]),
+            (current, "b.json", [("cuda::Old", 30), ("cuda::New", 40)]),
+            (current, "only-current.json", [("cuda::Old", 7)]),
+            (baseline, "only-baseline.json", [("cuda::Lost", 14)]),
+        ):
+            self.traces.write_trace(
+                directory / filename,
+                [
+                    self.traces.event(name, key, index * 100, dur)
+                    for index, (key, dur) in enumerate(details)
+                ],
+                filename,
+            )
+        self.run_summary(
+            current,
+            baseline,
+            output,
+            "-f",
+            "template-instantiation",
+            "-i",
+            "-n",
+            "10",
+            "--jobs",
+            "2",
+        )
+        manifest = json.loads((output / "summary.json").read_text())
+        comparison = manifest["slices"][0]["comparison"]
+        added = {row["event_key"]: row for row in comparison["added"]["rows"]}
+        removed = {row["event_key"]: row for row in comparison["removed"]["rows"]}
+        self.assertEqual(
+            {key: row["selected_total_s"] for key, row in added.items()},
+            {"cuda::New": "0.000010", "cuda::Old": "0.000007"},
+        )
+        self.assertEqual(
+            {key: row["selected_total_s"] for key, row in removed.items()},
+            {"cuda::Old": "0.000020", "cuda::Lost": "0.000014"},
+        )
+        self.assertTrue(
+            all(row["trace_count"] == 1 for row in [*added.values(), *removed.values()])
+        )
+        self.assertEqual(comparison["worse"]["rows"], [])
+        self.assertEqual(comparison["better"]["rows"], [])
+        self.assertTrue(Path(comparison["added"]["csv"]).is_file())
+        rendered = render_pr_comment.render_comment(
+            manifest,
+            {"id": "matx", "project": "matx"},
+            artifacts_url="https://example.test/artifacts",
+        )
+        self.assertIn("Regressions", rendered)
+        self.assertIn("Improvements", rendered)
+        self.assertIn("cuda::New", rendered)
+        self.assertIn("`0.000000` | `0.000010`", rendered)
+        self.assertIn("`0.000020` | `0.000000`", rendered)
+
+    def test_device_pass_means_and_repeated_source_compilations(self) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        output = self.work / "reports"
+        slices = self.work / "slices.json"
+        slices.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "total",
+                            "title": "Source compilation",
+                            "filter": "total-compilation",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                        },
+                        {
+                            "id": "templates",
+                            "title": "Template instantiation",
+                            "filter": "template-instantiation",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                        },
+                    ]
+                }
+            )
+        )
+        for directory in (baseline, current):
+            for filename in ("target-a.json", "target-b.json"):
+                events = [
+                    {
+                        "ph": "M",
+                        "name": "thread_name",
+                        "pid": pid,
+                        "tid": 1,
+                        "args": {"name": f"shared-main.cu [{arch}]"},
+                    }
+                    for pid, arch in ((2, "compute_75"), (3, "compute_120"))
+                ]
+                events.extend(
+                    [
+                        self.traces.event(
+                            "Instantiating Template Class", "cuda::decay", 0, 100, pid=2
+                        ),
+                        self.traces.event(
+                            "Instantiating Template Class",
+                            "cuda::decay",
+                            0,
+                            100 if directory == baseline else 10_000,
+                            pid=3,
+                        ),
+                    ]
+                )
+                self.traces.write_trace(directory / filename, events, "shared-main")
+        self.run_summary(
+            current, baseline, output, "--slices", slices.as_posix(), "--jobs", "2"
+        )
+        manifest = json.loads((output / "summary.json").read_text())
+        total, templates = manifest["slices"]
+        row = templates["comparison"]["worse"]["rows"][0]
+        self.assertEqual(row["baseline_event_count"], 4)
+        self.assertEqual(row["current_event_count"], 4)
+        self.assertEqual(row["matched_trace_count"], 2)
+        self.assertEqual(row["average_delta_per_trace_s"], "0.009900")
+        self.assertEqual(row["selected_delta_percent"], "+4950.000")
+        self.assertEqual(
+            row["baseline_architectures"]["compute_120"],
+            {"event_count": 2, "mean_event_s": "0.000100"},
+        )
+        self.assertEqual(
+            row["current_architectures"]["compute_120"],
+            {"event_count": 2, "mean_event_s": "0.010000"},
+        )
+        source = csv_rows(Path(total["reports"]["current"]["csv"]))[0]
+        self.assertEqual(source["trace_count"], "2")
+        self.assertEqual(source["root_tu_count"], "1")
+        self.assertEqual(source["selected_avg_per_trace_s"], "0.010000")
+        self.assertEqual(
+            total["comparison"]["compilation_totals"]["current_s"], "0.020000"
+        )
+        rendered = render_pr_comment.render_comment(
+            manifest,
+            {"id": "matx", "project": "matx"},
+            artifacts_url="https://example.test/artifacts",
+        )
+        self.assertIn(
+            "| Rank | Regression impact | Selected Δ | Baseline | Current | Event | Matched traces |",
+            rendered,
+        )
+        self.assertNotIn("Mean / event by pass", rendered)
 
     def test_empty_comparisons_still_write_csvs(self) -> None:
         baseline = self.work / "baseline"
@@ -642,6 +1025,93 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             ).exists()
         )
 
+    def test_wrapper_reads_third_party_project_traces(self) -> None:
+        project_build_dir = REPO_ROOT / "build" / self.wrapper_infix / "matx"
+        current = project_build_dir / "compile_time" / "raw_traces"
+        output = project_build_dir / "compile_time" / "event_reports"
+        self.traces.write_trace(
+            current / "matx" / "source.cu.o.json",
+            [self.traces.event("Frontend", "", 0, 12)],
+            "source",
+        )
+
+        self.run_wrapper(
+            "-f",
+            "total-compilation",
+            "-i",
+            "--sort",
+            "total",
+            "-n",
+            "5",
+            "--tag",
+            "matx",
+            common_args=("-project", "matx"),
+        )
+
+        self.assertTrue(
+            (output / "top-5-total-compilation-inclusive-by-total-matx.csv").exists()
+        )
+
+    def test_wrappers_enable_cccl_only_for_every_third_party_driver(self) -> None:
+        for project in ("matx", "pytorch", "rapids"):
+            with self.subTest(project=project):
+                project_root = REPO_ROOT / "build" / self.wrapper_infix / project
+                path_root = Path.home() if project == "rapids" else project_root
+                cccl_header = (
+                    path_root / "cuda/targets/x86_64-linux/include/cccl/cuda/std/tuple"
+                    if project == "pytorch"
+                    else path_root
+                    / "build/_deps/cccl-src/libcudacxx/include/cuda/std/tuple"
+                )
+                traces = TraceBuilder(path_root)
+                traces.write_trace(
+                    project_root / "compile_time/raw_traces/source.cu.o.json",
+                    [
+                        traces.event("Processing Header File", str(cccl_header), 0, 10),
+                        traces.event(
+                            "Processing Header File",
+                            str(path_root / "include/consumer.hpp"),
+                            20,
+                            100,
+                        ),
+                    ],
+                    "source",
+                )
+                common_args = ("-project", project)
+                if project == "rapids":
+                    common_args += ("-target", "rmm")
+                self.run_wrapper("-f", "file-processing", "-i", common_args=common_args)
+                output = project_root / "compile_time/event_reports"
+                rows = csv_rows(next(output.glob("*.csv")))
+                self.assertEqual(
+                    [r["event_key"] for r in rows],
+                    ["libcudacxx/include/cuda/std/tuple"],
+                )
+                manifest = json.loads((output / "summary.json").read_text())
+                self.assertEqual(manifest["header_scope"], "cccl")
+
+    def test_wrapper_rejects_build_common_options_for_third_party(self) -> None:
+        completed = subprocess.run(
+            [
+                "bash",
+                WRAPPER_SCRIPT.as_posix(),
+                "-project",
+                "matx",
+                "-arch",
+                "80",
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn(
+            "build_common.sh options are only available for cccl",
+            completed.stderr,
+        )
+
     def test_sort_by_average_per_root_tu(self) -> None:
         traces = self.work / "traces"
         output = self.work / "reports"
@@ -762,6 +1232,18 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                     'cuda::std::literals::operator ""sv(const char *, unsigned long)',
                     400,
                     60,
+                ),
+                self.traces.event(
+                    "Scanning Function Body",
+                    "matx::detail::validate(const cuda::std::array<int, 2> &)",
+                    600,
+                    1000,
+                ),
+                self.traces.event(
+                    "Scanning Function Body",
+                    "cuda::std::string_view cudf::name()",
+                    1700,
+                    1000,
                 ),
             ],
             "symbols",
@@ -911,6 +1393,124 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         )
         self.assertEqual(len(rows), 1)
         self.assertIn("cub::detail::load", rows[0]["event_key"])
+
+    def test_primary_template_grouping_aggregates_specializations(self) -> None:
+        traces = self.work / "traces"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            traces / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<int>]",
+                    0,
+                    100,
+                ),
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<long>]",
+                    200,
+                    300,
+                ),
+                self.traces.event(
+                    "Instantiating Template Function",
+                    "cub::detail::load [cub::detail::load<int>()]",
+                    600,
+                    50,
+                ),
+            ],
+            "templates",
+        )
+
+        subprocess.run(
+            [
+                sys.executable,
+                SUMMARY_SCRIPT.as_posix(),
+                traces.as_posix(),
+                "-o",
+                output.as_posix(),
+                "-f",
+                "template-instantiation",
+                "-i",
+                "--sort",
+                "total",
+                "-n",
+                "5",
+                "--group-by",
+                "primary-template",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        rows = csv_rows(
+            output
+            / "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total.csv"
+        )
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["event_key"], "cuda::std::__4::vector")
+        self.assertEqual(rows[0]["event_count"], "2")
+        self.assertEqual(rows[0]["selected_total_s"], "0.000400")
+        self.assertEqual(rows[1]["event_key"], "cub::detail::load")
+
+    def test_primary_template_grouping_compares_different_specializations(self) -> None:
+        baseline = self.work / "baseline"
+        current = self.work / "current"
+        output = self.work / "reports"
+
+        self.traces.write_trace(
+            baseline / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<int>]",
+                    0,
+                    100,
+                )
+            ],
+            "templates",
+        )
+        self.traces.write_trace(
+            current / "target" / "templates.json",
+            [
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<long>]",
+                    0,
+                    160,
+                )
+            ],
+            "templates",
+        )
+
+        self.run_summary(
+            current,
+            baseline,
+            output,
+            "-f",
+            "template-instantiation",
+            "-i",
+            "--sort",
+            "total",
+            "-n",
+            "5",
+            "--group-by",
+            "primary-template",
+        )
+
+        worse = csv_rows(
+            self.comparison_csv(
+                output,
+                "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total-worse.csv",
+            )
+        )
+        self.assertEqual(len(worse), 1)
+        self.assertEqual(worse[0]["event_key"], "cuda::std::__4::vector")
+        self.assertEqual(worse[0]["impact_delta_s"], "0.000060")
 
     def test_scope_filter_matches_mangled_cccl_namespaces(self) -> None:
         traces = self.work / "traces"
@@ -1087,7 +1687,15 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         same = self.traces.project_detail("libcudacxx/include/cuda/std/same.h")
         self.traces.write_trace(
             traces / "target" / "same.json",
-            [self.traces.event("Same", same, 0, 10)],
+            [
+                self.traces.event("Same", same, 0, 10),
+                self.traces.event(
+                    "Instantiating Template Class",
+                    "cuda::std::__4::vector [cuda::std::__4::vector<int>]",
+                    20,
+                    30,
+                ),
+            ],
             "same",
         )
         slices.write_text(
@@ -1111,6 +1719,16 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                             "sort": "total",
                             "top": 5,
                             "threshold": 0,
+                        },
+                        {
+                            "id": "primary-templates",
+                            "title": "Primary templates",
+                            "filter": "template-instantiation",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                            "group_by": "primary-template",
                         },
                     ]
                 }
@@ -1138,11 +1756,19 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         with (output / "summary.json").open(encoding="utf-8") as f:
             manifest = json.load(f)
 
+        self.assertEqual(manifest["status"], "complete")
         self.assertEqual(
-            [item["id"] for item in manifest["slices"]], ["all-events", "empty-events"]
+            manifest["expected_slice_ids"],
+            ["all-events", "empty-events", "primary-templates"],
         )
-        self.assertEqual(manifest["slices"][0]["reports"]["current"]["row_count"], 1)
+        self.assertEqual(
+            [item["id"] for item in manifest["slices"]],
+            ["all-events", "empty-events", "primary-templates"],
+        )
+        self.assertEqual(manifest["slices"][0]["reports"]["current"]["row_count"], 2)
         self.assertEqual(manifest["slices"][1]["reports"]["current"]["row_count"], 0)
+        self.assertEqual(manifest["slices"][2]["group_by"], "primary-template")
+        self.assertEqual(manifest["slices"][2]["reports"]["current"]["row_count"], 1)
         self.assertTrue(
             (
                 output
@@ -1150,6 +1776,91 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                 / "top-5-regex-does-not-match-inclusive-by-total.csv"
             ).exists()
         )
+        grouped_rows = csv_rows(
+            output
+            / "primary-templates"
+            / "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total.csv"
+        )
+        self.assertEqual(grouped_rows[0]["event_key"], "cuda::std::__4::vector")
+
+    def test_failed_nested_slice_keeps_completed_reports(self) -> None:
+        traces = self.work / "traces"
+        slices = self.work / "slices.json"
+        output = self.work / "reports"
+        self.traces.write_trace(
+            traces / "trace.json",
+            [self.traces.event("Event", "detail", 0, 10)],
+            "trace",
+        )
+        slices.write_text(
+            json.dumps(
+                {
+                    "slices": [
+                        {
+                            "id": "parent",
+                            "title": "Parent",
+                            "filter": "all",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                            "children": [
+                                {
+                                    "id": child_id,
+                                    "title": child_id,
+                                    "filter": "all",
+                                    "timing": "inclusive",
+                                    "sort": "total",
+                                    "top": 5,
+                                    "threshold": 0,
+                                }
+                                for child_id in ("first-child", "second-child")
+                            ],
+                        }
+                    ]
+                }
+            ),
+            encoding="utf-8",
+        )
+        real_run_slice_report = summarize_events.run_slice_report
+
+        def run_slice_report(request, **kwargs):
+            if request.config.slice_id == "second-child":
+                raise RuntimeError("simulated nested report failure")
+            return real_run_slice_report(request, **kwargs)
+
+        with (
+            mock.patch.object(
+                sys,
+                "argv",
+                [
+                    SUMMARY_SCRIPT.as_posix(),
+                    traces.as_posix(),
+                    "-o",
+                    output.as_posix(),
+                    "--slices",
+                    slices.as_posix(),
+                ],
+            ),
+            mock.patch.object(
+                summarize_events, "run_slice_report", side_effect=run_slice_report
+            ),
+            self.assertRaisesRegex(RuntimeError, "simulated nested report failure"),
+        ):
+            summarize_events.main()
+
+        manifest = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["status"], "failed")
+        self.assertEqual(
+            manifest["expected_slice_ids"],
+            ["parent", "first-child", "second-child"],
+        )
+        self.assertEqual([item["id"] for item in manifest["slices"]], ["parent"])
+        self.assertEqual(
+            [item["id"] for item in manifest["slices"][0]["children"]],
+            ["first-child"],
+        )
+        self.assertIn("simulated nested report failure", manifest["error"])
 
     def test_parallel_jobs_match_serial_slice_reports(self) -> None:
         baseline = self.work / "baseline"
@@ -1169,6 +1880,18 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                 [
                     self.traces.event("Processing Header File", parent, 0, parent_dur),
                     self.traces.event("Processing Header File", child, 0, child_dur),
+                    self.traces.event(
+                        "Instantiating Template Class",
+                        f"cuda::std::__4::vector [cuda::std::__4::vector<{'int' if directory == baseline else 'long'}>]",
+                        12,
+                        4 if directory == baseline else 8,
+                    ),
+                    self.traces.event(
+                        "Instantiating Template Class",
+                        f"cuda::std::__4::vector [cuda::std::__4::vector<{'float' if directory == baseline else 'double'}>]",
+                        20,
+                        6 if directory == baseline else 12,
+                    ),
                 ],
                 "matched-a",
             )
@@ -1181,6 +1904,11 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             current / "target" / "current-only.json",
             [self.traces.event("Processing Header File", current_only, 0, 7)],
             "current-only",
+        )
+        self.traces.write_trace(
+            baseline / "target" / "baseline-only.json",
+            [self.traces.event("Processing Header File", parent, 0, 9)],
+            "baseline-only",
         )
         slices.write_text(
             json.dumps(
@@ -1215,6 +1943,27 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                             "top": 5,
                             "threshold": 0,
                         },
+                        {
+                            "id": "templates",
+                            "title": "Template instantiation",
+                            "filter": "template-instantiation",
+                            "timing": "inclusive",
+                            "sort": "total",
+                            "top": 5,
+                            "threshold": 0,
+                            "children": [
+                                {
+                                    "id": "primary-templates",
+                                    "title": "Primary templates",
+                                    "filter": "template-instantiation",
+                                    "timing": "inclusive",
+                                    "sort": "total",
+                                    "top": 5,
+                                    "threshold": 0,
+                                    "group_by": "primary-template",
+                                }
+                            ],
+                        },
                     ]
                 }
             ),
@@ -1224,15 +1973,49 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
         outputs = []
         for jobs in (1, 4):
             output = self.work / f"reports-jobs-{jobs}"
-            self.run_summary(
-                current,
-                baseline,
-                output,
-                "--slices",
-                slices.as_posix(),
-                "--jobs",
-                str(jobs),
-            )
+            if jobs == 1:
+                with (
+                    mock.patch.object(
+                        sys,
+                        "argv",
+                        [
+                            SUMMARY_SCRIPT.as_posix(),
+                            current.as_posix(),
+                            "--baseline-dir",
+                            baseline.as_posix(),
+                            "-o",
+                            output.as_posix(),
+                            "--slices",
+                            slices.as_posix(),
+                            "--jobs",
+                            "1",
+                        ],
+                    ),
+                    mock.patch.object(
+                        summarize_events,
+                        "read_trace_events",
+                        wraps=summarize_events.read_trace_events,
+                    ) as reads,
+                    mock.patch.object(sys, "stdout"),
+                ):
+                    summarize_events.main()
+                expected_paths = sorted(
+                    [*baseline.rglob("*.json"), *current.rglob("*.json")]
+                )
+                self.assertEqual(
+                    sorted(call.args[0] for call in reads.call_args_list),
+                    expected_paths,
+                )
+            else:
+                self.run_summary(
+                    current,
+                    baseline,
+                    output,
+                    "--slices",
+                    slices.as_posix(),
+                    "--jobs",
+                    str(jobs),
+                )
             outputs.append(output)
 
         serial, parallel = outputs
@@ -1270,6 +2053,16 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
             / "top-5-file-processing-inclusive-by-total.csv"
         )
         self.assertGreater(len(csv_rows(child_report)), 0)
+        grouped = csv_rows(
+            serial
+            / "templates"
+            / "primary-templates"
+            / "comparison"
+            / "top-5-template-instantiation-grouped-by-primary-template-inclusive-by-total-worse.csv"
+        )
+        self.assertEqual(len(grouped), 1)
+        self.assertEqual(grouped[0]["event_key"], "cuda::std::__4::vector")
+        self.assertEqual(grouped[0]["impact_magnitude_s"], "0.000010")
 
     def test_malformed_trace_names_the_relative_path(self) -> None:
         current = self.work / "current"
@@ -1308,6 +2101,12 @@ class SummarizeEventsBaselineCompareTest(unittest.TestCase):
                 "failed to summarize trace target/broken.json",
                 completed.stderr,
             )
+            manifest = json.loads(
+                (output / str(jobs) / "summary.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["status"], "failed")
+            self.assertEqual(manifest["slices"], [])
+            self.assertIn("target/broken.json", manifest["error"])
 
 
 class CompileTimeMatrixAndCommentTest(unittest.TestCase):
@@ -1317,6 +2116,14 @@ class CompileTimeMatrixAndCommentTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.tempdir.cleanup()
+
+    def test_comment_preserves_full_event_names(self) -> None:
+        key = "cuda::std::tuple<" + "NestedTemplate<" * 100 + "int" + ">" * 100
+        row = {"event_name": "Instantiating Template Class", "event_key": key}
+        rendered = render_pr_comment.render_event_name(row)
+        self.assertIn(key, rendered)
+        self.assertNotIn(" ... ", rendered)
+        self.assertEqual(row["event_key"], key)
 
     def test_parse_matrix_disabled_when_section_missing(self) -> None:
         matrix = self.work / "matrix.yaml"
@@ -1343,14 +2150,15 @@ class CompileTimeMatrixAndCommentTest(unittest.TestCase):
             """
 compile_time:
   pull_request:
-    - id: public-headers
-      name: Public headers
-      gpu: rtx2080
+    - id: cccl
+      name: CCCL
+      project: cccl
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
       targets: [cub.headers.base]
-      args: "-arch native"
+      args: "-arch 75"
       slices:
         - id: total-compilation
           title: TU total compilation
@@ -1359,6 +2167,14 @@ compile_time:
           sort: total
           top: 15
           threshold: 0.001
+        - id: primary-templates
+          title: Primary templates
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 25
+          threshold: 0.001
+          group_by: primary-template
 """,
             encoding="utf-8",
         )
@@ -1378,14 +2194,132 @@ compile_time:
 
         include = json.loads(completed.stdout)["include"]
         self.assertEqual(len(include), 1)
-        self.assertEqual(
-            include[0]["comment_header"], "compile-time-bench-public-headers"
-        )
+        self.assertNotIn("comment", include[0])
+        self.assertNotIn("comment_header", include[0])
+        self.assertEqual(include[0]["project"], "cccl")
+        self.assertEqual(include[0]["runner"], "linux-amd64-cpu32")
+        self.assertEqual(include[0]["args"], "-arch 75")
         self.assertEqual(json.loads(include[0]["targets_json"]), ["cub.headers.base"])
         self.assertEqual(
             json.loads(include[0]["slices_json"])["slices"][0]["id"],
             "total-compilation",
         )
+        self.assertEqual(
+            json.loads(include[0]["slices_json"])["slices"][1]["group_by"],
+            "primary-template",
+        )
+
+    def test_parse_matrix_valid_third_party_config(self) -> None:
+        matrix = self.work / "matrix.yaml"
+        matrix.write_text(
+            """
+compile_time:
+  pull_request:
+    - id: matx
+      name: MatX
+      project: matx
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host gcc14 --cuda-ext"
+      baseline_ref: origin/main
+      slices:
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0
+""",
+            encoding="utf-8",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                matrix.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        config = json.loads(completed.stdout)["include"][0]
+        self.assertEqual(config["project"], "matx")
+        self.assertEqual(config["runner"], "linux-amd64-cpu32")
+        self.assertEqual(config["preset"], "")
+        self.assertEqual(json.loads(config["targets_json"]), [])
+
+    def test_real_matrix_compile_time_configs(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                MATRIX_PATH.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        configs = json.loads(completed.stdout)["include"]
+        self.assertGreater(len(configs), 1)
+        for config in configs:
+            self.assertEqual(config["runner"], "linux-amd64-cpu32")
+            grouped_slices = [
+                slice_data
+                for slice_data in json.loads(config["slices_json"])["slices"]
+                if slice_data.get("group_by") == "primary-template"
+            ]
+            if config["project"] == "cccl":
+                self.assertEqual(config["args"], "-arch 75")
+                self.assertEqual(grouped_slices, [])
+            else:
+                self.assertEqual(len(grouped_slices), 1)
+                self.assertEqual(grouped_slices[0]["filter"], "template-instantiation")
+
+    def test_parse_matrix_requires_rapids_targets(self) -> None:
+        matrix = self.work / "matrix.yaml"
+        matrix.write_text(
+            """
+compile_time:
+  pull_request:
+    - id: rapids
+      name: RAPIDS
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.3 --host rapids-conda"
+      baseline_ref: origin/main
+      slices:
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: 15
+          threshold: 0
+""",
+            encoding="utf-8",
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                PARSE_MATRIX_SCRIPT.as_posix(),
+                matrix.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("targets", completed.stderr)
 
     def test_parse_matrix_rejects_duplicate_slice_ids(self) -> None:
         matrix = self.work / "matrix.yaml"
@@ -1393,9 +2327,10 @@ compile_time:
             """
 compile_time:
   pull_request:
-    - id: public-headers
-      name: Public headers
-      gpu: rtx2080
+    - id: cccl
+      name: CCCL
+      project: cccl
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -1440,9 +2375,10 @@ compile_time:
             """
 compile_time:
   pull_request:
-    - id: public-headers
-      name: Public headers
-      gpu: rtx2080
+    - id: cccl
+      name: CCCL
+      project: cccl
+      runner: linux-amd64-cpu32
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -1481,6 +2417,253 @@ compile_time:
         self.assertIn("[skip-compile-time-bench]", workflow)
         self.assertIn("compile_time_enabled=false", workflow)
         self.assertIn('compile_time_matrix={"include":[]}', workflow)
+        self.assertIn("MATX_ENABLED", workflow)
+        self.assertIn("PYTORCH_ENABLED", workflow)
+        self.assertIn("RAPIDS_ENABLED", workflow)
+
+    def test_compile_time_workflow_dispatches_third_party_projects(self) -> None:
+        workflow = COMPILE_TIME_WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn("project:", workflow)
+        self.assertIn("ci/rapids/rapids-entrypoint.sh", workflow)
+        self.assertIn("RAPIDS_LIBS", workflow)
+
+    def test_bench_only_keeps_compile_time_project_opt_in(self) -> None:
+        import re
+
+        step = (
+            PULL_REQUEST_WORKFLOW.read_text()
+            .split("id: build-compile-time-matrix", 1)[1]
+            .split("\n        run:", 1)[0]
+        )
+        expressions = dict(
+            re.findall(r"^\s+(\w+_ENABLED): (\$\{\{.*\}\})$", step, re.MULTILINE)
+        )
+
+        def enabled(expression: str, message: str) -> bool:
+            condition = re.sub(
+                r"contains\(github.event.head_commit.message, '([^']+)'\)",
+                lambda match: str(match[1] in message),
+                expression[3:-2],
+            )
+            condition = (
+                condition.replace("&&", " and ")
+                .replace("||", " or ")
+                .replace("!", " not ")
+                .strip()
+            )
+            return bool(eval(condition, {"__builtins__": {}}, {}))
+
+        for project in ("matx", "pytorch", "rapids"):
+            expression = expressions[f"{project.upper()}_ENABLED"]
+            self.assertTrue(
+                enabled(expression, "Fix reporting [bench-only] [skip-sass-diff]")
+            )
+            for tag in (
+                f"[skip-{project}]",
+                "[skip-tpt]",
+                "[skip-third-party-testing]",
+            ):
+                self.assertFalse(
+                    enabled(expression, f"Fix reporting [bench-only] {tag}")
+                )
+        matrix = json.loads(
+            subprocess.run(
+                [
+                    sys.executable,
+                    PARSE_MATRIX_SCRIPT.as_posix(),
+                    MATRIX_PATH.as_posix(),
+                    "--workflow",
+                    "override",
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout
+        )
+        self.assertEqual([config["project"] for config in matrix["include"]], ["matx"])
+
+    def test_compile_time_comments_are_combined_after_matrix(self) -> None:
+        reusable_workflow = COMPILE_TIME_WORKFLOW.read_text(encoding="utf-8")
+        pull_request_workflow = PULL_REQUEST_WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertNotIn("comment_header:", reusable_workflow)
+        self.assertNotIn("sticky-pull-request-comment", reusable_workflow)
+        self.assertIn("compile-time-results:", pull_request_workflow)
+        self.assertIn(
+            "needs: [build-workflow, dispatch-compile-time-bench]",
+            pull_request_workflow,
+        )
+        self.assertIn("pattern: compile-time-*-comment", pull_request_workflow)
+        self.assertIn("id: download-comments", pull_request_workflow)
+        self.assertIn("combine_pr_comments.py", pull_request_workflow)
+        self.assertIn(
+            "steps.download-comments.outcome",
+            pull_request_workflow,
+        )
+        self.assertEqual(
+            pull_request_workflow.count("header: compile-time-bench"),
+            1,
+        )
+
+    def test_combiner_compacts_large_fragments_and_keeps_all_configs(self) -> None:
+        fragments = self.work / "fragments"
+        configs = [
+            {"id": f"config-{index}", "name": f"Configuration {index}"}
+            for index in range(7)
+        ]
+        for config in configs[:-1]:
+            fragment_dir = fragments / f"compile-time-{config['id']}-comment"
+            fragment_dir.mkdir(parents=True)
+            fragment_dir.joinpath("comment.md").write_text(
+                "\n".join(
+                    [
+                        "<details>",
+                        (
+                            f"<summary><strong>{config['name']}</strong> — "
+                            "15 regression row(s), 15 improvement row(s)</summary>"
+                        ),
+                        "",
+                        "x" * 24_000,
+                        "",
+                        "</details>",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+        rendered = combine_pr_comments.render_combined_comment(
+            {"include": configs},
+            fragments,
+            artifacts_url="https://example.test/artifacts",
+        )
+
+        if rendered is None:
+            self.fail("non-empty matrix did not render a comment")
+        self.assertLessEqual(
+            len(rendered.encode("utf-8")),
+            combine_pr_comments.DEFAULT_MAX_COMMENT_BYTES,
+        )
+        self.assertIn("detailed tables exceed", rendered.lower())
+        self.assertEqual(rendered.count("<details>"), len(configs))
+        self.assertIn("</details>\n\n<details>", rendered)
+        self.assertNotIn("</details>\n<details>", rendered)
+        for config in configs:
+            self.assertEqual(rendered.count(config["name"]), 1)
+        self.assertIn(
+            "The compile-time benchmark did not produce a comment fragment.",
+            rendered,
+        )
+
+    def test_combiner_falls_back_to_artifacts_when_summaries_are_too_large(
+        self,
+    ) -> None:
+        artifacts_url = "https://example.test/artifacts"
+        configs = [
+            {"id": f"config-{index}", "name": f"Configuration {index}"}
+            for index in range(100)
+        ]
+
+        rendered = combine_pr_comments.render_combined_comment(
+            {"include": configs},
+            self.work / "missing-fragments",
+            artifacts_url=artifacts_url,
+            max_comment_bytes=1_000,
+        )
+
+        if rendered is None:
+            self.fail("non-empty matrix did not render a comment")
+        self.assertLessEqual(len(rendered.encode("utf-8")), 1_000)
+        self.assertIn("Per-configuration summaries also exceed", rendered)
+        self.assertIn(artifacts_url, rendered)
+        self.assertNotIn("<details>", rendered)
+
+    def test_combiner_keeps_full_fragments_when_they_fit(self) -> None:
+        fragments = self.work / "fragments"
+        fragment_dir = fragments / "compile-time-cccl-comment"
+        fragment_dir.mkdir(parents=True)
+        fragment_dir.joinpath("comment.md").write_text(
+            "<details>\n"
+            "<summary><strong>CCCL</strong></summary>\n\n"
+            "full report row\n\n"
+            "</details>",
+            encoding="utf-8",
+        )
+
+        rendered = combine_pr_comments.render_combined_comment(
+            {"include": [{"id": "cccl", "name": "CCCL"}]},
+            fragments,
+            artifacts_url="https://example.test/artifacts",
+        )
+
+        if rendered is None:
+            self.fail("non-empty matrix did not render a comment")
+        self.assertIn("Each configuration is reported independently", rendered)
+        self.assertIn("full report row", rendered)
+        self.assertNotIn("detailed tables exceed", rendered.lower())
+
+    def test_combiner_reports_artifact_download_failures(self) -> None:
+        rendered = combine_pr_comments.render_combined_comment(
+            {"include": [{"id": "matx", "name": "MatX"}]},
+            self.work / "missing-fragments",
+            artifacts_url="https://example.test/artifacts",
+            artifact_download_failed=True,
+        )
+
+        if rendered is None:
+            self.fail("non-empty matrix did not render a comment")
+        self.assertIn("[!WARNING]", rendered)
+        self.assertIn(
+            "The compile-time comment artifacts could not be downloaded.",
+            rendered,
+        )
+
+    def test_third_party_builds_use_object_adjacent_nvcc_traces(self) -> None:
+        paths = (
+            REPO_ROOT / "ci" / "pytorch" / "build_pytorch.sh",
+            REPO_ROOT / "ci" / "matx" / "build_matx.sh",
+            REPO_ROOT / "ci" / "rapids" / "post-create-command.sh",
+        )
+
+        for path in paths:
+            script = path.read_text(encoding="utf-8")
+            if path.parent.name == "matx":
+                self.assertIn("ci/compile_time/nvcc_time_trace.py", script)
+                self.assertIn(
+                    "--fdevice-time-trace=-",
+                    (REPO_ROOT / "ci/compile_time/nvcc_time_trace.py").read_text(),
+                )
+            else:
+                self.assertIn("--fdevice-time-trace=-", script)
+            self.assertIn("-DCMAKE_CUDA_COMPILER_LAUNCHER=", script)
+            self.assertIn("CCCL_RESOLVE_TAG_LOCALLY", script)
+            self.assertNotIn("nvcc_trace_launcher", script)
+
+    def test_wrapper_keeps_temporary_index_until_git_initializes_it(self) -> None:
+        script = WRAPPER_SCRIPT.read_text(encoding="utf-8")
+        snapshot = script.split("create_current_snapshot() {", 1)[1].split("\n}", 1)[0]
+        index_created = snapshot.index('index_file="$(mktemp ')
+        index_initialized = snapshot.index('GIT_INDEX_FILE="${index_file}" git ')
+
+        self.assertNotIn(
+            'rm -f "${index_file}"',
+            snapshot[index_created:index_initialized],
+        )
+
+    def test_wrapper_defaults_rapids_to_all_manifest_cpp_projects(self) -> None:
+        script = WRAPPER_SCRIPT.read_text(encoding="utf-8")
+
+        self.assertIn(
+            'rapids_manifest="${PROJECT_MANIFEST_YML:-'
+            '/opt/rapids-build-utils/manifest.yaml}"',
+            script,
+        )
+        self.assertIn(
+            'rapids_targets="$(yq -r \'.repos[].cpp[].name\' "${rapids_manifest}")"',
+            script,
+        )
+        self.assertIn('mapfile -t build_targets <<< "${rapids_targets}"', script)
+        self.assertNotIn("rapids requires at least one -target library", script)
 
     def test_render_comment_omits_empty_sections_and_splits_directions(self) -> None:
         summary = self.work / "summary.json"
@@ -1506,6 +2689,7 @@ compile_time:
                                             "baseline_selected_s": "0.000001",
                                             "current_selected_s": "0.000003",
                                             "impact_magnitude_s": "0.000010",
+                                            "impact_delta_s": "0.000010",
                                             "selected_delta_s": "0.000002",
                                             "matched_trace_count": 1,
                                         }
@@ -1536,12 +2720,13 @@ compile_time:
         config.write_text(
             json.dumps(
                 {
-                    "id": "public-headers",
-                    "name": "Public headers",
+                    "id": "cccl",
+                    "name": "CCCL",
+                    "project": "cccl",
                     "baseline_ref": "origin/main",
                     "preset": "all-dev",
                     "targets": ["cub.headers.base"],
-                    "gpu": "rtx2080",
+                    "runner": "linux-amd64-cpu32",
                     "launch_args": "--cuda 13.3 --host gcc13",
                 }
             ),
@@ -1569,7 +2754,13 @@ compile_time:
         )
 
         rendered = output.read_text(encoding="utf-8")
-        self.assertIn("<!-- cccl-compile-time-bench: public-headers -->", rendered)
+        self.assertIn("<!-- cccl-compile-time-bench: cccl -->", rendered)
+        self.assertIn("| Project | `cccl` |", rendered)
+        self.assertIn(
+            "| Runner / launch args | `linux-amd64-cpu32` / "
+            "`--cuda 13.3 --host gcc13` |",
+            rendered,
+        )
         self.assertIn("Regressions", rendered)
         self.assertIn("Regression impact", rendered)
         self.assertIn(
@@ -1612,12 +2803,13 @@ compile_time:
         config.write_text(
             json.dumps(
                 {
-                    "id": "public-headers",
-                    "name": "Public headers",
+                    "id": "cccl",
+                    "name": "CCCL",
+                    "project": "cccl",
                     "baseline_ref": "origin/main",
                     "preset": "all-dev",
                     "targets": ["cub.headers.base"],
-                    "gpu": "rtx2080",
+                    "runner": "linux-amd64-cpu32",
                     "launch_args": "--cuda 13.3 --host gcc13",
                 }
             ),
@@ -1652,6 +2844,63 @@ compile_time:
             "No compile-time benchmark changes exceeded the configured thresholds.",
             rendered,
         )
+
+    def test_render_comment_marks_failed_report_as_incomplete(self) -> None:
+        rendered = render_pr_comment.render_comment(
+            {
+                "status": "failed",
+                "error": "RuntimeError: simulated report failure",
+                "expected_slice_ids": ["first", "second"],
+                "slices": [],
+            },
+            {
+                "id": "matx",
+                "name": "MatX",
+                "project": "matx",
+                "baseline_ref": "origin/main",
+                "targets": [],
+                "runner": "linux-amd64-cpu32",
+                "launch_args": "--cuda 13.3 --host gcc14 --cuda-ext",
+            },
+            artifacts_url="https://example.test/artifacts",
+            fragment=True,
+            run_outcome="failure",
+        )
+
+        self.assertIn("⚠️ MatX", rendered)
+        self.assertIn("Report generation failed", rendered)
+        self.assertIn("RuntimeError: simulated report failure", rendered)
+        self.assertIn("| Benchmark step | `failure` |", rendered)
+        self.assertNotIn(
+            "No compile-time benchmark changes exceeded the configured thresholds.",
+            rendered,
+        )
+
+    def test_render_comment_fragment_wraps_one_configuration(self) -> None:
+        rendered = render_pr_comment.render_comment(
+            {"slices": []},
+            {
+                "id": "matx",
+                "name": "MatX",
+                "project": "matx",
+                "baseline_ref": "origin/main",
+                "targets": [],
+                "runner": "linux-amd64-cpu32",
+                "launch_args": "--cuda 13.3 --host gcc14 --cuda-ext",
+            },
+            artifacts_url="https://example.test/artifacts",
+            fragment=True,
+        )
+
+        self.assertTrue(rendered.startswith("<details>\n"))
+        self.assertIn(
+            "<summary><strong>⏱️ MatX</strong> — "
+            "0 regression row(s), 0 improvement row(s)</summary>",
+            rendered,
+        )
+        self.assertNotIn("<!-- cccl-compile-time-bench", rendered)
+        self.assertNotIn("## ⏱️ CCCL", rendered)
+        self.assertTrue(rendered.endswith("</details>\n"))
 
     def test_render_comment_separates_top_level_slice_sections(self) -> None:
         summary = self.work / "summary.json"
@@ -1703,12 +2952,13 @@ compile_time:
         config.write_text(
             json.dumps(
                 {
-                    "id": "public-headers",
-                    "name": "Public headers",
+                    "id": "cccl",
+                    "name": "CCCL",
+                    "project": "cccl",
                     "baseline_ref": "origin/main",
                     "preset": "all-dev",
                     "targets": ["cub.headers.base"],
-                    "gpu": "rtx2080",
+                    "runner": "linux-amd64-cpu32",
                     "launch_args": "--cuda 13.3 --host gcc13",
                 }
             ),
@@ -1843,6 +3093,251 @@ class PrepareTracesTest(unittest.TestCase):
         )
 
         self.assertTrue((output_dir / "trace.perfetto.json").exists())
+
+
+class CollectTracesTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.work = Path(self.tempdir.name)
+
+    def tearDown(self) -> None:
+        self.tempdir.cleanup()
+
+    def test_collects_object_traces_and_preserves_relative_paths(self) -> None:
+        first = self.work / "first"
+        second = self.work / "second"
+        output = self.work / "output"
+        (first / "nested").mkdir(parents=True)
+        second.mkdir()
+        (first / "nested" / "a.cu.o.json").write_text("{}", encoding="utf-8")
+        (first / "nested" / "not-a-trace.json").write_text("{}", encoding="utf-8")
+        (second / "b.cu.obj.json").write_text("{}", encoding="utf-8")
+        (output / "stale").mkdir(parents=True)
+        (output / "stale" / "old.cu.o.json").write_text("{}", encoding="utf-8")
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                COLLECT_SCRIPT.as_posix(),
+                "--input",
+                f"first={first}",
+                "--input",
+                f"second={second}",
+                "--output",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertIn("collected 2 trace(s)", completed.stdout)
+        self.assertTrue((output / "first" / "nested" / "a.cu.o.json").exists())
+        self.assertTrue((output / "second" / "b.cu.obj.json").exists())
+        self.assertFalse((output / "first" / "nested" / "not-a-trace.json").exists())
+        self.assertFalse((output / "stale" / "old.cu.o.json").exists())
+
+    def test_overlapping_inputs_use_the_most_specific_root(self) -> None:
+        cudf = self.work / "cudf"
+        cudf_kafka = cudf / "cpp" / "libcudf_kafka"
+        output = self.work / "output"
+        cudf_trace = cudf / "cpp" / "build" / "cudf.cu.o.json"
+        kafka_trace = cudf_kafka / "build" / "kafka.cu.o.json"
+        cudf_trace.parent.mkdir(parents=True)
+        kafka_trace.parent.mkdir(parents=True)
+        cudf_trace.write_text("{}", encoding="utf-8")
+        kafka_trace.write_text("{}", encoding="utf-8")
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                COLLECT_SCRIPT.as_posix(),
+                "--input",
+                f"cudf={cudf}",
+                "--input",
+                f"cudf_kafka={cudf_kafka}",
+                "--output",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertIn("collected 2 trace(s)", completed.stdout)
+        self.assertTrue((output / "cudf" / "cpp" / "build" / cudf_trace.name).exists())
+        self.assertTrue((output / "cudf_kafka" / "build" / kafka_trace.name).exists())
+        self.assertFalse(
+            (
+                output / "cudf" / "cpp" / "libcudf_kafka" / "build" / kafka_trace.name
+            ).exists()
+        )
+
+    def test_rejects_external_link(self) -> None:
+        input_root = self.work / "input"
+        input_root.mkdir()
+        outside = self.work / "outside.cu.o.json"
+        outside.write_text("{}", encoding="utf-8")
+        (input_root / "trace.cu.o.json").symlink_to(outside)
+        output = self.work / "output"
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                COLLECT_SCRIPT.as_posix(),
+                "--input",
+                f"project={input_root}",
+                "--output",
+                output.as_posix(),
+            ],
+            cwd=REPO_ROOT,
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("trace escapes input directory", completed.stderr)
+        self.assertFalse(output.exists())
+
+    def test_rejects_overlapping_input_and_output_paths(self) -> None:
+        for relation in ("same", "output-parent", "output-child"):
+            with self.subTest(relation=relation):
+                case = self.work / relation
+                input_root = case / "input"
+                trace = input_root / "trace.cu.o.json"
+                trace.parent.mkdir(parents=True)
+                trace.write_text("{}", encoding="utf-8")
+
+                outputs = {
+                    "same": input_root,
+                    "output-parent": case,
+                    "output-child": input_root / "collected",
+                }
+                completed = subprocess.run(
+                    [
+                        sys.executable,
+                        COLLECT_SCRIPT.as_posix(),
+                        "--input",
+                        f"project={input_root}",
+                        "--output",
+                        outputs[relation].as_posix(),
+                    ],
+                    cwd=REPO_ROOT,
+                    check=False,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn(
+                    "input and output paths must not overlap", completed.stderr
+                )
+                self.assertTrue(trace.exists())
+
+    def test_rejects_input_labels_that_are_not_directory_names(self) -> None:
+        unsafe_labels = {
+            "parent": "../outside",
+            "nested": "nested/label",
+            "dot": ".",
+            "dotdot": "..",
+            "absolute": (self.work / "absolute-destination").as_posix(),
+        }
+        for name, label in unsafe_labels.items():
+            with self.subTest(label=label):
+                input_root = self.work / f"{name}-input"
+                output = self.work / f"{name}-output"
+                input_root.mkdir()
+                (input_root / "trace.cu.o.json").write_text("{}", encoding="utf-8")
+
+                completed = subprocess.run(
+                    [
+                        sys.executable,
+                        COLLECT_SCRIPT.as_posix(),
+                        "--input",
+                        f"{label}={input_root}",
+                        "--output",
+                        output.as_posix(),
+                    ],
+                    cwd=REPO_ROOT,
+                    check=False,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn(
+                    "input labels must be single directory names", completed.stderr
+                )
+                self.assertFalse(output.exists())
+
+    def test_rejects_file_and_symlink_outputs(self) -> None:
+        input_root = self.work / "input"
+        input_root.mkdir()
+        (input_root / "trace.cu.o.json").write_text("{}", encoding="utf-8")
+
+        output_file = self.work / "output-file"
+        output_file.write_text("keep", encoding="utf-8")
+        symlink_target = self.work / "symlink-target"
+        symlink_target.mkdir()
+        marker = symlink_target / "keep"
+        marker.write_text("keep", encoding="utf-8")
+        output_symlink = self.work / "output-symlink"
+        output_symlink.symlink_to(symlink_target, target_is_directory=True)
+
+        cases = (
+            (output_file, "output is not a directory"),
+            (output_symlink, "refusing to use a symbolic link"),
+        )
+        for output, expected_error in cases:
+            with self.subTest(output=output):
+                completed = subprocess.run(
+                    [
+                        sys.executable,
+                        COLLECT_SCRIPT.as_posix(),
+                        "--input",
+                        f"project={input_root}",
+                        "--output",
+                        output.as_posix(),
+                    ],
+                    cwd=REPO_ROOT,
+                    check=False,
+                    text=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn(expected_error, completed.stderr)
+
+        self.assertEqual(output_file.read_text(encoding="utf-8"), "keep")
+        self.assertTrue(output_symlink.is_symlink())
+        self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
+
+    def test_copy_failure_preserves_existing_output(self) -> None:
+        source = self.work / "source.cu.o.json"
+        source.write_text("new", encoding="utf-8")
+        output = self.work / "output"
+        output.mkdir()
+        previous = output / "previous.cu.o.json"
+        previous.write_text("previous", encoding="utf-8")
+        destination = output / "project" / source.name
+
+        with mock.patch.object(
+            collect_traces.shutil, "copy2", side_effect=OSError("copy failed")
+        ):
+            with self.assertRaisesRegex(OSError, "copy failed"):
+                collect_traces.replace_output(output, [(source, destination)])
+
+        self.assertEqual(previous.read_text(encoding="utf-8"), "previous")
+        self.assertEqual(list(self.work.glob(".output.staging-*")), [])
 
 
 class SummarizeTusTest(unittest.TestCase):
