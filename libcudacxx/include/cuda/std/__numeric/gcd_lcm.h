@@ -23,26 +23,27 @@
 #endif // no system header
 
 #include <cuda/__cmath/uabs.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/limits>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Tp>
-constexpr _CCCL_API inline _Tp __gcd(_Tp __m, _Tp __n)
+[[nodiscard]] _CCCL_API constexpr _Tp __gcd(_Tp __m, _Tp __n)
 {
-  static_assert((!is_signed_v<_Tp>), "");
+  static_assert((!is_signed_v<_Tp>) );
   return __n == 0 ? __m : ::cuda::std::__gcd<_Tp>(__n, __m % __n);
 }
 
 template <class _Tp, class _Up>
-constexpr _CCCL_API inline common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
+[[nodiscard]] _CCCL_API constexpr common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
 {
   static_assert((is_integral_v<_Tp> && is_integral_v<_Up>), "Arguments to gcd must be integer types");
   static_assert((!is_same_v<remove_cv_t<_Tp>, bool>), "First argument to gcd cannot be bool");
@@ -53,7 +54,7 @@ constexpr _CCCL_API inline common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
 }
 
 template <class _Tp, class _Up>
-constexpr _CCCL_API inline common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
+[[nodiscard]] _CCCL_API constexpr common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
 {
   static_assert((is_integral_v<_Tp> && is_integral_v<_Up>), "Arguments to lcm must be integer types");
   static_assert((!is_same_v<remove_cv_t<_Tp>, bool>), "First argument to lcm cannot be bool");

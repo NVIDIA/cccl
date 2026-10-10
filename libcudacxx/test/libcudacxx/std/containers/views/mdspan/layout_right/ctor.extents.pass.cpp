@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class E, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e)
+TEST_FUNC constexpr void test_construction(E e)
 {
   using M = cuda::std::layout_right::mapping<E>;
   static_assert(noexcept(M{e}));
@@ -43,7 +43,7 @@ __host__ __device__ constexpr void test_construction(E e)
 }
 
 template <class E, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
-__host__ __device__ constexpr void test_construction(E e)
+TEST_FUNC constexpr void test_construction(E e)
 {
   using M = cuda::std::layout_right::mapping<E>;
   static_assert(noexcept(M{e}));
@@ -54,7 +54,7 @@ __host__ __device__ constexpr void test_construction(E e)
   assert(m.extents() == e);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_construction(cuda::std::extents<int>());
@@ -68,6 +68,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

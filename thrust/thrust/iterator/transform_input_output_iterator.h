@@ -51,6 +51,9 @@ public:
     return input_function(*io);
   }
 
+  // Read-write proxy: assignment transforms x and forwards it to the wrapped iterator.
+  // Returning by value keeps the proxy usable in a chained `*it = a = b` expression.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
   _CCCL_HOST_DEVICE transform_input_output_iterator_proxy operator=(const T& x)
@@ -65,6 +68,7 @@ public:
     *io = output_function(x);
     return *this;
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
 private:
   Iterator io;

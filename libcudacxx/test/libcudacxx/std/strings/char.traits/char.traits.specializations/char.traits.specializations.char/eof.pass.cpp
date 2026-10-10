@@ -12,7 +12,9 @@
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
   // Check that the EOF value is the same as the standard library's EOF
   assert(cuda::std::char_traits<char>::eof() == EOF);

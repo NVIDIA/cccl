@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/variant.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/dependent_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
@@ -50,10 +50,10 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class... _Types>
 class _CCCL_TYPE_VISIBILITY_DEFAULT variant
-    : private __variant_base<__all<is_copy_constructible_v<_Types>...>::value,
-                             __all<is_move_constructible_v<_Types>...>::value,
-                             __all<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>::value,
-                             __all<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>::value>
+    : private __variant_base<__fold_and_v<is_copy_constructible_v<_Types>...>,
+                             __fold_and_v<is_move_constructible_v<_Types>...>,
+                             __fold_and_v<(is_copy_constructible_v<_Types> && is_copy_assignable_v<_Types>) ...>,
+                             __fold_and_v<(is_move_constructible_v<_Types> && is_move_assignable_v<_Types>) ...>>
 {
   static_assert(0 < sizeof...(_Types), "variant must consist of at least one alternative.");
 
@@ -89,7 +89,8 @@ public:
             class              = enable_if_t<sizeof...(_Types) != 0>,
             class _Constraints = __match_construct<_Arg>,
             class              = enable_if_t<_Constraints::__constructible>>
-  _CCCL_API constexpr variant(_Arg&& __arg) noexcept(_Constraints::__nothrow_constructible)
+  _CCCL_API constexpr variant(_Arg&& __arg) noexcept( // NOLINT(bugprone-forwarding-reference-overload)
+    _Constraints::__nothrow_constructible)
       : __impl_(in_place_index<_Constraints::_Ip>, ::cuda::std::forward<_Arg>(__arg))
   {}
 

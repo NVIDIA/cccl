@@ -30,7 +30,7 @@ struct MoveOnlyIterator
   using difference_type   = cuda::std::ptrdiff_t;
   using reference         = int&;
 
-  __host__ __device__ constexpr explicit MoveOnlyIterator(It it)
+  TEST_FUNC constexpr explicit MoveOnlyIterator(It it)
       : it_(it)
   {}
   MoveOnlyIterator(MoveOnlyIterator&&)                 = default;
@@ -38,41 +38,41 @@ struct MoveOnlyIterator
   MoveOnlyIterator(const MoveOnlyIterator&)            = delete;
   MoveOnlyIterator& operator=(const MoveOnlyIterator&) = delete;
 
-  __host__ __device__ constexpr reference operator*() const
+  TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr MoveOnlyIterator& operator++()
+  TEST_FUNC constexpr MoveOnlyIterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr MoveOnlyIterator operator++(int)
+  TEST_FUNC constexpr MoveOnlyIterator operator++(int)
   {
     return MoveOnlyIterator(it_++);
   }
 
-  __host__ __device__ friend constexpr bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  TEST_FUNC friend constexpr bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend constexpr bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  TEST_FUNC friend constexpr bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend constexpr It base(const MoveOnlyIterator& i)
+  TEST_FUNC friend constexpr It base(const MoveOnlyIterator& i)
   {
     return i.it_;
   }
 };
 
-static_assert(cuda::std::input_iterator<MoveOnlyIterator>, "");
-static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
+static_assert(cuda::std::input_iterator<MoveOnlyIterator>);
+static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value);
 
 template <class It>
-__host__ __device__ constexpr void test_one()
+TEST_FUNC constexpr void test_one()
 {
   // Non-const lvalue.
   {
@@ -108,7 +108,7 @@ __host__ __device__ constexpr void test_one()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_one<cpp17_input_iterator<int*>>();
   test_one<forward_iterator<int*>>();
@@ -124,7 +124,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

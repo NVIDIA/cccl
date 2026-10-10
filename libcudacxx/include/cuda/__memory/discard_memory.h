@@ -24,13 +24,13 @@
 #include <cuda/__memory/address_space.h>
 #include <cuda/__memory/align_down.h>
 #include <cuda/__memory/align_up.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-_CCCL_API inline void
+_CCCL_HOST_DEVICE_API inline void
 discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] ::cuda::std::size_t __nbytes) noexcept {
 // The discard PTX instruction is only available with PTX ISA 7.4 and later
 #if __cccl_ptx_isa >= 740ULL

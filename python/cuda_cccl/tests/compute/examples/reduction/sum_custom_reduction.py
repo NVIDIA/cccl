@@ -26,7 +26,9 @@ def add_op(a, b):
 
 
 # Perform the reduction.
-cuda.compute.reduce_into(d_input, d_output, add_op, len(d_input), h_init)
+cuda.compute.reduce_into(
+    d_in=d_input, d_out=d_output, num_items=len(d_input), op=add_op, h_init=h_init
+)
 
 # Verify the result.
 expected_output = 6

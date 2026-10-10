@@ -28,8 +28,7 @@ function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
-  add_executable(${bench_target} "${bench_src}")
-  cccl_configure_target(${bench_target} DIALECT 17)
+  cccl_add_executable(${bench_target} SOURCES "${bench_src}")
   target_link_libraries(
     ${bench_target}
     PRIVATE #
@@ -73,7 +72,7 @@ function(add_bench_dir bench_dir)
 
       string(APPEND bench_name ".base")
       add_bench(base_bench_target ${bench_name} "${real_bench_src}")
-      cccl_configure_target(${bench_name} DIALECT 17)
+      cccl_configure_target(${bench_name})
       target_link_libraries(${bench_name} PRIVATE ${thrust_target})
 
       # HPX Integration: Ensures HPX runtime is started
@@ -85,7 +84,10 @@ function(add_bench_dir bench_dir)
       endif()
 
       if ("CUDA" STREQUAL "${config_device}")
-        target_compile_options(${bench_name} PRIVATE "--extended-lambda")
+        target_compile_options(
+          ${bench_name}
+          PRIVATE "$<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>"
+        )
       endif()
     endforeach()
   endforeach()

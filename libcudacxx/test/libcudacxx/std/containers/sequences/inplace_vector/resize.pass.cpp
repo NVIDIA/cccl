@@ -23,10 +23,10 @@
 #endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
-__host__ __device__ constexpr void test_resize()
+TEST_FUNC constexpr void test_resize()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::resize with a size
     cuda::std::inplace_vector<T, 0> vec{};
@@ -66,10 +66,10 @@ __host__ __device__ constexpr void test_resize()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_clear()
+TEST_FUNC constexpr void test_clear()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::clear
     cuda::std::inplace_vector<T, 0> vec{};
@@ -93,17 +93,17 @@ __host__ __device__ constexpr void test_clear()
 struct is_one
 {
   template <class T>
-  __host__ __device__ constexpr bool operator()(const T& val) const noexcept
+  TEST_FUNC constexpr bool operator()(const T& val) const noexcept
   {
     return val == T(1);
   }
 };
 
 template <class T>
-__host__ __device__ constexpr void test_pop_back()
+TEST_FUNC constexpr void test_pop_back()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, N>::pop_back
     inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
@@ -113,15 +113,15 @@ __host__ __device__ constexpr void test_pop_back()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_erase()
+TEST_FUNC constexpr void test_erase()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, N>::erase(iter)
     inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
     auto res = vec.erase(vec.begin() + 1);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value);
     assert(*res == T(42));
     assert(equal_range(vec, cuda::std::array<T, 5>{T(1), T(42), T(12), T(0), T(-1)}));
   }
@@ -129,7 +129,7 @@ __host__ __device__ constexpr void test_erase()
   { // inplace_vector<T, N>::erase(iter, iter), iterators are equal
     inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
     auto res = vec.erase(vec.begin() + 1, vec.begin() + 1);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value);
     assert(*res == T(1337));
     assert(equal_range(vec, cuda::std::array<T, 6>{T(1), T(1337), T(42), T(12), T(0), T(-1)}));
   }
@@ -137,7 +137,7 @@ __host__ __device__ constexpr void test_erase()
   { // inplace_vector<T, N>::erase(iter, iter)
     inplace_vector vec{T(1), T(1337), T(42), T(12), T(0), T(-1)};
     auto res = vec.erase(vec.begin() + 1, vec.begin() + 3);
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::iterator>::value);
     assert(*res == T(12));
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1), T(12), T(0), T(-1)}));
   }
@@ -145,7 +145,7 @@ __host__ __device__ constexpr void test_erase()
   { // erase(inplace_vector<T, 0>, value)
     cuda::std::inplace_vector<T, 0> vec{};
     auto res = erase(vec, T(1));
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value);
     assert(res == 0);
     assert(vec.empty());
   }
@@ -153,7 +153,7 @@ __host__ __device__ constexpr void test_erase()
   { // erase_if(inplace_vector<T, 0>, pred)
     cuda::std::inplace_vector<T, 0> vec{};
     auto res = erase_if(vec, is_one{});
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value);
     assert(res == 0);
     assert(vec.empty());
   }
@@ -161,7 +161,7 @@ __host__ __device__ constexpr void test_erase()
   { // erase(inplace_vector<T, N>, value)
     inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     auto res = erase(vec, T(1));
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value);
     assert(res == 2);
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1337), T(12), T(0), T(-1)}));
   }
@@ -169,17 +169,17 @@ __host__ __device__ constexpr void test_erase()
   { // erase_if(inplace_vector<T, N>, pred)
     inplace_vector vec{T(1), T(1337), T(1), T(12), T(0), T(-1)};
     auto res = erase_if(vec, is_one{});
-    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value, "");
+    static_assert(cuda::std::is_same<decltype(res), typename inplace_vector::size_type>::value);
     assert(res == 2);
     assert(equal_range(vec, cuda::std::array<T, 4>{T(1337), T(12), T(0), T(-1)}));
   }
 }
 
 template <class T>
-__host__ __device__ constexpr void test_shrink_to_fit()
+TEST_FUNC constexpr void test_shrink_to_fit()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::shrink_to_fit
     cuda::std::inplace_vector<T, 0> vec{};
@@ -203,10 +203,10 @@ __host__ __device__ constexpr void test_shrink_to_fit()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_reserve()
+TEST_FUNC constexpr void test_reserve()
 {
-  constexpr size_t max_capacity = 42ull;
-  using inplace_vector          = cuda::std::inplace_vector<T, max_capacity>;
+  [[maybe_unused]] constexpr size_t max_capacity = 42ull;
+  using inplace_vector                           = cuda::std::inplace_vector<T, max_capacity>;
 
   { // inplace_vector<T, 0>::reserve
     cuda::std::inplace_vector<T, 0> vec{};
@@ -230,7 +230,7 @@ __host__ __device__ constexpr void test_reserve()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   test_resize<T>();
   test_clear<T>();
@@ -240,7 +240,7 @@ __host__ __device__ constexpr void test()
   test_reserve<T>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<int>();
   test<Trivial>();
@@ -304,7 +304,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 #if TEST_HAS_EXCEPTIONS()

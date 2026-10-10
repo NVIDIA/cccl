@@ -29,6 +29,7 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
 _CCCL_API constexpr _OutputIterator
 exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Tp __init, _BinaryOp __b)

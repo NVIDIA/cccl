@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/span.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -39,6 +37,9 @@ class compute_capability;
 enum class arch_id : int;
 
 inline constexpr int __arch_specific_id_multiplier = 100000;
+
+class __logical_device;
+class __logical_device_ref;
 
 _CCCL_END_NAMESPACE_CUDA
 

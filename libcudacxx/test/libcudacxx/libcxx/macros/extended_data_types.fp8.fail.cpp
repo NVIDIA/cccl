@@ -16,7 +16,7 @@
 
 int main(int, char**)
 {
-#if !_CCCL_HAS_NVFP8()
+#if !_CCCL_HAS_NVFP8() && !_CCCL_TILE_COMPILATION()
   auto x1 = __nv_fp8_e4m3(1.0f);
   unused(x1);
 #else

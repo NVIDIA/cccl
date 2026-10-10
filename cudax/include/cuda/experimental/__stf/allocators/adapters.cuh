@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -131,8 +132,8 @@ public:
 
   // This is movable, but we don't need to call clear anymore after moving
   stream_adapter(stream_adapter&& other) noexcept
-      : adapter_state(other.adapter_state)
-      , alloc(other.alloc)
+      : adapter_state(mv(other.adapter_state))
+      , alloc(mv(other.alloc))
       , cleared_or_moved(other.cleared_or_moved)
   {
     // No need to clear this now that it was moved
@@ -156,40 +157,62 @@ public:
   // Destructor
   ~stream_adapter()
   {
-    static_assert(::std::is_move_constructible_v<stream_adapter>, "stream_adapter must be move constructible");
-    static_assert(::std::is_move_assignable_v<stream_adapter>, "stream_adapter must be move assignable");
+    static_assert(::cuda::std::is_move_constructible_v<stream_adapter>, "stream_adapter must be move constructible");
+    static_assert(::cuda::std::is_move_assignable_v<stream_adapter>, "stream_adapter must be move assignable");
 
     _CCCL_ASSERT(cleared_or_moved, "clear() was not called.");
   }
 
   /**
    * @brief Free resources allocated by the stream_adapter object
+   *
+   * Every buffer is deallocated even if an earlier step failed; the first failure is rethrown once
+   * the adapter is cleared.
    */
   void clear()
   {
     _CCCL_ASSERT(adapter_state, "Invalid state");
     _CCCL_ASSERT(!cleared_or_moved, "clear() was already called, or the object was moved.");
 
-    cudaStream_t stream = adapter_state->stream;
+    const cudaStream_t stream = adapter_state->stream;
 
-    // Deallocate all buffers, synchronizing lazily on the first blocking deallocation.
-    // This allows stream-ordered deallocations (cudaFreeAsync) that appear before any
-    // blocking ones (cudaFreeHost, cudaFree) to proceed without waiting for the sync.
-    bool stream_synchronized = false;
-    for (auto& b : adapter_state->to_free)
+    ::std::exception_ptr err;
+    // Buffers that are not stream-ordered need the stream drained before they are freed; once
+    // is enough. If that synchronize fails, completion of the work that may still reference them
+    // is unknown, so those buffers are leaked rather than freed under running work; the
+    // stream-ordered ones are still released, since the stream orders their release itself.
+    bool synchronized = false;
+    bool drained      = false;
+    for (const auto& b : adapter_state->to_free)
     {
-      // Sync stream once before the first blocking deallocation
-      if (!b.memory_node.allocation_is_stream_ordered() && !stream_synchronized)
+      if (b.memory_node.allocation_is_stream_ordered())
       {
-        cuda_safe_call(cudaStreamSynchronize(stream));
-        stream_synchronized = true;
+        err |= [&] {
+          b.memory_node.deallocate(b.ptr, b.sz, stream);
+        };
+        continue;
       }
-      b.memory_node.deallocate(b.ptr, b.sz, stream);
+      if (!synchronized)
+      {
+        synchronized = true;
+        err |= [&] {
+          cuda_try<cudaStreamSynchronize>(stream);
+          drained = true;
+        };
+      }
+      if (drained)
+      {
+        err |= [&] {
+          b.memory_node.deallocate(b.ptr, b.sz, stream);
+        };
+      }
     }
-
     adapter_state->to_free.clear();
-
     cleared_or_moved = true;
+    if (err)
+    {
+      ::std::rethrow_exception(err);
+    }
   }
 
   /**

@@ -25,9 +25,9 @@
 TEST_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
 template <class It>
-__host__ __device__ void test(It i,
-                              typename cuda::std::iterator_traits<It>::difference_type n,
-                              typename cuda::std::iterator_traits<It>::value_type x)
+TEST_FUNC void test(It i,
+                    typename cuda::std::iterator_traits<It>::difference_type n,
+                    typename cuda::std::iterator_traits<It>::value_type x)
 {
   using value_type = typename cuda::std::iterator_traits<It>::value_type;
   const cuda::std::move_iterator<It> r(i);
@@ -37,7 +37,7 @@ __host__ __device__ void test(It i,
 
 struct do_nothing
 {
-  __host__ __device__ void operator()(void*) const {}
+  TEST_FUNC void operator()(void*) const {}
 };
 
 int main(int, char**)
@@ -69,8 +69,8 @@ int main(int, char**)
     constexpr const char* p = "123456789";
     using MI                = cuda::std::move_iterator<const char*>;
     constexpr MI it1        = cuda::std::make_move_iterator(p);
-    static_assert(it1[0] == '1', "");
-    static_assert(it1[5] == '6', "");
+    static_assert(it1[0] == '1');
+    static_assert(it1[5] == '6');
   }
 
   // Ensure the `iter_move` customization point is being used.

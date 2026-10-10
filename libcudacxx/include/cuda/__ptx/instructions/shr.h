@@ -22,8 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__ptx/ptx_dot_variants.h>
 #include <cuda/__ptx/ptx_helper_functions.h>
+// IWYU pragma: end_exports
+#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends

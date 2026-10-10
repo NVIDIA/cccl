@@ -20,14 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/counted_iterator.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__ranges/subrange.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/span>
@@ -68,9 +70,9 @@ struct __fn
 
   _CCCL_TEMPLATE(class _It, class _Diff)
   _CCCL_REQUIRES(convertible_to<_Diff, iter_difference_t<_It>> _CCCL_AND input_or_output_iterator<decay_t<_It>>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_It&& __it, _Diff&& __count) const
-    noexcept(noexcept(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count))))
-      -> decltype(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_It&& __it, _Diff&& __count) noexcept(
+    noexcept(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count))))
+    -> decltype(__go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count)))
   {
     return __go(::cuda::std::forward<_It>(__it), ::cuda::std::forward<_Diff>(__count));
   }

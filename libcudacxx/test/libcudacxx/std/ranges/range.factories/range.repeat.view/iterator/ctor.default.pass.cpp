@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using Iter = cuda::std::ranges::iterator_t<cuda::std::ranges::repeat_view<int>>;
   static_assert(cuda::std::is_default_constructible_v<Iter>);

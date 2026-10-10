@@ -56,8 +56,8 @@ public:
       __first_,
       __last_,
       __pred_,
-      typename ::cuda::std::iterator_traits<_ForwardIterator>::iterator_category(),
-      typename ::cuda::std::iterator_traits<_ForwardIterator2>::iterator_category());
+      __iterator_traits_category_or_concept_t<_ForwardIterator>(),
+      __iterator_traits_category_or_concept_t<_ForwardIterator2>());
   }
 
 private:

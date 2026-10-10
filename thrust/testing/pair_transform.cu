@@ -47,7 +47,7 @@ struct TestPairTransform
     // zip up pairs on the device
     thrust::transform(d_p1.begin(), d_p1.end(), d_p2.begin(), d_result.begin(), make_pair_functor());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE((h_result == d_result));
 
     // add pairs on the host
     thrust::transform(h_result.begin(), h_result.end(), h_result.begin(), h_result.begin(), add_pairs());
@@ -55,8 +55,8 @@ struct TestPairTransform
     // add pairs on the device
     thrust::transform(d_result.begin(), d_result.end(), d_result.begin(), d_result.begin(), add_pairs());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE((h_result == d_result));
   }
 }; // end TestPairZip
-VariableUnitTest<TestPairTransform, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestPairTransformInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairTransform,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

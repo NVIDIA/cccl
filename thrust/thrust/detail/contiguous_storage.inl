@@ -31,9 +31,9 @@ namespace detail
 {
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& alloc)
-    : m_allocator(alloc)
-    , m_begin(pointer(static_cast<T*>(0)))
+_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(Alloc alloc)
+    : m_allocator(::cuda::std::move(alloc))
+    , m_begin(pointer(static_cast<T*>(nullptr)))
     , m_size(0)
 {
   ;
@@ -41,9 +41,9 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(const Alloc& 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(size_type n, const Alloc& alloc)
-    : m_allocator(alloc)
-    , m_begin(pointer(static_cast<T*>(0)))
+_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(size_type n, Alloc alloc)
+    : m_allocator(::cuda::std::move(alloc))
+    , m_begin(pointer(static_cast<T*>(nullptr)))
     , m_size(0)
 {
   allocate(n);
@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(size_type n, 
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>::contiguous_storage(copy_allocator_t, const contiguous_storage& other)
     : m_allocator(other.m_allocator)
-    , m_begin(pointer(static_cast<T*>(0)))
+    , m_begin(pointer(static_cast<T*>(nullptr)))
     , m_size(0)
 {} // end contiguous_storage::contiguous_storage()
 
@@ -60,7 +60,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE
 contiguous_storage<T, Alloc>::contiguous_storage(copy_allocator_t, const contiguous_storage& other, size_type n)
     : m_allocator(other.m_allocator)
-    , m_begin(pointer(static_cast<T*>(0)))
+    , m_begin(pointer(static_cast<T*>(nullptr)))
     , m_size(0)
 {
   allocate(n);
@@ -152,7 +152,7 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::allocate(size_type n)
   } // end if
   else
   {
-    m_begin = iterator(pointer(static_cast<T*>(0)));
+    m_begin = iterator(pointer(static_cast<T*>(nullptr)));
     m_size  = 0;
   } // end else
 } // end contiguous_storage::allocate()
@@ -163,7 +163,7 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate() noexcept
   if (size() > 0)
   {
     alloc_traits::deallocate(m_allocator, m_begin.base(), size());
-    m_begin = iterator(pointer(static_cast<T*>(0)));
+    m_begin = iterator(pointer(static_cast<T*>(nullptr)));
     m_size  = 0;
   } // end if
 } // end contiguous_storage::deallocate()
@@ -234,7 +234,8 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::set_allocator(const Alloc& 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::operator=(contiguous_storage&& other)
+_CCCL_HOST_DEVICE contiguous_storage<T, Alloc>&
+contiguous_storage<T, Alloc>::operator=(contiguous_storage&& other) noexcept
 {
   if (size() > 0)
   {
@@ -248,7 +249,7 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
   m_begin = ::cuda::std::move(other.m_begin);
   m_size  = ::cuda::std::move(other.m_size);
 
-  other.m_begin = pointer(static_cast<T*>(0));
+  other.m_begin = pointer(static_cast<T*>(nullptr));
   other.m_size  = 0;
 
   return *this;

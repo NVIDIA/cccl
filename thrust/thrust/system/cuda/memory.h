@@ -21,7 +21,7 @@
 #include <thrust/mr/allocator.h>
 #include <thrust/system/cuda/memory_resource.h>
 
-#include <ostream>
+#include <cuda/std/__host_stdlib/ostream>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

@@ -15,11 +15,7 @@ struct fib_t
     OutT t1 = 0;
     OutT t2 = 1;
 
-    if (n < 1)
-    {
-      return t1;
-    }
-    else if (n == 1)
+    if (n <= 1)
     {
       return t1;
     }

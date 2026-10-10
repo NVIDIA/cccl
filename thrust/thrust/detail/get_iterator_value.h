@@ -13,10 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/memory.h> // for get_value()
+
+#include <cuda/std/__memory/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -38,7 +39,7 @@ _CCCL_HOST_DEVICE it_value_t<Iterator> get_iterator_value(thrust::execution_poli
 // we use get_value(exec,pointer*) function
 // to perform a dereferencing consistent with the execution policy
 template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer*>::element_type
+_CCCL_HOST_DEVICE typename ::cuda::std::pointer_traits<Pointer*>::element_type
 get_iterator_value(thrust::execution_policy<DerivedPolicy>& exec, Pointer* ptr)
 {
   return get_value(derived_cast(exec), ptr);

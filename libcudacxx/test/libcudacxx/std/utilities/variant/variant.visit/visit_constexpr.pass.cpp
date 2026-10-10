@@ -23,19 +23,19 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__ void test_constexpr()
+TEST_FUNC void test_constexpr()
 {
   constexpr ReturnFirst obj{};
   constexpr ReturnArity aobj{};
   {
     using V = cuda::std::variant<int>;
     constexpr V v(42);
-    static_assert(cuda::std::visit(obj, v) == 42, "");
+    static_assert(cuda::std::visit(obj, v) == 42);
   }
   {
     using V = cuda::std::variant<short, long, char>;
     constexpr V v(42l);
-    static_assert(cuda::std::visit(obj, v) == 42, "");
+    static_assert(cuda::std::visit(obj, v) == 42);
   }
   {
     using V1 = cuda::std::variant<int>;
@@ -44,7 +44,7 @@ __host__ __device__ void test_constexpr()
     constexpr V1 v1;
     constexpr V2 v2(nullptr);
     constexpr V3 v3;
-    static_assert(cuda::std::visit(aobj, v1, v2, v3) == 3, "");
+    static_assert(cuda::std::visit(aobj, v1, v2, v3) == 3);
   }
   {
     using V1 = cuda::std::variant<int>;
@@ -53,17 +53,17 @@ __host__ __device__ void test_constexpr()
     constexpr V1 v1;
     constexpr V2 v2(nullptr);
     constexpr V3 v3;
-    static_assert(cuda::std::visit(aobj, v1, v2, v3) == 3, "");
+    static_assert(cuda::std::visit(aobj, v1, v2, v3) == 3);
   }
   {
     using V = cuda::std::variant<int, long, double, int*>;
     constexpr V v1(42l), v2(101), v3(nullptr), v4(1.1);
-    static_assert(cuda::std::visit(aobj, v1, v2, v3, v4) == 4, "");
+    static_assert(cuda::std::visit(aobj, v1, v2, v3, v4) == 4);
   }
   {
     using V = cuda::std::variant<int, long, double, long long, int*>;
     constexpr V v1(42l), v2(101), v3(nullptr), v4(1.1);
-    static_assert(cuda::std::visit(aobj, v1, v2, v3, v4) == 4, "");
+    static_assert(cuda::std::visit(aobj, v1, v2, v3, v4) == 4);
   }
 }
 

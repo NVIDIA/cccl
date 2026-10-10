@@ -20,8 +20,8 @@ template <class T, class U = sentinel_wrapper<T>>
 class UncheckedRange
 {
 public:
-  __host__ __device__ T begin();
-  __host__ __device__ U end();
+  TEST_FUNC T begin();
+  TEST_FUNC U end();
 };
 
 static_assert(cuda::std::ranges::contiguous_range<UncheckedRange<int*, int*>>);
@@ -34,9 +34,9 @@ public:
   using value_type        = int;
   using iterator_category = void;
 
-  __host__ __device__ InputIteratorNotDerivedFrom& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC InputIteratorNotDerivedFrom& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
 };
 
 using InputRangeNotDerivedFrom = UncheckedRange<InputIteratorNotDerivedFrom>;
@@ -52,9 +52,9 @@ public:
   using difference_type   = long;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ InputIteratorNotIndirectlyReadable& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC InputIteratorNotIndirectlyReadable& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
 };
 
 using InputRangeNotIndirectlyReadable = UncheckedRange<InputIteratorNotIndirectlyReadable>;
@@ -71,9 +71,9 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ int& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC int& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
 };
 
 using InputRangeNotInputOrOutputIterator = UncheckedRange<InputIteratorNotInputOrOutputIterator>;
@@ -88,7 +88,7 @@ class IndirectUnaryPredicateNotCopyConstructible
 {
 public:
   IndirectUnaryPredicateNotCopyConstructible(const IndirectUnaryPredicateNotCopyConstructible&) = delete;
-  __host__ __device__ bool operator()(int) const;
+  TEST_FUNC bool operator()(int) const;
 };
 
 static_assert(cuda::std::predicate<IndirectUnaryPredicateNotCopyConstructible, int&>);
@@ -97,7 +97,7 @@ static_assert(!cuda::std::indirect_unary_predicate<IndirectUnaryPredicateNotCopy
 class IndirectUnaryPredicateNotPredicate
 {
 public:
-  __host__ __device__ bool operator()(int&&) const;
+  TEST_FUNC bool operator()(int&&) const;
 };
 
 static_assert(!cuda::std::predicate<IndirectUnaryPredicateNotPredicate, int&>);
@@ -109,14 +109,14 @@ class SentinelForNotSemiregular
 public:
   SentinelForNotSemiregular() = delete;
   using difference_type       = long;
-  __host__ __device__ SentinelForNotSemiregular& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
-  __host__ __device__ friend bool operator==(const SentinelForNotSemiregular&, const cpp20_input_iterator<int*>&);
+  TEST_FUNC SentinelForNotSemiregular& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
+  TEST_FUNC friend bool operator==(const SentinelForNotSemiregular&, const cpp20_input_iterator<int*>&);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator==(const cpp20_input_iterator<int*>&, const SentinelForNotSemiregular&);
-  __host__ __device__ friend bool operator!=(const SentinelForNotSemiregular&, const cpp20_input_iterator<int*>&);
-  __host__ __device__ friend bool operator!=(const cpp20_input_iterator<int*>&, const SentinelForNotSemiregular&);
+  TEST_FUNC friend bool operator==(const cpp20_input_iterator<int*>&, const SentinelForNotSemiregular&);
+  TEST_FUNC friend bool operator!=(const SentinelForNotSemiregular&, const cpp20_input_iterator<int*>&);
+  TEST_FUNC friend bool operator!=(const cpp20_input_iterator<int*>&, const SentinelForNotSemiregular&);
 #endif
 };
 
@@ -132,9 +132,9 @@ class SentinelForNotWeaklyEqualityComparableWith
 {
 public:
   using difference_type = long;
-  __host__ __device__ SentinelForNotWeaklyEqualityComparableWith& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC SentinelForNotWeaklyEqualityComparableWith& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
 };
 
 using InputRangeNotSentinelEqualityComparableWith =
@@ -150,8 +150,8 @@ class WeaklyIncrementableNotMovable
 {
 public:
   using difference_type = long;
-  __host__ __device__ WeaklyIncrementableNotMovable& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_FUNC WeaklyIncrementableNotMovable& operator++();
+  TEST_FUNC void operator++(int);
   WeaklyIncrementableNotMovable(const WeaklyIncrementableNotMovable&) = delete;
 };
 
@@ -166,14 +166,14 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ ForwardIteratorNotDerivedFrom& operator++();
-  __host__ __device__ ForwardIteratorNotDerivedFrom operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC ForwardIteratorNotDerivedFrom& operator++();
+  TEST_FUNC ForwardIteratorNotDerivedFrom operator++(int);
+  TEST_FUNC const int& operator*() const;
 #if TEST_STD_VER > 2017
   bool operator==(const ForwardIteratorNotDerivedFrom&) const = default;
 #else
-  __host__ __device__ bool operator==(const ForwardIteratorNotDerivedFrom&) const;
-  __host__ __device__ bool operator!=(const ForwardIteratorNotDerivedFrom&) const;
+  TEST_FUNC bool operator==(const ForwardIteratorNotDerivedFrom&) const;
+  TEST_FUNC bool operator!=(const ForwardIteratorNotDerivedFrom&) const;
 #endif
 };
 
@@ -191,14 +191,14 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ ForwardIteratorNotIncrementable& operator++();
-  __host__ __device__ int operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC ForwardIteratorNotIncrementable& operator++();
+  TEST_FUNC int operator++(int);
+  TEST_FUNC const int& operator*() const;
 #if TEST_STD_VER > 2017
   bool operator==(const ForwardIteratorNotIncrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const ForwardIteratorNotIncrementable&) const;
-  __host__ __device__ bool operator!=(const ForwardIteratorNotIncrementable&) const;
+  TEST_FUNC bool operator==(const ForwardIteratorNotIncrementable&) const;
+  TEST_FUNC bool operator!=(const ForwardIteratorNotIncrementable&) const;
 #endif
 };
 
@@ -220,17 +220,17 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::forward_iterator_tag;
 
-  __host__ __device__ BidirectionalIteratorNotDerivedFrom& operator++();
-  __host__ __device__ BidirectionalIteratorNotDerivedFrom operator++(int);
-  __host__ __device__ BidirectionalIteratorNotDerivedFrom& operator--();
-  __host__ __device__ BidirectionalIteratorNotDerivedFrom operator--(int);
-  __host__ __device__ int& operator*() const;
+  TEST_FUNC BidirectionalIteratorNotDerivedFrom& operator++();
+  TEST_FUNC BidirectionalIteratorNotDerivedFrom operator++(int);
+  TEST_FUNC BidirectionalIteratorNotDerivedFrom& operator--();
+  TEST_FUNC BidirectionalIteratorNotDerivedFrom operator--(int);
+  TEST_FUNC int& operator*() const;
 
 #if TEST_STD_VER > 2017
   bool operator==(const BidirectionalIteratorNotDerivedFrom&) const = default;
 #else
-  __host__ __device__ bool operator==(const BidirectionalIteratorNotDerivedFrom&) const;
-  __host__ __device__ bool operator!=(const BidirectionalIteratorNotDerivedFrom&) const;
+  TEST_FUNC bool operator==(const BidirectionalIteratorNotDerivedFrom&) const;
+  TEST_FUNC bool operator!=(const BidirectionalIteratorNotDerivedFrom&) const;
 #endif
 };
 
@@ -251,15 +251,15 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ BidirectionalIteratorNotDecrementable& operator++();
-  __host__ __device__ BidirectionalIteratorNotDecrementable operator++(int);
-  __host__ __device__ int& operator*() const;
+  TEST_FUNC BidirectionalIteratorNotDecrementable& operator++();
+  TEST_FUNC BidirectionalIteratorNotDecrementable operator++(int);
+  TEST_FUNC int& operator*() const;
 
 #if TEST_STD_VER > 2017
   bool operator==(const BidirectionalIteratorNotDecrementable&) const = default;
 #else
-  __host__ __device__ bool operator==(const BidirectionalIteratorNotDecrementable&) const;
-  __host__ __device__ bool operator!=(const BidirectionalIteratorNotDecrementable&) const;
+  TEST_FUNC bool operator==(const BidirectionalIteratorNotDecrementable&) const;
+  TEST_FUNC bool operator!=(const BidirectionalIteratorNotDecrementable&) const;
 #endif
 };
 
@@ -276,9 +276,9 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ PermutableNotForwardIterator& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ int& operator*() const;
+  TEST_FUNC PermutableNotForwardIterator& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC int& operator*() const;
 };
 
 using PermutableRangeNotForwardIterator = UncheckedRange<PermutableNotForwardIterator>;
@@ -299,15 +299,15 @@ public:
   using value_type        = NotSwappable;
   using iterator_category = cuda::std::contiguous_iterator_tag;
 
-  __host__ __device__ PermutableNotSwappable& operator++();
-  __host__ __device__ PermutableNotSwappable operator++(int);
-  __host__ __device__ NotSwappable& operator*() const;
+  TEST_FUNC PermutableNotSwappable& operator++();
+  TEST_FUNC PermutableNotSwappable operator++(int);
+  TEST_FUNC NotSwappable& operator*() const;
 
 #if TEST_STD_VER > 2017
   bool operator==(const PermutableNotSwappable&) const = default;
 #else
-  __host__ __device__ bool operator==(const PermutableNotSwappable&) const;
-  __host__ __device__ bool operator!=(const PermutableNotSwappable&) const;
+  TEST_FUNC bool operator==(const PermutableNotSwappable&) const;
+  TEST_FUNC bool operator!=(const PermutableNotSwappable&) const;
 #endif
 };
 
@@ -325,9 +325,9 @@ public:
   using value_type        = int;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ int& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ int& operator*();
+  TEST_FUNC int& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC int& operator*();
 };
 
 using OutputRangeNotInputOrOutputIterator = UncheckedRange<InputIteratorNotInputOrOutputIterator>;
@@ -343,9 +343,9 @@ public:
   using difference_type   = long;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ OutputIteratorNotIndirectlyWritable& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC OutputIteratorNotIndirectlyWritable& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
 };
 
 using OutputRangeNotIndirectlyWritable = UncheckedRange<OutputIteratorNotIndirectlyWritable>;
@@ -361,9 +361,9 @@ public:
   using difference_type   = long;
   using iterator_category = cuda::std::input_iterator_tag;
 
-  __host__ __device__ int& operator++();
-  __host__ __device__ void operator++(int);
-  __host__ __device__ const int& operator*() const;
+  TEST_FUNC int& operator++();
+  TEST_FUNC void operator++(int);
+  TEST_FUNC const int& operator*() const;
 };
 
 using InputRangeIndirectBinaryPredicateNotIndirectlyReadable =
@@ -384,31 +384,31 @@ public:
   // Deliberately not using the `cuda::std::random_access_iterator_tag` category.
   using iterator_category = cuda::std::bidirectional_iterator_tag;
 
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ reference operator[](difference_type) const;
+  TEST_FUNC reference operator*() const;
+  TEST_FUNC reference operator[](difference_type) const;
 
-  __host__ __device__ Self& operator++();
-  __host__ __device__ Self& operator--();
-  __host__ __device__ Self operator++(int);
-  __host__ __device__ Self operator--(int);
+  TEST_FUNC Self& operator++();
+  TEST_FUNC Self& operator--();
+  TEST_FUNC Self operator++(int);
+  TEST_FUNC Self operator--(int);
 
-  __host__ __device__ Self& operator+=(difference_type);
-  __host__ __device__ Self& operator-=(difference_type);
-  __host__ __device__ friend Self operator+(Self, difference_type);
-  __host__ __device__ friend Self operator+(difference_type, Self);
-  __host__ __device__ friend Self operator-(Self, difference_type);
-  __host__ __device__ friend difference_type operator-(Self, Self);
+  TEST_FUNC Self& operator+=(difference_type);
+  TEST_FUNC Self& operator-=(difference_type);
+  TEST_FUNC friend Self operator+(Self, difference_type);
+  TEST_FUNC friend Self operator+(difference_type, Self);
+  TEST_FUNC friend Self operator-(Self, difference_type);
+  TEST_FUNC friend difference_type operator-(Self, Self);
 
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Self&) const = default;
 #else
-  __host__ __device__ bool operator==(const Self&) const;
-  __host__ __device__ bool operator!=(const Self&) const;
+  TEST_FUNC bool operator==(const Self&) const;
+  TEST_FUNC bool operator!=(const Self&) const;
 
-  __host__ __device__ bool operator<(const Self&) const;
-  __host__ __device__ bool operator<=(const Self&) const;
-  __host__ __device__ bool operator>(const Self&) const;
-  __host__ __device__ bool operator>=(const Self&) const;
+  TEST_FUNC bool operator<(const Self&) const;
+  TEST_FUNC bool operator<=(const Self&) const;
+  TEST_FUNC bool operator>(const Self&) const;
+  TEST_FUNC bool operator>=(const Self&) const;
 #endif
 };
 
@@ -428,32 +428,32 @@ public:
   using reference         = int&;
   using iterator_category = cuda::std::random_access_iterator_tag;
 
-  __host__ __device__ reference operator*() const;
+  TEST_FUNC reference operator*() const;
   // Deliberately returning a type different from `reference`.
-  __host__ __device__ const int& operator[](difference_type) const;
+  TEST_FUNC const int& operator[](difference_type) const;
 
-  __host__ __device__ Self& operator++();
-  __host__ __device__ Self& operator--();
-  __host__ __device__ Self operator++(int);
-  __host__ __device__ Self operator--(int);
+  TEST_FUNC Self& operator++();
+  TEST_FUNC Self& operator--();
+  TEST_FUNC Self operator++(int);
+  TEST_FUNC Self operator--(int);
 
-  __host__ __device__ Self& operator+=(difference_type);
-  __host__ __device__ Self& operator-=(difference_type);
-  __host__ __device__ friend Self operator+(Self, difference_type);
-  __host__ __device__ friend Self operator+(difference_type, Self);
-  __host__ __device__ friend Self operator-(Self, difference_type);
-  __host__ __device__ friend difference_type operator-(Self, Self);
+  TEST_FUNC Self& operator+=(difference_type);
+  TEST_FUNC Self& operator-=(difference_type);
+  TEST_FUNC friend Self operator+(Self, difference_type);
+  TEST_FUNC friend Self operator+(difference_type, Self);
+  TEST_FUNC friend Self operator-(Self, difference_type);
+  TEST_FUNC friend difference_type operator-(Self, Self);
 
 #if TEST_HAS_SPACESHIP()
   auto operator<=>(const Self&) const = default;
 #else
-  __host__ __device__ bool operator==(const Self&) const;
-  __host__ __device__ bool operator!=(const Self&) const;
+  TEST_FUNC bool operator==(const Self&) const;
+  TEST_FUNC bool operator!=(const Self&) const;
 
-  __host__ __device__ bool operator<(const Self&) const;
-  __host__ __device__ bool operator<=(const Self&) const;
-  __host__ __device__ bool operator>(const Self&) const;
-  __host__ __device__ bool operator>=(const Self&) const;
+  TEST_FUNC bool operator<(const Self&) const;
+  TEST_FUNC bool operator<=(const Self&) const;
+  TEST_FUNC bool operator>(const Self&) const;
+  TEST_FUNC bool operator>=(const Self&) const;
 #endif
 };
 
@@ -471,7 +471,7 @@ public:
   ComparatorNotCopyable(const ComparatorNotCopyable&)            = delete;
   ComparatorNotCopyable& operator=(const ComparatorNotCopyable&) = delete;
 
-  __host__ __device__ bool operator()(Iter&, Iter&) const;
+  TEST_FUNC bool operator()(Iter&, Iter&) const;
 };
 
 #endif // ALMOST_SATISFIES_TYPES_H

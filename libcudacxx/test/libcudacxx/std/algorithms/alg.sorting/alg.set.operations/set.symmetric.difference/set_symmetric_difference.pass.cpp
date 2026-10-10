@@ -26,8 +26,9 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter1, class Iter2, class OutIter>
-__host__ __device__ constexpr void test4()
+TEST_FUNC constexpr void test4()
 {
   const T a[] = {11, 33, 31, 41};
   const T b[] = {22, 32, 43, 42, 52};
@@ -35,7 +36,8 @@ __host__ __device__ constexpr void test4()
     T result[20] = {};
     T expected[] = {11, 22, 31, 42, 52};
     OutIter end  = cuda::std::set_symmetric_difference(Iter1(a), Iter1(a + 4), Iter2(b), Iter2(b + 5), OutIter(result));
-    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, T::less) == 0);
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, SortableLessComparator<T>{})
+           == 0);
     for (const T* it = base(end); it != result + 20; ++it)
     {
       assert(it->value == 0);
@@ -45,7 +47,8 @@ __host__ __device__ constexpr void test4()
     T result[20] = {};
     T expected[] = {11, 22, 31, 42, 52};
     OutIter end  = cuda::std::set_symmetric_difference(Iter1(b), Iter1(b + 5), Iter2(a), Iter2(a + 4), OutIter(result));
-    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, T::less) == 0);
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 5, SortableLessComparator<T>{})
+           == 0);
     for (const T* it = base(end); it != result + 20; ++it)
     {
       assert(it->value == 0);
@@ -53,8 +56,9 @@ __host__ __device__ constexpr void test4()
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter1, class Iter2>
-__host__ __device__ constexpr void test3()
+TEST_FUNC constexpr void test3()
 {
   test4<T, Iter1, Iter2, cpp17_output_iterator<T*>>();
   // test4<T, Iter1, Iter2, forward_iterator<T*> >();
@@ -63,8 +67,9 @@ __host__ __device__ constexpr void test3()
   test4<T, Iter1, Iter2, T*>();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class Iter1>
-__host__ __device__ constexpr void test2()
+TEST_FUNC constexpr void test2()
 {
   test3<T, Iter1, cpp17_input_iterator<const T*>>();
   // test3<T, Iter1, forward_iterator<const T*> >();
@@ -73,17 +78,25 @@ __host__ __device__ constexpr void test2()
   test3<T, Iter1, const T*>();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class T>
-__host__ __device__ constexpr void test1()
+TEST_FUNC constexpr void test1()
 {
   test2<T, cpp17_input_iterator<const T*>>();
   // test2<T, forward_iterator<const T*> >();
   test2<T, bidirectional_iterator<const T*>>();
   test2<T, random_access_iterator<const T*>>();
   test2<T, const T*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test2<T, host_only_iterator<const T*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
+  NV_IF_TARGET(NV_IS_DEVICE, (test2<T, device_only_iterator<const T*>>();))
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test1<TrivialSortable>();
   test1<NonTrivialSortable>();
@@ -94,7 +107,7 @@ int main(int, char**)
 {
   test();
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;

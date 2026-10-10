@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // UNSUPPORTED: nvrtc
 
 #include <cuda/mdspan>
@@ -151,6 +152,37 @@ bool test_empty_tensor_layout_stride_null_strides()
   assert(host_mdspan.stride(1) == 1);
   assert(host_mdspan.size() == 0);
   assert(host_mdspan.empty());
+  return true;
+}
+
+bool test_empty_tensor_null_data()
+{
+  dlpack_array<2> shape   = {0, 3};
+  dlpack_array<2> strides = {3, 1};
+  DLTensor tensor{};
+  tensor.data        = nullptr;
+  tensor.device      = DLDevice{kDLCPU, 0};
+  tensor.ndim        = 2;
+  tensor.dtype       = DLDataType{DLDataTypeCode::kDLInt, 32, 1};
+  tensor.shape       = shape.data();
+  tensor.strides     = strides.data();
+  tensor.byte_offset = 0;
+
+  auto host_mdspan = cuda::to_host_mdspan<int, 2>(tensor);
+
+  assert(host_mdspan.extent(0) == 0);
+  assert(host_mdspan.extent(1) == 3);
+  assert(host_mdspan.size() == 0);
+  assert(host_mdspan.empty());
+  assert(host_mdspan.data_handle() == nullptr);
+
+  auto host_mdspan_right = cuda::to_host_mdspan<int, 2, cuda::std::layout_right>(tensor);
+
+  assert(host_mdspan_right.extent(0) == 0);
+  assert(host_mdspan_right.extent(1) == 3);
+  assert(host_mdspan_right.size() == 0);
+  assert(host_mdspan_right.empty());
+  assert(host_mdspan_right.data_handle() == nullptr);
   return true;
 }
 
@@ -510,7 +542,7 @@ bool test_return_types()
 
   static_assert(
     cuda::std::is_same_v<decltype(host_ms),
-                         cuda::host_mdspan<float, cuda::std::dextents<int64_t, 1>, cuda::std::layout_stride>>);
+                         cuda::host_mdspan<float, cuda::std::dextents<int64_t, 1>, cuda::layout_stride_relaxed>>);
   assert(host_ms.extent(0) == 4);
 
   auto host_ms_right = cuda::to_host_mdspan<float, 1, cuda::std::layout_right>(tensor);
@@ -531,6 +563,7 @@ int main(int, char**)
      assert(test_empty_tensor_layout_right_second_dim_zero());
      assert(test_empty_tensor_layout_left_first_dim_zero());
      assert(test_empty_tensor_layout_stride_explicit_strides());
+     assert(test_empty_tensor_null_data());
      // Rank-1 and Rank-2 tests
      assert(test_rank1());
      assert(test_rank2_layout_right());

@@ -58,7 +58,7 @@ _CCCL_HOST_DEVICE inline float frexp_expf(float x, int* expt)
 
   exp_x = ::cuda::std::expf(x - kln2);
   get_float_word(hx, exp_x);
-  *expt = (hx >> 23) - (0x7f + 127) + k;
+  *expt = static_cast<int>((hx >> 23) - (0x7f + 127) + k);
   set_float_word(exp_x, (hx & 0x7fffff) | ((0x7f + 127) << 23));
   return (exp_x);
 }
@@ -81,6 +81,10 @@ _CCCL_HOST_DEVICE inline complex<float> ldexp_cexpf(complex<float> z, int expt)
   return (complex<float>(::cuda::std::cos(y) * exp_x * scale1 * scale2, ::cuda::std::sin(y) * exp_x * scale1 * scale2));
 }
 
+// `y - y` is a deliberate IEEE-754 idiom, not a redundant expression: it yields +0.0 for a
+// finite y and propagates a NaN or raises invalid for an infinite y. C99 Annex G specifies
+// the complex functions in these terms.
+// NOLINTBEGIN(misc-redundant-expression)
 _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
 {
   float x, y, exp_x;
@@ -146,6 +150,7 @@ _CCCL_HOST_DEVICE inline complex<float> cexpf(const complex<float>& z)
     return (complex<float>(exp_x * ::cuda::std::cos(y), exp_x * ::cuda::std::sin(y)));
   }
 }
+// NOLINTEND(misc-redundant-expression)
 } // namespace detail::complex
 
 template <>

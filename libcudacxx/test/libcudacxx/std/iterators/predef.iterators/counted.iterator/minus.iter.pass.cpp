@@ -30,30 +30,30 @@ public:
   using pointer           = It;
   using reference         = typename cuda::std::iterator_traits<It>::reference;
 
-  __host__ __device__ constexpr It base() const
+  TEST_FUNC constexpr It base() const
   {
     return it_;
   }
 
   CommonWithForwardIter() = default;
-  __host__ __device__ explicit constexpr CommonWithForwardIter(It it)
+  TEST_FUNC explicit constexpr CommonWithForwardIter(It it)
       : it_(it)
   {}
-  __host__ __device__ constexpr CommonWithForwardIter(const forward_iterator<It>& it)
+  TEST_FUNC constexpr CommonWithForwardIter(const forward_iterator<It>& it)
       : it_(it.base())
   {}
 
-  __host__ __device__ constexpr reference operator*() const
+  TEST_FUNC constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ constexpr CommonWithForwardIter& operator++()
+  TEST_FUNC constexpr CommonWithForwardIter& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ constexpr CommonWithForwardIter operator++(int)
+  TEST_FUNC constexpr CommonWithForwardIter operator++(int)
   {
     CommonWithForwardIter tmp(*this);
     ++(*this);
@@ -61,7 +61,7 @@ public:
   }
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 

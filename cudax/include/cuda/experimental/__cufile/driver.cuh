@@ -19,7 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/throw_error.h>
+#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 
@@ -130,7 +131,7 @@ public:
     {
       if (!is_open())
       {
-        ::cuda::std::__throw_runtime_error("cuFile driver must be opened to query this attribute.");
+        _CCCL_THROW(::std::runtime_error, "cuFile driver must be opened to query this attribute.");
       }
 
       ::CUfileDrvProps_t __props{};
@@ -177,9 +178,8 @@ public:
     {
       if (!is_open())
       {
-        ::cuda::std::__throw_runtime_error(
-          "This cuFile driver attribute range must be queried after the driver is "
-          "opened.");
+        _CCCL_THROW(::std::runtime_error,
+                    "This cuFile driver attribute range must be queried after the driver is opened.");
       }
     }
 
@@ -253,9 +253,8 @@ public:
       }
       else
       {
-        ::cuda::std::__throw_runtime_error(
-          "This cuFile driver attribute cannot be modified after the driver is "
-          "opened.");
+        _CCCL_THROW(::std::runtime_error,
+                    "This cuFile driver attribute cannot be modified after the driver is opened.");
       }
     }
     else

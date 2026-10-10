@@ -17,19 +17,21 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <cuda::std::forward_iterator I>
-__host__ __device__ constexpr bool check_subsumption()
+TEST_FUNC constexpr bool check_subsumption()
 {
   return false;
 }
 
 template <cuda::std::bidirectional_iterator>
-__host__ __device__ constexpr bool check_subsumption()
+TEST_FUNC constexpr bool check_subsumption()
 {
   return true;
 }
 
-static_assert(check_subsumption<int*>(), "");
+static_assert(check_subsumption<int*>());
 
 int main(int, char**)
 {

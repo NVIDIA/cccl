@@ -48,13 +48,14 @@ _CCCL_END_NAMESPACE_CUDA_STD
 // [range.iter.op.next]
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
+
 _CCCL_BEGIN_NAMESPACE_CPO(__next)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x)
   {
     ++__x;
     return __x;
@@ -63,7 +64,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x, iter_difference_t<_Ip> __n)
   {
     ::cuda::std::ranges::advance(__x, __n);
     return __x;
@@ -72,7 +73,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr _Ip _CCCL_STATIC_CALL_OPERATOR(_Ip __x, _Sp __bound_sentinel)
   {
     ::cuda::std::ranges::advance(__x, __bound_sentinel);
     return __x;
@@ -81,7 +82,8 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
-  [[nodiscard]] _CCCL_API constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
+  [[nodiscard]] _CCCL_API constexpr _Ip
+  _CCCL_STATIC_CALL_OPERATOR(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel)
   {
     ::cuda::std::ranges::advance(__x, __n, __bound_sentinel);
     return __x;

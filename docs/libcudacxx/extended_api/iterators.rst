@@ -11,5 +11,5 @@ They allow the user to avoid storing data needlessly in memory and fuse multiple
    :maxdepth: 1
 
    ../api/class*__iterator
-   ../api/classzip__function
+   ../api/class*zip__function
    ../api/group__iterators*

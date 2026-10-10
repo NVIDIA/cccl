@@ -26,22 +26,22 @@ d_output_values = cp.empty_like(d_input_values)
 
 # Create the merge sort object.
 sorter = cuda.compute.make_merge_sort(
-    d_input_keys,
-    d_input_values,
-    d_output_keys,
-    d_output_values,
-    OpKind.LESS,
+    d_in_keys=d_input_keys,
+    d_in_values=d_input_values,
+    d_out_keys=d_output_keys,
+    d_out_values=d_output_values,
+    op=OpKind.LESS,
 )
 
 # Get the temporary storage size.
 temp_storage_size = sorter(
-    None,
-    d_input_keys,
-    d_input_values,
-    d_output_keys,
-    d_output_values,
-    OpKind.LESS,
-    len(h_input_keys),
+    temp_storage=None,
+    d_in_keys=d_input_keys,
+    d_in_values=d_input_values,
+    d_out_keys=d_output_keys,
+    d_out_values=d_output_values,
+    op=OpKind.LESS,
+    num_items=len(h_input_keys),
 )
 
 # Allocate the temporary storage.
@@ -49,13 +49,13 @@ d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
 # Perform the merge sort.
 sorter(
-    d_temp_storage,
-    d_input_keys,
-    d_input_values,
-    d_output_keys,
-    d_output_values,
-    OpKind.LESS,
-    len(h_input_keys),
+    temp_storage=d_temp_storage,
+    d_in_keys=d_input_keys,
+    d_in_values=d_input_values,
+    d_out_keys=d_output_keys,
+    d_out_values=d_output_values,
+    op=OpKind.LESS,
+    num_items=len(h_input_keys),
 )
 
 # Verify the result.

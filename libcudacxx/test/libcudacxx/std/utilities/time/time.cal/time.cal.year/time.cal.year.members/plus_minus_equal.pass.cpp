@@ -23,7 +23,7 @@
 using year  = cuda::std::chrono::year;
 using years = cuda::std::chrono::years;
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(noexcept(cuda::std::declval<year&>() += cuda::std::declval<years>()));
   static_assert(noexcept(cuda::std::declval<year&>() -= cuda::std::declval<years>()));

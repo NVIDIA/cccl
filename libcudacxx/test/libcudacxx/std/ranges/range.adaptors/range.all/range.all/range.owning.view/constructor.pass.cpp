@@ -22,44 +22,44 @@
 struct DefaultConstructible
 {
   int i;
-  __host__ __device__ constexpr explicit DefaultConstructible(int j = 42) noexcept(false)
+  TEST_FUNC constexpr explicit DefaultConstructible(int j = 42) noexcept(false)
       : i(j)
   {}
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct NotDefaultConstructible
 {
   int i;
-  __host__ __device__ constexpr explicit NotDefaultConstructible(int j) noexcept(false)
+  TEST_FUNC constexpr explicit NotDefaultConstructible(int j) noexcept(false)
       : i(j)
   {}
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct MoveChecker
 {
   int i;
-  __host__ __device__ constexpr explicit MoveChecker(int j)
+  TEST_FUNC constexpr explicit MoveChecker(int j)
       : i(j)
   {}
-  __host__ __device__ constexpr MoveChecker(MoveChecker&& v)
+  TEST_FUNC constexpr MoveChecker(MoveChecker&& v)
       : i(cuda::std::exchange(v.i, -1))
   {}
-  __host__ __device__ MoveChecker& operator=(MoveChecker&&);
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC MoveChecker& operator=(MoveChecker&&);
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct NoexceptChecker
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using OwningView = cuda::std::ranges::owning_view<DefaultConstructible>;

@@ -8,14 +8,15 @@ The CUDA Core Compute Libraries (CCCL) for Python are a collection of modules
 with the shared goal of providing **high-quality, high-performance, and easy-to-use**
 abstractions for CUDA Python developers.
 
-* :doc:`cuda.compute <compute>` — Composable device-level primitives for building
+* :doc:`cuda.compute <compute/index>` — Composable device-level primitives for building
   custom parallel algorithms, without writing CUDA kernels directly.
 
-* :doc:`cuda.coop <coop>` — Cooperative block- and warp-level algorithms for
-  writing highly efficient CUDA kernels with `Numba CUDA <https://nvidia.github.io/numba-cuda/>`_.
+* :doc:`cuda.stf._experimental <stf>` — Sequential Task Flow for CUDA: define
+  logical data and tasks with read/write annotations; STF orchestrates execution
+  and data movement.
 
 These libraries expose the generic, highly-optimized algorithms from the
-`CCCL C++ libraries <https://nvidia.github.io/cccl/cpp.html>`_,
+:doc:`CCCL C++ libraries </cccl/index>`,
 which have been tuned to provide optimal performance across GPU architectures.
 
 Who is this for?
@@ -32,7 +33,7 @@ Who is this for?
    :caption: CCCL Python Libraries
 
    setup
-   compute
-   coop
+   compute/index
+   stf
    resources
    api_reference

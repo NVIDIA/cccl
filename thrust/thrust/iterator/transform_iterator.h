@@ -164,7 +164,7 @@ public:
 //!    thrust::reduce(thrust::make_transform_iterator(v.begin(), square()),
 //!                   thrust::make_transform_iterator(v.end(),   square()));
 //!
-//!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
+//!   std::cout << "sum of squares: " << sum_of_squares << '\n';
 //!   return 0;
 //! }
 //! \endcode
@@ -250,8 +250,8 @@ public:
   template <typename OtherAdaptableUnaryFunction, typename OtherIterator, typename OtherReference, typename OtherValue>
   _CCCL_HOST_DEVICE transform_iterator(
     const transform_iterator<OtherAdaptableUnaryFunction, OtherIterator, OtherReference, OtherValue>& other,
-    detail::enable_if_convertible_t<OtherIterator, Iterator>*                             = 0,
-    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction>* = 0)
+    detail::enable_if_convertible_t<OtherIterator, Iterator, int>                             = 0,
+    detail::enable_if_convertible_t<OtherAdaptableUnaryFunction, AdaptableUnaryFunction, int> = 0)
       : super_t(other.base())
       , m_f(other.functor())
   {}

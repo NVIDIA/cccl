@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr void test_strncmp(const T* lhs, const T* rhs, cuda::std::size_t n, int expected)
+TEST_FUNC constexpr void test_strncmp(const T* lhs, const T* rhs, cuda::std::size_t n, int expected)
 {
   const auto ret = cuda::std::__cccl_strncmp(lhs, rhs, n);
 
@@ -33,11 +33,11 @@ __host__ __device__ constexpr void test_strncmp(const T* lhs, const T* rhs, cuda
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type();
+TEST_FUNC constexpr void test_type();
 
 #define TEST_SPECIALIZATION(T, P)                       \
   template <>                                           \
-  __host__ __device__ constexpr void test_type<T>()     \
+  TEST_FUNC constexpr void test_type<T>()               \
   {                                                     \
     test_strncmp<T>(P##"", P##"", 0, 0);                \
     test_strncmp<T>(P##"", P##"", 1, 0);                \
@@ -81,7 +81,7 @@ TEST_SPECIALIZATION(char8_t, u8)
 TEST_SPECIALIZATION(char16_t, u)
 TEST_SPECIALIZATION(char32_t, U)
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<char>();
 #if _CCCL_HAS_CHAR8_T()

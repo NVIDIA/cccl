@@ -43,14 +43,14 @@ void TestMinMaxElementDevice(ExecutionPolicy exec)
   minmax_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   d_min = ((pair_type) d_result[0]).first;
   d_max = ((pair_type) d_result[0]).second;
 
-  ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
-  ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
+  REQUIRE(h_min - h_data.begin() == d_min - d_data.begin());
+  REQUIRE(h_max - h_data.begin() == d_max - d_data.begin());
 
   h_max = thrust::minmax_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>()).first;
   h_min = thrust::minmax_element(h_data.begin(), h_data.end(), ::cuda::std::greater<int>()).second;
@@ -58,54 +58,45 @@ void TestMinMaxElementDevice(ExecutionPolicy exec)
   minmax_element_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), ::cuda::std::greater<int>(), d_result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
-    ASSERT_EQUAL(cudaSuccess, err);
+    REQUIRE(cudaSuccess == err);
   }
 
   d_max = ((pair_type) d_result[0]).first;
   d_min = ((pair_type) d_result[0]).second;
 
-  ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
-  ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
+  REQUIRE(h_min - h_data.begin() == d_min - d_data.begin());
+  REQUIRE(h_max - h_data.begin() == d_max - d_data.begin());
 }
 
-void TestMinMaxElementDeviceSeq()
+TEST_CASE("TestMinMaxElementDeviceSeq", "[minmax_element]")
 {
   TestMinMaxElementDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMinMaxElementDeviceSeq);
 
-void TestMinMaxElementDeviceDevice()
+TEST_CASE("TestMinMaxElementDeviceDevice", "[minmax_element]")
 {
   TestMinMaxElementDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMinMaxElementDeviceDevice);
 #endif
 
-void TestMinMaxElementCudaStreams()
+TEST_CASE("TestMinMaxElementCudaStreams", "[minmax_element]")
 {
   using Vector = thrust::device_vector<int>;
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  ASSERT_EQUAL(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first, 1);
-  ASSERT_EQUAL(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second, 5);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first - data.begin(), 2);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second - data.begin(), 1);
+  REQUIRE(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first == 1);
+  REQUIRE(*thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second == 5);
+  REQUIRE(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).first - data.begin() == 2);
+  REQUIRE(thrust::minmax_element(thrust::cuda::par.on(s), data.begin(), data.end()).second - data.begin() == 1);
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestMinMaxElementCudaStreams);
 
-void TestMinMaxElementDevicePointer()
+TEST_CASE("TestMinMaxElementDevicePointer", "[minmax_element]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -118,9 +109,8 @@ void TestMinMaxElementDevicePointer()
   data[4] = 5;
   data[5] = 1;
 
-  T* raw_ptr = thrust::raw_pointer_cast(data.data());
-  size_t n   = data.size();
-  ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).first - raw_ptr, 2);
-  ASSERT_EQUAL(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr, 1);
+  T* raw_ptr     = thrust::raw_pointer_cast(data.data());
+  const size_t n = data.size();
+  REQUIRE(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).first - raw_ptr == 2);
+  REQUIRE(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr == 1);
 }
-DECLARE_UNITTEST(TestMinMaxElementDevicePointer);

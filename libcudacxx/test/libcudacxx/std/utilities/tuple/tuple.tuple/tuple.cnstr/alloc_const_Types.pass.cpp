@@ -13,92 +13,104 @@
 // template <class Alloc>
 //   tuple(allocator_arg_t, const Alloc& a, const Types&...);
 
+#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
-#include "../alloc_first.h"
-#include "../alloc_last.h"
+#include "../alloc_constexpr_types.h"
 #include "allocators.h"
 #include "test_macros.h"
 
 struct ImplicitCopy
 {
-  __host__ __device__ explicit ImplicitCopy(int) {}
-  __host__ __device__ ImplicitCopy(ImplicitCopy const&) {}
+  TEST_FUNC explicit ImplicitCopy(int) {}
+  TEST_FUNC ImplicitCopy(ImplicitCopy const&) {}
 };
 
-// cuda::std::allocator not supported
-/*
 // Test that tuple(cuda::std::allocator_arg, Alloc, Types const&...) allows implicit
 // copy conversions in return value expressions.
-cuda::std::tuple<ImplicitCopy> testImplicitCopy1() {
-    ImplicitCopy i(42);
-    return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
-}
-
-cuda::std::tuple<ImplicitCopy> testImplicitCopy2() {
-    const ImplicitCopy i(42);
-    return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
-}
-*/
-
-int main(int, char**)
+TEST_FUNC cuda::std::tuple<ImplicitCopy> testImplicitCopy1()
 {
-  // Static initialization not supported on GPUs
-  alloc_first::allocator_constructed() = false;
-  alloc_last::allocator_constructed()  = false;
-  // cuda::std::allocator not supported
-  /*
+  ImplicitCopy i(42);
+  return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
+}
+
+TEST_FUNC cuda::std::tuple<ImplicitCopy> testImplicitCopy2()
+{
+  const ImplicitCopy i(42);
+  return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, i};
+}
+
+TEST_FUNC constexpr bool test()
+{
+  A1<int> alloc{5};
   {
-      // check that the literal '0' can implicitly initialize a stored pointer.
-      cuda::std::tuple<int*> t = {cuda::std::allocator_arg, cuda::std::allocator<void>{}, 0};
+    const int v = 3;
+    cuda::std::tuple<constexpr_alloc_arg> t(cuda::std::allocator_arg, alloc, v);
+    assert(cuda::std::get<0>(t).value == 3);
   }
-  */
   {
-    cuda::std::tuple<int> t(cuda::std::allocator_arg, A1<int>(), 3);
+    const int a = 1;
+    const int b = 2;
+    cuda::std::tuple<constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, a, b);
+    assert(cuda::std::get<0>(t).value == 1);
+    assert(cuda::std::get<1>(t).value == 2);
+  }
+  {
+    const int v = 3;
+    cuda::std::tuple<int> t(cuda::std::allocator_arg, alloc, v);
     assert(cuda::std::get<0>(t) == 3);
   }
   {
-    assert(!alloc_first::allocator_constructed());
-    cuda::std::tuple<alloc_first> t(cuda::std::allocator_arg, A1<int>(5), alloc_first(3));
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<0>(t) == alloc_first(3));
+    const constexpr_alloc_arg src(cuda::std::allocator_arg, alloc, 3);
+    cuda::std::tuple<constexpr_alloc_arg> t(cuda::std::allocator_arg, alloc, src);
+    assert(cuda::std::get<0>(t).value == 3);
   }
   {
-    assert(!alloc_last::allocator_constructed());
-    cuda::std::tuple<alloc_last> t(cuda::std::allocator_arg, A1<int>(5), alloc_last(3));
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<0>(t) == alloc_last(3));
+    const constexpr_alloc_last src(3, alloc);
+    cuda::std::tuple<constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, src);
+    assert(cuda::std::get<0>(t).value == 3);
   }
   {
-    alloc_first::allocator_constructed() = false;
-    cuda::std::tuple<int, alloc_first> t(cuda::std::allocator_arg, A1<int>(5), 10, alloc_first(15));
+    const int a = 10;
+    const constexpr_alloc_arg b(cuda::std::allocator_arg, alloc, 15);
+    cuda::std::tuple<int, constexpr_alloc_arg> t(cuda::std::allocator_arg, alloc, a, b);
     assert(cuda::std::get<0>(t) == 10);
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<1>(t) == alloc_first(15));
+    assert(cuda::std::get<1>(t).value == 15);
   }
   {
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    cuda::std::tuple<int, alloc_first, alloc_last> t(
-      cuda::std::allocator_arg, A1<int>(5), 1, alloc_first(2), alloc_last(3));
+    const int a = 1;
+    const constexpr_alloc_arg b(cuda::std::allocator_arg, alloc, 2);
+    const constexpr_alloc_last c(3, alloc);
+    cuda::std::tuple<int, constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, a, b, c);
     assert(cuda::std::get<0>(t) == 1);
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<1>(t) == alloc_first(2));
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<2>(t) == alloc_last(3));
+    assert(cuda::std::get<1>(t).value == 2);
+    assert(cuda::std::get<2>(t).value == 3);
   }
   {
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    cuda::std::tuple<int, alloc_first, alloc_last> t(
-      cuda::std::allocator_arg, A2<int>(5), 1, alloc_first(2), alloc_last(3));
+    // A2 is not convertible to the element allocator type, so ordinary copy is selected.
+    const int a = 1;
+    const constexpr_alloc_arg b(cuda::std::allocator_arg, alloc, 2);
+    const constexpr_alloc_last c(3, alloc);
+    cuda::std::tuple<int, constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, A2<int>{5}, a, b, c);
     assert(cuda::std::get<0>(t) == 1);
-    assert(!alloc_first::allocator_constructed());
-    assert(cuda::std::get<1>(t) == alloc_first(2));
-    assert(!alloc_last::allocator_constructed());
-    assert(cuda::std::get<2>(t) == alloc_last(3));
+    assert(cuda::std::get<1>(t).value == -1);
+    assert(cuda::std::get<2>(t).value == -1);
   }
+  return true;
+}
 
+TEST_FUNC void test_runtime()
+{
+  // cuda::std::allocator is not constexpr in C++17.
+  // check that the literal '0' can implicitly initialize a stored pointer.
+  [[maybe_unused]] cuda::std::tuple<int*> t = {cuda::std::allocator_arg, cuda::std::allocator<void>{}, 0};
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+  test_runtime();
   return 0;
 }

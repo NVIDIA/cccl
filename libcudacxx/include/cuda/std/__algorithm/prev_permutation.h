@@ -24,7 +24,6 @@
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/reverse.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -53,7 +52,8 @@ __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
     {
       _BidirectionalIterator __j = __last_iter;
       while (!__comp(*--__j, *__i))
-        ;
+      {
+      }
       _IterOps<_AlgPolicy>::iter_swap(__i, __j);
       ::cuda::std::__reverse<_AlgPolicy>(__ip1, __last_iter);
       return _Result(::cuda::std::move(__last_iter), true);

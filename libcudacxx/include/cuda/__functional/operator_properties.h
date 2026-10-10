@@ -51,7 +51,7 @@ template <class _Op>
   return false;
 }
 
-template <class _Op, class _Tp, class Enable = void>
+template <class _Op, class _Tp, class _Enable = void>
 inline constexpr bool __is_associative_v = __is_associative_static_assert<_Op>();
 
 // strictly speaking, plus (+) and multiply (*) are not associative because of overflow UB
@@ -202,7 +202,7 @@ template <class _Op>
   return false;
 }
 
-template <class _Op, class _Tp, class Enable = void>
+template <class _Op, class _Tp, class _Enable = void>
 inline constexpr bool __is_commutative_v = ::cuda::__is_commutative_static_assert<_Op>();
 
 template <class _Tp>
@@ -344,66 +344,159 @@ inline constexpr bool is_commutative_v = __is_commutative_v<_Op, ::cuda::std::re
  * Internal helpers
  **********************************************************************************************************************/
 
-template <typename>
+template <class, class = void>
 inline constexpr bool __is_cuda_std_plus_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_multiplies_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_bit_and_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_bit_or_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_bit_xor_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_logical_and_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_logical_or_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_minimum_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_maximum_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp>, void> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<>, void> = true;
 
 /***********************************************************************************************************************
  * Identity Element
  **********************************************************************************************************************/
 
 struct __no_identity_element
-{};
+{
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr bool operator==(_Tp&&) noexcept
+  {
+    return false;
+  }
+
+  template <class _Tp>
+  [[nodiscard]] _CCCL_API constexpr bool operator!=(_Tp&&) noexcept
+  {
+    return true;
+  }
+};
 
 template <class _Op, class _Tp>
 [[nodiscard]] _CCCL_API constexpr auto identity_element() noexcept
@@ -411,7 +504,7 @@ template <class _Op, class _Tp>
   using _Up = ::cuda::std::remove_cv_t<_Tp>;
   if constexpr (__is_cuda_std_plus_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -426,7 +519,8 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_multiplies_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_floating_point_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_floating_point_v<_Up>
+                  || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{1};
     }
@@ -441,7 +535,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_and_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return static_cast<_Up>(~_Up{});
     }
@@ -450,20 +544,9 @@ template <class _Op, class _Tp>
       return __no_identity_element{};
     }
   }
-  else if constexpr (__is_cuda_std_bit_or_v<_Op>)
+  else if constexpr (__is_cuda_std_bit_or_v<_Op> || __is_cuda_std_bit_xor_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
-    {
-      return _Up{};
-    }
-    else
-    {
-      return __no_identity_element{};
-    }
-  }
-  else if constexpr (__is_cuda_std_bit_xor_v<_Op>)
-  {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -496,7 +579,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_minimum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::max();
     }
@@ -511,7 +594,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_maximum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::lowest();
     }
@@ -551,21 +634,11 @@ template <class _Op, class _Tp>
 [[nodiscard]] _CCCL_API constexpr auto absorbing_element() noexcept
 {
   using _Up = ::cuda::std::remove_cv_t<_Tp>;
-  if constexpr (__is_cuda_std_multiplies_v<_Op>)
+  if constexpr (__is_cuda_std_multiplies_v<_Op> || __is_cuda_std_bit_and_v<_Op>)
   {
-    // no absorbing element for floating-point due to NaN, infinity, and -1.0 * +0.0 = -0.0 (!= +0.0)
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
-    {
-      return _Up{};
-    }
-    else
-    {
-      return __no_absorbing_element{};
-    }
-  }
-  else if constexpr (__is_cuda_std_bit_and_v<_Op>)
-  {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    // Multiplication has no absorbing element for floating-point due to NaN, infinity,
+    // and -1.0 * +0.0 = -0.0 (!= +0.0).
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return _Up{};
     }
@@ -576,7 +649,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_std_bit_or_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return static_cast<_Up>(~_Up{});
     }
@@ -609,7 +682,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_minimum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::lowest();
     }
@@ -624,7 +697,7 @@ template <class _Op, class _Tp>
   }
   else if constexpr (__is_cuda_maximum_v<_Op>)
   {
-    if constexpr (::cuda::std::__cccl_is_integer_v<_Up>)
+    if constexpr (::cuda::std::__cccl_is_integer_v<_Up> || ::cuda::std::is_same_v<_Up, char>)
     {
       return ::cuda::std::numeric_limits<_Up>::max();
     }

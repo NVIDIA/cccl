@@ -1,0 +1,7 @@
+// Minimal cmath stub for CUDA JIT compilation
+#ifndef _HOSTJIT_CMATH
+#define _HOSTJIT_CMATH
+
+#include <math.h>
+
+#endif // _HOSTJIT_CMATH

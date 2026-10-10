@@ -64,7 +64,7 @@ struct merge_sort_closure
       , inplace(inplace)
   {}
 
-  void operator()(void) const
+  void operator()() const
   {
     merge_sort(exec, first1, last1, first2, comp, inplace);
   }
@@ -80,7 +80,7 @@ void merge_sort(execution_policy<DerivedPolicy>& exec,
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
-  difference_type n = ::cuda::std::distance(first1, last1);
+  const difference_type n = ::cuda::std::distance(first1, last1);
 
   if (n < threshold)
   {
@@ -172,7 +172,7 @@ struct merge_sort_by_key_closure
       , inplace(inplace)
   {}
 
-  void operator()(void) const
+  void operator()() const
   {
     merge_sort_by_key(exec, first1, last1, first2, first3, first4, comp, inplace);
   }
@@ -196,7 +196,7 @@ void merge_sort_by_key(
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
-  difference_type n = ::cuda::std::distance(first1, last1);
+  const difference_type n = ::cuda::std::distance(first1, last1);
 
   Iterator1 mid1  = first1 + (n / 2);
   Iterator2 mid2  = first2 + (n / 2);

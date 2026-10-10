@@ -12,11 +12,12 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cmath> // for cuda::std::abs
 
+#include "test_macros.h"
 // See
 // https://www.boost.org/doc/libs/1_70_0/libs/test/doc/html/boost_test/testing_tools/extended_comparison/floating_point/floating_points_comparison_theory.html
 
 template <typename T>
-__host__ __device__ bool fptest_close(T val, T expected, T eps)
+TEST_FUNC bool fptest_close(T val, T expected, T eps)
 {
   constexpr T zero = T(0);
   assert(eps >= zero);
@@ -39,7 +40,7 @@ __host__ __device__ bool fptest_close(T val, T expected, T eps)
 }
 
 template <typename T>
-__host__ __device__ bool fptest_close_pct(T val, T expected, T percent)
+TEST_FUNC bool fptest_close_pct(T val, T expected, T percent)
 {
   constexpr T zero = T(0);
   assert(percent >= zero);

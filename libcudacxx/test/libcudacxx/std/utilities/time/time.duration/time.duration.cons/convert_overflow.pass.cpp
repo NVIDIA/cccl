@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // <chrono>
 
 // duration
@@ -24,8 +27,8 @@
 
 TEST_GLOBAL_VARIABLE bool called = false;
 
-__host__ __device__ void f(cuda::std::chrono::milliseconds);
-__host__ __device__ void f(cuda::std::chrono::seconds)
+TEST_HOST_DEVICE_FUNC void f(cuda::std::chrono::milliseconds);
+TEST_HOST_DEVICE_FUNC void f(cuda::std::chrono::seconds)
 {
   called = true;
 }

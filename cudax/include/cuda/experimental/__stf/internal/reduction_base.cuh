@@ -20,8 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/places.cuh>
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
-#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__stf/internal/instance_id.cuh>
+#include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 
 namespace cuda::experimental::stf
 {

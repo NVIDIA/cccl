@@ -25,12 +25,11 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
+#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/conditional.h>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <ostream>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -40,7 +39,7 @@ CUB_NAMESPACE_BEGIN
 
 //! BlockReduceAlgorithm enumerates alternative algorithms for parallel reduction across a CUDA thread
 //! block.
-enum BlockReduceAlgorithm
+enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
 
   //! @rst
@@ -141,6 +140,9 @@ enum BlockReduceAlgorithm
   //!      order non-deterministic.
   //!   #. The final block-wide result is available to all threads.
   //!
+  //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
+  //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
+  //!
   //! Performance Considerations
   //! ++++++++++++++++++++++++++
   //!
@@ -152,24 +154,47 @@ enum BlockReduceAlgorithm
   BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC,
 };
 
-#if !_CCCL_COMPILER(NVRTC) && !defined(_CCCL_DOXYGEN_INVOKED)
-inline ::std::ostream& operator<<(::std::ostream& os, const BlockReduceAlgorithm& alg)
+#if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
+namespace detail
 {
-  switch (alg)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(BlockReduceAlgorithm algo) noexcept
+{
+  switch (algo)
   {
-    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
-      return os << "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_RAKING:
-      return os << "BLOCK_REDUCE_RAKING";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS:
-      return os << "BLOCK_REDUCE_WARP_REDUCTIONS";
-    case BlockReduceAlgorithm::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
-      return os << "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
-    default:
-      return os << "<unknown BlockReduceAlgorithm: " << static_cast<int>(alg) << ">";
+    case BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY:
+      return "BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY";
+    case BLOCK_REDUCE_RAKING:
+      return "BLOCK_REDUCE_RAKING";
+    case BLOCK_REDUCE_WARP_REDUCTIONS:
+      return "BLOCK_REDUCE_WARP_REDUCTIONS";
+    case BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC:
+      return "BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC";
   }
+  return "<unknown BlockReduceAlgorithm>";
 }
-#endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_DOXYGEN_INVOKED
+} // namespace detail
+
+inline ::std::ostream& operator<<(::std::ostream& os, BlockReduceAlgorithm algo)
+{
+  return os << CUB_NS_QUALIFIER::detail::to_string(algo);
+}
+#endif // _CCCL_HOSTED() && !_CCCL_DOXYGEN_INVOKED
+
+CUB_NAMESPACE_END
+
+#if __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+template <::cuda::std::same_as<char> CharT>
+struct std::formatter<CUB_NS_QUALIFIER::BlockReduceAlgorithm, CharT> : formatter<const CharT*, CharT>
+{
+  template <class FmtCtx>
+  auto format(const CUB_NS_QUALIFIER::BlockReduceAlgorithm& algo, FmtCtx& ctx) const
+  {
+    return formatter<const CharT*, CharT>::format(CUB_NS_QUALIFIER::detail::to_string(algo), ctx);
+  }
+};
+#endif // __cpp_lib_format >= 201907L && !defined(_CCCL_DOXYGEN_INVOKED)
+
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! The BlockReduce class provides :ref:`collective <collective-primitives>` methods for computing a
@@ -308,8 +333,7 @@ private:
 
 public:
   /// @smemstorage{BlockReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -439,7 +463,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @tparam ReductionOp
@@ -450,8 +474,8 @@ public:
   //!
   //! @param[in] reduction_op
   //!   Binary reduction functor
-  template <int ITEMS_PER_THREAD, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
+  template <int ItemsPerThread, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ItemsPerThread], ReductionOp reduction_op)
   {
     // Reduce partials
     T partial = cub::ThreadReduce(inputs, reduction_op);
@@ -514,7 +538,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
     }
     else
     {
@@ -612,13 +636,13 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam ITEMS_PER_THREAD
+  //! @tparam ItemsPerThread
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
   //! @param[in] inputs
   //!   Calling thread's input segment
-  template <int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
+  template <int ItemsPerThread>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ItemsPerThread])
   {
     // Reduce partials
     T partial = cub::ThreadReduce(inputs, ::cuda::std::plus<>{});
@@ -675,7 +699,7 @@ public:
     // Determine if we skip bounds checking
     if (num_valid >= BLOCK_THREADS)
     {
-      return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
+      return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
     }
     else
     {

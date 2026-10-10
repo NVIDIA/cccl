@@ -24,7 +24,22 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(is_unbounded_array)
+#  define _CCCL_BUILTIN_IS_UNBOUNDED_ARRAY(...) __is_unbounded_array(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_unbounded_array)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if defined(_CCCL_BUILTIN_IS_UNBOUNDED_ARRAY)
+
+template <class _Tp>
+inline constexpr bool is_unbounded_array_v = _CCCL_BUILTIN_IS_UNBOUNDED_ARRAY(_Tp);
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : bool_constant<_CCCL_BUILTIN_IS_UNBOUNDED_ARRAY(_Tp)>
+{};
+
+#else // ^^^ _CCCL_BUILTIN_IS_UNBOUNDED_ARRAY ^^^ / vvv !_CCCL_BUILTIN_IS_UNBOUNDED_ARRAY vvv
 
 template <class _Tp>
 inline constexpr bool is_unbounded_array_v = false;
@@ -35,6 +50,8 @@ inline constexpr bool is_unbounded_array_v<_Tp[]> = true;
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : bool_constant<is_unbounded_array_v<_Tp>>
 {};
+
+#endif // ^^^ !_CCCL_BUILTIN_IS_UNBOUNDED_ARRAY ^^^
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

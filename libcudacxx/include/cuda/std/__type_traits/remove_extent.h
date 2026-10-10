@@ -24,17 +24,26 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+#if _CCCL_CHECK_BUILTIN(remove_extent) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX(15)
+#  define _CCCL_BUILTIN_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(remove_extent) && !_CCCL_BUILTIN_CONFLICTS_WITH_LIBSTDCXX( 15)
+
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 template <class _Tp>
 struct remove_extent
 {
-  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
+  using type _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 };
 
+#  if _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 template <class _Tp>
-using remove_extent_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
+using remove_extent_t _CCCL_NODEBUG = typename remove_extent<_Tp>::type;
+#  else // ^^^ _CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() ^^^ / vvv !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS() vvv
+template <class _Tp>
+using remove_extent_t _CCCL_NODEBUG = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
+#  endif // !_CCCL_DISALLOW_BUILTIN_IN_TYPE_ALIAS()
 
 #else
 template <class _Tp>
@@ -54,7 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[_Np]>
 };
 
 template <class _Tp>
-using remove_extent_t _CCCL_NODEBUG_ALIAS = typename remove_extent<_Tp>::type;
+using remove_extent_t _CCCL_NODEBUG = typename remove_extent<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 

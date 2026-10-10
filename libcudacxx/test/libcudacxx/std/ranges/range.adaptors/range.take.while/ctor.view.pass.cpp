@@ -20,8 +20,8 @@
 struct View : cuda::std::ranges::view_base
 {
   MoveOnly mo;
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_FUNC int* begin() const;
+  TEST_FUNC int* end() const;
 };
 
 struct Pred
@@ -29,16 +29,16 @@ struct Pred
   bool copied = false;
   bool moved  = false;
   Pred()      = default;
-  __host__ __device__ constexpr Pred(Pred&&)
+  TEST_FUNC constexpr Pred(Pred&&)
       : moved(true)
   {}
-  __host__ __device__ constexpr Pred(const Pred&)
+  TEST_FUNC constexpr Pred(const Pred&)
       : copied(true)
   {}
-  __host__ __device__ bool operator()(int) const;
+  TEST_FUNC bool operator()(int) const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::take_while_view<View, Pred> twv = {View{{}, MoveOnly{5}}, Pred{}};
@@ -52,6 +52,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

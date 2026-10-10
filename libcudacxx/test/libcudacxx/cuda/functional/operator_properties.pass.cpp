@@ -18,7 +18,7 @@
  **********************************************************************************************************************/
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr bool is_commutative()
+TEST_FUNC constexpr bool is_commutative()
 {
   return cuda::is_commutative_v<Op<T>, T> && cuda::is_commutative_v<Op<>, T> && //
          cuda::is_commutative_v<Op<T>, const T> && cuda::is_commutative_v<Op<T>, const T> && //
@@ -27,7 +27,7 @@ __host__ __device__ constexpr bool is_commutative()
 }
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr bool is_associative()
+TEST_FUNC constexpr bool is_associative()
 {
   return cuda::is_associative_v<Op<T>, T> && cuda::is_associative_v<Op<>, T> && //
          cuda::is_associative_v<Op<T>, const T> && cuda::is_associative_v<Op<T>, const T> && //
@@ -36,13 +36,13 @@ __host__ __device__ constexpr bool is_associative()
 }
 
 template <template <class...> class Op, class T>
-__host__ __device__ constexpr bool is_commutative_and_associative()
+TEST_FUNC constexpr bool is_commutative_and_associative()
 {
   return is_commutative<Op, T>() && is_associative<Op, T>();
 }
 
 template <class T>
-__host__ __device__ constexpr void test_associative_commutative_integral()
+TEST_FUNC constexpr void test_associative_commutative_integral()
 {
   static_assert(is_commutative_and_associative<cuda::std::plus, T>());
   static_assert(is_commutative_and_associative<cuda::std::multiplies, T>());
@@ -56,7 +56,7 @@ __host__ __device__ constexpr void test_associative_commutative_integral()
   static_assert(is_commutative_and_associative<cuda::maximum, T>());
 }
 
-__host__ __device__ constexpr void test_associative_commutative_integral()
+TEST_FUNC constexpr void test_associative_commutative_integral()
 {
   static_assert(is_commutative_and_associative<cuda::std::logical_and, bool>());
   static_assert(is_commutative_and_associative<cuda::std::logical_or, bool>());
@@ -80,7 +80,7 @@ __host__ __device__ constexpr void test_associative_commutative_integral()
 // floating-point
 
 template <class T>
-__host__ __device__ constexpr void test_associative_commutative_floating_point()
+TEST_FUNC constexpr void test_associative_commutative_floating_point()
 {
   static_assert(is_commutative<cuda::std::plus, T>() && !is_associative<cuda::std::plus, T>());
   static_assert(is_commutative<cuda::std::multiplies, T>() && !is_associative<cuda::std::multiplies, T>());
@@ -90,7 +90,7 @@ __host__ __device__ constexpr void test_associative_commutative_floating_point()
   static_assert(is_commutative_and_associative<cuda::maximum, T>());
 }
 
-__host__ __device__ constexpr void test_associative_commutative_floating_point()
+TEST_FUNC constexpr void test_associative_commutative_floating_point()
 {
   test_associative_commutative_floating_point<float>();
   test_associative_commutative_floating_point<double>();
@@ -109,7 +109,7 @@ __host__ __device__ constexpr void test_associative_commutative_floating_point()
  * Test dispatch
  **********************************************************************************************************************/
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_associative_commutative_integral();
   test_associative_commutative_floating_point();

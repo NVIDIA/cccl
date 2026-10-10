@@ -33,21 +33,21 @@ struct TracedBase
   bool movedFromTmp  = false;
   int data_;
 
-  __host__ __device__ constexpr TracedBase(const int& ii) noexcept(convertNoexcept)
+  TEST_FUNC constexpr TracedBase(const int& ii) noexcept(convertNoexcept)
       : data_(ii)
   {
     copiedFromInt = true;
   }
-  __host__ __device__ constexpr TracedBase(int&& ii) noexcept(convertNoexcept)
+  TEST_FUNC constexpr TracedBase(int&& ii) noexcept(convertNoexcept)
       : data_(ii)
   {
     movedFromInt = true;
   }
-  __host__ __device__ constexpr TracedBase(state& s, int ii) noexcept
+  TEST_FUNC constexpr TracedBase(state& s, int ii) noexcept
       : state_(&s)
       , data_(ii)
   {}
-  __host__ __device__ constexpr TracedBase(const TracedBase& other) noexcept(copyMoveNoexcept)
+  TEST_FUNC constexpr TracedBase(const TracedBase& other) noexcept(copyMoveNoexcept)
       : state_(other.state_)
       , data_(other.data_)
   {
@@ -60,7 +60,7 @@ struct TracedBase
       copiedFromTmp = true;
     }
   }
-  __host__ __device__ constexpr TracedBase(TracedBase&& other) noexcept(copyMoveNoexcept)
+  TEST_FUNC constexpr TracedBase(TracedBase&& other) noexcept(copyMoveNoexcept)
       : state_(other.state_)
       , data_(other.data_)
   {
@@ -73,19 +73,19 @@ struct TracedBase
       movedFromTmp = true;
     }
   }
-  __host__ __device__ constexpr TracedBase& operator=(const TracedBase& other) noexcept(copyMoveNoexcept)
+  TEST_FUNC constexpr TracedBase& operator=(const TracedBase& other) noexcept(copyMoveNoexcept)
   {
     data_                    = other.data_;
     state_->copyAssignCalled = true;
     return *this;
   }
-  __host__ __device__ constexpr TracedBase& operator=(TracedBase&& other) noexcept(copyMoveNoexcept)
+  TEST_FUNC constexpr TracedBase& operator=(TracedBase&& other) noexcept(copyMoveNoexcept)
   {
     data_                    = other.data_;
     state_->moveAssignCalled = true;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~TracedBase()
+  TEST_FUNC TEST_CONSTEXPR_CXX20 ~TracedBase()
   {
     if (state_)
     {
@@ -106,10 +106,10 @@ struct ADLSwap
 {
   int i;
   bool adlSwapCalled = false;
-  __host__ __device__ constexpr ADLSwap(int ii)
+  TEST_FUNC constexpr ADLSwap(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y)
+  TEST_FUNC constexpr friend void swap(ADLSwap& x, ADLSwap& y)
   {
     cuda::std::swap(x.i, y.i);
     x.adlSwapCalled = true;
@@ -124,10 +124,10 @@ struct TrackedMove
   int numberOfMoves = 0;
   bool swapCalled   = false;
 
-  __host__ __device__ constexpr TrackedMove(int ii)
+  TEST_FUNC constexpr TrackedMove(int ii)
       : i(ii)
   {}
-  __host__ __device__ constexpr TrackedMove(TrackedMove&& other) noexcept(Noexcept)
+  TEST_FUNC constexpr TrackedMove(TrackedMove&& other) noexcept(Noexcept)
       : i(other.i)
       , numberOfMoves(other.numberOfMoves)
       , swapCalled(other.swapCalled)
@@ -135,7 +135,7 @@ struct TrackedMove
     ++numberOfMoves;
   }
 
-  __host__ __device__ constexpr friend void swap(TrackedMove& x, TrackedMove& y)
+  TEST_FUNC constexpr friend void swap(TrackedMove& x, TrackedMove& y)
   {
     cuda::std::swap(x.i, y.i);
     cuda::std::swap(x.numberOfMoves, y.numberOfMoves);
@@ -210,16 +210,16 @@ struct ThrowOnMove
 
 struct TestError
 {
-  __host__ __device__ constexpr TestError(const int err) noexcept
+  TEST_FUNC constexpr TestError(const int err) noexcept
       : err_(err)
   {}
 
-  __host__ __device__ friend constexpr bool operator==(const TestError& lhs, const TestError& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const TestError& lhs, const TestError& rhs) noexcept
   {
     return lhs.err_ == rhs.err_;
   }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const TestError& lhs, const TestError& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const TestError& lhs, const TestError& rhs) noexcept
   {
     return lhs.err_ != rhs.err_;
   }

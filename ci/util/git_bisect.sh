@@ -281,6 +281,8 @@ if [[ "${found}" == "true" ]]; then
     echo "- Commit URL: https://github.com/NVIDIA/cccl/commit/${bad_commit}"
     if [[ -n "${GHA_LOG_URL:-}" ]]; then
       echo "- Bisection Logs: [GHA Job](${GHA_LOG_URL})"
+    fi
+    if [[ -n "${STEP_SUMMARY_URL:-}" ]]; then
       echo "- Bisection Summary: [GHA Report](${STEP_SUMMARY_URL})"
     fi
     echo

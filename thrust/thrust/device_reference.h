@@ -66,7 +66,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *    thrust::device_reference<int> ref_to_thirteen = vec[0];
  *
- *    std::cout << ref_to_thirteen << std::endl;
+ *    std::cout << ref_to_thirteen << '\n';
  *
  *    // 13 is printed
  *
@@ -86,7 +86,7 @@ THRUST_NAMESPACE_BEGIN
  *  {
  *    thrust::device_vector<int> vec(1, 13);
  *
- *    std::cout << vec[0] << std::endl;
+ *    std::cout << vec[0] << '\n';
  *
  *    // 13 is printed
  *
@@ -231,9 +231,9 @@ public:
    *  \endverbatim
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE
-  device_reference(const device_reference<OtherT>& other,
-                   thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = 0)
+  _CCCL_HOST_DEVICE device_reference(
+    const device_reference<OtherT>& other,
+    thrust::detail::enable_if_convertible_t<typename device_reference<OtherT>::pointer, pointer>* = nullptr)
       : super_t(other)
   {}
 
@@ -274,6 +274,10 @@ public:
       : super_t(ptr)
   {}
 
+  // A device_reference refers to an object in device memory, so assigning through a const
+  // reference writes the referent and not the proxy. This mirrors
+  // std::vector<bool>::reference and is what `*it = x` needs for output iterators.
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference& other) const
   {
     return super_t::operator=(other);
@@ -290,11 +294,13 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
+  // NOLINTBEGIN(misc-unconventional-assign-operator): proxy reference, see above
   template <typename OtherT>
   _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
   {
     return super_t::operator=(other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   /*! Assignment operator assigns the value of the given value to the
    *  value referenced by this \p device_reference.
@@ -306,6 +312,7 @@ public:
    *     .. versionadded:: 2.2.0
    *  \endverbatim
    */
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator): proxy reference, see above
   _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
   {
     return super_t::operator=(x);
@@ -1000,8 +1007,8 @@ _CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexce
  *     .. versionadded:: 2.2.0
  *  \endverbatim
  */
-template <typename T, typename charT, typename traits>
-std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& os, const device_reference<T>& y);
+template <typename T, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, const device_reference<T>& y);
 #endif
 
 /*! \} // memory_management

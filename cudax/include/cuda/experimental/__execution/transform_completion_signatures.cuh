@@ -40,7 +40,7 @@ template <class _Tag>
 struct __default_transform_fn
 {
   template <class... _Ts>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(_Ts...)>
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(_Ts...)>
   {
     return {};
   }
@@ -49,7 +49,7 @@ struct __default_transform_fn
 struct __swallow_transform
 {
   template <class... _Ts>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<>
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<>
   {
     return {};
   }
@@ -59,32 +59,38 @@ template <class _Tag>
 struct __decay_transform
 {
   template <class... _Ts>
-  _CCCL_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(decay_t<_Ts>...)>
+  _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()() const noexcept -> completion_signatures<_Tag(decay_t<_Ts>...)>
   {
     return {};
   }
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4864) // nvbug5765092 latest toolchain complains about missing template
+
 template <class _Fn, class... _As>
-using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().template operator()<_As...>());
+using __meta_call_result_t _CCCL_NODEBUG = decltype(declval<_Fn>().template operator()<_As...>());
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Ay, class... _As, class _Fn>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
   -> __meta_call_result_t<const _Fn&, _Ay, _As...>
 {
   return __fn.template operator()<_Ay, _As...>();
 }
 
+_CCCL_DIAG_POP
+
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn) -> __call_result_t<const _Fn&>
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __transform_expr(const _Fn& __fn)
+  -> __call_result_t<const _Fn&>
 {
   return __fn();
 }
 
 template <class _Fn, class... _As>
-using __transform_expr_t _CCCL_NODEBUG_ALIAS = decltype(execution::__transform_expr<_As...>(declval<const _Fn&>()));
+using __transform_expr_t _CCCL_NODEBUG = decltype(execution::__transform_expr<_As...>(declval<const _Fn&>()));
 
 struct _IN_TRANSFORM_COMPLETION_SIGNATURES;
 struct _A_TRANSFORM_FUNCTION_RETURNED_A_TYPE_THAT_IS_NOT_A_COMPLETION_SIGNATURES_SPECIALIZATION;
@@ -92,11 +98,11 @@ struct _COULD_NOT_CALL_THE_TRANSFORM_FUNCTION_WITH_THE_GIVEN_TEMPLATE_ARGUMENTS;
 
 // transform_completion_signatures:
 template <class... _As, class _Fn>
-[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __apply_transform(const _Fn& __fn)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto __apply_transform(const _Fn& __fn)
 {
   if constexpr (__is_instantiable_with<__transform_expr_t, _Fn, _As...>)
   {
-    using __completions _CCCL_NODEBUG_ALIAS = __transform_expr_t<_Fn, _As...>;
+    using __completions _CCCL_NODEBUG = __transform_expr_t<_Fn, _As...>;
     if constexpr (__valid_completion_signatures<__completions> || __type_is_error<__completions>
                   || ::cuda::std::is_base_of_v<dependent_sender_error, __completions>)
     {
@@ -130,7 +136,7 @@ struct __transform_one
   _StoppedFn __stopped_fn;
 
   template <class _Tag, class... _Ts>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Tag (*)(_Ts...)) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(_Tag (*)(_Ts...)) const
   {
     if constexpr (_Tag{} == set_value)
     {
@@ -153,21 +159,21 @@ struct __transform_all_fn
   _TransformOne __tfx1;
 
   template <class... _Sigs>
-  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Sigs*... __sigs) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto operator()(_Sigs*... __sigs) const
   {
     return concat_completion_signatures(__tfx1(__sigs)...);
   }
 };
 
 template <class _TransformOne>
-__transform_all_fn(_TransformOne) -> __transform_all_fn<_TransformOne>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __transform_all_fn(_TransformOne) -> __transform_all_fn<_TransformOne>;
 
 template <class _Completions,
           class _ValueFn   = __default_transform_fn<set_value_t>,
           class _ErrorFn   = __default_transform_fn<set_error_t>,
           class _StoppedFn = __default_transform_fn<set_stopped_t>,
           class _ExtraSigs = completion_signatures<>>
-_CCCL_API _CCCL_CONSTEVAL auto transform_completion_signatures(
+_CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto transform_completion_signatures(
   _Completions, //
   _ValueFn __value_fn     = {},
   _ErrorFn __error_fn     = {},

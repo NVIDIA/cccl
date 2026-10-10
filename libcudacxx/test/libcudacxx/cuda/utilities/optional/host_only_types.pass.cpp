@@ -134,9 +134,7 @@ void test()
 void test()
 {
   test<host_only_type>();
-#ifdef CCCL_ENABLE_OPTIONAL_REF
   test<host_only_type&>();
-#endif // CCCL_ENABLE_OPTIONAL_REF
 }
 
 int main(int arg, char** argv)

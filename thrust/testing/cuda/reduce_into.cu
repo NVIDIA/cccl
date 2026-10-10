@@ -1,6 +1,7 @@
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
 #include <thrust/reduce.h>
+
+#include <cuda/iterator>
 
 #include <unittest/unittest.h>
 
@@ -26,9 +27,9 @@ void TestReduceIntoDevice(ExecutionPolicy exec, const size_t n)
 
   reduce_into_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin(), init);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
 
 template <typename T>
@@ -39,7 +40,7 @@ struct TestReduceIntoDeviceSeq
     TestReduceIntoDevice<T>(thrust::seq, n);
   }
 };
-VariableUnitTest<TestReduceIntoDeviceSeq, IntegralTypes> TestReduceIntoDeviceSeqInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceIntoDeviceSeq, IntegralTypes);
 
 template <typename T>
 struct TestReduceIntoDeviceDevice
@@ -49,7 +50,7 @@ struct TestReduceIntoDeviceDevice
     TestReduceIntoDevice<T>(thrust::device, n);
   }
 };
-VariableUnitTest<TestReduceIntoDeviceDevice, IntegralTypes> TestReduceIntoDeviceDeviceInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceIntoDeviceDevice, IntegralTypes);
 
 template <typename T>
 struct TestReduceIntoDeviceNoSync
@@ -59,11 +60,11 @@ struct TestReduceIntoDeviceNoSync
     TestReduceIntoDevice<T>(thrust::cuda::par_nosync, n);
   }
 };
-VariableUnitTest<TestReduceIntoDeviceNoSync, IntegralTypes> TestReduceIntoDeviceNoSyncInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestReduceIntoDeviceNoSync, IntegralTypes);
 #endif
 
 template <typename ExecutionPolicy>
-void TestReduceIntoCudaStreams(ExecutionPolicy policy)
+void test_reduce_into_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -80,44 +81,41 @@ void TestReduceIntoCudaStreams(ExecutionPolicy policy)
   thrust::reduce_into(streampolicy, v.begin(), v.end(), o.begin());
 
   cudaStreamSynchronize(s);
-  ASSERT_EQUAL(o[0], 2);
+  REQUIRE(o[0] == 2);
 
   // with initializer
   thrust::reduce_into(streampolicy, v.begin(), v.end(), o.begin(), 10);
 
   cudaStreamSynchronize(s);
-  ASSERT_EQUAL(o[0], 12);
+  REQUIRE(o[0] == 12);
 
   cudaStreamDestroy(s);
 }
 
-void TestReduceIntoCudaStreamsSync()
+TEST_CASE("TestReduceIntoCudaStreamsSync", "[reduce_into]")
 {
-  TestReduceIntoCudaStreams(thrust::cuda::par);
+  test_reduce_into_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceIntoCudaStreamsSync);
 
-void TestReduceIntoCudaStreamsNoSync()
+TEST_CASE("TestReduceIntoCudaStreamsNoSync", "[reduce_into]")
 {
-  TestReduceIntoCudaStreams(thrust::cuda::par_nosync);
+  test_reduce_into_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceIntoCudaStreamsNoSync);
 
 #if defined(THRUST_RDC_ENABLED)
-void TestReduceIntoLargeInput()
+TEST_CASE("TestReduceIntoLargeInput", "[reduce_into]")
 {
   using T                 = unsigned long long;
   using OffsetT           = std::size_t;
   const OffsetT num_items = 1ull << 32;
 
-  thrust::constant_iterator<T> d_data(T{1});
+  const cuda::constant_iterator<T> d_data(T{1});
   thrust::device_vector<T> d_result(1);
 
   reduce_into_kernel<<<1, 1>>>(thrust::device, d_data, d_data + num_items, d_result.begin(), T{});
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
-  ASSERT_EQUAL(num_items, d_result[0]);
+  REQUIRE(num_items == d_result[0]);
 }
-DECLARE_UNITTEST(TestReduceIntoLargeInput);
 #endif

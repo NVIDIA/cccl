@@ -30,7 +30,7 @@
 #include "test_macros.h"
 
 template <typename M, typename Ms>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   M m{1};
   Ms offset{4};
@@ -61,7 +61,7 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<days>() + cuda::std::declval<weekday>()));
   static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<days>() + cuda::std::declval<weekday>())>);
 
-  static_assert(testConstexpr<weekday, days>(), "");
+  static_assert(testConstexpr<weekday, days>());
 
   for (unsigned i = 0; i <= 6; ++i)
   {

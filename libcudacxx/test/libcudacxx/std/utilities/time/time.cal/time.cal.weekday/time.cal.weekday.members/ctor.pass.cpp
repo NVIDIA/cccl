@@ -34,10 +34,10 @@ int main(int, char**)
   static_assert(noexcept(weekday(1).c_encoding()));
 
   constexpr weekday m0{};
-  static_assert(m0.c_encoding() == 0, "");
+  static_assert(m0.c_encoding() == 0);
 
   constexpr weekday m1{1};
-  static_assert(m1.c_encoding() == 1, "");
+  static_assert(m1.c_encoding() == 1);
 
   for (unsigned i = 0; i <= 255; ++i)
   {

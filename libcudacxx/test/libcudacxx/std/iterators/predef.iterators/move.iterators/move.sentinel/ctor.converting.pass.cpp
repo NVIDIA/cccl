@@ -19,17 +19,19 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 struct NonConvertible
 {
-  __host__ __device__ explicit NonConvertible();
-  __host__ __device__ NonConvertible(int i);
-  __host__ __device__ explicit NonConvertible(long i) = delete;
+  TEST_FUNC explicit NonConvertible();
+  TEST_FUNC NonConvertible(int i);
+  TEST_FUNC explicit NonConvertible(long i) = delete;
 };
 static_assert(cuda::std::semiregular<NonConvertible>);
 static_assert(cuda::std::is_convertible_v<long, NonConvertible>);
 static_assert(!cuda::std::convertible_to<long, NonConvertible>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Constructing from an lvalue.
   {

@@ -30,7 +30,7 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   ForwardIterator imin = first;
 
@@ -51,7 +51,7 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   ForwardIterator imax = first;
 
@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
   // wrap comp
-  thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
 
   ForwardIterator imin = first;
   ForwardIterator imax = first;
@@ -84,6 +84,7 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_ele
       imin = first;
     }
 
+    // TODO(bgruber): for CCCL 4.0, switch to `!wrapped_comp(*first, *imax)` to conform to the C++ standard
     if (wrapped_comp(*imax, *first))
     {
       imax = first;

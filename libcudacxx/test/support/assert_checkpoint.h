@@ -38,7 +38,7 @@ struct Checkpoint
     {
       s << " '" << msg << "'";
     }
-    s << std::endl;
+    s << '\n';
   }
 };
 

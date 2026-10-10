@@ -15,17 +15,17 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_copy_assignable()
+TEST_FUNC void test_is_copy_assignable()
 {
-  static_assert((cuda::std::is_copy_assignable<T>::value), "");
-  static_assert((cuda::std::is_copy_assignable_v<T>), "");
+  static_assert((cuda::std::is_copy_assignable<T>::value));
+  static_assert((cuda::std::is_copy_assignable_v<T>) );
 }
 
 template <class T>
-__host__ __device__ void test_is_not_copy_assignable()
+TEST_FUNC void test_is_not_copy_assignable()
 {
-  static_assert((!cuda::std::is_copy_assignable<T>::value), "");
-  static_assert((!cuda::std::is_copy_assignable_v<T>), "");
+  static_assert((!cuda::std::is_copy_assignable<T>::value));
+  static_assert((!cuda::std::is_copy_assignable_v<T>) );
 }
 
 class Empty
@@ -34,7 +34,7 @@ class Empty
 class NotEmpty
 {
 public:
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -47,17 +47,17 @@ struct bit_zero
 
 struct A
 {
-  __host__ __device__ A();
+  TEST_FUNC A();
 };
 
 class B
 {
-  __host__ __device__ B& operator=(const B&);
+  TEST_FUNC B& operator=(const B&);
 };
 
 struct C
 {
-  __host__ __device__ void operator=(C&); // not const
+  TEST_FUNC void operator=(C&); // not const
 };
 
 int main(int, char**)

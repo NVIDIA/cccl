@@ -1,4 +1,4 @@
-CUB Developer Overview
+Developer Overview
 ##########################
 
 .. toctree::
@@ -9,7 +9,7 @@ CUB Developer Overview
    developer/warp_level
    developer/block_scope
    developer/device_scope
-   developer/nvtx
+   developer/test_overview
 
 This living document serves as a guide to the design of the internal structure of CUB.
 
@@ -133,5 +133,3 @@ For more detailed descriptions of the respective algorithms levels see the indiv
   - :ref:`warp-level algorithms<cub-developer-guide-warp-level>`
   - :ref:`block-scope algorithms<cub-developer-guide-block-scope>`
   - :ref:`device-scope algorithms<cub-developer-guide-device-scope>`
-
-There is additional information for :ref:`nvtx ranges <cub-developer-guide-nvtx>`

@@ -19,7 +19,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     // Test `int`, which has operator<=>; the iota iterator should also have operator<=>.
@@ -138,7 +138,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

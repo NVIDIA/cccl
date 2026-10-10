@@ -7,14 +7,13 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: libcpp-no-deduction-guides
-// UNSUPPORTED: msvc
 
 // UNSUPPORTED: nvcc-10.3, nvcc-11.0, nvcc-11.1, nvcc-11.2, nvcc-11.3, nvcc-11.4
 
 // GCC's implementation of class template deduction is still immature and runs
 // into issues with libc++. However GCC accepts this code when compiling
 // against libstdc++.
-// XFAIL: gcc-4.8, gcc-5, gcc-6, gcc-7, gcc-8, gcc-9, gcc-10, gcc-11
+// XFAIL:  gcc-5, gcc-6, gcc-7, gcc-8, gcc-9, gcc-10, gcc-11
 
 // Currently broken with Clang + NVCC.
 // XFAIL: clang-6, clang-7
@@ -25,9 +24,8 @@
 // so they're compatible with implicit deduction guides, or if that's not
 // possible that they provide explicit guides to make it work.
 
+#include <cuda/std/__memory_>
 #include <cuda/std/utility>
-// cuda/std/memory not supported
-// #include <cuda/std/memory>
 // cuda::std::string not supported
 // #include <cuda/std/string>
 #include <cuda/std/cassert>
@@ -48,7 +46,7 @@
 int main(int, char**)
 {
   using E = ExplicitTestTypes::TestType;
-  static_assert(!cuda::std::is_convertible<E const&, E>::value, "");
+  static_assert(!cuda::std::is_convertible<E const&, E>::value);
   { // Testing (1)
     int const x = 42;
     cuda::std::pair t1("abc", x);

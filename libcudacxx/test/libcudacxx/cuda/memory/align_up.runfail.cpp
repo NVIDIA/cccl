@@ -8,13 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+
 #include <cuda/memory>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
 #include "test_macros.h"
 
-__host__ __device__ bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   uintptr_t ptr_int = 10;
   auto ptr          = reinterpret_cast<int*>(ptr_int);

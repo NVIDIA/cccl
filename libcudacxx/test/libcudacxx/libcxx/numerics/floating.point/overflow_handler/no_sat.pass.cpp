@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_fp_no_sat_overflow_handler(const T overflow_ref, const T underflow_ref)
+TEST_FUNC void test_fp_no_sat_overflow_handler(const T overflow_ref, const T underflow_ref)
 {
   using Handler = cuda::std::__fp_overflow_handler<cuda::std::__fp_overflow_handler_kind::__no_sat>;
 

@@ -47,23 +47,24 @@ namespace __detail
 {
 struct __env_proxy : __immovable
 {
-  _CCCL_API virtual auto query(const get_stop_token_t&) const noexcept -> inplace_stop_token              = 0;
-  _CCCL_API virtual auto query(const get_allocator_t&) const noexcept -> any_allocator<::cuda::std::byte> = 0;
-  _CCCL_API virtual auto query(const get_scheduler_t&) const noexcept -> task_scheduler                   = 0;
+  _CCCL_HOST_DEVICE_API virtual auto query(const get_stop_token_t&) const noexcept -> inplace_stop_token = 0;
+  _CCCL_HOST_DEVICE_API virtual auto query(const get_allocator_t&) const noexcept
+    -> any_allocator<::cuda::std::byte>                                                             = 0;
+  _CCCL_HOST_DEVICE_API virtual auto query(const get_scheduler_t&) const noexcept -> task_scheduler = 0;
 };
 } // namespace __detail
 
 class receiver_proxy : __detail::__env_proxy
 {
 public:
-  _CCCL_API virtual ~receiver_proxy() = 0;
+  _CCCL_HOST_DEVICE_API virtual ~receiver_proxy() = 0;
 
-  _CCCL_API virtual void set_value() noexcept                = 0;
-  _CCCL_API virtual void set_error(exception_ptr&&) noexcept = 0;
-  _CCCL_API virtual void set_stopped() noexcept              = 0;
+  _CCCL_HOST_DEVICE_API virtual void set_value() noexcept                = 0;
+  _CCCL_HOST_DEVICE_API virtual void set_error(exception_ptr&&) noexcept = 0;
+  _CCCL_HOST_DEVICE_API virtual void set_stopped() noexcept              = 0;
 
   [[nodiscard]]
-  _CCCL_API auto get_env() const noexcept -> const __detail::__env_proxy&
+  _CCCL_HOST_DEVICE_API auto get_env() const noexcept -> const __detail::__env_proxy&
   {
     return *this;
   }
@@ -71,7 +72,8 @@ public:
   // _CCCL_EXEC_CHECK_DISABLE
   // _CCCL_TEMPLATE(class _Value, class Query)
   // _CCCL_REQUIRES(__callable<const __detail::__try_queryable&, Query, ::cuda::std::optional<_Value>&>)
-  // [[nodiscard]] _CCCL_API auto try_query(const Query& __query) const noexcept -> ::cuda::std::optional<_Value>
+  // [[nodiscard]] _CCCL_HOST_DEVICE_API auto try_query(const Query& __query) const noexcept ->
+  // ::cuda::std::optional<_Value>
   // {
   //   const __detail::__try_queryable& __queryable = *this;
   //   ::cuda::std::optional<_Value> __value;
@@ -84,19 +86,19 @@ inline receiver_proxy::~receiver_proxy() = default;
 
 struct bulk_item_receiver_proxy : receiver_proxy
 {
-  _CCCL_API virtual void execute(size_t, size_t) noexcept = 0;
+  _CCCL_HOST_DEVICE_API virtual void execute(size_t, size_t) noexcept = 0;
 };
 
 struct parallel_scheduler_backend
 {
-  _CCCL_API virtual ~parallel_scheduler_backend() = 0;
+  _CCCL_HOST_DEVICE_API virtual ~parallel_scheduler_backend() = 0;
 
-  _CCCL_API virtual void schedule(receiver_proxy&, ::cuda::std::span<::cuda::std::byte>) noexcept = 0;
+  _CCCL_HOST_DEVICE_API virtual void schedule(receiver_proxy&, ::cuda::std::span<::cuda::std::byte>) noexcept = 0;
 
-  _CCCL_API virtual void
+  _CCCL_HOST_DEVICE_API virtual void
   schedule_bulk_chunked(size_t, bulk_item_receiver_proxy&, ::cuda::std::span<::cuda::std::byte>) noexcept = 0;
 
-  _CCCL_API virtual void
+  _CCCL_HOST_DEVICE_API virtual void
   schedule_bulk_unchunked(size_t, bulk_item_receiver_proxy&, ::cuda::std::span<::cuda::std::byte>) noexcept = 0;
 };
 
@@ -112,22 +114,22 @@ struct __receiver_proxy_base : _RcvrProxy
 public:
   using receiver_concept = receiver_t;
 
-  _CCCL_API explicit __receiver_proxy_base(_Rcvr rcvr) noexcept
+  _CCCL_HOST_DEVICE_API explicit __receiver_proxy_base(_Rcvr rcvr) noexcept
       : __rcvr_(static_cast<_Rcvr&&>(rcvr))
   {}
 
-  _CCCL_API void set_error(exception_ptr&& eptr) noexcept final override
+  _CCCL_HOST_DEVICE_API void set_error(exception_ptr&& eptr) noexcept final override
   {
     execution::set_error(_CCCL_MOVE(__rcvr_), _CCCL_MOVE(eptr));
   }
 
-  _CCCL_API void set_stopped() noexcept final override
+  _CCCL_HOST_DEVICE_API void set_stopped() noexcept final override
   {
     execution::set_stopped(_CCCL_MOVE(__rcvr_));
   }
 
 protected:
-  _CCCL_API auto query(const get_stop_token_t&) const noexcept -> inplace_stop_token final override
+  _CCCL_HOST_DEVICE_API auto query(const get_stop_token_t&) const noexcept -> inplace_stop_token final override
   {
     if constexpr (__callable<const get_stop_token_t&, env_of_t<_Rcvr>>)
     {
@@ -139,13 +141,14 @@ protected:
     return inplace_stop_token{}; // MSVC thinks this is unreachable. :-?
   }
 
-  _CCCL_API auto query(const get_allocator_t&) const noexcept -> any_allocator<::cuda::std::byte> final override
+  _CCCL_HOST_DEVICE_API auto query(const get_allocator_t&) const noexcept
+    -> any_allocator<::cuda::std::byte> final override
   {
     return any_allocator{get_allocator(get_env(__rcvr_))};
   }
 
   // defined in task_scheduler.cuh:
-  _CCCL_API auto query(const get_scheduler_t& __query) const noexcept -> task_scheduler final override;
+  _CCCL_HOST_DEVICE_API auto query(const get_scheduler_t& __query) const noexcept -> task_scheduler final override;
 
   _Rcvr __rcvr_;
 };
@@ -155,7 +158,7 @@ struct __receiver_proxy : __receiver_proxy_base<_Rcvr, receiver_proxy>
 {
   using __receiver_proxy_base<_Rcvr, receiver_proxy>::__receiver_proxy_base;
 
-  _CCCL_API void set_value() noexcept final override
+  _CCCL_HOST_DEVICE_API void set_value() noexcept final override
   {
     execution::set_value(_CCCL_MOVE(this->__rcvr_));
   }
@@ -170,28 +173,28 @@ struct __proxy_receiver
   using receiver_concept = receiver_t;
   using __delete_fn_t    = void(void*) noexcept;
 
-  _CCCL_API void set_value() noexcept
+  _CCCL_HOST_DEVICE_API void set_value() noexcept
   {
     auto& __proxy = __rcvr_proxy_;
     __delete_fn_(__opstate_storage_);
     __proxy.set_value();
   }
 
-  _CCCL_API void set_error(exception_ptr eptr) noexcept
+  _CCCL_HOST_DEVICE_API void set_error(exception_ptr eptr) noexcept
   {
     auto& __proxy = __rcvr_proxy_;
     __delete_fn_(__opstate_storage_);
     __proxy.set_error(_CCCL_MOVE(eptr));
   }
 
-  _CCCL_API void set_stopped() noexcept
+  _CCCL_HOST_DEVICE_API void set_stopped() noexcept
   {
     auto& __proxy = __rcvr_proxy_;
     __delete_fn_(__opstate_storage_);
     __proxy.set_stopped();
   }
 
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> env_of_t<_RcvrProxy>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto get_env() const noexcept -> env_of_t<_RcvrProxy>
   {
     return execution::get_env(__rcvr_proxy_);
   }

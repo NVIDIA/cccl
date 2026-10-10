@@ -42,16 +42,16 @@ int main(int, char**)
     constexpr year_month_weekday ymwd{year{1970}, month{1}, weekday_indexed{cuda::std::chrono::Thursday, 1}};
     constexpr local_days sd{ymwd};
 
-    static_assert(sd.time_since_epoch() == days{0}, "");
-    static_assert(year_month_weekday{sd} == ymwd, ""); // and back
+    static_assert(sd.time_since_epoch() == days{0});
+    static_assert(year_month_weekday{sd} == ymwd); // and back
   }
 
   {
     constexpr year_month_weekday ymwd{year{2000}, month{2}, weekday_indexed{cuda::std::chrono::Wednesday, 1}};
     constexpr local_days sd{ymwd};
 
-    static_assert(sd.time_since_epoch() == days{10957 + 32}, "");
-    static_assert(year_month_weekday{sd} == ymwd, ""); // and back
+    static_assert(sd.time_since_epoch() == days{10957 + 32});
+    static_assert(year_month_weekday{sd} == ymwd); // and back
   }
 
   //  There's one more leap day between 1/1/40 and 1/1/70
@@ -60,8 +60,8 @@ int main(int, char**)
     constexpr year_month_weekday ymwd{year{1940}, month{1}, weekday_indexed{cuda::std::chrono::Tuesday, 1}};
     constexpr local_days sd{ymwd};
 
-    static_assert(sd.time_since_epoch() == days{-10957}, "");
-    static_assert(year_month_weekday{sd} == ymwd, ""); // and back
+    static_assert(sd.time_since_epoch() == days{-10957});
+    static_assert(year_month_weekday{sd} == ymwd); // and back
   }
 
   {

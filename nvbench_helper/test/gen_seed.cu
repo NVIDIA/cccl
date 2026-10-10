@@ -8,18 +8,19 @@
 
 #include <catch2/catch_template_test_macros.hpp>
 
-using types =
-  nvbench::type_list<bool,
-                     int8_t,
-                     int16_t,
-                     int32_t,
-                     int64_t,
-#if NVBENCH_HELPER_HAS_I128
-                     int128_t,
+using types = nvbench::type_list<
+  bool,
+  int8_t,
+  int16_t,
+  int32_t,
+  int64_t,
+#if _CCCL_HAS_INT128()
+  int128_t,
 #endif
-                     float,
-                     double,
-                     complex>;
+  float,
+  double,
+  complex32,
+  complex64>;
 
 TEMPLATE_LIST_TEST_CASE("Generator seeds the data", "[gen]", types)
 {

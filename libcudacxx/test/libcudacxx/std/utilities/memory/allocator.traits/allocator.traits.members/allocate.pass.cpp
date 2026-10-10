@@ -28,9 +28,9 @@ struct A
 {
   using value_type = T;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 A() {}
+  TEST_FUNC TEST_CONSTEXPR_CXX20 A() {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 value_type* allocate(cuda::std::size_t n)
+  TEST_FUNC TEST_CONSTEXPR_CXX20 value_type* allocate(cuda::std::size_t n)
   {
     assert(n == 10);
     return &storage;
@@ -39,7 +39,7 @@ struct A
   value_type storage;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A<int> a;

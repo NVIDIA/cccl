@@ -31,14 +31,15 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
-[[nodiscard]] _CCCL_API constexpr const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp)
+[[nodiscard]] _CCCL_API constexpr const _Tp&
+min(const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND, _Compare __comp)
 {
   return __comp(__b, __a) ? __b : __a;
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr const _Tp& min(const _Tp& __a, const _Tp& __b)
+[[nodiscard]] _CCCL_API constexpr const _Tp& min(const _Tp& __a _CCCL_LIFETIMEBOUND, const _Tp& __b _CCCL_LIFETIMEBOUND)
 {
   return __b < __a ? __b : __a;
 }

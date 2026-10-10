@@ -53,6 +53,7 @@ endfunction()
 
 # Query nvcc --help to determine which architectures are supported.
 function(_cccl_detect_nvcc_arch_support arches_var)
+  # cccl_get_cudatoolkit() is intentionally not used here.
   find_package(CUDAToolkit)
   if (NOT CUDAToolkit_FOUND)
     message(

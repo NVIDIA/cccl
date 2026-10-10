@@ -32,10 +32,8 @@
 #include <cuda/__utility/__basic_any/virtual_tables.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -77,6 +75,7 @@ public:
   //! @post `has_value() == false`
   __basic_any() = default;
 
+  // NOLINTBEGIN(bugprone-forwarding-reference-overload)
   //! @brief Constructs a `__basic_any` object that contains a copy of `__value`.
   //! @pre `__value` must be move constructible. `_Tp` must satisfy the
   //! requirements of `_Interface`.
@@ -86,11 +85,12 @@ public:
                  // The following constraint seems to trip up a lot of compilers, so leave it out.
                  // _CCCL_AND ::cuda::std::constructible_from<_Up, _Tp>
                  _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_API __basic_any(_Tp&& __value) noexcept(__is_small<_Up, __movable>(__size_, __align_)
-                                                && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
+  _CCCL_HOST_DEVICE_API __basic_any(_Tp&& __value) noexcept(
+    __is_small<_Up, __movable>(__size_, __align_) && ::cuda::std::is_nothrow_constructible_v<_Up, _Tp>)
   {
     __emplace<_Up>(static_cast<_Tp&&>(__value));
   }
+  // NOLINTEND(bugprone-forwarding-reference-overload)
 
   //! @brief Constructs a `__basic_any` object that contains a new object of type `_Tp`
   //! constructed as `_Tp(__args...)`, or as `_Tp{__args...}` if `_Tp(__args...)` is
@@ -99,7 +99,7 @@ public:
   //! @post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_API explicit __basic_any(::cuda::std::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API explicit __basic_any(::cuda::std::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
     __is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>)
   {
     __emplace<_Up>(static_cast<_Args&&>(__args)...);
@@ -113,7 +113,7 @@ public:
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(
     __initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...> _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_API explicit __basic_any(
+  _CCCL_HOST_DEVICE_API explicit __basic_any(
     ::cuda::std::in_place_type_t<_Tp>,
     ::cuda::std::initializer_list<_Up> __il,
     _Args&&... __args) noexcept(__is_small<_Vp, __movable>(__size_, __align_)
@@ -128,7 +128,7 @@ public:
   //! @post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class _Fn, class... _Args)
   _CCCL_REQUIRES(__emplaceable_from<_Up, _Fn, _Args...> _CCCL_AND __satisfies<_Up, _Interface>)
-  _CCCL_API explicit __basic_any(::cuda::in_place_from_type_t<_Tp>, _Fn&& __fn, _Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API explicit __basic_any(::cuda::in_place_from_type_t<_Tp>, _Fn&& __fn, _Args&&... __args) noexcept(
     __is_small<_Up, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Up, _Fn, _Args...>)
   {
     __emplace_from<_Up>(static_cast<_Fn&&>(__fn), static_cast<_Args&&>(__args)...);
@@ -147,9 +147,9 @@ public:
   //! @post `__other.has_value() == false` and `has_value()` is `true` if and
   //! only if `__other.has_value()` was `true`.
   _CCCL_TEMPLATE(class _OtherInterface)
-  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface&, _Interface&>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface>, __basic_any>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface>&& __other)
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface>&& __other)
   {
     __convert_from(::cuda::std::move(__other));
   }
@@ -160,11 +160,31 @@ public:
   //! `__icopyable<>`.
   //! @post `has_value() == __other.has_value()`.
   _CCCL_TEMPLATE(class _OtherInterface)
-  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
+  _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface&, _Interface&>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface> const& __other)
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface> const& __other)
   {
     __convert_from(__other);
+  }
+
+  //! @brief Non-template converting constructors from the corresponding
+  //! reference type `__basic_any<_Interface&>`. These enable implicit
+  //! conversion from proxy types (e.g. Cython's __Pyx_FakeReference)
+  //! that wrap a `__basic_any<_Interface&>` and provide
+  //! `operator __basic_any<_Interface&>&()`, since non-template parameters
+  //! participate in implicit conversion sequences.
+  //! @pre `_Interface` must extend `__icopyable<>` (converting a ref to
+  //! a value requires copying the referenced object).
+  template <bool _Copyable = __copyable, ::cuda::std::enable_if_t<_Copyable, int> = 0>
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_Interface&> const& __other)
+  {
+    __convert_from(__other);
+  }
+
+  template <bool _Copyable = __copyable, ::cuda::std::enable_if_t<_Copyable, int> = 0>
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_Interface&>&& __other)
+  {
+    __convert_from(::cuda::std::move(__other));
   }
 
 #if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
@@ -172,21 +192,21 @@ public:
   // __basic_any<__ireference<I>> and __basic_any<I&>.
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface&>, __basic_any>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface&>&& __other)
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface&>&& __other)
   {
     __convert_from(__other);
   }
 
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface&>, __basic_any>)
-  _CCCL_API __basic_any(__basic_any<_OtherInterface&> const& __other)
+  _CCCL_HOST_DEVICE_API __basic_any(__basic_any<_OtherInterface&> const& __other)
   {
     __convert_from(__other);
   }
 #endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 
   //! @brief Destroys the contained value, if any.
-  _CCCL_API ~__basic_any()
+  _CCCL_HOST_DEVICE_API ~__basic_any()
   {
     reset();
   }
@@ -206,13 +226,17 @@ public:
   //! __basic_any(cuda::std::move(__other)).swap(*this);
   //! return *this;
   //! @endcode
+  // The return type is already __basic_any&; __assign_from returns *this, which the check
+  // does not follow.
+  // NOLINTBEGIN(misc-unconventional-assign-operator)
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface>, __basic_any>)
-  _CCCL_API auto operator=(__basic_any<_OtherInterface>&& __other) -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface>&& __other) -> __basic_any&
   {
     return __assign_from(::cuda::std::move(__other));
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 
   //! @brief Converting copy assignment operator from a compatible `__basic_any`
   //! object.
@@ -223,20 +247,22 @@ public:
   //! __basic_any(__other).swap(*this);
   //! return *this;
   //! @endcode
+  // NOLINTBEGIN(misc-unconventional-assign-operator): __assign_from returns *this
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!::cuda::std::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>)
-  _CCCL_API auto operator=(__basic_any<_OtherInterface> const& __other) -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface> const& __other) -> __basic_any&
   {
     return __assign_from(__other);
   }
+  // NOLINTEND(misc-unconventional-assign-operator)
 #else
   // nvcc 12.0 has a bug with its concepts implementation where substitution occurs too
   // early here causing a hard error. So we use SFINAE to work around it.
   template <class _OtherInterface,
             ::cuda::std::enable_if_t<!::cuda::std::same_as<_OtherInterface, _Interface>, int>              = 0,
             ::cuda::std::enable_if_t<__any_convertible_to<__basic_any<_OtherInterface>, __basic_any>, int> = 0>
-  _CCCL_API auto operator=(__basic_any<_OtherInterface>&& __other) -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface>&& __other) -> __basic_any&
   {
     return __assign_from(::cuda::std::move(__other));
   }
@@ -244,7 +270,7 @@ public:
   template <class _OtherInterface,
             ::cuda::std::enable_if_t<!::cuda::std::same_as<_OtherInterface, _Interface>, int>                     = 0,
             ::cuda::std::enable_if_t<__any_convertible_to<__basic_any<_OtherInterface> const&, __basic_any>, int> = 0>
-  _CCCL_API auto operator=(__basic_any<_OtherInterface> const& __other) -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface> const& __other) -> __basic_any&
   {
     return __assign_from(__other);
   }
@@ -255,26 +281,26 @@ public:
   // __basic_any<__ireference<I>> and __basic_any<I&>.
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES(__any_convertible_to<__basic_any<_OtherInterface&>, __basic_any>)
-  _CCCL_API auto operator=(__basic_any<_OtherInterface&> __other) -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto operator=(__basic_any<_OtherInterface&> __other) -> __basic_any&
   {
     return __assign_from(__other);
   }
 #endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 
   //! @brief Implicitly convert to a `__basic_any` non-const reference type:
-  [[nodiscard]] _CCCL_API operator __basic_any<__ireference<_Interface>>() & noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operator __basic_any<__ireference<_Interface>>() & noexcept
   {
     return __basic_any<__ireference<_Interface>>(*this);
   }
 
   //! @brief Implicitly convert to a `__basic_any` const reference type:
-  [[nodiscard]] _CCCL_API operator __basic_any<__ireference<_Interface const>>() const& noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API operator __basic_any<__ireference<_Interface const>>() const& noexcept
   {
     return __basic_any<__ireference<_Interface const>>(*this);
   }
 
   //! @brief Exchanges the values of two `__basic_any` objects.
-  _CCCL_API void swap(__basic_any& __other) noexcept
+  _CCCL_HOST_DEVICE_API void swap(__basic_any& __other) noexcept
   {
     //! if both objects refer to heap-allocated object, we can just
     //! swap the pointers. otherwise, do it the slow(er) way.
@@ -291,7 +317,7 @@ public:
   }
 
   //! @brief Exchanges the values of two `__basic_any` objects.
-  friend _CCCL_NODEBUG_API void swap(__basic_any& __lhs, __basic_any& __rhs) noexcept
+  friend _CCCL_NODEBUG_HOST_DEVICE_API void swap(__basic_any& __lhs, __basic_any& __rhs) noexcept
   {
     __lhs.swap(__rhs);
   }
@@ -302,7 +328,7 @@ public:
   //! @post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Up, _Args...>)
-  _CCCL_API auto emplace(_Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API auto emplace(_Args&&... __args) noexcept(
     __is_small<_Up, __movable>(__size_, __align_) && __nothrow_initializable_from<_Up, _Args...>) -> _Up&
   {
     reset();
@@ -315,7 +341,7 @@ public:
   //! @post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = ::cuda::std::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>)
-  _CCCL_API auto emplace(::cuda::std::initializer_list<_Up> __il, _Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API auto emplace(::cuda::std::initializer_list<_Up> __il, _Args&&... __args) noexcept(
     __is_small<_Vp, __movable>(__size_, __align_)
     && __nothrow_initializable_from<_Vp, ::cuda::std::initializer_list<_Up>&, _Args...>) -> _Vp&
   {
@@ -329,7 +355,7 @@ public:
   //! @post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = ::cuda::std::decay_t<_Tp>, class _Fn, class... _Args)
   _CCCL_REQUIRES(__emplaceable_from<_Up, _Fn, _Args...>)
-  _CCCL_API auto emplace_from(_Fn&& __fn, _Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API auto emplace_from(_Fn&& __fn, _Args&&... __args) noexcept(
     __is_small<_Up, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Up, _Fn, _Args...>) -> _Up&
   {
     reset();
@@ -337,14 +363,14 @@ public:
   }
 
   //! @brief Tests whether the `__basic_any` object contains a value.
-  [[nodiscard]] _CCCL_API auto has_value() const noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto has_value() const noexcept -> bool
   {
     return __get_vptr() != nullptr;
   }
 
   //! @brief Resets the `__basic_any` object to an empty state.
   //! @post `has_value() == false`
-  _CCCL_API void reset() noexcept
+  _CCCL_HOST_DEVICE_API void reset() noexcept
   {
     if (auto __vptr = __get_vptr())
     {
@@ -357,7 +383,7 @@ public:
 
   //! @brief Returns a reference to a type_info object representing the type of
   //! the contained object.
-  [[nodiscard]] _CCCL_API auto type() const noexcept -> ::cuda::std::__type_info_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto type() const noexcept -> ::cuda::std::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -374,7 +400,7 @@ public:
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  [[nodiscard]] _CCCL_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto interface() const noexcept -> ::cuda::std::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -386,7 +412,7 @@ public:
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  [[nodiscard]] _CCCL_API auto __in_situ() const noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __in_situ() const noexcept -> bool
   {
     return __vptr_.__flag();
   }
@@ -399,15 +425,15 @@ private:
   template <class, int>
   friend struct __basic_any_base;
 
-  _CCCL_API void __release_()
+  _CCCL_HOST_DEVICE_API void __release_()
   {
-    __vptr_for<_Interface> __vptr = nullptr;
+    const __vptr_for<_Interface> __vptr = nullptr;
     __vptr_.__set(__vptr, false);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class... _Args>
-  _CCCL_API auto __emplace(_Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API auto __emplace(_Args&&... __args) noexcept(
     __is_small<_Tp, __movable>(__size_, __align_) && __nothrow_initializable_from<_Tp, _Args...>) -> _Tp&
   {
     using __pointer_t = _Tp*;
@@ -440,14 +466,14 @@ private:
       }
     }
 
-    __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
+    const __vptr_for<_Interface> __vptr = ::cuda::__get_vtable_ptr_for<_Interface, _Tp>();
     __vptr_.__set(__vptr, __is_small<_Tp, __movable>(__size_, __align_));
     return *::cuda::std::launder(static_cast<_Tp*>(__get_optr()));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Fn, class... _Args>
-  _CCCL_API auto __emplace_from(_Fn&& __fn, _Args&&... __args) noexcept(
+  _CCCL_HOST_DEVICE_API auto __emplace_from(_Fn&& __fn, _Args&&... __args) noexcept(
     __is_small<_Tp, __movable>(__size_, __align_) && __nothrow_emplaceable_from<_Tp, _Fn, _Args...>) -> _Tp&
   {
     using __pointer_t = _Tp*;
@@ -472,11 +498,12 @@ private:
   // __basic_any<__ireference<_SrcInterface const>>).
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface>, __basic_any>)
-  _CCCL_API void
-  __convert_from(__basic_any<_SrcInterface>&& __from) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
+  _CCCL_HOST_DEVICE_API void __convert_from(
+    __basic_any<_SrcInterface>&& __from // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    ) noexcept(::cuda::std::same_as<_SrcInterface, _Interface>)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<_SrcInterface>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<_SrcInterface>;
     // if the source is an lvalue reference, we need to copy from it.
     if constexpr (__is_lvalue_reference_v<_SrcInterface>)
     {
@@ -510,10 +537,10 @@ private:
   // __basic_any<__ireference<_Interface>>, and __basic_any<_Interface&>.
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<__basic_any<_SrcInterface> const&, __basic_any>)
-  _CCCL_API void __convert_from(__basic_any<_SrcInterface> const& __from)
+  _CCCL_HOST_DEVICE_API void __convert_from(__basic_any<_SrcInterface> const& __from)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
-    using __src_interface_t _CCCL_NODEBUG_ALIAS = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
+    using __src_interface_t _CCCL_NODEBUG = __remove_ireference_t<::cuda::std::remove_reference_t<_SrcInterface>>;
     if (auto __to_vptr = __vptr_cast<__src_interface_t, _Interface>(__from.__get_vptr()))
     {
       bool const __small = __from.__copy_to(__buffer_, __size_, __align_);
@@ -524,7 +551,7 @@ private:
   // Assignment from a compatible __basic_any object handled here:
   _CCCL_TEMPLATE(class _SrcCvAny)
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, __basic_any>)
-  _CCCL_API auto __assign_from(_SrcCvAny&& __src) -> __basic_any&
+  _CCCL_HOST_DEVICE_API auto __assign_from(_SrcCvAny&& __src) -> __basic_any&
   {
     if (!__ptr_eq(this, &__src))
     {
@@ -534,12 +561,12 @@ private:
     return *this;
   }
 
-  [[nodiscard]] _CCCL_API auto __get_vptr() const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_vptr() const noexcept -> __vptr_for<_Interface>
   {
     return __vptr_.__get();
   }
 
-  [[nodiscard]] _CCCL_API auto __get_optr() noexcept -> void*
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_optr() noexcept -> void*
   {
     void* __pv = __buffer_;
     return __in_situ() ? __pv : *static_cast<void**>(__pv);
@@ -547,14 +574,14 @@ private:
 
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code (srsly where, msvc?)
-  [[nodiscard]] _CCCL_API auto __get_optr() const noexcept -> void const*
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_optr() const noexcept -> void const*
   {
     void const* __pv = __buffer_;
     return __in_situ() ? __pv : *static_cast<void const* const*>(__pv);
   }
   _CCCL_DIAG_POP
 
-  [[nodiscard]] _CCCL_API auto __get_rtti() const noexcept -> __rtti const*
+  [[nodiscard]] _CCCL_HOST_DEVICE_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __get_vptr()->__query_interface(__iunknown());
   }

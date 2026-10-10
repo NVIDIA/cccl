@@ -29,7 +29,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   static_assert(cuda::std::numeric_limits<T>::is_specialized, "cuda::std::numeric_limits<T>::is_specialized");
   static_assert(cuda::std::numeric_limits<const T>::is_specialized,

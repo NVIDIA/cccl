@@ -20,15 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_complete.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_referenceable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
@@ -49,7 +51,7 @@ namespace __detect_hidden_friend_swap
 // This will intentionally create an ambiguity with std::swap if that is find-able by ADL. But it will not interfere
 // with hidden friend swap
 template <class _Tp>
-_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&);
+_CCCL_HOST_DEVICE void swap(_Tp&, _Tp&); // NOLINT(performance-noexcept-swap)
 
 struct __hidden_friend_swap_found
 {};
@@ -98,7 +100,7 @@ template <class _Tp>
 struct __is_nothrow_swappable;
 
 template <class _Tp>
-using __swap_result_t _CCCL_NODEBUG_ALIAS =
+using __swap_result_t _CCCL_NODEBUG =
   enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value
               && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>>;
 
@@ -129,7 +131,7 @@ struct __swappable_with
   using __swap1 = decltype((__test_swap<_Tp, _Up>(0)));
   using __swap2 = decltype((__test_swap<_Up, _Tp>(0)));
 
-  static const bool value = _IsNotSame<__swap1, __nat>::value && _IsNotSame<__swap2, __nat>::value;
+  static constexpr bool value = !is_same_v<__swap1, __nat> && !is_same_v<__swap2, __nat>;
 };
 
 template <class _Tp, class _Up>
@@ -159,7 +161,7 @@ struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothr
 template <class _Tp, class _Up>
 inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __referenceable<_Tp>>
 inline constexpr bool is_swappable_v = false;
 
 template <class _Tp>
@@ -169,7 +171,7 @@ inline constexpr bool is_swappable_v<_Tp, true> =
 template <class _Tp, class _Up>
 inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
 
-template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __referenceable<_Tp>>
 inline constexpr bool is_nothrow_swappable_v = false;
 
 template <class _Tp>
@@ -192,6 +194,15 @@ is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable : public bool_constant<is_nothrow_swappable_v<_Tp>>
 {};
+
+// Do not use this trait over is_nothrow_swappable unless necessary. It is only useful in rare
+// cases where a type may need to work with incomplete types and has friend functions that
+// greedily instantiate the nothrow_swappable functions.
+template <class _Tp, bool = __is_complete_v<_Tp>>
+inline constexpr bool __is_complete_and_nothrow_swappable_v = false;
+
+template <class _Tp>
+inline constexpr bool __is_complete_and_nothrow_swappable_v<_Tp, true> = is_nothrow_swappable_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

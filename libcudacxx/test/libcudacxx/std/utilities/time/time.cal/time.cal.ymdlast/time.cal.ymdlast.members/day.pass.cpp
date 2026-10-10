@@ -30,18 +30,18 @@ int main(int, char**)
   static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<const year_month_day_last>().day())>);
 
   //  Some months have a 31st
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{1}}}.day() == day{31}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{2}}}.day() == day{29}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{3}}}.day() == day{31}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{4}}}.day() == day{30}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{5}}}.day() == day{31}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{6}}}.day() == day{30}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{7}}}.day() == day{31}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{8}}}.day() == day{31}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{9}}}.day() == day{30}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{10}}}.day() == day{31}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{11}}}.day() == day{30}, "");
-  static_assert(year_month_day_last{year{2020}, month_day_last{month{12}}}.day() == day{31}, "");
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{1}}}.day() == day{31});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{2}}}.day() == day{29});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{3}}}.day() == day{31});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{4}}}.day() == day{30});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{5}}}.day() == day{31});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{6}}}.day() == day{30});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{7}}}.day() == day{31});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{8}}}.day() == day{31});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{9}}}.day() == day{30});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{10}}}.day() == day{31});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{11}}}.day() == day{30});
+  static_assert(year_month_day_last{year{2020}, month_day_last{month{12}}}.day() == day{31});
 
   assert((year_month_day_last{year{2019}, month_day_last{month{2}}}.day() == day{28}));
   assert((year_month_day_last{year{2020}, month_day_last{month{2}}}.day() == day{29}));

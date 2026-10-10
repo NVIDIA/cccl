@@ -8,13 +8,17 @@ CUB
    :maxdepth: 3
 
    Overview <self>
-   test_overview
+   thread_level
+   warp_wide
+   block_wide
+   device_wide
+   environment
+   determinism
    benchmarking
    tuning
-   developer_overview
-   releases
-   API documentation <api>
+   tuning_infra
    API reference <api/index>
+   developer_overview
 
 What is CUB?
 ==================================================
@@ -86,27 +90,26 @@ Thus CUB is *CUDA Unbound*.
 An example (block-wide sorting)
 ==================================================
 
-The following code snippet presents a CUDA kernel in which each block of ``BLOCK_THREADS`` threads
-will collectively load, sort, and store its own segment of (``BLOCK_THREADS * ITEMS_PER_THREAD``)
+The following code snippet presents a CUDA kernel in which each block of ``BlockThreads`` threads
+will collectively load, sort, and store its own segment of (``BlockThreads * ItemsPerThread``)
 integer keys:
 
 .. code-block:: c++
 
-    #include <cub/cub.cuh>
+    #include <cub/block/block_load.cuh>
+    #include <cub/block/block_store.cuh>
+    #include <cub/block/block_radix_sort.cuh>
 
-    //
-    // Block-sorting CUDA kernel
-    //
-    template <int BLOCK_THREADS, int ITEMS_PER_THREAD>
+    template <int BlockThreads, int ItemsPerThread>
     __global__ void BlockSortKernel(int *d_in, int *d_out)
     {
         // Specialize BlockLoad, BlockStore, and BlockRadixSort collective types
         using BlockLoadT = cub::BlockLoad<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_LOAD_TRANSPOSE>;
+          int, BlockThreads, ItemsPerThread, cub::BLOCK_LOAD_TRANSPOSE>;
         using BlockStoreT = cub::BlockStore<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD, cub::BLOCK_STORE_TRANSPOSE>;
+          int, BlockThreads, ItemsPerThread, cub::BLOCK_STORE_TRANSPOSE>;
         using BlockRadixSortT = cub::BlockRadixSort<
-          int, BLOCK_THREADS, ITEMS_PER_THREAD>;
+          int, BlockThreads, ItemsPerThread>;
 
         // Allocate type-safe, repurposable shared memory for collectives
         __shared__ union {
@@ -116,8 +119,8 @@ integer keys:
         } temp_storage;
 
         // Obtain this block's segment of consecutive keys (blocked across threads)
-        int thread_keys[ITEMS_PER_THREAD];
-        int block_offset = blockIdx.x * (BLOCK_THREADS * ITEMS_PER_THREAD);
+        int thread_keys[ItemsPerThread];
+        const int block_offset = blockIdx.x * (BlockThreads * ItemsPerThread);
         BlockLoadT(temp_storage.load).Load(d_in + block_offset, thread_keys);
 
         __syncthreads();	// Barrier for smem reuse
@@ -178,7 +181,7 @@ plurality of state, granularity, throughput, latency, memory bottlenecks, etc.
 
 With the exception of CUB, however, there are few (if any) software libraries of
 *reusable* kernel primitives. In the CUDA ecosystem, CUB is unique in this regard.
-As a `SIMT <http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#hardware-implementation>`_
+As a `SIMT <https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html#gpu-hardware-model>`_
 library and software abstraction layer, CUB provides:
 
 #. **Simplicity of composition**. CUB enhances programmer productivity by
@@ -361,8 +364,8 @@ accommodate:
           (emphasis on items owned by *thread*\ :sub:`0`)
 
    * - **Striped arrangement**. The aggregate tile of items is partitioned across threads in "striped"
-       fashion, i.e., the ``ITEMS_PER_THREAD`` items owned by each thread have logical stride
-       ``BLOCK_THREADS`` between them. Striped arrangements are often desirable for data movement through
+       fashion, i.e., the ``ItemsPerThread`` items owned by each thread have logical stride
+       ``BlockThreads`` between them. Striped arrangements are often desirable for data movement through
        global memory (where
        `read/write coalescing <https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#coalesced-access-to-global-memory>`_
        is an important performance consideration).
@@ -418,18 +421,9 @@ of the entire kernel for a given set of hardware resources.
 How do I get started using CUB?
 ==================================================
 
-CUB is implemented as a C++ header library. There is no need to build CUB
-separately. To use CUB primitives in your code, simply:
-
-#. Download and unzip the latest CUB distribution
-#. ``#include`` the "umbrella" ``<cub/cub.cuh>`` header file in
-   your CUDA C++ sources.  (Or ``#include`` the particular
-   header files that define the CUB primitives you wish to use.)
-#. Compile your program with NVIDIA's ``nvcc`` CUDA compiler,
-   specifying a ``-I<path-to-CUB>`` include-path flag to reference
-   the location of the CUB header library.
-
-We also have a collection of simple CUB example programs.
+CUB is a C++ header-only library, and part of the CUDA Core Compute Libraries (CCCL).
+It ships as part of the CUDA Toolkit and is thus readily available when using the ``nvcc`` compiler.
+Alternatively, consider fetching CCCL directly from GitHub to benefit from the latest improvements.
 
 
 How is CUB different than Thrust and Modern GPU?
@@ -439,7 +433,7 @@ How is CUB different than Thrust and Modern GPU?
 CUB and Thrust
 --------------------------------------------------
 
-CUB and `Thrust <https://nvidia.github.io/cccl/thrust/>`_ share some
+CUB and :ref:`Thrust <thrust-module>` share some
 similarities in that they both provide similar device-wide primitives for CUDA.
 However, they target different abstraction layers for parallel computing.
 Thrust abstractions are agnostic of any particular parallel framework (e.g.,
@@ -479,20 +473,6 @@ CUB and MGPU are complementary in that MGPU serves as an excellent descriptive s
 for many of the algorithmic techniques used by CUB.
 
 
-Stable releases
-==================================================
-
-CUB releases are labeled using version identifiers having three fields:
-``<epoch>.<feature>.<update>``. The *epoch* field
-corresponds to support for a major change or update to the CUDA programming model.
-The *feature* field corresponds to a stable set of features,
-functionality, and interface. The *update* field corresponds to a
-bug-fix or performance update for that feature set.  At the moment, we do
-not publicly provide non-stable releases such as development snapshots,
-beta releases or rolling releases. (Feel free to contact us if you would
-like access to such things.)
-
-
 Contributors
 ==================================================
 
@@ -502,4 +482,6 @@ CUB is developed as open-source as part of the CUDA Core Compute Libraries (CCCL
 Open Source License
 ==================================================
 
-CUB is available under the `BSD 3-Clause "New" or "Revised" License <https://github.com/NVIDIA/cub/blob/main/LICENSE.TXT>`_
+CUB is mostly licensed under the BSD 3-Clause "New" or "Revised" License.
+New files are created under the Apache-2.0 WITH LLVM-exception License.
+See also our `LICENSE <https://github.com/NVIDIA/cccl/blob/main/LICENSE>`_ file.

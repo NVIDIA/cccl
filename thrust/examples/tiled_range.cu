@@ -59,7 +59,7 @@ public:
     return begin() + tiles * (last - first);
   }
 
-protected:
+private:
   Iterator first;
   Iterator last;
   difference_type tiles;
@@ -72,21 +72,21 @@ int main()
   // print the initial data
   std::cout << "range        ";
   thrust::copy(data.begin(), data.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   using Iterator = thrust::device_vector<int>::iterator;
 
   // create tiled_range with two tiles
-  tiled_range<Iterator> two(data.begin(), data.end(), 2);
+  const tiled_range<Iterator> two(data.begin(), data.end(), 2);
   std::cout << "two tiles:   ";
   thrust::copy(two.begin(), two.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   // create tiled_range with three tiles
-  tiled_range<Iterator> three(data.begin(), data.end(), 3);
+  const tiled_range<Iterator> three(data.begin(), data.end(), 3);
   std::cout << "three tiles: ";
   thrust::copy(three.begin(), three.end(), std::ostream_iterator<int>(std::cout, " "));
-  std::cout << std::endl;
+  std::cout << '\n';
 
   return 0;
 }

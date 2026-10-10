@@ -19,30 +19,30 @@
 
 struct NoDefaultCtor
 {
-  __host__ __device__ constexpr NoDefaultCtor() = delete;
+  TEST_FUNC constexpr NoDefaultCtor() = delete;
 };
 
-static_assert(cuda::std::is_nothrow_default_constructible_v<cuda::std::expected<void, int>>, "");
-static_assert(cuda::std::is_nothrow_default_constructible_v<cuda::std::expected<void, NoDefaultCtor>>, "");
+static_assert(cuda::std::is_nothrow_default_constructible_v<cuda::std::expected<void, int>>);
+static_assert(cuda::std::is_nothrow_default_constructible_v<cuda::std::expected<void, NoDefaultCtor>>);
 
 struct MyInt
 {
   int i;
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  TEST_FUNC friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i == rhs.i;
   }
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
+  TEST_FUNC friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept
   {
     return lhs.i != rhs.i;
   }
 #endif // TEST_STD_VER > 2017
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // default constructible
   {
@@ -63,7 +63,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

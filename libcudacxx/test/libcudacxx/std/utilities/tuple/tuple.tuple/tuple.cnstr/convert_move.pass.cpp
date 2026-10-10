@@ -22,7 +22,7 @@
 struct Explicit
 {
   int value;
-  __host__ __device__ explicit Explicit(int x)
+  TEST_FUNC explicit Explicit(int x)
       : value(x)
   {}
 };
@@ -30,43 +30,45 @@ struct Explicit
 struct Implicit
 {
   int value;
-  __host__ __device__ Implicit(int x)
+  TEST_FUNC Implicit(int x)
       : value(x)
   {}
 };
 
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
 struct B
 {
   int id_;
 
-  __host__ __device__ explicit B(int i)
+  TEST_FUNC explicit B(int i)
       : id_(i)
   {}
 
-  __host__ __device__ virtual ~B() {}
+  TEST_FUNC virtual ~B() {}
 };
 
 struct D : B
 {
-  __host__ __device__ explicit D(int i)
+  TEST_FUNC explicit D(int i)
       : B(i)
   {}
 };
+#endif // !_CCCL_TILE_COMPILATION()
 
 struct BonkersBananas
 {
   template <class T>
-  __host__ __device__ operator T() &&;
+  TEST_FUNC operator T() &&;
   template <class T, class = void>
-  __host__ __device__ explicit operator T() && = delete;
+  TEST_FUNC explicit operator T() && = delete;
 };
 
-__host__ __device__ void test_bonkers_bananas_conversion()
+TEST_FUNC void test_bonkers_bananas_conversion()
 {
   using ReturnType = cuda::std::tuple<int, int>;
-  static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>(), "");
+  static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>());
   // TODO: possibly a compiler bug that allows NVCC to think that it can construct a tuple from this type
-  //  static_assert(!cuda::std::is_constructible<ReturnType, BonkersBananas>(), "");
+  //  static_assert(!cuda::std::is_constructible<ReturnType, BonkersBananas>());
 }
 
 int main(int, char**)
@@ -86,6 +88,8 @@ int main(int, char**)
     assert(cuda::std::get<0>(t1) == 2);
     assert(cuda::std::get<1>(t1) == int('a'));
   }
+
+#if !_CCCL_TILE_COMPILATION() // virtual functions are unsupported in tile code
   {
     using T0 = cuda::std::tuple<long, char, D>;
     using T1 = cuda::std::tuple<long long, int, B>;
@@ -116,6 +120,7 @@ int main(int, char**)
     assert(cuda::std::get<1>(t1) == int('a'));
     assert(cuda::std::get<2>(t1)->id_ == 3);
   }
+#endif // !_CCCL_TILE_COMPILATION()
 
   {
     cuda::std::tuple<int> t1(42);

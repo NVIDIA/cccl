@@ -23,55 +23,56 @@
 #include "test_macros.h"
 
 template <typename C>
-__host__ __device__ void test_const_container(const C& c)
+TEST_FUNC void test_const_container(const C& c)
 {
   //  Can't say noexcept here because the container might not be
   assert(cuda::std::data(c) == c.data());
 }
 
 template <typename T>
-__host__ __device__ void test_const_container(const cuda::std::initializer_list<T>& c)
+TEST_FUNC void test_const_container(const cuda::std::initializer_list<T>& c)
 {
   static_assert(noexcept(cuda::std::data(c)));
   assert(cuda::std::data(c) == c.begin());
 }
 
 template <typename C>
-__host__ __device__ void test_container(C& c)
+TEST_FUNC void test_container(C& c)
 {
   //  Can't say noexcept here because the container might not be
   assert(cuda::std::data(c) == c.data());
 }
 
 template <typename T>
-__host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
+TEST_FUNC void test_container(cuda::std::initializer_list<T>& c)
 {
   static_assert(noexcept(cuda::std::data(c)));
   assert(cuda::std::data(c) == c.begin());
 }
 
 template <typename T, size_t Sz>
-__host__ __device__ void test_const_array(const T (&array)[Sz])
+TEST_FUNC void test_const_array(const T (&array)[Sz])
 {
   static_assert(noexcept(cuda::std::data(array)));
   assert(cuda::std::data(array) == &array[0]);
 }
 
-TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
-
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: calling a host device function in tile mode
   cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
+  test_container(v);
+  test_const_container(v);
+#endif // !_CCCL_TILE_COMPILATION()
+
   cuda::std::array<int, 1> a;
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-  test_container(v);
   test_container(a);
   test_container(il);
 
-  test_const_container(v);
   test_const_container(a);
   test_const_container(il);
 
@@ -79,6 +80,7 @@ int main(int, char**)
   test_container(sv);
   test_const_container(sv);
 
+  constexpr int arrA[]{1, 2, 3};
   test_const_array(arrA);
 
   return 0;

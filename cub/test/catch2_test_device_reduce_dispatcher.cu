@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): Drop this entire test in CCCL 4.0 when we drop all CUB dispatchers
 // This file tests calling cub::DispatchReduce directly
+
+// disable deprecation warnings for DispatchReduce and AgentReducePolicy
+#define CCCL_IGNORE_DEPRECATED_API
 
 #include "insert_nested_NVTX_range_guard.h"
 
@@ -10,14 +14,14 @@
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using value_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
 template <typename AccumT>
 struct policy_hub_t
 {
-  struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
+  struct policy_t : cub::detail::chained_policy<300, policy_t, policy_t>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;
@@ -38,13 +42,13 @@ struct policy_hub_t
   using MaxPolicy = policy_t;
 };
 
-C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][device]", value_types)
+CUB_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][device]", CUB_SMALL, value_types)
 {
-  using T        = c2h::get<0, TestType>;
-  using offset_t = int32_t;
-  using init_t   = T;
-  using op_t     = cuda::std::plus<>;
-  using accum_t  = cuda::std::__accumulator_t<op_t, T, T>;
+  using T            = c2h::get<0, TestType>;
+  using offset_t     = int32_t;
+  using init_value_t = T;
+  using op_t         = cuda::std::plus<>;
+  using accum_t      = cuda::std::__accumulator_t<op_t, T, T>;
 
   const int num_items = 12'345;
 
@@ -61,16 +65,17 @@ C2H_TEST("Dispatch reduce can be called with custom policy_hub", "[reduce][devic
                         decltype(d_out_it),
                         offset_t,
                         op_t,
-                        init_t,
+                        init_value_t,
                         accum_t,
                         ::cuda::std::identity,
                         policy_hub_t<accum_t>>;
 
   size_t temp_storage_bytes = 0;
-  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, 0);
+  dispatch_t::Dispatch(nullptr, temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_value_t{}, nullptr);
 
   c2h::device_vector<char> temp_storage(temp_storage_bytes, thrust::no_init);
-  dispatch_t::Dispatch(temp_storage.data().get(), temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_t{}, 0);
+  dispatch_t::Dispatch(
+    temp_storage.data().get(), temp_storage_bytes, d_in_it, d_out_it, num_items, op_t{}, init_value_t{}, nullptr);
 
   // Verify result
   const T expected_result = static_cast<T>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));

@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename M, typename Ms>
-__host__ __device__ constexpr bool testConstexpr()
+TEST_FUNC constexpr bool testConstexpr()
 {
   M m1{1};
   if ((m1 += Ms{1}).c_encoding() != 2)
@@ -63,7 +63,7 @@ int main(int, char**)
   static_assert(
     cuda::std::is_same_v<weekday&, decltype(cuda::std::declval<weekday&>() -= cuda::std::declval<days&>())>);
 
-  static_assert(testConstexpr<weekday, days>(), "");
+  static_assert(testConstexpr<weekday, days>());
 
   for (unsigned i = 0; i <= 6; ++i)
   {

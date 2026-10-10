@@ -37,14 +37,14 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
 
 #  if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) // WAR for compiler state space issues
-template <size_t _Copy_size>
-inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __src)
+template <size_t _CopySize>
+_CCCL_DEVICE_API void __cp_async_shared_global(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.
-  static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16,
+  static_assert(_CopySize == 4 || _CopySize == 8 || _CopySize == 16,
                 "cp.async.shared.global requires a copy size of 4, 8, or 16.");
 
   NV_IF_ELSE_TARGET(
@@ -61,11 +61,11 @@ inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __sr
       }
       )XYZ" : : "l"(__dest),
                   "l"(__src),
-                  "n"(_Copy_size) : "memory");),
+                  "n"(_CopySize) : "memory");),
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 template <>
-inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* __src)
+_CCCL_DEVICE_API inline void __cp_async_shared_global<16>(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
   // When copying 16 bytes, it is possible to skip L1 cache (.cg).
@@ -85,14 +85,14 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
                     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 #  else // ^^^^ NVCC 12.0 / !NVCC 12.0 vvvvv WAR for compiler state space issues
-template <size_t _Copy_size>
-inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __src)
+template <size_t _CopySize>
+_CCCL_DEVICE_API void __cp_async_shared_global(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 
   // If `if constexpr` is not available, this function gets instantiated even
   // if is not called. Do not static_assert in that case.
-  static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16,
+  static_assert(_CopySize == 4 || _CopySize == 8 || _CopySize == 16,
                 "cp.async.shared.global requires a copy size of 4, 8, or 16.");
 
   NV_IF_ELSE_TARGET(
@@ -100,11 +100,11 @@ inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __sr
     (asm volatile("cp.async.ca.shared.global [%0], [%1], %2, %2;" : : "r"(
                     static_cast<::cuda::std::uint32_t>(::__cvta_generic_to_shared(__dest))),
                   "l"(static_cast<::cuda::std::uint64_t>(::__cvta_generic_to_global(__src))),
-                  "n"(_Copy_size) : "memory");),
+                  "n"(_CopySize) : "memory");),
     (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 template <>
-inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* __src)
+_CCCL_DEVICE_API inline void __cp_async_shared_global<16>(char* __dest, const char* __src)
 {
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
   // When copying 16 bytes, it is possible to skip L1 cache (.cg).
@@ -119,7 +119,7 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
 #  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1)
 
 template <size_t _Alignment, typename _Group>
-inline _CCCL_DEVICE void
+_CCCL_DEVICE_API void
 __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, ::cuda::std::size_t __size)
 {
   // If `if constexpr` is not available, this function gets instantiated even

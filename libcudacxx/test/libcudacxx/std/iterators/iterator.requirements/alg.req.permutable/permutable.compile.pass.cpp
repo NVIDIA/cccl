@@ -15,29 +15,29 @@
 #include "test_iterators.h"
 
 using AllConstraintsSatisfied = forward_iterator<int*>;
-static_assert(cuda::std::forward_iterator<AllConstraintsSatisfied>, "");
-static_assert(cuda::std::indirectly_movable_storable<AllConstraintsSatisfied, AllConstraintsSatisfied>, "");
-static_assert(cuda::std::indirectly_swappable<AllConstraintsSatisfied>, "");
-static_assert(cuda::std::permutable<AllConstraintsSatisfied>, "");
+static_assert(cuda::std::forward_iterator<AllConstraintsSatisfied>);
+static_assert(cuda::std::indirectly_movable_storable<AllConstraintsSatisfied, AllConstraintsSatisfied>);
+static_assert(cuda::std::indirectly_swappable<AllConstraintsSatisfied>);
+static_assert(cuda::std::permutable<AllConstraintsSatisfied>);
 
 using NotAForwardIterator = cpp20_input_iterator<int*>;
-static_assert(!cuda::std::forward_iterator<NotAForwardIterator>, "");
-static_assert(cuda::std::indirectly_movable_storable<NotAForwardIterator, NotAForwardIterator>, "");
-static_assert(cuda::std::indirectly_swappable<NotAForwardIterator>, "");
-static_assert(!cuda::std::permutable<NotAForwardIterator>, "");
+static_assert(!cuda::std::forward_iterator<NotAForwardIterator>);
+static_assert(cuda::std::indirectly_movable_storable<NotAForwardIterator, NotAForwardIterator>);
+static_assert(cuda::std::indirectly_swappable<NotAForwardIterator>);
+static_assert(!cuda::std::permutable<NotAForwardIterator>);
 
 struct NonCopyable
 {
   NonCopyable(const NonCopyable&)            = delete;
   NonCopyable& operator=(const NonCopyable&) = delete;
-  __host__ __device__ friend void swap(NonCopyable&, NonCopyable&);
+  TEST_FUNC friend void swap(NonCopyable&, NonCopyable&);
 };
 using NotIMS = forward_iterator<NonCopyable*>;
 
-static_assert(cuda::std::forward_iterator<NotIMS>, "");
-static_assert(!cuda::std::indirectly_movable_storable<NotIMS, NotIMS>, "");
-static_assert(cuda::std::indirectly_swappable<NotIMS>, "");
-static_assert(!cuda::std::permutable<NotIMS>, "");
+static_assert(cuda::std::forward_iterator<NotIMS>);
+static_assert(!cuda::std::indirectly_movable_storable<NotIMS, NotIMS>);
+static_assert(cuda::std::indirectly_swappable<NotIMS>);
+static_assert(!cuda::std::permutable<NotIMS>);
 
 // Note: it is impossible for an iterator to satisfy `indirectly_movable_storable` but not `indirectly_swappable`:
 // `indirectly_swappable` requires both iterators to be `indirectly_readable` and for `ranges::iter_swap` to be

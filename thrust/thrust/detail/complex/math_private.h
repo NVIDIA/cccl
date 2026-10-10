@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE inline void get_float_word(int32_t& i, float d)
 {
   ieee_float_shape_type gf_u;
   gf_u.value = (d);
-  (i)        = gf_u.word;
+  (i)        = static_cast<int32_t>(gf_u.word);
 }
 
 _CCCL_HOST_DEVICE inline void set_float_word(float& d, uint32_t i)
@@ -109,8 +109,8 @@ _CCCL_HOST_DEVICE inline void extract_words(int32_t& ix0, int32_t& ix1, double d
 {
   ieee_double_shape_type ew_u;
   ew_u.value = (d);
-  (ix0)      = ew_u.parts.msw;
-  (ix1)      = ew_u.parts.lsw;
+  (ix0)      = static_cast<int32_t>(ew_u.parts.msw);
+  (ix1)      = static_cast<int32_t>(ew_u.parts.lsw);
 }
 } // namespace detail::complex
 

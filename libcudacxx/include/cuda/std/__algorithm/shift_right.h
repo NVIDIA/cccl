@@ -22,7 +22,6 @@
 
 #include <cuda/std/__algorithm/move.h>
 #include <cuda/std/__algorithm/move_backward.h>
-#include <cuda/std/__algorithm/swap_ranges.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -133,7 +132,7 @@ _CCCL_API constexpr _ForwardIterator shift_right(
     return __first;
   }
 
-  using _IterCategory = typename iterator_traits<_ForwardIterator>::iterator_category;
+  using _IterCategory = __iterator_traits_category_or_concept_t<_ForwardIterator>;
   return __shift_right(__first, __last, __n, _IterCategory());
 }
 

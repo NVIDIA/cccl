@@ -90,16 +90,16 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
 
   T oos = T(1.0) / s;
 
-  T ars = x.real() * oos;
-  T ais = x.imag() * oos;
-  T brs = y.real() * oos;
-  T bis = y.imag() * oos;
+  const T ars = x.real() * oos;
+  const T ais = x.imag() * oos;
+  const T brs = y.real() * oos;
+  const T bis = y.imag() * oos;
 
   s = (brs * brs) + (bis * bis);
 
   oos = T(1.0) / s;
 
-  complex<T> quot(((ars * brs) + (ais * bis)) * oos, ((ais * brs) - (ars * bis)) * oos);
+  const complex<T> quot(((ars * brs) + (ais * bis)) * oos, ((ais * brs) - (ars * bis)) * oos);
   return quot;
 }
 
@@ -165,8 +165,8 @@ _CCCL_HOST_DEVICE inline float norm(const complex<float>& z)
   if (::cuda::std::abs(z.real()) < ::cuda::std::sqrt(FLT_MIN)
       && ::cuda::std::abs(z.imag()) < ::cuda::std::sqrt(FLT_MIN))
   {
-    float a = z.real() * 4.0f;
-    float b = z.imag() * 4.0f;
+    const float a = z.real() * 4.0f;
+    const float b = z.imag() * 4.0f;
     return (a * a + b * b) / 16.0f;
   }
 
@@ -179,8 +179,8 @@ _CCCL_HOST_DEVICE inline double norm(const complex<double>& z)
   if (::cuda::std::abs(z.real()) < ::cuda::std::sqrt(DBL_MIN)
       && ::cuda::std::abs(z.imag()) < ::cuda::std::sqrt(DBL_MIN))
   {
-    double a = z.real() * 4.0;
-    double b = z.imag() * 4.0;
+    const double a = z.real() * 4.0;
+    const double b = z.imag() * 4.0;
     return (a * a + b * b) / 16.0;
   }
 

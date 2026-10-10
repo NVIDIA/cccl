@@ -49,6 +49,7 @@ public:
 };
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <class _Predicate>
 CCCL_DEPRECATED _CCCL_API constexpr binary_negate<_Predicate> not2(const _Predicate& __pred)
 {

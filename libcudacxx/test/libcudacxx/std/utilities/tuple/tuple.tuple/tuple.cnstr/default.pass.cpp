@@ -21,7 +21,7 @@
 struct NoDefault
 {
   NoDefault() = delete;
-  __host__ __device__ explicit NoDefault(int) {}
+  TEST_FUNC explicit NoDefault(int) {}
 };
 
 struct NoExceptDefault
@@ -31,16 +31,16 @@ struct NoExceptDefault
 
 struct ThrowingDefault
 {
-  __host__ __device__ ThrowingDefault() {}
+  TEST_FUNC ThrowingDefault() {}
 };
 
 struct IllFormedDefault
 {
-  __host__ __device__ IllFormedDefault(int x)
+  TEST_FUNC IllFormedDefault(int x)
       : value(x)
   {}
   template <bool Pred = false>
-  __host__ __device__ constexpr IllFormedDefault()
+  TEST_FUNC constexpr IllFormedDefault()
   {
     static_assert(Pred, "The default constructor should not be instantiated");
   }
@@ -80,18 +80,18 @@ int main(int, char**)
   */
   {
     // See bug #21157.
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault>>(), "");
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<DefaultOnly, NoDefault>>(), "");
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault, DefaultOnly, NoDefault>>(), "");
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault>>());
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<DefaultOnly, NoDefault>>());
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<NoDefault, DefaultOnly, NoDefault>>());
   }
   {
-    static_assert(noexcept(cuda::std::tuple<NoExceptDefault>()), "");
-    static_assert(noexcept(cuda::std::tuple<NoExceptDefault, NoExceptDefault>()), "");
+    static_assert(noexcept(cuda::std::tuple<NoExceptDefault>()));
+    static_assert(noexcept(cuda::std::tuple<NoExceptDefault, NoExceptDefault>()));
 
 #if !TEST_COMPILER(NVHPC)
-    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, NoExceptDefault>()), "");
-    static_assert(!noexcept(cuda::std::tuple<NoExceptDefault, ThrowingDefault>()), "");
-    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, ThrowingDefault>()), "");
+    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, NoExceptDefault>()));
+    static_assert(!noexcept(cuda::std::tuple<NoExceptDefault, ThrowingDefault>()));
+    static_assert(!noexcept(cuda::std::tuple<ThrowingDefault, ThrowingDefault>()));
 #endif // !TEST_COMPILER(NVHPC)
   }
   {
@@ -123,7 +123,7 @@ int main(int, char**)
     protected:
       Derived() = default;
     };
-    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<Derived, int>>::value, "");
+    static_assert(!cuda::std::is_default_constructible<cuda::std::tuple<Derived, int>>::value);
   }
 
   return 0;

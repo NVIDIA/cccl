@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
+
 // <cmath>
 
 // clang-format off
@@ -22,8 +24,14 @@
 
 #include "test_macros.h"
 
+// numeric_limits::has_denorm has been deprecated since C++23
+#if _CCCL_STD_VER >= 2023
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+#endif // _CCCL_STD_VER >= 2023
+
 template <class T>
-__host__ __device__ constexpr void test_fpclassify(T val, int expected)
+TEST_FUNC constexpr void test_fpclassify(T val, int expected)
 {
   assert(cuda::std::fpclassify(val) == expected);
 
@@ -50,7 +58,7 @@ __host__ __device__ constexpr void test_fpclassify(T val, int expected)
 }
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<int, decltype(cuda::std::fpclassify(T{}))>);
 
@@ -87,7 +95,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   static_assert(cuda::std::is_same_v<int, decltype(cuda::std::fpclassify(T{}))>);
 
@@ -97,7 +105,7 @@ __host__ __device__ constexpr void test_type()
   test_fpclassify(cuda::std::numeric_limits<T>::max(), FP_NORMAL);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
@@ -128,6 +136,9 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_NVFP4_E2M1()
   test_type<__nv_fp4_e2m1>();
 #endif // _CCCL_HAS_NVFP4_E2M1
+#if _CCCL_HAS_FLOAT128()
+  test_type<__float128>();
+#endif // _CCCL_HAS_FLOAT128()
 
   test_type<signed char>();
   test_type<unsigned char>();

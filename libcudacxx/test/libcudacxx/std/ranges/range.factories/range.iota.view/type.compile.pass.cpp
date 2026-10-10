@@ -8,17 +8,22 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 #include <cuda/std/ranges>
+
+#include "test_macros.h"
 
 // Test that we SFINAE away iota_view<bool>.
 
 template <class T>
-__host__ __device__ cuda::std::ranges::iota_view<T> f(int);
+TEST_HOST_DEVICE_FUNC cuda::std::ranges::iota_view<T> f(int);
 template <class T>
-__host__ __device__ void f(...)
+TEST_HOST_DEVICE_FUNC void f(...)
 {}
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   f<bool>(42);
 }

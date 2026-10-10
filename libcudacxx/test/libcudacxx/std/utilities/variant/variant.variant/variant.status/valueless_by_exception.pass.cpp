@@ -42,7 +42,7 @@ int main(int, char**)
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;
-    static_assert(!v.valueless_by_exception(), "");
+    static_assert(!v.valueless_by_exception());
   }
   {
     using V = cuda::std::variant<int, long>;

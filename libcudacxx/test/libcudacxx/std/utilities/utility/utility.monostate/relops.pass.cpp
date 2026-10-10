@@ -23,7 +23,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using M = cuda::std::monostate;
   constexpr M m1{};
@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

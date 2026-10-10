@@ -8,10 +8,12 @@ from datetime import datetime
 # Add extension directory to path
 sys.path.insert(0, os.path.abspath("_ext"))
 
-# Add Python CCCL package to path for autodoc
-python_package_path = os.path.abspath("../python/cuda_cccl")
-if os.path.exists(python_package_path):
-    sys.path.insert(0, python_package_path)
+# Add Python CCCL packages to path for autodoc. cuda-cccl and cuda-stf are
+# separate distributions that both contribute to the shared ``cuda`` namespace.
+for _pkg in ("../python/cuda_cccl", "../python/cuda_stf"):
+    python_package_path = os.path.abspath(_pkg)
+    if os.path.exists(python_package_path):
+        sys.path.insert(0, python_package_path)
 
 # Note: numpy is installed as a real dependency (see requirements.txt)
 # This avoids issues with type annotations using union syntax (ndarray | type)
@@ -23,13 +25,17 @@ copyright = f"{datetime.now().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
 # Version information
-try:
-    with open("VERSION.md", "r") as f:
-        version = f.read().strip()
-except Exception:
-    version = "latest"
+_env_version = os.environ.get("SPHINX_CCCL_VER")
+if _env_version:
+    release = _env_version
+else:
+    try:
+        with open("VERSION.md", "r", encoding="utf-8") as f:
+            release = f.read().strip()
+    except Exception:
+        release = "unstable"
 
-release = version
+version = release
 
 # -- General configuration ---------------------------------------------------
 
@@ -67,6 +73,11 @@ breathe_domain_by_extension = {"cuh": "cpp", "h": "cpp", "hpp": "cpp"}
 
 # Configure cpp domain to handle cub namespace
 cpp_index_common_prefix = ["cub::"]
+# The NVIDIA theme changes toc_object_entries_show_parents from "domain" to
+# "hide" and maximum_signature_line_length from None to 70 before the environment
+# is pickled. Set the final values explicitly to avoid invalidating the cache.
+toc_object_entries_show_parents = "hide"
+maximum_signature_line_length = 70
 
 # Preprocessor definitions for Breathe to handle CCCL macros
 cpp_id_attributes = [
@@ -96,6 +107,8 @@ source_suffix = {
     ".md": "markdown",
 }
 
+templates_path = ["_templates"]
+
 # Exclude patterns
 exclude_patterns = [
     "_build",
@@ -116,6 +129,12 @@ exclude_patterns = [
 html_theme = "nvidia_sphinx_theme"
 
 html_logo = "_static/nvidia-logo.png"
+
+html_baseurl = (
+    os.environ.get("CCCL_DOCS_BASE_URL", "https://nvidia.github.io/cccl/").rstrip("/")
+    + "/"
+)
+
 html_theme_options = {
     "icon_links": [
         {
@@ -133,6 +152,10 @@ html_theme_options = {
     "footer_end": ["sphinx-version"],
     "sidebar_includehidden": True,
     "collapse_navigation": False,
+    "switcher": {
+        "json_url": f"{html_baseurl}nv-versions.json",
+        "version_match": release,
+    },
 }
 
 html_static_path = ["_static"] if os.path.exists("_static") else []
@@ -140,6 +163,8 @@ html_static_path = ["_static"] if os.path.exists("_static") else []
 # Images directory
 if os.path.exists("img"):
     html_static_path.append("img")
+
+html_js_files = ["deduplicate_toc.js"]
 
 html_title = "CUDA Core Compute Libraries"
 
@@ -183,8 +208,10 @@ autodoc_default_options = {
 }
 
 # Enable type hints to be shown in the documentation
-autodoc_typehints = "description"
-autodoc_type_aliases = {}
+autodoc_type_hints = "description"
+autodoc_type_aliases = {
+    "Operator": "Operator",
+}
 
 # Set Python domain primary for intersphinx
 primary_domain = "py"
@@ -218,6 +245,11 @@ autodoc_mock_imports = [
     "cupy",
     "cuda.compute._bindings",
     "cuda.compute._bindings_impl",
+    # STF's public API lives in a compiled Cython extension that is not built
+    # at docs time; mock it so the pure-Python helper layers in stf_api.rst
+    # (task_graph, interop.numba, interop.pytorch) can still be imported by autodoc.
+    "cuda.stf._experimental._stf_bindings",
+    "cuda.stf._experimental._stf_bindings_impl",
 ]
 
 # External links configuration
@@ -232,6 +264,27 @@ extlinks = {
 # Note: numpydoc settings removed as Napoleon is used instead
 
 # Config copybutton
+# Suppress specific warning categories that arise from breathe (Doxygen-to-Sphinx
+# bridge) limitations.  These cannot be fixed in our source headers or RST files.
+#
+# See also _BREATHE_SKIP_SYMBOLS in _ext/auto_api_generator.py for symbols that
+# are excluded from page generation entirely due to unparsable declarations.
+suppress_warnings = [
+    # Breathe walks each Doxygen XML file independently.  When a symbol appears
+    # in both a namespace XML and a class/group XML (which is normal for Doxygen),
+    # breathe emits the C++ declaration twice, triggering a duplicate-declaration
+    # warning.  There is no way to control this from our side without patching
+    # breathe's XML traversal.
+    "cpp.duplicate_declaration",
+    # When breathe expands doxygenfunction/doxygenvariable directives, it writes
+    # the resolved C++ signature into RST.  Signatures containing default argument
+    # values (e.g. ``= {}``) or complex SFINAE expressions produce RST that the
+    # docutils parser cannot handle (mismatched inline-literal markers, unexpected
+    # braces, etc.).  The source C++ is valid; the issue is that what breathe
+    # emits as RST is not valid RST.
+    "docutils",
+]
+
 copybutton_prompt_text = ">>> |$ |# "
 autosummary_imported_members = False
 autosummary_generate = True

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source "$(dirname "${BASH_SOURCE[0]}")/build_common.sh"
 
@@ -8,6 +8,6 @@ print_environment_details
 
 PRESET="cccl-c-stf"
 
-test_preset "CCCL C Parallel Library" ${PRESET}
+test_preset "CCCL C Parallel Library" "${PRESET}"
 
 print_time_summary

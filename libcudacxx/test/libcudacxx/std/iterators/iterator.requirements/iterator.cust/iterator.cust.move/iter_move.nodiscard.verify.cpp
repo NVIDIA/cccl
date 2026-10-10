@@ -16,14 +16,16 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 struct WithADL
 {
   WithADL() = default;
-  __host__ __device__ constexpr decltype(auto) operator*() const noexcept;
-  __host__ __device__ constexpr WithADL& operator++() noexcept;
-  __host__ __device__ constexpr void operator++(int) noexcept;
-  __host__ __device__ constexpr bool operator==(WithADL const&) const noexcept;
-  __host__ __device__ friend constexpr auto iter_move(WithADL&)
+  TEST_FUNC constexpr decltype(auto) operator*() const noexcept;
+  TEST_FUNC constexpr WithADL& operator++() noexcept;
+  TEST_FUNC constexpr void operator++(int) noexcept;
+  TEST_FUNC constexpr bool operator==(WithADL const&) const noexcept;
+  TEST_FUNC friend constexpr auto iter_move(WithADL&)
   {
     return 0;
   }

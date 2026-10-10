@@ -22,10 +22,6 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
 
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  include <cub/agent/agent_unique_by_key.cuh> // for UniqueByKeyAgentPolicy
-#endif
-
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -37,15 +33,18 @@ CUB_NAMESPACE_BEGIN
  * Tuning policy types
  ******************************************************************************/
 
-template <int BlockThreads,
+namespace detail
+{
+// TODO(bgruber): remove this when C++20 is the minimum, since then we can pass policy values as NTTP
+template <int ThreadsPerBlock,
           int ItemsPerThread,
           BlockLoadAlgorithm LoadAlgorithm,
           CacheLoadModifier LoadModifier,
           BlockScanAlgorithm ScanAlgorithm,
           class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
-struct AgentThreeWayPartitionPolicy
+struct agent_three_way_partition_policy
 {
-  static constexpr int BLOCK_THREADS                 = BlockThreads;
+  static constexpr int BLOCK_THREADS                 = ThreadsPerBlock;
   static constexpr int ITEMS_PER_THREAD              = ItemsPerThread;
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
   static constexpr CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
@@ -56,20 +55,23 @@ struct AgentThreeWayPartitionPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
-
-#if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-namespace detail
-{
-CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  ThreeWayPartitionAgentPolicy,
-  (UniqueByKeyAgentPolicy),
-  (BLOCK_THREADS, BlockThreads, int),
-  (ITEMS_PER_THREAD, ItemsPerThread, int),
-  (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),
-  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier),
-  (SCAN_ALGORITHM, ScanAlgorithm, cub::BlockScanAlgorithm))
 } // namespace detail
-#endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
+
+//! Deprecated [Since 3.5]
+template <int ThreadsPerBlock,
+          int ItemsPerThread,
+          BlockLoadAlgorithm LoadAlgorithm,
+          CacheLoadModifier LoadModifier,
+          BlockScanAlgorithm ScanAlgorithm,
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+using AgentThreeWayPartitionPolicy
+  CCCL_DEPRECATED_BECAUSE("Use the tuning API for DevicePartition") = detail::agent_three_way_partition_policy<
+    ThreadsPerBlock,
+    ItemsPerThread,
+    LoadAlgorithm,
+    LoadModifier,
+    ScanAlgorithm,
+    DelayConstructorT>;
 
 namespace detail::three_way_partition
 {
@@ -272,7 +274,7 @@ struct AgentThreeWayPartition
   // Utility methods for initializing the selections
   //---------------------------------------------------------------------
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Initialize(
     OffsetT num_tile_items, InputT (&items)[ITEMS_PER_THREAD], AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD])
   {
@@ -281,7 +283,7 @@ struct AgentThreeWayPartition
       // Out-of-bounds items are selection_flags
       items_selection_flags[ITEM] = AccumPackHelperT::pack(1, 1);
 
-      if (!IS_LAST_TILE || (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM < num_tile_items))
+      if (!IsLastTile || (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM < num_tile_items))
       {
         OffsetT first_item_selected = select_first_part_op(items[ITEM]);
         items_selection_flags[ITEM] =
@@ -290,7 +292,7 @@ struct AgentThreeWayPartition
     }
   }
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     InputT (&items)[ITEMS_PER_THREAD],
     AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD],
@@ -311,12 +313,12 @@ struct AgentThreeWayPartition
     // Scatter items to shared memory (rejections first)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
+      const int item_idx = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
 
       const OffsetT first_items_selection_indices  = AccumPackHelperT::first(items_selection_indices[ITEM]);
       const OffsetT second_items_selection_indices = AccumPackHelperT::second(items_selection_indices[ITEM]);
 
-      if (!IS_LAST_TILE || (item_idx < num_tile_items))
+      if (!IsLastTile || (item_idx < num_tile_items))
       {
         int local_scatter_offset = 0;
 
@@ -331,9 +333,9 @@ struct AgentThreeWayPartition
         else
         {
           // Medium item
-          int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
-                                  + (second_items_selection_indices - num_second_selections_prefix);
-          local_scatter_offset = second_item_end + item_idx - local_selection_idx;
+          const int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
+                                        + (second_items_selection_indices - num_second_selections_prefix);
+          local_scatter_offset          = second_item_end + item_idx - local_selection_idx;
         }
 
         temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
@@ -343,18 +345,20 @@ struct AgentThreeWayPartition
     __syncthreads();
 
     // Gather items from shared memory and scatter to global
+    // NOLINTBEGIN(bugprone-misplaced-widening-cast)
     auto first_base =
       d_first_part_out + (streaming_context.num_previously_selected_first() + num_first_selections_prefix);
     auto second_base =
       d_second_part_out + (streaming_context.num_previously_selected_second() + num_second_selections_prefix);
     auto unselected_base = d_unselected_out + (streaming_context.num_previously_rejected() + num_rejected_prefix);
+    // NOLINTEND(bugprone-misplaced-widening-cast)
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      const int item_idx = (ITEM * BLOCK_THREADS) + threadIdx.x;
 
-      if (!IS_LAST_TILE || (item_idx < num_tile_items))
+      if (!IsLastTile || (item_idx < num_tile_items))
       {
-        InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+        const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
         if (item_idx < first_item_end)
         {
@@ -366,7 +370,7 @@ struct AgentThreeWayPartition
         }
         else
         {
-          int rejection_idx              = item_idx - second_item_end;
+          const int rejection_idx        = item_idx - second_item_end;
           unselected_base[rejection_idx] = item;
         }
       }
@@ -386,7 +390,7 @@ struct AgentThreeWayPartition
    * @param first_tile_state Global tile state descriptor
    * @param second_tile_state Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& num_items_selected)
   {
@@ -396,7 +400,7 @@ struct AgentThreeWayPartition
     AccumPackT items_selection_indices[ITEMS_PER_THREAD];
 
     // Load items
-    if constexpr (IS_LAST_TILE)
+    if constexpr (IsLastTile)
     {
       BlockLoadT(temp_storage.load_items)
         .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);
@@ -407,7 +411,7 @@ struct AgentThreeWayPartition
     }
 
     // Initialize selection_flags
-    Initialize<IS_LAST_TILE>(num_tile_items, items, items_selection_flags);
+    Initialize<IsLastTile>(num_tile_items, items, items_selection_flags);
     __syncthreads();
 
     // Exclusive scan of selection_flags
@@ -417,20 +421,20 @@ struct AgentThreeWayPartition
     if (threadIdx.x == 0)
     {
       // Update tile status if this is not the last tile
-      if (!IS_LAST_TILE)
+      if (!IsLastTile)
       {
         tile_state.SetInclusive(0, num_items_selected);
       }
     }
 
     // Discount any out-of-bounds selections
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       AccumPackHelperT::subtract(num_items_selected, TILE_ITEMS - num_tile_items);
     }
 
     // Scatter flagged items
-    Scatter<IS_LAST_TILE>(
+    Scatter<IsLastTile>(
       items,
       items_selection_flags,
       items_selection_indices,
@@ -451,7 +455,7 @@ struct AgentThreeWayPartition
    * @param first_tile_state Global tile state descriptor
    * @param second_tile_state Global tile state descriptor
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeSubsequentTile(
     int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& num_items_selected)
   {
@@ -461,7 +465,7 @@ struct AgentThreeWayPartition
     AccumPackT items_selected_indices[ITEMS_PER_THREAD];
 
     // Load items
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadT(temp_storage.load_items)
         .Load(d_in + streaming_context.input_offset() + tile_offset, items, num_tile_items);
@@ -472,7 +476,7 @@ struct AgentThreeWayPartition
     }
 
     // Initialize selection_flags
-    Initialize<IS_LAST_TILE>(num_tile_items, items, items_selected_flags);
+    Initialize<IsLastTile>(num_tile_items, items, items_selected_flags);
     __syncthreads();
 
     // Exclusive scan of values and selection_flags
@@ -491,7 +495,7 @@ struct AgentThreeWayPartition
     // Discount any out-of-bounds selections. There are exactly
     // TILE_ITEMS - num_tile_items elements like that because we
     // marked them as selected in Initialize method.
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       const int num_discount = TILE_ITEMS - num_tile_items;
 
@@ -500,7 +504,7 @@ struct AgentThreeWayPartition
     }
 
     // Scatter flagged items
-    Scatter<IS_LAST_TILE>(
+    Scatter<IsLastTile>(
       items,
       items_selected_flags,
       items_selected_indices,
@@ -513,17 +517,17 @@ struct AgentThreeWayPartition
   /**
    * Process a tile of input
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& accum)
   {
     if (tile_idx == 0)
     {
-      ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state, accum);
+      ConsumeFirstTile<IsLastTile>(num_tile_items, tile_offset, tile_state, accum);
     }
     else
     {
-      ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state, accum);
+      ConsumeSubsequentTile<IsLastTile>(num_tile_items, tile_idx, tile_offset, tile_state, accum);
     }
   }
 
@@ -551,7 +555,7 @@ struct AgentThreeWayPartition
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     // Current tile index
-    const int tile_idx = blockIdx.x;
+    const int tile_idx = static_cast<int>(blockIdx.x);
 
     // Global offset for the current tile
     const OffsetT tile_offset = tile_idx * TILE_ITEMS;

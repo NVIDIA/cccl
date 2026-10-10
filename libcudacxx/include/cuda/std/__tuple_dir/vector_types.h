@@ -26,7 +26,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
 #  include <cuda/std/__fwd/get.h>
-#  include <cuda/std/__tuple_dir/structured_bindings.h>
 #  include <cuda/std/__tuple_dir/tuple_element.h>
 #  include <cuda/std/__tuple_dir/tuple_size.h>
 #  include <cuda/std/__type_traits/enable_if.h>
@@ -64,7 +63,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
       return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                                \
     template <size_t _Ip>                                                                                            \
-    _CCCL_API constexpr __base_type&& get(__name&& __val) noexcept                                                   \
+    _CCCL_API constexpr __base_type&& get(                                                                           \
+      __name&& __val /* NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved) */) noexcept                      \
     {                                                                                                                \
       return ::cuda::std::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
     }                                                                                                                \
@@ -91,6 +91,7 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ushort, unsigned short)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(int, int)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uint, unsigned int)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(long, long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(longlong, long long)
@@ -108,6 +109,7 @@ _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(ulonglong, unsigned long long, 4, _32a)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(float, float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(double, double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)
@@ -263,6 +265,7 @@ _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ushort, unsigned short)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(int, int)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(uint, unsigned int)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(long, long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulong, unsigned long)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(longlong, long long)
@@ -280,6 +283,7 @@ _LIBCUDACXX_SPECIALIZE_GET(ulonglong4_32a, unsigned long long)
 #  endif // _CCCL_CTK_AT_LEAST(13, 0)
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(float, float)
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 _LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
 _CCCL_SUPPRESS_DEPRECATED_POP
 #  if _CCCL_CTK_AT_LEAST(13, 0)

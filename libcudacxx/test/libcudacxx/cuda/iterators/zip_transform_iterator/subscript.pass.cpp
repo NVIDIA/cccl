@@ -20,7 +20,7 @@
 template <class Iter>
 _CCCL_CONCEPT canSubscript = _CCCL_REQUIRES_EXPR((Iter), Iter it)(it[2]);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   int a[]    = {1, 2, 3, 4};
   double b[] = {4.1, 3.2, 4.3};
@@ -108,7 +108,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

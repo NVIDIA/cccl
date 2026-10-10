@@ -36,7 +36,7 @@ static_assert(!cuda::std::is_convertible_v<Empty&&, cuda::std::ranges::repeat_vi
 static_assert(!cuda::std::is_constructible_v<cuda::std::ranges::repeat_view<MoveOnly>, const MoveOnly&>);
 static_assert(cuda::std::is_constructible_v<cuda::std::ranges::repeat_view<MoveOnly>, MoveOnly&&>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // Move && unbound && default argument
   {

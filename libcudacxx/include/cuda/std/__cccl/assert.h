@@ -27,9 +27,9 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 #  include <assert.h>
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #include <nv/target>
 
@@ -89,7 +89,7 @@ void __assert_fail(const char* __assertion, const char* __file, unsigned int __l
 #  if _CCCL_OS(APPLE)
 #    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
-      ? (void) 0 : __assert_rtn(__func__, __FILE__, __LINE__, __message__)
+      ? (void) 0 : __assert_rtn(__func__, __FILE__, __LINE__, message)
 #  elif _CCCL_OS(ANDROID)
 #    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \

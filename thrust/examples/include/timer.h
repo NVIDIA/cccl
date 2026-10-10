@@ -15,7 +15,7 @@
 
 #  include <cuda_runtime_api.h>
 
-void cuda_safe_call(cudaError_t error, const std::string& message = "")
+inline void cuda_safe_call(cudaError_t error, const std::string& message = "")
 {
   if (error)
   {
@@ -25,8 +25,8 @@ void cuda_safe_call(cudaError_t error, const std::string& message = "")
 
 struct timer
 {
-  cudaEvent_t start;
-  cudaEvent_t end;
+  cudaEvent_t start{};
+  cudaEvent_t end{};
 
   timer()
   {
@@ -37,18 +37,18 @@ struct timer
 
   ~timer()
   {
-    cuda_safe_call(cudaEventDestroy(start));
-    cuda_safe_call(cudaEventDestroy(end));
+    static_cast<void>(cudaEventDestroy(start));
+    static_cast<void>(cudaEventDestroy(end));
   }
 
   void restart()
   {
-    cuda_safe_call(cudaEventRecord(start, 0));
+    cuda_safe_call(cudaEventRecord(start, nullptr));
   }
 
   double elapsed()
   {
-    cuda_safe_call(cudaEventRecord(end, 0));
+    cuda_safe_call(cudaEventRecord(end, nullptr));
     cuda_safe_call(cudaEventSynchronize(end));
 
     float ms_elapsed;
@@ -69,15 +69,15 @@ struct timer
 
 struct timer
 {
-  clock_t start;
-  clock_t end;
+  clock_t start{};
+  clock_t end{};
 
   timer()
   {
     restart();
   }
 
-  ~timer() {}
+  ~timer() = default;
 
   void restart()
   {

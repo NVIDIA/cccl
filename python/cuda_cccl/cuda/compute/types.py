@@ -3,11 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 from __future__ import annotations
 
+import inspect
+from typing import get_type_hints
+
 import numpy as np
 
 from ._bindings import TypeEnum, TypeInfo
 
-_ENUM_TO_DTYPE: dict[TypeEnum, np.dtype] = {
+# A None value means the type has no NumPy representation in this environment;
+# the corresponding TypeDescriptor still describes the type for codegen
+# purposes, but host-side data cannot be represented as NumPy arrays.
+_ENUM_TO_DTYPE: dict[TypeEnum, np.dtype | None] = {
     TypeEnum.INT8: np.dtype("int8"),
     TypeEnum.INT16: np.dtype("int16"),
     TypeEnum.INT32: np.dtype("int32"),
@@ -20,7 +26,16 @@ _ENUM_TO_DTYPE: dict[TypeEnum, np.dtype] = {
     TypeEnum.FLOAT32: np.dtype("float32"),
     TypeEnum.FLOAT64: np.dtype("float64"),
     TypeEnum.BOOLEAN: np.dtype("bool"),
+    TypeEnum.BFLOAT16: None,
 }
+
+# NumPy has no native bfloat16; the optional ml_dtypes package provides one.
+try:
+    import ml_dtypes
+
+    _ENUM_TO_DTYPE[TypeEnum.BFLOAT16] = np.dtype(ml_dtypes.bfloat16)
+except ImportError:
+    pass
 
 
 class TypeDescriptor:
@@ -28,13 +43,23 @@ class TypeDescriptor:
         self._type_info = TypeInfo(size, alignment, type_enum)
         self._dtype = _ENUM_TO_DTYPE.get(type_enum, np.dtype(f"V{size}"))
 
+    @property
     def info(self) -> TypeInfo:
         """Return the TypeInfo for this type."""
         return self._type_info
 
     @property
-    def dtype(self) -> np.dtype:
-        """Return the numpy dtype for this type."""
+    def size(self):
+        return self._type_info.size
+
+    @property
+    def alignment(self):
+        return self._type_info.alignment
+
+    @property
+    def dtype(self) -> np.dtype | None:
+        """The numpy dtype for this type, or None if it has no NumPy
+        representation (e.g. bfloat16 without the ml_dtypes package)."""
         return self._dtype
 
     def pointer(self) -> "PointerTypeDescriptor":
@@ -124,6 +149,13 @@ def _build_struct_dtype(
 ) -> np.dtype:
     dtype_list = []
     for field_name, field_type in fields.items():
+        if field_type.dtype is None:
+            # Without this check, np.dtype would silently interpret None as
+            # float64, giving the field the wrong size and layout.
+            raise TypeError(
+                f"struct field '{field_name}' has no NumPy representation "
+                "(bfloat16 fields require the ml_dtypes package to be installed)"
+            )
         dtype_list.append((field_name, field_type.dtype))
     return np.dtype(dtype_list, align=True)
 
@@ -187,6 +219,7 @@ uint64 = TypeDescriptor(8, 8, TypeEnum.UINT64)
 
 # Floating point types
 float16 = TypeDescriptor(2, 2, TypeEnum.FLOAT16)
+bfloat16 = TypeDescriptor(2, 2, TypeEnum.BFLOAT16)
 float32 = TypeDescriptor(4, 4, TypeEnum.FLOAT32)
 float64 = TypeDescriptor(8, 8, TypeEnum.FLOAT64)
 
@@ -210,10 +243,57 @@ _DTYPE_TO_TD: dict[np.dtype, TypeDescriptor] = {
     np.dtype("bool"): boolean,
 }
 
+if bfloat16.dtype is not None:
+    _DTYPE_TO_TD[bfloat16.dtype] = bfloat16
+
 
 def to_ctypes_type(td: TypeDescriptor):
     """Convert a TypeDescriptor to a ctypes type."""
     return np.ctypeslib.as_ctypes_type(td.dtype)
+
+
+def _annotation_to_type_descriptor(annotation):
+    """
+    Convert a type annotation to a TypeDescriptor.
+
+    Handles:
+    - TypeDescriptor: returns as-is
+    - gpu_struct classes: returns their _type_descriptor
+    - numpy dtypes/types: converts via from_numpy_dtype
+    """
+    from .struct import _is_struct_type
+
+    if isinstance(annotation, TypeDescriptor):
+        return annotation
+
+    if _is_struct_type(annotation):
+        return annotation._type_descriptor  # type: ignore[union-attr]
+
+    # numpy dtype or type
+    return from_numpy_dtype(np.dtype(annotation))
+
+
+def signature_from_annotations(py_func):
+    try:
+        annotations = get_type_hints(py_func)
+    except Exception:
+        annotations = py_func.__annotations__
+    spec = inspect.getfullargspec(py_func)
+    arg_names = list(spec.args)
+
+    input_tds = []
+    # Try to get input types from annotations
+    for name in arg_names:
+        if name in annotations:
+            input_tds.append(_annotation_to_type_descriptor(annotations[name]))
+            break
+
+    if "return" in annotations:
+        output_td = _annotation_to_type_descriptor(annotations["return"])
+    else:
+        output_td = None
+
+    return input_tds, output_td
 
 
 __all__ = [
@@ -226,6 +306,7 @@ __all__ = [
     "uint32",
     "uint64",
     "float16",
+    "bfloat16",
     "float32",
     "float64",
     "boolean",

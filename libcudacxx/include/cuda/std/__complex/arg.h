@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -33,45 +34,45 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // arg
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp arg(const complex<_Tp>& __c)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _Tp arg(const complex<_Tp>& __c)
 {
   return ::cuda::std::atan2(__c.imag(), __c.real());
 }
 
-[[nodiscard]] _CCCL_API inline float arg(float __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline float arg(float __re)
 {
   return ::cuda::std::atan2f(0.F, __re);
 }
 
-[[nodiscard]] _CCCL_API inline double arg(double __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double arg(double __re)
 {
   return ::cuda::std::atan2(0.0, __re);
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-[[nodiscard]] _CCCL_API inline long double arg(long double __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline long double arg(long double __re)
 {
   return ::cuda::std::atan2l(0.L, __re);
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 arg(__nv_bfloat16 __re)
-{
-  return ::cuda::std::atan2(::__int2bfloat16_rn(0), __re);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16()
-
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half arg(__half __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half arg(__half __re)
 {
   return ::cuda::std::atan2(::__int2half_rn(0), __re);
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
+#if _LIBCUDACXX_HAS_NVBF16()
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 arg(__nv_bfloat16 __re)
+{
+  return ::cuda::std::atan2(::__int2bfloat16_rn(0), __re);
+}
+#endif // _LIBCUDACXX_HAS_NVBF16()
+
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API inline double arg(_Tp __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline double arg(_Tp __re)
 {
   // integrals need to be promoted to double
   return ::cuda::std::arg(static_cast<double>(__re));

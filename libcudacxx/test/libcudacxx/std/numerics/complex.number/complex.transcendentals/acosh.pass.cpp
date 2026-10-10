@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
+
 // <cuda/std/complex>
 
 // template<class T>
@@ -20,20 +23,20 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
+TEST_HOST_DEVICE_FUNC void test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
 {
   assert(acosh(c) == x);
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test(cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 1),
        cuda::std::complex<T>(cuda::std::numeric_limits<T>::infinity(), 0));
 }
 
 template <class T>
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE_FUNC void test_edges()
 {
   const T pi       = cuda::std::atan2(+0., -0.);
   auto testcases   = get_testcases<T>();
@@ -88,8 +91,17 @@ __host__ __device__ void test_edges()
     }
     else if (cuda::std::isfinite(testcases[i].real()) && cuda::std::isnan(testcases[i].imag()))
     {
-      assert(cuda::std::isnan(r.real()));
-      assert(cuda::std::isnan(r.imag()));
+      // Per C11 DR471: If z is (0,NaN), the result should be (NaN,pi/2), otherwise (NaN, NaN).
+      if (testcases[i].real() == T(0))
+      {
+        assert(cuda::std::isnan(r.real()));
+        is_about(r.imag(), T(0.5) * pi);
+      }
+      else
+      {
+        assert(cuda::std::isnan(r.real()));
+        assert(cuda::std::isnan(r.imag()));
+      }
     }
     else if (cuda::std::isinf(testcases[i].real()) && testcases[i].real() < T(0)
              && cuda::std::isfinite(testcases[i].imag()))

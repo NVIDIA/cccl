@@ -32,8 +32,8 @@ struct equal_to
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(equality_comparable_with<_Tp, _Up>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
+    noexcept(bool(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u))))
   {
     return ::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u);
   }
@@ -45,8 +45,8 @@ struct not_equal_to
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(equality_comparable_with<_Tp, _Up>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(!(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u)))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
+    noexcept(bool(!(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u)))))
   {
     return !(::cuda::std::forward<_Tp>(__t) == ::cuda::std::forward<_Up>(__u));
   }
@@ -58,8 +58,8 @@ struct less
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
+    noexcept(bool(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u))))
   {
     return ::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u);
   }
@@ -71,8 +71,8 @@ struct less_equal
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(!(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t)))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
+    noexcept(bool(!(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t)))))
   {
     return !(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t));
   }
@@ -84,8 +84,8 @@ struct greater
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
+    noexcept(bool(::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t))))
   {
     return ::cuda::std::forward<_Up>(__u) < ::cuda::std::forward<_Tp>(__t);
   }
@@ -97,8 +97,8 @@ struct greater_equal
 {
   _CCCL_TEMPLATE(class _Tp, class _Up)
   _CCCL_REQUIRES(totally_ordered_with<_Tp, _Up>)
-  [[nodiscard]] _CCCL_API constexpr bool operator()(_Tp&& __t, _Up&& __u) const
-    noexcept(noexcept(bool(!(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u)))))
+  [[nodiscard]] _CCCL_API constexpr bool _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t, _Up&& __u) noexcept(
+    noexcept(bool(!(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u)))))
   {
     return !(::cuda::std::forward<_Tp>(__t) < ::cuda::std::forward<_Up>(__u));
   }

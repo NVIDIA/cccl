@@ -19,17 +19,21 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#if _CCCL_HAS_HOST_STD_LIB()
+#  include <functional>
+#endif // _CCCL_HAS_HOST_STD_LIB()
+
 #include "test_macros.h"
 
 template <typename T, typename Expected>
-__host__ __device__ void check_equal()
+TEST_FUNC void check_equal()
 {
   static_assert(cuda::std::is_same_v<typename cuda::std::unwrap_reference<T>::type, Expected>);
   static_assert(cuda::std::is_same_v<typename cuda::std::unwrap_reference<T>::type, cuda::std::unwrap_reference_t<T>>);
 }
 
 template <typename T>
-__host__ __device__ void check()
+TEST_FUNC void check()
 {
   check_equal<T, T>();
   check_equal<T&, T&>();
@@ -38,6 +42,11 @@ __host__ __device__ void check()
 
   check_equal<cuda::std::reference_wrapper<T>, T&>();
   check_equal<cuda::std::reference_wrapper<T const>, T const&>();
+
+#if _CCCL_HAS_HOST_STD_LIB()
+  check_equal<::std::reference_wrapper<T>, T&>();
+  check_equal<::std::reference_wrapper<T const>, T const&>();
+#endif // _CCCL_HAS_HOST_STD_LIB()
 }
 
 struct T

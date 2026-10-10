@@ -29,7 +29,7 @@ struct A
 
 int main(int, char**)
 {
-  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::value_type, char>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::value_type, char>::value));
 
   return 0;
 }

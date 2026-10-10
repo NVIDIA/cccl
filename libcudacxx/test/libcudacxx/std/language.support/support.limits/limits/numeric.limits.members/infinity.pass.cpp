@@ -22,12 +22,13 @@
 #endif // _CCCL_COMPILER(MSVC)
 
 #include "common.h"
+#include "cuda_fp_types.h"
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(221);
 
 template <class T>
-__host__ __device__ void test(T expected)
+TEST_FUNC void test(T expected)
 {
   assert(float_eq(cuda::std::numeric_limits<T>::infinity(), expected));
   assert(float_eq(cuda::std::numeric_limits<const T>::infinity(), expected));

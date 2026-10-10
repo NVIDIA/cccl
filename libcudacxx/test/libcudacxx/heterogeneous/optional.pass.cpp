@@ -18,7 +18,7 @@
 template <int Value>
 struct int_generator
 {
-  __host__ __device__ auto operator()() const
+  TEST_FUNC auto operator()() const
   {
     return Value;
   }
@@ -26,7 +26,7 @@ struct int_generator
 
 struct nullopt_generator
 {
-  __host__ __device__ auto operator()() const
+  TEST_FUNC auto operator()() const
   {
     return cuda::std::nullopt;
   }
@@ -36,13 +36,13 @@ template <typename OperandGenerator>
 struct assign_tester
 {
   template <typename Opt>
-  __host__ __device__ static void initialize(Opt& opt)
+  TEST_FUNC static void initialize(Opt& opt)
   {
     opt = OperandGenerator()();
   }
 
   template <typename Opt>
-  __host__ __device__ static void validate(Opt& opt)
+  TEST_FUNC static void validate(Opt& opt)
   {
     assert(opt == OperandGenerator()());
   }
@@ -51,13 +51,13 @@ struct assign_tester
 struct reset_tester
 {
   template <typename Opt>
-  __host__ __device__ static void initialize(Opt& opt)
+  TEST_FUNC static void initialize(Opt& opt)
   {
     opt.reset();
   }
 
   template <typename Opt>
-  __host__ __device__ static void validate(Opt& opt)
+  TEST_FUNC static void validate(Opt& opt)
   {
     assert(!opt.has_value());
   }
@@ -67,7 +67,7 @@ template <typename OperandGenerator>
 struct swap_tester
 {
   template <typename Opt>
-  __host__ __device__ static void initialize(Opt& opt)
+  TEST_FUNC static void initialize(Opt& opt)
   {
     auto original                                     = opt;
     cuda::std::optional<typename Opt::value_type> val = OperandGenerator()();
@@ -76,7 +76,7 @@ struct swap_tester
   }
 
   template <typename Opt>
-  __host__ __device__ static void validate(Opt& opt)
+  TEST_FUNC static void validate(Opt& opt)
   {
     cuda::std::optional<typename Opt::value_type> val = OperandGenerator()();
     assert(opt == val);
@@ -96,13 +96,13 @@ struct non_trivial
 {
   int i;
 
-  __host__ __device__ non_trivial(int i)
+  TEST_FUNC non_trivial(int i)
       : i(i)
   {}
   non_trivial(const non_trivial&)            = default;
   non_trivial& operator=(const non_trivial&) = default;
 
-  __host__ __device__ friend bool operator==(non_trivial lhs, non_trivial rhs)
+  TEST_FUNC friend bool operator==(non_trivial lhs, non_trivial rhs)
   {
     return lhs.i == rhs.i;
   }

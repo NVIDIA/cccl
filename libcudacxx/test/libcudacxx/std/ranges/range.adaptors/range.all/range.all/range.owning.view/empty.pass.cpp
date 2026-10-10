@@ -24,24 +24,24 @@ _CCCL_CONCEPT HasEmpty = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.empty()));
 
 struct ComparableIters
 {
-  __host__ __device__ forward_iterator<int*> begin();
-  __host__ __device__ forward_iterator<int*> end();
+  TEST_FUNC forward_iterator<int*> begin();
+  TEST_FUNC forward_iterator<int*> end();
 };
 
 struct NoEmpty
 {
-  __host__ __device__ cpp20_input_iterator<int*> begin();
-  __host__ __device__ sentinel_wrapper<cpp20_input_iterator<int*>> end();
+  TEST_FUNC cpp20_input_iterator<int*> begin();
+  TEST_FUNC sentinel_wrapper<cpp20_input_iterator<int*>> end();
 };
 
 struct EmptyMember
 {
-  __host__ __device__ cpp20_input_iterator<int*> begin();
-  __host__ __device__ sentinel_wrapper<cpp20_input_iterator<int*>> end();
-  __host__ __device__ bool empty() const;
+  TEST_FUNC cpp20_input_iterator<int*> begin();
+  TEST_FUNC sentinel_wrapper<cpp20_input_iterator<int*>> end();
+  TEST_FUNC bool empty() const;
 };
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     using OwningView = cuda::std::ranges::owning_view<ComparableIters>;

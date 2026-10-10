@@ -48,7 +48,7 @@ namespace std
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
-          class = decltype(::new(::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
+          class = decltype(::new (::cuda::std::declval<void*>()) _Tp(::cuda::std::declval<_Args>()...))>
 _CCCL_API constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
 #    if defined(_CCCL_BUILTIN_ADDRESSOF)

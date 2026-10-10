@@ -22,4 +22,16 @@ __global__ void test_fence_proxy_alias(void** fn_ptr)
                    // fence.proxy.alias; // 4.
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)()>(cuda::ptx::fence_proxy_alias));));
 #endif // __cccl_ptx_isa >= 750
+
+#if __cccl_ptx_isa >= 940
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (
+        // fence.proxy.alias.acquire.sys;
+        * fn_ptr++ =
+          reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_acquire_t)>(cuda::ptx::fence_proxy_alias));
+          // fence.proxy.alias.release.sys;
+            * fn_ptr++ =
+              reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::sem_release_t)>(cuda::ptx::fence_proxy_alias));));
+#endif // __cccl_ptx_isa >= 940
 }

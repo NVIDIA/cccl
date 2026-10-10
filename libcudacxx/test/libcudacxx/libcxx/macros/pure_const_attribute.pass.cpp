@@ -11,12 +11,12 @@
 
 #include "test_macros.h"
 
-_CCCL_PURE __host__ __device__ int f()
+_CCCL_PURE TEST_FUNC int f()
 {
   return 0;
 }
 
-_CCCL_CONST __host__ __device__ int g()
+_CCCL_CONST TEST_FUNC int g()
 {
   return 0;
 }

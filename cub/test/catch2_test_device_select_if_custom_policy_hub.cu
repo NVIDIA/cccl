@@ -1,24 +1,26 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+// TODO(bgruber): drop this test with CCCL 4.0 when we drop the select if dispatcher
+
+#define CCCL_IGNORE_DEPRECATED_API
+
 #include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
 
-#include <cuda/std/functional>
+#include <cuda/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
-
-// TODO(bgruber): drop this test with CCCL 4.0 when we drop the select if dispatcher after publishing the tuning API
 
 template <class InputT>
 struct my_policy_hub
 {
-  struct MaxPolicy : ChainedPolicy<500, MaxPolicy, MaxPolicy>
+  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
   {
     static constexpr int nominal_4b_items_per_thread = 10;
     static constexpr int items_per_thread =
@@ -33,15 +35,7 @@ struct my_policy_hub
   };
 };
 
-struct is_even_t
-{
-  __host__ __device__ bool operator()(int value) const
-  {
-    return (value & 1) == 0;
-  }
-};
-
-C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
+CUB_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]", CUB_SMALL)
 {
   using value_t  = int;
   using offset_t = int;
@@ -55,7 +49,7 @@ C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
   expected.reserve(h_in.size());
   for (const auto value : h_in)
   {
-    if (is_even_t{}(value))
+    if (cuda::__is_even{}(value))
     {
       expected.push_back(value);
     }
@@ -63,7 +57,15 @@ C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
 
   using policy_hub_t = my_policy_hub<value_t>;
   using dispatch_t =
-    DispatchSelectIf<value_t*, NullType*, value_t*, offset_t*, is_even_t, NullType, offset_t, SelectImpl::Select, policy_hub_t>;
+    DispatchSelectIf<value_t*,
+                     NullType*,
+                     value_t*,
+                     offset_t*,
+                     cuda::__is_even,
+                     NullType,
+                     offset_t,
+                     SelectImpl::Select,
+                     policy_hub_t>;
 
   size_t temp_size = 0;
   dispatch_t::Dispatch(
@@ -73,7 +75,7 @@ C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
     nullptr,
     thrust::raw_pointer_cast(d_out.data()),
     thrust::raw_pointer_cast(d_num_selected.data()),
-    is_even_t{},
+    cuda::__is_even{},
     NullType{},
     static_cast<offset_t>(h_in.size()),
     /* stream */ nullptr);
@@ -85,7 +87,7 @@ C2H_TEST("DispatchSelectIf::Dispatch: custom policy hub", "[select_if][device]")
     nullptr,
     thrust::raw_pointer_cast(d_out.data()),
     thrust::raw_pointer_cast(d_num_selected.data()),
-    is_even_t{},
+    cuda::__is_even{},
     NullType{},
     static_cast<offset_t>(h_in.size()),
     /* stream */ nullptr);

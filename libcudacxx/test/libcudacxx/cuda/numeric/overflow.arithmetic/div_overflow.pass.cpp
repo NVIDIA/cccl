@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <typename Result, typename Lhs, typename Rhs>
-__host__ __device__ constexpr void
+TEST_FUNC constexpr void
 test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case = false, Result expected = {})
 {
   // test overflow_result<Result> div_overflow(Lhs lhs, Rhs rhs) overload
@@ -25,16 +25,13 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
   //   but the result fits in the Result type
   {
     const auto result = cuda::div_overflow<Result>(lhs, rhs);
-    if (!overflow)
+    if (special_case)
     {
-      if (special_case)
-      {
-        assert(result.value == expected);
-      }
-      else
-      {
-        assert(result.value == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
-      }
+      assert(result.value == expected);
+    }
+    else if (!overflow)
+    {
+      assert(result.value == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
     }
     assert(result.overflow == overflow);
   }
@@ -42,39 +39,47 @@ test_div_overflow(const Lhs lhs, const Rhs rhs, bool overflow, bool special_case
   {
     Result result{};
     const bool has_overflow = cuda::div_overflow<Result>(result, lhs, rhs);
-    if (!overflow)
+    if (special_case)
     {
-      if (special_case)
-      {
-        assert(result == expected);
-      }
-      else
-      {
-        assert(result == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
-      }
+      assert(result == expected);
+    }
+    else if (!overflow)
+    {
+      assert(result == static_cast<Result>(static_cast<Result>(lhs) / static_cast<Result>(rhs)));
     }
     assert(has_overflow == overflow);
   }
 }
 
-// nvcc 12.0 doesn't support these two special cases in a constexpr context
+// nvcc 12.0 doesn't support 1 / -1 and -1 / 1 in a constexpr context.
+// 1 / -2 and -1 / 2 go through the same branches of div_overflow and are kept with them.
 template <typename Lhs, typename Rhs, typename Result>
-__host__ __device__ constexpr void test_nvcc_12_0_special_cases()
+TEST_FUNC constexpr void test_nvcc_12_0_special_cases()
 {
-  // 1 / -1 -> should overflow if the destination type is unsigned
+  // 1 / -1 -> should overflow if the destination type is unsigned, the value is -1 truncated to Result
   if constexpr (cuda::std::is_signed_v<Rhs>)
   {
-    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, cuda::std::is_unsigned_v<Result>);
+    test_div_overflow<Result>(Lhs{1}, Rhs{-1}, cuda::std::is_unsigned_v<Result>, true, static_cast<Result>(-1));
   }
-  // -1 / 1 -> should overflow if the destination type is unsigned
+  // -1 / 1 -> should overflow if the destination type is unsigned, the value is -1 truncated to Result
   if constexpr (cuda::std::is_signed_v<Lhs>)
   {
-    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, cuda::std::is_unsigned_v<Result>);
+    test_div_overflow<Result>(Lhs{-1}, Rhs{1}, cuda::std::is_unsigned_v<Result>, true, static_cast<Result>(-1));
+  }
+  // 1 / -2 -> quotient is 0, should never overflow
+  if constexpr (cuda::std::is_signed_v<Rhs>)
+  {
+    test_div_overflow<Result>(Lhs{1}, Rhs{-2}, false, true, Result{0});
+  }
+  // -1 / 2 -> quotient is 0, should never overflow
+  if constexpr (cuda::std::is_signed_v<Lhs>)
+  {
+    test_div_overflow<Result>(Lhs{-1}, Rhs{2}, false, true, Result{0});
   }
 }
 
 template <typename Lhs, typename Rhs, typename Result>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   using cuda::std::is_same_v;
   using cuda::std::is_signed_v;
@@ -96,10 +101,11 @@ __host__ __device__ constexpr void test_type()
   // 2. 1 / 1 -> should not overflow
   test_div_overflow<Result>(Lhs{1}, Rhs{1}, false);
 
-  // nvcc 12.0 doesn't support these two special cases in a constexpr context
+  // nvcc 12.0 doesn't support 1 / -1 and -1 / 1 in a constexpr context
 #if _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
   // 3. 1 / -1 -> should overflow if the destination type is unsigned
   // 4. -1 / 1 -> should overflow if the destination type is unsigned
+  //    1 / -2 and -1 / 2 -> quotient is 0, should never overflow
   test_nvcc_12_0_special_cases<Lhs, Rhs, Result>();
 #endif // _CCCL_CUDA_COMPILER(NVCC, !=, 12, 0)
   if (!cuda::std::__cccl_default_is_constant_evaluated())
@@ -137,7 +143,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <typename Lhs, typename Rhs>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<Lhs, Rhs, cuda::std::common_type_t<Lhs, Rhs>>();
   test_type<Lhs, Rhs, unsigned>();
@@ -152,7 +158,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <typename T>
-__host__ __device__ constexpr void test_type()
+TEST_FUNC constexpr void test_type()
 {
   test_type<T, signed char>();
   test_type<T, unsigned char>();
@@ -170,7 +176,7 @@ __host__ __device__ constexpr void test_type()
 #endif
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_type<signed char>();
   test_type<unsigned char>();

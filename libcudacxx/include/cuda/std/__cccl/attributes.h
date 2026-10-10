@@ -84,6 +84,11 @@
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif
 
+#if _CCCL_TILE_COMPILATION() // nvbug6100910: __builtin_assume is not supported in tile mode
+#  undef _CCCL_ASSUME
+#  define _CCCL_ASSUME(...)
+#endif // _CCCL_TILE_COMPILATION()
+
 // _CCCL_CONST
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(__gnu__::__const__)
@@ -99,6 +104,13 @@
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(diagnose_if) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(diagnose_if) vvv
 #  define _CCCL_DIAGNOSE_IF(_COND, _MSG, _TYPE)
 #endif // !_CCCL_HAS_ATTRIBUTE(diagnose_if)
+
+#if _CCCL_HAS_ATTRIBUTE(__format__)
+#  define _CCCL_ATTRIBUTE_FORMAT(_ARCHETYPE, _FMT_INDEX, _ARGS_INDEX) \
+    __attribute__((__format__(_ARCHETYPE, _FMT_INDEX, _ARGS_INDEX)))
+#else // ^^^ _CCCL_HAS_ATTRIBUTE(format) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(format) vvv
+#  define _CCCL_ATTRIBUTE_FORMAT(_ARCHETYPE, _FMT_INDEX, _ARGS_INDEX)
+#endif // !_CCCL_HAS_ATTRIBUTE(format)
 
 // _CCCL_INTRINSIC
 

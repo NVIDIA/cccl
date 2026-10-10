@@ -257,6 +257,121 @@ template <typename InputIterator1, typename InputIterator2, typename BinaryPredi
 ::cuda::std::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred);
 
+/*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
+ *  and <tt>[first2, last2)</tt> differ. This bounded overload stops as soon as either
+ *  range is exhausted, preventing reads past the end of the shorter range.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec   The execution policy to use for parallelization.
+ *  \param first1 The beginning of the first sequence.
+ *  \param last1  The end of the first sequence.
+ *  \param first2 The beginning of the second sequence.
+ *  \param last2  The end of the second sequence.
+ *  \return The first position where the sequences differ, or the end of the
+ *          shorter range if they match up to that point.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \p InputIterator1's \c value_type is equality comparable to \p InputIterator2's \c value_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.4.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2);
+
+/*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
+ *  and <tt>[first2, last2)</tt> differ. This bounded overload stops as soon as either
+ *  range is exhausted, preventing reads past the end of the shorter range.
+ *
+ *  \param first1 The beginning of the first sequence.
+ *  \param last1  The end of the first sequence.
+ *  \param first2 The beginning of the second sequence.
+ *  \param last2  The end of the second sequence.
+ *  \return The first position where the sequences differ, or the end of the
+ *          shorter range if they match up to that point.
+ *
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \p InputIterator1's \c value_type is equality comparable to \p InputIterator2's \c value_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.4.0
+ *  \endverbatim
+ */
+template <typename InputIterator1, typename InputIterator2>
+::cuda::std::pair<InputIterator1, InputIterator2>
+mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2);
+
+/*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
+ *  and <tt>[first2, last2)</tt> differ. This bounded overload stops as soon as either
+ *  range is exhausted, preventing reads past the end of the shorter range.
+ *
+ *  The algorithm's execution is parallelized as determined by \p exec.
+ *
+ *  \param exec   The execution policy to use for parallelization.
+ *  \param first1 The beginning of the first sequence.
+ *  \param last1  The end of the first sequence.
+ *  \param first2 The beginning of the second sequence.
+ *  \param last2  The end of the second sequence.
+ *  \param pred   The binary predicate to compare elements.
+ *  \return The first position where the sequences differ, or the end of the
+ *          shorter range if they match up to that point.
+ *
+ *  \tparam DerivedPolicy The name of the derived execution policy.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>. \tparam BinaryPredicate is a
+ * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.4.0
+ *  \endverbatim
+ */
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+_CCCL_HOST_DEVICE ::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  BinaryPredicate pred);
+
+/*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
+ *  and <tt>[first2, last2)</tt> differ. This bounded overload stops as soon as either
+ *  range is exhausted, preventing reads past the end of the shorter range.
+ *
+ *  \param first1 The beginning of the first sequence.
+ *  \param last1  The end of the first sequence.
+ *  \param first2 The beginning of the second sequence.
+ *  \param last2  The end of the second sequence.
+ *  \param pred   The binary predicate to compare elements.
+ *  \return The first position where the sequences differ, or the end of the
+ *          shorter range if they match up to that point.
+ *
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>. \tparam BinaryPredicate is a
+ * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *
+ *  \verbatim embed:rst:leading-asterisk
+ *     .. versionadded:: 3.4.0
+ *  \endverbatim
+ */
+template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+::cuda::std::pair<InputIterator1, InputIterator2> mismatch(
+  InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, BinaryPredicate pred);
+
 /*! \} // end searching
  */
 

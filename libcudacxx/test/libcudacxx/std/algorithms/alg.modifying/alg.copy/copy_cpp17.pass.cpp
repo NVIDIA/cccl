@@ -18,7 +18,7 @@
 
 #include "copy_common.h"
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+TEST_CONSTEXPR_CXX20 TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();

@@ -24,6 +24,7 @@
 #include <cuda/std/__cmath/copysign.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -180,7 +181,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half modf(__half __x, __half* __y) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half modf(__half __x, __half* __y) noexcept
 {
   const __half __integral_part = ::cuda::std::trunc(__x);
   *__y                         = __integral_part;
@@ -191,7 +192,7 @@ template <class _A1, class _A2, enable_if_t<is_arithmetic_v<_A1> && is_arithmeti
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 modf(__nv_bfloat16 __x, __nv_bfloat16* __y) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 modf(__nv_bfloat16 __x, __nv_bfloat16* __y) noexcept
 {
   const __nv_bfloat16 __integral_part = ::cuda::std::trunc(__x);
   *__y                                = __integral_part;

@@ -80,6 +80,7 @@ _create_rapids_cmake_override_json() {
     echo "Replacing CCCL repo information in rapids-cmake versions.json:";
     curl -fsSL -o- "https://raw.githubusercontent.com/${rapids_cmake_upstream}/rapids-cmake/${rapids_cmake_tag}/rapids-cmake/cpm/versions.json" \
   | jq -r ".packages.CCCL *= {\"git_url\": \"${HOME}/cccl\", \"git_tag\": \"${cccl_sha}\", \"always_download\": true}" \
+  | jq -r "del(.packages.CCCL.url) | del(.packages.CCCL.url_hash)" \
   > ~/rapids-cmake-override-versions-cccl-repo.json;
 
     if test -n "${CCCL_VERSION-}"; then
@@ -104,6 +105,11 @@ _create_rapids_cmake_override_json() {
     # Always build RAFT shared lib
     cmake_args+=("-DBUILD_SHARED_LIBS=ON");
     cmake_args+=("-DRAFT_COMPILE_LIBRARY=ON");
+
+    # RAPIDS repos include <cub/cub.cuh> directly and build with -Werror, so disable CUB's
+    # compile-time warning about including the umbrella header to avoid breaking their builds.
+    cmake_args+=("-DCMAKE_CXX_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING");
+    cmake_args+=("-DCMAKE_CUDA_FLAGS=-DCCCL_DISABLE_CUB_UMBRELLA_HEADER_WARNING");
 
     # Tell rapids-cmake to use custom CCCL and cuCollections forks
     cmake_args+=("-Drapids-cmake-branch=${rapids_cmake_tag}");
@@ -140,6 +146,6 @@ _run_post_create_command() {
     clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules --no-update-env;
 }
 
-if [ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]; then
+if [[ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]]; then
     _run_post_create_command;
 fi

@@ -17,7 +17,7 @@ TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 //  Assumption: minValue <= lhs <= maxValue
 //  Assumption: minValue >= 0
 template <typename T, T minValue, T maxValue>
-__host__ __device__ T euclidian_addition(T rhs, T lhs)
+TEST_FUNC T euclidian_addition(T rhs, T lhs)
 {
   const T modulus = maxValue - minValue + 1;
   T ret           = rhs + lhs;
@@ -33,7 +33,7 @@ __host__ __device__ T euclidian_addition(T rhs, T lhs)
 //  Assumption: minValue <= lhs <= maxValue
 //  Assumption: minValue >= 0
 template <typename T, T minValue, T maxValue>
-__host__ __device__ T euclidian_subtraction(T lhs, T rhs)
+TEST_FUNC T euclidian_subtraction(T lhs, T rhs)
 {
   const T modulus = maxValue - minValue + 1;
   T ret           = lhs - rhs;

@@ -12,7 +12,7 @@
 
 using namespace cuda::experimental::stf;
 
-void rec_func(exec_place_grid places)
+void rec_func(exec_place places)
 {
   if (places.size() == 1)
   {

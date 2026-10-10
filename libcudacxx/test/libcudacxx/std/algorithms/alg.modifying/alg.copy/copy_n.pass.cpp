@@ -21,8 +21,9 @@
 
 using UDI = UserDefinedIntegral<unsigned>;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test()
+TEST_CONSTEXPR_CXX20 TEST_FUNC void test()
 {
   {
     constexpr unsigned N = 1000;
@@ -59,7 +60,8 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test()
   }
 }
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+_CCCL_EXEC_CHECK_DISABLE
+TEST_CONSTEXPR_CXX20 TEST_FUNC bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
@@ -95,6 +97,13 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
   test<const int*, bidirectional_iterator<int*>>();
   test<const int*, random_access_iterator<int*>>();
   test<const int*, int*>();
+
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (test<const int*, host_only_iterator<int*>>();))
+#endif // !TEST_COMPILER(NVRTC)
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
+  NV_IF_TARGET(NV_IS_DEVICE, (test<const int*, device_only_iterator<int*>>();))
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
   return true;
 }

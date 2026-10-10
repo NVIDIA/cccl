@@ -22,23 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__complex/complex.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
-#include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-template <class _Tp>
-struct tuple_size<complex<_Tp>> : ::cuda::std::integral_constant<size_t, 2>
-{};
-
-template <size_t _Index, class _Tp>
-  struct tuple_element<_Index, complex<_Tp>> : ::cuda::std::enable_if < _Index<2, _Tp>
-{};
 
 template <class _Tp>
 struct __get_complex_impl

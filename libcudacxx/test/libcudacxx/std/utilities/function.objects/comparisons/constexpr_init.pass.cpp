@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ constexpr bool test_constexpr_context()
+TEST_FUNC constexpr bool test_constexpr_context()
 {
   [[maybe_unused]] cuda::std::equal_to<T> eq;
   [[maybe_unused]] cuda::std::not_equal_to<T> neq;
@@ -37,8 +37,8 @@ __host__ __device__ constexpr bool test_constexpr_context()
   return true;
 }
 
-static_assert(test_constexpr_context<int>(), "");
-static_assert(test_constexpr_context<void>(), "");
+static_assert(test_constexpr_context<int>());
+static_assert(test_constexpr_context<void>());
 
 int main(int, char**)
 {

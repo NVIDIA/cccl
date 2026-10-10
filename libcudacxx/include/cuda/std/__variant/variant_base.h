@@ -23,7 +23,7 @@
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
-#include <cuda/std/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
@@ -91,7 +91,7 @@ public:                                                                         
                                                                                  \
   template <class... _Args>                                                      \
   _CCCL_API explicit constexpr __union(in_place_index_t<0>, _Args&&... __args)   \
-      : __head_(in_place, ::cuda::std::forward<_Args>(__args)...)                \
+      : __head_(in_place_t{}, ::cuda::std::forward<_Args>(__args)...)            \
   {}                                                                             \
                                                                                  \
   template <size_t _Ip, class... _Args>                                          \
@@ -180,8 +180,8 @@ protected:
     return sizeof...(_Types);
   }
 
-  __union<_DestructibleTrait, 0, _Types...> __data_;
-  __index_t __index_;
+  __union<_DestructibleTrait, 0, _Types...> __data_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  __index_t __index_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   friend struct __access::__base;
 };
@@ -224,7 +224,7 @@ __dtor<__traits<_Types...>, _Trait::_Available> : public __base<_Trait::_Availab
   {
     _CCCL_EXEC_CHECK_DISABLE
     template <class _Alt>
-    _CCCL_API void operator()(_Alt& __alt) const noexcept
+    _CCCL_API void _CCCL_STATIC_CALL_OPERATOR(_Alt& __alt) noexcept
     {
       using __alt_type = remove_cvref_t<decltype(__alt)>;
       __alt.~__alt_type();
@@ -282,7 +282,8 @@ __dtor<__traits<_Types...>, _Trait::_Unavailable> : public __base<_Trait::_Unava
   _CCCL_API ~__dtor() = delete;
 
 protected:
-  _CCCL_API void __destroy() noexcept = delete;
+  // clang-tidy requests public access, but that would make this function part of the API.
+  _CCCL_API void __destroy() noexcept = delete; // NOLINT(modernize-use-equals-delete)
 };
 
 #undef _LIBCUDACXX_VARIANT_DESTRUCTOR_BODY
@@ -300,7 +301,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<_CurrentIndex>(__lhs.__as_base())),
-        in_place,
+        in_place_t{},
         __access::__base::__get_alt<_CurrentIndex>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
@@ -316,7 +317,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
     {
       ::cuda::std::__construct_at(
         ::cuda::std::addressof(__access::__base::__get_alt<0>(__lhs.__as_base())),
-        in_place,
+        in_place_t{},
         __access::__base::__get_alt<0>(::cuda::std::forward<_Rhs>(__rhs).__as_base()).__value);
       return;
     }
@@ -332,7 +333,7 @@ protected:
   template <size_t _Ip, class _Tp, class... _Args>
   _CCCL_API static _Tp& __construct_alt(__alt<_Ip, _Tp>& __a, _Args&&... __args)
   {
-    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place, ::cuda::std::forward<_Args>(__args)...);
+    ::cuda::std::__construct_at(::cuda::std::addressof(__a), in_place_t{}, ::cuda::std::forward<_Args>(__args)...);
     return __a.__value;
   }
 
@@ -343,9 +344,9 @@ protected:
     if (!__rhs.valueless_by_exception())
     {
       constexpr size_t __np = remove_cvref_t<__ctor>::__size();
-      __generic_construct_impl(
-        integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, ::cuda::std::forward<_Rhs>(__rhs));
-      __lhs.__index_ = static_cast<decltype(__lhs.__index_)>(__rhs.index());
+      const auto __index    = __rhs.index();
+      __generic_construct_impl(integral_constant<size_t, __np - 1>{}, __index, __lhs, ::cuda::std::forward<_Rhs>(__rhs));
+      __lhs.__index_ = static_cast<decltype(__lhs.__index_)>(__index);
     }
   }
 };
@@ -377,7 +378,7 @@ _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(_Trait::_TriviallyAvailable,
 _LIBCUDACXX_VARIANT_MOVE_CONSTRUCTOR(
   _Trait::_Available,
   _CCCL_API __move_constructor(__move_constructor&& __that) noexcept(
-    __all<is_nothrow_move_constructible_v<_Types>...>::value) : __move_constructor(__valueless_t{}) {
+    __fold_and_v<is_nothrow_move_constructible_v<_Types>...>) : __move_constructor(__valueless_t{}) {
     this->__generic_construct(*this, ::cuda::std::move(__that));
   });
 
@@ -548,7 +549,7 @@ _LIBCUDACXX_VARIANT_MOVE_ASSIGNMENT(
   _Trait::_Available,
   _CCCL_API __move_assignment&
   operator=(__move_assignment&& __that) noexcept(
-    __all<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>::value) {
+    __fold_and_v<(is_nothrow_move_constructible_v<_Types> && is_nothrow_move_assignable_v<_Types>) ...>) {
     this->__generic_assign(::cuda::std::move(__that));
     return *this;
   });

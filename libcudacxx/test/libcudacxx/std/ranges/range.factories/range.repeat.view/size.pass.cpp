@@ -24,7 +24,7 @@ static_assert(has_size<cuda::std::ranges::repeat_view<int, int>>);
 static_assert(!has_size<cuda::std::ranges::repeat_view<int>>);
 static_assert(!has_size<cuda::std::ranges::repeat_view<int, cuda::std::unreachable_sentinel_t>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   {
     cuda::std::ranges::repeat_view<int, int> rv(10, 20);

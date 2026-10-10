@@ -8,10 +8,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
+
 #include <cuda/std/cassert>
 #include <cuda/std/random>
 
-__host__ __device__ void test()
+#include "test_macros.h"
+
+TEST_HOST_DEVICE_FUNC void test()
 {
   static_assert(!cuda::std::is_copy_assignable_v<cuda::std::seed_seq>);
   static_assert(!cuda::std::is_move_assignable_v<cuda::std::seed_seq>);

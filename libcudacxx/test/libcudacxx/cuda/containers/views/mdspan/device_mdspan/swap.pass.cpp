@@ -27,7 +27,7 @@
 #include "test_macros.h"
 
 template <class MDS>
-__host__ __device__ constexpr void test_swap(MDS a, MDS b)
+TEST_FUNC constexpr void test_swap(MDS a, MDS b)
 {
   auto org_a = a;
   auto org_b = b;
@@ -43,7 +43,7 @@ __host__ __device__ constexpr void test_swap(MDS a, MDS b)
   test_swap_counter<MDS>();
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using extents_t    = cuda::std::extents<int, 4, cuda::std::dynamic_extent>;
   float data_a[1024] = {};
@@ -67,7 +67,7 @@ int main(int, char**)
 {
   test();
 #if !_CCCL_COMPILER(GCC, <, 11) // gcc-10 complains about swap failing during constant evaluation
-  static_assert(test(), "");
+  static_assert(test());
 #endif // !_CCCL_COMPILER(GCC, <, 11)
   return 0;
 }

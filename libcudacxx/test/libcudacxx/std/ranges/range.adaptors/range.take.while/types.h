@@ -25,13 +25,13 @@ struct BufferViewBase : cuda::std::ranges::view_base
   cuda::std::size_t size_;
 
   template <cuda::std::size_t N>
-  __host__ __device__ constexpr BufferViewBase(T (&b)[N])
+  TEST_FUNC constexpr BufferViewBase(T (&b)[N])
       : buffer_(b)
       , size_(N)
   {}
 
   template <cuda::std::size_t N>
-  __host__ __device__ constexpr BufferViewBase(cuda::std::array<T, N>& arr)
+  TEST_FUNC constexpr BufferViewBase(cuda::std::array<T, N>& arr)
       : buffer_(arr.data())
       , size_(N)
   {}
@@ -45,18 +45,18 @@ struct SimpleView : IntBufferViewBase
   SimpleView() = default;
 
   template <class T>
-  __host__ __device__ constexpr SimpleView(T&& input)
+  TEST_FUNC constexpr SimpleView(T&& input)
       : IntBufferViewBase(cuda::std::forward<T>(input))
   {}
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
   // ^^^ TEST_COMPILER(NVRTC) ^^^ / vvv !TEST_COMPILER(NVRTC) vvv
   using IntBufferViewBase::IntBufferViewBase;
 #endif // !TEST_COMPILER(NVRTC)
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return buffer_;
   }
-  __host__ __device__ constexpr int* end() const
+  TEST_FUNC constexpr int* end() const
   {
     return buffer_ + size_;
   }
@@ -69,18 +69,18 @@ struct ConstNotRange : IntBufferViewBase
   ConstNotRange() = default;
 
   template <class T>
-  __host__ __device__ constexpr ConstNotRange(T&& input)
+  TEST_FUNC constexpr ConstNotRange(T&& input)
       : IntBufferViewBase(cuda::std::forward<T>(input))
   {}
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
   // ^^^ TEST_COMPILER(NVRTC) ^^^ / vvv !TEST_COMPILER(NVRTC) vvv
   using IntBufferViewBase::IntBufferViewBase;
 #endif // !TEST_COMPILER(NVRTC)
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return buffer_;
   }
-  __host__ __device__ constexpr int* end()
+  TEST_FUNC constexpr int* end()
   {
     return buffer_ + size_;
   }
@@ -94,26 +94,26 @@ struct NonSimple : IntBufferViewBase
   NonSimple() = default;
 
   template <class T>
-  __host__ __device__ constexpr NonSimple(T&& input)
+  TEST_FUNC constexpr NonSimple(T&& input)
       : IntBufferViewBase(cuda::std::forward<T>(input))
   {}
 #else // ^^^ C++20 ^^^ / vvv C++17 vvv
   // ^^^ TEST_COMPILER(NVRTC) ^^^ / vvv !TEST_COMPILER(NVRTC) vvv
   using IntBufferViewBase::IntBufferViewBase;
 #endif // !TEST_COMPILER(NVRTC)
-  __host__ __device__ constexpr const int* begin() const
+  TEST_FUNC constexpr const int* begin() const
   {
     return buffer_;
   }
-  __host__ __device__ constexpr const int* end() const
+  TEST_FUNC constexpr const int* end() const
   {
     return buffer_ + size_;
   }
-  __host__ __device__ constexpr int* begin()
+  TEST_FUNC constexpr int* begin()
   {
     return buffer_;
   }
-  __host__ __device__ constexpr int* end()
+  TEST_FUNC constexpr int* end()
   {
     return buffer_ + size_;
   }

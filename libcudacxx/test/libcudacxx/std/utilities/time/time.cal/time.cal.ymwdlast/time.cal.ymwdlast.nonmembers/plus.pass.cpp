@@ -27,7 +27,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool testConstexprYears(cuda::std::chrono::year_month_weekday_last ym)
+TEST_FUNC constexpr bool testConstexprYears(cuda::std::chrono::year_month_weekday_last ym)
 {
   cuda::std::chrono::years offset{23};
   if (static_cast<int>((ym).year()) != 1)
@@ -45,7 +45,7 @@ __host__ __device__ constexpr bool testConstexprYears(cuda::std::chrono::year_mo
   return true;
 }
 
-__host__ __device__ constexpr bool testConstexprMonths(cuda::std::chrono::year_month_weekday_last ym)
+TEST_FUNC constexpr bool testConstexprMonths(cuda::std::chrono::year_month_weekday_last ym)
 {
   cuda::std::chrono::months offset{6};
   if (static_cast<unsigned>((ym).month()) != 1)
@@ -86,7 +86,7 @@ int main(int, char**)
       cuda::std::is_same_v<year_month_weekday_last,
                            decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday_last>())>);
 
-    static_assert(testConstexprMonths(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}), "");
+    static_assert(testConstexprMonths(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}));
 
     year_month_weekday_last ym{year{1234}, January, weekday_last{Tuesday}};
     for (int i = 0; i <= 10; ++i) // TODO test wrap-around
@@ -116,7 +116,7 @@ int main(int, char**)
       cuda::std::is_same_v<year_month_weekday_last,
                            decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday_last>())>);
 
-    static_assert(testConstexprYears(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}), "");
+    static_assert(testConstexprYears(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}));
 
     year_month_weekday_last ym{year{1234}, cuda::std::chrono::January, weekday_last{Tuesday}};
     for (int i = 0; i <= 10; ++i)

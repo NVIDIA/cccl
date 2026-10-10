@@ -1,0 +1,11 @@
+References
+==========
+
+Reference documentation for maintainers.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../branching_strategy
+   ../coderabbit
+   compile_time

@@ -1,0 +1,47 @@
+// Minimal initializer_list stub for CUDA JIT compilation
+#ifndef _HOSTJIT_INITIALIZER_LIST
+#define _HOSTJIT_INITIALIZER_LIST
+
+#include <cstddef>
+
+namespace std {
+
+template<class T>
+class initializer_list {
+public:
+    using value_type = T;
+    using reference = const T&;
+    using const_reference = const T&;
+    using size_type = size_t;
+    using iterator = const T*;
+    using const_iterator = const T*;
+
+private:
+    const T* _begin;
+    size_t _size;
+
+    // This constructor is called by the compiler
+    constexpr initializer_list(const T* b, size_t s) noexcept
+        : _begin(b), _size(s) {}
+
+public:
+    constexpr initializer_list() noexcept : _begin(nullptr), _size(0) {}
+
+    constexpr size_t size() const noexcept { return _size; }
+    constexpr const T* begin() const noexcept { return _begin; }
+    constexpr const T* end() const noexcept { return _begin + _size; }
+};
+
+template<class T>
+constexpr const T* begin(initializer_list<T> il) noexcept {
+    return il.begin();
+}
+
+template<class T>
+constexpr const T* end(initializer_list<T> il) noexcept {
+    return il.end();
+}
+
+} // namespace std
+
+#endif // _HOSTJIT_INITIALIZER_LIST

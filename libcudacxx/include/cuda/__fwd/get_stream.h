@@ -35,4 +35,4 @@ _CCCL_END_NAMESPACE_CUDA
 
 #endif // _CCCL_HAS_CTK()
 
-#endif // _CUDA___FWD_PIPELINE_H
+#endif // _CUDA___FWD_GET_STREAM_H

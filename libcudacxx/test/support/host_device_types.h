@@ -13,6 +13,9 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/utility>
 
+#include "test_iterators.h"
+#include "test_macros.h"
+
 #if !_CCCL_COMPILER(NVRTC)
 struct host_only_type
 {
@@ -75,6 +78,51 @@ struct host_only_type
   void swap(host_only_type& other) noexcept
   {
     cuda::std::swap(val_, other.val_);
+  }
+};
+
+struct host_only_container
+{
+  using iterator = host_only_iterator<int*>;
+
+  int data_[6] = {1, 2, 3, 4, 5, 6};
+
+  host_only_container() noexcept {}
+  host_only_container(const host_only_container&) noexcept {}
+  host_only_container(host_only_container&&) noexcept {}
+  host_only_container& operator=(const host_only_container&) noexcept
+  {
+    return *this;
+  }
+  host_only_container& operator=(host_only_container&&) noexcept
+  {
+    return *this;
+  }
+
+  host_only_iterator<int*> begin()
+  {
+    return host_only_iterator{data_};
+  }
+  host_only_iterator<const int*> begin() const
+  {
+    return host_only_iterator{data_};
+  }
+  host_only_iterator<int*> end()
+  {
+    return host_only_iterator{data_ + 6};
+  }
+  host_only_iterator<const int*> end() const
+  {
+    return host_only_iterator{data_ + 6};
+  }
+
+  int& operator[](const size_t index) noexcept
+  {
+    return data_[index];
+  }
+  const int& operator[](const size_t index) const noexcept
+  {
+    return data_[index];
   }
 };
 #endif // !_CCCL_COMPILER(NVRTC)
@@ -144,5 +192,71 @@ struct device_only_type
   }
 };
 #endif // _CCCL_CUDA_COMPILATION()
+
+#if _CCCL_TILE_COMPILATION()
+struct tile_only_type
+{
+  int val_;
+
+  __tile__ tile_only_type(const int val = 0) noexcept
+      : val_(val)
+  {}
+  __tile__ tile_only_type(cuda::std::initializer_list<int>, const int val) noexcept
+      : val_(val)
+  {}
+
+  __tile__ tile_only_type(const tile_only_type& other) noexcept
+      : val_(other.val_)
+  {}
+  __tile__ tile_only_type(tile_only_type&& other) noexcept
+      : val_(cuda::std::exchange(other.val_, -1))
+  {}
+
+  __tile__ tile_only_type& operator=(const tile_only_type& other) noexcept
+  {
+    val_ = other.val_;
+    return *this;
+  }
+
+  __tile__ tile_only_type& operator=(tile_only_type&& other) noexcept
+
+  {
+    val_ = cuda::std::exchange(other.val_, -1);
+    return *this;
+  }
+
+  __tile__ ~tile_only_type() noexcept {}
+
+  [[nodiscard]] __tile__ friend bool operator==(const tile_only_type& lhs, const tile_only_type& rhs) noexcept
+  {
+    return lhs.val_ == rhs.val_;
+  }
+  [[nodiscard]] __tile__ friend bool operator!=(const tile_only_type& lhs, const tile_only_type& rhs) noexcept
+  {
+    return lhs.val_ != rhs.val_;
+  }
+  [[nodiscard]] __tile__ friend bool operator<(const tile_only_type& lhs, const tile_only_type& rhs) noexcept
+  {
+    return lhs.val_ < rhs.val_;
+  }
+  [[nodiscard]] __tile__ friend bool operator<=(const tile_only_type& lhs, const tile_only_type& rhs) noexcept
+  {
+    return lhs.val_ <= rhs.val_;
+  }
+  [[nodiscard]] __tile__ friend bool operator>(const tile_only_type& lhs, const tile_only_type& rhs) noexcept
+  {
+    return lhs.val_ > rhs.val_;
+  }
+  [[nodiscard]] __tile__ friend bool operator>=(const tile_only_type& lhs, const tile_only_type& rhs) noexcept
+  {
+    return lhs.val_ >= rhs.val_;
+  }
+
+  __tile__ void swap(tile_only_type& other) noexcept
+  {
+    cuda::std::swap(val_, other.val_);
+  }
+};
+#endif // _CCCL_TILE_COMPILATION()
 
 #endif // TEST_SUPPORT_HOST_DEVICE_TYPES

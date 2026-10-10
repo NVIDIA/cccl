@@ -19,7 +19,7 @@ if (libcudacxx_ENABLE_CODEGEN)
   add_subdirectory(codegen)
 endif()
 
-set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
+list(PREPEND CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
 set(LLVM_PATH "${libcudacxx_SOURCE_DIR}" CACHE STRING "" FORCE)
 
 # Configuration options.

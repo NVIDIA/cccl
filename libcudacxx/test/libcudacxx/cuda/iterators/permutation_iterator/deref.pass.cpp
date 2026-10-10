@@ -17,7 +17,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   using baseIter = random_access_iterator<int*>;
   int buffer[]   = {1, 2, 3, 4, 5, 6, 7, 8};

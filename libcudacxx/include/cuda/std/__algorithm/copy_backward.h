@@ -22,6 +22,7 @@
 
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
@@ -69,8 +70,10 @@ template <class _BidirectionalIterator1, class _BidirectionalIterator2>
 _CCCL_API inline _CCCL_CONSTEXPR_CXX20 _BidirectionalIterator2
 copy_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
-  return ::cuda::std::__copy_backward(
+  auto __ret = ::cuda::std::__copy_backward(
     ::cuda::std::__unwrap_iter(__first), ::cuda::std::__unwrap_iter(__last), ::cuda::std::__unwrap_iter(__result));
+
+  return ::cuda::std::__rewrap_iter(__result, __ret);
 }
 
 _CCCL_END_NAMESPACE_CUDA_STD

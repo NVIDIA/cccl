@@ -18,7 +18,8 @@
 
 #include "test_macros.h"
 
-#if TEST_COMPILER(GCC, <, 10)
+// error: bit field read/write is unsupported in tile code
+#if TEST_COMPILER(GCC, <, 10) || _CCCL_TILE_COMPILATION()
 #  define OMIT_BITFIELD_ENUMS 1
 #endif // TEST_COMPILER(GCC, <, 10)
 
@@ -65,7 +66,7 @@ struct WithBitfieldEnums
 };
 #endif // !OMIT_BITFIELD_ENUMS
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   static_assert(noexcept(cuda::std::to_underlying(e_default::a)));
   static_assert(cuda::std::is_same_v<int, decltype(cuda::std::to_underlying(e_default::a))>);
@@ -108,7 +109,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

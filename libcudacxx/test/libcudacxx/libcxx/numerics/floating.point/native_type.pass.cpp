@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <cuda::std::__fp_format format, class T>
-__host__ __device__ void test_fp_native_type()
+TEST_FUNC void test_fp_native_type()
 {
   static_assert(cuda::std::is_same_v<T, cuda::std::__fp_native_type_t<format>>);
   static_assert(cuda::std::is_void_v<T> == !cuda::std::__fp_has_native_type_v<format>);

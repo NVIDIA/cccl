@@ -12,7 +12,9 @@
 #include <cuda/std/__string_>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_FUNC constexpr bool test()
 {
 #if _CCCL_HAS_CHAR8_T()
   [[maybe_unused]] const auto i = cuda::std::char_traits<char8_t>::eof();

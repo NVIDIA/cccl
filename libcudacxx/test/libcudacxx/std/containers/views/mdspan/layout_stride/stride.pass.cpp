@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class E, class... Args>
-__host__ __device__ constexpr void test_stride(cuda::std::array<typename E::index_type, E::rank()> strides, Args... args)
+TEST_FUNC constexpr void test_stride(cuda::std::array<typename E::index_type, E::rank()> strides, Args... args)
 {
   using M = cuda::std::layout_stride::mapping<E>;
   M m(E(args...), strides);
@@ -38,15 +38,14 @@ __host__ __device__ constexpr void test_stride(cuda::std::array<typename E::inde
 
   static_assert(noexcept(m.strides()));
   auto strides_out = m.strides();
-  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<typename E::index_type, E::rank()>>::value,
-                "");
+  static_assert(cuda::std::is_same<decltype(strides_out), cuda::std::array<typename E::index_type, E::rank()>>::value);
   for (size_t r = 0; r < E::rank(); r++)
   {
     assert(strides[r] == strides_out[r]);
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
   test_stride<cuda::std::extents<unsigned, D>>(cuda::std::array<unsigned, 1>{1}, 7);
@@ -59,6 +58,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

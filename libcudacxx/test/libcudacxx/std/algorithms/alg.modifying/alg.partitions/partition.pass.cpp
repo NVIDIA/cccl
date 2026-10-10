@@ -24,14 +24,14 @@
 
 struct is_odd
 {
-  __host__ __device__ constexpr bool operator()(const int& i) const
+  TEST_FUNC constexpr bool operator()(const int& i) const
   {
     return i & 1;
   }
 };
 
 template <class Iter>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   // check mixed
   int ia[]          = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -129,7 +129,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();
@@ -141,7 +141,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

@@ -41,7 +41,9 @@ it_output = TransformOutputIterator(d_output, write_op)
 
 h_init = SumAndCount(0.0, 0)
 
-cuda.compute.inclusive_scan(it_input, it_output, add_op, h_init, len(d_input))
+cuda.compute.inclusive_scan(
+    d_in=it_input, d_out=it_output, op=add_op, init_value=h_init, num_items=len(d_input)
+)
 
 expected = np.array([1.0, 1.5, 2.0, 2.5, 3.0], dtype=np.float32)
 np.testing.assert_allclose(d_output.get(), expected)

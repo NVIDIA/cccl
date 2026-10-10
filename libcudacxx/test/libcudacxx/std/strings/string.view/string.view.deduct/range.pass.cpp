@@ -22,7 +22,7 @@
 #include "test_iterators.h"
 
 template <class CharT>
-__host__ __device__ constexpr void test_range_deduct()
+TEST_FUNC constexpr void test_range_deduct()
 {
   // 1. Test construction of a string_view from an cuda::std::array
   {
@@ -40,20 +40,20 @@ __host__ __device__ constexpr void test_range_deduct()
       cuda::std::array<CharT, 3> data_{};
 
     public:
-      __host__ __device__ constexpr Widget()
+      TEST_FUNC constexpr Widget()
       {
         cuda::std::char_traits<CharT>::copy(data_.data(), TEST_STRLIT(CharT, "foo"), 3);
       }
 
-      __host__ __device__ constexpr const CharT* data() const
+      TEST_FUNC constexpr const CharT* data() const
       {
         return data_.data();
       }
-      __host__ __device__ constexpr contiguous_iterator<const CharT*> begin() const
+      TEST_FUNC constexpr contiguous_iterator<const CharT*> begin() const
       {
         return contiguous_iterator<const CharT*>(data());
       }
-      __host__ __device__ constexpr contiguous_iterator<const CharT*> end() const
+      TEST_FUNC constexpr contiguous_iterator<const CharT*> end() const
       {
         return contiguous_iterator<const CharT*>(data() + 3);
       }
@@ -67,7 +67,7 @@ __host__ __device__ constexpr void test_range_deduct()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_range_deduct<char>();
 #if _CCCL_HAS_CHAR8_T()

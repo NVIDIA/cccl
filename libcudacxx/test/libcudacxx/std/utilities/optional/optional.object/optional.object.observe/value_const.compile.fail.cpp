@@ -33,7 +33,7 @@ int main(int, char**)
 {
   {
     constexpr optional<X> opt{};
-    static_assert(opt.value().test() == 3, "");
+    static_assert(opt.value().test() == 3);
   }
 
   return 0;

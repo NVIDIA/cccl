@@ -10,6 +10,7 @@
 #include <cuda/__launch/host_launch.h>
 #include <cuda/__stream/stream.h>
 #include <cuda/atomic>
+#include <cuda/devices>
 #include <cuda/memory>
 
 #include <cooperative_groups.h>
@@ -19,7 +20,8 @@ void block_stream(cuda::stream_ref stream, cuda::atomic<int>& atomic)
 {
   auto block_lambda = [&]() {
     while (atomic != 1)
-      ;
+    {
+    }
   };
   cuda::host_launch(stream, block_lambda);
 }
@@ -123,10 +125,10 @@ private:
 
 C2H_CCCLRT_TEST("Host launch", "")
 {
-  cuda::device_ref device{0};
+  const cuda::device_ref device{0};
   device.init();
 
-  cuda::stream stream{device};
+  const cuda::stream stream{device};
 
   SECTION("Ordinary function without arguments returning void")
   {
@@ -216,7 +218,7 @@ C2H_CCCLRT_TEST("Host launch", "")
 
   SECTION("Confirm no const added to the callable")
   {
-    lambda_wrapper wrapped_lambda([&]() {
+    lambda_wrapper wrapped_lambda([&]() { // NOLINT(misc-const-correctness)
       i = 21;
     });
 
@@ -279,4 +281,28 @@ C2H_CCCLRT_TEST("Host launch", "")
     cuda::host_launch(stream, MoveOnlyCallable::make(), MoveOnlyArg::make());
     stream.sync();
   }
+}
+
+C2H_CCCLRT_TEST("Host launch uses the stream device when current device differs", "[launch][multi_gpu]")
+{
+  if (cuda::devices.size() < 2)
+  {
+    return;
+  }
+
+  const cuda::device_ref current_device{0};
+  const cuda::device_ref explicit_device{1};
+
+  const cuda::stream stream{explicit_device};
+  int value = 0;
+
+  {
+    const cuda::__ensure_current_context guard(current_device);
+    cuda::host_launch(stream, [&value]() {
+      value = 42;
+    });
+  }
+
+  stream.sync();
+  CCCLRT_REQUIRE(value == 42);
 }

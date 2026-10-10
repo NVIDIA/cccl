@@ -33,10 +33,12 @@
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/mdspan.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/integral_constant_like.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -45,9 +47,7 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/span>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -112,10 +112,10 @@ _CCCL_CONCEPT __all_convertible_to_index_type =
   && (is_nothrow_constructible_v<_IndexType, _Indices> && ... && true);
 
 template <class _Extent, size_t _Size>
-static constexpr bool __matches_dynamic_rank = (_Size == _Extent::rank_dynamic());
+_CCCL_CONCEPT __matches_dynamic_rank = (_Size == _Extent::rank_dynamic());
 
 template <class _Extent, size_t _Size>
-static constexpr bool __matches_static_rank = (_Size == _Extent::rank()) && (_Size != _Extent::rank_dynamic());
+_CCCL_CONCEPT __matches_static_rank = (_Size == _Extent::rank()) && !__matches_dynamic_rank<_Extent, _Size>;
 } // namespace __mdspan_detail
 
 template <class _Tp, class _IndexType>

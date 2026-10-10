@@ -24,21 +24,21 @@
 
 struct NotValueConvertible
 {
-  __host__ __device__ operator int() const&& = delete;
-  __host__ __device__ constexpr operator int() const&
+  TEST_FUNC operator int() const&& = delete;
+  TEST_FUNC constexpr operator int() const&
   {
     return 1;
   }
 };
 
 template <class D, class R>
-__host__ __device__ constexpr void check(R r)
+TEST_FUNC constexpr void check(R r)
 {
   D d(r);
   assert(d.count() == r);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   check<cuda::std::chrono::duration<int>>(5);
   check<cuda::std::chrono::duration<int, cuda::std::ratio<3, 2>>>(5);

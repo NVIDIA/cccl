@@ -23,27 +23,27 @@
 template <class T>
 struct test_is_function
 {
-  static_assert(cuda::std::is_function<T>::value, "");
-  static_assert(cuda::std::is_function<const T>::value, "");
-  static_assert(cuda::std::is_function<volatile T>::value, "");
-  static_assert(cuda::std::is_function<const volatile T>::value, "");
-  static_assert(cuda::std::is_function_v<T>, "");
-  static_assert(cuda::std::is_function_v<const T>, "");
-  static_assert(cuda::std::is_function_v<volatile T>, "");
-  static_assert(cuda::std::is_function_v<const volatile T>, "");
+  static_assert(cuda::std::is_function<T>::value);
+  static_assert(cuda::std::is_function<const T>::value);
+  static_assert(cuda::std::is_function<volatile T>::value);
+  static_assert(cuda::std::is_function<const volatile T>::value);
+  static_assert(cuda::std::is_function_v<T>);
+  static_assert(cuda::std::is_function_v<const T>);
+  static_assert(cuda::std::is_function_v<volatile T>);
+  static_assert(cuda::std::is_function_v<const volatile T>);
 };
 
 template <class T>
 struct test_is_not_function
 {
-  static_assert(!cuda::std::is_function<T>::value, "");
-  static_assert(!cuda::std::is_function<const T>::value, "");
-  static_assert(!cuda::std::is_function<volatile T>::value, "");
-  static_assert(!cuda::std::is_function<const volatile T>::value, "");
-  static_assert(!cuda::std::is_function_v<T>, "");
-  static_assert(!cuda::std::is_function_v<const T>, "");
-  static_assert(!cuda::std::is_function_v<volatile T>, "");
-  static_assert(!cuda::std::is_function_v<const volatile T>, "");
+  static_assert(!cuda::std::is_function<T>::value);
+  static_assert(!cuda::std::is_function<const T>::value);
+  static_assert(!cuda::std::is_function<volatile T>::value);
+  static_assert(!cuda::std::is_function<const volatile T>::value);
+  static_assert(!cuda::std::is_function_v<T>);
+  static_assert(!cuda::std::is_function_v<const T>);
+  static_assert(!cuda::std::is_function_v<volatile T>);
+  static_assert(!cuda::std::is_function_v<const volatile T>);
 };
 
 class Empty
@@ -51,7 +51,7 @@ class Empty
 
 class NotEmpty
 {
-  __host__ __device__ virtual ~NotEmpty();
+  TEST_FUNC virtual ~NotEmpty();
 };
 
 union Union
@@ -64,7 +64,7 @@ struct bit_zero
 
 class Abstract
 {
-  __host__ __device__ virtual ~Abstract() = 0;
+  TEST_FUNC virtual ~Abstract() = 0;
 };
 
 enum Enum

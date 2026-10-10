@@ -11,17 +11,17 @@ struct MoveOnlyView : cuda::std::ranges::view_base
 {
   int* ptr_;
 
-  __host__ __device__ constexpr explicit MoveOnlyView(int* ptr)
+  TEST_FUNC constexpr explicit MoveOnlyView(int* ptr)
       : ptr_(ptr)
   {}
   MoveOnlyView(MoveOnlyView&&)            = default;
   MoveOnlyView& operator=(MoveOnlyView&&) = default;
 
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return ptr_;
   }
-  __host__ __device__ constexpr sentinel_wrapper<int*> end() const
+  TEST_FUNC constexpr sentinel_wrapper<int*> end() const
   {
     return sentinel_wrapper<int*>{ptr_ + 8};
   }
@@ -33,15 +33,15 @@ static_assert(!cuda::std::copyable<MoveOnlyView>);
 struct CopyableView : cuda::std::ranges::view_base
 {
   int* ptr_;
-  __host__ __device__ constexpr explicit CopyableView(int* ptr)
+  TEST_FUNC constexpr explicit CopyableView(int* ptr)
       : ptr_(ptr)
   {}
 
-  __host__ __device__ constexpr int* begin() const
+  TEST_FUNC constexpr int* begin() const
   {
     return ptr_;
   }
-  __host__ __device__ constexpr sentinel_wrapper<int*> end() const
+  TEST_FUNC constexpr sentinel_wrapper<int*> end() const
   {
     return sentinel_wrapper<int*>{ptr_ + 8};
   }
@@ -54,14 +54,14 @@ using ForwardIter = forward_iterator<int*>;
 struct SizedForwardView : cuda::std::ranges::view_base
 {
   int* ptr_;
-  __host__ __device__ constexpr explicit SizedForwardView(int* ptr)
+  TEST_FUNC constexpr explicit SizedForwardView(int* ptr)
       : ptr_(ptr)
   {}
-  __host__ __device__ constexpr auto begin() const
+  TEST_FUNC constexpr auto begin() const
   {
     return ForwardIter(ptr_);
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sized_sentinel<ForwardIter>(ForwardIter(ptr_ + 8));
   }
@@ -74,14 +74,14 @@ using RandomAccessIter = random_access_iterator<int*>;
 struct SizedRandomAccessView : cuda::std::ranges::view_base
 {
   int* ptr_;
-  __host__ __device__ constexpr explicit SizedRandomAccessView(int* ptr)
+  TEST_FUNC constexpr explicit SizedRandomAccessView(int* ptr)
       : ptr_(ptr)
   {}
-  __host__ __device__ constexpr auto begin() const
+  TEST_FUNC constexpr auto begin() const
   {
     return RandomAccessIter(ptr_);
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_FUNC constexpr auto end() const
   {
     return sized_sentinel<RandomAccessIter>(RandomAccessIter(ptr_ + 8));
   }

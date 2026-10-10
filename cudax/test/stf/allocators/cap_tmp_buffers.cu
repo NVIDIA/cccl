@@ -33,7 +33,7 @@ int main(int, char**)
     auto Ap = ctx.logical_data(make_slice(&dA[p * PART_SIZE], PART_SIZE), data_place::current_device());
 
     ctx.parallel_for(Ap.shape(), Ap.write()).set_symbol("init_Ap")->*[p, PART_SIZE] __device__(size_t i, auto ap) {
-      ap(i) = 1.0 * (i + p * PART_SIZE);
+      ap(i) = 1.0 * static_cast<double>((i + p * PART_SIZE));
     };
 
     auto tmp = ctx.logical_data(Ap.shape());

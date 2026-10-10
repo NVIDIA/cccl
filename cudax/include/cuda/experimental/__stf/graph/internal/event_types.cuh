@@ -22,6 +22,7 @@
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <vector>
 
@@ -57,6 +58,8 @@ protected:
     ::std::unordered_set<cudaGraphNode_t> seen;
     ::std::vector<cudaGraphNode_t> result;
 
+    result.reserve(nodes.size());
+
     for (cudaGraphNode_t node : nodes)
     {
       if (seen.insert(node).second)
@@ -68,7 +71,7 @@ protected:
     ::std::swap(nodes, result);
   }
 
-  bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
+  bool factorize(const backend_ctx_untyped& bctx, reserved::event_vector& events) override
   {
     _CCCL_ASSERT(events.size() >= 2, "invalid value");
 
@@ -85,9 +88,11 @@ protected:
     // graph events by making them depend on a single node instead
     if (events.size() > 16)
     {
-      cudaGraphNode_t n;
+      cudaGraphNode_t n = nullptr;
 
       ::std::vector<cudaGraphNode_t> nodes;
+
+      nodes.reserve(events.size());
 
       // List all graph nodes in the vector of events
       for (const auto& e : events)
@@ -119,7 +124,7 @@ protected:
 
         // Create a new empty graph node which depends on the previous ones,
         // empty the list of events and replace it with this single "empty" event
-        cuda_safe_call(cudaGraphAddEmptyNode(&n, bctx_graph, nodes.data(), nodes.size()));
+        n = cuda_try<cudaGraphAddEmptyNode>(bctx_graph, nodes.data(), nodes.size());
       }
 
       events.clear();
@@ -169,6 +174,12 @@ join_with_graph_nodes(backend_ctx_untyped& bctx, event_list& prereqs, size_t cur
 
 // This creates a new CUDASTF event list from a cudaGraphNode_t and sets the appropriate annotations in the DOT output.
 /* previous_prereqs is only passed so that we can insert the proper DOT annotations */
+//
+// noexcept: by the time this runs the node is already in the graph, and no caller can take it
+// back out cleanly (allocate() would also have to free a buffer three different ways). The only
+// things that can fail here are host allocations -- the event handle, the event list, and under
+// DOT tracing the symbol and edge bookkeeping -- so host OOM at this point ends the program with
+// a report rather than leaving an orphan node behind.
 template <typename context_t>
 inline void fork_from_graph_node(
   context_t& ctx,
@@ -176,20 +187,26 @@ inline void fork_from_graph_node(
   cudaGraph_t g,
   size_t stage,
   event_list& previous_prereqs,
-  ::std::string prereq_string)
+  const char* prereq_string) noexcept
 {
-  auto gnp = reserved::graph_event(n, stage, g);
-  gnp->set_symbol(ctx, mv(prereq_string));
-
-  auto& dot = *ctx.get_dot();
-  if (dot.is_tracing_prereqs())
+  ON_THROW(abort)
   {
-    for (const auto& e : previous_prereqs)
-    {
-      dot.add_edge(e->unique_prereq_id, gnp->unique_prereq_id, edge_type::prereqs);
-    }
-  }
+    auto gnp = reserved::graph_event(n, stage, g);
+    // The label becomes a string only here, inside the guard: a by-value std::string parameter
+    // would be constructed by the caller, after the node is in the graph but before this
+    // function's policy could catch its allocation failing.
+    gnp->set_symbol(ctx, ::std::string(prereq_string));
 
-  previous_prereqs = event_list(gnp);
+    auto& dot = *ctx.get_dot();
+    if (dot.is_tracing_prereqs())
+    {
+      for (const auto& e : previous_prereqs)
+      {
+        dot.add_edge(e->unique_prereq_id, gnp->unique_prereq_id, edge_type::prereqs);
+      }
+    }
+
+    previous_prereqs = event_list(gnp);
+  };
 }
 } // namespace cuda::experimental::stf::reserved

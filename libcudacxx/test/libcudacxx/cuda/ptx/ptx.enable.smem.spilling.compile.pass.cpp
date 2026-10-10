@@ -8,9 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/ptx>
+// the following test fails with nvcc 13.2 with the flags -rdc=true -dc
+// UNSUPPORTED: true
 
-#include <cuda/ptx>
+// <cuda/ptxs/enable_smem_spilling.h>
+
+#include <cuda/ptxs/enable_smem_spilling.h>
 
 __global__ void test_enable_smem_spilling()
 {

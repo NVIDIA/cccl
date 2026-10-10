@@ -32,40 +32,9 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-/*! This convenience metafunction is included for compatibility with
- *  \p tuple. It returns either the type of a \p pair's
- *  \c first_type or \c second_type in its nested type, \c type.
- *
- *  \tparam N This parameter selects the member of interest.
- *  \tparam T A \c pair type of interest.
- *
- *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.2.0
- *  \endverbatim
- */
-#ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
-template <size_t N, class T>
-using tuple_element = ::cuda::std::tuple_element<N, T>;
-#else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
+// Documented in tuple.h — only declared here for compatibility with pair users.
 using ::cuda::std::tuple_element;
-#endif // _CCCL_DOXYGEN_INVOKED
-
-/*! This convenience metafunction is included for compatibility with
- *  \p tuple. It returns \c 2, the number of elements of a \p pair,
- *  in its nested data member, \c value.
- *
- *  \tparam Pair A \c pair type of interest.
- *
- *  \verbatim embed:rst:leading-asterisk
- *     .. versionadded:: 2.2.0
- *  \endverbatim
- */
-#ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
-template <class T>
-using tuple_size = ::cuda::std::tuple_size<T>;
-#else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 using ::cuda::std::tuple_size;
-#endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \p pair is a generic data structure encapsulating a heterogeneous
  *  pair of values.

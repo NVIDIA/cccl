@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/utility>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+
+#include <iostream>
 
 namespace cuda::experimental::stf::reserved
 {
@@ -39,7 +41,7 @@ public:
     bool is_end() const { return end_reached; }
 
     CartesianProduct& operator++() {
-        increment_helper(::std::index_sequence_for<Iterators...> {});
+        increment_helper(::cuda::std::index_sequence_for<Iterators...> {});
         end_reached = (current == ends);
         return *this;
     }
@@ -52,7 +54,7 @@ public:
 
 private:
     template <::std::size_t... Is>
-    void increment_helper(::std::index_sequence<Is...>) {
+    void increment_helper(::cuda::std::index_sequence<Is...>) {
         (((::std::get<Is>(current) != ::std::get<Is>(ends) &&
                   ++diagonal > ::std::distance(::std::get<Is>(begins), ::std::get<Is>(current)))
                          ? (++::std::get<Is>(current), 0)
@@ -83,7 +85,7 @@ UNITTEST("cartesian product") {
     while (!product.is_end()) {
         auto tuple = *product;
         ::std::cout << "(" << *(::std::get<0>(tuple)) << ", " << *(::std::get<1>(tuple)) << ", " << *(::std::get<2>(tuple))
-                  << ")" << ::std::endl;
+                  << ")" << ::'\n';
 
         ++product;
     }
@@ -278,7 +280,7 @@ namespace reserved
 template <typename T>
 __global__ void unit_test_range_func(T n)
 {
-  Range range(n);
+  const Range range(n);
   int sum = 0;
   for (auto i : range)
   {
@@ -291,12 +293,12 @@ __global__ void unit_test_range_func(T n)
 
 UNITTEST("range")
 {
-  int n = 10;
-  Range range(n);
+  const int n = 10;
+  const Range range(n);
 
   ::std::vector<int> check(n);
 
-  for (int num : range)
+  for (const auto num : range)
   {
     // fprintf(stderr, "->%d\n", num);
     check[num] = 1;
@@ -381,7 +383,7 @@ public:
 
   _CCCL_HOST_DEVICE difference_type operator-(const StridedRangeIterator& other) const
   {
-    return (currentValue - other.currentValue) / stride;
+    return static_cast<difference_type>((currentValue - other.currentValue) / stride);
   }
 
   _CCCL_HOST_DEVICE bool operator==(const StridedRangeIterator& other) const
@@ -461,9 +463,9 @@ private:
 #ifdef UNITTESTED_FILE
 UNITTEST("StridedRange")
 {
-  StridedRange range(12, 1024, 17);
-  size_t cnt          = 0;
-  size_t expected_cnt = (1024 - 12 + 17 - 1) / 17;
+  const StridedRange range(12, 1024, 17);
+  size_t cnt                = 0;
+  const size_t expected_cnt = (1024 - 12 + 17 - 1) / 17;
 
   for (auto it = range.begin(); it != range.end(); ++it)
   {
@@ -472,19 +474,19 @@ UNITTEST("StridedRange")
     cnt++;
   }
 
-  //    ::std::cout << ::std::endl;
+  //    ::std::cout << ::'\n';
 
   EXPECT(cnt == expected_cnt);
 };
 
 UNITTEST("StridedRange loop")
 {
-  size_t nthreads = 16;
-  size_t n        = 48;
-  size_t cnt      = 0;
+  const size_t nthreads = 16;
+  const size_t n        = 48;
+  size_t cnt            = 0;
   for (size_t tid = 0; tid < nthreads; tid++)
   {
-    StridedRange range(tid, n, nthreads);
+    const StridedRange range(tid, n, static_cast<::std::ptrdiff_t>(nthreads));
     //        ::std::cout << "Proc : " << tid << "=>";
     for (auto it = range.begin(); it != range.end(); ++it)
     {
@@ -492,7 +494,7 @@ UNITTEST("StridedRange loop")
       EXPECT(cnt < n);
       cnt++;
     }
-    //        ::std::cout << ::std::endl;
+    //        ::std::cout << ::'\n';
   }
 
   EXPECT(cnt == n);
@@ -501,9 +503,9 @@ UNITTEST("StridedRange loop")
 template <typename T>
 __global__ void unit_test_strided_range_func(T n)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
-  StridedRange r(tid, n, nthreads);
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
+  const StridedRange r(tid, n, nthreads);
   for (auto i : r)
   {
     //    printf("CUDA %ld\n", i);
@@ -512,7 +514,7 @@ __global__ void unit_test_strided_range_func(T n)
 
 UNITTEST("StridedRange CUDA")
 {
-  size_t n = 100;
+  const size_t n = 100;
   unit_test_strided_range_func<<<4, 2>>>(n);
   cudaDeviceSynchronize();
 };

@@ -15,8 +15,10 @@
 #include <cuda/__complex_>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ void test_layout()
+TEST_FUNC void test_layout()
 {
   cuda::complex<T> z{T(1), T(2)};
   T* p = (T*) &z;
@@ -30,7 +32,7 @@ __host__ __device__ void test_layout()
   assert(p[1] == z.imag());
 }
 
-__host__ __device__ void test()
+TEST_FUNC void test()
 {
   test_layout<float>();
   test_layout<double>();

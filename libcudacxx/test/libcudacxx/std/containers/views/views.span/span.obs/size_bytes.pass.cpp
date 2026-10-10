@@ -19,14 +19,14 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__ constexpr bool testConstexprSpan(Span sp, size_t sz)
+TEST_FUNC constexpr bool testConstexprSpan(Span sp, size_t sz)
 {
   static_assert(noexcept(sp.size_bytes()));
   return (size_t) sp.size_bytes() == sz * sizeof(typename Span::element_type);
 }
 
 template <typename Span>
-__host__ __device__ void testRuntimeSpan(Span sp, size_t sz)
+TEST_FUNC void testRuntimeSpan(Span sp, size_t sz)
 {
   static_assert(noexcept(sp.size_bytes()));
   assert((size_t) sp.size_bytes() == sz * sizeof(typename Span::element_type));
@@ -34,26 +34,27 @@ __host__ __device__ void testRuntimeSpan(Span sp, size_t sz)
 
 struct A
 {};
-constexpr int iArr1[]            = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-TEST_GLOBAL_VARIABLE int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
 int main(int, char**)
 {
-  static_assert(testConstexprSpan(cuda::std::span<int>(), 0), "");
-  static_assert(testConstexprSpan(cuda::std::span<long>(), 0), "");
-  static_assert(testConstexprSpan(cuda::std::span<double>(), 0), "");
-  static_assert(testConstexprSpan(cuda::std::span<A>(), 0), "");
+  constexpr int iArr1[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  int iArr2[]           = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
 
-  static_assert(testConstexprSpan(cuda::std::span<int, 0>(), 0), "");
-  static_assert(testConstexprSpan(cuda::std::span<long, 0>(), 0), "");
-  static_assert(testConstexprSpan(cuda::std::span<double, 0>(), 0), "");
-  static_assert(testConstexprSpan(cuda::std::span<A, 0>(), 0), "");
+  static_assert(testConstexprSpan(cuda::std::span<int>(), 0));
+  static_assert(testConstexprSpan(cuda::std::span<long>(), 0));
+  static_assert(testConstexprSpan(cuda::std::span<double>(), 0));
+  static_assert(testConstexprSpan(cuda::std::span<A>(), 0));
 
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1), 1), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2), 2), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3), 3), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4), 4), "");
-  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 5), 5), "");
+  static_assert(testConstexprSpan(cuda::std::span<int, 0>(), 0));
+  static_assert(testConstexprSpan(cuda::std::span<long, 0>(), 0));
+  static_assert(testConstexprSpan(cuda::std::span<double, 0>(), 0));
+  static_assert(testConstexprSpan(cuda::std::span<A, 0>(), 0));
+
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 1), 1));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 2), 2));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 3), 3));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 4), 4));
+  static_assert(testConstexprSpan(cuda::std::span<const int>(iArr1, 5), 5));
 
   testRuntimeSpan(cuda::std::span<int>(), 0);
   testRuntimeSpan(cuda::std::span<long>(), 0);

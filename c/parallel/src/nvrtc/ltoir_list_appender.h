@@ -43,6 +43,12 @@ struct nvrtc_linkable_list_appender
     {
       append(nvrtc_linkable{nvrtc_code{op.code, op.code_size}});
     }
+
+    // Append any extra LTOIR modules that this op depends on
+    for (size_t i = 0; i < op.num_extra_ltoirs; ++i)
+    {
+      append(nvrtc_linkable{nvrtc_ltoir{op.extra_ltoirs[i], op.extra_ltoir_sizes[i]}});
+    }
   }
 
   void add_iterator_definition(cccl_iterator_t it)

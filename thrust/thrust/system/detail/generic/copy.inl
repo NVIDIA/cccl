@@ -12,6 +12,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/internal_functional.h>
 #include <thrust/for_each.h>
 #include <thrust/functional.h>
@@ -19,6 +20,7 @@
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/tuple>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,7 +44,7 @@ copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size 
   using iterator_tuple = ::cuda::std::tuple<InputIterator, OutputIterator>;
   using zip_iter       = thrust::zip_iterator<iterator_tuple>;
 
-  zip_iter zipped = thrust::make_zip_iterator(first, result);
+  const zip_iter zipped = thrust::make_zip_iterator(first, result);
 
   return ::cuda::std::get<1>(thrust::for_each_n(exec, zipped, n, functor_type{xfrm_type()}).get_iterator_tuple());
 } // end copy_n()

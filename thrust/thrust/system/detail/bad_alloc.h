@@ -13,8 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <new>
-#include <string>
+#if _CCCL_HOSTED()
+#  include <new>
+#  include <string>
 
 THRUST_NAMESPACE_BEGIN
 namespace system::detail
@@ -25,16 +26,15 @@ class bad_alloc : public std::bad_alloc
 public:
   inline bad_alloc(const std::string& w)
       : std::bad_alloc()
-      , m_what()
+      , m_what(std::bad_alloc::what())
   {
-    m_what = std::bad_alloc::what();
     m_what += ": ";
     m_what += w;
   } // end bad_alloc()
 
-  inline virtual ~bad_alloc() noexcept {}
+  inline ~bad_alloc() noexcept override = default;
 
-  inline virtual const char* what() const noexcept
+  inline const char* what() const noexcept override
   {
     return m_what.c_str();
   } // end what()
@@ -43,4 +43,7 @@ private:
   std::string m_what;
 }; // end bad_alloc
 } // namespace system::detail
+
 THRUST_NAMESPACE_END
+
+#endif // _CCCL_HOSTED()

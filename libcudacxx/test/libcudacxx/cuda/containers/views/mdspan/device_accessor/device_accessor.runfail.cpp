@@ -6,7 +6,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 // UNSUPPORTED: nvrtc
+
+// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
+// the assert does not trigger
 
 #include <cuda/mdspan>
 

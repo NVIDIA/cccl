@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright (c) 2011, Duane Merrill. All rights reserved.
-// SPDX-FileCopyrightText: Copyright (c) 2011-2025, NVIDIA CORPORATION. All rights reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2011-2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: BSD-3
 
 //! @file
@@ -28,9 +28,9 @@
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
-#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -62,6 +62,42 @@ CUB_NAMESPACE_BEGIN
 //!
 //!   - Summation (**vs.** generic reduction)
 //!   - The architecture's warp size is a whole multiple of ``LogicalWarpThreads``
+//!
+//! Hardware Warp Redux Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For full 32-thread logical warps, ``WarpReduce`` uses PTX ``redux.sync`` instructions for the following operator and
+//! type combinations when the target architecture supports them:
+//!
+//! - On SM80 and later:
+//!
+//!   - ``cuda::std::plus``:
+//!
+//!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.add``
+//!     - 64-bit integers: 3x ``redux.sync.add``
+//!     - 128-bit integers: 5x ``redux.sync.add``
+//!
+//!   - ``cuda::minimum`` and ``cuda::maximum``:
+//!
+//!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.min/max``
+//!     - 64-bit integers: 2x ``redux.sync.min/max``
+//!     - 128-bit integers: 4x ``redux.sync.min/max``
+//!
+//!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor``: N times ``redux.sync.<bit_op>``,
+//!     where N is ceil(sizeof(T) / sizeof(unsigned)))
+//!
+//! - On SM100f and later in the same architecture family:
+//!
+//!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
+//!
+//! Warp Vote Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For ``bool`` inputs and power-of-two ``LogicalWarpThreads``, ``WarpReduce`` uses a single warp vote instruction on
+//! all architectures, including partially-full warp reductions:
+//!
+//! - ``cuda::std::logical_or``: ``__any_sync``
+//! - ``cuda::std::logical_and``: ``__all_sync``
 //!
 //! Simple Examples
 //! +++++++++++++++
@@ -134,7 +170,7 @@ class WarpReduce
                 "LogicalWarpThreads must be in the range [1, 32]");
 
   static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
-  static constexpr bool is_power_of_two = ::cuda::std::has_single_bit(uint32_t{LogicalWarpThreads});
+  static constexpr bool is_power_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -155,8 +191,7 @@ private:
 
 public:
   /// \smemstorage{WarpReduce}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -504,7 +539,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
-    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
+    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, reduction_op);
   }
   //! @rst
   //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
@@ -708,19 +743,18 @@ private:
 public:
   struct InternalWarpReduce
   {
-    struct TempStorage : Uninitialized<_TempStorage>
-    {};
+    using TempStorage = Uninitialized<_TempStorage>;
 
     _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
-    template <bool ALL_LANES_VALID, typename ReductionOp>
+    template <bool AllLanesValid, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
     {
       return input;
     }
 
-    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    template <bool HeadSegmented, typename FlagT, typename ReductionOp>
     [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
     {

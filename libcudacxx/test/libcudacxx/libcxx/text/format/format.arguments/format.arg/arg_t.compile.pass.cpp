@@ -7,6 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
 // <cuda/std/format>
 
 // cuda::std::__fmt_arg_t
@@ -14,6 +17,8 @@
 #include <cuda/std/__format_>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+
+#include "test_macros.h"
 
 static_assert(cuda::std::is_same_v<cuda::std::underlying_type_t<cuda::std::__fmt_arg_t>, cuda::std::uint8_t>);
 

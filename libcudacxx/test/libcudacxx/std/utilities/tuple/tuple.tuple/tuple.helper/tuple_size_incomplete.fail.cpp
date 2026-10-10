@@ -36,7 +36,7 @@ template <>
 struct cuda::std::tuple_size<Dummy2>
 {
 public:
-  __host__ __device__ static void value() {}
+  TEST_FUNC static void value() {}
 };
 
 template <>

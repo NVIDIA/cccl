@@ -13,16 +13,18 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 _CCCL_TEMPLATE(class MDSpan)
 _CCCL_REQUIRES((MDSpan::rank() == 0))
-__host__ __device__ constexpr bool equal_to(const MDSpan& mdspan, const char* expected)
+TEST_FUNC constexpr bool equal_to(const MDSpan& mdspan, const char* expected)
 {
   return mdspan[cuda::std::array<size_t, 0>{}] == expected[0];
 }
 
 _CCCL_TEMPLATE(class MDSpan)
 _CCCL_REQUIRES((MDSpan::rank() == 1))
-__host__ __device__ constexpr bool equal_to(const MDSpan& mdspan, const char* expected)
+TEST_FUNC constexpr bool equal_to(const MDSpan& mdspan, const char* expected)
 {
   for (size_t i = 0; i != mdspan.size(); ++i)
   {
@@ -36,7 +38,7 @@ __host__ __device__ constexpr bool equal_to(const MDSpan& mdspan, const char* ex
 
 _CCCL_TEMPLATE(class MDSpan)
 _CCCL_REQUIRES((MDSpan::rank() == 2))
-__host__ __device__ constexpr bool equal_to(const MDSpan& mdspan, cuda::std::array<const char*, 2> expected)
+TEST_FUNC constexpr bool equal_to(const MDSpan& mdspan, cuda::std::array<const char*, 2> expected)
 {
   for (size_t i = 0; i != mdspan.extent(0); ++i)
   {

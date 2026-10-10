@@ -91,7 +91,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
   // domain argument of stream_domain. It adapts a `bulk_chunked` sender to the stream
   // domain.
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     // Decompose the bulk sender into its components:
     auto& [__tag, __state, __child] = __sndr;
@@ -108,7 +108,7 @@ struct __bulk_chunked_t : execution::__bulk_t<__bulk_chunked_t>
     return __stream::__adapt(static_cast<__sndr_t&&>(__new_sndr));
   }
 
-  _CCCL_API static constexpr bool __is_chunked() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr bool __is_chunked() noexcept
   {
     return true;
   }
@@ -155,7 +155,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
   // domain argument of stream_domain. It adapts a `bulk_unchunked` sender to the stream
   // domain.
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
   {
     // Decompose the bulk sender into its components:
     auto& [__tag, __state, __child] = __sndr;
@@ -172,7 +172,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __bulk_unchunked_t : execution::__bulk_t<__
     return __stream::__adapt(static_cast<__sndr_t&&>(__new_sndr));
   }
 
-  _CCCL_API static constexpr bool __is_chunked() noexcept
+  _CCCL_HOST_DEVICE_API static constexpr bool __is_chunked() noexcept
   {
     return false;
   }
@@ -189,7 +189,8 @@ struct __bulk_t : execution::__bulk_t<__bulk_t>
   {};
 
   template <class _Sndr>
-  _CCCL_API constexpr auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const -> decltype(auto)
+  _CCCL_HOST_DEVICE_API constexpr auto operator()(set_value_t, _Sndr&& __sndr, ::cuda::std::__ignore_t) const
+    -> decltype(auto)
   {
     // This converts a bulk sender into a bulk_chunked sender, which will then be
     // further transformed by __bulk_chunked_t above.

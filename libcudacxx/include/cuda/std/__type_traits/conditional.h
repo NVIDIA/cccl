@@ -31,18 +31,18 @@ template <>
 struct _IfImpl<true>
 {
   template <class _IfRes, class _ElseRes>
-  using _Select _CCCL_NODEBUG_ALIAS = _IfRes;
+  using _Select _CCCL_NODEBUG = _IfRes;
 };
 
 template <>
 struct _IfImpl<false>
 {
   template <class _IfRes, class _ElseRes>
-  using _Select _CCCL_NODEBUG_ALIAS = _ElseRes;
+  using _Select _CCCL_NODEBUG = _ElseRes;
 };
 
 template <bool _Cond, class _IfRes, class _ElseRes>
-using _If _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
+using _If _CCCL_NODEBUG = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
 
 template <bool _Bp, class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
@@ -56,7 +56,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
 };
 
 template <bool _Bp, class _If, class _Then>
-using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
+using conditional_t _CCCL_NODEBUG = typename conditional<_Bp, _If, _Then>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

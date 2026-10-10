@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class Mdspan>
-__host__ __device__ void test(Mdspan md, size_t expected_size, int* data_handle)
+TEST_FUNC void test(Mdspan md, size_t expected_size, int* data_handle)
 {
   assert(md.data_handle() == data_handle);
   assert(md.extents().extent(0) == 42);

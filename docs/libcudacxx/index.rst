@@ -1,7 +1,7 @@
 .. _libcudacxx-module:
 
 libcu++
-=======
+========
 
 .. toctree::
    :hidden:
@@ -9,11 +9,11 @@ libcu++
 
    Overview <self>
    setup
-   releases
    standard_api
    extended_api
    runtime
    ptx_api
+   tile
    API reference <api/index>
 
 ``libcu++`` (``libcudacxx``) provides fundamental, idiomatic C++ abstractions that aim to make the lives of CUDA C++
@@ -27,8 +27,8 @@ Specifically, ``libcu++`` provides:
 C++ Standard Library Features
 -----------------------------
 
-If you are a C++ developer, then you know the C++ Standard Library (`sometimes referred to as “The
-STL” <https://stackoverflow.com/questions/5205491/whats-the-difference-between-stl-and-c-standard-library>`_)
+If you are a C++ developer, then you know the C++ Standard Library (`sometimes referred to as "The
+STL" <https://stackoverflow.com/questions/5205491/whats-the-difference-between-stl-and-c-standard-library>`_)
 as what comes along with your compiler and provides things like ``std::string`` or ``std::vector`` or ``std::atomic``.
 It provides the fundamental abstractions that C++ developers need to build high quality applications and libraries.
 
@@ -67,7 +67,7 @@ learning curve of learning CUDA. However, there are many aspects of writing high
 be expressed through purely Standard conforming APIs. For these cases, libcu++ also provides *extensions* of Standard
 Library utilities.
 
-For example, libcu++ extends ``atomic<T>`` and other synchronization primitives with the notion of a “thread scope”
+For example, libcu++ extends ``atomic<T>`` and other synchronization primitives with the notion of a "thread scope"
 that controls the strength of the memory fence.
 
 To use utilities that are extensions to Standard Library features, drop the ``std``:

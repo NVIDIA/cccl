@@ -18,8 +18,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 template <class T>
-__host__ __device__ constexpr void test_constructor_from_values()
+TEST_FUNC constexpr void test_constructor_from_values()
 {
   // 1. Test that cuda::complex<T> constructible from T and T T
   static_assert(cuda::std::is_constructible_v<cuda::complex<T>, const T&>);
@@ -38,7 +40,7 @@ __host__ __device__ constexpr void test_constructor_from_values()
   assert(v2.imag() == T(2));
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_constructor_from_values<float>();
   test_constructor_from_values<double>();

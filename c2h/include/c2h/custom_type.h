@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/__cmath/round_up.h>
 #include <cuda/std/limits>
 
 #include <memory>
@@ -17,6 +18,22 @@ struct custom_type_state_t
 };
 
 template <template <typename> class... Policies>
+class custom_type_t;
+
+namespace detail
+{
+//! Number of policies \p CustomType was instantiated with.
+template <class CustomType>
+struct policy_count_t;
+
+template <template <typename> class... Policies>
+struct policy_count_t<custom_type_t<Policies...>>
+{
+  static constexpr std::size_t value = sizeof...(Policies);
+};
+} // namespace detail
+
+template <template <typename> class... Policies>
 class custom_type_t
     : public custom_type_state_t
     , public Policies<custom_type_t<Policies...>>...
@@ -28,14 +45,36 @@ public:
   }
 };
 
+//! Inflates a custom type to roughly \p TotalSize bytes, so that algorithms have to fall back to
+//! temporary storage backed by global memory (vsmem). We let the filler round the object up to a
+//! multiple of its alignment to avoid tail padding, and appease compute-sanitizer's initcheck of
+//! reads of never-written global memory.
 template <std::size_t TotalSize>
 struct huge_data
 {
   template <class CustomType>
   class type
   {
-    static constexpr auto extra_member_bytes = (TotalSize - sizeof(custom_type_state_t));
-    std::uint8_t data[extra_member_bytes];
+    // Every other policy contributes exactly one byte (their MSVC workaround member), so counting
+    // them is enough, and their order does not matter as they are all byte-aligned.
+    static constexpr std::size_t other_policy_bytes = detail::policy_count_t<CustomType>::value - 1;
+
+    // TotalSize already covers custom_type_state_t and the filler, so the other policies add on top.
+    // Sizing the object to a whole number of alignment units to keep it free of tail padding
+    static constexpr std::size_t object_bytes =
+      ::cuda::round_up(TotalSize + other_policy_bytes, alignof(custom_type_state_t));
+
+    // Where the filler starts, i.e. where the bases in front of it end
+    static constexpr std::size_t bytes_before_filler = sizeof(custom_type_state_t) + other_policy_bytes;
+
+    // A second huge_data policy, or any policy contributing more than its one-byte MSVC workaround
+    // member, breaks the one-byte-per-policy assumption above and underflows the filler size below.
+    static_assert(bytes_before_filler <= object_bytes,
+                  "huge_data expects to be the only size-contributing policy in the pack, and TotalSize to be at "
+                  "least as large as custom_type_state_t plus one byte per remaining policy");
+
+    // Whatever the other bases leave over becomes the filler
+    std::uint8_t data[object_bytes - bytes_before_filler]{};
   };
 };
 
@@ -159,27 +198,33 @@ class cuda::std::numeric_limits<c2h::custom_type_t<Policies...>>
 public:
   static constexpr bool is_specialized = true;
 
+  // template <class SizeT = size_t> is a workaround for cudafe++ < 13.1 + gcc < 13 replacing `numeric_limits<size_t>`
+  // with `numeric_limits<conditional<is_void_v<void>, __common_type2_imp<uint64_t, uint64_t>::type, void>::type>`
+
+  template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> max()
   {
-    c2h::custom_type_t<Policies...> val;
-    val.key = numeric_limits<std::size_t>::max();
-    val.val = numeric_limits<std::size_t>::max();
+    c2h::custom_type_t<Policies...> val{};
+    val.key = numeric_limits<SizeT>::max();
+    val.val = numeric_limits<SizeT>::max();
     return val;
   }
 
+  template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> min()
   {
-    c2h::custom_type_t<Policies...> val;
-    val.key = numeric_limits<std::size_t>::min();
-    val.val = numeric_limits<std::size_t>::min();
+    c2h::custom_type_t<Policies...> val{};
+    val.key = numeric_limits<SizeT>::min();
+    val.val = numeric_limits<SizeT>::min();
     return val;
   }
 
+  template <class SizeT = std::size_t>
   static __host__ __device__ c2h::custom_type_t<Policies...> lowest()
   {
-    c2h::custom_type_t<Policies...> val;
-    val.key = numeric_limits<std::size_t>::lowest();
-    val.val = numeric_limits<std::size_t>::lowest();
+    c2h::custom_type_t<Policies...> val{};
+    val.key = numeric_limits<SizeT>::lowest();
+    val.val = numeric_limits<SizeT>::lowest();
     return val;
   }
 };

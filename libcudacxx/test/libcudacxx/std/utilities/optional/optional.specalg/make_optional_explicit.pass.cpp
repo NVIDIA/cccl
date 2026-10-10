@@ -29,7 +29,7 @@ int main(int, char**)
 {
   {
     constexpr auto opt = cuda::std::make_optional<int>('a');
-    static_assert(*opt == int('a'), "");
+    static_assert(*opt == int('a'));
     assert(*opt == int('a'));
   }
 

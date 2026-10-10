@@ -1,114 +1,158 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-// <cuda/std/span>
+// <span>
 
-// constexpr explicit(extent != dynamic_extent) span(std::initializer_list<value_type> il);
+// template <class _InitListValueType>
+//   requires same_as<_InitListValueType, value_type> && is_const_v<element_type>
+// constexpr span(initializer_list<_InitListValueType> __il);
 
-// #include <any>
 #include <cuda/std/cassert>
-#include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
 
-#include "test_convertible.h"
 #include "test_macros.h"
 
-using cuda::std::is_constructible;
+struct A
+{};
 
-// Constructor constrains
-static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<int>>::value, "");
-static_assert(is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<int>>::value, "");
-static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<const int>>::value, "");
-static_assert(is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<const int>>::value, "");
-
-static_assert(!is_constructible<cuda::std::span<int>, cuda::std::initializer_list<int>>::value, "");
-static_assert(!is_constructible<cuda::std::span<int, 42>, cuda::std::initializer_list<int>>::value, "");
-static_assert(!is_constructible<cuda::std::span<int>, cuda::std::initializer_list<const int>>::value, "");
-static_assert(!is_constructible<cuda::std::span<int, 42>, cuda::std::initializer_list<const int>>::value, "");
-
-// Constructor conditionally explicit
-
-static_assert(!test_convertible<cuda::std::span<const int, 28>, cuda::std::initializer_list<int>>(),
-              "This constructor must be explicit");
-static_assert(is_constructible<cuda::std::span<const int, 28>, cuda::std::initializer_list<int>>::value, "");
-static_assert(test_convertible<cuda::std::span<const int>, cuda::std::initializer_list<int>>(),
-              "This constructor must not be explicit");
-static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<int>>::value, "");
-
-struct Sink
+// Test dynamic extent construction from braced init list for various types.
+// Only check size — the initializer_list temporary is destroyed after construction,
+// so accessing elements through the span would be dangling.
+template <typename T>
+TEST_FUNC constexpr bool testDynamicExtent()
 {
-  constexpr Sink() = default;
-  __host__ __device__ constexpr Sink(Sink*) {}
-};
-
-__host__ __device__ constexpr cuda::std::size_t count(cuda::std::span<const Sink> sp)
-{
-  return sp.size();
+  cuda::std::span<const T> s1{T{}};
+  cuda::std::span<const T> s2{T{}, T{}};
+  cuda::std::span<const T> s3{T{}, T{}, T{}};
+  cuda::std::span<const T> s4{T{}, T{}, T{}, T{}};
+  return s1.size() == 1 && s2.size() == 2 && s3.size() == 3 && s4.size() == 4;
 }
 
-template <cuda::std::size_t N>
-__host__ __device__ constexpr cuda::std::size_t count_n(cuda::std::span<const Sink, N> sp)
+// Test static extent construction from braced init list.
+// Only check size — same dangling concern as testDynamicExtent.
+template <typename T>
+TEST_FUNC constexpr bool testStaticExtent()
 {
-  return sp.size();
+  cuda::std::span<const T, 3> s{T{}, T{}, T{}};
+  return s.size() == 3;
 }
 
-__host__ __device__ constexpr bool test()
+// Test construction from an explicit initializer_list variable
+TEST_FUNC constexpr bool testFromInitializerListVariable()
+{
+  cuda::std::initializer_list<int> il = {1, 2, 3, 4};
+  cuda::std::span<const int> s{il};
+  return s.data() == il.begin() && s.size() == il.size();
+}
+
+// Test construction with static extent from an explicit initializer_list variable
+TEST_FUNC constexpr bool testFromInitializerListVariableStaticExtent()
+{
+  cuda::std::initializer_list<int> il = {10, 20, 30};
+  cuda::std::span<const int, 3> s{il};
+  return s.data() == il.begin() && s.size() == il.size();
+}
+
+// Test empty initializer_list with dynamic extent
+TEST_FUNC constexpr bool testEmptyDynamic()
+{
+  cuda::std::span<const int> s{cuda::std::initializer_list<int>{}};
+  return s.size() == 0;
+}
+
+// Test empty initializer_list with static extent 0
+TEST_FUNC constexpr bool testEmptyStatic()
+{
+  cuda::std::span<const int, 0> s{cuda::std::initializer_list<int>{}};
+  return s.size() == 0;
+}
+
+// Test value integrity: verify size and element values
+// Must use a named initializer_list so the backing storage outlives the span.
+TEST_FUNC constexpr bool testValueIntegrity()
+{
+  cuda::std::initializer_list<int> il = {1, 2, 3, 4, 5};
+  cuda::std::span<const int> s{il};
+  return s.size() == il.size() && s[0] == 1 && s[1] == 2 && s[2] == 3 && s[3] == 4 && s[4] == 5;
+}
+
+// Test with bool literals
+TEST_FUNC constexpr bool testBool()
+{
+  cuda::std::initializer_list<bool> il = {true, false, true};
+  cuda::std::span<const bool> s{il};
+  return s.size() == il.size() && s[0] && !s[1] && s[2];
+}
+
+// Test const volatile element type (only check size, volatile reads are not constexpr)
+TEST_FUNC constexpr bool testConstVolatile()
+{
+  cuda::std::initializer_list<int> il = {1, 2, 3};
+  cuda::std::span<const volatile int> s{il};
+  return s.size() == il.size();
+}
+
+// Test const pointer element type: span<int* const> from initializer_list<int*>.
+// is_const_v<int* const> is true (the pointer itself is const), so this should work.
+TEST_FUNC bool testConstPointer()
+{
+  int x                                = 1;
+  int y                                = 2;
+  cuda::std::initializer_list<int*> il = {&x, &y};
+  cuda::std::span<int* const> s{il};
+  return s.size() == il.size() && s[0] == &x && s[1] == &y;
+}
+
+TEST_FUNC constexpr bool testAll()
 {
   // Dynamic extent
-  {
-    Sink a[10]{};
+  assert(testDynamicExtent<int>());
+  assert(testDynamicExtent<A>());
 
-    assert(count({a}) == 1);
-    assert(count({a, a + 10}) == 2);
-    assert(count({a, a + 1, a + 2}) == 3);
-    assert(count(cuda::std::initializer_list<Sink>{a[0], a[1], a[2], a[3]}) == 4);
-  }
+  // Static extent
+  assert(testStaticExtent<int>());
+  assert(testStaticExtent<A>());
+
+  // From explicit initializer_list variable
+  assert(testFromInitializerListVariable());
+  assert(testFromInitializerListVariableStaticExtent());
+
+  // Empty initializer_list
+  assert(testEmptyDynamic());
+  assert(testEmptyStatic());
+
+  // Value integrity
+  assert(testValueIntegrity());
+
+  // Bool
+  assert(testBool());
+
+  // const volatile
+  assert(testConstVolatile());
 
   return true;
 }
 
-// Test P2447R4 "Annex C examples"
-
-__host__ __device__ constexpr int three(cuda::std::span<void* const> sp)
+// Separate from testAll because testConstPointer uses address-of, which is not constexpr
+TEST_FUNC bool testRuntime()
 {
-  return static_cast<int>(sp.size());
-}
-
-__host__ __device__ bool test_P2447R4_annex_c_examples()
-{
-  // 1. Overload resolution is affected
-  // --> tested in "initializer_list.verify.cpp"
-
-  // 2. The `initializer_list` ctor has high precedence
-  // --> tested in "initializer_list.verify.cpp"
-
-  // 3. Implicit two-argument construction with a highly convertible value_type
-  {
-    void* a[10];
-    assert(three({a, 0}) == 2);
-  }
-  // {
-  //   cuda::std::any a[10];
-  //   assert(four({a, a + 10}) == 2);
-  // }
-
+  assert(testConstPointer());
   return true;
 }
 
 int main(int, char**)
 {
-  assert(test());
-  static_assert(test(), "");
-
-  assert(test_P2447R4_annex_c_examples());
+  testAll();
+  static_assert(testAll());
+  testRuntime();
 
   return 0;
 }

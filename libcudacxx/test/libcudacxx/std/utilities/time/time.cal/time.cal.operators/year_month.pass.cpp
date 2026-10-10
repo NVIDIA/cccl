@@ -34,8 +34,8 @@ int main(int, char**)
     static_assert(noexcept(year{2018} / February));
     static_assert(cuda::std::is_same_v<year_month, decltype(year{2018} / February)>);
 
-    static_assert((year{2018} / February).year() == year{2018}, "");
-    static_assert((year{2018} / February).month() == month{2}, "");
+    static_assert((year{2018} / February).year() == year{2018});
+    static_assert((year{2018} / February).month() == month{2});
     for (int i = 1000; i <= 1030; ++i)
     {
       for (unsigned j = 1; j <= 12; ++j)
@@ -51,8 +51,8 @@ int main(int, char**)
     static_assert(noexcept(year{2018} / 4));
     static_assert(cuda::std::is_same_v<year_month, decltype(year{2018} / 4)>);
 
-    static_assert((year{2018} / 2).year() == year{2018}, "");
-    static_assert((year{2018} / 2).month() == month{2}, "");
+    static_assert((year{2018} / 2).year() == year{2018});
+    static_assert((year{2018} / 2).month() == month{2});
 
     for (int i = 1000; i <= 1030; ++i)
     {

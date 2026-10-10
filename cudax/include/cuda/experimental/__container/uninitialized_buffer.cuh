@@ -137,7 +137,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_buffer(__resource __mr, const size_t __count)
       : __mr_(::cuda::std::move(__mr))
       , __count_(__count)
-      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate_sync(__get_allocation_size(__count_)))
+      , __buf_(__count_ == 0 ? nullptr : __mr_.allocate_sync(__get_allocation_size(__count_), alignof(_Tp)))
   {}
 
   _CCCL_HIDE_FROM_ABI uninitialized_buffer(const uninitialized_buffer&)            = delete;
@@ -175,7 +175,7 @@ public:
 
     if (__buf_)
     {
-      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_));
+      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_), alignof(_Tp));
     }
 
     __mr_    = ::cuda::std::move(__other.__mr_);
@@ -191,7 +191,7 @@ public:
   {
     if (__buf_)
     {
-      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_));
+      __mr_.deallocate_sync(__buf_, __get_allocation_size(__count_), alignof(_Tp));
       __buf_   = nullptr;
       __count_ = 0;
     }

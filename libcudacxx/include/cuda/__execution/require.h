@@ -63,7 +63,7 @@ template <class... _Requirements>
   // clang < 19 doesn't like this code
   // since the only requirements we currently allow are in determinism.h and
   // all of them are stateless, let's ignore incoming parameters
-  ::cuda::std::execution::env<_Requirements...> __env{};
+  const ::cuda::std::execution::env<_Requirements...> __env{};
 
   return ::cuda::std::execution::prop{__get_requirements_t{}, __env};
 }

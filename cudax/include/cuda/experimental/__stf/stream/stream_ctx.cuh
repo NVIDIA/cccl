@@ -16,6 +16,8 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,6 +27,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__places/partitions/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
@@ -34,10 +37,11 @@
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
-#include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
+#include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
@@ -61,7 +65,7 @@ public:
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
@@ -83,12 +87,12 @@ public:
   void deallocate(
     backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
-    auto dstream = memory_node.getDataStream(ctx.async_resources());
+    auto dstream = memory_node.getDataStream(ctx.async_resources().get_place_resources());
 
     if (!memory_node.allocation_is_stream_ordered())
     {
       // Blocking deallocation - synchronize stream first, then free
-      cuda_safe_call(cudaStreamSynchronize(dstream.stream));
+      cuda_try<cudaStreamSynchronize>(dstream.stream);
       memory_node.deallocate(ptr, sz, dstream.stream);
       return;
     }
@@ -119,6 +123,20 @@ public:
  *   CUDA events are used as synchronization primitives.
  *
  * This class is copyable, movable, and can be passed by value
+ *
+ * @par Caller-stream finalize semantics
+ *
+ * Default-constructed `stream_ctx` instances synchronize the submission
+ * stream from `finalize()` and only return once all queued work has
+ * completed. Instances constructed with `stream_ctx(user_stream, handle)`
+ * instead bind the context to the caller-provided CUDA stream, set
+ * `blocking_finalize = false`, and make `finalize()` non-blocking: the
+ * remaining work and the context's resource-release callback are enqueued on
+ * `user_stream` and `finalize()` returns without synchronizing it. The
+ * caller must therefore drive `user_stream` to completion (e.g. via
+ * `cudaStreamSynchronize(user_stream)`) before observing results on the
+ * host or destroying any shared `async_resources_handle` that was passed
+ * to the context.
  */
 class stream_ctx : public backend_ctx<stream_ctx>
 {
@@ -141,8 +159,36 @@ public:
       : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
   {}
   stream_ctx(cudaStream_t user_stream, async_resources_handle handle = async_resources_handle(nullptr))
-      : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle)))
+      : backend_ctx<stream_ctx>(::std::make_shared<impl>(mv(handle), !is_stream_capturing(user_stream)))
   {
+    // If ``user_stream`` is currently capturing a CUDA graph, avoid issuing
+    // any CUDA runtime initialization calls in the backend constructor: under
+    // ``cudaStreamCaptureModeThreadLocal`` / ``Global`` such calls are
+    // rejected with ``cudaErrorStreamCaptureUnsupported`` and invalidate the
+    // in-progress capture. (The null/default stream is treated as
+    // ``not-capturing`` by ``cudaStreamIsCapturing``, so it goes through the
+    // normal init path.)
+
+    // When the caller supplies their own ``async_resources_handle``, its
+    // stream pool is very likely already populated with streams that carry
+    // residual work from previous contexts. Folding those streams into an
+    // on-going capture -- which STF would attempt the first time the pool is
+    // queried during task submission -- is rejected by CUDA with
+    // ``cudaErrorStreamCaptureIsolation``. Contexts created *without* an
+    // explicit handle get a fresh, empty pool and are capture-safe; that is
+    // the supported in-capture configuration.
+    if (state().user_provided_handle)
+    {
+      EXPECT(!is_stream_capturing(user_stream),
+             "stream_ctx(user_stream, handle): user_stream is in a CUDA graph "
+             "capture but a caller-provided async_resources_handle was "
+             "supplied. The handle's stream pool may carry uncaptured work "
+             "that cannot be legally joined into the on-going capture. Either "
+             "end the capture before constructing the context, or construct "
+             "the context without an explicit handle so a fresh empty pool is "
+             "used.");
+    }
+
     // We set the user stream as the entry point after the creation of the
     // context so that we can manipulate the object, not its shared_ptr
     // implementation
@@ -154,7 +200,7 @@ public:
   void set_user_stream(cudaStream_t user_stream)
   {
     // TODO first introduce the user stream in our pool
-    auto dstream = decorated_stream(user_stream);
+    auto dstream = augmented_stream(user_stream);
 
     this->state().user_dstream = dstream;
 
@@ -179,7 +225,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...); // NOLINT(cppcoreguidelines-slicing)
   }
 
   template <typename... Deps>
@@ -216,10 +262,11 @@ public:
   {
     const auto& user_dstream = state().user_dstream;
     // We either use the user-provided stream, or we get one stream from the pool
-    decorated_stream dstream =
+    augmented_stream dstream =
       (user_dstream.has_value())
         ? user_dstream.value()
-        : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
+        : exec_place::current_device().getStream(
+            async_resources().get_place_resources(), true /* stream for computation */);
 
     auto prereqs = get_state().insert_fence(*get_dot());
 
@@ -458,12 +505,25 @@ public:
     // Make sure we release resources attached to this context
     state.release_ctx_resources(state.submitted_stream);
 
+    // Finalization has to complete even when the synchronize below reports a failure, which is
+    // the likely case rather than the exotic one: cudaStreamSynchronize is where asynchronous
+    // errors from earlier work surface. Leaving the context in `submitted` with its resources
+    // already released makes it unusable AND unretryable -- a second finalize() re-enters
+    // release_ctx_resources and trips its "already released" assertion. The guard is armed
+    // after that release so that a failure there still leaves the context retryable, which it
+    // is today: release() only sets its released flag once it has finished.
+    //
+    // The error still propagates; the caller simply gets a consistent context along with it.
+    SCOPE(exit)
+    {
+      state.cleanup();
+      set_phase(backend_ctx_untyped::phase::finalized);
+    };
+
     if (state.blocking_finalize)
     {
-      cuda_safe_call(cudaStreamSynchronize(state.submitted_stream));
+      cuda_try<cudaStreamSynchronize>(state.submitted_stream);
     }
-    state.cleanup();
-    set_phase(backend_ctx_untyped::phase::finalized);
   }
 
   float get_submission_time_ms() const
@@ -481,11 +541,43 @@ public:
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
 
+    // Submission timing forces the current device to 0; remember the caller's
+    // device so we can restore it on exit (0 means we never switched).
+    int prev_device = 0;
+
+    // The events are releases: a failing destroy leaks that event and is reported, one policy per
+    // release. Restoring the caller's device is not: if it fails, the caller continues on the wrong
+    // device and fails somewhere unrelated, so that one reports and aborts.
+    SCOPE(exit)
+    {
+      if (startEvent)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(startEvent);
+        };
+      }
+      if (stopEvent)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(stopEvent);
+        };
+      }
+      if (prev_device != 0)
+      {
+        ON_THROW(abort)
+        {
+          cuda_try<cudaSetDevice>(prev_device);
+        };
+      }
+    };
+
     ::std::unordered_map<int, reserved::reorderer_payload> payloads;
     if (reordering_tasks())
     {
       build_task_graph();
-      for (int id : state.deferred_tasks)
+      for (const int id : state.deferred_tasks)
       {
         const auto& t = state.task_map.at(id);
         payloads.emplace(id, t.get_reorderer_payload());
@@ -500,14 +592,16 @@ public:
         }
       }
 
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaStreamSynchronize(fence()));
-      cuda_safe_call(cudaEventCreate(&startEvent));
-      cuda_safe_call(cudaEventCreate(&stopEvent));
-      cuda_safe_call(cudaEventRecord(startEvent, fence()));
+      prev_device = cuda_try<cudaGetDevice>();
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaStreamSynchronize>(fence());
+      // cudaEventCreate is an overload set; use cudaEventCreateWithFlags instead.
+      startEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      stopEvent  = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+      cuda_try<cudaEventRecord>(startEvent, fence());
     }
 
-    for (int id : state.deferred_tasks)
+    for (const int id : state.deferred_tasks)
     {
       auto& task = state.task_map.at(id);
       task.run();
@@ -515,10 +609,10 @@ public:
 
     if (reordering_tasks())
     {
-      cuda_safe_call(cudaSetDevice(0));
-      cuda_safe_call(cudaEventRecord(stopEvent, fence()));
-      cuda_safe_call(cudaEventSynchronize(stopEvent));
-      cuda_safe_call(cudaEventElapsedTime(&state.submission_time, startEvent, stopEvent));
+      cuda_try<cudaSetDevice>(0);
+      cuda_try<cudaEventRecord>(stopEvent, fence());
+      cuda_try<cudaEventSynchronize>(stopEvent);
+      state.submission_time = cuda_try<cudaEventElapsedTime>(startEvent, stopEvent);
     }
 
     // Write-back data and erase automatically created data instances
@@ -554,24 +648,37 @@ public:
   template <typename T>
   auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    typename owning_container_of<T>::type out;
+    if constexpr (::cuda::std::is_same_v<T, void_interface>)
+    {
+      // A token has no content to materialize: only synchronize the host with
+      // the work the token depends on, and return void.
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[](cudaStream_t stream) {
+        cuda_try<cudaStreamSynchronize>(stream);
+      };
+    }
+    else
+    {
+      typename owning_container_of<T>::type out;
 
-    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      out = owning_container_of<T>::get_value(data);
-    };
+      task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+        cuda_try<cudaStreamSynchronize>(stream);
+        out = owning_container_of<T>::get_value(data);
+      };
 
-    return out;
+      return out;
+    }
   }
 
 private:
+  using base_impl = typename base::impl;
+
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
-  class impl : public base::impl
+  class impl : public base_impl
   {
   public:
-    impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : base::impl(mv(_async_resources))
+    impl(async_resources_handle _async_resources = async_resources_handle(nullptr), bool initialize_cuda_runtime = true)
+        : base_impl(mv(_async_resources), initialize_cuda_runtime)
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
@@ -582,7 +689,7 @@ private:
       deferred_tasks.clear();
       task_map.clear();
       submitted_stream = nullptr;
-      base::impl::cleanup();
+      base_impl::cleanup();
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
@@ -593,7 +700,7 @@ private:
 
     event_list stream_to_event_list(cudaStream_t stream, ::std::string symbol) const override
     {
-      auto e = reserved::record_event_in_stream(decorated_stream(stream), *get_dot(), mv(symbol));
+      auto e = reserved::record_event_in_stream(augmented_stream(stream), *get_dot(), mv(symbol));
       return event_list(mv(e));
     }
 
@@ -616,7 +723,7 @@ private:
 
     // If the context is attached to a user stream, we should use it for
     // finalize() or fence()
-    ::std::optional<decorated_stream> user_dstream;
+    ::cuda::std::optional<augmented_stream> user_dstream;
 
     /* By default, the finalize operation is blocking, unless user provided
      * a stream when creating the context */
@@ -643,7 +750,7 @@ private:
     ::std::unordered_map<::std::string, ::std::deque<int>> current_readers;
     ::std::unordered_map<::std::string, int> current_writer, previous_writer;
 
-    for (int id : state.deferred_tasks)
+    for (const int id : state.deferred_tasks)
     {
       auto& t = state.task_map.at(id);
       assert(id == t.get_mapping_id());
@@ -719,19 +826,11 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-UNITTEST("copyable stream_task")
-{
-  stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = t;
-  ctx.finalize();
-};
-
 UNITTEST("movable stream_task")
 {
   stream_ctx ctx;
-  stream_task<> t     = ctx.task();
-  stream_task<> t_cpy = mv(t);
+  stream_task<> t           = ctx.task();
+  const stream_task<> t_cpy = mv(t);
   ctx.finalize();
 };
 
@@ -747,13 +846,23 @@ UNITTEST("logical_data_untyped moveable")
   public:
     scalar(stream_ctx& ctx)
     {
-      size_t s       = sizeof(double);
-      double* h_addr = (double*) malloc(s);
-      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
+      const size_t s = sizeof(double);
+      auto owner     = ::cuda::std::make_unique<double>();
+      double* h_addr = owner.get();
+      cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
+      // Unregister memory before owner deletes it on failure.
+      SCOPE(fail)
+      {
+        ON_THROW(notify)
+        {
+          cuda_try<cudaHostUnregister>(h_addr);
+        };
+      };
       handle = ctx.logical_data(h_addr, 1);
+      owner.release();
     }
 
-    scalar& operator=(scalar&& rhs)
+    scalar& operator=(scalar&& rhs) noexcept
     {
       handle = mv(rhs.handle);
       return *this;
@@ -884,11 +993,11 @@ UNITTEST("non contiguous slice")
   int X[32 * 32];
 
   // Pinning non contiguous memory is extremely expensive, so we do it now
-  cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
+  cuda_try<cudaHostRegister>(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable);
 
-  for (size_t i = 0; i < 32 * 32; i++)
+  for (auto& x : X)
   {
-    X[i] = 1;
+    x = 1;
   }
 
   // Create a non-contiguous slice
@@ -910,13 +1019,13 @@ UNITTEST("non contiguous slice")
   {
     for (size_t i = 0; i < 32; i++)
     {
-      size_t ind   = i + 32 * j;
-      int expected = ((i < 24) ? 2 : 1);
+      const size_t ind   = i + 32 * j;
+      const int expected = ((i < 24) ? 2 : 1);
       EXPECT(X[ind] == expected);
     }
   }
 
-  cuda_safe_call(cudaHostUnregister(&X[0]));
+  cuda_try<cudaHostUnregister>(&X[0]);
 };
 
 UNITTEST("logical data from a shape of 2D slice")
@@ -1036,10 +1145,10 @@ UNITTEST("get logical_data from a task_dep")
   // Create a task dependency using that logical data
   auto d = lA.read();
 
-  logical_data_untyped ul = d.get_data();
+  const logical_data_untyped ul = d.get_data();
   EXPECT(ul == lA);
 
-  logical_data<T> lB = d.get_data();
+  const logical_data<T> lB = d.get_data();
   EXPECT(lB == lA);
 
   auto lC = logical_data<T>(d.get_data());
@@ -1057,7 +1166,10 @@ namespace reserved
 inline void unit_test_pfor()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };
@@ -1235,7 +1347,10 @@ UNITTEST("basic parallel_for test on grid")
 inline void unit_test_launch()
 {
   stream_ctx ctx;
-  SCOPE(exit)
+  // finalize() submits pending work and synchronizes, so it belongs on the normal path only:
+  // finalizing a context that is being torn down by an exception is neither meaningful nor
+  // safe, and SCOPE(success) is the flavor whose body may throw.
+  SCOPE(success)
   {
     ctx.finalize();
   };

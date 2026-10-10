@@ -7,9 +7,9 @@
 #include <nvrtc.h>
 #include <nvrtc_args.h>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-TEST_CASE("Test nvrtc", "[test][nvrtc]")
+CUB_TEST_CASE("Test nvrtc", "[test][nvrtc]", CUB_SMALL)
 {
   nvrtcProgram prog{};
 
@@ -272,16 +272,17 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   const std::string arch = std::string("-arch=sm_") + std::to_string(ptx_version / 10);
   const std::string std  = std::string("-std=c++") + std::to_string(_CCCL_STD_VER - 2000);
 
-  constexpr int num_includes         = 6;
+  constexpr int num_includes = 6;
+  // NOLINTNEXTLINE(misc-const-correctness)
   const char* includes[num_includes] = {
     NVRTC_CUB_PATH, NVRTC_THRUST_PATH, NVRTC_LIBCUDACXX_PATH, NVRTC_CTK_PATH, arch.c_str(), std.c_str()};
 
   std::size_t log_size{};
-  nvrtcResult compile_result = nvrtcCompileProgram(prog, num_includes, includes);
+  const nvrtcResult compile_result = nvrtcCompileProgram(prog, num_includes, includes);
 
   REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
 
-  std::unique_ptr<char[]> log{new char[log_size]};
+  const std::unique_ptr<char[]> log{new char[log_size]};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.get()));
   INFO("nvrtc log = " << log.get());
   REQUIRE(NVRTC_SUCCESS == compile_result);
@@ -289,7 +290,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   std::size_t code_size{};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBINSize(prog, &code_size));
 
-  std::unique_ptr<char[]> code{new char[code_size]};
+  const std::unique_ptr<char[]> code{new char[code_size]};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBIN(prog, code.get()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
@@ -302,7 +303,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
   REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRetain(&context, device));
   REQUIRE(CUDA_SUCCESS == cuCtxSetCurrent(context));
-  REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
+  REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, nullptr, nullptr));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
   // Generate input for execution, and create output buffers.
@@ -328,7 +329,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   void* args[] = {&d_ptr, &d_err};
 
-  REQUIRE(CUDA_SUCCESS == cuLaunchKernel(kernel, 1, 1, 1, threads_in_block, 1, 1, 0, nullptr, args, 0));
+  REQUIRE(CUDA_SUCCESS == cuLaunchKernel(kernel, 1, 1, 1, threads_in_block, 1, 1, 0, nullptr, args, nullptr));
   REQUIRE(CUDA_SUCCESS == cuCtxSynchronize());
   REQUIRE(CUDA_SUCCESS == cuMemcpyDtoH(h_ptr, d_ptr, tile_size * sizeof(int)));
   REQUIRE(CUDA_SUCCESS == cuMemcpyDtoH(&h_err, d_err, sizeof(int)));

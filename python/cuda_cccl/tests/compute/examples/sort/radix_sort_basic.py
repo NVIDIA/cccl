@@ -30,12 +30,12 @@ d_out_values = cp.empty_like(d_in_values)
 
 # Perform the radix sort.
 cuda.compute.radix_sort(
-    d_in_keys,
-    d_out_keys,
-    d_in_values,
-    d_out_values,
-    SortOrder.ASCENDING,
-    d_in_keys.size,
+    d_in_keys=d_in_keys,
+    d_out_keys=d_out_keys,
+    d_in_values=d_in_values,
+    d_out_values=d_out_values,
+    order=SortOrder.ASCENDING,
+    num_items=d_in_keys.size,
 )
 
 # Verify the result.

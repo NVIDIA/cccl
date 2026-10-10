@@ -52,7 +52,8 @@ _CCCL_API constexpr size_t __find_index()
     {
       if (__result != __not_found)
       {
-        return __ambiguous;
+        __result = __ambiguous;
+        break;
       }
       __result = __i;
     }

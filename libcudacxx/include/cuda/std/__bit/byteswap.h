@@ -22,11 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+
+#include <nv/target>
 
 #if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
@@ -50,12 +53,17 @@
 #  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
 
+#if _CCCL_CHECK_BUILTIN(builtin_bswapg)
+#  define _CCCL_BUILTIN_BSWAPG(...) __builtin_bswapg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswapg)
+
 // nvcc doesn't support these builtins in device code
 #if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 #  undef _CCCL_BUILTIN_BSWAP16
 #  undef _CCCL_BUILTIN_BSWAP32
 #  undef _CCCL_BUILTIN_BSWAP64
 #  undef _CCCL_BUILTIN_BSWAP128
+#  undef _CCCL_BUILTIN_BSWAPG
 #endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -83,8 +91,9 @@ template <class _Full>
 #if _CCCL_CUDA_COMPILATION()
 
 template <class _Tp>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
+[[nodiscard]] _CCCL_DEVICE_API _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
+#  if !_CCCL_TILE_COMPILATION() // nvbug6085423: error: "call to non-tile function not supported!"
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
     return static_cast<uint16_t>(::__byte_perm(static_cast<uint32_t>(__val), 0u, 0x3201u));
@@ -100,6 +109,7 @@ template <class _Tp>
     return (static_cast<uint64_t>(__hi) << 32) | static_cast<uint64_t>(__lo);
   }
   else
+#  endif // !_CCCL_TILE_COMPILATION()
   {
     return ::cuda::std::__byteswap_impl_recursive(__val);
   }
@@ -134,7 +144,9 @@ template <class _Tp>
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ushort(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
+#  if !_CCCL_TILE_COMPILATION()
     NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
+#  endif // !_CCCL_TILE_COMPILATION()
   }
   return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP16
@@ -150,7 +162,9 @@ template <class _Tp>
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_ulong(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
+#  if !_CCCL_TILE_COMPILATION()
     NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
+#  endif // !_CCCL_TILE_COMPILATION()
   }
   return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
@@ -166,7 +180,9 @@ template <class _Tp>
 #  if _CCCL_COMPILER(MSVC)
     NV_IF_TARGET(NV_IS_HOST, return ::_byteswap_uint64(__val);)
 #  endif // _CCCL_COMPILER(MSVC)
+#  if !_CCCL_TILE_COMPILATION()
     NV_IF_TARGET(NV_IS_DEVICE, return ::cuda::std::__byteswap_impl_device(__val);)
+#  endif // !_CCCL_TILE_COMPILATION()
   }
   return ::cuda::std::__byteswap_impl_recursive(__val);
 #endif // !_CCCL_BUILTIN_BSWAP64
@@ -194,6 +210,14 @@ _CCCL_REQUIRES(is_integral_v<_Integer>)
 {
   if constexpr (sizeof(_Integer) > 1)
   {
+#if defined(_CCCL_BUILTIN_BSWAPG)
+#  if _CCCL_CUDA_COMPILER(NVCC)
+    _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+    {
+      NV_IF_TARGET(NV_IS_HOST, ({ return static_cast<_Integer>(_CCCL_BUILTIN_BSWAPG(__val)); }))
+    }
+#endif // _CCCL_BUILTIN_BSWAPG
     return static_cast<_Integer>(::cuda::std::__byteswap_impl(::cuda::std::__to_unsigned_like(__val)));
   }
   else

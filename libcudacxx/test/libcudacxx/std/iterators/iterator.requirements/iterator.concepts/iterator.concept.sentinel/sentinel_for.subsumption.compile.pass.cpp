@@ -16,19 +16,21 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 // clang-format off
 template<cuda::std::input_or_output_iterator, cuda::std::semiregular>
-__host__ __device__ constexpr bool check_sentinel_subsumption() {
+TEST_FUNC constexpr bool check_sentinel_subsumption() {
   return false;
 }
 
 template<class I, cuda::std::sentinel_for<I> >
-__host__ __device__ constexpr bool check_subsumption() {
+TEST_FUNC constexpr bool check_subsumption() {
   return true;
 }
 // clang-format on
 
-static_assert(check_subsumption<cuda::std::array<int, 4>::iterator, cuda::std::array<int, 4>::iterator>(), "");
+static_assert(check_subsumption<cuda::std::array<int, 4>::iterator, cuda::std::array<int, 4>::iterator>());
 
 int main(int, char**)
 {

@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ void checkCV()
+TEST_FUNC void checkCV()
 {
   //  Types the same (dynamic sized)
   {
@@ -39,7 +39,7 @@ __host__ __device__ void checkCV()
 }
 
 template <typename T>
-__host__ __device__ constexpr bool testConstexprSpan()
+TEST_FUNC constexpr bool testConstexprSpan()
 {
   cuda::std::span<const T> s1;
   cuda::std::span<const T, 0> s2;
@@ -47,7 +47,7 @@ __host__ __device__ constexpr bool testConstexprSpan()
 }
 
 template <typename T>
-__host__ __device__ void testRuntimeSpan()
+TEST_FUNC void testRuntimeSpan()
 {
   static_assert(noexcept(T{}));
   cuda::std::span<const T> s1;
@@ -73,9 +73,9 @@ int main(int, char**)
 
   checkCV();
 
-  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, cuda::std::dynamic_extent>>::value, "");
-  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, 0>>::value, "");
-  static_assert(!cuda::std::is_default_constructible<cuda::std::span<int, 2>>::value, "");
+  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, cuda::std::dynamic_extent>>::value);
+  static_assert(cuda::std::is_default_constructible<cuda::std::span<int, 0>>::value);
+  static_assert(!cuda::std::is_default_constructible<cuda::std::span<int, 2>>::value);
 
   return 0;
 }

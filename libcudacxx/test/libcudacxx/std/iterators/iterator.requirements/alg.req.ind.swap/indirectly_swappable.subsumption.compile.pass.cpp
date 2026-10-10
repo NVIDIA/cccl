@@ -15,21 +15,23 @@
 #include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template <class I1, class I2>
   requires cuda::std::indirectly_readable<I1> && cuda::std::indirectly_readable<I2>
-__host__ __device__ constexpr bool indirectly_swappable_subsumption()
+TEST_FUNC constexpr bool indirectly_swappable_subsumption()
 {
   return false;
 }
 
 template <class I1, class I2>
   requires cuda::std::indirectly_swappable<I1, I2>
-__host__ __device__ constexpr bool indirectly_swappable_subsumption()
+TEST_FUNC constexpr bool indirectly_swappable_subsumption()
 {
   return true;
 }
 
-static_assert(indirectly_swappable_subsumption<int*, int*>(), "");
+static_assert(indirectly_swappable_subsumption<int*, int*>());
 
 int main(int, char**)
 {

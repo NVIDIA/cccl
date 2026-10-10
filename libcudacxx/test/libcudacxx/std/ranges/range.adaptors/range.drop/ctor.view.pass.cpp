@@ -8,14 +8,23 @@
 //
 //===----------------------------------------------------------------------===//
 
-// constexpr drop_view(V base, range_difference_t<V> count);
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
+// constexpr explicit drop_view(V base, range_difference_t<V> count); // explicit since C++23
 
 #include <cuda/std/ranges>
 
+#include "test_convertible.h"
 #include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+static_assert(!test_convertible<cuda::std::ranges::drop_view<MoveOnlyView>,
+                                MoveOnlyView,
+                                cuda::std::ranges::range_difference_t<MoveOnlyView>>(),
+              "This constructor must be explicit");
+
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   cuda::std::ranges::drop_view dropView1(MoveOnlyView(), 4);
   assert(dropView1.size() == 4);
@@ -31,7 +40,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   return 0;

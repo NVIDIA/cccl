@@ -29,7 +29,8 @@
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 template <class _Func, class... _Args>
-using __call_result_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::std::declval<_Func>()(::cuda::std::declval<_Args>()...));
+using __call_result_t _CCCL_NODEBUG = // NOLINT(modernize-type-traits)
+  decltype(::cuda::std::declval<_Func>()(::cuda::std::declval<_Args>()...)); // NOLINT(modernize-type-traits)
 
 template <class _Func, class... _Args>
 struct __is_callable : _IsValidExpansion<__call_result_t, _Func, _Args...>
@@ -41,7 +42,7 @@ inline constexpr bool __is_callable_v = _IsValidExpansion<__call_result_t, _Func
 namespace detail
 {
 template <class _Func, class... _Args>
-using __if_nothrow_callable_t _CCCL_NODEBUG_ALIAS =
+using __if_nothrow_callable_t _CCCL_NODEBUG =
   ::cuda::std::enable_if_t<noexcept(::cuda::std::declval<_Func>()(::cuda::std::declval<_Args>()...))>;
 } // namespace detail
 

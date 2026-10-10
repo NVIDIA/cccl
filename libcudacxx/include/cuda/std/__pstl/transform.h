@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HOSTED()
 
+#  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/transform.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
@@ -35,7 +35,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/transform.h>
+#    include <cuda/std/__pstl/cuda/transform.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -61,15 +61,17 @@ _CCCL_HOST_API _OutputIterator transform(
                 "cuda::std::transform requires OutputIterator to be indirectly writable with the return value of "
                 "UnaryOp");
 
-  if (__first == __last)
-  {
-    return __result;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::transform");
+
+    if (__first == __last)
+    {
+      return __result;
+    }
+
     return __dispatch(
       __policy,
       ::cuda::std::move(__first),
@@ -105,15 +107,17 @@ _CCCL_HOST_API _OutputIterator transform(
                         invoke_result_t<_BinaryOp, iter_reference_t<_InputIterator1>, iter_reference_t<_InputIterator2>>>,
     "cuda::std::transform requires OutputIterator to be indirectly writable with the return value of BinaryOp");
 
-  if (__first1 == __last1)
-  {
-    return __result;
-  }
-
   [[maybe_unused]] auto __dispatch =
     ::cuda::std::execution::__pstl_select_dispatch<::cuda::std::execution::__pstl_algorithm::__transform, _Policy>();
   if constexpr (::cuda::std::execution::__pstl_can_dispatch<decltype(__dispatch)>)
   {
+    _CCCL_NVTX_RANGE_SCOPE("cuda::std::transform");
+
+    if (__first1 == __last1)
+    {
+      return __result;
+    }
+
     return __dispatch(
       __policy,
       ::cuda::std::move(__first1),
@@ -140,6 +144,6 @@ _CCCL_END_NAMESPACE_CUDA_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HOSTED()
 
 #endif // _CUDA_STD___PSTL_TRANSFORM_H

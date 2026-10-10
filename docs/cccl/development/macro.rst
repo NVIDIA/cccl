@@ -87,16 +87,32 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 
 ----
 
-Architecture Macros
+Host Architecture Macros
 -------------------
 
-The following macros are used to check the target architecture. They comply with the compiler supported by the CUDA toolkit. Compilers outside the CUDA toolkit may define such macros in a different way.
+The following macros are used to check the host architecture. They comply with the compiler supported by the CUDA toolkit. Compilers outside the CUDA toolkit may define such macros in a different way.
 
-+-------------------------+---------------------------------------------------+
-| ``_CCCL_ARCH(ARM64)``   |  ARM 64-bit, including MSVC emulation             |
-+-------------------------+---------------------------------------------------+
-| ``_CCCL_ARCH(X86_64)``  |  X86 64-bit. False on ARM 64-bit MSVC emulation   |
-+-------------------------+---------------------------------------------------+
++------------------------------+---------------------------------------------------+
+| ``_CCCL_HOST_ARCH(ARM64)``   |  ARM 64-bit, including MSVC emulation             |
++------------------------------+---------------------------------------------------+
+| ``_CCCL_HOST_ARCH(X86_64)``  |  X86 64-bit. False on ARM 64-bit MSVC emulation   |
++------------------------------+---------------------------------------------------+
+
+The following macros can be used to check a particular feature set of the the host architecture.
+
++--------------------------------------+---------------------------------------------------------------+
+| ``_CCCL_HOST_ARCH_FEAT(ARCH, FEAT)`` |  Host architecture is ``ARCH`` and provides feature ``FEAT``  |
++--------------------------------------+---------------------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    #if _CCCL_HOST_ARCH_FEAT(X86_64, AVX2)
+    // use AVX2 features on x86_64 architecture
+    #else
+    // non-x86_64 architecture or x86_64 without AVX2 support
+    #endif
 
 ----
 
@@ -424,6 +440,12 @@ Visibility Macros
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
 | ``_CCCL_API``                 | Host/device function with hidden visibility. Most CCCL functions are hidden with this attribute     |
 +-------------------------------+-----------------------------------------------------------------------------------------------------+
+| ``_CCCL_HOST_API``            | Host function with hidden visibility. Most CCCL functions are hidden with this attribute            |
++-------------------------------+-----------------------------------------------------------------------------------------------------+
+| ``_CCCL_DEVICE_API``          | Device function with hidden visibility. Most CCCL functions are hidden with this attribute          |
++-------------------------------+-----------------------------------------------------------------------------------------------------+
+| ``_CCCL_KERNEL_ATTRIBUTES``   | Global function with hidden visibility. Most CCCL functions are hidden with this attribute          |
++-------------------------------+-----------------------------------------------------------------------------------------------------+
 
 ----
 
@@ -490,3 +512,58 @@ Usage example:
     _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
     // code ..
     _CCCL_DIAG_POP
+
+----
+
+Freestanding support
+--------------------------
+
+We - partially - support building CCCL headers in freestanding mode, for example JIT compilation with NVRTC.
+
++-----------------------------+----------------------------------------------------+
+| ``_CCCL_HOSTED()``          | "Normal" compilation mode with host STL support    |
++-----------------------------+----------------------------------------------------+
+| ``_CCCL_FREESTANDING()``    | Freestanding compilation mode, no host STL support |
++-----------------------------+----------------------------------------------------+
+| ``_CCCL_HOSTJIT()``         | Freestanding compilation mode, with host compiler  |
++-----------------------------+----------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    #if _CCCL_HOSTED()
+    #  include <iostream> // Host STL header not available in freestanding
+    #endif // _CCCL_HOSTED()
+
+    // code ..
+
+Similarly we also provide macros to detect which host standard library is available
+
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HAS_HOST_STD_LIB()``      | Whether a known host standard library is available |
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HOST_STD_LIB(LIBSTDCXX)`` | libstdc++ is available as host standard library    |
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HOST_STD_LIB(LIBCXX)``    | libc++ is available as host standard library       |
++-----------------------------------+----------------------------------------------------+
+| ``_CCCL_HOST_STD_LIB(STL)``       | MSVC STL is available as host standard library     |
++-----------------------------------+----------------------------------------------------+
+
+Usage example:
+
+.. code-block:: c++
+
+    #if _CCCL_HAS_HOST_STD_LIB()
+    _CCCL_BEGIN_NAMESPACE_STD
+
+    #  if _CCCL_HOST_STD_LIB(STL)
+    template <class _Tp, size_t _Size>
+    class array;
+    #  else // ^^^ _CCCL_HOST_STD_LIB(STL) ^^^ / vvv !_CCCL_HOST_STD_LIB(STL) vvv
+    template <class _Tp, size_t _Size>
+    struct array;
+    #  endif // !_CCCL_HOST_STD_LIB(STL)
+
+    _CCCL_END_NAMESPACE_STD
+    #endif // _CCCL_HAS_HOST_STD_LIB()

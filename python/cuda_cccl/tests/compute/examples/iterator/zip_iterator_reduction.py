@@ -43,7 +43,9 @@ h_init = Pair(0, 0.0)
 d_output = cp.empty(1, dtype=Pair.dtype)
 
 # Perform the reduction.
-cuda.compute.reduce_into(zip_it, d_output, sum_pairs, len(d_input1), h_init)
+cuda.compute.reduce_into(
+    d_in=zip_it, d_out=d_output, num_items=len(d_input1), op=sum_pairs, h_init=h_init
+)
 
 # Calculate the expected results.
 expected_first = sum(d_input1.get())

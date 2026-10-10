@@ -24,14 +24,11 @@
 #include <cuda/__cmath/sincos.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/hypot.h>
-#include <cuda/std/__cmath/inverse_trigonometric_functions.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/signbit.h>
-#include <cuda/std/__cmath/trigonometric_functions.h>
 #include <cuda/std/__complex/complex.h>
-#include <cuda/std/__complex/vector_support.h>
-#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/limits>
@@ -43,7 +40,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 // abs
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline _Tp abs(const complex<_Tp>& __c)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline _Tp abs(const complex<_Tp>& __c)
 {
   return ::cuda::std::hypot(__c.real(), __c.imag());
 }
@@ -51,7 +48,7 @@ template <class _Tp>
 // norm
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr _Tp norm(const complex<_Tp>& __c)
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp norm(const complex<_Tp>& __c)
 {
   if (::cuda::std::isinf(__c.real()))
   {
@@ -99,7 +96,7 @@ template <class _Tp>
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>) )
-[[nodiscard]] _CCCL_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   if (::cuda::std::isinf(__re))
   {
@@ -110,7 +107,7 @@ _CCCL_REQUIRES((is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(is_integral_v<_Tp>)
-[[nodiscard]] _CCCL_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __cccl_complex_complex_type<_Tp> proj(_Tp __re)
 {
   return __cccl_complex_complex_type<_Tp>(__re);
 }
@@ -118,7 +115,7 @@ _CCCL_REQUIRES(is_integral_v<_Tp>)
 // polar
 
 template <class _Tp>
-[[nodiscard]] _CCCL_API inline complex<_Tp> polar(const _Tp& __rho, const _Tp& __theta = _Tp())
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline complex<_Tp> polar(const _Tp& __rho, const _Tp& __theta = _Tp())
 {
   if (::cuda::std::isnan(__rho) || ::cuda::std::signbit(__rho))
   {

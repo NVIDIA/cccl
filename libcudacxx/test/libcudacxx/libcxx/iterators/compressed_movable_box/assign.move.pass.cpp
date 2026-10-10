@@ -23,7 +23,7 @@ template <class... Ts>
 using box = cuda::std::__compressed_movable_box<Ts...>;
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void test(const int expected)
+TEST_FUNC TEST_CONSTEXPR_CXX20 void test(const int expected)
 {
   constexpr bool is_noexcept =
     cuda::std::movable<T>
@@ -52,7 +52,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test(const int expected)
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   using cuda::std::__compressed_box_choose;
   using cuda::std::__compressed_box_move_assign_available;

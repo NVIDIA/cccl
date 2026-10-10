@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
+
 // UNSUPPORTED: pre-sm-70
 
 #include <cooperative_groups.h>
@@ -16,7 +19,7 @@
 
 // TODO: global-shared
 // TODO: read  const
-__device__ __host__ __noinline__ void test_memcpy_async()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_memcpy_async()
 {
   size_t ARR_SZ = 1 << 10;
   int* arr0     = nullptr;

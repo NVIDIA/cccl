@@ -3,15 +3,150 @@
 
 #pragma once
 
-#include <cub/device/device_segmented_sort.cuh>
+#include <cub/device/device_copy.cuh>
+#include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh> // topk::select::{min, max}
+#include <cub/device/dispatch/tuning/tuning_batched_topk.cuh> // make_baseline_policy
+#include <cub/util_device.cuh> // cub::PtxVersion
 
+#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/remove.h>
 
+#include <cuda/__execution/determinism.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/iterator>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <c2h/catch2_test_helper.h>
+
+// Low-level predicate: true when a request that must use the SM90+ cluster backend has no cluster-capable target in the
+// build. With `CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT` defined (as the top-k test sources do), such a request
+// degrades to a runtime cudaErrorNotSupported rather than a compile-time error; callers dispatch it, verify that error
+// (via expect_batched_topk_unsupported_and_skip), and skip the result-correctness checks. `needs_cluster` must be true
+// when the caller knows the configuration requires the cluster backend; prefer batched_topk_backend_unavailable(),
+// which derives it from the request.
+//
+// Uses cub::PtxVersion (the compiled compute capability the dispatch resolves via PtxComputeCap), not cub::SmVersion
+// (the physical device): the two diverge when compiling for a virtual architecture below the device (e.g. `89-virtual`
+// on an SM120 GPU), where the cluster arm is never emitted and the dispatch returns cudaErrorNotSupported -- exactly
+// what this must catch.
+inline bool batched_topk_cluster_backend_unavailable(bool needs_cluster)
+{
+  if (!needs_cluster)
+  {
+    return false;
+  }
+  int ptx_version = 0;
+  REQUIRE(cudaSuccess == cub::PtxVersion(ptx_version));
+  constexpr int cluster_min_ptx_version = 900; // SM 9.0
+  return ptx_version < cluster_min_ptx_version;
+}
+
+// True when the batched top-k configuration cannot run in the current build (see
+// batched_topk_cluster_backend_unavailable). The request needs the cluster backend if it is deterministic / has a
+// concrete tie-break, or if `static_max_segment_size` exceeds the baseline backend's coverage. Deriving the size
+// decision here (rather than a precomputed `oversize` bool) keeps the threshold in one place. Pass the same maximum
+// segment size the test hands to the dispatch: its `cuda::args::bounds<...>` upper bound (or, for an un-annotated
+// narrow type, that type's maximum; a type whose maximum exceeds 2^21 no longer compiles without a bound). Note that
+// `oversize` uses only the tile-size bound `baseline_max_covered_segment_size`; the dispatch's `baseline_can_cover_v`
+// additionally checks the agent's shared-memory fit, so a borderline size the bound deems baseline-coverable could
+// still route to the cluster backend (such a case would fail rather than skip if the cluster backend is unavailable).
+template <cuda::execution::determinism::__determinism_t Determinism =
+            cuda::execution::determinism::__determinism_t::__not_guaranteed,
+          cuda::execution::tie_break::__tie_break_t TieBreak = cuda::execution::tie_break::__tie_break_t::__unspecified>
+bool batched_topk_backend_unavailable(cuda::std::int64_t static_max_segment_size)
+{
+  constexpr bool deterministic = Determinism != cuda::execution::determinism::__determinism_t::__not_guaranteed
+                              || TieBreak != cuda::execution::tie_break::__tie_break_t::__unspecified;
+  const bool oversize =
+    static_max_segment_size
+    > cub::detail::batched_topk::baseline_max_covered_segment_size(cub::detail::batched_topk::make_baseline_policy());
+  return batched_topk_cluster_backend_unavailable(deterministic || oversize);
+}
+
+// Runs the two-phase direct-API dispatch `dispatch(d_temp_storage, temp_storage_bytes)` (temp-size query, then launch)
+// for a request whose backend is unavailable in this build, and verifies it degraded gracefully at runtime: the query
+// still succeeds (returns a placeholder size), while the launch must return cudaErrorNotSupported
+// (CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT defers the would-be compile-time diagnostic to runtime). Then skips the
+// result-correctness checks, which need a device that can run the request. Callers gate this on
+// batched_topk_backend_unavailable() (or batched_topk_cluster_backend_unavailable() when the request is already known
+// to require the cluster backend); `dispatch` forwards to the direct-API entry point (host-side; the runtime error is
+// backend-selection driven and independent of the launch variant under test).
+template <typename DispatchFn>
+void expect_batched_topk_unsupported_and_skip(DispatchFn&& dispatch)
+{
+  cuda::std::size_t temp_storage_bytes = 0;
+  REQUIRE(dispatch(nullptr, temp_storage_bytes) == cudaSuccess);
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(dispatch(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes) == cudaErrorNotSupported);
+  SKIP("This batched top-k request routes to the SM90+ cluster backend, which the compute capability this dispatch "
+       "resolved to does not provide; the dispatch reported cudaErrorNotSupported at runtime "
+       "(CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT) as expected. Skipping the result-correctness checks.");
+}
+
+// Whole-`topk_policy` tuning override that forces the cluster backend and pins otherwise heuristic / hardware-derived
+// launch geometry, so a *small* segment can deterministically reach paths that normally only large segments hit. Shared
+// by the segmented keys and pairs cluster tests (identical there, so it lives here). The levers (a `0`/`-1` sentinel
+// keeps the production default):
+//   * `MaxBlocksPerCluster`   -- cap on the launched cluster width. A cap narrower than a segment needs forces the
+//                                oversize/streaming fallback (cap 1 -> single-CTA streaming; cap 2 -> a fixed 2-CTA
+//                                cluster with a real cross-CTA scan / barriers) instead of the hardware-derived width.
+//   * `MaxChunkSlotsPerBlock` -- cap on resident chunk slots per block. Resident capacity is then `slots *
+//   max_chunk_items`
+//                                (host-known), so a tiny segment above it overflows into streaming -- how a test
+//                                reaches the streaming / stage-schedule paths at a racecheck-tiny footprint. Combined
+//                                with a segment size that overflows to a non-divisor resident-chunk count, it also
+//                                reaches the misaligned-tail (`stage_rot`) prime rotation.
+//   * `SingleBlockMaxSegSize` -- pin the single-CTA-fastpath threshold; `0` disables it so even a small resident
+//                                segment fans out across the cluster (multi-CTA scan / idle-rank paths).
+//   * `ChunkBytes`            -- shrink the chunk (== slot) stride so a small segment still spans several chunks.
+//   * `PipelineStages`        -- vary the streaming pipeline depth relative to the resident chunk count, sweeping the
+//                                `num_stream_stages` <, ==, > `prologue` stage-schedule trichotomy.
+//   * `MinChunksPerBlock`     -- raise the chunks-per-block divisor to collapse the logical cluster below the
+//                                physical width (idle-rank early-out).
+template <int MaxBlocksPerCluster,
+          int MaxChunkSlotsPerBlock = 0,
+          int SingleBlockMaxSegSize = -1,
+          int ChunkBytes            = 0,
+          int PipelineStages        = 0,
+          int MinChunksPerBlock     = 0>
+struct cluster_tuning_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::detail::batched_topk::topk_policy
+  {
+    auto cluster                   = cub::detail::batched_topk::make_cluster_policy();
+    cluster.max_blocks_per_cluster = MaxBlocksPerCluster;
+    if constexpr (MaxChunkSlotsPerBlock != 0)
+    {
+      cluster.max_chunk_slots_per_block = MaxChunkSlotsPerBlock;
+    }
+    if constexpr (SingleBlockMaxSegSize >= 0)
+    {
+      cluster.single_block_max_seg_size = SingleBlockMaxSegSize;
+    }
+    if constexpr (ChunkBytes != 0)
+    {
+      cluster.chunk_bytes = ChunkBytes;
+    }
+    if constexpr (PipelineStages != 0)
+    {
+      cluster.pipeline_stages = PipelineStages;
+    }
+    if constexpr (MinChunksPerBlock != 0)
+    {
+      cluster.min_chunks_per_block = MinChunksPerBlock;
+    }
+    return cub::detail::batched_topk::topk_policy{
+      cub::detail::batched_topk::topk_algorithm::cluster, cub::detail::batched_topk::make_baseline_policy(), cluster};
+  }
+};
+
+// 512 B chunk stride -> 128 floats per chunk (== per slot); small enough that a tiny segment spans several chunks.
+inline constexpr int cluster_test_chunk_bytes = 512;
 
 // Function object to generate monotonically non-decreasing values for small key types
 template <typename T>
@@ -32,7 +167,7 @@ struct inc_t
     }
     else
     {
-      value_increment = static_cast<double>(cuda::std::numeric_limits<T>::max()) / num_item;
+      value_increment = static_cast<double>(cuda::std::numeric_limits<T>::max()) / static_cast<double>(num_item);
     }
   }
 
@@ -43,9 +178,119 @@ struct inc_t
   }
 };
 
+template <typename OffsetItT>
+struct segment_size_op
+{
+  OffsetItT d_offsets;
+
+  template <typename IndexT>
+  __host__ __device__ __forceinline__ auto operator()(IndexT segment_id) const
+  {
+    return d_offsets[segment_id + 1] - d_offsets[segment_id];
+  }
+};
+
+template <typename OffsetItT, typename KSizesItT>
+struct get_output_size_op
+{
+  OffsetItT offset_it;
+  KSizesItT k_it;
+  cuda::std::int64_t num_segments;
+
+  __device__ __forceinline__ cuda::std::int64_t operator()(cuda::std::int64_t segment_id) const
+  {
+    // Building the `num_segments + 1` compacted offsets via an exclusive scan invokes this functor once past the last
+    // segment (segment_id == num_segments). Return 0 there to avoid reading `offset_it[num_segments + 1]` and
+    // `k_it[num_segments]` out of bounds; that extra element never contributes to an exclusive-scan output.
+    if (segment_id >= num_segments)
+    {
+      return 0;
+    }
+    const auto segment_size = offset_it[segment_id + 1] - offset_it[segment_id];
+    return (cuda::std::min) (static_cast<cuda::std::int64_t>(k_it[segment_id]), segment_size);
+  }
+};
+
+template <typename OffsetItT, typename KSizesItT>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES get_output_size_op(OffsetItT, KSizesItT, cuda::std::int64_t)
+  -> get_output_size_op<OffsetItT, KSizesItT>;
+
+template <typename IteratorT, typename OffsetItT>
+struct offset_iterator_op
+{
+  IteratorT base_it;
+  OffsetItT offset_it;
+
+  offset_iterator_op(IteratorT base_it, OffsetItT offset_it)
+      : base_it(base_it)
+      , offset_it(offset_it)
+  {}
+
+  template <typename IndexT>
+  __device__ __forceinline__ IteratorT operator()(IndexT segment_id) const
+  {
+    return base_it + offset_it[segment_id];
+  }
+};
+
 template <cub::detail::topk::select SelectDirection>
 using direction_to_comparator_t =
   cuda::std::conditional_t<SelectDirection == cub::detail::topk::select::min, cuda::std::less<>, cuda::std::greater<>>;
+
+struct topk_custom_key_t
+{
+  cuda::std::uint32_t primary;
+  float secondary;
+
+  friend __host__ __device__ bool operator==(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
+  {
+    return lhs.primary == rhs.primary && lhs.secondary == rhs.secondary;
+  }
+
+  friend __host__ __device__ bool operator<(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
+  {
+    return lhs.primary == rhs.primary ? lhs.secondary < rhs.secondary : lhs.primary < rhs.primary;
+  }
+
+  friend __host__ __device__ bool operator>(const topk_custom_key_t& lhs, const topk_custom_key_t& rhs)
+  {
+    return lhs.primary == rhs.primary ? lhs.secondary > rhs.secondary : lhs.primary > rhs.primary;
+  }
+
+  friend __host__ std::ostream& operator<<(std::ostream& os, const topk_custom_key_t& v)
+  {
+    return os << "{ " << v.primary << ", " << v.secondary << " }";
+  }
+};
+
+struct topk_custom_key_decomposer_t
+{
+  __host__ __device__ cuda::std::tuple<cuda::std::uint32_t&, float&> operator()(topk_custom_key_t& key) const
+  {
+    return {key.primary, key.secondary};
+  }
+};
+
+// Generates topk_custom_key_t data with only 2 LSBs set on the primary key (values 0-3),
+// forcing the algorithm to inspect secondary key bits to resolve the top-k.
+inline void gen_topk_custom_keys(c2h::seed_t seed, c2h::device_vector<topk_custom_key_t>& keys)
+{
+  const auto num_items = keys.size();
+  c2h::device_vector<cuda::std::uint32_t> primary(num_items);
+  c2h::device_vector<float> secondary(num_items);
+  c2h::gen(seed, primary, cuda::std::uint32_t{0}, cuda::std::uint32_t{3});
+  c2h::gen(seed, secondary);
+
+  c2h::host_vector<cuda::std::uint32_t> h_primary(primary);
+  c2h::host_vector<float> h_secondary(secondary);
+  c2h::host_vector<topk_custom_key_t> h_keys(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    h_keys[i].primary   = h_primary[i];
+    h_keys[i].secondary = h_secondary[i];
+  }
+  keys = h_keys;
+}
 
 // Function object that maintains two bit-flags:
 // (1) one to keep track of the unique items encountered
@@ -69,7 +314,7 @@ struct set_bit_flag_for_write_op
   template <typename OffsetT, typename T>
   __host__ __device__ void operator()(OffsetT index, T val)
   {
-    static_assert(::cuda::std::is_integral<T>::value, "set_bit_for_element_op requires values to be of integral type");
+    static_assert(cuda::std::is_integral<T>::value, "set_bit_for_element_op requires values to be of integral type");
     set_bit_flag(d_element_flags, static_cast<OffsetT>(val));
     set_bit_flag(d_index_flags, index);
   }
@@ -91,7 +336,7 @@ class check_unordered_output_helper
   // Checks whether all results have been written correctly
   void check_bit_flags(const c2h::device_vector<std::uint32_t>& flag_vector)
   {
-    auto correctness_flags_end = flag_vector.cbegin() + (num_elements / bits_per_element);
+    auto correctness_flags_end = flag_vector.cbegin() + static_cast<std::ptrdiff_t>(num_elements / bits_per_element);
     const bool all_correct =
       thrust::equal(flag_vector.cbegin(), correctness_flags_end, cuda::constant_iterator(0xFFFFFFFFU));
 
@@ -108,7 +353,7 @@ class check_unordered_output_helper
       {
         if (((mismatch_value >> i) & 0x01u) == 0)
         {
-          bit_index = i;
+          bit_index = static_cast<int>(i);
           break;
         }
       }
@@ -132,8 +377,8 @@ public:
   check_unordered_output_helper(std::size_t num_elements)
       : num_elements(num_elements)
   {
-    element_flags.resize(::cuda::ceil_div(num_elements, bits_per_element), 0);
-    index_flags.resize(::cuda::ceil_div(num_elements, bits_per_element), 0);
+    element_flags.resize(cuda::ceil_div(num_elements, bits_per_element), 0);
+    index_flags.resize(cuda::ceil_div(num_elements, bits_per_element), 0);
   }
 
   // Prepares and returns a tabulate_output_iterator that checks whether the correct result has been written at each
@@ -181,12 +426,71 @@ void compact_sorted_keys_to_topk(
   d_keys_in.resize(new_end - d_keys_in.begin());
 }
 
-template <typename KeyT>
-void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
-                         cuda::std::int64_t num_segments,
-                         cuda::std::int64_t segment_size,
-                         cub::detail::topk::select direction)
+// Stream-compacts each segment to only contain its top-k elements, where the number of elements to keep is provided
+// per segment by `k_it` (k_it[segment_id] -> k for that segment). Each output segment holds exactly
+// min(k_it[segment_id], segment_size[segment_id]) items, tightly packed.
+template <typename KeyT,
+          typename OffsetT,
+          typename KSizesItT,
+          ::cuda::std::enable_if_t<!::cuda::std::is_integral_v<KSizesItT>, int> = 0>
+c2h::device_vector<KeyT> compact_to_topk_batched(
+  c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, KSizesItT k_it)
 {
+  // Expects d_offsets includes the number of items at the end
+  const auto num_segments = d_offsets.size() - 1;
+
+  // Maps segments to source pointers: d_keys_in.data() + offset[i]
+  auto src_ptrs_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(0), offset_iterator_op{d_keys_in.cbegin(), d_offsets.cbegin()});
+
+  // Calculates the output sizes (if segment size is smaller than k, then output size is segment size, otherwise k)
+  auto copy_sizes_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(0),
+    get_output_size_op{d_offsets.cbegin(), k_it, static_cast<cuda::std::int64_t>(num_segments)});
+
+  // Calculate destination offsets via prefix sum. Scan only the `num_segments` valid sizes (each reads
+  // `offset[seg]`/`offset[seg + 1]`, which stay in bounds) into indices [1, num_segments]; index 0 stays 0.
+  c2h::device_vector<OffsetT> d_output_offsets(num_segments + 1);
+  thrust::inclusive_scan(copy_sizes_it, copy_sizes_it + num_segments, d_output_offsets.begin() + 1);
+
+  OffsetT total_compacted_size = d_output_offsets.back();
+  c2h::device_vector<KeyT> d_keys_out(total_compacted_size, thrust::no_init);
+
+  // Map segments to destination pointers: d_keys_out.data() + new_offset[i]
+  auto dst_ptrs_it = cuda::make_transform_iterator(
+    cuda::make_counting_iterator(0), offset_iterator_op{d_keys_out.begin(), d_output_offsets.cbegin()});
+
+  // Query temporary storage size
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, src_ptrs_it, dst_ptrs_it, copy_sizes_it, num_segments);
+  c2h::device_vector<cuda::std::uint8_t> d_temp(temp_storage_bytes, thrust::no_init);
+  d_temp_storage = thrust::raw_pointer_cast(d_temp.data());
+
+  // Run batched copy to compact top-k elements of each segment to the front of the input buffer
+  cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, src_ptrs_it, dst_ptrs_it, copy_sizes_it, num_segments);
+
+  return d_keys_out;
+}
+
+// Stream-compacts each segment to only contain the top-k elements, using a single uniform k across all segments.
+template <typename KeyT, typename OffsetT>
+c2h::device_vector<KeyT> compact_to_topk_batched(
+  c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<OffsetT>& d_offsets, cuda::std::int64_t k)
+{
+  return compact_to_topk_batched(d_keys_in, d_offsets, cuda::constant_iterator(k));
+}
+
+template <typename KeyT, typename OffsetItT>
+void segmented_sort_keys(
+  c2h::device_vector<KeyT>& d_keys_in,
+  cuda::std::int64_t num_segments,
+  OffsetItT d_segment_offsets_begin_it,
+  OffsetItT d_segment_offsets_end_it,
+  cub::detail::topk::select direction)
+{
+  // Use cub::DeviceSegmentedRadixSort rather than cub::DeviceSegmentedSort for this reference sort: it compiles
+  // ~30% faster at negligible runtime cost (the reference only needs per-segment ordering of arithmetic keys).
   cuda::std::int64_t num_items = d_keys_in.size();
 
   // Prepare alternate buffer for double buffering
@@ -194,47 +498,55 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
   cub::DoubleBuffer<KeyT> d_keys(
     thrust::raw_pointer_cast(d_keys_in.data()), thrust::raw_pointer_cast(d_keys_alt.data()));
 
-  // Prepare segment offsets
-  auto segment_offsets_it =
-    cuda::make_strided_iterator(cuda::make_counting_iterator<cuda::std::int64_t>(0), segment_size);
-
   // Query temporary storage size
   size_t temp_storage_bytes = 0;
   if (direction == cub::detail::topk::select::min)
   {
-    cub::DeviceSegmentedSort::SortKeys(
-      nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
+    cub::DeviceSegmentedRadixSort::SortKeys(
+      nullptr,
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
 
     // Allocate temporary storage
     c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
 
     // Run segmented sort
-    cub::DeviceSegmentedSort::SortKeys(
+    cub::DeviceSegmentedRadixSort::SortKeys(
       thrust::raw_pointer_cast(d_temp_storage.data()),
       temp_storage_bytes,
       d_keys,
       num_items,
       num_segments,
-      segment_offsets_it,
-      (segment_offsets_it + 1));
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
   }
   else
   {
-    cub::DeviceSegmentedSort::SortKeysDescending(
-      nullptr, temp_storage_bytes, d_keys, num_items, num_segments, segment_offsets_it, (segment_offsets_it + 1));
+    cub::DeviceSegmentedRadixSort::SortKeysDescending(
+      nullptr,
+      temp_storage_bytes,
+      d_keys,
+      num_items,
+      num_segments,
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
 
     // Allocate temporary storage
     c2h::device_vector<cuda::std::uint8_t> d_temp_storage(temp_storage_bytes, thrust::no_init);
 
     // Run segmented sort
-    cub::DeviceSegmentedSort::SortKeysDescending(
+    cub::DeviceSegmentedRadixSort::SortKeysDescending(
       thrust::raw_pointer_cast(d_temp_storage.data()),
       temp_storage_bytes,
       d_keys,
       num_items,
       num_segments,
-      segment_offsets_it,
-      (segment_offsets_it + 1));
+      d_segment_offsets_begin_it,
+      d_segment_offsets_end_it);
   }
 
   // Make sure the result is returned in the original buffer
@@ -242,4 +554,26 @@ void segmented_sort_keys(c2h::device_vector<KeyT>& d_keys_in,
   {
     thrust::copy(d_keys.Current(), d_keys.Current() + num_items, d_keys_in.begin());
   }
+}
+
+template <typename KeyT>
+void fixed_size_segmented_sort_keys(
+  c2h::device_vector<KeyT>& d_keys_in,
+  cuda::std::int64_t num_segments,
+  cuda::std::int64_t segment_size,
+  cub::detail::topk::select direction)
+{
+  auto segment_offsets_it =
+    cuda::make_strided_iterator(cuda::make_counting_iterator<cuda::std::int64_t>(0), segment_size);
+
+  // We materialize the offsets to reduce the number of kernel template specializations
+  c2h::device_vector<cuda::std::int64_t> d_segment_offsets(num_segments + 1);
+  thrust::copy(segment_offsets_it,
+               segment_offsets_it + (num_segments + 1), // NOLINT(bugprone-misplaced-widening-cast)
+               d_segment_offsets.begin());
+
+  // Perform segmented sort
+  auto d_segment_offsets_begin_it = d_segment_offsets.cbegin();
+  auto d_segment_offsets_end_it   = d_segment_offsets_begin_it + 1;
+  segmented_sort_keys(d_keys_in, num_segments, d_segment_offsets_begin_it, d_segment_offsets_end_it, direction);
 }

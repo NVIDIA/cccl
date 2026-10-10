@@ -24,6 +24,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include "test_macros.h"
+
 _CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
 
 #if _CCCL_HAS_CHAR8_T()
@@ -32,7 +34,7 @@ using u8string_view = cuda::std::u8string_view;
 using u8string_view = cuda::std::string_view;
 #endif // ^^^ !_CCCL_HAS_CHAR8_T() ^^^
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // char
 

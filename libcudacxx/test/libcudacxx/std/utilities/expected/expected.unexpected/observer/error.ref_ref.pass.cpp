@@ -23,14 +23,14 @@ template <class T>
 constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T&&>().error())>> =
   noexcept(cuda::std::declval<T&&>().error());
 
-static_assert(!ErrorNoexcept<int>, "");
-static_assert(ErrorNoexcept<cuda::std::unexpected<int>>, "");
+static_assert(!ErrorNoexcept<int>);
+static_assert(ErrorNoexcept<cuda::std::unexpected<int>>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   cuda::std::unexpected<int> unex(5);
   decltype(auto) i = cuda::std::move(unex).error();
-  static_assert(cuda::std::same_as<decltype(i), int&&>, "");
+  static_assert(cuda::std::same_as<decltype(i), int&&>);
   assert(i == 5);
   return true;
 }
@@ -38,6 +38,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }

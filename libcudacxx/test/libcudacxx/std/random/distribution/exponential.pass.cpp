@@ -6,8 +6,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -26,7 +30,7 @@ struct exponential_cdf
 {
   using P = typename cuda::std::exponential_distribution<T>::param_type;
 
-  __host__ __device__ double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     if (x <= 0.0)
     {
@@ -39,7 +43,7 @@ struct exponential_cdf
 };
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = false;
   using D                                    = cuda::std::exponential_distribution<T>;

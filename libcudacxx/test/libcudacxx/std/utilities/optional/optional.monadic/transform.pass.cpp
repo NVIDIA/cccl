@@ -22,7 +22,7 @@
 
 struct LVal
 {
-  __host__ __device__ constexpr int operator()(int&)
+  TEST_FUNC constexpr int operator()(int&)
   {
     return 1;
   }
@@ -34,7 +34,7 @@ struct LVal
 struct CLVal
 {
   int operator()(int&) = delete;
-  __host__ __device__ constexpr int operator()(const int&)
+  TEST_FUNC constexpr int operator()(const int&)
   {
     return 1;
   }
@@ -46,7 +46,7 @@ struct RVal
 {
   int operator()(int&)       = delete;
   int operator()(const int&) = delete;
-  __host__ __device__ constexpr int operator()(int&&)
+  TEST_FUNC constexpr int operator()(int&&)
   {
     return 1;
   }
@@ -58,7 +58,7 @@ struct CRVal
   int operator()(int&)       = delete;
   int operator()(const int&) = delete;
   int operator()(int&&)      = delete;
-  __host__ __device__ constexpr int operator()(const int&&)
+  TEST_FUNC constexpr int operator()(const int&&)
   {
     return 1;
   }
@@ -66,7 +66,7 @@ struct CRVal
 
 struct RefQual
 {
-  __host__ __device__ constexpr int operator()(int) &
+  TEST_FUNC constexpr int operator()(int) &
   {
     return 1;
   }
@@ -78,7 +78,7 @@ struct RefQual
 struct CRefQual
 {
   int operator()(int) & = delete;
-  __host__ __device__ constexpr int operator()(int) const&
+  TEST_FUNC constexpr int operator()(int) const&
   {
     return 1;
   }
@@ -90,7 +90,7 @@ struct RVRefQual
 {
   int operator()(int) &      = delete;
   int operator()(int) const& = delete;
-  __host__ __device__ constexpr int operator()(int) &&
+  TEST_FUNC constexpr int operator()(int) &&
   {
     return 1;
   }
@@ -102,7 +102,7 @@ struct RVCRefQual
   int operator()(int) &      = delete;
   int operator()(int) const& = delete;
   int operator()(int) &&     = delete;
-  __host__ __device__ constexpr int operator()(int) const&&
+  TEST_FUNC constexpr int operator()(int) const&&
   {
     return 1;
   }
@@ -111,11 +111,11 @@ struct RVCRefQual
 struct NoCopy
 {
   NoCopy() = default;
-  __host__ __device__ NoCopy(const NoCopy&)
+  TEST_FUNC NoCopy(const NoCopy&)
   {
     assert(false);
   }
-  __host__ __device__ int operator()(const NoCopy&&)
+  TEST_FUNC int operator()(const NoCopy&&)
   {
     return 1;
   }
@@ -125,7 +125,7 @@ struct NoMove
 {
   NoMove()         = default;
   NoMove(NoMove&&) = delete;
-  __host__ __device__ NoMove operator()(const NoCopy&&)
+  TEST_FUNC NoMove operator()(const NoCopy&&)
   {
     return NoMove{};
   }
@@ -133,7 +133,7 @@ struct NoMove
 
 struct LValRef
 {
-  __host__ __device__ constexpr int& operator()(int& val)
+  TEST_FUNC constexpr int& operator()(int& val)
   {
     return val;
   }
@@ -144,7 +144,7 @@ struct LValRef
 
 struct RefQualRef
 {
-  __host__ __device__ constexpr int& operator()(int& val) &
+  TEST_FUNC constexpr int& operator()(int& val) &
   {
     return val;
   }
@@ -155,7 +155,7 @@ struct RefQualRef
 
 struct LValRefObj
 {
-  __host__ __device__ constexpr int operator()(int& val)
+  TEST_FUNC constexpr int operator()(int& val)
   {
     return val;
   }
@@ -166,7 +166,7 @@ struct LValRefObj
 
 struct RefQualRefObj
 {
-  __host__ __device__ constexpr int operator()(int& val) &
+  TEST_FUNC constexpr int operator()(int& val) &
   {
     return val;
   }
@@ -175,7 +175,7 @@ struct RefQualRefObj
   int operator()(int&) const&& = delete;
 };
 
-__host__ __device__ constexpr void test_val_types()
+TEST_FUNC constexpr void test_val_types()
 {
   // Test & overload
   {
@@ -297,7 +297,7 @@ __host__ __device__ constexpr void test_val_types()
 
 struct NonConst
 {
-  __host__ __device__ int non_const()
+  TEST_FUNC int non_const()
   {
     return 1;
   }
@@ -308,14 +308,14 @@ struct NonConst
 struct nvrtc_workaround
 {
   template <typename T>
-  __host__ __device__ int operator()(T&& t)
+  TEST_FUNC int operator()(T&& t)
   {
     return t.non_const();
   }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__ constexpr void test_sfinae()
+TEST_FUNC constexpr void test_sfinae()
 {
   cuda::std::optional<NonConst> opt{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -323,7 +323,7 @@ __host__ __device__ constexpr void test_sfinae()
   cuda::std::move(opt).transform(l);
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test_sfinae();
   test_val_types();

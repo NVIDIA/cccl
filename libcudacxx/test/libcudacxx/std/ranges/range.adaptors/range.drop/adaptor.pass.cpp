@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
+
 // cuda::std::views::drop
 
 #include <cuda/std/array>
@@ -21,6 +24,40 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+struct CopyOnlyCount
+{
+  int value_;
+
+  TEST_HOST_DEVICE_FUNC constexpr CopyOnlyCount(int value)
+      : value_(value)
+  {}
+  constexpr CopyOnlyCount(const CopyOnlyCount&) = default;
+  CopyOnlyCount(CopyOnlyCount&&)                = delete;
+
+  TEST_HOST_DEVICE_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
+struct ThrowingMoveCount
+{
+  int value_;
+
+  TEST_HOST_DEVICE_FUNC constexpr ThrowingMoveCount(int value)
+      : value_(value)
+  {}
+  constexpr ThrowingMoveCount(const ThrowingMoveCount&) = default;
+  TEST_HOST_DEVICE_FUNC ThrowingMoveCount(ThrowingMoveCount&& other)
+      : value_(other.value_)
+  {}
+
+  TEST_HOST_DEVICE_FUNC constexpr operator int() const
+  {
+    return value_;
+  }
+};
+
 template <class View, class T>
 _CCCL_CONCEPT CanBePiped =
   _CCCL_REQUIRES_EXPR((View, T), View&& view, T&& t)((cuda::std::forward<View>(view) | cuda::std::forward<T>(t)));
@@ -29,16 +66,16 @@ struct SizedView : cuda::std::ranges::view_base
 {
   int* begin_ = nullptr;
   int* end_   = nullptr;
-  __host__ __device__ constexpr SizedView(int* begin, int* end)
+  TEST_HOST_DEVICE_FUNC constexpr SizedView(int* begin, int* end)
       : begin_(begin)
       , end_(end)
   {}
 
-  __host__ __device__ constexpr auto begin() const
+  TEST_HOST_DEVICE_FUNC constexpr auto begin() const
   {
     return forward_iterator<int*>(begin_);
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_HOST_DEVICE_FUNC constexpr auto end() const
   {
     return sized_sentinel<forward_iterator<int*>>(forward_iterator<int*>(end_));
   }
@@ -54,20 +91,20 @@ struct SizedViewWithUnsizedSentinel : cuda::std::ranges::view_base
 
   int* begin_ = nullptr;
   int* end_   = nullptr;
-  __host__ __device__ constexpr SizedViewWithUnsizedSentinel(int* begin, int* end)
+  TEST_HOST_DEVICE_FUNC constexpr SizedViewWithUnsizedSentinel(int* begin, int* end)
       : begin_(begin)
       , end_(end)
   {}
 
-  __host__ __device__ constexpr auto begin() const
+  TEST_HOST_DEVICE_FUNC constexpr auto begin() const
   {
     return iterator(begin_);
   }
-  __host__ __device__ constexpr auto end() const
+  TEST_HOST_DEVICE_FUNC constexpr auto end() const
   {
     return sentinel(iterator(end_));
   }
-  __host__ __device__ constexpr size_t size() const
+  TEST_HOST_DEVICE_FUNC constexpr size_t size() const
   {
     return end_ - begin_;
   }
@@ -79,7 +116,7 @@ static_assert(
 static_assert(cuda::std::ranges::view<SizedViewWithUnsizedSentinel>);
 
 template <class T>
-__host__ __device__ constexpr void test_small_range(const T& input)
+TEST_HOST_DEVICE_FUNC constexpr void test_small_range(const T& input)
 {
   constexpr int N = 100;
   auto size       = cuda::std::ranges::size(input);
@@ -91,13 +128,13 @@ __host__ __device__ constexpr void test_small_range(const T& input)
 
 struct Pred
 {
-  __host__ __device__ constexpr int operator()(int i) noexcept
+  TEST_HOST_DEVICE_FUNC constexpr int operator()(int i) noexcept
   {
     return i;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE_FUNC TEST_CONSTEXPR_CXX20 bool test()
 {
   constexpr int N = 8;
   int buf[N]      = {1, 2, 3, 4, 5, 6, 7, 8};
@@ -265,6 +302,35 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     test_small_range(cuda::std::views::iota(1, 8));
   }
 
+  // `views::drop` on a sized `repeat_view` with an unsigned bound uses the difference type of `distance - min`.
+  {
+    auto repeat  = cuda::std::views::repeat(1, cuda::std::size_t{8});
+    using Result = cuda::std::ranges::repeat_view<int, cuda::std::ranges::range_difference_t<decltype(repeat)>>;
+    decltype(auto) result = repeat | cuda::std::views::drop(3);
+    static_assert(cuda::std::same_as<decltype(result), Result>);
+    static_assert(!cuda::std::same_as<decltype(result), decltype(repeat)>);
+    assert(result.size() == 5);
+    assert(*result.begin() == 1);
+  }
+
+  // A copy-only count, and a count whose move may throw, can form a partial `views::drop`.
+  {
+    [[maybe_unused]] int count_value = 3;
+    static_assert(noexcept(cuda::std::views::drop(count_value)));
+
+    CopyOnlyCount copy_only{2};
+    static_assert(noexcept(cuda::std::views::drop(copy_only)));
+    auto copy_only_partial      = cuda::std::views::drop(copy_only);
+    decltype(auto) copy_dropped = buf | copy_only_partial;
+    assert(copy_dropped.size() == N - 2);
+
+    ThrowingMoveCount throwing_move{5};
+    static_assert(noexcept(cuda::std::views::drop(throwing_move)));
+    auto throwing_partial           = cuda::std::views::drop(throwing_move);
+    decltype(auto) throwing_dropped = buf | throwing_partial;
+    assert(throwing_dropped.size() == N - 5);
+  }
+
   // Test that it's possible to call `cuda::std::views::drop` with any single argument as long as the resulting closure
   // is never invoked. There is no good use case for it, but it's valid.
   {
@@ -281,7 +347,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020 && defined(_CCCL_BUILTIN_ADDRESSOF)
 
   return 0;

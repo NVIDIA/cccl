@@ -18,7 +18,7 @@
 #include "helper.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   constexpr char data[] = {'H', 'O', 'P', 'P', 'E', 'R'};
 
@@ -392,7 +392,7 @@ __host__ __device__ constexpr bool test()
       static_assert(sub.rank_dynamic() == 1);
 
       using submdspan_t = decltype(sub);
-      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_stride>);
+      static_assert(cuda::std::is_same_v<typename submdspan_t::layout_type, cuda::std::layout_left>);
 
       assert(sub.stride(0) == md.stride(0));
       assert(sub.extent(0) == 1);
@@ -406,8 +406,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if !_CCCL_COMPILER(GCC, <, 11) // gcc-10 complains about __submdspan_offset not being constexpr...
-  static_assert(test(), "");
-#endif // !_CCCL_COMPILER(GCC, <, 11)
+  static_assert(test());
   return 0;
 }

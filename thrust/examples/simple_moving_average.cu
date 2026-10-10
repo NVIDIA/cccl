@@ -61,10 +61,10 @@ void simple_moving_average(const InputVector& data, size_t w, OutputVector& outp
 int main()
 {
   // length of data series
-  size_t n = 30;
+  const size_t n = 30;
 
   // window size of the moving average
-  size_t w = 4;
+  const size_t w = 4;
 
   // generate random data series
   thrust::host_vector<float> host_data(n);
@@ -74,7 +74,7 @@ int main()
   {
     e = static_cast<float>(dist(rng));
   }
-  thrust::device_vector<float> data = host_data;
+  const thrust::device_vector<float> data = host_data;
 
   // allocate storage for averages
   thrust::device_vector<float> averages(data.size() - (w - 1));
@@ -88,13 +88,13 @@ int main()
   {
     std::cout << value << " ";
   }
-  std::cout << "]" << std::endl;
+  std::cout << "]" << '\n';
 
   // print moving averages
-  std::cout << "simple moving averages (window = " << w << ")" << std::endl;
+  std::cout << "simple moving averages (window = " << w << ")" << '\n';
   for (size_t i = 0; i < averages.size(); i++)
   {
-    std::cout << "  [" << std::setw(2) << i << "," << std::setw(2) << (i + w) << ") = " << averages[i] << std::endl;
+    std::cout << "  [" << std::setw(2) << i << "," << std::setw(2) << (i + w) << ") = " << averages[i] << '\n';
   }
 
   return 0;

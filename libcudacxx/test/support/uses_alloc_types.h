@@ -341,7 +341,7 @@ public:
   template <class First, class... Args, EnableIfB<sizeof...(Args) == Arity> Dummy = false>
   constexpr UsesAllocatorV1(First&&, Args&&...)
   {
-    static_assert(!std::is_same<First, First>::value, "");
+    static_assert(!std::is_same<First, First>::value);
   }
 };
 

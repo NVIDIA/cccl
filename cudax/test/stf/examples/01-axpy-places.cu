@@ -15,17 +15,19 @@
  *        places and composite data places
  */
 
+#include <cuda/experimental/__places/partitions/tiled_partition.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
-#include <cuda/experimental/__stf/places/tiled_partition.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+
+#include <vector>
 
 using namespace cuda::experimental::stf;
 
 template <typename T>
 __global__ void axpy(size_t start, size_t cnt, T a, const T* x, T* y)
 {
-  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
-  int nthreads = gridDim.x * blockDim.x;
+  const int tid      = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
+  const int nthreads = static_cast<int>(gridDim.x * blockDim.x);
 
   for (int ind = tid; ind < cnt; ind += nthreads)
   {
@@ -49,15 +51,8 @@ void run()
   Ctx ctx;
 
   const int N = 1024 * 1024 * 32;
-  double *X, *Y;
 
-  X = new double[N];
-  Y = new double[N];
-  SCOPE(exit)
-  {
-    delete[] X;
-    delete[] Y;
-  };
+  ::std::vector<double> X(N), Y(N);
 
   for (size_t ind = 0; ind < N; ind++)
   {
@@ -77,26 +72,22 @@ void run()
 
   data_place cdp = data_place::composite(tiled_partition<512 * 1024ULL>(), all_devs);
 
-  auto handle_X = ctx.logical_data(X, {N});
-  auto handle_Y = ctx.logical_data(Y, {N});
+  auto handle_X = ctx.logical_data(X.data(), {N});
+  auto handle_Y = ctx.logical_data(Y.data(), {N});
 
   double alpha = 3.14;
 
   /* Compute Y = Y + alpha X */
   auto t = ctx.task(all_devs, handle_X.read(cdp), handle_Y.rw(cdp));
-  t->*[&](auto stream, auto sX, auto sY) {
-    // should be nullptr as we did not set a place
-    // fprintf(stderr, "t.get_stream() = %p\n", t.get_stream());
-    size_t grid_size = t.grid_dims().size();
+  t->*[&](auto, auto sX, auto sY) {
+    const size_t grid_size = t.grid_dims().size();
 
     assert(N % grid_size == 0);
 
     for (size_t i = 0; i < grid_size; i++)
     {
-      t.set_current_place(pos4(i));
-      // fprintf(stderr, "t.get_stream(%ld) = %p\n", i, t.get_stream());
-      axpy<<<16, 128, 0, stream>>>(i * N / grid_size, N / grid_size, alpha, sX.data_handle(), sY.data_handle());
-      t.unset_current_place();
+      auto active = t.activate_place(i);
+      axpy<<<16, 128, 0, t.get_stream(i)>>>(i * N / grid_size, N / grid_size, alpha, sX.data_handle(), sY.data_handle());
     }
   };
 

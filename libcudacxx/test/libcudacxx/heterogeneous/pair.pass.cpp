@@ -29,7 +29,7 @@ struct Write
   using async = cuda::std::false_type;
 
   template <typename Pair>
-  __host__ __device__ static void perform(Pair& p)
+  TEST_FUNC static void perform(Pair& p)
   {
     cuda::std::get<0>(p)        = N;
     cuda::std::get<1>(p).val[0] = N;
@@ -42,7 +42,7 @@ struct Read
   using async = cuda::std::false_type;
 
   template <typename Pair>
-  __host__ __device__ static void perform(Pair& p)
+  TEST_FUNC static void perform(Pair& p)
   {
     assert(cuda::std::get<0>(p) == N);
     assert(cuda::std::get<1>(p).val[0] == N);

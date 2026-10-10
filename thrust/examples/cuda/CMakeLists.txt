@@ -1,6 +1,6 @@
 file(
   GLOB example_srcs
-  RELATIVE "${CMAKE_CURRENT_LIST_DIR}}"
+  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
   CONFIGURE_DEPENDS
   *.cu
   *.cpp

@@ -23,8 +23,8 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
-#  define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
+#ifdef _CCCL_DOXYGEN_INVOKED
+#  define CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 #endif
 
 /**
@@ -47,6 +47,7 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
     }
 #endif
 
+// TODO(bgruber): drop in CCCL 4.0 when we drop the public dispatchers
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
 #  define CUB_DEFINE_SUB_POLICY_GETTER(name)                            \
     _CCCL_HOST_DEVICE static constexpr auto name()                      \
@@ -54,13 +55,6 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
       return MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
     }
 #endif
-
-// RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
-#if defined(CCCL_AVOID_SORT_UNROLL)
-#  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_NOUNROLL()
-#else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
-#  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_UNROLL_FULL()
-#endif // !CCCL_AVOID_SORT_UNROLL
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES)
 #  define CUB_DETAIL_STATIC_ISH_ASSERT(expr, msg) _CCCL_ASSERT(expr, msg)

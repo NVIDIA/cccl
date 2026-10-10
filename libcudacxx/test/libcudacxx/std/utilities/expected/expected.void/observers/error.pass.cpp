@@ -28,20 +28,20 @@ template <class T>
 constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().error())>> =
   noexcept(cuda::std::declval<T>().error());
 
-static_assert(!ErrorNoexcept<int>, "");
+static_assert(!ErrorNoexcept<int>);
 
-static_assert(ErrorNoexcept<cuda::std::expected<void, int>&>, "");
-static_assert(ErrorNoexcept<const cuda::std::expected<void, int>&>, "");
-static_assert(ErrorNoexcept<cuda::std::expected<void, int>&&>, "");
-static_assert(ErrorNoexcept<const cuda::std::expected<void, int>&&>, "");
+static_assert(ErrorNoexcept<cuda::std::expected<void, int>&>);
+static_assert(ErrorNoexcept<const cuda::std::expected<void, int>&>);
+static_assert(ErrorNoexcept<cuda::std::expected<void, int>&&>);
+static_assert(ErrorNoexcept<const cuda::std::expected<void, int>&&>);
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   // non-const &
   {
     cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
     decltype(auto) x = e.error();
-    static_assert(cuda::std::same_as<decltype(x), int&>, "");
+    static_assert(cuda::std::same_as<decltype(x), int&>);
     assert(x == 5);
   }
 
@@ -49,7 +49,7 @@ __host__ __device__ constexpr bool test()
   {
     const cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
     decltype(auto) x = e.error();
-    static_assert(cuda::std::same_as<decltype(x), const int&>, "");
+    static_assert(cuda::std::same_as<decltype(x), const int&>);
     assert(x == 5);
   }
 
@@ -57,7 +57,7 @@ __host__ __device__ constexpr bool test()
   {
     cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
     decltype(auto) x = cuda::std::move(e).error();
-    static_assert(cuda::std::same_as<decltype(x), int&&>, "");
+    static_assert(cuda::std::same_as<decltype(x), int&&>);
     assert(x == 5);
   }
 
@@ -65,7 +65,7 @@ __host__ __device__ constexpr bool test()
   {
     const cuda::std::expected<void, int> e(cuda::std::unexpect, 5);
     decltype(auto) x = cuda::std::move(e).error();
-    static_assert(cuda::std::same_as<decltype(x), const int&&>, "");
+    static_assert(cuda::std::same_as<decltype(x), const int&&>);
     assert(x == 5);
   }
 
@@ -76,7 +76,7 @@ int main(int, char**)
 {
   test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test(), "");
+  static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

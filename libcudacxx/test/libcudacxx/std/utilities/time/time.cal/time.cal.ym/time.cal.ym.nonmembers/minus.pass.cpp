@@ -45,7 +45,7 @@ int main(int, char**)
     static_assert(
       cuda::std::is_same_v<year_month, decltype(cuda::std::declval<year_month>() - cuda::std::declval<years>())>);
 
-    //  static_assert(testConstexprYears (year_month{year{1}, month{1}}), "");
+    //  static_assert(testConstexprYears (year_month{year{1}, month{1}}));
 
     year_month ym{year{1234}, January};
     for (int i = 0; i <= 10; ++i)
@@ -61,7 +61,7 @@ int main(int, char**)
     static_assert(
       cuda::std::is_same_v<year_month, decltype(cuda::std::declval<year_month>() - cuda::std::declval<months>())>);
 
-    //  static_assert(testConstexprMonths(year_month{year{1}, month{1}}), "");
+    //  static_assert(testConstexprMonths(year_month{year{1}, month{1}}));
 
     auto constexpr November = cuda::std::chrono::November;
     year_month ym{year{1234}, November};
@@ -78,7 +78,7 @@ int main(int, char**)
     static_assert(
       cuda::std::is_same_v<months, decltype(cuda::std::declval<year_month>() - cuda::std::declval<year_month>())>);
 
-    //  static_assert(testConstexprMonths(year_month{year{1}, month{1}}), "");
+    //  static_assert(testConstexprMonths(year_month{year{1}, month{1}}));
 
     //  Same year
     year y{2345};
@@ -87,7 +87,7 @@ int main(int, char**)
       for (int j = 1; j <= 12; ++j)
       {
         months diff = year_month{y, month(i)} - year_month{y, month(j)};
-        std::cout << "i: " << i << " j: " << j << " -> " << diff.count() << std::endl;
+        std::cout << "i: " << i << " j: " << j << " -> " << diff.count() << '\n';
         assert(diff.count() == i - j);
       }
     }

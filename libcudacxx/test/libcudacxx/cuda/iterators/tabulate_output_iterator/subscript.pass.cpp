@@ -17,7 +17,7 @@
 #include "types.h"
 
 template <class Fn>
-__host__ __device__ constexpr void test()
+TEST_FUNC constexpr void test()
 {
   Fn func{};
 
@@ -42,7 +42,7 @@ __host__ __device__ constexpr void test()
   }
 }
 
-__host__ __device__ constexpr bool test()
+TEST_FUNC constexpr bool test()
 {
   test<basic_functor>();
   test<mutable_functor>();
@@ -53,7 +53,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
 
   return 0;
 }

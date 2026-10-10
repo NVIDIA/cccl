@@ -13,19 +13,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_type.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::topk
 {
-template <class KeyT>
-constexpr int calc_bits_per_pass()
+_CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass(int key_size)
 {
-  switch (sizeof(KeyT))
+  switch (key_size)
   {
     case 1:
     default:
@@ -37,48 +42,118 @@ constexpr int calc_bits_per_pass()
   }
 }
 
-template <class KeyInT>
-struct sm90_tuning
+template <class KeyT>
+_CCCL_HOST_DEVICE_API constexpr int calc_bits_per_pass()
 {
-  static constexpr int threads = 512; // Number of threads per block
+  return calc_bits_per_pass(int{sizeof(KeyT)});
+}
 
-  static constexpr int nominal_4b_items_per_thread = 4;
-  static constexpr int items =
-    ::cuda::std::max(1, (nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT))));
-  // Try to load 16 Bytes per thread. (int64(items=2);int32(items=4);int16(items=8)).
+struct topk_policy
+{
+  int threads_per_block;
+  int items_per_thread;
+  BlockLoadAlgorithm load_algorithm;
+  BlockScanAlgorithm scan_algorithm;
+  int bits_per_pass;
 
-  static constexpr int bits_per_pass = calc_bits_per_pass<KeyInT>();
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator==(const topk_policy& lhs, const topk_policy& rhs)
+  {
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
+        && lhs.load_algorithm == rhs.load_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
+        && lhs.bits_per_pass == rhs.bits_per_pass;
+  }
 
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_VECTORIZE;
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool operator!=(const topk_policy& lhs, const topk_policy& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+#if _CCCL_HOSTED()
+  friend ::std::ostream& operator<<(::std::ostream& os, const topk_policy& p)
+  {
+    return os << "topk_policy { .threads_per_block = " << p.threads_per_block
+              << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
+              << ", .scan_algorithm = " << p.scan_algorithm << ", .bits_per_pass = " << p.bits_per_pass << " }";
+  }
+#endif // _CCCL_HOSTED()
 };
 
-template <class KeyInT, class OffsetT>
-struct policy_hub
+#if _CCCL_HAS_CONCEPTS()
+template <typename T>
+concept topk_policy_selector = policy_selector<T, topk_policy>;
+#endif // _CCCL_HAS_CONCEPTS()
+
+struct policy_selector
 {
-  struct DefaultTuning
+  int key_size;
+  int value_size; // 0 when selecting keys only
+  int offset_size;
+  int out_offset_size;
+  type_t key_type; // distinguishes same-sized key types (e.g. float vs. int32), which take different tunings
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    static constexpr int nominal_4b_items_per_thread = 4;
-    static constexpr int items_per_thread            = ::cuda::std::clamp(
-      nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(KeyInT)), 1, nominal_4b_items_per_thread);
-    static constexpr int bits_per_pass = calc_bits_per_pass<KeyInT>();
+    constexpr int nominal_4b_items_per_thread = 4;
+    const int bits_per_pass                   = calc_bits_per_pass(key_size);
 
-    using topk_policy_t =
-      AgentTopKPolicy<512, items_per_thread, bits_per_pass, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
-  };
+    // tunings from cub/benchmarks/bench/topk/keys.cu. These are raw measured values; items_per_thread already
+    // accounts for the key size. Only configurations that won for their exact key type and offset width during
+    // verification are encoded; everything else intentionally falls through.
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && value_size == 0)
+    {
+      if (offset_size == 8)
+      {
+        if (key_type == type_t::float64)
+        {
+          // ipt_9.tpb_128.ld_0
+          return topk_policy{128, 4, BLOCK_LOAD_DIRECT, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+        if (key_type == type_t::float32)
+        {
+          // ipt_6.tpb_320.ld_0
+          return topk_policy{320, 6, BLOCK_LOAD_DIRECT, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+        if (key_type == type_t::int8 || key_type == type_t::uint8)
+        {
+          // ipt_3.tpb_384.ld_2
+          return topk_policy{384, 12, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+        }
+      }
+      if (offset_size == 4 && key_type == type_t::int128)
+      {
+        // ipt_9.tpb_480.ld_2
+        return topk_policy{480, 2, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+      }
+    }
 
-  struct Policy500
-      : DefaultTuning
-      , ChainedPolicy<350, Policy500, Policy500>
-  {};
+    if (cc >= ::cuda::compute_capability{9, 0})
+    {
+      // Try to load 16 bytes per thread: int64 -> 2, int32 -> 4, int16 -> 8.
+      const int items_per_thread = ::cuda::std::max(1, nominal_4b_items_per_thread * 4 / key_size);
+      return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+    }
 
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy500>
+    // Default tuning used on older architectures.
+    const int items_per_thread =
+      ::cuda::std::clamp(nominal_4b_items_per_thread * 4 / key_size, 1, nominal_4b_items_per_thread);
+    return topk_policy{512, items_per_thread, BLOCK_LOAD_VECTORIZE, BLOCK_SCAN_WARP_SCANS, bits_per_pass};
+  }
+};
+
+#if _CCCL_HAS_CONCEPTS()
+static_assert(topk_policy_selector<policy_selector>);
+#endif // _CCCL_HAS_CONCEPTS()
+
+template <typename KeyT, typename ValueT, typename OffsetT, typename OutOffsetT>
+struct policy_selector_from_types
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> topk_policy
   {
-    using tuning = sm90_tuning<KeyInT>;
-    using topk_policy_t =
-      AgentTopKPolicy<tuning::threads, tuning::items, tuning::bits_per_pass, tuning::load_algorithm, BLOCK_SCAN_WARP_SCANS>;
-  };
-
-  using max_policy = Policy900;
+    constexpr int value_size = ::cuda::std::is_same_v<ValueT, NullType> ? 0 : int{sizeof(ValueT)};
+    constexpr auto policies  = policy_selector{
+      int{sizeof(KeyT)}, value_size, int{sizeof(OffsetT)}, int{sizeof(OutOffsetT)}, classify_type<KeyT>};
+    return policies(cc);
+  }
 };
 } // namespace detail::topk
 CUB_NAMESPACE_END

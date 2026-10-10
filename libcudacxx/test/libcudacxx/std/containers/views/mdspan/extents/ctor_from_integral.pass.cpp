@@ -41,7 +41,7 @@
 struct IntegralCtorTest
 {
   template <class E, class AllExtents, class Extents, size_t... Indices>
-  __host__ __device__ static constexpr void
+  TEST_FUNC static constexpr void
   test_construction(AllExtents all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
     // construction from indices
@@ -54,7 +54,7 @@ int main(int, char**)
 {
   test_index_type_combo<IntegralCtorTest>();
 #if TEST_STD_VER >= 2020
-  static_assert(test_index_type_combo<IntegralCtorTest>(), "");
+  static_assert(test_index_type_combo<IntegralCtorTest>());
 #endif // TEST_STD_VER >= 2020
 
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;

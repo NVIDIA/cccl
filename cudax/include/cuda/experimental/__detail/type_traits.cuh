@@ -45,17 +45,17 @@ using ::cuda::std::__declfn_t;
 using ::cuda::std::decay_t;
 
 template <class _Ty, bool _Nothrow = true>
-[[noreturn]] _CCCL_API auto __declfn() noexcept(_Nothrow) -> _Ty
+[[noreturn]] _CCCL_HOST_DEVICE_API auto __declfn() noexcept(_Nothrow) -> _Ty
 {
   _CCCL_ASSERT(false, "__declfn should never be called at runtime.");
   _CCCL_UNREACHABLE();
 }
 
 template <class _Ty, class _Uy>
-_CCCL_CONCEPT __same_as = ::cuda::std::_IsSame<_Ty, _Uy>::value;
+_CCCL_CONCEPT __same_as = ::cuda::std::is_same_v<_Ty, _Uy>;
 
 template <class _Ty, class _Uy>
-_CCCL_CONCEPT __not_same_as = !::cuda::std::_IsSame<_Ty, _Uy>::value;
+_CCCL_CONCEPT __not_same_as = !::cuda::std::is_same_v<_Ty, _Uy>;
 
 template <class _Ty, class... _Us>
 _CCCL_CONCEPT __one_of = (__same_as<_Ty, _Us> || ...);
@@ -109,7 +109,7 @@ template <class... _As>
 _CCCL_CONCEPT __nothrow_copyable = (::cuda::std::is_nothrow_copy_constructible_v<_As> && ...);
 
 template <class... _As>
-using __nothrow_decay_copyable_t _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<__nothrow_decay_copyable<_As...>>;
+using __nothrow_decay_copyable_t _CCCL_NODEBUG = ::cuda::std::bool_constant<__nothrow_decay_copyable<_As...>>;
 
 using ::cuda::std::__call_result_t;
 } // namespace cuda::experimental

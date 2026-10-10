@@ -17,6 +17,8 @@
 
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
+#include <iostream>
+
 using namespace cuda::experimental::stf;
 
 int main(int argc, char** argv)
@@ -28,7 +30,7 @@ int main(int argc, char** argv)
 
   for (size_t ind = 0; ind < n; ind++)
   {
-    X[ind] = 1.0 * ind + 42;
+    X[ind] = 1.0 * static_cast<double>(ind) + 42;
     Y[ind] = 0.0;
   }
 
@@ -42,7 +44,7 @@ int main(int argc, char** argv)
   auto handle_TMP = ctx.logical_data<double>(n);
   handle_TMP.set_symbol("tmp");
 
-  int NITER = 4;
+  const int NITER = 4;
   for (int iter = 0; iter < NITER; iter++)
   {
     // We swap X and Y using TMP as temporary buffer
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    std::cout << "Generating DOT output in " << argv[1] << '\n';
     ctx.print_to_dot(argv[1]);
   }
 

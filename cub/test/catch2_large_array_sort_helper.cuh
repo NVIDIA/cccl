@@ -47,15 +47,15 @@ class key_sort_ref_key_transform
 
 public:
   key_sort_ref_key_transform(std::size_t num_items, bool is_descending)
-      : m_conversion(max_key / num_items)
+      : m_conversion(max_key / static_cast<double>(num_items))
       , m_num_items(num_items)
       , m_is_descending(is_descending)
   {}
 
   __host__ __device__ KeyType operator()(std::size_t idx) const
   {
-    return m_is_descending ? static_cast<KeyType>((m_num_items - 1 - idx) * m_conversion)
-                           : static_cast<KeyType>(idx * m_conversion);
+    return m_is_descending ? static_cast<KeyType>(static_cast<double>(m_num_items - 1 - idx) * m_conversion)
+                           : static_cast<KeyType>(static_cast<double>(idx) * m_conversion);
   }
 };
 
@@ -76,8 +76,8 @@ struct index_to_summary
   std::size_t num_summaries;
   bool is_descending;
 
-  template <typename index_type>
-  __host__ __device__ summary_t operator()(index_type idx) const
+  template <typename IndexType>
+  __host__ __device__ summary_t operator()(IndexType idx) const
   {
     constexpr KeyType max_key = ::cuda::std::numeric_limits<KeyType>::max();
 
@@ -125,8 +125,8 @@ public:
 template <typename ValueType>
 struct index_to_value
 {
-  template <typename index_type>
-  __host__ __device__ ValueType operator()(index_type index)
+  template <typename IndexType>
+  __host__ __device__ ValueType operator()(IndexType index)
   {
     return static_cast<ValueType>(index);
   }
@@ -377,7 +377,7 @@ private:
   static std::size_t compute_num_summaries(std::size_t num_items, std::size_t max_summaries)
   {
     constexpr KeyType max_key       = ::cuda::std::numeric_limits<KeyType>::max();
-    const std::size_t num_summaries = std::min(std::min(max_summaries, num_items), static_cast<std::size_t>(max_key));
+    const std::size_t num_summaries = std::min({max_summaries, num_items, static_cast<std::size_t>(max_key)});
     return num_summaries;
   }
 };

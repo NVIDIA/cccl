@@ -110,7 +110,7 @@ __mu(_Ti& __ti, tuple<_Uj...>& __uj)
   return ::cuda::std::__mu_expand(__ti, __uj, __indices());
 }
 
-template <bool IsPh, class _Ti, class _Uj>
+template <bool _IsPh, class _Ti, class _Uj>
 struct __mu_return2
 {};
 
@@ -138,7 +138,7 @@ __mu(_Ti& __ti, _Uj&)
   return __ti;
 }
 
-template <class _Ti, bool IsReferenceWrapper, bool IsBindEx, bool IsPh, class _TupleUj>
+template <class _Ti, bool _IsReferenceWrapper, bool _IsBindEx, bool _IsPh, class _TupleUj>
 struct __mu_return_impl;
 
 template <bool _Invocable, class _Ti, class... _Uj>
@@ -222,6 +222,7 @@ struct __bind_return<_Fp, const tuple<_BoundArgs...>, _TupleUj, true>
 template <class _Fp, class _BoundArgs, class _TupleUj>
 using __bind_return_t = typename __bind_return<_Fp, _BoundArgs, _TupleUj>::type;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _BoundArgs, size_t... _Indx, class _Args>
 _CCCL_API inline __bind_return_t<_Fp, _BoundArgs, _Args>
 __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>, _Args&& __args)
