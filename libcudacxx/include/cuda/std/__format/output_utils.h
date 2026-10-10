@@ -27,7 +27,8 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/format_spec_parser.h>
-#include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__iterator/back_insert_iterator.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/string_view>
 

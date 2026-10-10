@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/concepts.h>
 #include <cuda/std/__format/format_parse_context.h>
@@ -32,7 +31,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/string_view>
 
