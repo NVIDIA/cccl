@@ -64,6 +64,9 @@ namespace detail::segmented_scan
 //! @tparam AccumT
 //!   The type of intermediate accumulator (according to P2322R6)
 //!
+//! @tparam FixedSize
+//!   Whether all segments have the same, known size, so that no cumulative segment sizes are stored
+//!
 template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -71,7 +74,8 @@ template <typename SegmentedScanPolicyGetterT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
-          bool ForceInclusive = false>
+          bool ForceInclusive = false,
+          bool FixedSize      = false>
 struct agent_segmented_scan
 {
 private:
@@ -151,8 +155,15 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  using _TempStorage =
-    ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
+  struct _fixed_size_multi_segment_temp_storage_t
+  {
+    _multiple_segment_algorithms_storage_t reused;
+  };
+
+  using _TempStorage = ::cuda::std::conditional_t<
+    multi_segment_enabled,
+    ::cuda::std::conditional_t<FixedSize, _fixed_size_multi_segment_temp_storage_t, _multi_segment_temp_storage_t>,
+    _single_segment_temp_storage_t>;
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
   wrapped_input_iterator_t d_in; ///< Input data
@@ -200,7 +211,9 @@ public:
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
       const OffsetT chunk_begin = input_begin_idx + chunk_id * tile_items;
-      const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, input_end_idx);
+      // Subtract first to avoid overflow for segments ending close to the maximum of OffsetT
+      const OffsetT chunk_end =
+        chunk_begin + (::cuda::std::min) (static_cast<OffsetT>(tile_items), input_end_idx - chunk_begin);
 
       // chunk_size <= TILE_ITEMS, casting to int is safe
       const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
@@ -392,6 +405,18 @@ public:
         scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
       }
     }
+  }
+
+  //! @brief Scan contiguous segments of segment_size items each
+  template <::cuda::std::size_t NumSegments = max_segments, ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_fixed_size_segments(OffsetT segment_size, int n_segments)
+  {
+    _CCCL_ASSERT(segment_size > 0, "Segment size should be positive");
+    _CCCL_ASSERT(n_segments > 0 && n_segments <= NumSegments, "Number of segments per worker is out of range");
+
+    const bag_of_fixed_size_segments searcher{segment_size};
+    const auto begin_idx_it = ::cuda::make_strided_iterator(::cuda::counting_iterator<OffsetT>{0}, segment_size);
+    scan_segments_chunked(searcher, begin_idx_it, begin_idx_it, static_cast<OffsetT>(segment_size * n_segments));
   }
 
 private:
@@ -667,6 +692,81 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     else
     {
       agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
+    }
+  }
+}
+
+//! Each block scans up to segments_per_block consecutive segments. Several segments share a block only when they
+//! fit into one tile, so offsets local to the block fit into int.
+template <typename PolicySelector,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          bool ForceInclusive,
+          typename ActualInitValueT = typename InitValueT::value_type>
+#if _CCCL_HAS_CONCEPTS()
+  requires segmented_scan_policy_selector<PolicySelector>
+#endif // _CCCL_HAS_CONCEPTS()
+__launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
+  _CCCL_KERNEL_ATTRIBUTES void device_fixed_size_segmented_scan_kernel(
+    const InputIteratorT d_in,
+    const OutputIteratorT d_out,
+    const int n_segments,
+    const int segment_size,
+    const ScanOpT scan_op,
+    const InitValueT init_value,
+    const int segments_per_block)
+{
+  static constexpr auto policy = current_policy<PolicySelector>();
+  static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
+                "The memory consistency model does not apply to texture accesses");
+
+  struct policy_getter
+  {
+    constexpr auto operator()() const
+    {
+      return policy;
+    }
+  };
+
+  using agent_t = agent_segmented_scan<
+    policy_getter,
+    InputIteratorT,
+    OutputIteratorT,
+    int,
+    ScanOpT,
+    ActualInitValueT,
+    AccumT,
+    ForceInclusive,
+    /* FixedSize */ true>;
+
+  __shared__ typename agent_t::TempStorage temp_storage;
+
+  _CCCL_ASSERT(segments_per_block > 0 && segments_per_block <= policy.block.max_segments,
+               "Number of segments per block is out of range");
+
+  // first_segment < n_segments, so it fits into int
+  const int first_segment = static_cast<int>(blockIdx.x) * segments_per_block;
+  const auto first_item   = static_cast<::cuda::std::int64_t>(first_segment) * segment_size;
+
+  agent_t agent(temp_storage, d_in + first_item, d_out + first_item, scan_op, init_value);
+
+  if constexpr (policy.block.max_segments == 1)
+  {
+    agent.scan_one_segment(0, segment_size, 0);
+  }
+  else
+  {
+    const int size = ::cuda::std::min(segments_per_block, n_segments - first_segment);
+    if (size == 1)
+    {
+      agent.scan_one_segment(0, segment_size, 0);
+    }
+    else
+    {
+      agent.scan_fixed_size_segments(segment_size, size);
     }
   }
 }

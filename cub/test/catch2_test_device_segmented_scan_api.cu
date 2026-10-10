@@ -675,3 +675,188 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
     cuda::std::plus<>{},
     5);
 }
+
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with fixed-size segments works",
+         "[segmented][scan][fixed_size]",
+         CUB_SMALL)
+{
+  const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedSum[fixed size]";
+
+  // example-begin exclusive-segmented-sum-fixed-size
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  auto input              = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1};
+  auto output             = thrust::device_vector<int>(input.size(), thrust::no_init);
+  const int segment_size  = 4;
+  const auto num_segments = static_cast<cuda::std::int64_t>(input.size() / segment_size);
+
+  cuda::std::uint8_t* d_temp_storage = nullptr;
+  size_t temp_storage_bytes          = 0;
+
+  // get size of required temporary storage and allocate
+  auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size);
+  check_execution_status(status, algo_name);
+
+  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // run the algorithm
+  status = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size);
+  check_execution_status(status, algo_name);
+
+  // exclusive prefix sum of each segment
+  const thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 12};
+  // example-end exclusive-segmented-sum-fixed-size
+
+  REQUIRE(status == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with fixed-size segments works",
+         "[segmented][scan][fixed_size]",
+         CUB_SMALL)
+{
+  const std::string& algo_name = "cub::DeviceSegmentedScan::ExclusiveSegmentedScan[fixed size]";
+
+  // example-begin exclusive-segmented-scan-fixed-size
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  auto input              = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1};
+  auto output             = thrust::device_vector<int>(input.size(), thrust::no_init);
+  const int segment_size  = 4;
+  const auto num_segments = static_cast<cuda::std::int64_t>(input.size() / segment_size);
+
+  cuda::std::uint8_t* d_temp_storage = nullptr;
+  size_t temp_storage_bytes          = 0;
+
+  // get size of required temporary storage and allocate
+  auto status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size, cuda::maximum<>{}, 4);
+  check_execution_status(status, algo_name);
+
+  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // run the algorithm
+  status = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size, cuda::maximum<>{}, 4);
+  check_execution_status(status, algo_name);
+
+  // exclusive running maximum of each segment, seeded with 4
+  const thrust::device_vector<int> expected{4, 8, 8, 8, 4, 4, 4, 9};
+  // example-end exclusive-segmented-scan-fixed-size
+
+  REQUIRE(status == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with fixed-size segments works",
+         "[segmented][scan][fixed_size]",
+         CUB_SMALL)
+{
+  const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedSum[fixed size]";
+
+  // example-begin inclusive-segmented-sum-fixed-size
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  auto input              = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1};
+  auto output             = thrust::device_vector<int>(input.size(), thrust::no_init);
+  const int segment_size  = 4;
+  const auto num_segments = static_cast<cuda::std::int64_t>(input.size() / segment_size);
+
+  cuda::std::uint8_t* d_temp_storage = nullptr;
+  size_t temp_storage_bytes          = 0;
+
+  // get size of required temporary storage and allocate
+  auto status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size);
+  check_execution_status(status, algo_name);
+
+  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // run the algorithm
+  status = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size);
+  check_execution_status(status, algo_name);
+
+  // inclusive prefix sum of each segment
+  const thrust::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 13};
+  // example-end inclusive-segmented-sum-fixed-size
+
+  REQUIRE(status == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with fixed-size segments works",
+         "[segmented][scan][fixed_size]",
+         CUB_SMALL)
+{
+  const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScan[fixed size]";
+
+  // example-begin inclusive-segmented-scan-fixed-size
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  auto input              = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1};
+  auto output             = thrust::device_vector<int>(input.size(), thrust::no_init);
+  const int segment_size  = 4;
+  const auto num_segments = static_cast<cuda::std::int64_t>(input.size() / segment_size);
+
+  cuda::std::uint8_t* d_temp_storage = nullptr;
+  size_t temp_storage_bytes          = 0;
+
+  // get size of required temporary storage and allocate
+  auto status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size, cuda::maximum<>{});
+  check_execution_status(status, algo_name);
+
+  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // run the algorithm
+  status = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size, cuda::maximum<>{});
+  check_execution_status(status, algo_name);
+
+  // inclusive running maximum of each segment
+  const thrust::device_vector<int> expected{8, 8, 8, 8, 3, 3, 9, 9};
+  // example-end inclusive-segmented-scan-fixed-size
+
+  REQUIRE(status == cudaSuccess);
+  REQUIRE(output == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with fixed-size segments works",
+         "[segmented][scan][fixed_size]",
+         CUB_SMALL)
+{
+  const std::string& algo_name = "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit[fixed size]";
+
+  // example-begin inclusive-segmented-scan-init-fixed-size
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  auto input              = thrust::device_vector<int>{8, 6, 7, 5, 3, 0, 9, 1};
+  auto output             = thrust::device_vector<int>(input.size(), thrust::no_init);
+  const int segment_size  = 4;
+  const auto num_segments = static_cast<cuda::std::int64_t>(input.size() / segment_size);
+
+  cuda::std::uint8_t* d_temp_storage = nullptr;
+  size_t temp_storage_bytes          = 0;
+
+  // get size of required temporary storage and allocate
+  auto status = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size, cuda::maximum<>{}, 4);
+  check_execution_status(status, algo_name);
+
+  thrust::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // run the algorithm
+  status = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    d_temp_storage, temp_storage_bytes, input.begin(), output.begin(), num_segments, segment_size, cuda::maximum<>{}, 4);
+  check_execution_status(status, algo_name);
+
+  // inclusive running maximum of each segment, seeded with 4
+  const thrust::device_vector<int> expected{8, 8, 8, 8, 4, 4, 9, 9};
+  // example-end inclusive-segmented-scan-init-fixed-size
+
+  REQUIRE(status == cudaSuccess);
+  REQUIRE(output == expected);
+}
