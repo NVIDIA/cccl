@@ -16,8 +16,11 @@
 #include <thrust/execution_policy.h>
 #include <thrust/logical.h>
 
+#include <cuda/__cccl_config>
+#include <cuda/algorithm>
 #include <cuda/atomic>
 #include <cuda/buffer>
+#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/hierarchy>
 #include <cuda/iterator>
@@ -25,6 +28,7 @@
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/stream>
 
@@ -262,4 +266,63 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
 
   REQUIRE(::thrust::all_of(
     ::thrust::cuda::par.on(stream.get()), cleared_visits.data(), cleared_visits.data() + num_keys, is_zero{}));
+}
+
+struct collision_hash
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr cuda::std::size_t operator()(int) const noexcept
+  {
+    return 0;
+  }
+};
+
+struct counting_equal
+{
+  int* comparisons;
+
+  [[nodiscard]] _CCCL_DEVICE_API bool operator()(int lhs, int rhs) const noexcept
+  {
+    cuda::atomic_ref<int, cuda::thread_scope_device>{*comparisons}.fetch_add(1, cuda::memory_order_relaxed);
+    return lhs == rhs;
+  }
+};
+
+C2H_TEST("fixed_capacity_map for_each stops after a unique match", "[container]", cg_sizes, bucket_sizes)
+{
+  constexpr int cg_size     = c2h::get<0, TestType>::value;
+  constexpr int bucket_size = c2h::get<1, TestType>::value;
+  using map_type            = cudax::cuco::fixed_capacity_map<
+    int,
+    int,
+    128,
+    cuda::thread_scope_device,
+    counting_equal,
+    cudax::cuco::linear_probing<cg_size, collision_hash>,
+    bucket_size>;
+
+  const cuda::stream stream{cuda::device_ref{0}};
+  const auto mr = cuda::device_default_memory_pool(stream.device());
+  cuda::device_buffer<int> comparisons{stream, mr, {0}};
+  cuda::device_buffer<int> visits{stream, mr, {0}};
+  map_type map{stream, mr, cudax::cuco::empty_key{-1}, cudax::cuco::empty_value{-1}, counting_equal{comparisons.data()}};
+
+  const auto keys  = cuda::counting_iterator<int>{0};
+  const auto pairs = cuda::transform_iterator(keys, iota_pair<typename map_type::value_type>{});
+  // Insert the queried key first so it precedes a long chain of colliding keys.
+  map.insert(stream, pairs, pairs + 1);
+  map.insert(stream, pairs + 1, pairs + 17);
+  cuda::fill_bytes(stream, comparisons, 0);
+
+  // The bulk API dispatches to scalar queries for cg_size == 1 and CG queries otherwise.
+  map.for_each(stream, keys, keys + 1, record_visit<typename map_type::value_type>{visits.data()});
+  int num_comparisons = 0;
+  int num_visits      = 0;
+  cuda::copy_bytes(stream, comparisons, cuda::std::span<int>{&num_comparisons, 1});
+  cuda::copy_bytes(stream, visits, cuda::std::span<int>{&num_visits, 1});
+  stream.sync();
+
+  REQUIRE(num_visits == 1);
+  // A hit in the first probing window must not scan the trailing collision chain.
+  REQUIRE(num_comparisons > 0);
+  REQUIRE(num_comparisons <= cg_size * bucket_size);
 }
