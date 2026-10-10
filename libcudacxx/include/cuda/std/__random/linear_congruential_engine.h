@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/ios.h>
 #include <cuda/std/__host_stdlib/istream>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__random/is_seed_sequence.h>

@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/integral.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/cstdint>
 
