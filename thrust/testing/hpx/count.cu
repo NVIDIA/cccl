@@ -15,136 +15,120 @@ void TestCount(ExecutionPolicy exec)
   Vector data{1, 6, 1, 9, 2};
 
   {
-    ASSERT_EQUAL(thrust::count(data.begin(), data.end(), 0), 0);
-    ASSERT_EQUAL(thrust::count(data.begin(), data.end(), 1), 2);
-    ASSERT_EQUAL(thrust::count(data.begin(), data.end(), 2), 1);
+    REQUIRE(thrust::count(exec, data.begin(), data.end(), 0) == 0);
+    REQUIRE(thrust::count(exec, data.begin(), data.end(), 1) == 2);
+    REQUIRE(thrust::count(exec, data.begin(), data.end(), 2) == 1);
   }
   {
     auto greater_than_five = [](const T& x) {
       return x > 5;
     };
-    ASSERT_EQUAL(thrust::count_if(data.begin(), data.end(), greater_than_five), 2);
+    REQUIRE(thrust::count_if(exec, data.begin(), data.end(), greater_than_five) == 2);
   }
 }
 
-void TestCountPar()
+TEST_CASE("TestCountPar", "[hpx]")
 {
   TestCount(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestCountPar);
 
-void TestCountParOnSequencedExecutor()
+TEST_CASE("TestCountParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCount(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestCountParOnSequencedExecutor);
 
-void TestCountParOnTestSyncExecutor()
+TEST_CASE("TestCountParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCount(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestCountParOnTestSyncExecutor);
 
-void TestCountParWithAutoChunkSize()
+TEST_CASE("TestCountParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCount(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestCountParWithAutoChunkSize);
 
-void TestCountParUnseq()
+TEST_CASE("TestCountParUnseq", "[hpx]")
 {
   TestCount(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestCountParUnseq);
 
-void TestCountParUnseqOnSequencedExecutor()
+TEST_CASE("TestCountParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCount(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCountParUnseqOnSequencedExecutor);
 
-void TestCountParUnseqOnTestSyncExecutor()
+TEST_CASE("TestCountParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCount(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCountParUnseqOnTestSyncExecutor);
 
-void TestCountParUnseqWithAutoChunkSize()
+TEST_CASE("TestCountParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCount(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestCountParUnseqWithAutoChunkSize);
 
-void TestCountSeq()
+TEST_CASE("TestCountSeq", "[hpx]")
 {
   TestCount(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestCountSeq);
 
-void TestCountSeqOnSequencedExecutor()
+TEST_CASE("TestCountSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCount(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestCountSeqOnSequencedExecutor);
 
-void TestCountSeqOnTestSyncExecutor()
+TEST_CASE("TestCountSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCount(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestCountSeqOnTestSyncExecutor);
 
-void TestCountSeqWithAutoChunkSize()
+TEST_CASE("TestCountSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCount(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestCountSeqWithAutoChunkSize);
 
-void TestCountUnseq()
+TEST_CASE("TestCountUnseq", "[hpx]")
 {
   TestCount(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestCountUnseq);
 
-void TestCountUnseqOnSequencedExecutor()
+TEST_CASE("TestCountUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCount(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCountUnseqOnSequencedExecutor);
 
-void TestCountUnseqOnTestSyncExecutor()
+TEST_CASE("TestCountUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCount(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCountUnseqOnTestSyncExecutor);
 
-void TestCountUnseqWithAutoChunkSize()
+TEST_CASE("TestCountUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCount(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestCountUnseqWithAutoChunkSize);
 
 _CCCL_DIAG_POP

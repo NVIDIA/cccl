@@ -14,126 +14,110 @@ void TestMerge(ExecutionPolicy exec)
   Vector result(7);
   const auto end = thrust::merge(exec, a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
-  ASSERT_EQUAL(ref, result);
+  REQUIRE(result.end() == end);
+  REQUIRE(ref == result);
 }
 
-void TestMergePar()
+TEST_CASE("TestMergePar", "[hpx]")
 {
   TestMerge(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestMergePar);
 
-void TestMergeParOnSequencedExecutor()
+TEST_CASE("TestMergeParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestMerge(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestMergeParOnSequencedExecutor);
 
-void TestMergeParOnTestSyncExecutor()
+TEST_CASE("TestMergeParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestMerge(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestMergeParOnTestSyncExecutor);
 
-void TestMergeParWithAutoChunkSize()
+TEST_CASE("TestMergeParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestMerge(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestMergeParWithAutoChunkSize);
 
-void TestMergeParUnseq()
+TEST_CASE("TestMergeParUnseq", "[hpx]")
 {
   TestMerge(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestMergeParUnseq);
 
-void TestMergeParUnseqOnSequencedExecutor()
+TEST_CASE("TestMergeParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestMerge(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestMergeParUnseqOnSequencedExecutor);
 
-void TestMergeParUnseqOnTestSyncExecutor()
+TEST_CASE("TestMergeParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestMerge(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestMergeParUnseqOnTestSyncExecutor);
 
-void TestMergeParUnseqWithAutoChunkSize()
+TEST_CASE("TestMergeParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestMerge(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestMergeParUnseqWithAutoChunkSize);
 
-void TestMergeSeq()
+TEST_CASE("TestMergeSeq", "[hpx]")
 {
   TestMerge(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestMergeSeq);
 
-void TestMergeSeqOnSequencedExecutor()
+TEST_CASE("TestMergeSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestMerge(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestMergeSeqOnSequencedExecutor);
 
-void TestMergeSeqOnTestSyncExecutor()
+TEST_CASE("TestMergeSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestMerge(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestMergeSeqOnTestSyncExecutor);
 
-void TestMergeSeqWithAutoChunkSize()
+TEST_CASE("TestMergeSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestMerge(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestMergeSeqWithAutoChunkSize);
 
-void TestMergeUnseq()
+TEST_CASE("TestMergeUnseq", "[hpx]")
 {
   TestMerge(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestMergeUnseq);
 
-void TestMergeUnseqOnSequencedExecutor()
+TEST_CASE("TestMergeUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestMerge(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestMergeUnseqOnSequencedExecutor);
 
-void TestMergeUnseqOnTestSyncExecutor()
+TEST_CASE("TestMergeUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestMerge(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestMergeUnseqOnTestSyncExecutor);
 
-void TestMergeUnseqWithAutoChunkSize()
+TEST_CASE("TestMergeUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestMerge(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestMergeUnseqWithAutoChunkSize);

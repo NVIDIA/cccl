@@ -16,8 +16,8 @@ void TestTransform(ExecutionPolicy exec)
 
     typename Vector::iterator iter = thrust::transform(exec, input.begin(), input.end(), output.begin(), thrust::negate<T>());
 
-    ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
-    ASSERT_EQUAL(output, result);
+    REQUIRE(std::size_t(iter - output.begin()) == input.size());
+    REQUIRE(output == result);
   }
   {
     Vector input1{1, -2, 3};
@@ -28,127 +28,111 @@ void TestTransform(ExecutionPolicy exec)
     typename Vector::iterator iter =
       thrust::transform(exec, input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minus<T>());
 
-    ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
-    ASSERT_EQUAL(output, result);
+    REQUIRE(std::size_t(iter - output.begin()) == input1.size());
+    REQUIRE(output == result);
   }
 }
 
-void TestTransformPar()
+TEST_CASE("TestTransformPar", "[hpx]")
 {
   TestTransform(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestTransformPar);
 
-void TestTransformParOnSequencedExecutor()
+TEST_CASE("TestTransformParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestTransform(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestTransformParOnSequencedExecutor);
 
-void TestTransformParOnTestSyncExecutor()
+TEST_CASE("TestTransformParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestTransform(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestTransformParOnTestSyncExecutor);
 
-void TestTransformParWithAutoChunkSize()
+TEST_CASE("TestTransformParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestTransform(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestTransformParWithAutoChunkSize);
 
-void TestTransformParUnseq()
+TEST_CASE("TestTransformParUnseq", "[hpx]")
 {
   TestTransform(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestTransformParUnseq);
 
-void TestTransformParUnseqOnSequencedExecutor()
+TEST_CASE("TestTransformParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestTransform(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestTransformParUnseqOnSequencedExecutor);
 
-void TestTransformParUnseqOnTestSyncExecutor()
+TEST_CASE("TestTransformParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestTransform(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestTransformParUnseqOnTestSyncExecutor);
 
-void TestTransformParUnseqWithAutoChunkSize()
+TEST_CASE("TestTransformParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestTransform(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestTransformParUnseqWithAutoChunkSize);
 
-void TestTransformSeq()
+TEST_CASE("TestTransformSeq", "[hpx]")
 {
   TestTransform(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestTransformSeq);
 
-void TestTransformSeqOnSequencedExecutor()
+TEST_CASE("TestTransformSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestTransform(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestTransformSeqOnSequencedExecutor);
 
-void TestTransformSeqOnTestSyncExecutor()
+TEST_CASE("TestTransformSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestTransform(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestTransformSeqOnTestSyncExecutor);
 
-void TestTransformSeqWithAutoChunkSize()
+TEST_CASE("TestTransformSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestTransform(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestTransformSeqWithAutoChunkSize);
 
-void TestTransformUnseq()
+TEST_CASE("TestTransformUnseq", "[hpx]")
 {
   TestTransform(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestTransformUnseq);
 
-void TestTransformUnseqOnSequencedExecutor()
+TEST_CASE("TestTransformUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestTransform(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestTransformUnseqOnSequencedExecutor);
 
-void TestTransformUnseqOnTestSyncExecutor()
+TEST_CASE("TestTransformUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestTransform(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestTransformUnseqOnTestSyncExecutor);
 
-void TestTransformUnseqWithAutoChunkSize()
+TEST_CASE("TestTransformUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestTransform(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestTransformUnseqWithAutoChunkSize);

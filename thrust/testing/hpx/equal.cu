@@ -16,138 +16,122 @@ void TestEqual(ExecutionPolicy exec)
   Vector v2{5, 2, 0, 6, 1};
 
   {
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v1.begin()), true);
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v2.begin()), false);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.end(), v1.begin()) == true);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.end(), v2.begin()) == false);
 
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 0, v1.begin()), true);
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 1, v1.begin()), true);
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 3, v2.begin()), true);
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.begin() + 4, v2.begin()), false);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.begin() + 0, v1.begin()) == true);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.begin() + 1, v1.begin()) == true);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.begin() + 3, v2.begin()) == true);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.begin() + 4, v2.begin()) == false);
   }
   {
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v2.begin(), thrust::less_equal<T>()), true);
-    ASSERT_EQUAL(thrust::equal(v1.begin(), v1.end(), v2.begin(), thrust::greater<T>()), false);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.end(), v2.begin(), thrust::less_equal<T>()) == true);
+    REQUIRE(thrust::equal(exec, v1.begin(), v1.end(), v2.begin(), thrust::greater<T>()) == false);
   }
 }
 
-void TestEqualPar()
+TEST_CASE("TestEqualPar", "[hpx]")
 {
   TestEqual(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestEqualPar);
 
-void TestEqualParOnSequencedExecutor()
+TEST_CASE("TestEqualParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestEqual(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestEqualParOnSequencedExecutor);
 
-void TestEqualParOnTestSyncExecutor()
+TEST_CASE("TestEqualParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestEqual(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestEqualParOnTestSyncExecutor);
 
-void TestEqualParWithAutoChunkSize()
+TEST_CASE("TestEqualParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestEqual(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestEqualParWithAutoChunkSize);
 
-void TestEqualParUnseq()
+TEST_CASE("TestEqualParUnseq", "[hpx]")
 {
   TestEqual(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestEqualParUnseq);
 
-void TestEqualParUnseqOnSequencedExecutor()
+TEST_CASE("TestEqualParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestEqual(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestEqualParUnseqOnSequencedExecutor);
 
-void TestEqualParUnseqOnTestSyncExecutor()
+TEST_CASE("TestEqualParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestEqual(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestEqualParUnseqOnTestSyncExecutor);
 
-void TestEqualParUnseqWithAutoChunkSize()
+TEST_CASE("TestEqualParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestEqual(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestEqualParUnseqWithAutoChunkSize);
 
-void TestEqualSeq()
+TEST_CASE("TestEqualSeq", "[hpx]")
 {
   TestEqual(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestEqualSeq);
 
-void TestEqualSeqOnSequencedExecutor()
+TEST_CASE("TestEqualSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestEqual(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestEqualSeqOnSequencedExecutor);
 
-void TestEqualSeqOnTestSyncExecutor()
+TEST_CASE("TestEqualSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestEqual(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestEqualSeqOnTestSyncExecutor);
 
-void TestEqualSeqWithAutoChunkSize()
+TEST_CASE("TestEqualSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestEqual(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestEqualSeqWithAutoChunkSize);
 
-void TestEqualUnseq()
+TEST_CASE("TestEqualUnseq", "[hpx]")
 {
   TestEqual(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestEqualUnseq);
 
-void TestEqualUnseqOnSequencedExecutor()
+TEST_CASE("TestEqualUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestEqual(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestEqualUnseqOnSequencedExecutor);
 
-void TestEqualUnseqOnTestSyncExecutor()
+TEST_CASE("TestEqualUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestEqual(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestEqualUnseqOnTestSyncExecutor);
 
-void TestEqualUnseqWithAutoChunkSize()
+TEST_CASE("TestEqualUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestEqual(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestEqualUnseqWithAutoChunkSize);
 
 _CCCL_DIAG_POP

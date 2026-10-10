@@ -34,8 +34,8 @@ void TestForEach(ExecutionPolicy exec)
 
     typename Vector::iterator result = thrust::for_each(exec, input.begin(), input.end(), f);
 
-    ASSERT_EQUAL(output, ref);
-    ASSERT_EQUAL_QUIET(result, input.end());
+    REQUIRE(output == ref);
+    REQUIRE(result == input.end());
   }
 
   {
@@ -44,129 +44,113 @@ void TestForEach(ExecutionPolicy exec)
 
     typename Vector::iterator result = thrust::for_each_n(exec, input.begin(), input.size(), f);
 
-    ASSERT_EQUAL(output, ref);
-    ASSERT_EQUAL_QUIET(result, input.end());
+    REQUIRE(output == ref);
+    REQUIRE(result == input.end());
   }
 }
 
-void TestForEachPar()
+TEST_CASE("TestForEachPar", "[hpx]")
 {
   TestForEach(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestForEachPar);
 
-void TestForEachParOnSequencedExecutor()
+TEST_CASE("TestForEachParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestForEach(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestForEachParOnSequencedExecutor);
 
-void TestForEachParOnTestSyncExecutor()
+TEST_CASE("TestForEachParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestForEach(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestForEachParOnTestSyncExecutor);
 
-void TestForEachParWithAutoChunkSize()
+TEST_CASE("TestForEachParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestForEach(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestForEachParWithAutoChunkSize);
 
-void TestForEachParUnseq()
+TEST_CASE("TestForEachParUnseq", "[hpx]")
 {
   TestForEach(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestForEachParUnseq);
 
-void TestForEachParUnseqOnSequencedExecutor()
+TEST_CASE("TestForEachParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestForEach(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestForEachParUnseqOnSequencedExecutor);
 
-void TestForEachParUnseqOnTestSyncExecutor()
+TEST_CASE("TestForEachParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestForEach(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestForEachParUnseqOnTestSyncExecutor);
 
-void TestForEachParUnseqWithAutoChunkSize()
+TEST_CASE("TestForEachParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestForEach(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestForEachParUnseqWithAutoChunkSize);
 
-void TestForEachSeq()
+TEST_CASE("TestForEachSeq", "[hpx]")
 {
   TestForEach(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestForEachSeq);
 
-void TestForEachSeqOnSequencedExecutor()
+TEST_CASE("TestForEachSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestForEach(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestForEachSeqOnSequencedExecutor);
 
-void TestForEachSeqOnTestSyncExecutor()
+TEST_CASE("TestForEachSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestForEach(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestForEachSeqOnTestSyncExecutor);
 
-void TestForEachSeqWithAutoChunkSize()
+TEST_CASE("TestForEachSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestForEach(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestForEachSeqWithAutoChunkSize);
 
-void TestForEachUnseq()
+TEST_CASE("TestForEachUnseq", "[hpx]")
 {
   TestForEach(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestForEachUnseq);
 
-void TestForEachUnseqOnSequencedExecutor()
+TEST_CASE("TestForEachUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestForEach(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestForEachUnseqOnSequencedExecutor);
 
-void TestForEachUnseqOnTestSyncExecutor()
+TEST_CASE("TestForEachUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestForEach(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestForEachUnseqOnTestSyncExecutor);
 
-void TestForEachUnseqWithAutoChunkSize()
+TEST_CASE("TestForEachUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestForEach(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestForEachUnseqWithAutoChunkSize);
 
 _CCCL_DIAG_POP

@@ -17,137 +17,121 @@ void TestFill(ExecutionPolicy exec)
   {
     Vector v{0, 1, 2, 3, 4};
 
-    thrust::fill(v.begin(), v.end(), (T) 1);
+    thrust::fill(exec, v.begin(), v.end(), (T) 1);
 
-    ASSERT_EQUAL(v, ref);
+    REQUIRE(v == ref);
   }
   {
     Vector v{0, 1, 2, 3, 4};
 
-    thrust::fill_n(v.begin(), v.size(), (T) 1);
+    thrust::fill_n(exec, v.begin(), v.size(), (T) 1);
 
-    ASSERT_EQUAL(v, ref);
+    REQUIRE(v == ref);
   }
 }
 
-void TestFillPar()
+TEST_CASE("TestFillPar", "[hpx]")
 {
   TestFill(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestFillPar);
 
-void TestFillParOnSequencedExecutor()
+TEST_CASE("TestFillParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestFill(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestFillParOnSequencedExecutor);
 
-void TestFillParOnTestSyncExecutor()
+TEST_CASE("TestFillParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestFill(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestFillParOnTestSyncExecutor);
 
-void TestFillParWithAutoChunkSize()
+TEST_CASE("TestFillParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestFill(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestFillParWithAutoChunkSize);
 
-void TestFillParUnseq()
+TEST_CASE("TestFillParUnseq", "[hpx]")
 {
   TestFill(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestFillParUnseq);
 
-void TestFillParUnseqOnSequencedExecutor()
+TEST_CASE("TestFillParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestFill(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestFillParUnseqOnSequencedExecutor);
 
-void TestFillParUnseqOnTestSyncExecutor()
+TEST_CASE("TestFillParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestFill(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestFillParUnseqOnTestSyncExecutor);
 
-void TestFillParUnseqWithAutoChunkSize()
+TEST_CASE("TestFillParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestFill(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestFillParUnseqWithAutoChunkSize);
 
-void TestFillSeq()
+TEST_CASE("TestFillSeq", "[hpx]")
 {
   TestFill(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestFillSeq);
 
-void TestFillSeqOnSequencedExecutor()
+TEST_CASE("TestFillSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestFill(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestFillSeqOnSequencedExecutor);
 
-void TestFillSeqOnTestSyncExecutor()
+TEST_CASE("TestFillSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestFill(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestFillSeqOnTestSyncExecutor);
 
-void TestFillSeqWithAutoChunkSize()
+TEST_CASE("TestFillSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestFill(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestFillSeqWithAutoChunkSize);
 
-void TestFillUnseq()
+TEST_CASE("TestFillUnseq", "[hpx]")
 {
   TestFill(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestFillUnseq);
 
-void TestFillUnseqOnSequencedExecutor()
+TEST_CASE("TestFillUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestFill(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestFillUnseqOnSequencedExecutor);
 
-void TestFillUnseqOnTestSyncExecutor()
+TEST_CASE("TestFillUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestFill(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestFillUnseqOnTestSyncExecutor);
 
-void TestFillUnseqWithAutoChunkSize()
+TEST_CASE("TestFillUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestFill(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestFillUnseqWithAutoChunkSize);
 
 _CCCL_DIAG_POP

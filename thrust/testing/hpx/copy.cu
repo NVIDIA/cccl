@@ -17,137 +17,121 @@ void TestCopy(ExecutionPolicy exec)
   {
     Vector v{1, 1, 1, 1, 1};
 
-    thrust::copy(ref.cbegin(), ref.cend(), v.begin());
+    thrust::copy(exec, ref.cbegin(), ref.cend(), v.begin());
 
-    ASSERT_EQUAL(v, ref);
+    REQUIRE(v == ref);
   }
   {
     Vector v{1, 1, 1, 1, 1};
 
-    thrust::copy_n(ref.cbegin(), ref.size(), v.begin());
+    thrust::copy_n(exec, ref.cbegin(), ref.size(), v.begin());
 
-    ASSERT_EQUAL(v, ref);
+    REQUIRE(v == ref);
   }
 }
 
-void TestCopyPar()
+TEST_CASE("TestCopyPar", "[hpx]")
 {
   TestCopy(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestCopyPar);
 
-void TestCopyParOnSequencedExecutor()
+TEST_CASE("TestCopyParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCopy(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestCopyParOnSequencedExecutor);
 
-void TestCopyParOnTestSyncExecutor()
+TEST_CASE("TestCopyParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCopy(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestCopyParOnTestSyncExecutor);
 
-void TestCopyParWithAutoChunkSize()
+TEST_CASE("TestCopyParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCopy(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestCopyParWithAutoChunkSize);
 
-void TestCopyParUnseq()
+TEST_CASE("TestCopyParUnseq", "[hpx]")
 {
   TestCopy(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestCopyParUnseq);
 
-void TestCopyParUnseqOnSequencedExecutor()
+TEST_CASE("TestCopyParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCopy(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCopyParUnseqOnSequencedExecutor);
 
-void TestCopyParUnseqOnTestSyncExecutor()
+TEST_CASE("TestCopyParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCopy(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCopyParUnseqOnTestSyncExecutor);
 
-void TestCopyParUnseqWithAutoChunkSize()
+TEST_CASE("TestCopyParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCopy(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestCopyParUnseqWithAutoChunkSize);
 
-void TestCopySeq()
+TEST_CASE("TestCopySeq", "[hpx]")
 {
   TestCopy(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestCopySeq);
 
-void TestCopySeqOnSequencedExecutor()
+TEST_CASE("TestCopySeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCopy(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestCopySeqOnSequencedExecutor);
 
-void TestCopySeqOnTestSyncExecutor()
+TEST_CASE("TestCopySeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCopy(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestCopySeqOnTestSyncExecutor);
 
-void TestCopySeqWithAutoChunkSize()
+TEST_CASE("TestCopySeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCopy(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestCopySeqWithAutoChunkSize);
 
-void TestCopyUnseq()
+TEST_CASE("TestCopyUnseq", "[hpx]")
 {
   TestCopy(thrust::hpx::unseq);
 }
-DECLARE_UNITTEST(TestCopyUnseq);
 
-void TestCopyUnseqOnSequencedExecutor()
+TEST_CASE("TestCopyUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
   TestCopy(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCopyUnseqOnSequencedExecutor);
 
-void TestCopyUnseqOnTestSyncExecutor()
+TEST_CASE("TestCopyUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
   TestCopy(thrust::hpx::unseq.on(exec));
 }
-DECLARE_UNITTEST(TestCopyUnseqOnTestSyncExecutor);
 
-void TestCopyUnseqWithAutoChunkSize()
+TEST_CASE("TestCopyUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
   TestCopy(thrust::hpx::unseq.with(acs));
 }
-DECLARE_UNITTEST(TestCopyUnseqWithAutoChunkSize);
 
 _CCCL_DIAG_POP

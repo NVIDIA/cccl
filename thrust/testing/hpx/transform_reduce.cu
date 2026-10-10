@@ -1,139 +1,123 @@
-#include <thrust/reduce.h>
+#include <thrust/transform_reduce.h>
 
 #include "test_executor.h"
 #include <unittest/unittest.h>
 
 template <typename ExecutionPolicy>
-void TestReduce(ExecutionPolicy exec)
+void TestTransformReduce(ExecutionPolicy exec)
 {
   using Vector = thrust::device_vector<int>;
   using T      = typename Vector::value_type;
 
   Vector v{1, -2, 3};
 
-  // no initializer
-  ASSERT_EQUAL(thrust::reduce(exec, v.begin(), v.end()), 2);
+  auto square = [](T x) {
+    return x * x;
+  };
 
-  // with initializer
-  ASSERT_EQUAL(thrust::reduce(exec, v.begin(), v.end(), (T) 10), 12);
+  REQUIRE(thrust::transform_reduce(exec, v.begin(), v.end(), square, (T) 0, thrust::plus<T>()) == 14);
 }
 
-void TestReducePar()
+TEST_CASE("TestTransformReducePar", "[hpx]")
 {
-  TestReduce(thrust::hpx::par);
+  TestTransformReduce(thrust::hpx::par);
 }
-DECLARE_UNITTEST(TestReducePar);
 
-void TestReduceParOnSequencedExecutor()
-{
-  hpx::execution::sequenced_executor exec{};
-
-  TestReduce(thrust::hpx::par.on(exec));
-}
-DECLARE_UNITTEST(TestReduceParOnSequencedExecutor);
-
-void TestReduceParOnTestSyncExecutor()
-{
-  test_sync_executor exec{};
-
-  TestReduce(thrust::hpx::par.on(exec));
-}
-DECLARE_UNITTEST(TestReduceParOnTestSyncExecutor);
-
-void TestReduceParWithAutoChunkSize()
-{
-  hpx::execution::experimental::auto_chunk_size acs{};
-
-  TestReduce(thrust::hpx::par.with(acs));
-}
-DECLARE_UNITTEST(TestReduceParWithAutoChunkSize);
-
-void TestReduceParUnseq()
-{
-  TestReduce(thrust::hpx::par_unseq);
-}
-DECLARE_UNITTEST(TestReduceParUnseq);
-
-void TestReduceParUnseqOnSequencedExecutor()
+TEST_CASE("TestTransformReduceParOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
-  TestReduce(thrust::hpx::par_unseq.on(exec));
+  TestTransformReduce(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestReduceParUnseqOnSequencedExecutor);
 
-void TestReduceParUnseqOnTestSyncExecutor()
+TEST_CASE("TestTransformReduceParOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
-  TestReduce(thrust::hpx::par_unseq.on(exec));
+  TestTransformReduce(thrust::hpx::par.on(exec));
 }
-DECLARE_UNITTEST(TestReduceParUnseqOnTestSyncExecutor);
 
-void TestReduceParUnseqWithAutoChunkSize()
+TEST_CASE("TestTransformReduceParWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
-  TestReduce(thrust::hpx::par_unseq.with(acs));
+  TestTransformReduce(thrust::hpx::par.with(acs));
 }
-DECLARE_UNITTEST(TestReduceParUnseqWithAutoChunkSize);
 
-void TestReduceSeq()
+TEST_CASE("TestTransformReduceParUnseq", "[hpx]")
 {
-  TestReduce(thrust::hpx::seq);
+  TestTransformReduce(thrust::hpx::par_unseq);
 }
-DECLARE_UNITTEST(TestReduceSeq);
 
-void TestReduceSeqOnSequencedExecutor()
+TEST_CASE("TestTransformReduceParUnseqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
-  TestReduce(thrust::hpx::seq.on(exec));
+  TestTransformReduce(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestReduceSeqOnSequencedExecutor);
 
-void TestReduceSeqOnTestSyncExecutor()
+TEST_CASE("TestTransformReduceParUnseqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
-  TestReduce(thrust::hpx::seq.on(exec));
+  TestTransformReduce(thrust::hpx::par_unseq.on(exec));
 }
-DECLARE_UNITTEST(TestReduceSeqOnTestSyncExecutor);
 
-void TestReduceSeqWithAutoChunkSize()
+TEST_CASE("TestTransformReduceParUnseqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
-  TestReduce(thrust::hpx::seq.with(acs));
+  TestTransformReduce(thrust::hpx::par_unseq.with(acs));
 }
-DECLARE_UNITTEST(TestReduceSeqWithAutoChunkSize);
 
-void TestReduceUnseq()
+TEST_CASE("TestTransformReduceSeq", "[hpx]")
 {
-  TestReduce(thrust::hpx::unseq);
+  TestTransformReduce(thrust::hpx::seq);
 }
-DECLARE_UNITTEST(TestReduceUnseq);
 
-void TestReduceUnseqOnSequencedExecutor()
+TEST_CASE("TestTransformReduceSeqOnSequencedExecutor", "[hpx]")
 {
   hpx::execution::sequenced_executor exec{};
 
-  TestReduce(thrust::hpx::unseq.on(exec));
+  TestTransformReduce(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestReduceUnseqOnSequencedExecutor);
 
-void TestReduceUnseqOnTestSyncExecutor()
+TEST_CASE("TestTransformReduceSeqOnTestSyncExecutor", "[hpx]")
 {
   test_sync_executor exec{};
 
-  TestReduce(thrust::hpx::unseq.on(exec));
+  TestTransformReduce(thrust::hpx::seq.on(exec));
 }
-DECLARE_UNITTEST(TestReduceUnseqOnTestSyncExecutor);
 
-void TestReduceUnseqWithAutoChunkSize()
+TEST_CASE("TestTransformReduceSeqWithAutoChunkSize", "[hpx]")
 {
   hpx::execution::experimental::auto_chunk_size acs{};
 
-  TestReduce(thrust::hpx::unseq.with(acs));
+  TestTransformReduce(thrust::hpx::seq.with(acs));
 }
-DECLARE_UNITTEST(TestReduceUnseqWithAutoChunkSize);
+
+TEST_CASE("TestTransformReduceUnseq", "[hpx]")
+{
+  TestTransformReduce(thrust::hpx::unseq);
+}
+
+TEST_CASE("TestTransformReduceUnseqOnSequencedExecutor", "[hpx]")
+{
+  hpx::execution::sequenced_executor exec{};
+
+  TestTransformReduce(thrust::hpx::unseq.on(exec));
+}
+
+TEST_CASE("TestTransformReduceUnseqOnTestSyncExecutor", "[hpx]")
+{
+  test_sync_executor exec{};
+
+  TestTransformReduce(thrust::hpx::unseq.on(exec));
+}
+
+TEST_CASE("TestTransformReduceUnseqWithAutoChunkSize", "[hpx]")
+{
+  hpx::execution::experimental::auto_chunk_size acs{};
+
+  TestTransformReduce(thrust::hpx::unseq.with(acs));
+}
