@@ -461,6 +461,9 @@ CUB_TEST("Device segmented scan gives the same result with every schedule",
     output_t above_init{};
     init_default_constant(above_init, 3);
 
+    using init_value_t      = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    const auto d_init_value = static_cast<init_value_t>(*unwrap_it(&init_value));
+
     for (offset_t i = 0; i < num_segments; ++i)
     {
       compute_exclusive_scan_reference(
@@ -474,23 +477,23 @@ CUB_TEST("Device segmented scan gives the same result with every schedule",
     const auto run = [&](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
         schedule_env,
-        d_in_it,
-        d_out_it,
+        unwrap_it(d_in_it),
+        unwrap_it(d_out_it),
         num_segments,
         d_offsets_it,
         d_offsets_it + 1,
         d_offsets_it,
         op_t{},
-        cub::detail::InputValue<output_t>{init_value});
+        cub::detail::InputValue<init_value_t>{d_init_value});
       thrust::fill(c2h::device_policy, output_vec.begin(), output_vec.end(), above_init);
       device_exclusive_segmented_scan_env(
-        d_in_it,
-        d_out_it,
+        unwrap_it(d_in_it),
+        unwrap_it(d_out_it),
         d_offsets_it,
         d_offsets_it + 1,
         num_segments,
         op_t{},
-        init_value,
+        d_init_value,
         cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
       require_reference();
     };

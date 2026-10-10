@@ -660,7 +660,8 @@ CUB_TEST("Device segmented scan with schedule properties scans out-of-order segm
     scan_segments(expected, h_out_begins, true, 0);
     c2h::device_vector<int> d_out(num_output);
 
-    const auto run = [&](const auto& schedule_env) {
+    // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+    const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
         schedule_env,
         d_in.begin(),
@@ -694,7 +695,8 @@ CUB_TEST("Device segmented scan with schedule properties scans out-of-order segm
     scan_segments(expected, h_begins, false, init);
     c2h::device_vector<int> d_data(num_input);
 
-    const auto run = [&](const auto& schedule_env) {
+    // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+    const auto run = [&, num_segments](const auto& schedule_env) {
       const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
         schedule_env,
         d_data.begin(),
@@ -731,7 +733,8 @@ struct high_offset_value
 
   __host__ __device__ ::cuda::std::int64_t operator()(OffsetT index) const
   {
-    return static_cast<::cuda::std::int64_t>((index - base) % OffsetT{7} + OffsetT{1});
+    const OffsetT remainder = (index - base) % OffsetT{7};
+    return static_cast<::cuda::std::int64_t>(remainder) + 1;
   }
 };
 

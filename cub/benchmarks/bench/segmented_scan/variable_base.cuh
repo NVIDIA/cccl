@@ -45,8 +45,6 @@ NVBENCH_DECLARE_ENUM_TYPE_STRINGS(
     return std::string{};
   })
 
-namespace
-{
 using seed_type = ::cuda::std::philox4x32::result_type;
 
 struct pareto_weight
@@ -211,7 +209,6 @@ void uniform_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT,
 {
   variable_size_segments<true>(state, types);
 }
-} // namespace
 
 #ifdef TUNE_T
 using value_types = nvbench::type_list<TUNE_T>;

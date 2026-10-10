@@ -95,7 +95,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
   ::cuda::std::int64_t num_segments,
   BeginOffsetIteratorInputT input_begin_offsets,
   EndOffsetIteratorInputT input_end_offsets,
-  BeginOffsetIteratorOutputT output_begin_offsets,
+  [[maybe_unused]] BeginOffsetIteratorOutputT output_begin_offsets,
   ScanOpT scan_op,
   InitValueT init_value,
   cudaStream_t stream,
@@ -103,6 +103,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
 {
   if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_load_balancing_t>)
   {
+    // NOLINTNEXTLINE(misc-const-correctness)
     ::cuda::std::optional<::cuda::std::int64_t> num_items;
     if constexpr (::cuda::std::execution::__queryable_with<EnvT, get_segmented_scan_num_items_t>)
     {

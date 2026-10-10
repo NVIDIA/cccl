@@ -31,6 +31,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/operations.h>
@@ -67,15 +69,15 @@ template <typename WorkT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int load_balanced_block_count(
   WorkT total_work, WorkT tile_size, int resident_blocks, int min_tiles_per_block, int max_factor)
 {
-  const auto tiles =
-    static_cast<::cuda::std::int64_t>(total_work / tile_size + (total_work % tile_size != 0 ? WorkT{1} : WorkT{0}));
-  ::cuda::std::int64_t factor = max_factor;
+  const WorkT tiles      = ::cuda::ceil_div(total_work, tile_size);
+  const WorkT wave_tiles = static_cast<WorkT>(resident_blocks);
+  WorkT factor           = static_cast<WorkT>(max_factor);
   if (min_tiles_per_block > 0)
   {
-    factor = tiles / (static_cast<::cuda::std::int64_t>(min_tiles_per_block) * resident_blocks);
-    factor = factor < 1 ? 1 : (factor > max_factor ? max_factor : factor);
+    // Divides twice, as min_tiles_per_block x resident_blocks may exceed WorkT
+    factor = ::cuda::std::clamp(tiles / static_cast<WorkT>(min_tiles_per_block) / wave_tiles, WorkT{1}, factor);
   }
-  return static_cast<int>((::cuda::std::min) (tiles, factor * resident_blocks));
+  return static_cast<int>((::cuda::std::min) (tiles, factor * wave_tiles));
 }
 
 template <typename WorkT>
@@ -571,6 +573,7 @@ private:
     }
     if (threadIdx.x == 0)
     {
+      // NOLINTNEXTLINE(misc-const-correctness)
       bool input_is_contiguous = false;
       if constexpr (reads_contiguity_flag)
       {
@@ -902,7 +905,7 @@ private:
       const int valid_items    = static_cast<int>(tile_size);
       const OffsetT tile_start = element_index(tile_begin, delta);
       input_value_t values[items_per_thread];
-      AccumT tile_aggregate;
+      AccumT tile_aggregate{};
       if (valid_items == items_per_tile)
       {
         block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
@@ -968,7 +971,7 @@ private:
     {
       using status_word_t       = typename prefix_callback_t::StatusWord;
       using delay_constructor_t = detail::default_delay_constructor_t<flag_value_t>;
-      int predecessor_idx       = tile_idx - threadIdx.x - 1;
+      int predecessor_idx       = tile_idx - static_cast<int>(threadIdx.x) - 1;
       status_word_t predecessor_status;
       flag_value_t window_aggregate;
       delay_constructor_t construct_delay(tile_idx);
@@ -1013,7 +1016,7 @@ private:
       const int valid_items  = static_cast<int>(tile_end - tile_begin);
       flag_value_t items[items_per_thread];
       int entries[items_per_thread];
-      bool head_flags[items_per_thread];
+      [[maybe_unused]] bool head_flags[items_per_thread];
       load_tile(tile_begin, tile_end, num_segments, items, entries);
 
       _CCCL_PRAGMA_UNROLL_FULL()

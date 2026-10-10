@@ -180,20 +180,20 @@ static_assert(::cuda::ceil_div(max_work_index_segments + 1, ::cuda::std::int64_t
               > max_tile_state_tiles);
 
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr bool
-load_balanced_grid_size(int blocks_per_sm, int sm_count, int subscription_factor, int& grid_size)
+load_balanced_grid_size(int blocks_per_sm, int sm_count, int grid_subscription_factor, int& grid_size)
 {
-  if (blocks_per_sm <= 0 || sm_count <= 0 || subscription_factor <= 0
+  if (blocks_per_sm <= 0 || sm_count <= 0 || grid_subscription_factor <= 0
       || blocks_per_sm > max_tile_state_tiles / sm_count)
   {
     return false;
   }
 
   const int resident_capacity = blocks_per_sm * sm_count;
-  if (resident_capacity > max_tile_state_tiles / subscription_factor)
+  if (resident_capacity > max_tile_state_tiles / grid_subscription_factor)
   {
     return false;
   }
-  grid_size = resident_capacity * subscription_factor;
+  grid_size = resident_capacity * grid_subscription_factor;
   return true;
 }
 
@@ -748,7 +748,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
   _CCCL_ASSERT(active_policy.items_per_thread > 0, "Policy value for items_per_thread is not positive");
 
   const int threads_per_block = active_policy.threads_per_block;
-  const work_t tile_size      = static_cast<work_t>(threads_per_block * active_policy.items_per_thread);
+  const work_t tile_size = static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
 
   int blocks_per_sm{};
   if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(

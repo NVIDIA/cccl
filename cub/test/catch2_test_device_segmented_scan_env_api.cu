@@ -433,6 +433,12 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
   REQUIRE(d_out == expected);
 }
 
+// nvcc turns the `.member = value,` C++ syntax into GNU's `member: value,` when clang (14 - 21) is used
+_CCCL_DIAG_PUSH
+#  if _CCCL_COMPILER(CLANG)
+_CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-designator")
+#  endif // _CCCL_COMPILER(CLANG)
+
 // example-begin segmented-scan-load-balanced-policy-selector
 struct SegmentedScanLoadBalancedPolicySelector
 {
@@ -449,6 +455,8 @@ struct SegmentedScanLoadBalancedPolicySelector
   }
 };
 // example-end segmented-scan-load-balanced-policy-selector
+
+_CCCL_DIAG_POP
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan with load balancing accepts a custom policy selector",
          "[segmented_scan][env]",
