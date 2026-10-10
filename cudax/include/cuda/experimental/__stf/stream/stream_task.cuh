@@ -342,16 +342,7 @@ public:
 
       if (start_event && end_event)
       {
-        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-        if (dot->is_tracing())
-        {
-          dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
+        reserved::task_statistics::instance().record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();
@@ -607,21 +598,7 @@ public:
 
       if (start_event && end_event)
       {
-        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
-        cuda_safe_call(cudaEventSynchronize(end_event));
-
-        float milliseconds = 0;
-        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
-
-        if (dot->is_tracing())
-        {
-          dot->template add_vertex_timing<task>(*this, milliseconds);
-        }
-
-        if (statistics.is_calibrating())
-        {
-          statistics.log_task_time(*this, milliseconds);
-        }
+        statistics.record_task_timing(*this, start_event, end_event, get_stream(), *dot);
       }
 
       clear();
