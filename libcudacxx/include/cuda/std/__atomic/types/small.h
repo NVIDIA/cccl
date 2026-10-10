@@ -22,14 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types/base.h>
+#include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/cstring>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

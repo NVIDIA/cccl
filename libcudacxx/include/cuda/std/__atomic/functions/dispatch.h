@@ -21,13 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/common.h>
-#include <cuda/std/__atomic/functions/cuda_local.h>
-#include <cuda/std/__atomic/functions/device_backend.h>
+#include <cuda/std/__atomic/functions/cuda_local.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/functions/device_backend.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/functions/generic.h>
 #include <cuda/std/__atomic/functions/host.h>
+#include <cuda/std/__atomic/order.h>
 #include <cuda/std/__type_traits/copy_cv.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cassert>
 
 #include <cuda/std/__cccl/prologue.h>
