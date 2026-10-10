@@ -15,8 +15,6 @@
 
 using namespace cuda::experimental::stf;
 
-using scalar_t = slice_stream_interface<int, 1>;
-
 template <typename T>
 __global__ void set_value(T* addr, T val)
 {
@@ -47,8 +45,8 @@ public:
     const exec_place& /*unused*/,
     cudaStream_t s) override
   {
-    auto& in_instance    = d.instance<typename scalar_t::element_type>(in_instance_id);
-    auto& inout_instance = d.instance<typename scalar_t::element_type>(inout_instance_id);
+    auto& in_instance    = d.instance<slice<int>>(in_instance_id);
+    auto& inout_instance = d.instance<slice<int>>(inout_instance_id);
     add<<<1, 1, 0, s>>>(in_instance.data_handle(), inout_instance.data_handle());
   }
 
@@ -58,7 +56,7 @@ public:
                       const exec_place& /*unused*/,
                       cudaStream_t s) override
   {
-    auto& out_instance = d.instance<typename scalar_t::element_type>(out_instance_id);
+    auto& out_instance = d.instance<slice<int>>(out_instance_id);
     // fprintf(stderr, "REDUX INIT d %p memory node %d instance id %d => addr %p\n", d, out_memory_node,
     //        out_instance_id, *out_instance);
     set_value<<<1, 1, 0, s>>>(out_instance.data_handle(), 0);

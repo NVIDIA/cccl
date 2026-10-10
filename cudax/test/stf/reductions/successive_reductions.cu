@@ -13,8 +13,6 @@
 
 using namespace cuda::experimental::stf;
 
-using scalar_t = slice_stream_interface<int, 1>;
-
 template <typename T>
 __global__ void set_value(T* addr, T val)
 {
