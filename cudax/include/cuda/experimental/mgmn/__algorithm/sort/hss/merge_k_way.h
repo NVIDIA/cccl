@@ -25,6 +25,7 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_merge.cuh>
 
+#include <cuda/__container/simple_vector.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__mdspan/mdspan.h>
 #include <cuda/std/__numeric/accumulate.h>
@@ -32,8 +33,6 @@
 
 #include <cuda/experimental/mgmn/__algorithm/common.h>
 #include <cuda/experimental/mgmn/__algorithm/sort/hss/sorter.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -60,15 +59,14 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
     ::cuda::no_init,
     ::cuda::experimental::mgmn::__detail::__sanitize_buffer_env(__env)};
 
-  ::std::vector<::cuda::std::span<const _Tp>> __cur_level;
-  ::std::vector<::cuda::std::span<const _Tp>> __next_level;
+  ::cuda::__simple_vector<::cuda::std::span<const _Tp>> __nodes{__counts.size(), ::cuda::no_init};
 
-  __cur_level.reserve(__counts.size());
   for (::cuda::std::size_t __i = 0; __i < __counts.size(); ++__i)
   {
-    __cur_level.push_back(__data.subspan(__displs[__i], __counts[__i]));
+    __nodes.emplace_back(__data.subspan(__displs[__i], __counts[__i]));
   }
-  __next_level.reserve((__cur_level.size() + 1) / 2);
+
+  auto __cur_level = ::cuda::std::span<::cuda::std::span<const _Tp>>{__nodes.data(), __nodes.size()};
 
   auto* __next_level_buffer = __ret;
   bool __result_in_ret      = false;
@@ -88,7 +86,6 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
     ::cuda::std::size_t __next_off = 0;
     ::cuda::std::size_t __i        = 0;
 
-    __next_level.clear();
     for (; __i + 1 < __cur_level.size(); __i += 2)
     {
       const auto __left_node  = __cur_level[__i];
@@ -107,7 +104,8 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
 
       const auto __count = __left_node.size() + __right_node.size();
 
-      __next_level.push_back(__next_level_buffer->subspan(__next_off, __count));
+      // Reusing consumed node slots avoids a second metadata allocation.
+      __cur_level[__i / 2] = __next_level_buffer->subspan(__next_off, __count);
       __next_off += __count;
     }
 
@@ -126,10 +124,10 @@ _CCCL_HOST_API void _HSSSorter<_Tp, _Env, _BinaryOp>::__merge_k_way_tree(
 
       __CUDAX_MULTI_GPU_DISPATCH(__next_level_buffer->stream(), CUB_NS_QUALIFIER::DeviceCopy::Copy, __src, __dst, __env);
 
-      __next_level.push_back(__next_level_node);
+      __cur_level[__i / 2] = __next_level_node;
     }
 
-    __cur_level.swap(__next_level);
+    __cur_level         = __cur_level.first((__cur_level.size() + 1) / 2);
     __result_in_ret     = __next_level_buffer == __ret;
     __next_level_buffer = __result_in_ret ? &__tmp_buf : __ret;
   }

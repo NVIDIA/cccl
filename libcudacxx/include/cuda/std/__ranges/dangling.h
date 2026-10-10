@@ -23,7 +23,8 @@
 
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

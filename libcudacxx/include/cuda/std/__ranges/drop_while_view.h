@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/ranges_find_if_not.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__functional/bind_back.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__ranges/access.h>
@@ -36,6 +36,7 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__utility/forward.h>

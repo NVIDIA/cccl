@@ -31,6 +31,7 @@
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
+#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h> // IWYU pragma: keep
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()

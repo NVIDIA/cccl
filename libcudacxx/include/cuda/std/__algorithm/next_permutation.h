@@ -24,7 +24,6 @@
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/reverse.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 

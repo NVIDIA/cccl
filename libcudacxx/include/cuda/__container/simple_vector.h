@@ -130,6 +130,13 @@ public:
     return static_cast<size_type>(__end_ - __begin_);
   }
 
+  //! @brief Returns the maximum number of elements.
+  //! @return The maximum number of elements.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr size_type max_size() const noexcept
+  {
+    return __capacity_;
+  }
+
   //! @brief Returns whether the vector holds no elements.
   //! @return @c true if @c size() is zero, otherwise @c false.
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool empty() const noexcept
@@ -189,6 +196,22 @@ public:
     _CCCL_ASSERT(__end_ < __begin_ + __capacity_, "simple_vector: Inserting beyond capacity");
     ::cuda::std::__construct_at(__end_, ::cuda::std::forward<_Args>(__args)...);
     return *(__end_++);
+  }
+
+  //! @brief Access the element at index `__idx`.
+  //!
+  //! @return The element at index `__idx`.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp& operator[](size_type __idx) noexcept
+  {
+    _CCCL_ASSERT(__idx < __capacity_, "simple_vector: access out of bounds");
+    return __begin_[__idx];
+  }
+
+  //! @overload
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const _Tp& operator[](size_type __idx) const noexcept
+  {
+    _CCCL_ASSERT(__idx < __capacity_, "simple_vector: access out of bounds");
+    return __begin_[__idx];
   }
 };
 
