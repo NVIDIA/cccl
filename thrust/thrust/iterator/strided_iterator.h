@@ -16,6 +16,8 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
+
 THRUST_NAMESPACE_BEGIN
 
 //! Holds a runtime value
@@ -153,3 +155,14 @@ make_strided_iterator(Iterator it)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _Iter, class _StrideHolder>
+inline constexpr bool __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::strided_iterator<_Iter, _StrideHolder>> =
+  __is_synthesizing_iterator_v<_Iter>;
+_CCCL_END_NAMESPACE_CUDA
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // !_CCCL_DOXYGEN_INVOKED

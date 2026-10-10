@@ -441,6 +441,7 @@ struct policy_selector
   bool length_is_primitive;
   bool key_is_primitive; // TODO(bgruber): can probably be derived from key_type
   bool key_is_trivially_copyable;
+  bool input_synthesizing = false;
 
 private:
   _CCCL_HOST_DEVICE_API constexpr auto
@@ -460,7 +461,7 @@ private:
         delay_ctor_key_size, sizeof(int), key_is_primitive || key_is_trivially_copyable, true)};
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_tuned_lookback_policy(::cuda::compute_capability cc) const
     -> RleNonTrivialRunsLookbackPolicy
   {
     // tunings from cub/benchmarks/bench/run_length_encode/non_trivial_runs.cu; raw measured values
@@ -708,6 +709,12 @@ private:
   }
 
 public:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
+    -> RleNonTrivialRunsLookbackPolicy
+  {
+    return block_load_for_synthesized_input(get_tuned_lookback_policy(cc), input_synthesizing, key_size);
+  }
+
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> RleNonTrivialRunsPolicy
   {
@@ -719,7 +726,7 @@ public:
 static_assert(rle_non_trivial_runs_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
-template <class LengthT, class KeyT>
+template <class LengthT, class KeyT, class InputIteratorT>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
@@ -731,7 +738,8 @@ struct policy_selector_from_types
       classify_type<KeyT>,
       is_primitive_v<LengthT>,
       is_primitive_v<KeyT>,
-      ::cuda::is_trivially_copyable_v<KeyT>};
+      ::cuda::is_trivially_copyable_v<KeyT>,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>};
     return selector(cc);
   }
 };

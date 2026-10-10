@@ -911,6 +911,7 @@ struct policy_selector
   // TODO(griwes): remove this field before policy_selector is publicly exposed
   bool benchmark_match;
   bool require_stable_reduction_order = false;
+  bool input_synthesizing             = false;
 
   _CCCL_HOST_DEVICE_API constexpr auto get_sm100_fallback_lookahead_policy() const -> ScanLookaheadPolicy
   {
@@ -1105,6 +1106,14 @@ struct policy_selector
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanPolicy
+  {
+    auto policy                    = get_policy(cc);
+    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    return policy;
+  }
+
+private:
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_policy(::cuda::compute_capability cc) const -> ScanPolicy
   {
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the old scan impl.
     // For stable reduction order (fp + plus), lookahead can only be used on sm_90+, Older arches fall back to classic
@@ -1563,7 +1572,8 @@ struct policy_selector_from_types
       ::cuda::std::is_default_constructible_v<OutputValueT>,
       accum_is_primitive_or_trivially_copy_constructible,
       benchmark_match,
-      StableReductionOrder};
+      StableReductionOrder,
+      ::cuda::__is_synthesizing_iterator_v<InputIteratorT>};
     return policies(cc);
   }
 };

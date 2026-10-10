@@ -13,14 +13,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 #include <cuda/__functional/operator_properties.h>
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
@@ -187,6 +190,58 @@ template <class LengthT>
 _CCCL_HOST_DEVICE_API constexpr length_size classify_length_size()
 {
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
+}
+
+// Synthesizing iterators produce their values without accessing memory, so transposing them through shared memory to
+// coalesce memory accesses only costs shared memory and synchronization. Loading them directly yields the same blocked
+// arrangement.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+load_algorithm_for_input(BlockLoadAlgorithm load_algorithm, bool input_synthesizing) noexcept -> BlockLoadAlgorithm
+{
+  if (input_synthesizing
+      && (load_algorithm == BLOCK_LOAD_TRANSPOSE || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE
+          || load_algorithm == BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED))
+  {
+    return BLOCK_LOAD_DIRECT;
+  }
+  return load_algorithm;
+}
+
+// A blocked load addresses item `i` as `linear_tid * items_per_thread + i`. A power-of-two tile makes that scale a
+// shift. For the policies whose direct blocked index increased register pressure, move to the closest power of two.
+// Prefer the next power of two when that step is no larger than the step down and the larger tile still fits in static
+// shared memory; otherwise use the previous power of two. Memory iterators, and counts that are already a power of
+// two, keep the tuned value.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int items_per_thread_for_synthesized_input(
+  int items_per_thread, bool input_synthesizing, int threads_per_block, int bytes_per_item) noexcept
+{
+  if (!input_synthesizing || items_per_thread <= 1 || ::cuda::is_power_of_two(items_per_thread))
+  {
+    return items_per_thread;
+  }
+  const int higher    = ::cuda::next_power_of_two(items_per_thread);
+  const int lower     = ::cuda::prev_power_of_two(items_per_thread);
+  const int step_up   = higher - items_per_thread;
+  const int step_down = items_per_thread - lower;
+  const auto upward_tile_bytes =
+    static_cast<::cuda::std::size_t>(threads_per_block) * static_cast<::cuda::std::size_t>(higher)
+    * static_cast<::cuda::std::size_t>(bytes_per_item);
+  const bool upward_tile_fits = bytes_per_item <= 0 || upward_tile_bytes < max_smem_per_block;
+  if (step_up <= step_down && upward_tile_fits)
+  {
+    return higher;
+  }
+  return lower;
+}
+
+template <class Policy>
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr Policy
+block_load_for_synthesized_input(Policy policy, bool input_synthesizing, int bytes_per_item) noexcept
+{
+  policy.load_algorithm   = load_algorithm_for_input(policy.load_algorithm, input_synthesizing);
+  policy.items_per_thread = items_per_thread_for_synthesized_input(
+    policy.items_per_thread, input_synthesizing, policy.threads_per_block, bytes_per_item);
+  return policy;
 }
 } // namespace detail
 

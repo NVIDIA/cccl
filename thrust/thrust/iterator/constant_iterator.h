@@ -19,6 +19,7 @@
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
 
+#include <cuda/__iterator/is_synthesizing_iterator.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>
 
@@ -214,3 +215,14 @@ make_constant_iterator(V x)
 //! \} // end iterators
 
 THRUST_NAMESPACE_END
+
+#ifndef _CCCL_DOXYGEN_INVOKED
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <class _Value, class _Incrementable, class _System>
+inline constexpr bool
+  __is_synthesizing_iterator_v<THRUST_NS_QUALIFIER::constant_iterator<_Value, _Incrementable, _System>> = true;
+_CCCL_END_NAMESPACE_CUDA
+_CCCL_SUPPRESS_DEPRECATED_POP
+#endif // !_CCCL_DOXYGEN_INVOKED
