@@ -97,6 +97,8 @@ struct agent_histogram_policy
   static constexpr int BLOCK_THREADS = ThreadsPerBlock;
   /// Items per thread (per tile of input)
   static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
+  // TODO(bgruber): remove this compatibility alias in CCCL 4.0.
+  static constexpr int PIXELS_PER_THREAD = ItemsPerThread;
 
   /// Whether to perform localized RLE to compress samples before histogramming
   static constexpr bool IS_RLE_COMPRESS = RleCompress;
