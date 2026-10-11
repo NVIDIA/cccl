@@ -342,6 +342,68 @@ private:
 inline const notify_t notify{};
 
 /**
+ * @brief An effect: run a callable on the failure and decide nothing (answer `void`).
+ *
+ * `effect(f)` is the general effect-only sink, of which `notify` and `store` are the named cases.
+ * `f` may take nothing, or the failure: on the exception channel a `const std::exception*`
+ * (null for a non-standard exception), on the code channel the status value. On its own the
+ * operation goes on (the default value, the status unchanged); inside `&` whatever follows
+ * decides. A throw from `f` forwards, as from any hook.
+ *
+ * @code
+ * int level = 0;
+ * auto evict = effect([&](ptrdiff_t s) { reclaim(place, -s, prereqs); ++level; });
+ * errsink((evict & retry) * 5 | unwind) ->* [&] { return allocator.allocate(place, size, prereqs); };
+ * @endcode
+ */
+template <class _F>
+struct effect_t
+{
+  //! @cond
+  using __exception_sink_tag = void;
+  //! @endcond
+
+  _F __f_;
+
+  template <class _Fn>
+  void on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location, _Fn&) noexcept(
+    ::cuda::std::is_nothrow_invocable_v<_F&, const ::std::exception*> || ::cuda::std::is_nothrow_invocable_v<_F&>)
+  {
+    if constexpr (::cuda::std::is_invocable_v<_F&, const ::std::exception*>)
+    {
+      __f_(__exception);
+    }
+    else
+    {
+      static_assert(::cuda::std::is_invocable_v<_F&>, "effect(f): f takes nothing or the failure");
+      __f_();
+    }
+  }
+
+  template <class _Status, class _Fn>
+  void on_returned(const _Status __status, const ::cuda::std::source_location, _Fn&) noexcept(
+    ::cuda::std::is_nothrow_invocable_v<_F&, _Status> || ::cuda::std::is_nothrow_invocable_v<_F&>)
+  {
+    if constexpr (::cuda::std::is_invocable_v<_F&, _Status>)
+    {
+      __f_(__status);
+    }
+    else
+    {
+      static_assert(::cuda::std::is_invocable_v<_F&>, "effect(f): f takes nothing or the status");
+      __f_();
+    }
+  }
+};
+
+//! @brief Build an effect-only sink from a callable; see @ref effect_t.
+template <class _F>
+effect_t<::cuda::std::decay_t<_F>> effect(_F&& __f)
+{
+  return {::cuda::std::forward<_F>(__f)};
+}
+
+/**
  * @brief Reporting ending: report through `notify`, then `std::abort`. Usable as
  * `errsink(abort) ->* callable`. The policy acts through its hook only; it has no bare-call
  * form, so `eh::abort()` as a plain statement does not compile. Ending a
@@ -6002,6 +6064,64 @@ UNITTEST("ON_THROW macro")
     EXPECT(&r == &obj);
   }
 #  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("effect")
+{
+  using namespace cuda::experimental::stf;
+  using namespace cuda::experimental::stf::eh;
+#  if _CCCL_HAS_EXCEPTIONS()
+  // nullary: runs, decides nothing; alone the expression takes its default
+  {
+    int hits    = 0;
+    const int v = errsink(effect([&] {
+                    ++hits;
+                  }))
+                    ->*[]() -> int {
+      throw ::std::runtime_error("boom");
+    };
+    EXPECT(v == 0);
+    EXPECT(hits == 1);
+  }
+  // sees the exception; the right of & decides
+  {
+    ::std::string what;
+    const int v =
+      errsink(effect([&](const ::std::exception* e) {
+                what = e ? e->what() : "?";
+              })
+              & subst(7))
+        ->*[]() -> int {
+      throw ::std::runtime_error("seen");
+    };
+    EXPECT(v == 7);
+    EXPECT(what == "seen");
+  }
+  // on a status: sees the code; the status is left unchanged
+  {
+    cudaError_t seen = cudaSuccess;
+    const auto r     = errsink(effect([&](cudaError_t s) {
+                     seen = s;
+                       }))
+                         ->*cudaErrorInvalidValue;
+    EXPECT(r == cudaErrorInvalidValue);
+    EXPECT(seen == cudaErrorInvalidValue);
+  }
+  // an effect may not stand after a value-chooser: subst(1) & effect is rejected (static); the
+  // legal order runs the effect first
+  {
+    int hits = 0;
+    const int v =
+      errsink(effect([&] {
+                ++hits;
+              })
+              & subst(3))
+        ->*[]() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(v == 3 && hits == 1);
+  }
+#  endif
 };
 
 UNITTEST("store")
