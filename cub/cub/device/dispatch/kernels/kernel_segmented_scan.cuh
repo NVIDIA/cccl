@@ -177,13 +177,12 @@ private:
     // whole tile when it lies inside one segment or the block's segments are back to back.
     OffsetT tile_input_begin;
     OffsetT tile_output_begin;
-    // Index plus one of the latest tile with a segment start after its first item.
-    walk_offset_t tile_with_heads;
     // Where the block's first segment begins in the input and in the output.
     OffsetT block_input_begin;
     OffsetT block_output_begin;
-    unsigned int contiguous_mask;
     bool tile_begins_at_head;
+    // Whether the tile holds a segment start after its first item.
+    bool tile_has_heads;
     unsigned char head_flags[tile_items];
     _walked_segment_algorithms_storage_t reused;
   };
@@ -468,11 +467,12 @@ public:
     }
     if (tid == 0)
     {
-      temp_storage.contiguous_mask    = 1u;
-      temp_storage.tile_with_heads    = 0;
       temp_storage.block_input_begin  = input_begin_idx_it[0];
       temp_storage.block_output_begin = output_begin_idx_it[0];
     }
+
+    // Whether this thread's nonempty segments follow the block's first one in the input and in the output.
+    bool contiguous_thread = true;
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
@@ -504,21 +504,16 @@ public:
         }
         __syncthreads();
 
-        // A nonempty segment that does not follow the block's first one in the input or the output clears the
-        // mask; every writer stores the same value.
         if (segment_size > 0)
         {
           // Compared modulo 2^n, as positions are unsigned.
           const walk_offset_t work_begin = prefix - segment_size;
-          const bool contiguous =
-            (static_cast<walk_offset_t>(input_segment_begin) - work_begin
-             == static_cast<walk_offset_t>(temp_storage.block_input_begin))
+          contiguous_thread =
+            contiguous_thread
+            && (static_cast<walk_offset_t>(input_segment_begin) - work_begin
+                == static_cast<walk_offset_t>(temp_storage.block_input_begin))
             && (static_cast<walk_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
                 == static_cast<walk_offset_t>(temp_storage.block_output_begin));
-          if (!contiguous)
-          {
-            temp_storage.contiguous_mask = 0u;
-          }
         }
       }
     }
@@ -526,8 +521,8 @@ public:
     const walk_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
     const walk_offset_t n_tiles         = ::cuda::ceil_div(items_per_block, walk_offset_t{tile_items});
 
-    mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, walk_offset_t{0});
-    __syncthreads();
+    mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, walk_offset_t{0}, items_per_block);
+    const bool contiguous_block = __syncthreads_and(contiguous_thread);
 
     using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
     augmented_scan_op_t augmented_scan_op{scan_op};
@@ -547,8 +542,8 @@ public:
       const OffsetT input_begin  = temp_storage.tile_input_begin;
       const OffsetT output_begin = temp_storage.tile_output_begin;
       const bool begins_at_head  = temp_storage.tile_begins_at_head;
-      const bool has_heads       = temp_storage.tile_with_heads == tile_id + 1;
-      const bool block_io        = !has_heads || temp_storage.contiguous_mask != 0u;
+      const bool has_heads       = temp_storage.tile_has_heads;
+      const bool block_io        = !has_heads || contiguous_block;
 
       bool heads[items_per_thread];
       if (has_heads)
@@ -669,7 +664,7 @@ public:
       // The next tile's heads are marked here so that it needs no barrier of its own.
       if (++tile_id < n_tiles)
       {
-        mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, tile_id);
+        mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, tile_id, items_per_block);
         __syncthreads();
       }
     }
@@ -677,13 +672,15 @@ public:
 
 private:
   // Each thread tests its own segments against the tile: the segment holding the tile's first item publishes
-  // where the tile begins, and every segment starting later in the tile flags its head.
+  // where the tile begins and whether a later segment starts in it, and every segment starting later in the tile
+  // flags its head.
   template <typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void mark_tile_heads(
     InputBeginOffsetIteratorT input_begin_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
     int n_segments,
-    walk_offset_t tile_id)
+    walk_offset_t tile_id,
+    walk_offset_t items_per_block)
   {
     const walk_offset_t tile_begin = tile_id * tile_items;
     const walk_offset_t tile_end   = tile_begin + tile_items;
@@ -700,11 +697,12 @@ private:
         temp_storage.tile_input_begin    = static_cast<OffsetT>(input_begin_idx_it[segment]) + skipped;
         temp_storage.tile_output_begin   = static_cast<OffsetT>(output_begin_idx_it[segment]) + skipped;
         temp_storage.tile_begins_at_head = skipped == 0;
+        // The next nonempty segment starts where this one ends.
+        temp_storage.tile_has_heads = segment_end < (::cuda::std::min) (tile_end, items_per_block);
       }
       else if (tile_begin < segment_begin && segment_begin < tile_end && segment_begin < segment_end)
       {
         temp_storage.head_flags[static_cast<int>(segment_begin - tile_begin)] = 1;
-        temp_storage.tile_with_heads                                          = tile_id + 1;
       }
     }
   }
