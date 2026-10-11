@@ -409,7 +409,7 @@ effect_t<::cuda::std::decay_t<_F>> effect(_F&& __f)
  * form, so `eh::abort()` as a plain statement does not compile. Ending a
  * program directly remains `std::abort()`.
  *
- * Inside `eh`, plain `abort` finds this object before the C library's function.
+ * Inside `sump`, plain `abort` finds this object before the C library's function.
  * Code that sees both through using-directives gets an ambiguity error rather than a silent
  * pick, and disambiguates with a using-declaration:
  * `using cuda::experimental::stf::eh::abort;`. A block-scope using-declaration
@@ -4436,15 +4436,15 @@ public:
  * The location defaults to the call site; pass one explicitly to report a different site.
  *
  * Vocabulary visibility: the named policies live in the non-inline namespace
- * `eh`. Blessed patterns are a block-scope
- * `using namespace cuda::experimental::stf::eh;` at the function that
- * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::eh;`):
+ * `sump`. Blessed patterns are a block-scope
+ * `using namespace cuda::experimental::stf::sump;` at the function that
+ * configures sinks, or a namespace alias (`namespace pol = cuda::experimental::stf::sump;`):
  *
  * @code
- * using namespace cuda::experimental::stf::eh;
+ * using namespace cuda::experimental::stf::sump;
  * errsink(notify & retry * 3 | subst(-1)) ->* flaky;
  *
- * namespace pol = cuda::experimental::stf::eh;
+ * namespace pol = cuda::experimental::stf::sump;
  * errsink(pol::subst(0)) ->* flaky;
  * @endcode
  *
@@ -4481,7 +4481,7 @@ namespace eh
 {
 /**
  * @brief `errsink` under its name inside the policy vocabulary: with
- * `using namespace cuda::experimental::stf::eh;` in scope, `sink(notify) << status` and
+ * `using namespace cuda::experimental::stf::sump;` in scope, `sink(notify) << status` and
  * `sink(subst(-1)) ->* flaky` read without qualification.
  *
  * @param[in] __reaction The policy (or a reaction normalized into one), as for `errsink`.
@@ -4500,7 +4500,7 @@ auto sink(_Reaction&& __reaction,
 #  error "CUDASTF's exception_policy.cuh defines ON_THROW; rename the prior definition"
 #endif
 //! @brief Statement-shaped errsink: ON_THROW(policy-expression) { body };
-//! The policy expression is evaluated with `eh` visible, so
+//! The policy expression is evaluated with `sump` visible, so
 //! ON_THROW(notify & retry * 3 | subst(-1)) { return flaky(); }; needs no
 //! qualification. All arguments forward to errsink, so a source_location
 //! may follow the policy: ON_THROW(notify, loc) { body };. Expands to
@@ -4513,11 +4513,11 @@ auto sink(_Reaction&& __reaction,
 //! policies. Without them, using the macro at global scope with the C
 //! library in scope would be ambiguous: the using-directive parks the
 //! policy names at the nearest namespace enclosing both it and
-//! `eh`, which in user code is the global namespace,
+//! `sump`, which in user code is the global namespace,
 //! right next to the C library's `abort`.
 #define ON_THROW(...)                                       \
   [&] {                                                     \
-    using namespace ::cuda::experimental::stf::eh;          \
+    using namespace ::cuda::experimental::stf::sump;        \
     using ::cuda::experimental::stf::eh::abort;             \
     using ::cuda::experimental::stf::eh::terminate;         \
     return ::cuda::experimental::stf::errsink(__VA_ARGS__); \
@@ -4594,7 +4594,7 @@ UNITTEST("exception_ptr |= step")
 UNITTEST("nullval")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   // No values: not constructible in any way.
   static_assert(!::std::is_default_constructible_v<nullval>);
   static_assert(!::std::is_copy_constructible_v<nullval>);
@@ -4622,7 +4622,7 @@ UNITTEST("nullval")
 UNITTEST("circuit_breaker")
 {
   using namespace cuda::experimental::stf;
-  namespace pol = cuda::experimental::stf::eh;
+  namespace pol = cuda::experimental::stf::sump;
 
   auto budget = ::std::make_shared<int>(2);
   // A NAMED policy value: the entry gate still fires per attempt, not per construction.
@@ -4726,7 +4726,7 @@ UNITTEST("circuit_breaker")
 UNITTEST("defer across threads")
 {
   using namespace cuda::experimental::stf;
-  namespace pol = cuda::experimental::stf::eh;
+  namespace pol = cuda::experimental::stf::sump;
 
   // One worker fails; the exception travels as a value. The worker is joined (and its
   // thread object gone) before handling: the exception_ptr alone keeps the exception
@@ -4797,7 +4797,7 @@ UNITTEST("defer across threads")
 UNITTEST("errsink")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   //! [errsink]
   // The C library also declares ::abort, so under a using-directive the typed one is picked
   // by name; qualifying every use works as well.
@@ -4978,7 +4978,7 @@ UNITTEST("errsink")
 UNITTEST("policy algebra")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
   // Vocabulary for observing effect order.
   ::std::string trace;
@@ -5235,7 +5235,7 @@ UNITTEST("policy algebra")
 UNITTEST("policy inventory")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
   // subst: eager value, lazy callable, and exception-aware callable.
   int lazy_calls = 0;
@@ -5307,7 +5307,7 @@ UNITTEST("policy inventory")
 UNITTEST("re-running policies")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 
 #  if _CCCL_HAS_EXCEPTIONS()
   // retry | retry: attempts add up (1 initial + 1 + 1).
@@ -5519,7 +5519,7 @@ struct __ut_high_error : ::std::runtime_error
 UNITTEST("as_expected and defer")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 
 #  if _CCCL_HAS_EXCEPTIONS()
   using _PtrResult = ::cuda::std::expected<int, ::std::exception_ptr>;
@@ -5613,7 +5613,7 @@ UNITTEST("as_expected and defer")
 UNITTEST("guard translate delay backoff remember")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 
 #  if _CCCL_HAS_EXCEPTIONS()
   // A true guard contributes an effect-only answer; a false guard declines its whole sequence.
@@ -5875,7 +5875,7 @@ UNITTEST("guard translate delay backoff remember")
 UNITTEST("repetition")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   static_assert(::cuda::std::is_empty_v<retry_t>, "retry is the stateless unit re-attempt");
 
 #  if _CCCL_HAS_EXCEPTIONS()
@@ -6068,7 +6068,7 @@ UNITTEST("ON_THROW macro")
 UNITTEST("effect")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
   // nullary: runs, decides nothing; alone the expression takes its default
   {
@@ -6126,7 +6126,7 @@ UNITTEST("effect")
 UNITTEST("store")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
   // store alone: Nothing as the whole sink keeps the failure and the operation goes on (the
   // yielding form yields T{}).
@@ -6243,7 +6243,7 @@ UNITTEST("store")
 UNITTEST("type erasure")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
 #  if _CCCL_HAS_EXCEPTIONS()
   const auto __names_both = [](const ::std::logic_error& __err, ::std::string_view __a, ::std::string_view __b) {
     const ::std::string __msg{__err.what()};
@@ -6799,7 +6799,7 @@ UNITTEST("error sinks: success costs nothing")
 UNITTEST("error sinks: notify on a code handles it without throwing")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   auto r = errsink(notify(log))->*cudaErrorInvalidValue;
   EXPECT(r == cudaErrorInvalidValue); // handled (reported), left unchanged
@@ -6814,7 +6814,7 @@ UNITTEST("error sinks: notify on a code handles it without throwing")
 UNITTEST("error sinks: fwd yields the code")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   EXPECT((errsink(fwd)->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
   EXPECT((errsink(fwd)->*cudaSuccess) == cudaSuccess);
   EXPECT((errsink(fwd)->*CUDA_ERROR_NOT_READY) == CUDA_ERROR_NOT_READY);
@@ -6826,7 +6826,7 @@ UNITTEST("error sinks: fwd yields the code")
 UNITTEST("error sinks: unwind throws the trait's exception")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   bool caught = false;
   try
   {
@@ -6844,7 +6844,7 @@ UNITTEST("error sinks: unwind throws the trait's exception")
 UNITTEST("error sinks: polling idiom")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   // A matched selector that passes through hands the status to the next arm (same as
   // if_isa<E>(fwd) | p on the exception channel), so "stop here and yield this code" is a
   // substitution of the code by itself.
@@ -6867,7 +6867,7 @@ UNITTEST("error sinks: polling idiom")
 UNITTEST("error sinks: subst remaps a code")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   auto pol = if_equal(cudaErrorCudartUnloading)(subst(cudaSuccess)) | fwd;
   EXPECT((errsink(pol)->*cudaErrorCudartUnloading) == cudaSuccess);
   EXPECT((errsink(pol)->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
@@ -6876,7 +6876,7 @@ UNITTEST("error sinks: subst remaps a code")
 UNITTEST("error sinks: notify & fwd logs and yields")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   auto r = errsink(notify(log) & fwd)->*cudaErrorInvalidValue;
   EXPECT(r == cudaErrorInvalidValue);
@@ -6886,7 +6886,7 @@ UNITTEST("error sinks: notify & fwd logs and yields")
 UNITTEST("error sinks: store on a code stores the trait's exception")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::exception_ptr err;
   auto r = errsink(store(&err))->*cudaErrorInvalidValue;
   EXPECT(r == cudaErrorInvalidValue); // handled (stored), left unchanged
@@ -6969,7 +6969,7 @@ UNITTEST("error sinks: a hook-only user leaf works on the code channel")
 UNITTEST("error sinks: & stops at the first fwd on both channels")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   bool gate = false;
   EXPECT((errsink(when(
@@ -7008,7 +7008,7 @@ UNITTEST("error sinks: status traits")
 UNITTEST("error sinks: << chains, each operand after the previous was handled")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   ::std::string trace;
   auto step = [&](const char* name, cudaError_t r) {
@@ -7044,7 +7044,7 @@ UNITTEST("error sinks: << chains, each operand after the previous was handled")
 UNITTEST("error sinks: ->* yields, << does not convert")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   const cudaError_t e = errsink(fwd)->*cudaErrorNotReady;
   EXPECT(e == cudaErrorNotReady);
   int n       = 0;
@@ -7060,7 +7060,7 @@ UNITTEST("error sinks: ->* yields, << does not convert")
 UNITTEST("error sinks: unwind inside a chain stops it")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   int a = 0, b = 0;
   bool threw = false;
   try
@@ -7086,7 +7086,7 @@ UNITTEST("error sinks: unwind inside a chain stops it")
 UNITTEST("error sinks: ->* yields an action's return verbatim")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   // a status is returned as data: nothing is logged, the raw status comes back
   const auto st = errsink(notify(log))->*[&] {
@@ -7118,7 +7118,7 @@ UNITTEST("error sinks: ->* yields an action's return verbatim")
 UNITTEST("error sinks: << treats an action's return as an error code")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   auto chain = errsink(notify(log) & fwd) << [&] {
     return cudaErrorNotReady;
@@ -7140,7 +7140,7 @@ UNITTEST("error sinks: << treats an action's return as an error code")
 UNITTEST("error sinks: retry on a status-returning action")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   int n  = 0;
   auto c = errsink(if_equal(cudaErrorNotReady)(retry(3))) << [&]() noexcept {
     return ++n < 3 ? cudaErrorNotReady : cudaSuccess;
@@ -7159,7 +7159,7 @@ UNITTEST("error sinks: retry on a status-returning action")
 UNITTEST("error sinks: (notify & retry) * 3")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   int n  = 0;
   auto c = errsink((notify(log) & retry) * 3) << [&]() noexcept {
@@ -7178,7 +7178,7 @@ UNITTEST("error sinks: (notify & retry) * 3")
 UNITTEST("error sinks: one action, two routes, two treatments")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
   auto pol  = returned(subst(cudaSuccess)) | thrown(notify(log) & fwd);
   bool c    = false;
@@ -7208,7 +7208,7 @@ UNITTEST("error sinks: one action, two routes, two treatments")
 UNITTEST("error sinks: exception to code with thrown<E>(f)")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   auto pol = thrown<cuda_exception>([](const cuda_exception& e) {
                return e.status<cudaError_t>();
              })
@@ -7231,7 +7231,7 @@ UNITTEST("error sinks: exception to code with thrown<E>(f)")
 UNITTEST("error sinks: code to exception with returned<S>(f)")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   auto pol    = returned<cudaError_t>([](cudaError_t s) -> cudaError_t {
     throw ::std::runtime_error(cudaGetErrorName(s));
   });
@@ -7250,7 +7250,7 @@ UNITTEST("error sinks: code to exception with returned<S>(f)")
 UNITTEST("error sinks: a noexcept status-returning action is legal")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   auto c = errsink(fwd) << []() noexcept {
     return cudaErrorInvalidValue;
   };
@@ -7260,7 +7260,7 @@ UNITTEST("error sinks: a noexcept status-returning action is legal")
 UNITTEST("error sinks: a re-run that throws is offered to the policy")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   int n        = 0;
   const auto c = errsink(if_equal(cudaErrorNotReady)(retry(3)) | thrown(subst(cudaSuccess))) << [&]() -> cudaError_t {
     if (++n == 2)
@@ -7276,7 +7276,7 @@ UNITTEST("error sinks: a re-run that throws is offered to the policy")
 UNITTEST("error sinks: polling idiom under section 1's |")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   // A status that if_equal(...)(fwd) passes through goes on to the right arm of |; keeping the
   // not-ready code is a substitution that handles it.
   auto pol = if_equal(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
@@ -7297,7 +7297,7 @@ UNITTEST("error sinks: polling idiom under section 1's |")
 UNITTEST("error sinks: composites and the bridge on a code")
 {
   using namespace cuda::experimental::stf;
-  using namespace cuda::experimental::stf::eh;
+  using namespace cuda::experimental::stf::sump;
   // A hook-only user policy sees the status's exception through the bridge; one that passes
   // through hands the status on unchanged.
   EXPECT((errsink(error_sinks_test::succeed_on<cuda_exception>{})->*cudaErrorInvalidValue) == cudaSuccess);
@@ -7555,7 +7555,7 @@ UNITTEST("SCOPE combinations")
 UNITTEST("policies inside handlers")
 {
   using namespace cuda::experimental::stf;
-  namespace pol = cuda::experimental::stf::eh;
+  namespace pol = cuda::experimental::stf::sump;
 
   // SCOPE(fail) declared inside a catch block fires only when the HANDLER throws, never
   // for the exception being handled. The relative uncaught_exceptions() idiom guarantees
