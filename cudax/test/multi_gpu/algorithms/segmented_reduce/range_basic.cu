@@ -16,7 +16,7 @@
 #include <cuda/std/ranges>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/segmented_reduce.h>
+#include <cuda/experimental/mgmn/segmented_reduce>
 
 #include <numeric>
 #include <vector>

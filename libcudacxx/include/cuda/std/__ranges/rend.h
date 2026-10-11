@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/rbegin.h>
@@ -130,8 +130,8 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__can_reverse<_Tp>)
-  [[nodiscard]] _CCCL_API constexpr auto
-  _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(noexcept(::cuda::std::ranges::begin(__t)))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp&& __t) noexcept(
+    noexcept(::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__t))))
   {
     return ::cuda::std::make_reverse_iterator(::cuda::std::ranges::begin(__t));
   }

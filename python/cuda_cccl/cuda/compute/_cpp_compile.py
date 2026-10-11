@@ -47,6 +47,38 @@ def _get_include_paths() -> list[str]:
     return [p for p in paths if p is not None]
 
 
+# Source placed in front of every C++ source compiled here. It is a copy of
+# c/parallel/src/nvrtc/user_source_prelude.h, which the C library puts in front
+# of the C++ sources it compiles itself; keep the two in sync and see that
+# header for the full rationale.
+#
+# In short: the CUDA 12.4 Update 1 headers define __half::__half(__nv_bfloat16)
+# in cuda_bf16.h without `inline` under NVRTC, so every translation unit that
+# includes the header carries an external definition and linking any two of
+# them fails with "symbol multiply defined" (NVIDIA/cccl#11885). Including
+# cuda_bf16.h with __CUDA_NO_HALF_CONVERSIONS__ defined skips only that
+# definition; cuda_fp16.h is parsed first, so __half keeps all its conversions,
+# and a call to the constructor resolves to the one definition left in the
+# link, the kernel's. That is only safe on CUDA 12.4, so the prelude is limited
+# to NVRTC 12.4 and is empty everywhere else. A source that defines the macro
+# itself keeps that behavior, and `#line 1` keeps NVRTC diagnostics pointing at
+# the original source lines.
+#
+# Only the v1 (NVRTC) backend gets it: the v2 (HostJIT) backend compiles its
+# kernel with nvcc, where the constructor is inline and so cannot be relied on
+# to be present in the link, and where the header has no such defect anyway.
+_NVRTC_USER_SOURCE_PRELUDE = r"""
+#if defined(__CUDACC_RTC__) && (__CUDACC_VER_MAJOR__ == 12) && (__CUDACC_VER_MINOR__ == 4) \
+  && !defined(__CUDA_NO_HALF_CONVERSIONS__) && __has_include(<cuda_fp16.h>) && __has_include(<cuda_bf16.h>)
+#  include <cuda_fp16.h>
+#  define __CUDA_NO_HALF_CONVERSIONS__
+#  include <cuda_bf16.h>
+#  undef __CUDA_NO_HALF_CONVERSIONS__
+#endif
+#line 1
+"""
+
+
 def compile_cpp_to_ltoir(
     source: str,
     arch: str | None = None,
@@ -95,7 +127,8 @@ def _compile_cpp_to_ltoir_cached(source: str, arch: str) -> bytes:
     )
 
     # Compile to LTOIR
-    program = Program(source, "c++", options=opts)
+    prelude = "" if USING_V2 else _NVRTC_USER_SOURCE_PRELUDE
+    program = Program(prelude + source, "c++", options=opts)
     result = program.compile("ltoir")
 
     return result.code

@@ -110,10 +110,7 @@ __device__ void test_type(const Config& config)
   test_group<T>(cudax::coop::generic_group{
     cuda::gpu_thread, warp, cudax::coop::identity_mapping{}, cudax::coop::lane_synchronizer{}});
   test_group<T>(cudax::coop::generic_group{
-    cuda::gpu_thread,
-    warp,
-    cudax::coop::group_by{cuda::std::integral_constant<cuda::std::size_t, 4>{}},
-    cudax::coop::lane_synchronizer{}});
+    cuda::gpu_thread, warp, cudax::coop::group_by{cuda::std::cw<4>}, cudax::coop::lane_synchronizer{}});
   test_group<T>(
     cudax::coop::generic_group{cuda::gpu_thread, warp, cudax::coop::group_by{1}, cudax::coop::lane_synchronizer{}});
   test_group<T>(cudax::coop::generic_group{

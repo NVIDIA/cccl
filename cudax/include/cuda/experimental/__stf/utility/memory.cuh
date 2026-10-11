@@ -169,7 +169,10 @@ inline void deallocateHostMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFreeHost(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::host_pool().insert(::std::make_pair(sz, p));
@@ -209,7 +212,10 @@ inline void deallocateManagedMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFree(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::managed_pool().insert(::std::make_pair(sz, p));
@@ -228,8 +234,11 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFreeHost(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   };
   // Own the heap pair until the launch succeeds; release ownership to the
   // callback only after cuda_try returns without throwing, so a failed
@@ -263,8 +272,11 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFree(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   };
   auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   cuda_try(cudaLaunchHostFunc(

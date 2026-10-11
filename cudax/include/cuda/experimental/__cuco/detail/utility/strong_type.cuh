@@ -41,7 +41,7 @@ struct __strong_type
   //! @brief Implicit conversion operator to the underlying value.
   //!
   //! @return The underlying value
-  _CCCL_HOST_DEVICE_API constexpr operator _Tp() const noexcept
+  _CCCL_HOST_DEVICE_API constexpr operator _Tp() const
   {
     return __value;
   }

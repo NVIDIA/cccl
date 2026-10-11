@@ -22,6 +22,7 @@
 #include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/std/algorithm>
+#include <cuda/stream>
 
 #include <nv/target>
 
@@ -1178,8 +1179,9 @@ inline int CompareDeviceResults(
   CUB_NS_QUALIFIER::NullType* /* h_reference */,
   CUB_NS_QUALIFIER::NullType* /* d_data */,
   std::size_t /* num_items */,
-  bool /* verbose */      = true,
-  bool /* display_data */ = false)
+  bool /* verbose */            = true,
+  bool /* display_data */       = false,
+  cuda::stream_ref /* stream */ = cuda::stream_ref{cudaStream_t{}})
 {
   return 0;
 }
@@ -1193,8 +1195,9 @@ int CompareDeviceResults(
   S* /*h_reference*/,
   THRUST_NS_QUALIFIER::discard_iterator<OffsetT> /*d_data*/,
   std::size_t /*num_items*/,
-  bool /*verbose*/      = true,
-  bool /*display_data*/ = false)
+  bool /*verbose*/            = true,
+  bool /*display_data*/       = false,
+  cuda::stream_ref /*stream*/ = cuda::stream_ref{cudaStream_t{}})
 {
   return 0;
 }
@@ -1205,7 +1208,12 @@ int CompareDeviceResults(
  */
 template <typename S, typename T>
 int CompareDeviceResults(
-  S* h_reference, T* d_data, std::size_t num_items, bool verbose = true, bool display_data = false)
+  S* h_reference,
+  T* d_data,
+  std::size_t num_items,
+  bool verbose            = true,
+  bool display_data       = false,
+  cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{}})
 {
   if (num_items == 0)
   {
@@ -1215,8 +1223,9 @@ int CompareDeviceResults(
   // Allocate array on host
   const std::unique_ptr<T[]> h_data(new T[num_items]);
 
-  // Copy data back
-  cudaMemcpy(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost);
+  // Copy data back on the given stream and wait for completion
+  CubDebugExit(cudaMemcpyAsync(h_data.get(), d_data, sizeof(T) * num_items, cudaMemcpyDeviceToHost, stream.get()));
+  stream.sync();
 
   // Display data
   if (display_data)

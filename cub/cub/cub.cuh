@@ -68,8 +68,10 @@
 #include <cub/device/device_scan.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/device/device_segmented_reduce.cuh>
+#include <cub/device/device_segmented_scan.cuh>
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/device_select.cuh>
+#include <cub/device/device_set_operations.cuh>
 #include <cub/device/device_topk.cuh>
 #include <cub/device/device_transform.cuh>
 

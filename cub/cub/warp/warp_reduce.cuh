@@ -77,13 +77,27 @@ CUB_NAMESPACE_BEGIN
 //!     - 64-bit integers: 3x ``redux.sync.add``
 //!     - 128-bit integers: 5x ``redux.sync.add``
 //!
-//!   - ``cuda::minimum`` and ``cuda::maximum`` for integral types up to 32 bits.
+//!   - ``cuda::minimum`` and ``cuda::maximum``:
+//!
+//!     - 8-bit, 16-bit, 32-bit integers: A single ``redux.sync.min/max``
+//!     - 64-bit integers: 2x ``redux.sync.min/max``
+//!     - 128-bit integers: 4x ``redux.sync.min/max``
+//!
 //!   - ``cuda::std::bit_and``, ``cuda::std::bit_or``, and ``cuda::std::bit_xor``: N times ``redux.sync.<bit_op>``,
 //!     where N is ceil(sizeof(T) / sizeof(unsigned)))
 //!
 //! - On SM100f and later in the same architecture family:
 //!
 //!   - ``cuda::minimum`` and ``cuda::maximum`` for ``float``, ``__half``, and ``__nv_bfloat16``.
+//!
+//! Warp Vote Optimizations
+//! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//!
+//! For ``bool`` inputs and power-of-two ``LogicalWarpThreads``, ``WarpReduce`` uses a single warp vote instruction on
+//! all architectures, including partially-full warp reductions:
+//!
+//! - ``cuda::std::logical_or``: ``__any_sync``
+//! - ``cuda::std::logical_and``: ``__all_sync``
 //!
 //! Simple Examples
 //! +++++++++++++++

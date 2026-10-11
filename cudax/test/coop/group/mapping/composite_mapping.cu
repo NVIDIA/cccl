@@ -161,7 +161,7 @@ struct TestKernel
   __device__ void operator()(const Config& config)
   {
     {
-      const cudax::coop::group_by mapping1{cuda::std::integral_constant<cuda::std::size_t, 4>{}};
+      const cudax::coop::group_by mapping1{cuda::std::cw<4>};
       const cudax::coop::group_as mapping2{cuda::std::integer_sequence<cuda::std::size_t, 1, 3>{}};
       test_composite_mapping(mapping1, mapping2, config);
     }
@@ -171,7 +171,7 @@ struct TestKernel
       test_composite_mapping(mapping1, mapping2, config);
     }
     {
-      const cudax::coop::group_by mapping1{cuda::std::integral_constant<cuda::std::size_t, 4>{}};
+      const cudax::coop::group_by mapping1{cuda::std::cw<4>};
       constexpr unsigned counts2[]{1, 3};
       const cudax::coop::group_as mapping2{counts2};
       test_composite_mapping(mapping1, mapping2, config);

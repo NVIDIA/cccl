@@ -25,6 +25,7 @@
 #include <cuda/std/__barrier/poll_tester.h>
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__new_>
+#include <cuda/std/__thread/poll.h>
 #include <cuda/std/atomic>
 #include <cuda/std/cstddef>
 

@@ -3,15 +3,24 @@ FPMP — Multi-Precision Arithmetic on Pairs of Floats
 
 An `fpmp2` value represents a number as the unevaluated sum of two IEEE-754 floats,
 `value = hi + lo`, which roughly doubles the available mantissa. The pair is stored
-directly in the object and every operation is an error-free transformation on the two
-limbs, so the extra precision comes from arithmetic the hardware already does fast rather
-than from a wider format the hardware does not have.
+directly in the object, and each operation is built from error-free transformations —
+primitives such as `two_sum` that recover the rounding error of a single hardware operation
+exactly — so the extra precision comes from arithmetic the hardware already does fast rather
+than from a wider format the hardware does not have. The exactness belongs to those
+primitives rather than to the operation composed from them: a pair addition or multiply
+carries a small error of its own, and how small is what the accuracy levels choose between.
 
 That matters in two places. Below `double`, GPUs typically have far more FP32 throughput
 than FP64, so a float pair can be both more precise than `float` and faster than native
 `double`. Above `double`, there is usually no IEEE-754 binary128 hardware at all, and a
-double pair reaches 104 mantissa bits out of FP64 operations for far less than a software
-binary128 costs.
+double pair reaches 104 mantissa bits out of ordinary FP64 operations.
+
+Which of the two applies is decided by the rate at which the part runs FP64 against FP32 —
+1:2 on B200 against 1:32 on B300 and RTX PRO 6000 Blackwell. `fp64mp2` spends FP64
+throughput, so it is the cheap route to quad-like precision where FP64 runs close to FP32,
+and a costly one where FP64 is rationed: a software binary128 is integer code and is not
+competing for the units `fp64mp2` needs. `fp32mp2` is the mirror image, and wins exactly
+where `fp64mp2` struggles.
 
 For the example set, see the [examples README](README.md).
 
@@ -145,12 +154,10 @@ Using the types
 ---------------
 
 ```c++
-#include <cuda/fpmp>       // types, operators, sqrt, rsqrt, fma, mad
-#include <cuda/fpmp_math>  // adds exp, log, trig, pow, ...; also pulls in <cuda/fpmp>
+#include <cuda/fpmp>   // types, operators, sqrt, rsqrt, fma, mad, and the math functions
 ```
 
-Include only `<cuda/fpmp>` where the transcendentals are not needed — the math header
-costs compile time.
+One header carries the whole interface, the transcendental math functions included.
 
 The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
 examples abbreviate it rather than using a using-directive:
@@ -229,6 +236,25 @@ edit churn matters more than the diagnostics. The conversion still takes the acc
 two-limb path when it is allowed through — the macro decides whether the conversion is
 written out, not how precisely it is done.
 
+Changing the accuracy tag is a separate matter, and always explicit in both directions:
+
+```c++
+cudax::fp32mp2_low fast = ...;
+cudax::fp32mp2      safe(fast);    // explicit; renormalizes on the way
+```
+
+Converting **out of** `low` renormalizes. The `low` algorithms skip the closing
+normalization step, so their results may have overlapping limbs, while the `mid` and `high`
+algorithms assume they do not — feeding them an overlapping pair compiles fine and quietly
+returns a worse answer. Doing it in the conversion means the mixed-accuracy pattern, `low`
+for the bulk of the work and `mid` for the critical stretch, is correct as written rather
+than depending on a `renormalize` call the caller has to remember.
+
+The step costs one `fast_two_sum` and is exact, so it changes the representation and never
+the number. Conversions in the other direction, into `low`, are a plain limb copy: the pair
+is already normalized, and moving into `low` is a deliberate step into the fast regime. For
+a pure retag with no arithmetic at all, construct from the limbs: `fp32mp2{x.hi(), x.lo()}`.
+
 ### Operations
 
 Arithmetic `+ - * /` and unary negation, compound assignment, and all six comparisons.
@@ -237,9 +263,11 @@ directly, so an `fpmp2` combines with a built-in scalar without a cast on the sc
 
 `renormalize(x)` restores the invariant that the limbs do not overlap (`|lo| < ulp(hi)`).
 Arithmetic at `low` accuracy skips that step, so a run of low-accuracy operations can leave
-a value whose limbs have drifted into overlap; `renormalize` is how it gets repaired.
+a value whose limbs have drifted into overlap; `renormalize` is how it gets repaired. It is
+applied automatically when converting out of `low`, so the call is only needed to repair a
+value that stays at `low` accuracy.
 
-`<cuda/fpmp_math>` adds the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
+The same header carries the transcendentals: `exp`, `log`, `log2`, `log10`, `log1p`, `pow`,
 `cbrt`, `rcbrt`, `sin`, `cos`, `tan`, `sincos`, `asin`, `acos`, `atan`, `atan2`, `sinh`,
 `cosh`, `tanh`, `erf`, `erfc`, `normcdfinv`, the rounding family, the min/max family, and
 `icdf` for `fp32mp2` only.
@@ -292,7 +320,7 @@ Demonstrated:
 - mixed-type arithmetic — an `fpmp2` combined directly with a `double` literal, with an
   `int`, with the scalar on the left, and the `+=` scalar accumulate path
 - `sqrt`, `rsqrt` and `fma`
-- math functions, here `exp` and `sin`, from `<cuda/fpmp_math>`
+- math functions, here `exp` and `sin`
 - comparison operators
 - the `hi`/`lo` components the value is stored as
 - the accuracy levels: the same sum on the default and the `high` type, then that same

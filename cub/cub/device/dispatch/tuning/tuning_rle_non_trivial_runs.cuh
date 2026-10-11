@@ -427,9 +427,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-using rle_non_trivial_runs_policy
-  CCCL_DEPRECATED_BECAUSE("Use RleNonTrivialRunsPolicy instead") = RleNonTrivialRunsPolicy;
-
 #if _CCCL_HAS_CONCEPTS()
 template <typename T>
 concept rle_non_trivial_runs_policy_selector = detail::policy_selector<T, RleNonTrivialRunsPolicy>;

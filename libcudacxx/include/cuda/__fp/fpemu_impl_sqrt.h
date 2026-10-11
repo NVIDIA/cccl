@@ -39,6 +39,9 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
+// The ::sqrt and ::sqrtf host seeds from the platform's <math.h>, which no hand-written
+// declaration can portably match, plus the cuda::std::sqrt the end of this file extends.
+#include <cuda/std/__cmath/roots.h>
 
 #include <nv/target>
 
@@ -46,22 +49,6 @@
 
 namespace cuda::experimental
 {
-#if _CCCL_HOST_COMPILATION()
-// Host seeds: the libm symbols. On glibc these are declared noexcept to match
-// the standard <math.h> prototypes (marked __THROW); otherwise the extern-"C"
-// redeclarations conflict with ::sqrt/::sqrtf when <cmath> is also in the TU
-// (-Werror). On MSVC the CRT/CUDA prototypes carry no exception specification,
-// so a noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
-// under C++20); declare them without noexcept to match.
-#  if _CCCL_COMPILER(MSVC)
-extern "C" double sqrt(double __x);
-extern "C" float sqrtf(float __x); // host seed for the reciprocal-sqrt builtin
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-extern "C" double sqrt(double __x) noexcept;
-extern "C" float sqrtf(float __x) noexcept; // host seed for the reciprocal-sqrt builtin
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
-#endif // _CCCL_HOST_COMPILATION()
-
 // ========================================================================
 // Native fp64 square root.
 //
@@ -84,10 +71,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __internal_fp64emu_sqrt_recip_sqrt32(uint
   // odd-exponent case folds the sqrt(2) factor into the same 2^47 scale.
   float __af = __odd_exp ? (float) __a * 0.5f : (float) __a;
   float __rf{};
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE, ({ asm("rsqrt.approx.ftz.f32 %0, %1;"
-                         : "=f"(__rf)
-                         : "f"(__af)); }), ({ __rf = 1.0f / sqrtf(__af); }))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, ({ asm("rsqrt.approx.ftz.f32 %0, %1;"
+                                         : "=f"(__rf)
+                                         : "f"(__af)); }), ({
+                      __rf = 1.0f / ::sqrtf(__af);
+                    }))
   uint64_t __r = (uint64_t) (__rf * 140737488355328.0f); // * 2^47
 
   if (__r < 0x80000000ULL)
@@ -304,7 +292,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64_unpacked __internal_fp64emu_dsqrt_unpac
   // ---- finite positive : fixed-point reciprocal-sqrt root -------------
   int32_t __exp_z   = ((__exp_x - 0x3FF) >> 1) + 0x3FE;
   int32_t __odd     = __exp_x & 1; // exponent parity
-  uint64_t __mant_x = __x.mantissa >> EXTRA_BITS; // 53-bit significand, implicit bit at 52
+  uint64_t __mant_x = __x.mantissa >> _CCCL_FPEMU_EXTRA_BITS; // 53-bit significand, implicit bit at 52
 
   uint32_t __mant32_x = (uint32_t) (__mant_x >> 21);
   uint32_t __rcp32    = __internal_fp64emu_sqrt_recip_sqrt32((uint32_t) __odd, __mant32_x);

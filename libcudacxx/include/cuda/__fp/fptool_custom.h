@@ -194,6 +194,7 @@
 //! @note Thread Safety: All operations are thread-safe (no shared mutable state) unless a
 //! setter runs concurrently with arithmetic.
 
+#include <cuda/__fp/fptool_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
 #include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
@@ -207,9 +208,10 @@
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 // The host half of the runtime size control: a stream-ordered copy to the device globals
+#  include <cuda/__algorithm/copy.h>
 #  include <cuda/__memory/get_device_address.h>
-#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/span>
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
@@ -468,14 +470,12 @@ _CCCL_HOST_API void fp_custom_set_device_mantissa_size(int __new_size, ::cuda::s
   _CCCL_ASSERT(__new_size >= 0 && __new_size <= __fp_custom_native_sizes<_FpType>::__mant_size,
                "fp_custom mantissa size out of range");
   int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to set the fp_custom device mantissa size",
-    __size_ptr,
-    &__new_size,
-    sizeof(int),
-    ::cudaMemcpyHostToDevice,
-    __stream.get());
+  // The source is a parameter, which the copy has to consume before returning rather than
+  // at a later point of its own choosing.
+  ::cuda::copy_configuration __config;
+  __config.src_access_order = ::cuda::source_access_order::during_api_call;
+  ::cuda::copy_bytes(
+    __stream, ::cuda::std::span<const int, 1>{&__new_size, 1}, ::cuda::std::span<int, 1>{__size_ptr, 1}, __config);
 }
 
 //! @brief Set the exponent size used by device code (2-11) on the stream's device
@@ -486,14 +486,12 @@ _CCCL_HOST_API void fp_custom_set_device_exponent_size(int __new_size, ::cuda::s
   _CCCL_ASSERT(__new_size >= 2 && __new_size <= __fp_custom_native_sizes<_FpType>::__exp_size,
                "fp_custom exponent size out of range");
   int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to set the fp_custom device exponent size",
-    __size_ptr,
-    &__new_size,
-    sizeof(int),
-    ::cudaMemcpyHostToDevice,
-    __stream.get());
+  // The source is a parameter, which the copy has to consume before returning rather than
+  // at a later point of its own choosing.
+  ::cuda::copy_configuration __config;
+  __config.src_access_order = ::cuda::source_access_order::during_api_call;
+  ::cuda::copy_bytes(
+    __stream, ::cuda::std::span<const int, 1>{&__new_size, 1}, ::cuda::std::span<int, 1>{__size_ptr, 1}, __config);
 }
 
 //! @brief Read the mantissa size used by device code on the stream's device
@@ -509,14 +507,7 @@ template <typename _FpType = double>
 {
   int __size            = 0;
   const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_mantissa_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to read the fp_custom device mantissa size",
-    &__size,
-    __size_ptr,
-    sizeof(int),
-    ::cudaMemcpyDeviceToHost,
-    __stream.get());
+  ::cuda::copy_bytes(__stream, ::cuda::std::span<const int, 1>{__size_ptr, 1}, ::cuda::std::span<int, 1>{&__size, 1});
   __stream.sync();
   return __size;
 }
@@ -528,14 +519,7 @@ template <typename _FpType = double>
 {
   int __size            = 0;
   const int* __size_ptr = ::cuda::get_device_address(__fp_custom_device_exponent_size<_FpType>, __stream.device());
-  _CCCL_TRY_RUNTIME_API(
-    ::cudaMemcpyAsync,
-    "failed to read the fp_custom device exponent size",
-    &__size,
-    __size_ptr,
-    sizeof(int),
-    ::cudaMemcpyDeviceToHost,
-    __stream.get());
+  ::cuda::copy_bytes(__stream, ::cuda::std::span<const int, 1>{__size_ptr, 1}, ::cuda::std::span<int, 1>{&__size, 1});
   __stream.sync();
   return __size;
 }

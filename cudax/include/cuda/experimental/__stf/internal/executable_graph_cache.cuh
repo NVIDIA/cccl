@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 #include <cuda/experimental/__stf/utility/source_location.cuh>
@@ -58,12 +59,16 @@ inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_
 // Instantiate a CUDA graph
 inline ::std::shared_ptr<cudaGraphExec_t> graph_instantiate(cudaGraph_t g)
 {
-  // The handle stays null if instantiation throws below: the deleter must
-  // not destroy it in that case, or the abort would mask the real error.
+  // The handle stays null if instantiation throws below: the deleter must not destroy it in that
+  // case, or the report would mask the real error. A deleter cannot throw: a failing destroy leaks
+  // the handle and is reported.
   ::std::shared_ptr<cudaGraphExec_t> res{new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
                                            if (*p)
                                            {
-                                             cuda_safe_call(cudaGraphExecDestroy(*p));
+                                             ON_THROW(notify)
+                                             {
+                                               cuda_try<cudaGraphExecDestroy>(*p);
+                                             };
                                            }
                                            delete p;
                                          }};

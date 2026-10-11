@@ -487,15 +487,6 @@ try
          cc.major_cap(),
          cc.minor_cap());
 
-  // The fpemu template instantiations are stack-heavy. This limit belongs to the
-  // device rather than the stream, so it is still set through the CUDA runtime.
-  constexpr size_t device_stack_bytes = 16384;
-  if (const cudaError_t status = cudaDeviceSetLimit(cudaLimitStackSize, device_stack_bytes); status != cudaSuccess)
-  {
-    printf("\ncould not raise the device stack limit: %s\n\n", cudaGetErrorString(status));
-    return 1;
-  }
-
   // Work is submitted through a stream, into a one-value buffer per result. Both
   // buffers release themselves at the end of the scope.
   cuda::stream stream{device};

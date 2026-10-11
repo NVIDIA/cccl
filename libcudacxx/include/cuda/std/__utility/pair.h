@@ -231,8 +231,8 @@ private:
                   && !__is_cuda_std_ranges_subrange_v<remove_cvref_t<_UPair>> // [pairs#pair]-15.1, [pairs#pair]-42.2
                   && __pair_like<_UPair>>; // [pairs#pair]-13, [pairs#pair]-42 template<pair-like P>
 
-#if _CCCL_COMPILER(GCC, <, 8)
-  // GCC7 substitutes the later default template arguments of the pair-like constructors even if
+#if _CCCL_COMPILER(GCC, <, 11)
+  // GCC substitutes the later default template arguments of the pair-like constructors even if
   // __disambiguate_pair_like already failed, so guard the call to get behind an if constexpr. This cannot be done with
   // an alias template, because that would always instantiate the decltype.
   _CCCL_EXEC_CHECK_DISABLE
@@ -252,10 +252,10 @@ private:
 
   template <size_t _Index, class _UPair>
   using __get_t = decltype(pair::__get_type<_Index>(::cuda::std::declval<_UPair>()));
-#else // ^^^ _CCCL_COMPILER(GCC, <, 8) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 8) vvv
+#else // ^^^ _CCCL_COMPILER(GCC, <, 11) ^^^ / vvv !_CCCL_COMPILER(GCC, <, 11) vvv
   template <size_t _Index, class _UPair>
   using __get_t = decltype(::cuda::std::get<_Index>(::cuda::std::declval<_UPair>()));
-#endif // !_CCCL_COMPILER(GCC, <, 8)
+#endif // !_CCCL_COMPILER(GCC, <, 11)
 
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
   template <class _Tp, class... _Args>

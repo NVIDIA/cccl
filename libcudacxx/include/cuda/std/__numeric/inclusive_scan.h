@@ -24,7 +24,6 @@
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

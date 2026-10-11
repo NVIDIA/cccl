@@ -19,7 +19,9 @@
 #include <cuda/atomic>
 #include <cuda/buffer>
 #include <cuda/functional>
+#include <cuda/hierarchy>
 #include <cuda/iterator>
+#include <cuda/launch>
 #include <cuda/memory_pool>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -233,9 +235,14 @@ C2H_TEST("fixed_capacity_map for_each", "[container]", key_types, mapped_types, 
     const auto num_threads   = 2 * num_keys * cg_size;
     const auto grid_size     = static_cast<unsigned>((num_threads + block_size - 1) / block_size);
 
-    for_each_ref_kernel<typename map_type::ref_type, cuda::counting_iterator<key_type>, value_type>
-      <<<grid_size, block_size, 0, stream.get()>>>(
-        map.ref(), cuda::counting_iterator<key_type>{0}, 2 * num_keys, ref_visits.data());
+    cuda::launch(
+      stream,
+      cuda::make_config(cuda::grid_dims(grid_size), cuda::block_dims<block_size>()),
+      for_each_ref_kernel<typename map_type::ref_type, cuda::counting_iterator<key_type>, value_type>,
+      map.ref(),
+      cuda::counting_iterator<key_type>{0},
+      2 * num_keys,
+      ref_visits.data());
     stream.sync();
   }
 

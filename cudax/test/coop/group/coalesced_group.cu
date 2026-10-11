@@ -52,10 +52,9 @@ __device__ void test_coalesced_group(Config config)
     REQUIRE(cuda::gpu_thread.rank(group) == rank);
 
     static_assert(group.static_count(cuda::warp) == 1);
-    // todo(dabayer): Refactor static_count query and uncomment these.
-    // static_assert(group.static_count(cuda::block) == cuda::warp.static_count(cuda::block, config));
-    // static_assert(group.static_count(cuda::cluster) == cuda::warp.static_count(cuda::cluster, config));
-    // static_assert(group.static_count(cuda::grid) == cuda::warp.static_count(cuda::grid, config));
+    static_assert(group.static_count(cuda::block) == cuda::warp.static_count(cuda::block, config));
+    static_assert(group.static_count(cuda::cluster) == cuda::warp.static_count(cuda::cluster, config));
+    static_assert(group.static_count(cuda::grid) == cuda::warp.static_count(cuda::grid, config));
 
     REQUIRE(group.count(cuda::warp) == 1);
     REQUIRE(group.count(cuda::block) == cuda::warp.count(cuda::block));
@@ -98,10 +97,9 @@ __device__ void test_coalesced_group(Config config)
     REQUIRE(cuda::gpu_thread.rank(group) == rank);
 
     static_assert(group.static_count(cuda::warp) == 1);
-    // todo(dabayer): Refactor static_count query and uncomment these.
-    // static_assert(group.static_count(cuda::block) == cuda::warp.static_count(cuda::block, config));
-    // static_assert(group.static_count(cuda::cluster) == cuda::warp.static_count(cuda::cluster, config));
-    // static_assert(group.static_count(cuda::grid) == cuda::warp.static_count(cuda::grid, config));
+    static_assert(group.static_count(cuda::block) == cuda::warp.static_count(cuda::block, config));
+    static_assert(group.static_count(cuda::cluster) == cuda::warp.static_count(cuda::cluster, config));
+    static_assert(group.static_count(cuda::grid) == cuda::warp.static_count(cuda::grid, config));
 
     REQUIRE(group.count(cuda::warp) == 1);
     REQUIRE(group.count(cuda::block) == cuda::warp.count(cuda::block));
@@ -144,10 +142,9 @@ __device__ void test_coalesced_group(Config config)
     REQUIRE(cuda::gpu_thread.rank(group) == rank / 2);
 
     static_assert(group.static_count(cuda::warp) == 1);
-    // todo(dabayer): Refactor static_count query and uncomment these.
-    // static_assert(group.static_count(cuda::block) == cuda::warp.static_count(cuda::block, config));
-    // static_assert(group.static_count(cuda::cluster) == cuda::warp.static_count(cuda::cluster, config));
-    // static_assert(group.static_count(cuda::grid) == cuda::warp.static_count(cuda::grid, config));
+    static_assert(group.static_count(cuda::block) == cuda::warp.static_count(cuda::block, config));
+    static_assert(group.static_count(cuda::cluster) == cuda::warp.static_count(cuda::cluster, config));
+    static_assert(group.static_count(cuda::grid) == cuda::warp.static_count(cuda::grid, config));
 
     REQUIRE(group.count(cuda::warp) == 1);
     REQUIRE(group.count(cuda::block) == cuda::warp.count(cuda::block));
