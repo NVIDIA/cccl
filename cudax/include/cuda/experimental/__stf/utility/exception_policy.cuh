@@ -3717,7 +3717,7 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * LIMIT: `std::any` cannot carry references. A reference-returning callable is
  * rejected at the composition site; use a concrete policy, or return a pointer.
  */
-class exception_sink
+class dynamic
 {
 public:
   //! @brief What the wrapped policy's answer was, statically, at erasure time.
@@ -3975,7 +3975,7 @@ private:
 
   [[noreturn]] void __throw_mismatch(::std::string_view __stored, ::std::string_view __wanted) const
   {
-    ::std::string __msg{"exception_sink cannot convert "};
+    ::std::string __msg{"dynamic cannot convert "};
     __msg.append(__stored.data(), __stored.size());
     __msg.append(" answer to ");
     __msg.append(__wanted.data(), __wanted.size());
@@ -4179,29 +4179,30 @@ public:
   using __exception_sink_tag = void;
   //! @endcond
 
-  //! @brief Erase a policy. Prefer the @ref type_erase factory, which also
-  //! normalizes the historical reactions.
+  //! @brief Erase a policy. Implicit, so any sink converts where a `dynamic` is expected:
+  //! `void release_all(pool&, dynamic sink); release_all(pl, notify & abort);`. A raw reaction
+  //! is normalized first.
   template <class _P,
-            ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_P>
-                                       && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, exception_sink>,
+            ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_P>
+                                       && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, dynamic>,
                                      int> = 0>
-  explicit exception_sink(_P __p)
-      : __p_(new __model<_P>(::cuda::std::move(__p)))
+  dynamic(_P&& __p)
+      : __p_(new __model<detail::__normalized_t<_P>>(detail::__normalize(::cuda::std::forward<_P>(__p))))
   {}
 
   //! @brief Adopt a custom model derived from @ref sink_base.
-  explicit exception_sink(::std::unique_ptr<sink_base> __custom)
+  explicit dynamic(::std::unique_ptr<sink_base> __custom)
       : __p_(::std::move(__custom))
   {
-    _CCCL_ASSERT(__p_, "exception_sink requires a non-null model");
+    _CCCL_ASSERT(__p_, "dynamic requires a non-null model");
   }
 
-  exception_sink(const exception_sink& __other)
+  dynamic(const dynamic& __other)
       : __p_(__other.__p_->clone())
   {}
-  exception_sink(exception_sink&&) noexcept            = default;
-  exception_sink& operator=(exception_sink&&) noexcept = default;
-  exception_sink& operator=(const exception_sink& __other)
+  dynamic(dynamic&&) noexcept            = default;
+  dynamic& operator=(dynamic&&) noexcept = default;
+  dynamic& operator=(const dynamic& __other)
   {
     if (this != &__other)
     {
@@ -4238,7 +4239,7 @@ public:
     -> ::cuda::std::conditional_t<::cuda::std::is_void_v<_Raw>, decltype(::std::ignore), _Raw>
   {
     static_assert(!::cuda::std::is_reference_v<_Raw>,
-                  "exception_sink cannot serve a reference-returning callable: std::any cannot "
+                  "dynamic cannot serve a reference-returning callable: std::any cannot "
                   "carry references; use a concrete policy, or return a pointer");
     if constexpr (::cuda::std::is_reference_v<_Raw>)
     {
@@ -4287,7 +4288,7 @@ public:
   _R on_success(_R&& __r)
   {
     static_assert(!::cuda::std::is_reference_v<_R>,
-                  "exception_sink cannot serve a reference-returning callable: std::any cannot "
+                  "dynamic cannot serve a reference-returning callable: std::any cannot "
                   "carry references; use a concrete policy, or return a pointer");
     if constexpr (::cuda::std::is_reference_v<_R>)
     {
@@ -4304,13 +4305,6 @@ public:
     static_cast<void>(__p_->on_success());
   }
 };
-
-//! @brief Erase any policy (or historical reaction) into an @ref exception_sink.
-template <class _P>
-exception_sink type_erase(_P&& __p)
-{
-  return exception_sink{detail::__normalize(::cuda::std::forward<_P>(__p))};
-}
 } // namespace eh
 
 // The abort tripwire that once lived at this spot is retired. It caught bare abort() calls
@@ -4631,9 +4625,9 @@ UNITTEST("circuit_breaker")
   EXPECT(__gated);
 
   // The erased form carries the gate through: sinks re-erase, gates survive.
-  *budget                            = 0;
-  const pol::exception_sink __erased = pol::type_erase(pol::circuit_breaker(budget) & pol::subst(-1));
-  __gated                            = false;
+  *budget                     = 0;
+  const pol::dynamic __erased = pol::dynamic(pol::circuit_breaker(budget) & pol::subst(-1));
+  __gated                     = false;
   _CCCL_TRY
   {
     errsink(__erased)->*flaky;
@@ -4662,8 +4656,8 @@ UNITTEST("circuit_breaker")
 //      // "as_expected requires the callable to return a cuda::std::expected instantiation"
 //  - a policy whose on_success returns a different type than decltype(fn());
 //      // "a policy's on_success must preserve the expression type; policies no longer own it (SPEC-ADDENDUM-7)"
-//  - errsink(type_erase(subst(1))) ->* []() -> int& { static int x = 0; return x; };
-//      // "exception_sink cannot serve a reference-returning callable: std::any cannot carry references; use a concrete
+//  - errsink(dynamic(subst(1))) ->* []() -> int& { static int x = 0; return x; };
+//      // "dynamic cannot serve a reference-returning callable: std::any cannot carry references; use a concrete
 //      policy, or return a pointer"
 //  - errsink(subst(8) | subst(9)) ->* ...;         // "the left policy never passes through; alternatives after it are
 //  unreachable"
@@ -6142,7 +6136,7 @@ UNITTEST("type erasure")
   // and rethrow-on-exhaustion preserved. Retry-through is fwd/unchecked.
   {
     int calls   = 0;
-    const int x = errsink(type_erase(retry * 3))->*[&]() -> int {
+    const int x = errsink(dynamic(retry * 3))->*[&]() -> int {
       if (++calls < 3)
       {
         throw ::std::runtime_error("flaky");
@@ -6155,7 +6149,7 @@ UNITTEST("type erasure")
   // Exhaustion rethrows into the next arm; the callable owns the result type.
   {
     int calls   = 0;
-    const int x = errsink(type_erase(retry * 3) | subst(-7))->*[&]() -> int {
+    const int x = errsink(dynamic(retry * 3) | subst(-7))->*[&]() -> int {
       ++calls;
       throw ::std::runtime_error("always");
     };
@@ -6164,7 +6158,7 @@ UNITTEST("type erasure")
   }
   // One sink object serves callables of different result types (fwd).
   {
-    const exception_sink r = type_erase(retry * 2);
+    const dynamic r = dynamic(retry * 2);
     {
       int calls   = 0;
       const int x = errsink(r)->*[&]() -> int {
@@ -6190,7 +6184,7 @@ UNITTEST("type erasure")
   }
   // int stored under long body: the body's range contains the answer.
   {
-    const long x = errsink(type_erase(subst(9)))->*[]() -> long {
+    const long x = errsink(dynamic(subst(9)))->*[]() -> long {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 9L);
@@ -6200,7 +6194,7 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      errsink(type_erase(subst(9LL)))->*[]() -> int {
+      errsink(dynamic(subst(9LL)))->*[]() -> int {
         throw ::std::runtime_error("x");
       };
     }
@@ -6212,14 +6206,14 @@ UNITTEST("type erasure")
   }
   // int under double: integral answers pass under a floating body.
   {
-    const double x = errsink(type_erase(subst(9)))->*[]() -> double {
+    const double x = errsink(dynamic(subst(9)))->*[]() -> double {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 9.0);
   }
   // double under float: precision loss is tolerated.
   {
-    const float x = errsink(type_erase(subst(1.5)))->*[]() -> float {
+    const float x = errsink(dynamic(subst(1.5)))->*[]() -> float {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == static_cast<float>(1.5));
@@ -6229,7 +6223,7 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      errsink(type_erase(subst(1.5)))->*[]() -> int {
+      errsink(dynamic(subst(1.5)))->*[]() -> int {
         throw ::std::runtime_error("x");
       };
     }
@@ -6244,7 +6238,7 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      errsink(type_erase(defer))->*[]() -> int {
+      errsink(dynamic(defer))->*[]() -> int {
         return 1;
       };
     }
@@ -6257,29 +6251,29 @@ UNITTEST("type erasure")
   // Resume / effects: exempt from the type check. Resume over void is legal.
   {
     int hits = 0;
-    errsink(type_erase(noop))->*[&]() -> void {
+    errsink(dynamic(noop))->*[&]() -> void {
       ++hits;
       throw ::std::runtime_error("x");
     };
     EXPECT(hits == 1);
   }
   {
-    const int x = errsink(type_erase(noop))->*[]() -> int {
+    const int x = errsink(dynamic(noop))->*[]() -> int {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 0);
   }
   // Metadata: const fields, derived at erasure time.
-  EXPECT(type_erase(retry * 3).kind() == exception_sink::answer_kind::own_result);
-  EXPECT(type_erase(subst(9)).kind() == exception_sink::answer_kind::integral);
-  EXPECT(type_erase(subst(1.5)).kind() == exception_sink::answer_kind::floating);
-  EXPECT(type_erase(noop).kind() == exception_sink::answer_kind::effects);
-  EXPECT((type_erase(translate<::std::runtime_error, ::std::logic_error>).kind() == exception_sink::answer_kind::dies));
-  EXPECT(type_erase(retry * 3).may_passthrough());
-  EXPECT(!type_erase(noop).may_passthrough());
+  EXPECT(dynamic(retry * 3).kind() == dynamic::answer_kind::own_result);
+  EXPECT(dynamic(subst(9)).kind() == dynamic::answer_kind::integral);
+  EXPECT(dynamic(subst(1.5)).kind() == dynamic::answer_kind::floating);
+  EXPECT(dynamic(noop).kind() == dynamic::answer_kind::effects);
+  EXPECT((dynamic(translate<::std::runtime_error, ::std::logic_error>).kind() == dynamic::answer_kind::dies));
+  EXPECT(dynamic(retry * 3).may_passthrough());
+  EXPECT(!dynamic(noop).may_passthrough());
   // Re-erasure: fwd composite; first-throw unbox is the backstop.
   {
-    const int x = errsink(type_erase(type_erase(subst(5))))->*[]() -> int {
+    const int x = errsink(dynamic(dynamic(subst(5))))->*[]() -> int {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 5);
@@ -6291,7 +6285,7 @@ UNITTEST("type erasure")
                 [] {
                   return true;
                 },
-                type_erase(subst(11))))
+                dynamic(subst(11))))
         ->*[]() -> int {
       throw ::std::runtime_error("x");
     };
@@ -6299,17 +6293,17 @@ UNITTEST("type erasure")
   }
   // The success path delivers the callable's result, unboxed to the same type.
   {
-    const int x = errsink(type_erase(subst(1)))->*[]() -> int {
+    const int x = errsink(dynamic(subst(1)))->*[]() -> int {
       return 30; // no throw
     };
     EXPECT(x == 30);
   }
   // A custom model derived from the public sink_base defaults to fwd/unchecked.
   {
-    struct halving_sink final : exception_sink::sink_base
+    struct halving_sink final : dynamic::sink_base
     {
       halving_sink()
-          : sink_base(exception_sink::answer_kind::own_result, false)
+          : sink_base(dynamic::answer_kind::own_result, false)
       {}
       sink_base* clone() const override
       {
@@ -6320,13 +6314,13 @@ UNITTEST("type erasure")
         return ::std::any(21);
       }
     };
-    const exception_sink custom{::std::unique_ptr<exception_sink::sink_base>(new halving_sink())};
+    const dynamic custom{::std::unique_ptr<dynamic::sink_base>(new halving_sink())};
     const int x = errsink(custom)->*[]() -> int {
       throw ::std::runtime_error("x");
     };
     EXPECT(x == 21);
     EXPECT(!custom.may_passthrough());
-    EXPECT(custom.kind() == exception_sink::answer_kind::own_result);
+    EXPECT(custom.kind() == dynamic::answer_kind::own_result);
   }
 
   // The fwd backstop applies the conversion law per VALUE at first throw. Only
@@ -6335,12 +6329,12 @@ UNITTEST("type erasure")
   {
     // A stored int that FITS the unsigned body converts.
     const unsigned x =
-      errsink(type_erase(when(
-                           [] {
-                             return true;
-                           },
-                           subst(7))
-                         | subst(0u)))
+      errsink(dynamic(when(
+                        [] {
+                          return true;
+                        },
+                        subst(7))
+                      | subst(0u)))
         ->*[]() -> unsigned {
       throw ::std::runtime_error("x");
     };
@@ -6351,12 +6345,12 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      errsink(type_erase(when(
-                           [] {
-                             return true;
-                           },
-                           subst(-1))
-                         | subst(0)))
+      errsink(dynamic(when(
+                        [] {
+                          return true;
+                        },
+                        subst(-1))
+                      | subst(0)))
           ->*[]() -> unsigned {
         throw ::std::runtime_error("x");
       };
@@ -6372,12 +6366,12 @@ UNITTEST("type erasure")
     bool failed = false;
     try
     {
-      errsink(type_erase(when(
-                           [] {
-                             return true;
-                           },
-                           subst(1.5))
-                         | subst(0)))
+      errsink(dynamic(when(
+                        [] {
+                          return true;
+                        },
+                        subst(1.5))
+                      | subst(0)))
           ->*[]() -> int {
         throw ::std::runtime_error("x");
       };
@@ -6394,8 +6388,8 @@ UNITTEST("type erasure")
   //       -> "as_expected requires the callable to return a cuda::std::expected instantiation"
   //  2. a policy whose on_success returns a different type than decltype(fn());
   //       -> "a policy's on_success must preserve the expression type; policies no longer own it (SPEC-ADDENDUM-7)"
-  //  3. errsink(type_erase(subst(1))) ->* []() -> int& { static int x = 0; return x; };
-  //       -> "exception_sink cannot serve a reference-returning callable: std::any cannot carry references; use a
+  //  3. errsink(dynamic(subst(1))) ->* []() -> int& { static int x = 0; return x; };
+  //       -> "dynamic cannot serve a reference-returning callable: std::any cannot carry references; use a
   //       concrete policy, or return a pointer"
   //  4. errsink(subst(-1)) ->* []() -> unsigned { throw 0; };
   //       -> "the policy's answer does not preserve the callable's value range ...; write the conversion in the
