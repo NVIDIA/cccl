@@ -446,7 +446,7 @@ private:
     ::cuda::std::conditional_t<::cuda::std::is_pointer_v<InputIteratorT>,
                                CacheModifiedInputIterator<policy.load_modifier, input_value_t, OffsetT>,
                                InputIteratorT>;
-  using block_load_t       = BlockLoad<input_value_t, threads_per_block, items_per_thread, policy.load_algorithm>;
+  using block_load_t       = BlockLoad<AccumT, threads_per_block, items_per_thread, policy.load_algorithm>;
   using block_scan_t       = BlockScan<flag_value_t, threads_per_block, policy.scan_algorithm>;
   using block_store_t      = BlockStore<AccumT, threads_per_block, items_per_thread, policy.store_algorithm>;
   using block_count_scan_t = BlockScan<int, threads_per_block, policy.scan_algorithm>;
@@ -722,7 +722,7 @@ private:
     const bool gather        = !deltas.input_is_uniform;
     const bool needs_entries = gather || (has_output_deltas && !deltas.output_is_uniform);
     const OffsetT tile_start = element_index(tile_begin, tile_delta);
-    input_value_t values[items_per_thread];
+    AccumT values[items_per_thread];
     if (needs_entries)
     {
       block_count_scan_t(deltas.count_scan).InclusiveSum(head_counts, entries);
@@ -731,7 +731,7 @@ private:
     {
       const delta_t* input_deltas = deltas.input.Alias();
       // Pads the items past the end of a partial tile.
-      input_value_t filler{};
+      AccumT filler{};
       if ((static_cast<int>(threadIdx.x) + 1) * items_per_thread > valid_items)
       {
         filler = d_in[tile_start];
@@ -740,9 +740,11 @@ private:
       for (int item = 0; item < items_per_thread; ++item)
       {
         const int local_index = static_cast<int>(threadIdx.x) * items_per_thread + item;
-        values[item] = local_index < valid_items
-                       ? d_in[element_index(tile_begin + static_cast<work_t>(local_index), input_deltas[entries[item]])]
-                       : filler;
+        values[item] =
+          local_index < valid_items
+            ? static_cast<AccumT>(
+                d_in[element_index(tile_begin + static_cast<work_t>(local_index), input_deltas[entries[item]])])
+            : filler;
       }
     }
     else if (valid_items == items_per_tile)
@@ -829,7 +831,7 @@ private:
   {
     const int valid_items    = static_cast<int>(tile_end - tile_begin);
     const OffsetT tile_start = element_index(tile_begin, delta);
-    input_value_t values[items_per_thread];
+    AccumT values[items_per_thread];
 
     if (valid_items == items_per_tile)
     {
@@ -904,20 +906,14 @@ private:
       const work_t tile_end    = tile_begin + tile_size;
       const int valid_items    = static_cast<int>(tile_size);
       const OffsetT tile_start = element_index(tile_begin, delta);
-      input_value_t values[items_per_thread];
+      AccumT values[items_per_thread];
       AccumT tile_aggregate{};
       if (valid_items == items_per_tile)
       {
         block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
         __syncthreads();
 
-        AccumT items[items_per_thread];
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int item = 0; item < items_per_thread; ++item)
-        {
-          items[item] = values[item];
-        }
-        tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(items, scan_op);
+        tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(values, scan_op);
       }
       else
       {
@@ -931,7 +927,7 @@ private:
         {
           if (item < thread_items)
           {
-            partial = scan_op(partial, static_cast<AccumT>(values[item]));
+            partial = scan_op(partial, values[item]);
           }
         }
         const int valid_threads = (valid_items + items_per_thread - 1) / items_per_thread;
