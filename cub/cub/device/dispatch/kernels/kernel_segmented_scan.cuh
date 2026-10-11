@@ -722,7 +722,8 @@ private:
     const walk_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
     const walk_offset_t thread_begin =
       tile_begin + static_cast<walk_offset_t>(static_cast<int>(threadIdx.x) * items_per_thread);
-    OffsetT index{};
+    // Unsigned, as the items past the block's end are stepped over too.
+    walk_offset_t index{};
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
@@ -743,13 +744,13 @@ private:
         }
         const walk_offset_t segment_begin =
           segment == 0 ? walk_offset_t{0} : temp_storage.logical_segment_offsets[segment - 1];
-        index = static_cast<OffsetT>(begin_idx_it[segment]) + static_cast<OffsetT>(position - segment_begin);
+        index = static_cast<walk_offset_t>(static_cast<OffsetT>(begin_idx_it[segment])) + (position - segment_begin);
       }
       else
       {
         ++index;
       }
-      indices[item] = index;
+      indices[item] = static_cast<OffsetT>(index);
     }
   }
 
