@@ -1681,7 +1681,7 @@ public:
   //! `fwd`, propagates it with its type intact; `abort` reports and ends the program, which
   //! is what the RAII scopes pass since they call pop() from a destructor; `notify` reports and
   //! lets the program continue. See exception_policy.cuh for the full set.
-  template <typename Policy = eh::fwd_t>
+  template <typename Policy = sump::fwd_t>
   void pop(Policy policy = {})
   {
     pimpl->pop(policy);
@@ -1711,7 +1711,7 @@ public:
   //! context, and destroys the node. Invalidates every launchable_graph_handle
   //! that was produced by the matching pop_prologue(). Completes even if a step
   //! fails, then hands the first failure to `policy`; see the contract on pop().
-  template <typename Policy = eh::fwd_t>
+  template <typename Policy = sump::fwd_t>
   void pop_epilogue(Policy policy = {})
   {
     pimpl->pop_epilogue_impl(policy);

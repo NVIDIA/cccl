@@ -22,7 +22,7 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
-  const int v = errsink(eh::subst(1) & eh::notify)->*[]() -> int {
+  const int v = errsink(sump::subst(1) & sump::notify)->*[]() -> int {
     throw ::std::runtime_error("x");
   };
   return v;

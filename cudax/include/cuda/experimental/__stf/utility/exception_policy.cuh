@@ -155,7 +155,7 @@ struct status_traits;
  * whoever opens all of std wants its literals, while whoever opens stf is exactly who
  * this namespace protects from the policy vocabulary.
  */
-namespace eh
+namespace sump
 {
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
@@ -406,13 +406,13 @@ effect_t<::cuda::std::decay_t<_F>> effect(_F&& __f)
 /**
  * @brief Reporting ending: report through `notify`, then `std::abort`. Usable as
  * `errsink(abort) ->* callable`. The policy acts through its hook only; it has no bare-call
- * form, so `eh::abort()` as a plain statement does not compile. Ending a
+ * form, so `sump::abort()` as a plain statement does not compile. Ending a
  * program directly remains `std::abort()`.
  *
  * Inside `sump`, plain `abort` finds this object before the C library's function.
  * Code that sees both through using-directives gets an ambiguity error rather than a silent
  * pick, and disambiguates with a using-declaration:
- * `using cuda::experimental::stf::eh::abort;`. A block-scope using-declaration
+ * `using cuda::experimental::stf::sump::abort;`. A block-scope using-declaration
  * still hides `::abort`.
  *
  * `notify & abort` reports twice (documented). `abort | p` is a dead-| error (hook is
@@ -3433,7 +3433,7 @@ auto if_equal(const _Status __first, const _More... __more)
  * @brief The exception channel, as a selector or as a conversion.
  *
  * Given a policy, `thrown(p)` applies `p` to exceptions only and forwards a failing status.
- * For a callable that can fail both ways, it pairs with @ref eh::returned "returned", as in
+ * For a callable that can fail both ways, it pairs with @ref sump::returned "returned", as in
  * `returned(subst(cudaSuccess)) | thrown(notify & fwd)`. Such a policy is built for that
  * callable: on a bare status operand the `thrown` arm can never match, which is a compile error
  * (a type selector on a status), so the same policy variable cannot be reused there.
@@ -4366,13 +4366,13 @@ public:
     static_cast<void>(__p_->on_success());
   }
 };
-} // namespace eh
+} // namespace sump
 
 // The abort tripwire that once lived at this spot is retired. It caught bare abort() calls
 // during the migration of the policy vocabulary into eh, when such calls
 // could silently rebind; with the policies in a non-inline namespace, a bare abort() in
 // this scope can only mean ::abort, which is what callers expect. Policy uses spell
-// eh::abort (or arrive through ON_THROW, which injects the namespace for
+// sump::abort (or arrive through ON_THROW, which injects the namespace for
 // the policy expression only).
 
 /**
@@ -4405,13 +4405,13 @@ public:
  * `(const std::exception*, source_location, Fn&)` whose return value is its answer on the throw
  * path (the callable may be re-invoked by policies like `retry`; most policies ignore it), and
  * a success hook `on_success(...)` that observes the result while preserving its type. The named policies
- * include @ref eh::notify_t "notify", @ref eh::subst_t "subst", @ref eh::defer_t "defer",
- * @ref eh::fwd_t "fwd", @ref eh::unwind_t "unwind", @ref eh::retry_t "retry",
- * @ref eh::as_expected_t "as_expected", @ref eh::noop_t "noop", @ref eh::if_isa,
- * @ref eh::if_monomorphic, @ref eh::if_equal, @ref eh::thrown, @ref eh::returned,
- * @ref eh::when "when", @ref eh::translate_t "translate" / @ref eh::nest,
- * @ref eh::delay_t "delay", @ref eh::backoff, @ref eh::remember_t "remember",
- * @ref eh::circuit_breaker_t "circuit_breaker", and @ref eh::always. Guards forward what they
+ * include @ref sump::notify_t "notify", @ref sump::subst_t "subst", @ref sump::defer_t "defer",
+ * @ref sump::fwd_t "fwd", @ref sump::unwind_t "unwind", @ref sump::retry_t "retry",
+ * @ref sump::as_expected_t "as_expected", @ref sump::noop_t "noop", @ref sump::if_isa,
+ * @ref sump::if_monomorphic, @ref sump::if_equal, @ref sump::thrown, @ref sump::returned,
+ * @ref sump::when "when", @ref sump::translate_t "translate" / @ref sump::nest,
+ * @ref sump::delay_t "delay", @ref sump::backoff, @ref sump::remember_t "remember",
+ * @ref sump::circuit_breaker_t "circuit_breaker", and @ref sump::always. Guards forward what they
  * do not claim; translators forward with a different exception; delay/backoff/retry re-run; remember serves the last
  * success. Policies compose with `&` (sequence; the last element answers; non-final answers are
  * discarded) and `|` (alternation; the left may forward by throwing), and with `*` (n-fold
@@ -4474,10 +4474,10 @@ template <class _Reaction>
 auto errsink(_Reaction&& __reaction,
              const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
-  return eh::detail::__on_throw_policy{eh::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
+  return sump::detail::__on_throw_policy{sump::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
 }
 
-namespace eh
+namespace sump
 {
 /**
  * @brief `errsink` under its name inside the policy vocabulary: with
@@ -4494,7 +4494,7 @@ auto sink(_Reaction&& __reaction,
 {
   return errsink(::cuda::std::forward<_Reaction>(__reaction), __loc);
 }
-} // namespace eh
+} // namespace sump
 
 #ifdef ON_THROW
 #  error "CUDASTF's exception_policy.cuh defines ON_THROW; rename the prior definition"
@@ -4518,8 +4518,8 @@ auto sink(_Reaction&& __reaction,
 #define ON_THROW(...)                                       \
   [&] {                                                     \
     using namespace ::cuda::experimental::stf::sump;        \
-    using ::cuda::experimental::stf::eh::abort;             \
-    using ::cuda::experimental::stf::eh::terminate;         \
+    using ::cuda::experimental::stf::sump::abort;           \
+    using ::cuda::experimental::stf::sump::terminate;       \
     return ::cuda::experimental::stf::errsink(__VA_ARGS__); \
   }()                                                       \
       ->*[&]()
@@ -4535,7 +4535,7 @@ auto sink(_Reaction&& __reaction,
  * `if (e) errsink(policy) ->* [&] { std::rethrow_exception(e); };`. Later failures are dropped;
  * in practice they are echoes of the first (an asynchronous CUDA fault surfaces again at every
  * later synchronize). `|=` reads as the algebra's `|`: first claim, the left operand keeps its
- * failure if it has one. Implemented on @ref eh::defer_t "defer", so it
+ * failure if it has one. Implemented on @ref sump::defer_t "defer", so it
  * inherits the header's behaviour when exceptions are disabled. Nothing is allocated unless a
  * step fails.
  *
@@ -4547,7 +4547,7 @@ auto sink(_Reaction&& __reaction,
 template <class _Fn, ::cuda::std::enable_if_t<::cuda::std::is_invocable_v<_Fn&>, int> = 0>
 ::std::exception_ptr& operator|=(::std::exception_ptr& __first, _Fn&& __step) noexcept
 {
-  ::std::exception_ptr __e = errsink(eh::defer)->*[&]() -> ::std::exception_ptr {
+  ::std::exception_ptr __e = errsink(sump::defer)->*[&]() -> ::std::exception_ptr {
     __step();
     return {};
   };
@@ -4585,7 +4585,7 @@ UNITTEST("exception_ptr |= step")
   EXPECT(rethrown);
   // The policy algebra decides the terminal action: here, report and resume.
   ::std::ostringstream log;
-  errsink(eh::notify(log))->*[&] {
+  errsink(sump::notify(log))->*[&] {
     ::std::rethrow_exception(e);
   };
   EXPECT(log.str().find("first") != ::std::string::npos);
@@ -4709,7 +4709,7 @@ UNITTEST("circuit_breaker")
 };
 
 // Negative-compile expectations (do not compile; kept as comments near the code they guard):
-//  - eh::abort();                  // the policy has no bare-call form; hooks only
+//  - sump::abort();                  // the policy has no bare-call form; hooks only
 //  - errsink(abort & notify) ->* [] {};            // "policies after a never-returning policy are unreachable"
 //  - errsink(notify) ->* []() noexcept {};         // existing rule, unchanged message
 //  - errsink(notify & subst(42)) ->* []() -> int& {...}; // reference result vs owned substitution (existing rule)
@@ -4801,7 +4801,7 @@ UNITTEST("errsink")
   //! [errsink]
   // The C library also declares ::abort, so under a using-directive the typed one is picked
   // by name; qualifying every use works as well.
-  using cuda::experimental::stf::eh::abort;
+  using cuda::experimental::stf::sump::abort;
   int value = 0;
   errsink(abort)->*[&] {
     value = 42; // would report and abort the application if this code threw
@@ -5188,10 +5188,10 @@ UNITTEST("policy algebra")
   static_assert(::cuda::std::is_same_v<decltype(subst(1) | fwd), decltype(subst(1))>, "fwd is eliminated on the right");
 
   // noop & abort eliminates to abort itself -- no adapter in the type.
-  static_assert(::cuda::std::is_same_v<decltype(noop & eh::abort), abort_t>,
+  static_assert(::cuda::std::is_same_v<decltype(noop & sump::abort), abort_t>,
                 "abort is a policy; elimination returns it bare");
   {
-    using cuda::experimental::stf::eh::abort; // block-scope: hides ::abort
+    using cuda::experimental::stf::sump::abort; // block-scope: hides ::abort
     const int kept = errsink(noop & abort)->*[] {
       return 11;
     };
@@ -6617,7 +6617,7 @@ void invoke_nothrow(F& f, ::cuda::std::source_location loc, bool failing = false
   // The body may throw; that is what the abort policy is for. In clang-tidy's device pass the policy's
   // catch is erased, so the check sees the throw escape this noexcept function.
   // NOLINTNEXTLINE(bugprone-exception-escape)
-  errsink(eh::abort, loc)->*[&] {
+  errsink(sump::abort, loc)->*[&] {
     invoke_body(f, failing);
   };
 }
@@ -6990,7 +6990,7 @@ UNITTEST("error sinks: & stops at the first fwd on both channels")
 UNITTEST("error sinks: status traits")
 {
   using namespace cuda::experimental::stf;
-  namespace pd = cuda::experimental::stf::eh::detail;
+  namespace pd = cuda::experimental::stf::sump::detail;
   static_assert(pd::__is_status_v<cudaError_t>);
   static_assert(pd::__is_status_v<CUresult>);
   static_assert(!pd::__is_status_v<int>, "a raw integer is never a status");
