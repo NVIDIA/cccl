@@ -429,7 +429,7 @@ struct abort_t
   [[noreturn]] nullval
   on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
   {
-    notify(__exception, __loc, __fn);
+    notify.on_thrown(__exception, __loc, __fn);
     ::std::abort();
   }
 
@@ -455,7 +455,7 @@ struct terminate_t
   [[noreturn]] nullval
   on_thrown(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn) const noexcept
   {
-    notify(__exception, __loc, __fn);
+    notify.on_thrown(__exception, __loc, __fn);
     ::std::terminate();
   }
 
