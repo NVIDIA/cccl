@@ -26,7 +26,6 @@
 #include <thrust/scan.h>
 #include <thrust/set_operations.h>
 #include <thrust/unique.h>
-#include <thrust/universal_vector.h>
 
 #include <cuda/std/type_traits>
 
@@ -169,7 +168,7 @@ TEST_CASE("WrappedFunctionExplicitResultConversion", "[wrapped_function]")
 
 TEST_CASE("SequentialFindIfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   // Use thrust::seq to force sequential backend
   const auto result = thrust::find_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
@@ -178,7 +177,7 @@ TEST_CASE("SequentialFindIfProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialForEachProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f};
 
   // Validates type conversion for for_each
   thrust::for_each(thrust::seq, vec.begin(), vec.end(), double_negate{});
@@ -186,7 +185,7 @@ TEST_CASE("SequentialForEachProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialForEachNProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f};
 
   const auto result = thrust::for_each_n(thrust::seq, vec.begin(), 3, double_negate{});
   CHECK(result == vec.end());
@@ -194,7 +193,7 @@ TEST_CASE("SequentialForEachNProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialMinElementProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
+  thrust::device_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
 
   const auto result = thrust::min_element(thrust::seq, vec.begin(), vec.end(), double_less{});
   CHECK(result - vec.begin() == 1);
@@ -202,7 +201,7 @@ TEST_CASE("SequentialMinElementProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialMaxElementProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
+  thrust::device_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
 
   const auto result = thrust::max_element(thrust::seq, vec.begin(), vec.end(), double_less{});
   CHECK(result - vec.begin() == 3);
@@ -210,7 +209,7 @@ TEST_CASE("SequentialMaxElementProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialMinmaxElementProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
+  thrust::device_vector<float> vec{3.0f, 1.0f, 2.0f, 5.0f, 4.0f};
 
   const auto result = thrust::minmax_element(thrust::seq, vec.begin(), vec.end(), double_less{});
   CHECK(result.first - vec.begin() == 1);
@@ -219,7 +218,7 @@ TEST_CASE("SequentialMinmaxElementProxyReference", "[sequential][proxy_reference
 
 TEST_CASE("SequentialLowerBoundProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   const auto result = thrust::lower_bound(thrust::seq, vec.begin(), vec.end(), 3.0f, double_less{});
   CHECK(result - vec.begin() == 2);
@@ -227,7 +226,7 @@ TEST_CASE("SequentialLowerBoundProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialUpperBoundProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   const auto result = thrust::upper_bound(thrust::seq, vec.begin(), vec.end(), 3.0f, double_less{});
   CHECK(result - vec.begin() == 3);
@@ -235,7 +234,7 @@ TEST_CASE("SequentialUpperBoundProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialRemoveIfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   const auto new_end = thrust::remove_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(new_end - vec.begin() == 2);
@@ -245,7 +244,7 @@ TEST_CASE("SequentialRemoveIfProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialUniqueProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
+  thrust::device_vector<float> vec{1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
 
   const auto new_end = thrust::unique(thrust::seq, vec.begin(), vec.end(), double_equal{});
   CHECK(new_end - vec.begin() == 3);
@@ -253,8 +252,8 @@ TEST_CASE("SequentialUniqueProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialUniqueCopyProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
-  thrust::universal_vector<float> output(5);
+  thrust::device_vector<float> input{1.0f, 1.0f, 2.0f, 2.0f, 3.0f};
+  thrust::device_vector<float> output(5);
 
   const auto new_end = thrust::unique_copy(thrust::seq, input.begin(), input.end(), output.begin(), double_equal{});
   CHECK(new_end - output.begin() == 3);
@@ -265,9 +264,9 @@ TEST_CASE("SequentialUniqueCopyProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialMergeProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> a{1.0f, 3.0f, 5.0f};
-  thrust::universal_vector<float> b{2.0f, 4.0f, 6.0f};
-  thrust::universal_vector<float> out(6);
+  thrust::device_vector<float> a{1.0f, 3.0f, 5.0f};
+  thrust::device_vector<float> b{2.0f, 4.0f, 6.0f};
+  thrust::device_vector<float> out(6);
 
   thrust::merge(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
 
@@ -281,9 +280,9 @@ TEST_CASE("SequentialMergeProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialSetDifferenceProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> a{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-  thrust::universal_vector<float> b{2.0f, 4.0f};
-  thrust::universal_vector<float> out(5);
+  thrust::device_vector<float> a{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> b{2.0f, 4.0f};
+  thrust::device_vector<float> out(5);
 
   const auto new_end =
     thrust::set_difference(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
@@ -295,9 +294,9 @@ TEST_CASE("SequentialSetDifferenceProxyReference", "[sequential][proxy_reference
 
 TEST_CASE("SequentialSetIntersectionProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> a{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-  thrust::universal_vector<float> b{2.0f, 4.0f, 6.0f};
-  thrust::universal_vector<float> out(5);
+  thrust::device_vector<float> a{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> b{2.0f, 4.0f, 6.0f};
+  thrust::device_vector<float> out(5);
 
   const auto new_end =
     thrust::set_intersection(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
@@ -308,9 +307,9 @@ TEST_CASE("SequentialSetIntersectionProxyReference", "[sequential][proxy_referen
 
 TEST_CASE("SequentialSetUnionProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> a{1.0f, 3.0f, 5.0f};
-  thrust::universal_vector<float> b{2.0f, 3.0f, 4.0f};
-  thrust::universal_vector<float> out(6);
+  thrust::device_vector<float> a{1.0f, 3.0f, 5.0f};
+  thrust::device_vector<float> b{2.0f, 3.0f, 4.0f};
+  thrust::device_vector<float> out(6);
 
   const auto new_end =
     thrust::set_union(thrust::seq, a.begin(), a.end(), b.begin(), b.end(), out.begin(), double_less{});
@@ -324,8 +323,8 @@ TEST_CASE("SequentialSetUnionProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialRemoveCopyIfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-  thrust::universal_vector<float> output(5);
+  thrust::device_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> output(5);
 
   const auto new_end =
     thrust::remove_copy_if(thrust::seq, input.begin(), input.end(), output.begin(), double_greater_than_two{});
@@ -336,8 +335,8 @@ TEST_CASE("SequentialRemoveCopyIfProxyReference", "[sequential][proxy_reference]
 
 TEST_CASE("SequentialAdjacentDifferenceProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 4.0f, 9.0f, 16.0f};
-  thrust::universal_vector<float> output(4);
+  thrust::device_vector<float> input{1.0f, 4.0f, 9.0f, 16.0f};
+  thrust::device_vector<float> output(4);
 
   const auto result =
     thrust::adjacent_difference(thrust::seq, input.begin(), input.end(), output.begin(), double_minus{});
@@ -350,7 +349,7 @@ TEST_CASE("SequentialAdjacentDifferenceProxyReference", "[sequential][proxy_refe
 
 TEST_CASE("SequentialReduceProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f};
 
   const float result = thrust::reduce(thrust::seq, vec.begin(), vec.end(), 0.0f, double_plus{});
   CHECK(result == 10.0f);
@@ -358,8 +357,8 @@ TEST_CASE("SequentialReduceProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialInclusiveScanProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f};
-  thrust::universal_vector<float> output(4);
+  thrust::device_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f};
+  thrust::device_vector<float> output(4);
 
   thrust::inclusive_scan(thrust::seq, input.begin(), input.end(), output.begin(), double_plus{});
   CHECK(output[0] == 1.0f);
@@ -370,8 +369,8 @@ TEST_CASE("SequentialInclusiveScanProxyReference", "[sequential][proxy_reference
 
 TEST_CASE("SequentialExclusiveScanProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f};
-  thrust::universal_vector<float> output(4);
+  thrust::device_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f};
+  thrust::device_vector<float> output(4);
 
   thrust::exclusive_scan(thrust::seq, input.begin(), input.end(), output.begin(), 0.0f, double_plus{});
   CHECK(output[0] == 0.0f);
@@ -382,9 +381,9 @@ TEST_CASE("SequentialExclusiveScanProxyReference", "[sequential][proxy_reference
 
 TEST_CASE("SequentialStablePartitionCopyProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-  thrust::universal_vector<float> out_true(5);
-  thrust::universal_vector<float> out_false(5);
+  thrust::device_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> out_true(5);
+  thrust::device_vector<float> out_false(5);
 
   const auto result = thrust::stable_partition_copy(
     thrust::seq, input.begin(), input.end(), out_true.begin(), out_false.begin(), double_greater_than_two{});
@@ -401,7 +400,7 @@ TEST_CASE("SequentialStablePartitionCopyProxyReference", "[sequential][proxy_ref
 
 TEST_CASE("SequentialPartitionProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 3.0f, 2.0f, 5.0f, 4.0f};
+  thrust::device_vector<float> vec{1.0f, 3.0f, 2.0f, 5.0f, 4.0f};
 
   const auto mid = thrust::partition(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(mid - vec.begin() == 3);
@@ -418,8 +417,8 @@ TEST_CASE("SequentialPartitionProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialInclusiveScanWithInitProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f};
-  thrust::universal_vector<float> output(4);
+  thrust::device_vector<float> input{1.0f, 2.0f, 3.0f, 4.0f};
+  thrust::device_vector<float> output(4);
 
   thrust::inclusive_scan(thrust::seq, input.begin(), input.end(), output.begin(), 10.0f, double_plus{});
   CHECK(output[0] == 11.0f); // 10 + 1
@@ -430,7 +429,7 @@ TEST_CASE("SequentialInclusiveScanWithInitProxyReference", "[sequential][proxy_r
 
 TEST_CASE("SequentialCountIfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
 
   const auto n = thrust::count_if(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{});
   CHECK(n == 3);
@@ -438,21 +437,21 @@ TEST_CASE("SequentialCountIfProxyReference", "[sequential][proxy_reference]")
 
 TEST_CASE("SequentialAllOfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{3.0f, 4.0f, 5.0f};
+  thrust::device_vector<float> vec{3.0f, 4.0f, 5.0f};
 
   CHECK(thrust::all_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
 }
 
 TEST_CASE("SequentialAnyOfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f, 3.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f, 3.0f};
 
   CHECK(thrust::any_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
 }
 
 TEST_CASE("SequentialNoneOfProxyReference", "[sequential][proxy_reference]")
 {
-  thrust::universal_vector<float> vec{1.0f, 2.0f};
+  thrust::device_vector<float> vec{1.0f, 2.0f};
 
   CHECK(thrust::none_of(thrust::seq, vec.begin(), vec.end(), double_greater_than_two{}));
 }
