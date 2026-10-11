@@ -1617,7 +1617,6 @@ using __exception_hook_of = typename __exception_hook_impl<_P, _Fn>::type;
 template <class _P, class _Fn = void (&)()>
 inline constexpr bool __has_exception_hook =
   ::cuda::std::_IsValidExpansion<__exception_hook_of, ::cuda::std::remove_reference_t<_P>, _Fn>::value;
-}
 
 template <class _P, class _Fn = void (&)()>
 using __hook_answer_t = __exception_hook_of<::cuda::std::remove_reference_t<_P>, _Fn>;
