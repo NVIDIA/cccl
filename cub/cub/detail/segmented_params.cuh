@@ -289,46 +289,46 @@ using bounded_offset_t =
 // Both compilation passes then name the same kernel. On unaffected toolkits this only makes `constant<int64_t{384}>`
 // and `constant<384>` select the same 32-bit kernel instead of two different ones.
 
-template <auto _Value>
+template <auto Value>
 using __static_value_type_t = ::cuda::std::conditional_t<
-  ::cuda::std::in_range<::cuda::std::int32_t>(_Value),
+  ::cuda::std::in_range<::cuda::std::int32_t>(Value),
   ::cuda::std::int32_t,
   ::cuda::std::
-    conditional_t<::cuda::std::in_range<::cuda::std::int64_t>(_Value), ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
+    conditional_t<::cuda::std::in_range<::cuda::std::int64_t>(Value), ::cuda::std::int64_t, ::cuda::std::uint64_t>>;
 
-template <class _ElementT, class _StaticBounds>
+template <class ElementT, class StaticBounds>
 struct __retype_static_bounds
 {
-  using type = _StaticBounds; // no_bounds
+  using type = StaticBounds; // no_bounds
 };
 
-template <class _ElementT, auto _Lowest, auto _Highest>
-struct __retype_static_bounds<_ElementT, ::cuda::args::static_bounds<_Lowest, _Highest>>
+template <class ElementT, auto Lowest, auto Highest>
+struct __retype_static_bounds<ElementT, ::cuda::args::static_bounds<Lowest, Highest>>
 {
-  using type = ::cuda::args::static_bounds<static_cast<_ElementT>(_Lowest), static_cast<_ElementT>(_Highest)>;
+  using type = ::cuda::args::static_bounds<static_cast<ElementT>(Lowest), static_cast<ElementT>(Highest)>;
 };
 
-template <class _ElementT, class _StaticBounds>
-using __retype_static_bounds_t = typename __retype_static_bounds<_ElementT, _StaticBounds>::type;
+template <class ElementT, class StaticBounds>
+using __retype_static_bounds_t = typename __retype_static_bounds<ElementT, StaticBounds>::type;
 
 //! @brief Plain values carry no `auto` NTTP and pass through unchanged.
-_CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<_Tp>>) )
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::remove_cvref_t<_Tp> normalize_param(_Tp&& __arg) noexcept
+_CCCL_TEMPLATE(class Tp)
+_CCCL_REQUIRES((!::cuda::args::__is_wrapper_v<::cuda::std::remove_cvref_t<Tp>>) )
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr ::cuda::std::remove_cvref_t<Tp> normalize_param(Tp&& __arg) noexcept
 {
-  return ::cuda::std::forward<_Tp>(__arg);
+  return ::cuda::std::forward<Tp>(__arg);
 }
 
 //! @brief Compile-time constants: integer values are re-wrapped with a value-chosen element type. Everything else
 //! (enumerators, pointers) already spells its type in any constant expression and is kept as is.
-template <auto _Value, class _Tp>
+template <auto Value, class Tp>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-normalize_param([[maybe_unused]] ::cuda::args::constant<_Value, _Tp> __arg) noexcept
+normalize_param([[maybe_unused]] ::cuda::args::constant<Value, Tp> __arg) noexcept
 {
-  if constexpr (::cuda::std::__cccl_is_integer_v<::cuda::std::remove_cv_t<decltype(_Value)>>)
+  if constexpr (::cuda::std::__cccl_is_integer_v<::cuda::std::remove_cv_t<decltype(Value)>>)
   {
-    // For integral types, we discard the `_Tp` type and normalize the type based on the `_Value`'s value
-    return ::cuda::args::constant<static_cast<__static_value_type_t<_Value>>(_Value)>{};
+    // For integral types, we discard the `Tp` type and normalize the type based on the `Value`'s value
+    return ::cuda::args::constant<static_cast<__static_value_type_t<Value>>(Value)>{};
   }
   else
   {
@@ -336,44 +336,44 @@ normalize_param([[maybe_unused]] ::cuda::args::constant<_Value, _Tp> __arg) noex
   }
 }
 
-template <auto _Value>
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto normalize_param(::cuda::args::__constant_sequence<_Value> __arg) noexcept
+template <auto Value>
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto normalize_param(::cuda::args::__constant_sequence<Value> __arg) noexcept
 {
   return __arg;
 }
 
-template <class _Arg, class _StaticBounds>
+template <class Arg, class StaticBounds>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-normalize_param(const ::cuda::args::immediate<_Arg, _StaticBounds>& __arg) noexcept
+normalize_param(const ::cuda::args::immediate<Arg, StaticBounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
-  return ::cuda::args::immediate<_Arg, __bounds_t>{::cuda::args::__access::__arg(__arg)};
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
+  return ::cuda::args::immediate<Arg, __bounds_t>{::cuda::args::__access::__arg(__arg)};
 }
 
-template <class _Arg, class _StaticBounds>
+template <class Arg, class StaticBounds>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-normalize_param(const ::cuda::args::__immediate_sequence<_Arg, _StaticBounds>& __arg) noexcept
+normalize_param(const ::cuda::args::__immediate_sequence<Arg, StaticBounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
-  return ::cuda::args::__immediate_sequence<_Arg, __bounds_t>{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
+  return ::cuda::args::__immediate_sequence<Arg, __bounds_t>{
     ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
 }
 
-template <class _Arg, class _StaticBounds>
+template <class Arg, class StaticBounds>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-normalize_param(const ::cuda::args::deferred<_Arg, _StaticBounds>& __arg) noexcept
+normalize_param(const ::cuda::args::deferred<Arg, StaticBounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
-  return ::cuda::args::deferred<_Arg, __bounds_t>{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
+  return ::cuda::args::deferred<Arg, __bounds_t>{
     ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
 }
 
-template <class _Arg, class _StaticBounds>
+template <class Arg, class StaticBounds>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
-normalize_param(const ::cuda::args::deferred_sequence<_Arg, _StaticBounds>& __arg) noexcept
+normalize_param(const ::cuda::args::deferred_sequence<Arg, StaticBounds>& __arg) noexcept
 {
-  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<_Arg>, _StaticBounds>;
-  return ::cuda::args::deferred_sequence<_Arg, __bounds_t>{
+  using __bounds_t = __retype_static_bounds_t<::cuda::args::__element_type_of_t<Arg>, StaticBounds>;
+  return ::cuda::args::deferred_sequence<Arg, __bounds_t>{
     ::cuda::args::__access::__arg(__arg), ::cuda::args::__access::__runtime_bounds(__arg)};
 }
 

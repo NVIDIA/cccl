@@ -120,7 +120,11 @@ CUB_TEST("cub::detail::params::normalize_param re-types static bounds with the w
   // wrapped argument (`int` for both wrappers below).
   using wide_bounds_t  = cuda::args::static_bounds<i64{0}, i64{100}>;
   using plain_bounds_t = cuda::args::static_bounds<0, 100>;
+  // GCC 7 identifies a specialization by the values of its `auto` non-type template arguments alone, so it already
+  // treats the two spellings as one type (GCC bug 79092, fixed in GCC 8).
+#if !_CCCL_COMPILER(GCC, <, 8)
   STATIC_REQUIRE(!cuda::std::is_same_v<wide_bounds_t, plain_bounds_t>);
+#endif // !_CCCL_COMPILER(GCC, <, 8)
 
   STATIC_REQUIRE(cuda::std::is_same_v<normalized_t<cuda::args::immediate<int, wide_bounds_t>>,
                                       cuda::args::immediate<int, plain_bounds_t>>);
@@ -196,16 +200,17 @@ template <class ParamT>
 
 // Two functions must name the same specialization from a local `constexpr` int64_t, and they must stay separate
 // functions: cudafe++ re-emits the argument correctly for the function that *first* names the specialization and as
-// the untyped initializer for every other one, so a single call site never fails. Keep both.
+// the untyped initializer for every other one, so a single call site never fails. Keep both. `segment_size` is
+// referenced only as a template argument, which MSVC (C4189) and NVHPC do not count as a use.
 [[nodiscard]] cudaError_t launch_from_first_naming(i64* d_result)
 {
-  constexpr i64 segment_size = 384;
+  [[maybe_unused]] constexpr i64 segment_size = 384;
   return launch_with_param(cub::detail::params::normalize_param(cuda::args::constant<segment_size>{}), d_result);
 }
 
 [[nodiscard]] cudaError_t launch_from_second_naming(i64* d_result)
 {
-  constexpr i64 segment_size = 384;
+  [[maybe_unused]] constexpr i64 segment_size = 384;
   return launch_with_param(cub::detail::params::normalize_param(cuda::args::constant<segment_size>{}), d_result);
 }
 

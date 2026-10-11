@@ -949,7 +949,9 @@ template <typename PolicySelector>
 // Internal entry point: the single dispatch that replaces the standalone baseline / cluster dispatches. It resolves the
 // runtime compute capability, then uses `dispatch_compute_cap` to pick, per architecture, the backend chosen by the
 // resolved policy selector (deterministic -> cluster; otherwise the arch+size crossover). Both host arms launch the
-// same kernel symbol. `Determinism`/`TieBreak` are compile-time selection inputs.
+// same kernel symbol. `Determinism`/`TieBreak` are compile-time selection inputs. Called by `dispatch` with the
+// annotated parameters already normalized (see `params::normalize_param`), so the wrapper types that reach the kernel
+// are identical in both nvcc compilation passes.
 //
 // `tuning_env` carries an optional `tune`d policy selector (keyed on `topk_policy`): when present it fully replaces the
 // automatic selector -- its `.backend` chooses the arm and its `.baseline`/`.cluster` carry the tunings. Matching
