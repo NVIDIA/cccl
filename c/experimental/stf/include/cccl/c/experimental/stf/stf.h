@@ -84,7 +84,7 @@ extern "C" {
 //!
 //! Specifies how a task will access logical data, which determines
 //! synchronization requirements and concurrency opportunities.
-typedef enum stf_access_mode
+typedef enum stf_access_mode // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_NONE  = 0, //!< No access (invalid)
   STF_READ  = 1 << 0, //!< Read-only access - allows concurrent readers
@@ -323,7 +323,7 @@ uint32_t stf_locality_domain_count(int dev_id);
 //!   left out of the partition.
 //! - FINE: all of the domain's SMs at the finest co-scheduling granularity.
 //!   Strictly domain-affine, at the cost of thread-block cluster launches.
-typedef enum stf_locality_domain_sm_split
+typedef enum stf_locality_domain_sm_split // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_LOCALITY_DOMAIN_SM_SPLIT_BACKFILL = 0,
   STF_LOCALITY_DOMAIN_SM_SPLIT_ALIGNED  = 1,
@@ -475,8 +475,23 @@ void* stf_data_place_allocate_nd(
 //! stf_cute_partition_destroy().
 typedef struct stf_cute_partition_opaque_t* stf_cute_partition_handle;
 
+//! \brief Statistics describing how a localized allocation (or a dry-run
+//! evaluation of one) distributes a tensor over data places.
+typedef struct stf_placement_stats
+{
+  uint64_t total_bytes; //!< requested payload size in bytes
+  uint64_t vm_bytes; //!< block-rounded virtual reservation size in bytes
+  uint64_t block_size; //!< placement granularity in bytes
+  uint64_t nblocks; //!< number of placement blocks
+  uint64_t nallocs; //!< physical allocations after merging same-owner runs
+  //! Fraction of bytes local to their owner once ownership is quantized to
+  //! placement blocks: exact for a structured partition resolved analytically,
+  //! a sampled estimate (\c probes per block) for an opaque mapper
+  double accuracy;
+} stf_placement_stats;
+
 //! \brief Per-dimension distribution policy (see stf_partition_dim_spec).
-typedef enum stf_dim_policy
+typedef enum stf_dim_policy // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_DIM_WHOLE        = 0, //!< dimension is not distributed
   STF_DIM_BLOCKED      = 1, //!< contiguous chunks of ceil(extent / places)
@@ -491,6 +506,47 @@ typedef struct stf_partition_dim_spec
   int mesh_axis; //!< grid axis this dimension distributes over (ignored for STF_DIM_WHOLE)
   uint64_t block; //!< block size (STF_DIM_BLOCK_CYCLIC only)
 } stf_partition_dim_spec;
+
+//! \brief Evaluate - without allocating - how a localized allocation would
+//! distribute a tensor over the places of a grid.
+//!
+//! Runs the exact same block-owner decision procedure as the allocation path
+//! and returns the resulting statistics, so a candidate mapping can be scored
+//! (and its parameters tuned) before committing memory.
+//!
+//! \param grid      Grid of execution places (must not be NULL)
+//! \param mapper    Partition function mapping element coordinates to a place
+//! \param data_dims Extents of the tensor (dimension 0 fastest; must not be NULL)
+//! \param elemsize  Size of one element in bytes
+//! \param probes    Samples per block for the majority vote (0 = default)
+//! \param block_size Placement granularity in bytes; 0 selects the allocation
+//!        granularity queried on device 0 when a device is present, assumed
+//!        uniform across the machine's devices (2 MiB otherwise)
+//! \param out_stats Filled with the resulting statistics (must not be NULL)
+//! \param bytes_per_grid_index Optional array of one entry per grid position
+//!        (length = product of the grid dims), filled with the bytes owned by
+//!        each position; pass NULL to skip
+//! \return 0 on success, non-zero on failure (diagnostic on stderr)
+int stf_placement_evaluate(
+  stf_exec_place_handle grid,
+  stf_get_executor_fn mapper,
+  const stf_dim4* data_dims,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index);
+
+//! \brief Variant of stf_placement_evaluate() for a structured partition.
+//! The tensor extents are the partition's true extents.
+int stf_placement_evaluate_partition(
+  stf_exec_place_handle grid,
+  stf_cute_partition_handle partition,
+  uint64_t elemsize,
+  uint64_t probes,
+  uint64_t block_size,
+  stf_placement_stats* out_stats,
+  uint64_t* bytes_per_grid_index);
 
 //! \brief Build a structured partition from a JAX-like per-dimension
 //! specification ("dimension 1, blocked over grid axis 0").
@@ -741,7 +797,7 @@ stf_async_resources_handle stf_async_resources_create(void);
 void stf_async_resources_destroy(stf_async_resources_handle h);
 
 //! \brief Backend selector for stf_ctx_create_ex()
-typedef enum stf_backend_kind
+typedef enum stf_backend_kind // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_BACKEND_STREAM = 0, //!< Default stream-backed backend (eager, same as stf_ctx_create())
   STF_BACKEND_GRAPH  = 1, //!< CUDA-graph-backed backend (same as stf_ctx_create_graph())
@@ -1675,7 +1731,7 @@ static inline cudaError_t stf_cuda_kernel_add_desc(
   const void** args)
 {
   CUfunction cufunc;
-  cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
+  const cudaError_t res = cudaGetFuncBySymbol(&cufunc, func);
   if (res != cudaSuccess)
   {
     return res;
@@ -2246,7 +2302,7 @@ stf_repeat_scope_handle stf_stackable_push_repeat(stf_ctx_handle ctx, size_t cou
 void stf_stackable_pop_repeat(stf_repeat_scope_handle scope);
 
 //! \brief Comparison operator for built-in while conditions.
-typedef enum stf_compare_op
+typedef enum stf_compare_op // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_CMP_GT = 0, //!< Greater than (>)
   STF_CMP_LT = 1, //!< Less than (<)
@@ -2255,7 +2311,7 @@ typedef enum stf_compare_op
 } stf_compare_op;
 
 //! \brief Scalar element type for \c stf_stackable_while_cond_scalar().
-typedef enum stf_dtype
+typedef enum stf_dtype // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_DTYPE_FLOAT32 = 0,
   STF_DTYPE_FLOAT64 = 1,
@@ -2287,7 +2343,7 @@ void stf_stackable_while_cond_scalar(
 #  define STF_WHILE_COND_MAX_TERMS 8
 
 //! \brief Combiner for multi-term while conditions.
-typedef enum stf_cond_combiner
+typedef enum stf_cond_combiner // NOLINT(cppcoreguidelines-use-enum-class)
 {
   STF_COND_ALL = 0, //!< Continue while every term holds (logical AND)
   STF_COND_ANY = 1, //!< Continue while at least one term holds (logical OR)

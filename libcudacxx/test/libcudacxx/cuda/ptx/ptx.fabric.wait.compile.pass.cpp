@@ -9,10 +9,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/fabric_wait.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/fabric_wait.h>
 
 #include "generated/fabric_wait.h"
 

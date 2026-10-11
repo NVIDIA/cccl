@@ -114,19 +114,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#else // CUB_DEBUG_LOG
-  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-      "%d items per thread\n",
-      active_policy.single_tile.threads_per_block,
-      (long long) stream,
-      active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeterministicDeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
   // Invoke single_reduce_sweep_kernel
   if (const auto error = CubDebug(
@@ -211,11 +200,11 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
 
   // A deferred problem size cannot be read on the host, so these defaults stand: the kernel consumes the whole
   // problem in a single launch with the worst-case grid, whose surplus blocks exit early.
-  int num_chunks           = 1;
-  int chunk_grid_size      = max_blocks;
-  int partial_chunk_size   = 0;
-  bool has_partial_chunk   = false;
-  int last_chunk_grid_size = max_blocks;
+  int num_chunks           = 1; // NOLINT(misc-const-correctness)
+  int chunk_grid_size      = max_blocks; // NOLINT(misc-const-correctness)
+  int partial_chunk_size   = 0; // NOLINT(misc-const-correctness)
+  bool has_partial_chunk   = false; // NOLINT(misc-const-correctness)
+  int last_chunk_grid_size = max_blocks; // NOLINT(misc-const-correctness)
   if constexpr (!::cuda::args::__traits<OffsetT>::is_deferred)
   {
     num_chunks = static_cast<int>(::cuda::ceil_div(num_items, num_items_per_chunk));
@@ -233,8 +222,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   const int reduce_grid_size = chunk_grid_size * (num_chunks - 1) + last_chunk_grid_size;
 
   // Temporary storage allocation requirements
-  void* allocations[1]       = {};
-  size_t allocation_sizes[1] = {
+  void* allocations[1]             = {};
+  const size_t allocation_sizes[1] = {
     reduce_grid_size * sizeof(DeterministicAccumT) // bytes needed for privatized block reductions
   };
 
@@ -278,23 +267,16 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
     }();
 
     // Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            current_grid_size,
-            active_policy.multi_tile.threads_per_block,
-            (long long) stream,
-            active_policy.multi_tile.items_per_thread,
-            reduce_config.sm_occupancy);
-#else // CUB_DEBUG_LOG
-    log("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
-        "per thread, %d SM occupancy\n",
-        current_grid_size,
-        active_policy.multi_tile.threads_per_block,
-        (long long) stream,
-        active_policy.multi_tile.items_per_thread,
-        reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "DeterministicDeviceReduceKernel",
+      current_grid_size,
+      1,
+      1,
+      active_policy.multi_tile.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d",
+      reduce_config.sm_occupancy);
 
     if (const auto error = CubDebug(
           launcher_factory(current_grid_size, active_policy.multi_tile.threads_per_block, 0, stream)
@@ -334,19 +316,8 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t invok
   }
 
   // Log single_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          active_policy.single_tile.threads_per_block,
-          (long long) stream,
-          active_policy.single_tile.items_per_thread);
-#else // CUB_DEBUG_LOG
-  log("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-      "%d items per thread\n",
-      active_policy.single_tile.threads_per_block,
-      (long long) stream,
-      active_policy.single_tile.items_per_thread);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH(
+    "DeterministicDeviceReduceSingleTileKernel", 1, 1, 1, active_policy.single_tile.threads_per_block, 0, stream, "");
 
   // Invoke DeterministicDeviceReduceSingleTileKernel/DeterministicDeviceReduceDeferredSingleTileKernel
   const auto second_pass_error = [&] {
@@ -434,23 +405,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   const ReducePolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceReduceDeterministic to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceReduceDeterministic", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceReduceDeterministic", cc, active_policy);
 
   using deterministic_add_t  = deterministic_sum_t<AccumT>;
   using input_unwrapped_it_t = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<InputIteratorT>;
 
-  input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
+  const input_unwrapped_it_t d_in_unwrapped = THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(d_in);
 
   // A deferred problem size cannot be compared against the single-tile capacity on the host, so a deferred
   // reduction always takes the two-pass path.

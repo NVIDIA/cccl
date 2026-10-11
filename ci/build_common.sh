@@ -35,7 +35,7 @@ function usage {
     echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
     echo "  -std: CUDA/C++ standard (Defaults to 17)"
     echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
-    echo "  --enable-tile: Enable tile support"
+    echo "  -enable-tile: Enable tile support"
     echo "  --test-par: CTest parallel level (Defaults to 1)"
     echo "  -pedantic/--pedantic: Enable strict warnings-as-errors and expose CCCL header warnings (default in CI)"
     echo "  -cmake-options: Additional options to pass to CMake"
@@ -81,7 +81,7 @@ while [[ "${#args[@]}" -ne 0 ]]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
-    --enable-tile) GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_TILE=ON"); args=("${args[@]:1}");;
+    -enable-tile) GLOBAL_CMAKE_OPTIONS+=("-DCCCL_ENABLE_TILE=ON"); args=("${args[@]:1}");;
     --test-par) CTEST_PARALLEL_LEVEL="${args[1]}"; args=("${args[@]:2}");;
     -pedantic | --pedantic) PEDANTIC=1; args=("${args[@]:1}");;
     -disable-benchmarks) export DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;

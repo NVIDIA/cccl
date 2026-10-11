@@ -32,12 +32,12 @@ void TestComparisonSortByKeyDevice(ExecutionPolicy exec, const size_t n, Compare
 
   sort_by_key_kernel<<<1, 1>>>(exec, d_keys.begin(), d_keys.end(), d_values.begin(), comp);
   cudaError_t const err = cudaDeviceSynchronize();
-  ASSERT_EQUAL(cudaSuccess, err);
+  REQUIRE(cudaSuccess == err);
 
   thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), comp);
 
-  ASSERT_EQUAL(h_keys, d_keys);
-  ASSERT_EQUAL(h_values, d_values);
+  REQUIRE(h_keys == d_keys);
+  REQUIRE(h_values == d_values);
 };
 
 template <typename T>
@@ -91,7 +91,7 @@ DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestSortByKeyDeviceDevice,
                                           unittest::type_list<unittest::int8_t, unittest::int32_t>);
 #endif
 
-void TestComparisonSortByKeyCudaStreams()
+TEST_CASE("TestComparisonSortByKeyCudaStreams", "[sort_by_key]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
   thrust::device_vector<int> vals{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
@@ -102,14 +102,13 @@ void TestComparisonSortByKeyCudaStreams()
   thrust::sort_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), my_less<int>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
-  ASSERT_EQUAL(true, thrust::is_sorted(vals.begin(), vals.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestComparisonSortByKeyCudaStreams);
 
-void TestSortByKeyCudaStreams()
+TEST_CASE("TestSortByKeyCudaStreams", "[sort_by_key]")
 {
   thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
   thrust::device_vector<int> vals{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
@@ -120,9 +119,8 @@ void TestSortByKeyCudaStreams()
   thrust::sort_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(true, thrust::is_sorted(keys.begin(), keys.end()));
-  ASSERT_EQUAL(true, thrust::is_sorted(vals.begin(), vals.end()));
+  REQUIRE(thrust::is_sorted(keys.begin(), keys.end()));
+  REQUIRE(thrust::is_sorted(vals.begin(), vals.end()));
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestSortByKeyCudaStreams);

@@ -30,11 +30,11 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 // generate_canonical
 _CCCL_EXEC_CHECK_DISABLE
-template <class _RealType, size_t __bits, class _URng>
+template <class _RealType, size_t _Bits, class _URng>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _RealType generate_canonical(_URng& __g) noexcept
 {
   constexpr size_t __dt = numeric_limits<_RealType>::digits;
-  const size_t __b      = __dt < __bits ? __dt : __bits;
+  const size_t __b      = __dt < _Bits ? __dt : _Bits;
   const size_t __log_r  = ::cuda::std::__bit_log2<uint64_t>((_URng::max) () - (_URng::min) () + uint64_t(1));
   const size_t __k      = __b / __log_r + (__b % __log_r != 0) + (__b == 0);
   const _RealType __rp  = static_cast<_RealType>((_URng::max) () - (_URng::min) ()) + _RealType(1);

@@ -13,6 +13,7 @@
 #include <thrust/system/detail/generic/shuffle.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -76,7 +77,7 @@ shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, R
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, ExecutionPolicy> temp(exec, first, last);
-  thrust::shuffle_copy(exec, temp.begin(), temp.end(), first, g);
+  thrust::shuffle_copy(exec, temp.begin(), temp.end(), first, ::cuda::std::forward<URBG>(g));
 }
 
 template <typename ExecutionPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
@@ -89,16 +90,16 @@ _CCCL_HOST_DEVICE void shuffle_copy(
 {
   // m is the length of the input
   // we have an available bijection of length n via a feistel cipher
-  std::size_t m = last - first;
-  thrust::detail::feistel_bijection bijection(m, g);
+  const std::size_t m = last - first;
+  const thrust::detail::feistel_bijection bijection(m, ::cuda::std::forward<URBG>(g));
   std::uint64_t n = bijection.size();
 
   // perform stream compaction over length n bijection to get length m
   // pseudorandom bijection over the original input
-  thrust::counting_iterator<std::uint64_t> indices(0);
-  thrust::transform_iterator<construct_key_flag_op, decltype(indices), key_flag_tuple> key_flag_it(
-    indices, construct_key_flag_op(m, bijection));
-  write_output_op<RandomIterator, decltype(result)> write_functor{m, first, result};
+  const thrust::counting_iterator<std::uint64_t> indices(0);
+  const thrust::transform_iterator<construct_key_flag_op, thrust::counting_iterator<std::uint64_t>, key_flag_tuple>
+    key_flag_it(indices, construct_key_flag_op(m, bijection));
+  const write_output_op<RandomIterator, OutputIterator> write_functor{m, first, result};
   auto gather_output_it =
     thrust::make_transform_output_iterator(thrust::discard_iterator<std::size_t>(), write_functor);
   // the feistel_bijection outputs a stream of permuted indices in range [0,n)

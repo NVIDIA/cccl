@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Weekly scheduled workflow. Delegates matrix building and job dispatch (with
-# Slack alert notifications) to .github/workflows/ci-matrix-build.yml.
+# Weekly scheduled workflow. Delegates matrix building and job dispatch to
+# .github/workflows/ci-matrix-build.yml, then runs failure analysis and Slack
+# notification.
 name: weekly
 
 defaults:
@@ -37,4 +38,102 @@ jobs:
     secrets: inherit
     with:
       workflows: weekly
-      enable_slack_alert: true
+
+  # This analyzes the current run. Keep every job whose failures should be
+  # included in this job's direct or transitive `needs` so log collection starts
+  # after they finish.
+  analyze-failures:
+    name: Analyze weekly failures
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        needs.matrix-build.result == 'failure'
+      }}
+    needs:
+      - matrix-build
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      slack_thread: ${{ steps.render-slack.outputs.content }}
+    steps:
+      - name: Check out CCCL
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Analyze failures
+        id: analyze
+        uses: ./.github/actions/ci-failure-analysis
+        with:
+          inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
+          run_id: ${{ github.run_id }}
+
+      - name: Render GitHub verbose failure analysis summary
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-github-verbose-summary
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: github-verbose-summary
+
+      - name: Add failure analysis to workflow summary
+        if: ${{ !cancelled() && steps.render-github-verbose-summary.outcome == 'success' }}
+        env:
+          SUMMARY_FILE: ${{ steps.render-github-verbose-summary.outputs.rendered_file }}
+        run: |
+          test -s "${SUMMARY_FILE}"
+          cat "${SUMMARY_FILE}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Render Slack failure analysis
+        if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
+        id: render-slack
+        uses: ./.github/actions/ci-failure-analysis-render
+        with:
+          analysis_file: ${{ steps.analyze.outputs.analysis_file }}
+          format: slack
+
+  publish-failure-notification:
+    name: Post weekly failure notification to Slack
+    if: >-
+      ${{
+        always() &&
+        !cancelled() &&
+        github.repository == 'NVIDIA/cccl' &&
+        github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+        (
+          needs.matrix-build.outputs.failure_message != '' ||
+          needs.analyze-failures.outputs.slack_thread != ''
+        )
+      }}
+    needs:
+      - analyze-failures
+      - matrix-build
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Slack publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: ci/util/publish_slack_notification.py
+          sparse-checkout-cone-mode: false
+
+      - name: Post failure notification
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          SLACK_PARENT_TEXT: ${{ needs.matrix-build.outputs.failure_message }}
+          SLACK_THREAD: ${{ needs.analyze-failures.outputs.slack_thread }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          printf '%s' "${SLACK_THREAD}" | \
+            python3 ci/util/publish_slack_notification.py

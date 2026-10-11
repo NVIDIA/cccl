@@ -27,10 +27,94 @@
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_like.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
+
+#if _CCCL_HAS_HOST_STD_LIB()
+_CCCL_BEGIN_NAMESPACE_STD
+
+template <size_t _Ip, class... _Tp>
+constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type& get(tuple<_Tp...>&) noexcept;
+
+template <size_t _Ip, class... _Tp>
+constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type& get(const tuple<_Tp...>&) noexcept;
+
+template <size_t _Ip, class... _Tp>
+constexpr typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(tuple<_Tp...>&&) noexcept;
+
+// libstdc++ before GCC 8 has no get(const tuple&&). The parameter is an lvalue, so this calls the const
+// lvalue overload. Cast that result to the const rvalue the caller asked for.
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+template <size_t _Ip, class... _Tp>
+constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(const tuple<_Tp...>&& __t) noexcept
+{
+  return static_cast<const typename tuple_element<_Ip, tuple<_Tp...>>::type&&>(::std::get<_Ip>(__t));
+}
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
+template <size_t _Ip, class... _Tp>
+constexpr const typename tuple_element<_Ip, tuple<_Tp...>>::type&& get(const tuple<_Tp...>&&) noexcept;
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+
+template <size_t _Ip, class _T1, class _T2>
+constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type& get(pair<_T1, _T2>&) noexcept;
+
+template <size_t _Ip, class _T1, class _T2>
+constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type& get(const pair<_T1, _T2>&) noexcept;
+
+template <size_t _Ip, class _T1, class _T2>
+constexpr typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(pair<_T1, _T2>&&) noexcept;
+
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+template <size_t _Ip, class _T1, class _T2>
+constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pair<_T1, _T2>&& __p) noexcept
+{
+  return static_cast<const typename tuple_element<_Ip, pair<_T1, _T2>>::type&&>(::std::get<_Ip>(__p));
+}
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
+template <size_t _Ip, class _T1, class _T2>
+constexpr const typename tuple_element<_Ip, pair<_T1, _T2>>::type&& get(const pair<_T1, _T2>&&) noexcept;
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+
+template <size_t _Ip, class _Tp, size_t _Size>
+constexpr _Tp& get(array<_Tp, _Size>&) noexcept;
+
+template <size_t _Ip, class _Tp, size_t _Size>
+constexpr const _Tp& get(const array<_Tp, _Size>&) noexcept;
+
+template <size_t _Ip, class _Tp, size_t _Size>
+constexpr _Tp&& get(array<_Tp, _Size>&&) noexcept;
+
+#  if _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+template <size_t _Ip, class _Tp, size_t _Size>
+constexpr const _Tp&& get(const array<_Tp, _Size>&& __arr) noexcept
+{
+  return static_cast<const _Tp&&>(::std::get<_Ip>(__arr));
+}
+#  else // ^^^ _CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) ^^^ / vvv !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8) vvv
+template <size_t _Ip, class _Tp, size_t _Size>
+constexpr const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
+#  endif // !_CCCL_HOST_STD_LIB(LIBSTDCXX, <, 8)
+
+#  if __cpp_lib_tuple_like >= 202311L
+template <size_t _Ip, class _Tp>
+constexpr _Tp& get(complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+constexpr const _Tp& get(const complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+constexpr _Tp&& get(complex<_Tp>&&) noexcept;
+
+template <size_t _Ip, class _Tp>
+constexpr const _Tp&& get(const complex<_Tp>&&) noexcept;
+#  endif // __cpp_lib_tuple_like >= 202311L
+
+_CCCL_END_NAMESPACE_STD
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
@@ -82,6 +166,18 @@ template <size_t _Ip, class _Tp>
 template <size_t _Ip, class _Tp>
 [[nodiscard]] _CCCL_API constexpr const _Tp&& get(const complex<_Tp>&&) noexcept;
 
+template <size_t _Ip, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp& get(::cuda::complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp&& get(::cuda::complex<_Tp>&&) noexcept;
+
+template <size_t _Ip, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp& get(const ::cuda::complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+[[nodiscard]] _CCCL_API constexpr const _Tp&& get(const ::cuda::complex<_Tp>&&) noexcept;
+
 _CCCL_END_NAMESPACE_CUDA_STD
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD_RANGES
@@ -116,14 +212,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 using ::cuda::std::ranges::get;
 
-// Explicitly rely on ADL, mostly for constructors of host STL types, where we cannot squeze using ::cuda::std::get; in
+#if _CCCL_HAS_HOST_STD_LIB()
+// Host std::tuple, std::pair, std::array, and std::complex when that type is tuple-like.
 _CCCL_EXEC_CHECK_DISABLE
-template <size_t _Ip, class _TupleLike>
-[[nodiscard]] _CCCL_API constexpr decltype(auto) __adl_get(_TupleLike&& __t) noexcept
+template <size_t _Ip, class _TupleLike, enable_if_t<__is_std_tuple_like_v<remove_cvref_t<_TupleLike>>, int> = 0>
+[[nodiscard]] _CCCL_HOST_API constexpr decltype(auto)
+get(_TupleLike&& __t) noexcept(noexcept(::std::get<_Ip>(::cuda::std::forward<_TupleLike>(__t))))
 {
-  using ::cuda::std::get;
-  return get<_Ip>(::cuda::std::forward<_TupleLike>(__t));
+  return ::std::get<_Ip>(::cuda::std::forward<_TupleLike>(__t));
 }
+#endif // _CCCL_HAS_HOST_STD_LIB()
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

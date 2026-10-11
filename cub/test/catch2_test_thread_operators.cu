@@ -13,27 +13,15 @@ T Make(int val)
 }
 
 template <bool>
-class BaseT
+struct BaseT
 {
-protected:
   int m_val{};
-
-public:
-  BaseT(int val)
-      : m_val{val}
-  {}
 };
 
 template <>
-class BaseT<true>
+struct BaseT<true>
 {
-protected:
   int m_val{};
-
-public:
-  BaseT(int val)
-      : m_val{val}
-  {}
 
   __host__ __device__ operator int() const
   {
@@ -42,15 +30,8 @@ public:
 };
 
 #define CUSTOM_TYPE_FACTORY(NAME, RT, OP, CONVERTIBLE) \
-  class Custom##NAME##T : public BaseT<CONVERTIBLE>    \
+  struct Custom##NAME##T : BaseT<CONVERTIBLE>          \
   {                                                    \
-    explicit Custom##NAME##T(int val)                  \
-        : BaseT<CONVERTIBLE>(val)                      \
-    {}                                                 \
-                                                       \
-    friend Custom##NAME##T Make<Custom##NAME##T>(int); \
-                                                       \
-  public:                                              \
     __host__ __device__ RT operator OP(int val) const  \
     {                                                  \
       return m_val OP val;                             \
@@ -61,11 +42,11 @@ CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
 
 CUB_TEST("InequalityWrapper", "[thread_operator]", CUB_SMALL)
 {
-  cuda::std::equal_to<> wrapped_op{};
+  const cuda::std::equal_to<> wrapped_op{};
   cub::InequalityWrapper<cuda::std::equal_to<>> op{wrapped_op};
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  const int magic_val           = const_magic_val;
 
   CHECK(op(const_magic_val, const_magic_val) == false);
   CHECK(op(const_magic_val, magic_val) == false);

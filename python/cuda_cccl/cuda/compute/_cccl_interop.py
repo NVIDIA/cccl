@@ -228,10 +228,9 @@ def get_value_type(
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
-    if cccl_it.is_kind_pointer():
+    if cccl_it.is_ptr_kind:
         ptr = get_data_pointer(input_it)
-        ptr_obj = make_pointer_object(ptr, input_it)
-        cccl_it.state = ptr_obj
+        cccl_it.bind_pointer_state(ptr, input_it)
     else:
         state_ = input_it.state
         if isinstance(state_, (IteratorState, Pointer)):

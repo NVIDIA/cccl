@@ -49,7 +49,7 @@ int main()
   std::cout << '\n';
 
   // count number of unique keys
-  size_t num_unique = thrust::unique_count(d_data.begin(), d_data.end());
+  const size_t num_unique = thrust::unique_count(d_data.begin(), d_data.end());
 
   // count multiplicity of each key
   thrust::device_vector<int> d_output_keys(num_unique);
@@ -71,8 +71,8 @@ int main()
   thrust::device_vector<int>::iterator mode_iter;
   mode_iter = thrust::max_element(d_output_counts.begin(), d_output_counts.end());
 
-  int mode        = d_output_keys[cuda::std::distance(d_output_counts.begin(), mode_iter)];
-  int occurrences = *mode_iter;
+  const int mode        = d_output_keys[cuda::std::distance(d_output_counts.begin(), mode_iter)];
+  const int occurrences = *mode_iter;
 
   std::cout << "Modal value " << mode << " occurs " << occurrences << " times " << '\n';
 

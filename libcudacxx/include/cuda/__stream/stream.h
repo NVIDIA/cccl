@@ -29,7 +29,6 @@
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
 #  include <cuda/__stream/stream_ref.h> // IWYU pragma: export
-#  include <cuda/std/__fwd/hash.h>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -49,7 +48,7 @@ struct stream : stream_ref
   _CCCL_HOST_API explicit stream(device_ref __dev, int __priority = default_priority)
       : stream_ref(::cuda::__invalid_stream())
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter(__dev);
+    const __ensure_current_context __ctx_setter(__dev);
     __stream = ::cuda::__driver::__streamCreateWithPriority(cudaStreamNonBlocking, __priority);
   }
 

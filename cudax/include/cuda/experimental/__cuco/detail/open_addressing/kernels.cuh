@@ -24,9 +24,12 @@
 #include <cub/block/block_reduce.cuh>
 
 #include <cuda/__atomic/atomic.h>
+#include <cuda/__memory/uninitialized_array.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
@@ -42,6 +45,29 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 
 namespace cuda::experimental::cuco::__open_addressing
 {
+//! @brief Inserts or assigns each pair in `[__first, __first + __n)`.
+template <int _CgSize, int _BlockSize, class _InputIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+__insert_or_assign_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
+{
+  const auto __stride = detail::__grid_stride() / _CgSize;
+  auto __idx          = detail::__global_thread_id() / _CgSize;
+  while (__idx < __n)
+  {
+    const typename ::cuda::std::iterator_traits<_InputIt>::value_type __value = *(__first + __idx);
+    if constexpr (_CgSize == 1)
+    {
+      __ref.insert_or_assign(__value);
+    }
+    else
+    {
+      const auto __group = ::cooperative_groups::tiled_partition<_CgSize>(::cooperative_groups::this_thread_block());
+      __ref.insert_or_assign(__group, __value);
+    }
+    __idx += __stride;
+  }
+}
+
 //! @brief Scalar (cooperative-group size 1) functor inserting `first[i]` when `pred(stencil[i])` holds.
 template <class _InputIt, class _StencilIt, class _Predicate, class _Ref>
 struct __insert_if_fn
@@ -83,6 +109,24 @@ struct __contains_if_fn
 template <class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES __contains_if_fn(_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref)
   -> __contains_if_fn<_InputIt, _StencilIt, _Predicate, _OutputIt, _Ref>;
+
+//! @brief Scalar (cooperative-group size 1) functor applying `callback_op` to every slot matching `first[i]`.
+template <class _InputIt, class _CallbackOp, class _Ref>
+struct __for_each_fn
+{
+  _InputIt __first;
+  _CallbackOp __callback_op;
+  _Ref __ref;
+
+  _CCCL_DEVICE_API void operator()(detail::__index_type __idx)
+  {
+    __ref.for_each(*(__first + __idx), __callback_op);
+  }
+};
+
+template <class _InputIt, class _CallbackOp, class _Ref>
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES __for_each_fn(_InputIt, _CallbackOp, _Ref)
+  -> __for_each_fn<_InputIt, _CallbackOp, _Ref>;
 
 //! @brief Inserts all elements in the range `[first, first + n)` and returns the number of
 //! successful insertions if `pred` of the corresponding stencil returns true.
@@ -217,6 +261,77 @@ template <class _Ref, class _Iterator>
   }
 }
 
+//! @brief Inserts each element and returns the mapped value and insertion status.
+//!
+//! @tparam _CgSize Number of threads cooperating on each insertion
+//! @tparam _BlockSize Number of threads per block
+//! @tparam _InputIt Device accessible random access input iterator
+//! @tparam _FoundIt Device accessible output iterator assignable from the mapped type
+//! @tparam _InsertedIt Device accessible output iterator assignable from bool
+//! @tparam _Ref Device reference to the map
+//!
+//! @param[in] __first Beginning of the input sequence
+//! @param[in] __n Number of input pairs
+//! @param[out] __found_begin Beginning of the mapped-value output sequence
+//! @param[out] __inserted_begin Beginning of the insertion-status output sequence
+//! @param[in,out] __ref Map in which to insert the input pairs
+template <int _CgSize, int _BlockSize, class _InputIt, class _FoundIt, class _InsertedIt, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __insert_and_find_n(
+  _InputIt __first, detail::__index_type __n, _FoundIt __found_begin, _InsertedIt __inserted_begin, _Ref __ref)
+{
+  const auto __block       = ::cooperative_groups::this_thread_block();
+  const auto __thread_idx  = __block.thread_rank();
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
+
+  using __output_type = typename __find_buffer<_Ref>::type;
+  __shared__ ::cuda::__uninitialized_array<__output_type, _BlockSize / _CgSize> __found_buffer;
+  __shared__ bool __inserted_buffer[_BlockSize / _CgSize];
+
+  while ((__idx - __thread_idx / _CgSize) < __n)
+  {
+    if constexpr (_CgSize == 1)
+    {
+      if (__idx < __n)
+      {
+        using __value_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_type __value{*(__first + __idx)};
+        const auto [__found, __inserted] = __ref.insert_and_find(__value);
+
+        /*
+         * Staging scalar results in shared memory avoids the additional L2 sector stores caused by
+         * frequent L1 flushing from relaxed GPU loads.
+         */
+        ::cuda::std::__construct_at(__found_buffer.data() + __thread_idx, __find_output(__ref, __found));
+        __inserted_buffer[__thread_idx] = __inserted;
+      }
+      __block.sync();
+      if (__idx < __n)
+      {
+        *(__found_begin + __idx)    = __found_buffer[__thread_idx];
+        *(__inserted_begin + __idx) = __inserted_buffer[__thread_idx];
+      }
+    }
+    else
+    {
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(__block);
+      if (__idx < __n)
+      {
+        using __value_type = typename ::cuda::std::iterator_traits<_InputIt>::value_type;
+        const __value_type __value{*(__first + __idx)};
+        const auto [__found, __inserted] = __ref.insert_and_find(__tile, __value);
+
+        if (__tile.thread_rank() == 0)
+        {
+          *(__found_begin + __idx)    = __find_output(__ref, __found);
+          *(__inserted_begin + __idx) = __inserted;
+        }
+      }
+    }
+    __idx += __loop_stride;
+  }
+}
+
 //! @brief Find with predicate.
 template <int _CgSize, int _BlockSize, class _InputIt, class _StencilIt, class _Predicate, class _OutputIt, class _Ref>
 _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
@@ -281,6 +396,100 @@ _CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void __find_if_n(
         }
       }
     }
+    __idx += __loop_stride;
+  }
+}
+
+//! @brief Applies `__callback_op` to a copy of every slot matching each key in `[__first, __first + __n)`.
+//!
+//! @note The return value of `__callback_op`, if any, is ignored.
+template <int _CgSize, int _BlockSize, class _InputIt, class _CallbackOp, class _Ref>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+__for_each_n(_InputIt __first, detail::__index_type __n, _CallbackOp __callback_op, _Ref __ref)
+{
+  const auto __loop_stride = detail::__grid_stride() / _CgSize;
+  auto __idx               = detail::__global_thread_id() / _CgSize;
+
+  while (__idx < __n)
+  {
+    const typename ::cuda::std::iterator_traits<_InputIt>::value_type __key = *(__first + __idx);
+    if constexpr (_CgSize == 1)
+    {
+      __ref.for_each(__key, __callback_op);
+    }
+    else
+    {
+      const auto __tile = ::cooperative_groups::tiled_partition<_CgSize, ::cooperative_groups::thread_block>(
+        ::cooperative_groups::this_thread_block());
+      __ref.for_each(__tile, __key, __callback_op);
+    }
+    __idx += __loop_stride;
+  }
+}
+
+//! @brief Reinserts all filled slots from old storage into a container.
+//!
+//! Each thread examines one physical slot, so a block stages at most `_BlockSize` elements
+//! regardless of the storage's bucket size.
+//!
+//! @tparam _BlockSize Number of threads in a block
+//! @tparam _StorageRef Old slot storage reference type
+//! @tparam _ContainerRef Destination container reference type
+//! @tparam _Predicate Predicate identifying filled slots
+//!
+//! @param[in] __old_storage Old slot storage
+//! @param[in] __container_ref Destination container reference
+//! @param[in] __is_filled Predicate identifying filled slots
+template <int _BlockSize, class _StorageRef, class _ContainerRef, class _Predicate>
+_CCCL_KERNEL_ATTRIBUTES _CCCL_LAUNCH_BOUNDS(_BlockSize) void
+__rehash(_StorageRef __old_storage, _ContainerRef __container_ref, _Predicate __is_filled)
+{
+  using __value_type = typename _ContainerRef::value_type;
+
+  // `__value_type` is not trivially default constructible, so a plain `__shared__` array would
+  // require initialization, which is not allowed for shared variables.
+  __shared__ ::cuda::__uninitialized_array<__value_type, _BlockSize> __buffer;
+  __shared__ ::cuda::std::uint32_t __buffer_size;
+
+  constexpr auto __cg_size         = _ContainerRef::cg_size;
+  constexpr auto __tiles_per_block = _BlockSize / __cg_size;
+
+  const auto __block = ::cooperative_groups::this_thread_block();
+  const auto __tile  = ::cooperative_groups::tiled_partition<__cg_size, ::cooperative_groups::thread_block>(__block);
+  const auto __thread_rank = __block.thread_rank();
+  const auto __tile_rank   = __tile.meta_group_rank();
+  const auto __loop_stride = detail::__grid_stride();
+  const auto __num_slots   = __old_storage.capacity();
+  auto __idx               = detail::__global_thread_id();
+
+  while (__idx - __thread_rank < __num_slots)
+  {
+    if (__thread_rank == 0)
+    {
+      __buffer_size = 0;
+    }
+    __block.sync();
+
+    if (__idx < __num_slots)
+    {
+      const auto __slot = *(__old_storage.data() + __idx);
+      if (__is_filled(__slot))
+      {
+        const auto __buffer_idx =
+          ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_block>{__buffer_size}.fetch_add(
+            1, ::cuda::std::memory_order_relaxed);
+        __buffer[__buffer_idx] = __slot;
+      }
+    }
+    __block.sync();
+
+    const auto __local_buffer_size = __buffer_size;
+    for (auto __buffer_idx = __tile_rank; __buffer_idx < __local_buffer_size; __buffer_idx += __tiles_per_block)
+    {
+      __container_ref.insert(__tile, __buffer[__buffer_idx]);
+    }
+    __block.sync();
+
     __idx += __loop_stride;
   }
 }

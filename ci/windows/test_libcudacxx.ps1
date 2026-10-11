@@ -2,14 +2,17 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(17, 20)]
+    [ValidateSet(17, 20, 23)]
     [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [Alias("arch")]
     [string]$CUDA_ARCH = "",
     [Parameter(Mandatory = $false)]
     [Alias("cmake-options")]
-    [string]$CMAKE_OPTIONS = ""
+    [string]$CMAKE_OPTIONS = "",
+    [Parameter(Mandatory = $false)]
+    [Alias("enable-tile")]
+    [switch]$ENABLE_TILE = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,7 +23,7 @@ If($CURRENT_PATH -ne "ci") {
     pushd "$PSScriptRoot/.."
 }
 
-Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS)
+Import-Module -Name "$PSScriptRoot/build_common.psm1" -ArgumentList @($CXX_STANDARD, $CUDA_ARCH, $CMAKE_OPTIONS, $ENABLE_TILE)
 
 if ($env:GITHUB_ACTIONS) {
     $producerId = & bash "./util/workflow/get_producer_id.sh"
@@ -34,9 +37,7 @@ if ($env:GITHUB_ACTIONS) {
         & bash "./util/artifacts/download_packed.sh" "$artifactName" "../"
     } "Downloading test artifacts failed"
 } else {
-    $buildCmd = "$PSScriptRoot/build_libcudacxx.ps1 -std $CXX_STANDARD -arch '$CUDA_ARCH' -cmake-options '$CMAKE_OPTIONS'"
-    Write-Host "Running: $buildCmd"
-    Invoke-Expression $buildCmd
+    & "$PSScriptRoot/build_libcudacxx.ps1" @PSBoundParameters
 }
 
 if ($env:GITHUB_ACTIONS) {

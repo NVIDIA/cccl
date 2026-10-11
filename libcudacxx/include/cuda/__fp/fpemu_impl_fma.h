@@ -36,6 +36,9 @@
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
+// The ::fma host seed from the platform's <math.h>, which no hand-written declaration
+// can portably match, plus the cuda::std::fma the end of this file extends.
+#include <cuda/std/__cmath/fma.h>
 
 #include <nv/target>
 
@@ -43,22 +46,6 @@
 
 namespace cuda::experimental
 {
-#if _CCCL_HOST_COMPILATION()
-// Host seed: the libm symbol. The exception spec must match the platform's
-// <math.h> prototype exactly, otherwise this extern-"C" redeclaration conflicts
-// with ::fma when <cmath> is also in the TU (in C++17+ the exception spec is
-// part of the type, so a mismatch is an error, not just a warning):
-//   - glibc marks fma __THROW (noexcept), so the redeclaration must be noexcept.
-//   - MSVC's CRT/CUDA prototype carries no exception specification, so a
-//     noexcept redeclaration is a mismatched extern-"C" overload (C2382/C2733
-//     under C++20); declare it without noexcept to match.
-#  if _CCCL_COMPILER(MSVC)
-extern "C" double fma(double __x, double __y, double __z);
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-extern "C" double fma(double __x, double __y, double __z) noexcept;
-#  endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
-#endif // _CCCL_HOST_COMPILATION()
-
 //! @brief Pure FMA core operating on the unpacked representation.
 //!
 //! Consumes/produces __fpbits64_unpacked exactly as produced by the universal
@@ -109,7 +96,7 @@ __internal_fp64emu_fma_unpacked(__fpbits64_unpacked __a, __fpbits64_unpacked __b
   int __mul_nzeros          = __mantissa_ab32.hi.x[1] < 0x08000000;
   int32_t __exponent_ab_new = __exponent_ab - __mul_nzeros + 1;
   // Shift mantissa_ab
-  __mantissa_ab = __mantissa_ab << (11 - EXTRA_BITS + __mul_nzeros);
+  __mantissa_ab = __mantissa_ab << (11 - _CCCL_FPEMU_EXTRA_BITS + __mul_nzeros);
   // Compute mantissa_c - the mantissa of c
   __fpemu_uint128 __mantissa_c = __c.mantissa;
   // Compute mantissa_r - the result of the product of a and b and c

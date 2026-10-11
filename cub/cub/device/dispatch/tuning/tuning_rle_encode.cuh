@@ -790,6 +790,24 @@ struct policy_selector
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> RleEncodePolicy
   {
+    // on sm107, a tuned lookback configuration outperforms the lookahead kernel for 1-byte keys
+    // (from cub/benchmarks/bench/run_length_encode/encode.cu, which benchmarks the default dispatch as baseline)
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && key_is_primitive
+        && key_size == 1 && length_is_primitive && length_size == 4)
+    {
+      // ipt_24.tpb_512.trp_0.ld_0.ns_60.dcid_0.l2w_155  1.147  1.204  1.289  1.362
+      return RleEncodePolicy{
+        RleAlgorithm::lookback,
+        RleLookbackPolicy{
+          512,
+          24,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 60, 155}},
+        RleLookaheadPolicy{}};
+    }
+
     // we first try to get the valid lookahead implementation. if we can't run it, fall back to the lookback impl.
     // The lookback policy stays populated either way: the dispatch layer re-checks runtime-only facts (device smem
     // opt-in, temporary-storage alignment) and may still fall back at launch time. Inputs with more than INT_MAX

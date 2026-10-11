@@ -27,7 +27,7 @@ struct test_memory_resource_t final : thrust::mr::memory_resource<>
 
   void do_deallocate(void* ptr, std::size_t size, std::size_t) override
   {
-    ASSERT_EQUAL(ptr, reinterpret_cast<void*>(size)); // NOLINT(performance-no-int-to-ptr)
+    REQUIRE(ptr == reinterpret_cast<void*>(size)); // NOLINT(performance-no-int-to-ptr)
   }
 } test_memory_resource;
 
@@ -49,22 +49,19 @@ struct TestAllocatorAttachment
   template <typename Expected, typename T>
   static void assert_correct(T)
   {
-    ASSERT_EQUAL(
-      (::cuda::std::is_same<
+    REQUIRE(
+      ::cuda::std::is_same<
         T,
-        typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>::value),
-      true);
+        typename PolicyInfo::template apply_base_second<thrust::detail::execute_with_allocator, Expected>::type>::value);
   }
 
   template <typename ExpectedResource, typename T>
   static void assert_npa_correct(T)
   {
-    ASSERT_EQUAL(
-      (::cuda::std::is_same<T,
-                            typename PolicyInfo::template apply_base_second<
-                              thrust::detail::execute_with_allocator,
-                              thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>::value),
-      true);
+    REQUIRE(::cuda::std::is_same<T,
+                                 typename PolicyInfo::template apply_base_second<
+                                   thrust::detail::execute_with_allocator,
+                                   thrust::mr::allocator<cuda::std::max_align_t, ExpectedResource>>::type>::value);
   }
 
   template <typename Policy>
@@ -77,7 +74,7 @@ struct TestAllocatorAttachment
 
   void operator()()
   {
-    typename PolicyInfo::policy policy;
+    typename PolicyInfo::policy policy; // NOLINT(misc-const-correctness)
 
     // test correctness of attachment
     assert_correct<test_allocator_t<int>>(policy(test_allocator_t<int>()));

@@ -23,8 +23,8 @@ CUB_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_len
   auto counts_out   = thrust::device_vector<int>(8);
   auto num_runs_out = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRunLengthEncode::Encode(
     input.begin(), unique_out.begin(), counts_out.begin(), num_runs_out.begin(), input.size(), stream_ref);
@@ -33,9 +33,9 @@ CUB_TEST("cub::DeviceRunLengthEncode::Encode accepts env with stream", "[run_len
     std::cerr << "cub::DeviceRunLengthEncode::Encode failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_unique{0, 2, 9, 5, 8};
-  thrust::device_vector<int> expected_counts{1, 2, 1, 3, 1};
-  thrust::device_vector<int> expected_num_runs{5};
+  const thrust::device_vector<int> expected_unique{0, 2, 9, 5, 8};
+  const thrust::device_vector<int> expected_counts{1, 2, 1, 3, 1};
+  const thrust::device_vector<int> expected_num_runs{5};
   // example-end encode-env
   stream.sync();
 
@@ -55,8 +55,8 @@ CUB_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "
   auto lengths_out  = thrust::device_vector<int>(8);
   auto num_runs_out = thrust::device_vector<int>(1);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceRunLengthEncode::NonTrivialRuns(
     input.begin(), offsets_out.begin(), lengths_out.begin(), num_runs_out.begin(), input.size(), stream_ref);
@@ -65,9 +65,9 @@ CUB_TEST("cub::DeviceRunLengthEncode::NonTrivialRuns accepts env with stream", "
     std::cerr << "cub::DeviceRunLengthEncode::NonTrivialRuns failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_offsets{1, 4};
-  thrust::device_vector<int> expected_lengths{2, 3};
-  thrust::device_vector<int> expected_num_runs{2};
+  const thrust::device_vector<int> expected_offsets{1, 4};
+  const thrust::device_vector<int> expected_lengths{2, 3};
+  const thrust::device_vector<int> expected_num_runs{2};
   // example-end non-trivial-runs-env
   stream.sync();
 

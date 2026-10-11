@@ -404,8 +404,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Number of input tiles
-      int tile_size = threads_per_block * items_per_thread;
-      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
+      const int tile_size = threads_per_block * items_per_thread;
+      const int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       // The amount of virtual shared memory to allocate
       const auto vsmem_size = num_tiles * vsmem_helper_t::vsmem_per_block;
@@ -417,7 +417,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       {
         break; // bytes needed for tile status descriptors
       }
-      size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
+      const size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
 
       // Compute allocation pointers into the single storage blob (or compute
       // the necessary size of the blob)
@@ -445,14 +445,9 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
       // Invoke init_kernel to initialize tile descriptors
       error = CubDebug(
@@ -499,30 +494,21 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceReduce::ReduceByKey
       }
 
       // Run grids in epochs (in case number of tiles exceeds max x-dimension
-      int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
+      const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
       for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
       {
         // Log reduce_by_key_kernel configuration
-#ifdef CUB_DEBUG_LOG
-        _CubLog("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d "
-                "items per thread, %d SM occupancy\n",
-                start_tile,
-                scan_grid_size,
-                threads_per_block,
-                (long long) stream,
-                items_per_thread,
-                reduce_by_key_sm_occupancy);
-#else // CUB_DEBUG_LOG
-        detail::log(
-          "Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d "
-          "items per thread, %d SM occupancy\n",
-          start_tile,
+        _CUB_LOG_KERNEL_LAUNCH(
+          "reduce_by_key_kernel",
           scan_grid_size,
+          1,
+          1,
           threads_per_block,
-          (long long) stream,
-          items_per_thread,
-          reduce_by_key_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+          0,
+          stream,
+          ", SM occupancy: %d, epoch: %d",
+          reduce_by_key_sm_occupancy,
+          start_tile);
 
         // Invoke reduce_by_key_kernel
         error = CubDebug(
@@ -728,18 +714,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
   }
 
   return detail::dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << policy_getter();
-                   _CubLog("Dispatching DeviceReduceByKey to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    log_dispatch("DeviceReduceByKey", cc, policy_getter());
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceReduceByKey", cc, policy_getter());
 
     const auto [threads_per_block, items_per_thread, vsmem_per_block] = determine_threads_items_vsmem<
       decltype(policy_getter),
@@ -766,8 +741,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     {
       return error;
     }
-    size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
-    void* allocations[2]       = {};
+    const size_t allocation_sizes[2] = {tile_descriptor_memory, vsmem_size};
+    void* allocations[2]             = {};
 
     if (const auto error =
           CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
@@ -787,11 +762,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     }
 
     const int init_grid_size = ::cuda::std::max(1, ::cuda::ceil_div(num_tiles, init_kernel_threads));
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#else // CUB_DEBUG_LOG
-    log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
     if (const auto error = CubDebug(
           THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
             .doit(detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -851,23 +822,17 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              threads_per_block,
-              (long long) stream,
-              items_per_thread,
-              reduce_by_key_sm_occupancy);
-#else // CUB_DEBUG_LOG
-      log("Invoking %d reduce_by_key_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
-          start_tile,
-          scan_grid_size,
-          threads_per_block,
-          (long long) stream,
-          items_per_thread,
-          reduce_by_key_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH(
+        "reduce_by_key_kernel",
+        scan_grid_size,
+        1,
+        1,
+        threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d, epoch: %d",
+        reduce_by_key_sm_occupancy,
+        start_tile);
       if (const auto error = CubDebug(
             THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(scan_grid_size, threads_per_block, 0, stream)
               .doit(reduce_by_key_kernel,

@@ -80,7 +80,7 @@ public:
    */
   static pool_options get_default_options()
   {
-    pool_options ret;
+    pool_options ret{};
 
     ret.min_blocks_per_chunk = 16;
     ret.min_bytes_per_chunk  = 1024;
@@ -119,8 +119,8 @@ public:
   {
     assert(m_options.validate());
 
-    pointer_vector free(m_bookkeeper);
-    pool p(free);
+    const pointer_vector free(m_bookkeeper);
+    const pool p(free);
     m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
@@ -142,8 +142,8 @@ public:
   {
     assert(m_options.validate());
 
-    pointer_vector free(m_bookkeeper);
-    pool p(free);
+    const pointer_vector free(m_bookkeeper);
+    const pool p(free);
     m_pools.resize(::cuda::ceil_ilog2(m_options.largest_block_size) - m_smallest_block_log2 + 1, p);
   }
 
@@ -158,7 +158,8 @@ private:
   using void_ptr = typename Upstream::pointer;
   using char_ptr = typename ::cuda::std::pointer_traits<void_ptr>::template rebind<char>;
 
-  struct chunk_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct chunk_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     void_ptr pointer;
@@ -167,7 +168,8 @@ private:
 
   using chunk_vector = thrust::host_vector<chunk_descriptor, allocator<chunk_descriptor, Bookkeeper>>;
 
-  struct oversized_block_descriptor
+  // Preserve default construction of allocator metadata; allocation paths supply the fields.
+  struct oversized_block_descriptor // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     std::size_t size;
     std::size_t alignment;
@@ -343,7 +345,9 @@ public:
     }
   }
 
-  [[nodiscard]] void_ptr do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  [[nodiscard]] void_ptr do_allocate( // NOLINT(google-default-arguments)
+    std::size_t bytes,
+    std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     try
     {
@@ -365,7 +369,7 @@ public:
     // an oversized and/or overaligned allocation requested; needs to be allocated separately
     if (bytes > m_options.largest_block_size || alignment > m_options.alignment)
     {
-      oversized_block_descriptor oversized;
+      oversized_block_descriptor oversized{};
       oversized.size      = bytes;
       oversized.alignment = alignment;
 
@@ -379,7 +383,7 @@ public:
         // allocate a new block
         if (it != m_cached_oversized.end())
         {
-          std::size_t size_factor = (*it).size / bytes;
+          const std::size_t size_factor = (*it).size / bytes;
           if (size_factor >= m_options.cached_size_cutoff_factor)
           {
             it = m_cached_oversized.end();
@@ -396,7 +400,7 @@ public:
         // allocate a new block
         if (it != m_cached_oversized.end())
         {
-          std::size_t alignment_factor = (*it).alignment / alignment;
+          const std::size_t alignment_factor = (*it).alignment / alignment;
           if (alignment_factor >= m_options.cached_alignment_cutoff_factor)
           {
             it = m_cached_oversized.end();
@@ -420,15 +424,15 @@ public:
 
     // the request is NOT for oversized and/or overaligned memory
     // allocate a block from an appropriate bucket
-    std::size_t bytes_log2 = ::cuda::ceil_ilog2(bytes);
-    std::size_t pool_idx   = bytes_log2 - m_smallest_block_log2;
-    pool& bucket           = m_pools[pool_idx];
+    const std::size_t bytes_log2 = ::cuda::ceil_ilog2(bytes);
+    const std::size_t pool_idx   = bytes_log2 - m_smallest_block_log2;
+    pool& bucket                 = m_pools[pool_idx];
 
     // if the free list of the bucket has no elements, allocate a new chunk
     // and split it into blocks pushed to the free list
     if (bucket.free_blocks.empty())
     {
-      std::size_t bucket_size = static_cast<std::size_t>(1) << bytes_log2;
+      const std::size_t bucket_size = static_cast<std::size_t>(1) << bytes_log2;
 
       std::size_t n = bucket.previous_allocated_count;
       if (n == 0)
@@ -450,10 +454,7 @@ public:
       assert(bytes >= m_options.min_bytes_per_chunk);
       assert(bytes <= m_options.max_bytes_per_chunk);
 
-      chunk_descriptor allocated;
-      allocated.size     = bytes;
-      allocated.pointer  = m_upstream->do_allocate(bytes, m_options.alignment);
-      allocated.pool_idx = pool_idx;
+      const chunk_descriptor allocated{bytes, m_upstream->do_allocate(bytes, m_options.alignment), pool_idx};
       m_allocated.push_back(allocated);
       bucket.previous_allocated_count = n;
 
@@ -469,7 +470,9 @@ public:
     return ret;
   }
 
-  void do_deallocate(void_ptr p, std::size_t n, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  void do_deallocate(void_ptr p, // NOLINT(google-default-arguments)
+                     std::size_t n,
+                     std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     n = (std::max) (n, m_options.smallest_block_size);
     assert(::cuda::__is_valid_alignment(alignment));
@@ -480,14 +483,15 @@ public:
     // the deallocated block is oversized and/or overaligned
     if (n > m_options.largest_block_size || alignment > m_options.alignment)
     {
-      typename oversized_block_vector::iterator it = find_if(m_oversized.begin(), m_oversized.end(), equal_pointers(p));
+      const typename oversized_block_vector::iterator it =
+        find_if(m_oversized.begin(), m_oversized.end(), equal_pointers(p));
       assert(it != m_oversized.end());
 
-      oversized_block_descriptor oversized = *it;
+      const oversized_block_descriptor oversized = *it;
 
       if (m_options.cache_oversized)
       {
-        typename oversized_block_vector::iterator position =
+        const typename oversized_block_vector::iterator position =
           lower_bound(m_cached_oversized.begin(), m_cached_oversized.end(), oversized);
         m_cached_oversized.insert(position, oversized);
         return;
@@ -501,9 +505,9 @@ public:
     }
 
     // push the block to the front of the appropriate bucket's free list
-    std::size_t n_log2   = ::cuda::ceil_ilog2(n);
-    std::size_t pool_idx = n_log2 - m_smallest_block_log2;
-    pool& bucket         = m_pools[pool_idx];
+    const std::size_t n_log2   = ::cuda::ceil_ilog2(n);
+    const std::size_t pool_idx = n_log2 - m_smallest_block_log2;
+    pool& bucket               = m_pools[pool_idx];
 
     bucket.free_blocks.push_back(p);
   }

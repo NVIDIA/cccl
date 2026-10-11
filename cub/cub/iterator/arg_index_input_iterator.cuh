@@ -193,7 +193,7 @@ public:
   template <typename Distance>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
   {
-    self_type offset = (*this) + n;
+    const self_type offset = (*this) + n;
     return *offset;
   }
 

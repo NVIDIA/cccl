@@ -112,7 +112,7 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB
 {
   INFO("Launch = " << TEST_LAUNCH);
 
-  int n = 42;
+  const int n = 42;
   c2h::device_vector<int> in(n, 21);
   c2h::device_vector<int> out(n);
 
@@ -170,7 +170,7 @@ struct custom_x0_5_invocable
 
 CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]", CUB_SMALL)
 {
-  int n = 42;
+  const int n = 42;
   c2h::device_vector<int> in(n, 21);
   c2h::device_vector<int> out(n);
 

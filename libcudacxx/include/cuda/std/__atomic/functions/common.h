@@ -48,8 +48,8 @@ struct __atomic_ptr_skip<_Tp*>
 template <typename _Tp>
 struct __atomic_ptr_skip<_Tp[]>
 {};
-template <typename _Tp, int n>
-struct __atomic_ptr_skip<_Tp[n]>
+template <typename _Tp, int _Np>
+struct __atomic_ptr_skip<_Tp[_Np]>
 {};
 
 template <typename _Tp>

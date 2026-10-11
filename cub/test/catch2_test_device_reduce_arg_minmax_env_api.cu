@@ -23,7 +23,7 @@ CUB_TEST("cub::DeviceReduce::ArgMinMax API example", "[reduce][env]", CUB_SMALL)
   auto max_output = thrust::device_vector<float>(1, thrust::no_init);
   auto max_index  = thrust::device_vector<cuda::std::int64_t>(1, thrust::no_init);
 
-  cuda::stream stream{cuda::devices[0]};
+  const cuda::stream stream{cuda::devices[0]};
 
   auto error = cub::DeviceReduce::ArgMinMax(
     input.begin(),
@@ -38,10 +38,10 @@ CUB_TEST("cub::DeviceReduce::ArgMinMax API example", "[reduce][env]", CUB_SMALL)
     std::cerr << "cub::DeviceReduce::ArgMinMax failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<float> expected_min{0.0f};
-  thrust::device_vector<cuda::std::int64_t> expected_min_index{3};
-  thrust::device_vector<float> expected_max{4.0f};
-  thrust::device_vector<cuda::std::int64_t> expected_max_index{2};
+  const thrust::device_vector<float> expected_min{0.0f};
+  const thrust::device_vector<cuda::std::int64_t> expected_min_index{3};
+  const thrust::device_vector<float> expected_max{4.0f};
+  const thrust::device_vector<cuda::std::int64_t> expected_max_index{2};
   // example-end argminmax-env
 
   stream.sync();

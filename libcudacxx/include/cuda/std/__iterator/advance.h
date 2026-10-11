@@ -41,7 +41,8 @@ template <class _InputIter,
 _CCCL_API constexpr void advance(_InputIter& __i, _Distance __orig_n)
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
-  _Difference __n   = static_cast<_Difference>(::cuda::std::__convert_to_integral(__orig_n));
+  // NOLINTNEXTLINE(misc-const-correctness)
+  _Difference __n = static_cast<_Difference>(::cuda::std::__convert_to_integral(__orig_n));
   if constexpr (__has_random_access_traversal<_InputIter>) // To support pointers to incomplete types
   {
     __i += __n;
@@ -84,8 +85,8 @@ struct __fn
 {
 private:
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter_difference>
-  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  template <class _IterDifference>
+  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_IterDifference __a, _IterDifference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b

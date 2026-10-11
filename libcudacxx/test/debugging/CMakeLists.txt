@@ -167,7 +167,7 @@ function(libcudacxx_add_pretty_printer_test)
   )
   target_link_libraries(
     ${target_name}
-    PRIVATE libcudacxx.compiler_interface CUDA::cudart
+    PRIVATE libcudacxx.compiler_interface CUDA::cudart CUDA::cuda_driver
   )
 
   # Explicitly set max optimization, the printers should work even when everything is

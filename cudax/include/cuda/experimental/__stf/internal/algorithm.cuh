@@ -17,6 +17,7 @@
 
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/internal/context.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 
 #include <map>
 
@@ -249,17 +250,11 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
-    // Speaking of which. clear() is documented throwing (its deallocations
-    // and the final stream synchronization go through cuda_try), so the two
-    // exits part ways: on success a failure to release propagates to the
-    // caller as an ordinary exception; on the exception path a secondary
-    // failure is reported and aborts (guard bodies run under
-    // on_throw(abort)) rather than reaching std::terminate bare.
-    SCOPE(success)
-    {
-      adapter.clear();
-    };
-    SCOPE(fail)
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
+    SCOPE(exit)
     {
       adapter.clear();
     };
@@ -288,8 +283,17 @@ public:
 
     if (!eg)
     {
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cuda_safe_call(cudaGraphExecDestroy(*p));
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
             }};
 
       dump_algorithm(gctx_graph);
@@ -318,17 +322,11 @@ public:
     // instead. These resources need to be released later with .clear()
     auto adapter = setup_allocator(gctx, stream);
 
-    // Speaking of which. clear() is documented throwing (its deallocations
-    // and the final stream synchronization go through cuda_try), so the two
-    // exits part ways: on success a failure to release propagates to the
-    // caller as an ordinary exception; on the exception path a secondary
-    // failure is reported and aborts (guard bodies run under
-    // on_throw(abort)) rather than reaching std::terminate bare.
-    SCOPE(success)
-    {
-      adapter.clear();
-    };
-    SCOPE(fail)
+    // Speaking of which. clear() is documented throwing (its deallocations and the final
+    // stream synchronization go through cuda_try), which SCOPE(exit) now handles on its own:
+    // a failure while leaving normally propagates to the caller, and one while already
+    // unwinding is reported and aborts.
+    SCOPE(exit)
     {
       adapter.clear();
     };
@@ -353,8 +351,17 @@ public:
 
     if (!eg)
     {
+      // A deleter cannot throw: a failing destroy leaks the handle and is reported. The handle is
+      // value-initialized and stays null if instantiation throws; do not destroy it then.
       eg = {new cudaGraphExec_t{}, [](cudaGraphExec_t* p) {
-              cuda_safe_call(cudaGraphExecDestroy(*p));
+              if (*p)
+              {
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphExecDestroy>(*p);
+                };
+              }
+              delete p;
             }};
 
       dump_algorithm(gctx_graph);
@@ -375,7 +382,11 @@ private:
     {
       static int print_to_dot_cnt = 0; // Warning: not thread-safe
       ::std::string filename      = "algo_" + symbol + "_" + ::std::to_string(print_to_dot_cnt++) + ".dot";
-      cuda_safe_call(cudaGraphDebugDotPrint(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0)));
+      // A debugging aid that cannot write its file says so; it does not end the computation.
+      ON_THROW(notify)
+      {
+        cuda_try<cudaGraphDebugDotPrint>(*gctx_graph, filename.c_str(), cudaGraphDebugDotFlags(0));
+      };
     }
   }
 

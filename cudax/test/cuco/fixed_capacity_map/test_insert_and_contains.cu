@@ -96,7 +96,7 @@ C2H_TEST("fixed_capacity_map insert and contains", "[container]", key_types, cg_
 
   constexpr int num_keys = (::cuda::std::numeric_limits<key_type>::max() > 800) ? 400 : 100;
 
-  ::cuda::stream stream{::cuda::device_ref{0}};
+  const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
   map_type map{stream,

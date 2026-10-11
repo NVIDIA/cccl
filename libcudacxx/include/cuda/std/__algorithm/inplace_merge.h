@@ -118,6 +118,7 @@ _CCCL_API void __buffered_inplace_merge(
 {
   using value_type = typename iterator_traits<_BidirectionalIterator>::value_type;
   __destruct_n __d(0);
+  // NOLINTNEXTLINE(misc-const-correctness)
   unique_ptr<value_type, __destruct_n&> __h2(__buff, __d);
   if (__len1 <= __len2)
   {
@@ -219,7 +220,9 @@ _CCCL_API void __inplace_merge(
       __m2    = ::cuda::std::lower_bound(__middle, __last, *__m1, __comp);
       __len21 = _Ops::distance(__middle, __m2);
     }
+    // NOLINTNEXTLINE(misc-const-correctness)
     difference_type __len12 = __len1 - __len11; // distance(__m1, __middle)
+    // NOLINTNEXTLINE(misc-const-correctness)
     difference_type __len22 = __len2 - __len21; // distance(__m2, __last)
     // [__first, __m1) [__m1, __middle) [__middle, __m2) [__m2, __last)
     // swap middle two partitions

@@ -48,6 +48,31 @@ auto compute_find_if_reference(InputIt first, InputIt last, Predicate predicate)
   return static_cast<OffsetT>(cuda::std::distance(first, it));
 }
 
+CUB_TEST("Device find_if handles empty input", "[device][find_if]", CUB_SMALL)
+{
+  auto input     = cuda::make_counting_iterator(0);
+  auto predicate = cuda::equal_to_value<int>{0};
+  c2h::device_vector<int> output(1, -1);
+
+  SECTION("contiguous output")
+  {
+    find_if(input, thrust::raw_pointer_cast(output.data()), predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+  SECTION("contiguous input")
+  {
+    c2h::device_vector<int> device_input(1, 0);
+    find_if(device_input.begin(), thrust::raw_pointer_cast(output.data()), predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+  SECTION("transformed output")
+  {
+    auto transformed = cuda::make_transform_output_iterator(output.begin(), cuda::std::negate{});
+    find_if(input, transformed, predicate, 0);
+    REQUIRE(output[0] == 0);
+  }
+}
+
 CUB_TEST("Device find_if works", "[device][find_if]", CUB_SMALL, value_types, offset_types)
 {
   using input_t  = c2h::get<0, TestType>;
@@ -169,7 +194,7 @@ CUB_TEST("Device find_if works with non primitive iterator", "[device][find_if]"
   constexpr offset_t min_items = 1;
   constexpr offset_t max_items = 10000000; // 10M items for reasonable test time
 
-  input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
+  const input_t val_to_find = static_cast<input_t>(GENERATE_COPY(take(1, random(min_items, max_items))));
   // Generate the input sizes to test for
   const offset_t num_items = GENERATE_COPY(
     take(1, random(min_items, max_items)),
@@ -322,7 +347,7 @@ void test_vectorized(Variant variant, HostVariant host_variant, std::size_t num_
   c2h::host_vector<Value> target_values_h = target_values_d;
   c2h::host_vector<Value> values_h        = values_d;
 
-  c2h::host_vector<Result> offsets_h = offsets_d;
+  const c2h::host_vector<Result> offsets_h = offsets_d;
 
   c2h::host_vector<std::ptrdiff_t> offsets_ref(offsets_h.size(), thrust::default_init);
 

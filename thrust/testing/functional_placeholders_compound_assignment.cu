@@ -151,19 +151,7 @@ struct bit_rshift_equal_reference
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitAndEqual, &=, bit_and_equal_reference, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitOrEqual, |=, bit_or_equal_reference, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitXorEqual, ^=, bit_xor_equal_reference, SmallIntegralTypes);
-
-// XXX ptxas produces an error
-void TestFunctionalPlaceholdersBitLshiftEqualDevice()
-{
-  KNOWN_FAILURE;
-}
-// XXX KNOWN_FAILURE this until the above works
-void TestFunctionalPlaceholdersBitLshiftEqualHost()
-{
-  KNOWN_FAILURE;
-}
-// BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitLshiftEqual, <<=, bit_lshift_equal_reference, SmallIntegralTypes);
-
+BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitLshiftEqual, <<=, bit_lshift_equal_reference, SmallIntegralTypes);
 BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(BitRshiftEqual, >>=, bit_rshift_equal_reference, SmallIntegralTypes);
 
 template <typename T>

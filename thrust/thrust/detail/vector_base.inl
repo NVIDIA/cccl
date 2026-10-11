@@ -272,7 +272,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    size_type new_size = ::cuda::std::distance(first, last);
+    const size_type new_size = ::cuda::std::distance(first, last);
 
     allocate_and_copy(new_size, first, last, m_storage);
     m_size = new_size;
@@ -590,7 +590,7 @@ void vector_base<T, Alloc>::push_back(const value_type& x)
 template <typename T, typename Alloc>
 void vector_base<T, Alloc>::pop_back()
 {
-  iterator e           = end();
+  const iterator e     = end();
   iterator ptr_to_back = e;
   --ptr_to_back;
   m_storage.destroy(ptr_to_back, e);
@@ -610,7 +610,7 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator f
 {
   // overlap copy the range [last,end()) to first
   // XXX this copy only potentially overlaps
-  iterator i = thrust::detail::overlapped_copy(last, end(), first);
+  const iterator i = thrust::detail::overlapped_copy(last, end(), first);
 
   // destroy everything after i
   m_storage.destroy(i, end());
@@ -654,7 +654,7 @@ template <typename T, typename Alloc>
 typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator position, const T& x)
 {
   // find the index of the insertion
-  size_type index = ::cuda::std::distance(begin(), position);
+  const size_type index = ::cuda::std::distance(begin(), position);
 
   // make the insertion
   insert(position, 1, x);
@@ -709,7 +709,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
       // we've got room for all of them
       // how many existing elements will we displace?
       const size_type num_displaced_elements = end() - position;
-      iterator old_end                       = end();
+      const iterator old_end                 = end();
 
       if (num_displaced_elements > num_new_elements)
       {
@@ -889,8 +889,8 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
   {
     // we've got room for all of them
     const size_type num_displaced_elements = end() - position;
-    iterator old_end                       = end();
-    iterator mid                           = position + n;
+    const iterator old_end                 = end();
+    const iterator mid                     = position + n;
 
     if (num_displaced_elements > n)
     {
@@ -992,7 +992,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
     else if (size() >= n)
     {
       // we can already accommodate the new range
-      iterator new_end = thrust::copy(first, last, begin());
+      const iterator new_end = thrust::copy(first, last, begin());
 
       // destroy the elements we don't need
       m_storage.destroy(new_end, end());
@@ -1069,7 +1069,7 @@ void vector_base<T, Alloc>::fill_assign(size_type n, const T& x)
   else
   {
     // fill to existing elements
-    iterator new_end = thrust::fill_n(begin(), n, x);
+    const iterator new_end = thrust::fill_n(begin(), n, x);
 
     // erase the elements after the fill
     erase(new_end, end());
@@ -1130,7 +1130,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
 {
-  it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
+  const it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
 
   using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
   using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;
@@ -1140,9 +1140,9 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
   FromSystem1 from_system1;
   FromSystem2 from_system2;
   thrust::host_system_tag to_system;
-  thrust::detail::move_to_system<InputIterator1, FromSystem1, thrust::host_system_tag> rng1(
+  const thrust::detail::move_to_system<InputIterator1, FromSystem1, thrust::host_system_tag> rng1(
     from_system1, to_system, first1, last1);
-  thrust::detail::move_to_system<InputIterator2, FromSystem2, thrust::host_system_tag> rng2(
+  const thrust::detail::move_to_system<InputIterator2, FromSystem2, thrust::host_system_tag> rng2(
     from_system2, to_system, first2, first2 + n);
 
   return thrust::equal(rng1.begin(), rng1.end(), rng2.begin());

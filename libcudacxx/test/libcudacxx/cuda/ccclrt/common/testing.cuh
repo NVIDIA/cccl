@@ -14,6 +14,7 @@
 #include <cuda/std/detail/__config>
 
 #include <cuda/__driver/driver_api.h>
+#include <cuda/__hierarchy/hierarchy_query_result.h>
 
 #include <nv/target>
 
@@ -54,6 +55,17 @@ struct StringMaker<dim3>
   {
     std::ostringstream oss;
     oss << "(" << dims.x << ", " << dims.y << ", " << dims.z << ")";
+    return oss.str();
+  }
+};
+
+template <typename T>
+struct StringMaker<cuda::hierarchy_query_result<T>>
+{
+  static std::string convert(cuda::hierarchy_query_result<T> const& result)
+  {
+    std::ostringstream oss;
+    oss << "(" << result.x << ", " << result.y << ", " << result.z << ")";
     return oss.str();
   }
 };

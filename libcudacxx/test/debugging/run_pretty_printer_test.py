@@ -714,8 +714,11 @@ def _run_debugger(
             timeout=args.timeout,
         )
     except subprocess.TimeoutExpired as error:
-        if isinstance(error.stdout, str):
-            args.output_log.write_text(error.stdout)
+        if error.stdout is not None:
+            output = error.stdout
+            if isinstance(output, bytes):
+                output = output.decode(errors="replace")
+            args.output_log.write_text(output)
         raise DebuggerTimeoutError(
             f"{debugger.kind} timed out after {args.timeout:g} seconds"
         ) from error
@@ -842,6 +845,7 @@ def _report_error(
     print(f"debugger commands: {command_file}", file=sys.stderr)
     if args.output_log.exists():
         print(f"complete transcript: {args.output_log}", file=sys.stderr)
+        print(args.output_log.read_text(errors="replace"), file=sys.stderr)
 
 
 def main(arguments: Sequence[str] | None = None) -> int:

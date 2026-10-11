@@ -58,7 +58,7 @@ int main()
 
   stackable_ctx sctx;
 
-  size_t sz = 1024;
+  const size_t sz = 1024;
   ::std::vector<int> data(sz);
 
   // Initialize data
@@ -72,7 +72,7 @@ int main()
 
   // First scope: push with READ access mode
   {
-    stackable_ctx::graph_scope_guard scope1{sctx};
+    const stackable_ctx::graph_scope_guard scope1{sctx};
     ldata.push(access_mode::read);
 
     // We are going to try to escalate from read to rw access mode in nested context:
@@ -82,7 +82,7 @@ int main()
     // NESTED second scope: attempt to push with RW access mode
     // This should be caught as an invalid access mode escalation
     {
-      stackable_ctx::graph_scope_guard scope2{sctx};
+      const stackable_ctx::graph_scope_guard scope2{sctx};
       ldata.push(access_mode::rw); // This should trigger abort()!
     }
   }

@@ -123,8 +123,7 @@ class WarpBitonicSort
   WarpBitonicSort() = default;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
@@ -451,8 +450,7 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   WarpBitonicSort() = default;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
@@ -570,7 +568,7 @@ private:
   {
     // Each stage divides the inputs into groups and sorts within each group.
     // Sort direction of each group should be adjusted to maintain the bitonic property.
-    unsigned int group_reverse = Reverse;
+    unsigned int group_reverse = Reverse; // NOLINT(misc-const-correctness)
     if constexpr (Stage == num_stages - 1)
     {
       // The last stage contains only one group, and the sort direction is just Reverse

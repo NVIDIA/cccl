@@ -32,22 +32,16 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct __cccl_is_member_pointer
 {
-  enum
-  {
-    __is_member = false,
-    __is_func   = false,
-    __is_obj    = false
-  };
+  static constexpr bool __is_member = false;
+  static constexpr bool __is_func   = false;
+  static constexpr bool __is_obj    = false;
 };
 template <class _Tp, class _Up>
 struct __cccl_is_member_pointer<_Tp _Up::*>
 {
-  enum
-  {
-    __is_member = true,
-    __is_func   = is_function_v<_Tp>,
-    __is_obj    = !__is_func,
-  };
+  static constexpr bool __is_member = true;
+  static constexpr bool __is_func   = is_function_v<_Tp>;
+  static constexpr bool __is_obj    = !__is_func;
 };
 
 #if defined(_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_FUNCTION_POINTER_FALLBACK)

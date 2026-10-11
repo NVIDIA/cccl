@@ -66,7 +66,7 @@ struct SmemAllocator
         NV_IS_DEVICE,
         (
           // Convert allocated smem address to generic pointer
-          void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
+          const void* mPtrAllocation = __cvta_shared_to_generic(ptrAllocation32);
           // Ensure alignment calculation does not move down into rest of kernel code.
           return optimizeSmemPtr(mPtrAllocation);))
     }

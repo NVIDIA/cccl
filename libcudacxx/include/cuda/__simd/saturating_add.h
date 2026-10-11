@@ -43,7 +43,7 @@ struct __saturating_add_operation
 {
   template <typename _Storage>
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Storage
-  operator()(const _Storage& __lhs, const _Storage& __rhs) const noexcept
+  _CCCL_STATIC_CALL_OPERATOR(const _Storage& __lhs, const _Storage& __rhs) noexcept
   {
 #if _CCCL_HAS_SIMD_SAT()
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT

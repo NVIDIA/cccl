@@ -29,8 +29,6 @@
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/cstdint>
 
-#  include <nv/target>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
@@ -92,8 +90,8 @@ struct __allowed_levels
 
 namespace __detail
 {
-template <typename LevelType>
-using __default_unit_below = typename LevelType::__allowed_below::__default_unit;
+template <typename _LevelType>
+using __default_unit_below = typename _LevelType::__allowed_below::__default_unit;
 
 template <class _QueryLevel, class _AllowedLevels>
 inline constexpr bool __is_level_allowed = false;

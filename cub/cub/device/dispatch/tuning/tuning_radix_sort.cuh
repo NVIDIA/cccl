@@ -252,6 +252,7 @@ struct RadixSortUpsweepPolicy
 };
 
 //! The tuning policy for all algorithms in @ref DeviceRadixSort.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct RadixSortPolicy
 {
   RadixSortAlgorithm algorithm; //!< The radix sort algorithm to use

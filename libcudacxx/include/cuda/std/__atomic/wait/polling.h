@@ -24,7 +24,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-#include <cuda/std/__thread/threading_support.h>
+#include <cuda/std/__thread/poll.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -47,7 +47,7 @@ struct __atomic_poll_tester
 
   _CCCL_HOST_DEVICE_API bool operator()() const
   {
-    return !(__atomic_load_dispatch(__atom, __order, _Sco{}) == __val);
+    return !(::cuda::std::__atomic_load_dispatch(__atom, __order, _Sco{}) == __val);
   }
 };
 

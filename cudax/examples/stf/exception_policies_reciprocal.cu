@@ -36,7 +36,6 @@
 #include <vector>
 
 using namespace cuda::experimental::stf;
-namespace pol = cuda::experimental::stf::exception_policies;
 
 double f(double x)
 {
@@ -55,6 +54,7 @@ int main()
   ::std::vector<::std::exception_ptr> reports(n_workers);
   ::std::vector<::std::thread> workers;
 
+  workers.reserve(n_workers);
   for (size_t w = 0; w < n_workers; ++w)
   {
     workers.emplace_back([&, w] {

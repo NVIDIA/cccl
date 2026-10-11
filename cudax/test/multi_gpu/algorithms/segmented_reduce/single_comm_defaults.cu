@@ -16,7 +16,7 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__multi_gpu/algorithm/reduce/segmented_reduce.h>
+#include <cuda/experimental/mgmn/segmented_reduce>
 
 #include <exception>
 #include <future>
@@ -86,7 +86,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
   SECTION("Default init, op, ident (all)")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::segmented_reduce(
+      cudax::mgmn::segmented_reduce(
         cudax::broadcasted,
         comms[i],
         envs[i],
@@ -106,7 +106,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
   SECTION("Default op, ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::segmented_reduce(
+      cudax::mgmn::segmented_reduce(
         cudax::broadcasted,
         comms[i],
         envs[i],
@@ -127,7 +127,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
   SECTION("Default ident")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::segmented_reduce(
+      cudax::mgmn::segmented_reduce(
         cudax::broadcasted,
         comms[i],
         envs[i],
@@ -149,7 +149,7 @@ MULTI_GPU_TEST("segmented_reduce single-comm, overloads default values", )
   SECTION("Default none")
   {
     run_threaded(comms.size(), [&](cuda::std::size_t i) {
-      cudax::segmented_reduce(
+      cudax::mgmn::segmented_reduce(
         cudax::broadcasted,
         comms[i],
         envs[i],

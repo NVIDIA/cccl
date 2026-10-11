@@ -195,8 +195,8 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT duration
     static constexpr intmax_t __d2        = _R2::den / __gcd_d1_d2;
     static constexpr intmax_t max         = -((intmax_t(1) << (sizeof(intmax_t) * CHAR_BIT - 1)) + 1);
 
-    template <intmax_t _Xp, intmax_t _Yp, bool __overflow>
-    struct __mul // __overflow == false
+    template <intmax_t _Xp, intmax_t _Yp, bool _Overflow>
+    struct __mul // _Overflow == false
     {
       static constexpr intmax_t value = _Xp * _Yp;
     };

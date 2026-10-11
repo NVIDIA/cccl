@@ -42,10 +42,13 @@
     _CCCL_EXEC_CHECK_DISABLE                                                                                           \
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #else // ^^^ workaround ^^^ / vvv no workaround vvv
-#  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
-    using __base = __baseclass<__VA_ARGS__>;                     \
-    using __base::__base;                                        \
-    _CCCL_EXEC_CHECK_DISABLE                                     \
+#  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)          \
+    using __base = __baseclass<__VA_ARGS__>;                              \
+    /* clang-tidy is off its rocker */                                    \
+    /* NOLINTBEGIN(cppcoreguidelines-rvalue-reference-param-not-moved) */ \
+    using __base::__base;                                                 \
+    /* NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved) */   \
+    _CCCL_EXEC_CHECK_DISABLE                                              \
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #endif // ^^^ no workaround ^^^
 

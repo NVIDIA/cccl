@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:cluster=tsc,GPU,non_block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE type i128:u128
 // %PARAM% CAS cas compare_exchange_weak:compare_exchange_strong
 // %PARAM% SUCCESS_ORDER,FAILURE_ORDER,SASS_MEMBAR,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order rr=mor,mor,,non_seq_cst,no_acquire,no_membar:ar=moa,mor,,non_seq_cst,acquire,no_membar:aa=moa,moa,,non_seq_cst,acquire,no_membar:er=more,mor,ALL,non_seq_cst,no_acquire,membar:br=moar,mor,ALL,non_seq_cst,acquire,membar:ba=moar,moa,ALL,non_seq_cst,acquire,membar:sr=mosc,mor,SC,seq_cst,acquire,membar:sa=mosc,moa,SC,seq_cst,acquire,membar:ss=mosc,mosc,SC,seq_cst,acquire,membar

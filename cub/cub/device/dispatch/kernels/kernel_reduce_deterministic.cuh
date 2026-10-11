@@ -25,6 +25,8 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -170,7 +172,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
   AccumT thread_aggregate{};
   int count = 0;
 
-  int n_threads = active_grid_size * threads_per_block;
+  const int n_threads = active_grid_size * threads_per_block;
 
   if constexpr (sizeof(num_items_t) == 8)
   {

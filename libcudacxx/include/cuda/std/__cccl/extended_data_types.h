@@ -125,10 +125,10 @@ struct __nv_fp4x4_e2m1;
 // nvcc does not support _Float64 in device code. A type that exists in one pass of a CUDA
 // compilation and not the other would give the two passes different overload sets, so this reports
 // false for nvcc in both passes rather than only in the device one.
-#if defined(__STDCPP_FLOAT64_T__) && __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#if defined(__STDCPP_FLOAT64_T__) && __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 #  undef _CCCL_HAS_FLOAT64
 #  define _CCCL_HAS_FLOAT64() 1
-#endif // __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC)
+#endif // __STDCPP_FLOAT64_T__ == 1 && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
 
 /***********************************************************************************************************************
  * __float128

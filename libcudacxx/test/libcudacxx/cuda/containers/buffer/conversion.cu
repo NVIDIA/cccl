@@ -36,21 +36,21 @@ C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
     return;
   }
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   Resource resource = extract_properties<Buffer>::get_resource();
 
   SECTION("cuda::buffer construction with matching buffer")
   {
     { // can be copy constructed from empty input
       const MatchingBuffer input{stream, resource, 0, cuda::no_init};
-      Buffer buf(input);
+      const Buffer buf(input);
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(input.empty());
     }
 
     { // can be copy constructed from non-empty input
       const MatchingBuffer input{stream, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Buffer buf(input);
+      const Buffer buf(input);
       CCCLRT_CHECK(!buf.empty());
       CCCLRT_CHECK(equal_range(buf));
       CCCLRT_CHECK(equal_range(input));
@@ -58,7 +58,7 @@ C2H_CCCLRT_TEST("cuda::buffer conversion", "[container][buffer]", test_types)
 
     { // can be move constructed with empty input
       MatchingBuffer input{stream, resource, 0, cuda::no_init};
-      Buffer buf(cuda::std::move(input));
+      const Buffer buf(cuda::std::move(input));
       CCCLRT_CHECK(buf.empty());
       CCCLRT_CHECK(input.empty());
     }

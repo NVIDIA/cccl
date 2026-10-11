@@ -1,4 +1,4 @@
-#include <cub/cub.cuh>
+#include <cub/device/device_radix_sort.cuh>
 
 void b()
 {

@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // clang-format off
-// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:device=tsd,GPU,non_block:system=tss,SYS,non_block
+// %PARAM% SCOPE,SASS_SCOPE,FILECHECK_PREFIX_SCOPE scope block=tsb,CTA,block:cluster=tsc,GPU,non_block:device=tsd,GPU,non_block:system=tss,SYS,non_block
 // %PARAM% TYPE,FILECHECK_PREFIX_WIDTH type int8_t=int8_t,byte:uint8_t=uint8_t,byte:int16_t=int16_t,halfword:uint16_t=uint16_t,halfword:f16=f16,halfword:bf16=bf16,halfword
 // %PARAM% CAS cas compare_exchange_weak:compare_exchange_strong
 // %PARAM% SUCCESS_ORDER,FAILURE_ORDER,FILECHECK_PREFIX_SEQ_CST,FILECHECK_PREFIX_ACQUIRE,FILECHECK_PREFIX_ORDER order rr=mor,mor,non_seq_cst,no_acquire,no_membar:ar=moa,mor,non_seq_cst,acquire,no_membar:aa=moa,moa,non_seq_cst,acquire,no_membar:er=more,mor,non_seq_cst,no_acquire,release:br=moar,mor,non_seq_cst,acquire,release:ba=moar,moa,non_seq_cst,acquire,release:sr=mosc,mor,seq_cst,acquire,seq_cst:sa=mosc,moa,seq_cst,acquire,seq_cst:ss=mosc,mosc,seq_cst,acquire,seq_cst

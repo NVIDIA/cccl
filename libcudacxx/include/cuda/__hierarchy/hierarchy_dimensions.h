@@ -24,14 +24,15 @@
 #if _CCCL_HAS_CTK()
 
 #  include <cuda/__fwd/hierarchy.h>
-#  include <cuda/__hierarchy/level_dimensions.h>
+#  include <cuda/__hierarchy/level_dimensions.h> // IWYU pragma: keep
 #  include <cuda/__hierarchy/traits.h>
+#  include <cuda/std/__tuple_dir/apply.h>
+#  include <cuda/std/__tuple_dir/get.h>
+#  include <cuda/std/__tuple_dir/tie.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
+#  include <cuda/std/__tuple_dir/tuple_cat.h>
 #  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/integer_sequence.h>
-#  include <cuda/std/tuple>
-
-#  include <nv/target>
 
 #  include <cuda/std/__cccl/prologue.h>
 

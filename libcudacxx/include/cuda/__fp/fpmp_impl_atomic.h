@@ -31,9 +31,9 @@
     error-free-transform primitives live in <cuda/__fp/fpmp_impl.h>, which this header includes.
 */
 
-#include <cuda/__atomic/atomic.h> // dd atomics use cuda::atomic_ref for the 128-bit compare-exchange
-#include <cuda/__fp/fpmp_impl.h>
-#include <cuda/__fp/fpmp_impl_muladd.h> // dd atomics reuse __fpmp2_high_add (muladd family)
+#include <cuda/__atomic/atomic.h> // IWYU pragma: keep
+#include <cuda/__fp/fpmp_impl.h> // IWYU pragma: keep
+#include <cuda/__fp/fpmp_impl_muladd.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -140,7 +140,7 @@ _CCCL_FPMP_CORE_DEVICE_API inline void __fpmp2_atomicAdd<float>(
     unsigned long long int __new_ull =
       static_cast<unsigned long long int>(__new_hi_bits) | (static_cast<unsigned long long int>(__new_lo_bits) << 32);
 
-    __old = atomicCAS(__address_as_ull, __assumed, __new_ull);
+    __old = ::atomicCAS(__address_as_ull, __assumed, __new_ull);
   } while (__assumed != __old);
 
   // Return old value - extract from the final 'old' value

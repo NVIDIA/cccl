@@ -13,7 +13,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_void.h>
 
-#include <cuda/experimental/__multi_gpu/concepts.h>
+#include <cuda/experimental/mgmn/concepts>
 
 #include <testing.cuh>
 
@@ -43,11 +43,11 @@ _CCCL_END_NV_DIAG_SUPPRESS()
 
 C2H_TEST("__has_all_reduce concept", "[multi_gpu][concepts]")
 {
-  STATIC_REQUIRE(cudax::__has_all_reduce<types::collective_communicator_model>);
-  STATIC_REQUIRE(cudax::__has_all_reduce<types::collective_communicator_model, long*>);
-  STATIC_REQUIRE(!cudax::__has_all_reduce<types::communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_reduce<types::collective_communicator_model>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_reduce<types::collective_communicator_model, long*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_reduce<types::communicator_model>);
 
-  STATIC_REQUIRE(!cudax::__has_all_reduce<all_reduce_returns_int>);
-  STATIC_REQUIRE(cudax::__has_all_reduce<all_reduce_rejects_void, int*>);
-  STATIC_REQUIRE(!cudax::__has_all_reduce<all_reduce_rejects_void, void*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_reduce<all_reduce_returns_int>);
+  STATIC_REQUIRE(cudax::mgmn::__has_all_reduce<all_reduce_rejects_void, int*>);
+  STATIC_REQUIRE(!cudax::mgmn::__has_all_reduce<all_reduce_rejects_void, void*>);
 }

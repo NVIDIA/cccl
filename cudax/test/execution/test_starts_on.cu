@@ -135,7 +135,7 @@ C2H_TEST("starts_on can be called with const ref scheduler", "[adaptors][starts_
 
 C2H_TEST("starts_on can be called with ref scheduler", "[adaptors][starts_on]")
 {
-  dummy_scheduler<> sched;
+  const dummy_scheduler<> sched;
   auto snd = ex::starts_on(sched, ex::just(42));
   auto op  = ex::connect(std::move(snd), checked_value_receiver{42});
   ex::start(op);
@@ -144,7 +144,7 @@ C2H_TEST("starts_on can be called with ref scheduler", "[adaptors][starts_on]")
 C2H_TEST("starts_on forwards scheduler errors", "[adaptors][starts_on]")
 {
   auto ec = error_code{std::errc::invalid_argument};
-  error_scheduler<error_code> sched{ec};
+  const error_scheduler<error_code> sched{ec};
   auto snd = ex::starts_on(sched, ex::just(42));
   auto op  = ex::connect(std::move(snd), checked_error_receiver{ec});
   ex::start(op);
@@ -153,7 +153,7 @@ C2H_TEST("starts_on forwards scheduler errors", "[adaptors][starts_on]")
 
 C2H_TEST("starts_on forwards scheduler errors of other types", "[adaptors][starts_on]")
 {
-  error_scheduler<string> sched{string{"scheduler error"}};
+  const error_scheduler<string> sched{string{"scheduler error"}};
   auto snd = ex::starts_on(sched, ex::just(42));
   auto op  = ex::connect(std::move(snd), checked_error_receiver{string{"scheduler error"}});
   ex::start(op);
@@ -161,7 +161,7 @@ C2H_TEST("starts_on forwards scheduler errors of other types", "[adaptors][start
 
 C2H_TEST("starts_on forwards scheduler stopped signal", "[adaptors][starts_on]")
 {
-  stopped_scheduler sched{};
+  const stopped_scheduler sched{};
   auto snd = ex::starts_on(sched, ex::just(42));
   auto op  = ex::connect(std::move(snd), checked_stopped_receiver{});
   ex::start(op);
@@ -191,7 +191,7 @@ C2H_TEST("starts_on preserves multiple values", "[adaptors][starts_on]")
 
 C2H_TEST("starts_on has the values_type corresponding to the child sender", "[adaptors][starts_on]")
 {
-  dummy_scheduler<> sched{};
+  const dummy_scheduler<> sched{};
 
   check_value_types<types<int>>(ex::starts_on(sched, ex::just(1)));
   check_value_types<types<int, double>>(ex::starts_on(sched, ex::just(3, 0.14)));
@@ -200,9 +200,9 @@ C2H_TEST("starts_on has the values_type corresponding to the child sender", "[ad
 
 C2H_TEST("starts_on includes error_types from both scheduler and sender", "[adaptors][starts_on]")
 {
-  dummy_scheduler<> sched1{};
-  error_scheduler<std::error_code> sched2{std::make_error_code(std::errc::invalid_argument)};
-  error_scheduler<int> sched3{43};
+  const dummy_scheduler<> sched1{};
+  const error_scheduler<std::error_code> sched2{std::make_error_code(std::errc::invalid_argument)};
+  const error_scheduler<int> sched3{43};
 
   // Inline scheduler has no errors, sender has no errors
   check_error_types<>(ex::starts_on(sched1, ex::just(1)));
@@ -216,9 +216,9 @@ C2H_TEST("starts_on includes error_types from both scheduler and sender", "[adap
 
 C2H_TEST("starts_on sends_stopped includes both scheduler and sender", "[adaptors][starts_on]")
 {
-  dummy_scheduler<> sched1{};
-  error_scheduler<error_code> sched2{error_code{std::errc::invalid_argument}};
-  stopped_scheduler sched3{};
+  const dummy_scheduler<> sched1{};
+  const error_scheduler<error_code> sched2{error_code{std::errc::invalid_argument}};
+  const stopped_scheduler sched3{};
 
   // Neither scheduler nor sender sends stopped
   check_sends_stopped<false>(ex::starts_on(sched1, ex::just(1)));

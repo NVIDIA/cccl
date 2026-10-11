@@ -12,7 +12,7 @@ compile_time:
   pull_request:
     - id: public-headers-gcc13
       name: Public headers compile-time bench
-      gpu: rtx2080
+      gpu: t4
       launch_args: "--cuda 13.3 --host gcc13"
       baseline_ref: origin/main
       preset: all-dev
@@ -53,6 +53,9 @@ larger single-trace movement.
 `summarize_events.py --slices <json>` writes per-slice CSVs under
 `event_reports/<slice-id>/` and writes a normalized `event_reports/summary.json`
 manifest. The manifest is the renderer contract; CSVs are human artifacts.
+Trace JSON is parsed once per file and every slice is applied in that pass.
+`--jobs N` parses files in parallel (default `min(cpu count, 8)`; `--jobs 1`
+stays in-process).
 Configured slices that match no events, have no matching trace files, or have no
 comparable event keys record warnings in the manifest so reporting failures are
 not presented as ordinary no-regression results.

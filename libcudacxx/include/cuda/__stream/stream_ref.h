@@ -29,12 +29,8 @@
 #  include <cuda/__fwd/get_stream.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__stream/invalid_stream.h>
-#  include <cuda/__utility/no_init.h>
-#  include <cuda/std/__exception/cuda_error.h>
-#  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__fwd/hash.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__utility/to_underlying.h>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -49,7 +45,8 @@ enum class stream_id : unsigned long long
 class stream_ref
 {
 protected:
-  ::cudaStream_t __stream{nullptr};
+  // The owning stream class manages this handle directly.
+  ::cudaStream_t __stream{nullptr}; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using value_type = ::cudaStream_t;
@@ -207,7 +204,7 @@ public:
     _CCCL_ASSERT(__stream != ::cuda::__invalid_stream(), "cuda::stream_ref::wait invalid stream passed");
     if (*this != __other)
     {
-      event __tmp(__other);
+      const event __tmp(__other);
       wait(__tmp);
     }
   }
@@ -385,7 +382,7 @@ _CCCL_HOST_API inline event::event(stream_ref __stream, event_flags __flags)
 _CCCL_HOST_API inline event::event(stream_ref __stream, unsigned __flags)
     : event_ref(::cudaEvent_t{})
 {
-  [[maybe_unused]] __ensure_current_context __ctx_setter(__stream);
+  [[maybe_unused]] const __ensure_current_context __ctx_setter(__stream);
   __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
 }
 

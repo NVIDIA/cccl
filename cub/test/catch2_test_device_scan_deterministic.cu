@@ -111,7 +111,7 @@ CUB_TEST("DeviceScan::ExclusiveScan with run_to_run determinism matches host ref
   const auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
   const auto op  = cuda::std::plus<type>{};
 
-  c2h::host_vector<type> h_input(d_input);
+  const c2h::host_vector<type> h_input(d_input);
   c2h::host_vector<type> h_reference(num_items);
   compute_exclusive_scan_reference(h_input.cbegin(), h_input.cend(), h_reference.begin(), type{}, op);
 

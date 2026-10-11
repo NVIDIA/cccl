@@ -27,12 +27,7 @@ InternalDict = dict[str, object]
 # Compiled once per process, then called per stream: an inferior round trip costs
 # far more than the queries, so one call collects every field.
 #
-# The queries use the driver API. libcuda is always shared, so its symbols are
-# always present; the cudart equivalents are absent from a statically linked
-# runtime unless the program itself calls them, which silently drops a field.
-#
-# An unresolved identifier fails the whole unit, so the device query is spliced in
-# only when its symbol resolves. The rest predate the oldest supported driver.
+# The driver API avoids initializing a primary context from the formatter.
 _STREAM_SNAPSHOT_DEFINITION = """
 struct __cccl_stream_snapshot_result
 {
@@ -153,11 +148,27 @@ def _snapshot_fields(value: lldb.SBValue, handle: int) -> dict[str, int] | None:
     process_id = process.GetUniqueID()
     if _snapshot_fields.process_id != process_id:
         _snapshot_fields.process_id = process_id
+        _snapshot_fields.installed = False
+        device_address = cccl_common.driver_function_address(value, "cuStreamGetDevice")
         definition = _STREAM_SNAPSHOT_DEFINITION % (
-            _STREAM_DEVICE_QUERY
-            if target.FindSymbols("cuStreamGetDevice").GetSize()
+            _STREAM_DEVICE_QUERY.replace("cuStreamGetDevice", f"{device_address:#x}")
+            if device_address
             else ""
         )
+        # LLDB can miss libcuda even when the executable links it. Use the
+        # loaded driver's addresses, as the memory-pool formatter does.
+        for name in (
+            "cuCtxGetCurrent",
+            "cuCtxSetCurrent",
+            "cuStreamIsCapturing",
+            "cuStreamGetId",
+            "cuStreamGetPriority",
+            "cuStreamGetFlags",
+        ):
+            address = cccl_common.driver_function_address(value, name)
+            if not address:
+                return None
+            definition = definition.replace(name, f"{address:#x}")
         top_level = lldb.SBExpressionOptions()
         top_level.SetIgnoreBreakpoints(True)
         top_level.SetUnwindOnError(True)

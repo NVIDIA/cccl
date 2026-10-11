@@ -18,11 +18,11 @@
 #include <cuda/iterator>
 #include <cuda/std/__floating_point/cuda_fp_types.h> // __half, __nv_bfloat16
 #include <cuda/std/bit>
+#include <cuda/std/optional>
 #include <cuda/type_traits>
 
 #include <cstdint>
 #include <random>
-#include <type_traits>
 
 #include <curand.h>
 #include <nvbench_helper.cuh>
@@ -43,6 +43,11 @@ enum class executor
 class host_generator_t
 {
 public:
+  host_generator_t()
+      : m_distribution()
+  {}
+  ~host_generator_t() {}
+
   template <typename T>
   void generate(seed_t seed, cuda::std::span<T> device_span, bit_entropy entropy, T min, T max);
 
@@ -132,7 +137,7 @@ struct random_to_item_t
 
   __host__ __device__ T operator()(double random_value) const
   {
-    if constexpr (::cuda::is_floating_point_v<T>)
+    if constexpr (cuda::is_floating_point_v<T>)
     {
       return static_cast<T>((m_max - m_min) * random_value + m_min);
     }
@@ -218,7 +223,7 @@ struct and_t
     const T b_real = b.real();
     const T b_imag = b.imag();
 
-    using uint_t           = std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>;
+    using uint_t           = cuda::std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>;
     const auto result_real = cuda::std::bit_cast<uint_t>(a_real) & cuda::std::bit_cast<uint_t>(b_real);
     const auto result_imag = cuda::std::bit_cast<uint_t>(a_imag) & cuda::std::bit_cast<uint_t>(b_imag);
 
@@ -338,8 +343,8 @@ private:
   void power_law_segment_offsets(
     const ExecT& exec, DistT& dist, seed_t seed, cuda::std::span<T> span, std::size_t total_elements);
 
-  std::optional<host_generator_t> m_host_generator;
-  std::optional<device_generator_t> m_device_generator;
+  cuda::std::optional<host_generator_t> m_host_generator;
+  cuda::std::optional<device_generator_t> m_device_generator;
 };
 
 template <typename ExecT, typename DistT, typename T>
@@ -356,7 +361,7 @@ void generator_t::generate(
         uniform_distribution,
         uniform_distribution + span.size(),
         span.data(),
-        ::cuda::proclaim_copyable_arguments(random_to_item_t<T>(min, max)));
+        cuda::proclaim_copyable_arguments(random_to_item_t<T>(min, max)));
       return;
     }
     case bit_entropy::_0_000: {
@@ -376,12 +381,12 @@ void generator_t::generate(
         uniform_distribution,
         uniform_distribution + span.size(),
         span.data(),
-        ::cuda::proclaim_copyable_arguments(random_to_item_t<T>(min, max)));
+        cuda::proclaim_copyable_arguments(random_to_item_t<T>(min, max)));
 
       const int number_of_steps = static_cast<int>(entropy);
 
-      constexpr bool is_device = std::is_same_v<DistT, device_generator_t>;
-      using vec_t              = std::conditional_t<is_device, thrust::device_vector<T>, thrust::host_vector<T>>;
+      constexpr bool is_device = cuda::std::is_same_v<DistT, device_generator_t>;
+      using vec_t              = cuda::std::conditional_t<is_device, thrust::device_vector<T>, thrust::host_vector<T>>;
       vec_t tmp_vec(span.size());
       cuda::std::span<T> tmp(thrust::raw_pointer_cast(tmp_vec.data()), tmp_vec.size());
 
@@ -395,7 +400,7 @@ void generator_t::generate(
           span.data() + span.size(),
           tmp.data(),
           span.data(),
-          ::cuda::proclaim_copyable_arguments(and_t{}));
+          cuda::proclaim_copyable_arguments(and_t{}));
       }
       return;
     }
@@ -456,10 +461,10 @@ void generator_t::generate(
 
       const int number_of_steps = static_cast<int>(entropy);
 
-      constexpr bool is_device = std::is_same_v<DistT, device_generator_t>;
-      using vec_t              = std::conditional_t<is_device,
-                                                    thrust::device_vector<cuda::std::complex<T>>,
-                                                    thrust::host_vector<cuda::std::complex<T>>>;
+      constexpr bool is_device = cuda::std::is_same_v<DistT, device_generator_t>;
+      using vec_t              = cuda::std::conditional_t<is_device,
+                                                          thrust::device_vector<cuda::std::complex<T>>,
+                                                          thrust::host_vector<cuda::std::complex<T>>>;
 
       vec_t tmp_vec(span.size());
       cuda::std::span<cuda::std::complex<T>> tmp(thrust::raw_pointer_cast(tmp_vec.data()), tmp_vec.size());
@@ -474,7 +479,7 @@ void generator_t::generate(
           span.data() + span.size(),
           tmp.data(),
           span.data(),
-          ::cuda::proclaim_copyable_arguments(and_t{}));
+          cuda::proclaim_copyable_arguments(and_t{}));
       }
       return;
     }
@@ -518,7 +523,7 @@ void generator_t::generate(
       uniform_distribution,
       uniform_distribution + span.size(),
       span.data(),
-      ::cuda::proclaim_copyable_arguments(random_to_probability_t{entropy_to_probability(entropy)}));
+      cuda::proclaim_copyable_arguments(random_to_probability_t{entropy_to_probability(entropy)}));
   }
 }
 
@@ -553,7 +558,7 @@ void generator_t::power_law_segment_offsets(
     uniform_distribution,
     uniform_distribution + total_segments,
     device_segment_offsets.data(),
-    ::cuda::proclaim_copyable_arguments(lognormal_transformer_t<T>{total_elements, sum}));
+    cuda::proclaim_copyable_arguments(lognormal_transformer_t<T>{total_elements, sum}));
 
   const int diff =
     total_elements

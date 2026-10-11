@@ -92,7 +92,7 @@ _CCCL_HOST_DEVICE inline complex<float> ctanhf(const complex<float>& z)
 
   if (ix >= 0x41300000)
   { /* x >= 11 */
-    float exp_mx = ::cuda::std::expf(-::cuda::std::fabsf(x));
+    const float exp_mx = ::cuda::std::expf(-::cuda::std::fabsf(x));
     return (complex<float>(::cuda::std::copysignf(1.0f, x),
                            4.0f * ::cuda::std::sinf(y) * ::cuda::std::cosf(y) * exp_mx * exp_mx));
   }

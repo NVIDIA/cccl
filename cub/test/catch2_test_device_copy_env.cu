@@ -16,9 +16,10 @@ struct stream_registry_factory_t;
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
 
-#include "catch2_test_env_launch_helper.h"
+#include "block_size_extracting_helpers.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceCopy::Batched, device_copy_batched);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceCopy::Batched, device_copy_batched);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -57,9 +58,9 @@ CUB_TEST_CASE("DeviceCopy::Batched works with default environment", "[copy][devi
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
-  int num_ranges = 3;
+  const int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  const thrust::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -80,9 +81,9 @@ CUB_TEST("DeviceCopy::Batched uses environment", "[copy][device]", CUB_SMALL)
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
-  int num_ranges = 3;
+  const int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  const thrust::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -107,9 +108,9 @@ CUB_TEST_CASE("DeviceCopy::Batched uses custom stream", "[copy][device]", CUB_SM
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 5, 6};
 
-  int num_ranges = 3;
+  const int num_ranges = 3;
 
-  thrust::counting_iterator<int> iota(0);
+  const thrust::counting_iterator<int> iota(0);
   auto input_it = thrust::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
@@ -162,17 +163,17 @@ CUB_TEST("DeviceCopy::Batched can be tuned", "[copy][device]", CUB_SMALL, block_
   auto d_dst     = c2h::device_vector<int>(6, 0);
   auto d_offsets = c2h::device_vector<int>{0, 2, 4, 6};
 
-  int num_ranges                = 3;
+  const int num_ranges          = 3;
   constexpr int items_per_range = 2;
 
-  cuda::counting_iterator<int> iota(0);
+  const cuda::counting_iterator<int> iota(0);
   auto input_it = cuda::make_transform_iterator(
     iota, index_to_ptr<const int>{thrust::raw_pointer_cast(d_src.data()), thrust::raw_pointer_cast(d_offsets.data())});
   auto output_it = thrust::make_transform_iterator(
     iota, index_to_ptr<int>{thrust::raw_pointer_cast(d_dst.data()), thrust::raw_pointer_cast(d_offsets.data())});
 
   c2h::device_vector<unsigned int> d_block_size(1);
-  block_size_extracting_constant_iterator sizes(items_per_range, thrust::raw_pointer_cast(d_block_size.data()));
+  const block_size_extracting_constant_iterator sizes(items_per_range, thrust::raw_pointer_cast(d_block_size.data()));
 
   auto env = cuda::execution::tune(batch_copy_tuning<target_block_size>{});
 

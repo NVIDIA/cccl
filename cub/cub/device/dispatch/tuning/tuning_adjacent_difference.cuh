@@ -67,9 +67,17 @@ struct policy_selector
   int value_type_size;
   bool may_alias;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> AdjacentDifferencePolicy
   {
+    // tuning from cub/benchmarks/bench/adjacent_difference/subtract_left.cu; raw measured values
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && value_type_size == 4
+        && !may_alias)
+    {
+      // ipt_20.tpb_128  1.032  1.016  1.206  1.349
+      return AdjacentDifferencePolicy{128, 20, BLOCK_LOAD_WARP_TRANSPOSE, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE};
+    }
+
     return AdjacentDifferencePolicy{
       128,
       nominal_8B_items_to_items(7, value_type_size),

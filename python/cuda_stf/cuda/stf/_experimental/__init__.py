@@ -48,6 +48,8 @@ _LAZY_SYMBOLS = {
     "native_partition_fn": "._stf_bindings",
     "partition_fn_blocked": "._stf_bindings",
     "partition_fn_cyclic": "._stf_bindings",
+    "placement_evaluate": "._stf_bindings",
+    "placement_stats": "._stf_bindings",
     "stackable_context": "._stf_bindings",
     "DeviceArray": ".device_array",
     "TaskGraph": ".task_graph",
@@ -73,6 +75,8 @@ if TYPE_CHECKING:
         native_partition_fn,
         partition_fn_blocked,
         partition_fn_cyclic,
+        placement_evaluate,
+        placement_stats,
         stackable_context,
     )
     from .device_array import DeviceArray
@@ -121,6 +125,8 @@ __all__ = [
     "native_partition_fn",
     "partition_fn_blocked",
     "partition_fn_cyclic",
+    "placement_evaluate",
+    "placement_stats",
     "paths",
     "stackable_context",
     "task_graph",

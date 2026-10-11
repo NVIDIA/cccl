@@ -25,13 +25,11 @@
 
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/maybe_const.h>
 #  include <cuda/std/__type_traits/remove_const.h>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -105,7 +103,8 @@ public:
   }
 
 protected:
-  pointer __ptr_ = nullptr;
+  // Derived iterators and their comparison functions access this pointer.
+  pointer __ptr_ = nullptr; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   template <class, class...>
   friend class heterogeneous_iterator;
@@ -151,7 +150,8 @@ public:
   }
 
 protected:
-  pointer __ptr_ = nullptr;
+  // Derived iterators and their comparison functions access this pointer.
+  pointer __ptr_ = nullptr; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   template <class, class...>
   friend class heterogeneous_iterator;
@@ -197,7 +197,8 @@ public:
   }
 
 protected:
-  pointer __ptr_ = nullptr;
+  // Derived iterators and their comparison functions access this pointer.
+  pointer __ptr_ = nullptr; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   template <class, class...>
   friend class heterogeneous_iterator;

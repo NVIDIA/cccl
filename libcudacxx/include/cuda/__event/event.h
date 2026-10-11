@@ -28,8 +28,8 @@
 #  include <cuda/__event/event_ref.h>
 #  include <cuda/__runtime/ensure_current_context.h>
 #  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__utility/to_underlying.h>
-#  include <cuda/std/cstddef>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -155,7 +155,7 @@ private:
   _CCCL_HOST_API explicit event(device_ref __device, unsigned __flags)
       : event_ref(::cudaEvent_t{})
   {
-    [[maybe_unused]] __ensure_current_context __ctx_setter(__device);
+    [[maybe_unused]] const __ensure_current_context __ctx_setter(__device);
     __event_ = ::cuda::__driver::__eventCreate(static_cast<unsigned>(__flags));
   }
 };

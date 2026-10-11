@@ -244,11 +244,13 @@ int main(int, char**)
     (do_test<cuda_std_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, local_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, local_memory_selector>();),
     NV_PROVIDES_SM_70,
     (do_test<cuda_std_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, local_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, local_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, local_memory_selector>();))
 
   NV_IF_TARGET(
@@ -256,11 +258,13 @@ int main(int, char**)
     (do_test<cuda_std_atomic, cuda::thread_scope_system, shared_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, shared_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, shared_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, shared_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, shared_memory_selector>();
 
      do_test<cuda_std_atomic, cuda::thread_scope_system, global_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_system, global_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_device, global_memory_selector>();
+     do_test<cuda_atomic, cuda::thread_scope_cluster, global_memory_selector>();
      do_test<cuda_atomic, cuda::thread_scope_block, global_memory_selector>();))
 
   return 0;

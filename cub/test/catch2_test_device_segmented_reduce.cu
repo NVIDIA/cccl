@@ -210,7 +210,7 @@ CUB_TEST(
     using result_t = cub::KeyValuePair<int, output_t>;
 
     // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<result_t> expected_result(num_segments);
     compute_segmented_argmin_reference(in_items, segment_offsets, expected_result.begin());
 
@@ -273,8 +273,8 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    using init_value_t = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
-    init_value_t init  = static_cast<init_value_t>(*unwrap_it(&default_constant));
+    using init_value_t      = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
+    const init_value_t init = static_cast<init_value_t>(*unwrap_it(&default_constant));
     device_segmented_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size, reduction_op, init);
     // Verify result
     REQUIRE(expected_result == out_result);
@@ -298,7 +298,7 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     auto d_out_it = unwrap_it(thrust::raw_pointer_cast(d_out_result.data()));
     device_segmented_sum(d_in_it, d_out_it, num_segments, segment_size);
 
-    c2h::host_vector<output_t> h_out_result(d_out_result);
+    const c2h::host_vector<output_t> h_out_result(d_out_result);
     // Verify result
     REQUIRE(h_expected_result == h_out_result);
   }
@@ -323,7 +323,7 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     auto d_out_it = thrust::raw_pointer_cast(d_out_result.data());
     device_segmented_min(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size);
 
-    c2h::host_vector<output_t> h_out_result(d_out_result);
+    const c2h::host_vector<output_t> h_out_result(d_out_result);
     // Verify result
     REQUIRE(h_expected_result == h_out_result);
   }
@@ -340,7 +340,7 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::device_vector<result_t> d_out_result(num_segments);
     device_segmented_arg_min(d_in_it, thrust::raw_pointer_cast(d_out_result.data()), num_segments, segment_size);
 
-    c2h::host_vector<result_t> h_out_result(d_out_result);
+    const c2h::host_vector<result_t> h_out_result(d_out_result);
     // Verify result
     REQUIRE(h_expected_result == h_out_result);
   }
@@ -364,7 +364,7 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     auto d_out_it = thrust::raw_pointer_cast(d_out_result.data());
     device_segmented_max(unwrap_it(d_in_it), unwrap_it(d_out_it), num_segments, segment_size);
 
-    c2h::host_vector<output_t> h_out_result(d_out_result);
+    const c2h::host_vector<output_t> h_out_result(d_out_result);
     // Verify result
     REQUIRE(h_expected_result == h_out_result);
   }
@@ -381,7 +381,7 @@ CUB_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::device_vector<result_t> d_out_result(num_segments);
     device_segmented_arg_max(d_in_it, thrust::raw_pointer_cast(d_out_result.data()), num_segments, segment_size);
 
-    c2h::host_vector<result_t> h_out_result(d_out_result);
+    const c2h::host_vector<result_t> h_out_result(d_out_result);
     // Verify result
     REQUIRE(h_expected_result == h_out_result);
   }

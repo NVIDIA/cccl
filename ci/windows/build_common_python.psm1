@@ -1,3 +1,28 @@
+# Windows PowerShell 5.1 in a bare image may still default to TLS 1.0, which
+# astral.sh and aka.ms both reject.
+[Net.ServicePointManager]::SecurityProtocol =
+    [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+function Invoke-Checked {
+    <#
+    .SYNOPSIS
+        Runs a script block and throws if the last native command in it exits
+        non-zero. $ErrorActionPreference = "Stop" does not make native commands
+        (python/pip/pytest/...) throw, so their $LASTEXITCODE must be checked
+        explicitly; this wraps that boilerplate into one call.
+    .EXAMPLE
+        Invoke-Checked { & $python -m pip install pytest } "pip install failed"
+    #>
+    param(
+        [Parameter(Mandatory, Position = 0)][scriptblock]$ScriptBlock,
+        [Parameter(Position = 1)][string]$ErrorMessage = "Native command failed"
+    )
+    & $ScriptBlock
+    if ($LASTEXITCODE -ne 0) {
+        throw "$ErrorMessage (exit code $LASTEXITCODE)"
+    }
+}
+
 function Get-Python {
     <#
     .SYNOPSIS
@@ -70,6 +95,9 @@ function Get-CudaMajor {
         $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+)(?:\.\d+)?')
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
+    # The minimal test container has no CUDA toolkit at all, by design, so the
+    # caller passes the version resolved outside it.
+    if ($env:CCCL_CUDA_VERSION -match '^(\d+)\.') { return $Matches[1] }
     return '13'
 }
 
@@ -90,6 +118,8 @@ function Get-CudaVersion {
         $pathMatch = [regex]::Match($env:CUDA_PATH, 'v?(\d+\.\d+)')
         if ($pathMatch.Success) { return $pathMatch.Groups[1].Value }
     }
+    # See Get-CudaMajor.
+    if ($env:CCCL_CUDA_VERSION -match '^\d+\.\d+$') { return $env:CCCL_CUDA_VERSION }
     return '13.0'
 }
 
@@ -243,4 +273,112 @@ $indented
     return $pathMatches[0]
 }
 
-Export-ModuleMember -Function Get-Python, Get-CudaMajor, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch
+function Install-MsvcRuntime {
+    <#
+    .SYNOPSIS
+        Ensures the MSVC runtime redistributable is present.
+    .DESCRIPTION
+        Server Core ships no MSVC runtime, and C++ Python extensions that do not
+        bundle their own link against it. The cuda-cccl wheel bundles its
+        runtime (delvewheel) and must never need this, so the compute lanes run
+        without it. The examples lane still installs it for the CuPy wheel on
+        PyPI, which imports the system msvcp140.dll (cupy/cupy#10316).
+        vcruntime140*.dll ship next to some interpreters, which makes
+        msvcp140.dll the reliable probe.
+
+        A no-op wherever the runtime already exists, so it costs nothing in the
+        devcontainer.
+    #>
+    $msvcp = Join-Path $env:SystemRoot 'System32\msvcp140.dll'
+    if (Test-Path $msvcp) { return }
+
+    Write-Host "Installing the MSVC runtime redistributable..."
+    $installer = Join-Path $env:TEMP 'vc_redist.x64.exe'
+    Invoke-WebRequest -UseBasicParsing `
+        -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile $installer
+    Start-Process -Wait -FilePath $installer -ArgumentList '/quiet', '/norestart'
+    if (-not (Test-Path $msvcp)) {
+        throw "vc_redist.x64.exe did not install msvcp140.dll."
+    }
+}
+
+function Assert-MinimalEnvironment {
+    <#
+    .SYNOPSIS
+        Proves the claim the minimal container exists to make: that nothing here
+        but Python and the wheel's declared dependencies is available.
+    .DESCRIPTION
+        Without this the isolation is merely assumed -- swap the base image for
+        one carrying a toolchain and every lane would keep passing while testing
+        nothing. A no-op outside the container, where a compiler and a CUDA
+        toolkit are legitimately present.
+
+        The MSVC *runtime* some payloads install is deliberately not checked: it
+        is a Windows prerequisite for their dependencies, not a compiler.
+    #>
+    if ($env:CCCL_INSIDE_MINIMAL_CONTAINER -ne '1') { return }
+
+    $found = @()
+    foreach ($tool in @('cl.exe', 'link.exe', 'nvcc.exe')) {
+        $cmd = Get-Command $tool -ErrorAction SilentlyContinue
+        if ($cmd) { $found += "$tool ($($cmd.Source))" }
+    }
+    if ($env:CUDA_PATH) { $found += "CUDA_PATH=$($env:CUDA_PATH)" }
+    # Guarded: Join-Path throws on a null root, and with ErrorActionPreference
+    # Stop that would mask the check it is part of.
+    if ($env:ProgramFiles) {
+        $ctkDir = Join-Path $env:ProgramFiles 'NVIDIA GPU Computing Toolkit\CUDA'
+        if (Test-Path $ctkDir) { $found += $ctkDir }
+    }
+
+    if ($found.Count -gt 0) {
+        $list = ($found | ForEach-Object { "    $_" }) -join "`n"
+        throw (
+            "This is supposed to be a minimal environment, but it provides:`n$list`n" +
+            "The lane cannot tell whether cuda.compute depends only on its declared " +
+            "pip dependencies while these are present. Check the container image."
+        )
+    }
+    Write-Host "Minimal environment confirmed: no host compiler, no system CUDA toolkit."
+}
+
+function Test-FreeThreadedPython {
+    <#
+    .SYNOPSIS
+    True when the given interpreter is a free-threaded (GIL-disabled) build.
+
+    .DESCRIPTION
+    Mirrors is_free_threaded_python in ci/pyenv_helper.sh. Ask the interpreter
+    rather than matching the version string ("3.14t"): a string match silently
+    stops firing the day a 3.15t appears, and the free-threading coverage would
+    vanish with no test failure to notice it.
+
+    Reports what the build supports, not whether the GIL happens to be on right
+    now (PYTHON_GIL=1 can re-enable it). Callers that need the GIL genuinely off
+    assert that separately, so a mis-set PYTHON_GIL fails loudly instead of
+    silently skipping.
+
+    The probe prints a sentinel and anything else throws. An exit-code probe
+    would read a crashed probe as "GIL build" and silently skip the
+    free-threading coverage this function exists to gate.
+    #>
+    Param([Parameter(Mandatory = $true)][string]$Python)
+
+    # Outer double / inner single quotes: Windows PowerShell 5.1 passes native
+    # arguments without escaping embedded double quotes, so a double-quoted
+    # Python literal reaches python.exe with its quotes stripped.
+    $probe = (& $Python -c "import sysconfig; print('FT=%d' % (sysconfig.get_config_var('Py_GIL_DISABLED') in (1, '1')))" | Out-String).Trim()
+    # Capture the exit code before anything else can disturb it. A probe that
+    # printed a sentinel but exited nonzero is still a failed probe, matching the
+    # bash is_free_threaded_python, which treats any nonzero exit as an error.
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -eq 0) {
+        switch ($probe) {
+            'FT=1' { return $true }
+            'FT=0' { return $false }
+        }
+    }
+    throw "free-threading probe failed (exit code $exitCode, output '$probe'); expected exit 0 with FT=0 or FT=1"
+}
+
+Export-ModuleMember -Function Invoke-Checked, Get-Python, Assert-MinimalEnvironment, Install-MsvcRuntime, Get-CudaMajor, Get-CudaVersion, Set-CtkPin, Get-CtkExtraFlavor, Convert-ToUnixPath, Get-RepoRoot, Get-CudaCcclWheel, Get-OnePathMatch, Test-FreeThreadedPython

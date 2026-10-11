@@ -118,7 +118,7 @@ using custom_value = c2h::custom_type_t<c2h::accumulateable_t, c2h::less_compara
 using value_types  = c2h::type_list<cuda::std::int32_t, float, custom_value>;
 using operators    = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, custom_plus>;
 
-static_assert(cudax::nccl_transportable<custom_value>);
+static_assert(cudax::mgmn::nccl_transportable<custom_value>);
 
 template <class T>
 [[nodiscard]] inline T make_value(int i)

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
+#if _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU()
 
 #  include <cuda/std/cstdint>
 
@@ -345,9 +345,51 @@ _CCCL_BEGIN_NAMESPACE_CUDA_SIMD
 
 #  endif // _CCCL_HAS_SIMD_VABSDIFF()
 
+#  if _CCCL_HAS_SIMD_MIN_MAX_RELU() && _CCCL_HAS_SIMD_8BIT_PTX()
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vmax_relu_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
+{
+#    if (__cccl_ptx_isa >= 940ULL)
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_107f, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("max.relu.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+                 return __result;
+               }))
+#    endif // __cccl_ptx_isa >= 940ULL
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("max.relu.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+                 return __result;
+               }))
+  _CCCL_VERIFY(false, "cuda::simd::__vmax_relu_s8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint32_t __vmin_relu_s8x4(
+  [[maybe_unused]] const ::cuda::std::uint32_t __lhs, [[maybe_unused]] const ::cuda::std::uint32_t __rhs) noexcept
+{
+#    if (__cccl_ptx_isa >= 940ULL)
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_107f, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("min.relu.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+                 return __result;
+               }))
+#    endif // __cccl_ptx_isa >= 940ULL
+  NV_IF_TARGET(NV_HAS_FEATURE_SM_120f, ({
+                 ::cuda::std::uint32_t __result{};
+                 asm("min.relu.s8x4 %0, %1, %2;" : "=r"(__result) : "r"(__lhs), "r"(__rhs));
+                 return __result;
+               }))
+  _CCCL_VERIFY(false, "cuda::simd::__vmin_relu_s8x4: Unsupported architecture");
+  return ::cuda::std::uint32_t{};
+}
+
+#  endif // _CCCL_HAS_SIMD_8BIT_PTX() && _CCCL_HAS_SIMD_MIN_MAX_RELU()
+
 _CCCL_END_NAMESPACE_CUDA_SIMD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT()
+#endif // _CCCL_HAS_SIMD_SAT() || _CCCL_HAS_SIMD_VABSDIFF() || _CCCL_HAS_SIMD_IDOT() || _CCCL_HAS_SIMD_MIN_MAX_RELU()
 #endif // _CUDA___SIMD_SIMD_INTRINSICS_H

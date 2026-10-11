@@ -94,7 +94,8 @@ private:
 #endif // _CCCL_STD_VER > 2017
 
 protected:
-  _Iter current;
+  // The standard requires protected access.
+  _Iter current; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_type = _Iter;
@@ -362,8 +363,8 @@ struct __unwrap_reverse_iter_impl
   }
 };
 
-template <class _Iter, bool __b>
-struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, __b>
+template <class _Iter, bool _Bp>
+struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, _Bp>
     : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
 {};
 

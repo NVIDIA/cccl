@@ -32,10 +32,10 @@ invoke any of these directly; they fire on push or schedule.
      - Runs the ``pull_request`` matrix on every push to a ``pull-request/<N>`` branch.
    * - ``.github/workflows/ci-workflow-nightly.yml``
      - Both
-     - Runs the broader ``nightly`` matrix on a weekday schedule, with Slack notifications.
+     - Runs the broader ``nightly`` matrix on a weekday schedule, with AI failure analysis and Slack notifications.
    * - ``.github/workflows/ci-workflow-weekly.yml``
      - Both
-     - Runs the exhaustive ``weekly`` matrix on a Sunday schedule, with Slack notifications.
+     - Runs the exhaustive ``weekly`` matrix on a Sunday schedule, with AI failure analysis and Slack notifications.
    * - ``.github/workflows/workflow-dispatch-standalone-group-linux.yml``
      - Automatic
      - Dispatches an array of standalone Linux jobs as a matrix.

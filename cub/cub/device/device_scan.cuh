@@ -37,6 +37,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/require.h>
 #include <cuda/__execution/tune.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -212,7 +213,7 @@ struct DeviceScan
     constexpr bool is_safe_integral_op =
       ::cuda::std::is_integral_v<accum_t> && detail::is_cuda_binary_operator<ScanOpT>;
     constexpr bool is_fp_plus_op =
-      ::cuda::std::is_floating_point_v<accum_t> && detail::is_cuda_std_plus_v<ScanOpT, accum_t>;
+      ::cuda::std::is_floating_point_v<accum_t> && ::cuda::__is_cuda_std_plus_v<ScanOpT, accum_t>;
 
     // run_to_run determinism is supported only with integral types with known operators, or floating-point types with
     // plus operator
@@ -388,7 +389,7 @@ struct DeviceScan
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return detail::scan::dispatch(
       d_temp_storage,
@@ -468,7 +469,7 @@ struct DeviceScan
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceScan::ExclusiveSum");
 
     using init_value_t = cub::detail::it_value_t<InputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
 
     return scan_impl_env(
       d_in, d_out, ::cuda::std::plus<>{}, detail::InputValue<init_value_t>(init_value), num_items, env);
@@ -2672,7 +2673,7 @@ struct DeviceScan
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
     using init_value_t = cub::detail::it_value_t<ValuesInputIteratorT>;
-    init_value_t init_value{};
+    const init_value_t init_value{};
     return scan_by_key_impl<::cuda::std::execution::env<>>(
       d_temp_storage,
       temp_storage_bytes,

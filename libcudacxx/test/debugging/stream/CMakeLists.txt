@@ -19,8 +19,3 @@ libcudacxx_add_pretty_printer_test(
     --case inspect_after_capture stream.after_capture value
     # gersemi: on
 )
-
-target_link_libraries(
-  libcudacxx.test.debugging.stream
-  PRIVATE CUDA::cuda_driver
-)
