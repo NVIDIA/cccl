@@ -22,6 +22,7 @@
 #endif // no system header
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
+#  include <cuda/__memory/address_space.h>
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/instructions/mbarrier_complete_tx.h>
 #  include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
@@ -31,6 +32,7 @@
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
 #  include <cuda/std/__atomic/scopes.h>
+#  include <cuda/std/__cccl/assert.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/cstdint>
 
@@ -51,6 +53,14 @@ class __shared_mbarrier_impl
     -> ::cuda::ptx::scope_t<_Scope == thread_scope_block ? ::cuda::ptx::dot_scope::cta : ::cuda::ptx::dot_scope::cluster>
   {
     return {};
+  }
+
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint64_t* __local_native_handle() const noexcept
+  {
+    // Cluster synchronization scope does not make .shared::cta instructions legal on a remote barrier.
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier_, ::cuda::device::address_space::shared),
+                 "shared_memory_barrier operation requires shared memory in the calling block");
+    return __native_handle();
   }
 
 public:
@@ -87,12 +97,12 @@ public:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __init_status_reporting(::cuda::std::uint32_t __count)
   {
-    ::cuda::ptx::mbarrier_init(::cuda::ptx::layout_v1, __native_handle(), __count);
+    ::cuda::ptx::mbarrier_init(::cuda::ptx::layout_v1, __local_native_handle(), __count);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __inval()
   {
-    ::cuda::ptx::mbarrier_inval(__native_handle());
+    ::cuda::ptx::mbarrier_inval(__local_native_handle());
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE __arrival_token __arrive(::cuda::std::ptrdiff_t __update)
@@ -101,25 +111,25 @@ public:
       ::cuda::ptx::sem_release,
       __scope(),
       ::cuda::ptx::space_shared,
-      __native_handle(),
+      __local_native_handle(),
       static_cast<::cuda::std::uint32_t>(__update));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __test_wait(__arrival_token __token) const
   {
-    return ::cuda::ptx::mbarrier_test_wait(::cuda::ptx::sem_acquire, __scope(), __native_handle(), __token);
+    return ::cuda::ptx::mbarrier_test_wait(::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __token);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait(__arrival_token __token) const
   {
-    return ::cuda::ptx::mbarrier_try_wait(::cuda::ptx::sem_acquire, __scope(), __native_handle(), __token);
+    return ::cuda::ptx::mbarrier_try_wait(::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __token);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __try_wait(__arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
   {
     return ::cuda::ptx::mbarrier_try_wait(
-      ::cuda::ptx::sem_acquire, __scope(), __native_handle(), __token, __suspend_time_hint);
+      ::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __token, __suspend_time_hint);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE __wait_status __test_wait_status(__arrival_token __token) const
@@ -132,7 +142,7 @@ public:
       __scope(),
       __report_predicate,
       __report_value,
-      __native_handle(),
+      __local_native_handle(),
       __token);
     return {__complete, __report_predicate, __report_value};
   }
@@ -147,7 +157,7 @@ public:
       __scope(),
       __report_predicate,
       __report_value,
-      __native_handle(),
+      __local_native_handle(),
       __token);
     return {__complete, __report_predicate, __report_value};
   }
@@ -163,7 +173,7 @@ public:
       __scope(),
       __report_predicate,
       __report_value,
-      __native_handle(),
+      __local_native_handle(),
       __token,
       __suspend_time_hint);
     return {__complete, __report_predicate, __report_value};
@@ -171,19 +181,19 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __test_wait_phase(::cuda::std::uint32_t __phase) const
   {
-    return ::cuda::ptx::mbarrier_test_wait_parity(::cuda::ptx::sem_acquire, __scope(), __native_handle(), __phase);
+    return ::cuda::ptx::mbarrier_test_wait_parity(::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_phase(::cuda::std::uint32_t __phase) const
   {
-    return ::cuda::ptx::mbarrier_try_wait_parity(::cuda::ptx::sem_acquire, __scope(), __native_handle(), __phase);
+    return ::cuda::ptx::mbarrier_try_wait_parity(::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __try_wait_phase(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
     return ::cuda::ptx::mbarrier_try_wait_parity(
-      ::cuda::ptx::sem_acquire, __scope(), __native_handle(), __phase, __suspend_time_hint);
+      ::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __phase, __suspend_time_hint);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE __wait_status
@@ -197,7 +207,7 @@ public:
       __scope(),
       __report_predicate,
       __report_value,
-      __native_handle(),
+      __local_native_handle(),
       __phase);
     return {__complete, __report_predicate, __report_value};
   }
@@ -213,7 +223,7 @@ public:
       __scope(),
       __report_predicate,
       __report_value,
-      __native_handle(),
+      __local_native_handle(),
       __phase);
     return {__complete, __report_predicate, __report_value};
   }
@@ -229,7 +239,7 @@ public:
       __scope(),
       __report_predicate,
       __report_value,
-      __native_handle(),
+      __local_native_handle(),
       __phase,
       __suspend_time_hint);
     return {__complete, __report_predicate, __report_value};
@@ -239,13 +249,13 @@ public:
   __test_wait_conditional_phase(::cuda::std::uint32_t __phase) const
   {
     return ::cuda::ptx::mbarrier_test_wait_parity(
-      ::cuda::ptx::mbarrier_phase_conditional, ::cuda::ptx::sem_acquire, __scope(), __native_handle(), __phase);
+      ::cuda::ptx::mbarrier_phase_conditional, ::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __try_wait_conditional_phase(::cuda::std::uint32_t __phase) const
   {
     return ::cuda::ptx::mbarrier_try_wait_parity(
-      ::cuda::ptx::mbarrier_phase_conditional, ::cuda::ptx::sem_acquire, __scope(), __native_handle(), __phase);
+      ::cuda::ptx::mbarrier_phase_conditional, ::cuda::ptx::sem_acquire, __scope(), __local_native_handle(), __phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
@@ -255,7 +265,7 @@ public:
       ::cuda::ptx::mbarrier_phase_conditional,
       ::cuda::ptx::sem_acquire,
       __scope(),
-      __native_handle(),
+      __local_native_handle(),
       __phase,
       __suspend_time_hint);
   }
@@ -263,7 +273,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __arrive_and_drop()
   {
     (void) ::cuda::ptx::mbarrier_arrive_drop(
-      ::cuda::ptx::sem_release, __scope(), ::cuda::ptx::space_shared, __native_handle(), 1);
+      ::cuda::ptx::sem_release, __scope(), ::cuda::ptx::space_shared, __local_native_handle(), 1);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __expect_tx(::cuda::std::ptrdiff_t __transaction_count_update)
@@ -272,7 +282,7 @@ public:
       ::cuda::ptx::sem_relaxed,
       __scope(),
       ::cuda::ptx::space_shared,
-      __native_handle(),
+      __local_native_handle(),
       static_cast<::cuda::std::uint32_t>(__transaction_count_update));
   }
 
@@ -285,7 +295,7 @@ public:
         ::cuda::ptx::sem_release,
         __scope(),
         ::cuda::ptx::space_shared,
-        __native_handle(),
+        __local_native_handle(),
         static_cast<::cuda::std::uint32_t>(__transaction_count_update));
     }
 
@@ -299,7 +309,7 @@ public:
       ::cuda::ptx::sem_relaxed,
       __scope(),
       ::cuda::ptx::space_shared,
-      __native_handle(),
+      __local_native_handle(),
       static_cast<::cuda::std::uint32_t>(__transaction_count_update));
   }
 };
