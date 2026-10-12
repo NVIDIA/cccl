@@ -21,7 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/boolean_testable.h>
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
