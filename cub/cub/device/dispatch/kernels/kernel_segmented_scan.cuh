@@ -28,6 +28,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/atomic>
 #include <cuda/iterator>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -180,6 +181,7 @@ private:
     // Where the block's first segment begins in the input and in the output.
     OffsetT block_input_begin;
     OffsetT block_output_begin;
+    unsigned int contiguous_mask;
     bool tile_begins_at_head;
     // Whether the tile holds a segment start after its first item.
     bool tile_has_heads;
@@ -467,12 +469,10 @@ public:
     }
     if (tid == 0)
     {
+      temp_storage.contiguous_mask    = 1u;
       temp_storage.block_input_begin  = input_begin_idx_it[0];
       temp_storage.block_output_begin = output_begin_idx_it[0];
     }
-
-    // Whether this thread's nonempty segments follow the block's first one in the input and in the output.
-    bool contiguous_thread = true;
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
@@ -504,16 +504,22 @@ public:
         }
         __syncthreads();
 
+        // A nonempty segment that does not follow the block's first one in the input or the output clears the
+        // mask.
         if (segment_size > 0)
         {
           // Compared modulo 2^n, as positions are unsigned.
           const walk_offset_t work_begin = prefix - segment_size;
-          contiguous_thread =
-            contiguous_thread
-            && (static_cast<walk_offset_t>(input_segment_begin) - work_begin
-                == static_cast<walk_offset_t>(temp_storage.block_input_begin))
+          const bool contiguous =
+            (static_cast<walk_offset_t>(input_segment_begin) - work_begin
+             == static_cast<walk_offset_t>(temp_storage.block_input_begin))
             && (static_cast<walk_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
                 == static_cast<walk_offset_t>(temp_storage.block_output_begin));
+          if (!contiguous)
+          {
+            ::cuda::atomic_ref<unsigned int, ::cuda::thread_scope_block>{temp_storage.contiguous_mask}.store(
+              0u, ::cuda::std::memory_order_relaxed);
+          }
         }
       }
     }
@@ -522,7 +528,7 @@ public:
     const walk_offset_t n_tiles         = ::cuda::ceil_div(items_per_block, walk_offset_t{tile_items});
 
     mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, walk_offset_t{0}, items_per_block);
-    const bool contiguous_block = __syncthreads_and(contiguous_thread);
+    __syncthreads();
 
     using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
     augmented_scan_op_t augmented_scan_op{scan_op};
@@ -543,7 +549,7 @@ public:
       const OffsetT output_begin = temp_storage.tile_output_begin;
       const bool begins_at_head  = temp_storage.tile_begins_at_head;
       const bool has_heads       = temp_storage.tile_has_heads;
-      const bool block_io        = !has_heads || contiguous_block;
+      const bool block_io        = !has_heads || temp_storage.contiguous_mask != 0u;
 
       bool heads[items_per_thread];
       if (has_heads)
