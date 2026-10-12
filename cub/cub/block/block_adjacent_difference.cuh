@@ -194,8 +194,7 @@ private:
 
 public:
   /// @smemstorage{BlockAdjacentDifference}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/comp.h>
-#include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 

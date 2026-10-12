@@ -2,9 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import importlib.metadata
+
 import numpy as np
 import pytest
 from _utils.device_array import DeviceArray
+from packaging.version import Version
 
 import cuda.compute
 from cuda.compute import (
@@ -21,6 +24,10 @@ try:
     from cuda.compute._build_info import USING_V2
 except ImportError:
     USING_V2 = False
+
+
+# The numba-cuda-mlir bug behind the version-gated xfail below was fixed in 0.5.4.
+_NUMBA_CUDA_MLIR_VERSION = Version(importlib.metadata.version("numba-cuda-mlir"))
 
 
 def unary_transform_host(h_input: np.ndarray, op):
@@ -842,6 +849,82 @@ def test_stateful_transform_same_bytecode_different_sizes():
     )
 
 
+def test_stateful_transform_no_recompile_when_captured_array_length_changes():
+    """
+    Regression test for gh-11407: a stateful op that captures a device
+    array in its closure should reuse the same compiled build when only the
+    captured array's *length* changes (dtype and rank unchanged) -- not
+    just when its values change at fixed length.
+    """
+    from cuda.compute import op as op_module
+
+    h_in = np.arange(5, dtype=np.int64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    def make_op(lut):
+        # References len(lut), not just lut[x], so the assertions below only
+        # pass if the reused wrapper reads the *new* length at call time
+        # rather than retaining whatever length was baked in when it (or an
+        # earlier build sharing its cache key) was first compiled.
+        def op(x):
+            return lut[x] + len(lut)
+
+        return op
+
+    lut_short = DeviceArray.from_numpy(np.arange(5, dtype=np.int64))
+    lut_long = DeviceArray.from_numpy(np.arange(50, dtype=np.int64) * 2)
+
+    op_adapter_short = op_module.make_op_adapter(make_op(lut_short))
+    op_adapter_long = op_module.make_op_adapter(make_op(lut_long))
+
+    build_short = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_short)
+    build_long = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_long)
+
+    # Same cache key (dtype + rank only) -> same cached build, no recompile.
+    assert build_short is build_long
+
+    build_short(
+        d_in=d_in, d_out=d_out, op=op_adapter_short, num_items=h_in.size, stream=None
+    )
+    np.testing.assert_array_equal(
+        d_out.copy_to_host(), lut_short.copy_to_host()[h_in] + len(lut_short)
+    )
+
+    build_long(
+        d_in=d_in, d_out=d_out, op=op_adapter_long, num_items=h_in.size, stream=None
+    )
+    np.testing.assert_array_equal(
+        d_out.copy_to_host(), lut_long.copy_to_host()[h_in] + len(lut_long)
+    )
+
+
+def test_stateful_transform_recompiles_when_captured_array_dtype_changes():
+    """A captured array's *dtype* change must still trigger recompilation."""
+    from cuda.compute import op as op_module
+
+    h_in = np.arange(5, dtype=np.int64)
+    d_in = DeviceArray.from_numpy(h_in)
+    d_out = DeviceArray.empty(h_in.shape, h_in.dtype)
+
+    def make_op(lut):
+        def op(x):
+            return lut[x]
+
+        return op
+
+    lut_int32 = DeviceArray.from_numpy(np.arange(5, dtype=np.int32))
+    lut_int64 = DeviceArray.from_numpy(np.arange(5, dtype=np.int64))
+
+    op_adapter_int32 = op_module.make_op_adapter(make_op(lut_int32))
+    op_adapter_int64 = op_module.make_op_adapter(make_op(lut_int64))
+
+    build_int32 = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_int32)
+    build_int64 = make_unary_transform(d_in=d_in, d_out=d_out, op=op_adapter_int64)
+
+    assert build_int32 is not build_int64
+
+
 def test_transform_caching_with_global_np_ufunc():
     # regression test for a case where if multiple, identically named,
     # ops referenced dotted globals like `np.<func>` those
@@ -1079,9 +1162,10 @@ def test_store_into_a_local_array_of_a_wider_dtype_keeps_unsigned_values():
 
 
 @pytest.mark.xfail(
+    _NUMBA_CUDA_MLIR_VERSION < Version("0.5.4"),
     strict=True,
-    reason="numba-cuda-mlir NVIDIA/numba-cuda-mlir#304: a float converts to a "
-    "bool by truncation, so 1.25 arrives as False",
+    reason="numba-cuda-mlir NVIDIA/numba-cuda-mlir#304 (fixed in 0.5.4): a float "
+    "converts to a bool by truncation, so 1.25 arrives as False",
 )
 def test_store_into_captured_bool_state_asks_whether_it_is_nonzero():
     """Storing a float into captured bool state converts as ``x != 0``.

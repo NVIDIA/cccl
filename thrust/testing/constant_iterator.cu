@@ -132,7 +132,7 @@ TEST_CASE("TestMakeConstantIterator", "[constant_iterator]")
 }
 
 template <typename Vector>
-void TestConstantIteratorCopy()
+void test_constant_iterator_copy()
 {
   using ValueType = typename Vector::value_type;
   using ConstIter = thrust::constant_iterator<ValueType>;
@@ -146,10 +146,10 @@ void TestConstantIteratorCopy()
   Vector ref(4, 7);
   REQUIRE(ref == result);
 };
-DECLARE_VECTOR_UNITTEST(TestConstantIteratorCopy);
+DECLARE_VECTOR_UNITTEST(test_constant_iterator_copy);
 
 template <typename Vector>
-void TestConstantIteratorTransform()
+void test_constant_iterator_transform()
 {
   using T         = typename Vector::value_type;
   using ConstIter = thrust::constant_iterator<T>;
@@ -170,7 +170,7 @@ void TestConstantIteratorTransform()
   ref = Vector(4, 10);
   REQUIRE(ref == result);
 };
-DECLARE_VECTOR_UNITTEST(TestConstantIteratorTransform);
+DECLARE_VECTOR_UNITTEST(test_constant_iterator_transform);
 
 TEST_CASE("TestConstantIteratorReduce", "[constant_iterator]")
 {

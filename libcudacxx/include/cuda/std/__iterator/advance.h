@@ -85,8 +85,8 @@ struct __fn
 {
 private:
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter_difference>
-  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  template <class _IterDifference>
+  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_IterDifference __a, _IterDifference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b

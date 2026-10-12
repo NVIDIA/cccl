@@ -20,6 +20,7 @@
 #include <cub/util_arch.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/atomic>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -195,7 +196,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().multi_tile.threads_per_bl
 
   if constexpr (!StableReductionOrder)
   {
-    static_assert(detail::is_cuda_std_plus_v<ReductionOpT>,
+    static_assert(::cuda::__is_cuda_std_plus_v<ReductionOpT>,
                   "Only plus is currently supported in nondeterministic reduce");
 
     // The atomic code path already finishes in this kernel, so check if we have an empty problem and handle it

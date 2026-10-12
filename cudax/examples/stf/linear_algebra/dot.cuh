@@ -15,6 +15,7 @@
 
 #include <cuda/experimental/stf.cuh>
 
+// NOLINTNEXTLINE(google-global-names-in-headers) -- example header, included only by the example sources
 using namespace cuda::experimental::stf;
 
 template <typename T>
@@ -56,8 +57,8 @@ void SPMV(ctx_t& ctx, csr_matrix<T>& a, vector_t<T>& x, vector_t<T>& y)
   ctx.parallel_for(y.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.read(), y.write())
       .set_symbol("SPMV")
       ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
-            int row_start = da_row(row);
-            int row_end   = da_row(row + 1);
+            const int row_start = da_row(row);
+            const int row_end   = da_row(row + 1);
 
             double sum = 0.0;
             for (int elt = row_start; elt < row_end; elt++)

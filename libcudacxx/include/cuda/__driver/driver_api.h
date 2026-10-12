@@ -23,12 +23,11 @@
 
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/__driver/driver_api.h>
 #  include <cuda/std/__bit/bit_cast.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__host_stdlib/stdexcept> // IWYU pragma: keep
 #  include <cuda/std/__internal/namespaces.h>
 #  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/always_false.h>
@@ -99,11 +98,20 @@ _CCCL_BEGIN_NAMESPACE_CUDA_DRIVER
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline int __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __deviceGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
+  int& __result,
+  ::CUdevice_attribute __attr,
+  ::CUdevice __device) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
+  return static_cast<::cudaError_t>(__driver_fn(&__result, __attr, __device));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline int __deviceGetAttribute(::CUdevice_attribute __attr, ::CUdevice __device)
+{
   int __result;
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to get device attribute", &__result, __attr, __device);
+  _CCCL_TRY_DRIVER_API(
+    ::cuda::__driver::__deviceGetAttributeNoThrow, "Failed to get device attribute", __result, __attr, __device);
   return __result;
 }
 
@@ -1058,6 +1066,15 @@ _CCCL_HOST_API inline ::cudaError_t __logicalEndpointIdReserveNoThrow( // NOLINT
   return static_cast<::cudaError_t>(__driver_fn(__base_le_id, static_cast<::cuuint32_t>(__count)));
 }
 
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointCreateNoThrow( // NOLINT(bugprone-exception-escape)
+  ::CUlogicalEndpointId __le_id,
+  const ::CUlogicalEndpointProp* __prop) noexcept
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointCreate, cuLogicalEndpointCreate, 13, 3);
+  return static_cast<::cudaError_t>(__driver_fn(__le_id, __prop));
+}
+
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointAddDeviceNoThrow(
   ::CUlogicalEndpointId __le_id, ::CUdevice __device) noexcept // NOLINT(bugprone-exception-escape)
 {
@@ -1073,6 +1090,40 @@ _CCCL_HOST_API inline void __logicalEndpointAddDevice(::CUlogicalEndpointId __le
     "Failed to add a device to a logical endpoint",
     __le_id,
     __device);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__logicalEndpointDestroyNoThrow(::CUlogicalEndpointId __le_id) noexcept // NOLINT(bugprone-exception-escape)
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointDestroy, cuLogicalEndpointDestroy, 13, 3);
+  return static_cast<::cudaError_t>(__driver_fn(__le_id));
+}
+
+_CCCL_HOST_API inline void
+__logicalEndpointExport(void* __handle, ::CUlogicalEndpointId __le_id, ::CUlogicalEndpointIpcHandleType __handle_type)
+{
+  if (::cuda::__driver::__version_below(13, 4))
+  {
+    _CCCL_THROW(
+      ::cuda::cuda_error, ::cudaErrorNotSupported, "Logical endpoint fabric IPC export requires a CUDA 13.4 driver");
+  }
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointExport, cuLogicalEndpointExport, 13, 4);
+  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to export a logical endpoint handle", __handle, __le_id, __handle_type);
+}
+
+_CCCL_HOST_API inline void __logicalEndpointImport(
+  ::CUlogicalEndpointId __le_id, const void* __handle, ::CUlogicalEndpointIpcHandleType __handle_type)
+{
+  if (::cuda::__driver::__version_below(13, 4))
+  {
+    _CCCL_THROW(
+      ::cuda::cuda_error, ::cudaErrorNotSupported, "Logical endpoint fabric IPC import requires a CUDA 13.4 driver");
+  }
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointImport, cuLogicalEndpointImport, 13, 4);
+  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to import a logical endpoint handle", __le_id, __handle, __handle_type);
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointBindAddrNoThrow( // NOLINT(bugprone-exception-escape)
@@ -1172,6 +1223,24 @@ _CCCL_HOST_API inline void __logicalEndpointUnbind(
     __device,
     __offset,
     __bytes);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointGetLimitsNoThrow( // NOLINT(bugprone-exception-escape)
+  ::cuda::std::uint64_t& __bind_alignment,
+  ::cuda::std::uint64_t& __max_size,
+  const ::CUlogicalEndpointProp* __prop) noexcept
+{
+  static const auto __driver_fn =
+    _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointGetLimits, cuLogicalEndpointGetLimits, 13, 3);
+  ::cuuint64_t __native_bind_alignment{};
+  ::cuuint64_t __native_max_size{};
+  const auto __status = static_cast<::cudaError_t>(__driver_fn(&__native_bind_alignment, &__native_max_size, __prop));
+  if (__status == ::cudaSuccess)
+  {
+    __bind_alignment = static_cast<::cuda::std::uint64_t>(__native_bind_alignment);
+    __max_size       = static_cast<::cuda::std::uint64_t>(__native_max_size);
+  }
+  return __status;
 }
 
 [[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __logicalEndpointQueryNoThrow( // NOLINT(bugprone-exception-escape)

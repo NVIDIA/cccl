@@ -101,7 +101,7 @@ TEST_CASE("TestReverseIteratorIncrement", "[reverse_iterator]")
 }
 
 template <typename Vector>
-void TestReverseIteratorCopy()
+void test_reverse_iterator_copy()
 {
   Vector source{10, 20, 30, 40};
 
@@ -114,7 +114,7 @@ void TestReverseIteratorCopy()
   Vector ref{40, 30, 20, 10};
   REQUIRE(destination == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestReverseIteratorCopy);
+DECLARE_VECTOR_UNITTEST(test_reverse_iterator_copy);
 
 TEST_CASE("TestReverseIteratorExclusiveScanSimple", "[reverse_iterator]")
 {

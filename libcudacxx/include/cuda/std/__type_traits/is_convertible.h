@@ -94,8 +94,8 @@ inline constexpr int __is_array_function_or_void_v<_Tp, false, false, true> = 3;
 
 template <class _T1,
           class _T2,
-          int _T1_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_T1>,
-          int _T2_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_T2>>
+          int _T1IsArrayFunctionOrVoid = __is_convertible_imp::__is_array_function_or_void_v<_T1>,
+          int _T2IsArrayFunctionOrVoid = __is_convertible_imp::__is_array_function_or_void_v<_T2>>
 inline constexpr bool __is_convertible_fallback_v =
   decltype(::cuda::std::__is_convertible_imp::__is_convertible_test<_T1, _T2>(0))::value;
 

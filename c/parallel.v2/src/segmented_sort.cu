@@ -57,7 +57,7 @@ CUresult cccl_device_segmented_sort_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);

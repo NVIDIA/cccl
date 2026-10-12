@@ -256,8 +256,8 @@ template <int SlotsCount>
 class layout
 {
   slot m_slots[SlotsCount];
-  size_t m_sizes[SlotsCount];
-  void* m_pointers[SlotsCount];
+  size_t m_sizes[SlotsCount]{};
+  void* m_pointers[SlotsCount]{};
   bool m_layout_was_mapped{};
 
 public:

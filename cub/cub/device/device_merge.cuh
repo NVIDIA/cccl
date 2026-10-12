@@ -38,7 +38,7 @@ CUB_NAMESPACE_BEGIN
 //! Tuning
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
-//! All algorithms in DeviceMerge that accept an environment can be tuned by passing a custom
+//! All algorithms in DeviceMerge can be tuned by passing a custom
 //! :ref:`policy selector <cub-policy-selectors>` that returns a :cpp:struct:`cub::MergePolicy`, as shown in the
 //! example below:
 //!
@@ -86,6 +86,8 @@ struct DeviceMerge
   //! @tparam KeyIteratorOut **[deduced]** Random access iterator to the output sequence.
   //! @tparam CompareOp **[deduced]** Binary predicate to compare the input iterator's value types. Must have a
   //! signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
+  //! @tparam EnvT **[deduced]** Execution environment type. Default is `cuda::std::execution::env<>`. Supports
+  //! customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -98,13 +100,14 @@ struct DeviceMerge
   //! @param[out] keys_out Iterator to the beginning of the output sequence.
   //! @param[in] compare_op Comparison function object, returning true if the first argument is ordered before the
   //! second. Must establish a [strict weak ordering].
-  //! @param[in] stream **[optional]** CUDA stream to launch kernels into. Default is stream<sub>0</sub>.
+  //! @param[in] env **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!
   //! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
   template <typename KeyIteratorIn1,
             typename KeyIteratorIn2,
             typename KeyIteratorOut,
-            typename CompareOp = ::cuda::std::less<>>
+            typename CompareOp = ::cuda::std::less<>,
+            typename EnvT      = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MergeKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -114,23 +117,32 @@ struct DeviceMerge
     ::cuda::std::int64_t num_keys2,
     KeyIteratorOut keys_out,
     CompareOp compare_op = {},
-    cudaStream_t stream  = nullptr)
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
     // offset type is just int64_t
-    return detail::merge::dispatch(
+    using default_policy_selector =
+      detail::merge::policy_selector_from_types<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, int64_t>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
-      keys_in1,
-      static_cast<NullType*>(nullptr),
-      num_keys1,
-      keys_in2,
-      static_cast<NullType*>(nullptr),
-      num_keys2,
-      keys_out,
-      static_cast<NullType*>(nullptr),
-      compare_op,
-      stream);
+      env,
+      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::merge::dispatch(
+          storage,
+          bytes,
+          keys_in1,
+          static_cast<NullType*>(nullptr),
+          num_keys1,
+          keys_in2,
+          static_cast<NullType*>(nullptr),
+          num_keys2,
+          keys_out,
+          static_cast<NullType*>(nullptr),
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst
@@ -276,6 +288,8 @@ struct DeviceMerge
   //! @tparam ValueIteratorOut **[deduced]** Random access iterator to the values of the output sequence.
   //! @tparam CompareOp **[deduced]** Binary predicate to compare the key input iterator's value types. Must have a
   //! signature equivalent to `bool operator()(Key lhs, Key rhs)` and establish a [strict weak ordering].
+  //! @tparam EnvT **[deduced]** Execution environment type. Default is `cuda::std::execution::env<>`. Supports
+  //! customization of the stream via `cuda::get_stream` and of the tuning via `cuda::execution::tune`.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -291,7 +305,7 @@ struct DeviceMerge
   //! @param[out] values_out Iterator to the beginning of the values of the output sequence.
   //! @param[in] compare_op Comparison function object, returning true if the first argument is ordered before the
   //! second. Must establish a [strict weak ordering].
-  //! @param[in] stream **[optional]** CUDA stream to launch kernels into. Default is stream<sub>0</sub>.
+  //! @param[in] env **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
   //!
   //! [strict weak ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
   template <typename KeyIteratorIn1,
@@ -300,7 +314,8 @@ struct DeviceMerge
             typename ValueIteratorIn2,
             typename KeyIteratorOut,
             typename ValueIteratorOut,
-            typename CompareOp = ::cuda::std::less<>>
+            typename CompareOp = ::cuda::std::less<>,
+            typename EnvT      = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t MergePairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -313,23 +328,32 @@ struct DeviceMerge
     KeyIteratorOut keys_out,
     ValueIteratorOut values_out,
     CompareOp compare_op = {},
-    cudaStream_t stream  = nullptr)
+    const EnvT& env      = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
     // offset type is just int64_t
-    return detail::merge::dispatch(
+    using default_policy_selector = detail::merge::
+      policy_selector_from_types<KeyIteratorIn1, ValueIteratorIn1, KeyIteratorIn2, ValueIteratorIn2, int64_t>;
+    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage,
       temp_storage_bytes,
-      keys_in1,
-      values_in1,
-      num_pairs1,
-      keys_in2,
-      values_in2,
-      num_pairs2,
-      keys_out,
-      values_out,
-      compare_op,
-      stream);
+      env,
+      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::merge::dispatch(
+          storage,
+          bytes,
+          keys_in1,
+          values_in1,
+          num_pairs1,
+          keys_in2,
+          values_in2,
+          num_pairs2,
+          keys_out,
+          values_out,
+          compare_op,
+          stream,
+          policy_selector);
+      });
   }
 
   //! @rst

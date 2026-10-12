@@ -20,6 +20,7 @@
 
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/operations.h>
@@ -106,17 +107,13 @@ enum class op_kind_t
   other
 };
 
-template <typename T>
-inline constexpr auto classify_op = op_kind_t::other;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::std::plus<T>> = op_kind_t::plus;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::minimum<T>> = op_kind_t::min;
-
-template <typename T>
-inline constexpr auto classify_op<::cuda::maximum<T>> = op_kind_t::max;
+template <typename Op>
+inline constexpr auto classify_op =
+  ::cuda::__is_cuda_std_plus_v<Op>  ? op_kind_t::plus
+  : ::cuda::__is_cuda_minimum_v<Op> ? op_kind_t::min
+  : ::cuda::__is_cuda_maximum_v<Op>
+    ? op_kind_t::max
+    : op_kind_t::other;
 
 struct iterator_info
 {

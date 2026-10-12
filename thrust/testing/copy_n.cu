@@ -59,7 +59,7 @@ TEST_CASE("TestCopyNToDiscardIterator", "[copy_n]")
 }
 
 template <class Vector>
-void TestCopyNMatchingTypes()
+void test_copy_n_matching_types()
 {
   using T = typename Vector::value_type;
 
@@ -79,13 +79,13 @@ void TestCopyNMatchingTypes()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_VECTOR_UNITTEST(TestCopyNMatchingTypes);
+DECLARE_VECTOR_UNITTEST(test_copy_n_matching_types);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // '=': conversion from 'int' to '_Ty', possible loss of data
 
 template <class Vector>
-void TestCopyNMixedTypes()
+void test_copy_n_mixed_types()
 {
   Vector v{0, 1, 2, 3, 4};
 
@@ -104,7 +104,7 @@ void TestCopyNMixedTypes()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNMixedTypes);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_copy_n_mixed_types);
 
 _CCCL_DIAG_POP
 
@@ -128,7 +128,7 @@ TEST_CASE("TestCopyNVectorBool", "[copy_n]")
 }
 
 template <class Vector>
-void TestCopyNListTo()
+void test_copy_n_list_to()
 {
   using T = typename Vector::value_type;
 
@@ -161,10 +161,10 @@ void TestCopyNListTo()
   REQUIRE(*iter == T(4));
   iter++;
 }
-DECLARE_VECTOR_UNITTEST(TestCopyNListTo);
+DECLARE_VECTOR_UNITTEST(test_copy_n_list_to);
 
 template <typename Vector>
-void TestCopyNCountingIterator()
+void test_copy_n_counting_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -177,10 +177,10 @@ void TestCopyNCountingIterator()
   Vector ref{1, 2, 3, 4};
   REQUIRE(vec == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_copy_n_counting_iterator);
 
 template <typename Vector>
-void TestCopyNZipIterator()
+void test_copy_n_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -195,10 +195,10 @@ void TestCopyNZipIterator()
   REQUIRE(v1 == v3);
   REQUIRE(v2 == v4);
 };
-DECLARE_VECTOR_UNITTEST(TestCopyNZipIterator);
+DECLARE_VECTOR_UNITTEST(test_copy_n_zip_iterator);
 
 template <typename Vector>
-void TestCopyNConstantIteratorToZipIterator()
+void test_copy_n_constant_iterator_to_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -215,7 +215,7 @@ void TestCopyNConstantIteratorToZipIterator()
   REQUIRE(v1 == ref1);
   REQUIRE(v2 == ref2);
 };
-DECLARE_VECTOR_UNITTEST(TestCopyNConstantIteratorToZipIterator);
+DECLARE_VECTOR_UNITTEST(test_copy_n_constant_iterator_to_zip_iterator);
 
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(my_system& system, InputIterator, Size, OutputIterator result)

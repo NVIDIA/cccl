@@ -31,6 +31,7 @@
 #include <cuda/__execution/require.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/array>
 #include <cuda/std/limits>
@@ -774,7 +775,9 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
+    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
@@ -799,7 +802,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -816,7 +819,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
@@ -1500,7 +1503,9 @@ public:
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
+    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
@@ -1524,7 +1529,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -1540,7 +1545,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
@@ -2062,7 +2067,9 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramEven");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
+    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, true>;
@@ -2084,7 +2091,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -2101,7 +2108,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }
@@ -2525,7 +2532,9 @@ public:
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceHistogram::MultiHistogramRange");
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-    ::cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
+    // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
+    using is_byte_sample_t _CCCL_NODEBUG =
+      ::cuda::std::bool_constant<sizeof(SampleT) == 1 && !::cuda::std::is_signed_v<SampleT>>;
 
     using default_policy_selector =
       detail::histogram::policy_selector_from_types<SampleT, CounterT, NumChannels, NumActiveChannels, false>;
@@ -2546,7 +2555,7 @@ public:
               (int) num_rows,
               (int) (row_stride_bytes / sizeof(SampleT)),
               stream,
-              is_byte_sample,
+              is_byte_sample_t{},
               policy_selector);
           }
         }
@@ -2562,7 +2571,7 @@ public:
           num_rows,
           (OffsetT) (row_stride_bytes / sizeof(SampleT)),
           stream,
-          is_byte_sample,
+          is_byte_sample_t{},
           policy_selector);
       });
   }

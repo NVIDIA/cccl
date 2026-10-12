@@ -11,14 +11,15 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 
 #include <algorithm>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
-#include <c2h/device_and_stream.h>
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
@@ -56,21 +57,14 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, select_flagged_if);
 
 using custom_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 
-template <typename T>
-struct is_even_t
+struct is_even_t : cuda::__is_even
 {
-  __host__ __device__ bool operator()(T const& elem) const
-  {
-    return !(elem % 2);
-  }
-};
+  using __is_even::operator();
 
-template <>
-struct is_even_t<custom_t>
-{
-  __host__ __device__ bool operator()(custom_t elem) const
+  template <template <typename> class... Policies>
+  __host__ __device__ bool operator()(c2h::custom_type_t<Policies...> elem) const
   {
-    return !(elem.key % 2);
+    return cuda::__is_even{}(elem.key);
   }
 };
 
@@ -179,7 +173,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  const is_even_t<flag_type> is_even{};
+  const is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -221,7 +215,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
   c2h::device_vector<input_type> out(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), flags);
@@ -277,43 +271,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with user provided memory and environmen
     REQUIRE(reference == out);
   };
 
-  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_flagged_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_flagged_if(env);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged_if(policy);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged_if(policy);
-  }
+  test_with_custom_streams(test_flagged_if);
 }
 
 CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and environment",
@@ -329,7 +287,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
   c2h::device_vector<input_type> in(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(2), in);
 
-  is_even_t<flag_type> is_even{};
+  is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), flags);
@@ -383,43 +341,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works in place with user provided memory and e
     REQUIRE(reference == in);
   };
 
-  SECTION("DeviceSelect::FlaggedIf works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream.get());
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_flagged_if(stream);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_flagged_if(stream_ref);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_flagged_if(env);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_flagged_if(policy);
-  }
-
-  SECTION("DeviceSelect::FlaggedIf works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_flagged_if(policy);
-  }
+  test_with_custom_streams(test_flagged_if);
 }
 
 template <cub::detail::LoadPrefetch Prefetch, cub::SelectImpl SelectionOpt>
@@ -455,7 +377,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with explicit prefetch policies",
   c2h::device_vector<int> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
 
-  const is_even_t<int> is_even{};
+  const is_even_t is_even{};
   const c2h::host_vector<int> reference = get_reference(in, flags, is_even);
   const int num_selected                = static_cast<int>(reference.size());
 
@@ -503,7 +425,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  const is_even_t<flag_type> is_even{};
+  const is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);
@@ -531,7 +453,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<input_type> out(num_items);
   c2h::gen(C2H_SEED(2), in);
 
-  const is_even_t<flag_type> is_even{};
+  const is_even_t is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(C2H_SEED(1), flags);

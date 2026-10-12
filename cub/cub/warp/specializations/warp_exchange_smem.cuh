@@ -59,8 +59,7 @@ class WarpExchangeSmem
   const unsigned int member_mask;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   WarpExchangeSmem() = delete;
 

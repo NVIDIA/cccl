@@ -8,7 +8,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestInnerProductSimple()
+void test_inner_product_simple()
 {
   using T = typename Vector::value_type;
 
@@ -19,7 +19,7 @@ void TestInnerProductSimple()
   const T result = thrust::inner_product(v1.begin(), v1.end(), v2.begin(), init);
   REQUIRE(result == 7);
 }
-DECLARE_VECTOR_UNITTEST(TestInnerProductSimple);
+DECLARE_VECTOR_UNITTEST(test_inner_product_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
 int inner_product(my_system& system, InputIterator1, InputIterator1, InputIterator2, OutputType)
@@ -55,7 +55,7 @@ TEST_CASE("TestInnerProductDispatchImplicit", "[inner_product]")
 }
 
 template <class Vector>
-void TestInnerProductWithOperator()
+void test_inner_product_with_operator()
 {
   using T = typename Vector::value_type;
 
@@ -68,7 +68,7 @@ void TestInnerProductWithOperator()
     v1.begin(), v1.end(), v2.begin(), init, ::cuda::std::multiplies<T>(), ::cuda::std::minus<T>());
   REQUIRE(result == 90);
 }
-DECLARE_VECTOR_UNITTEST(TestInnerProductWithOperator);
+DECLARE_VECTOR_UNITTEST(test_inner_product_with_operator);
 
 template <typename T>
 struct TestInnerProduct
@@ -107,7 +107,7 @@ struct only_set_when_both_expected
   }
 };
 
-void TestInnerProductWithBigIndexesHelper(int magnitude)
+void test_inner_product_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -129,11 +129,11 @@ void TestInnerProductWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestInnerProductWithBigIndexes", "[inner_product]")
 {
-  TestInnerProductWithBigIndexesHelper(30);
+  test_inner_product_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestInnerProductWithBigIndexesHelper(31);
-  TestInnerProductWithBigIndexesHelper(32);
-  TestInnerProductWithBigIndexesHelper(33);
+  test_inner_product_with_big_indexes_helper(31);
+  test_inner_product_with_big_indexes_helper(32);
+  test_inner_product_with_big_indexes_helper(33);
 #endif
 }
 

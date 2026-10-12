@@ -15,6 +15,7 @@
 
 #include <cuda/experimental/coop/algorithm>
 #include <cuda/experimental/coop/group>
+#include <cuda/experimental/hierarchy.cuh>
 
 #include "testing.cuh"
 

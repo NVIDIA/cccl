@@ -22,7 +22,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property_encoding.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>

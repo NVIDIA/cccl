@@ -18,6 +18,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <iostream>
+#include <string>
 
 #include "cuda/experimental/__stf/stackable/stackable_ctx.cuh"
 
@@ -37,13 +38,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 2)
   {
-    n = atol(argv[1]);
-    m = atol(argv[2]);
+    n = ::std::stol(argv[1]);
+    m = ::std::stol(argv[2]);
   }
 
   if (argc > 3)
   {
-    tol = atof(argv[3]);
+    tol = ::std::stod(argv[3]);
   }
 
   auto lA    = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
@@ -70,9 +71,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))
         ->*[] __device__(size_t i, size_t j, auto A, auto Anew, auto& residual) {
-              Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
-              double error = fabs(A(i, j) - Anew(i, j));
-              residual     = error;
+              Anew(i, j)         = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+              const double error = fabs(A(i, j) - Anew(i, j));
+              residual           = error;
             };
 
     ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__(size_t i, size_t j, auto A, auto Anew) {
@@ -81,13 +82,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
     auto handle = while_guard.cond_handle();
     ctx.parallel_for(box(1), lresidual.read())->*[handle, tol] __device__(size_t, auto residual) {
-      bool converged = (*residual < tol);
+      const bool converged = (*residual < tol);
       cudaGraphSetConditional(handle, !converged);
     };
   }
 
   // Store final residual for verification
-  double final_residual = ctx.wait(lresidual);
+  const double final_residual = ctx.wait(lresidual);
 
   fprintf(stderr, "ITER %zu: converged residual %e\n", iter++, final_residual);
 

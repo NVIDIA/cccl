@@ -119,8 +119,8 @@ void Test()
   // Initialize device arrays
   int* d_in  = nullptr;
   int* d_out = nullptr;
-  cudaMalloc((void**) &d_in, sizeof(int) * BlockThreads);
-  cudaMalloc((void**) &d_out, sizeof(int) * BlockThreads);
+  cudaMalloc(reinterpret_cast<void**>(&d_in), sizeof(int) * BlockThreads);
+  cudaMalloc(reinterpret_cast<void**>(&d_out), sizeof(int) * BlockThreads);
 
   // Display input problem data
   if (g_verbose)

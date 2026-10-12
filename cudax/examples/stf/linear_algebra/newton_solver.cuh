@@ -18,6 +18,7 @@
 #include "cg_solver.cuh"
 #include "dot.cuh"
 
+// NOLINTNEXTLINE(google-global-names-in-headers) -- example header, included only by the example sources
 using namespace cuda::experimental::stf;
 
 /**
@@ -84,7 +85,7 @@ void newton_solver(
     csr_matrix<double> A(csr_values, csr_row_offsets, csr_col_ind);
 
     // Solve linear system: J * delta = -F(U)
-    double cg_tol = 1e-8;
+    const double cg_tol = 1e-8;
     cg_solver(ctx, A, delta, rhs, cg_tol, max_cg);
 
     // Newton update: U = U + delta (no special boundary handling needed)
@@ -96,7 +97,7 @@ void newton_solver(
     while_guard.update_cond(newton_norm2.read(), newton_iter.rw())
         ->*[newton_tol, max_newton] __device__(auto dnorm2, auto diter) {
               (*diter)++; // increment iteration counter
-              bool converged = (*dnorm2 < newton_tol * newton_tol);
+              const bool converged = (*dnorm2 < newton_tol * newton_tol);
               return !converged && (*diter < max_newton);
             };
   }
@@ -151,7 +152,7 @@ void newton_solver_no_while(
     csr_matrix<double> A(csr_values, csr_row_offsets, csr_col_ind);
 
     // Solve linear system: J * delta = -F(U)
-    double cg_tol = 1e-8;
+    const double cg_tol = 1e-8;
     if (cg_use_while)
     {
       //      fprintf(stderr, "NEWTON NO WHILE, CG WHILE.\n");

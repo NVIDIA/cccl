@@ -305,7 +305,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
 {
   double x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
   int B_is_usable;
-  complex<double> w;
+  complex<double> w{};
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
   x                          = z.real();
   y                          = z.imag();
@@ -406,7 +406,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   double x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
   int sx, sy;
   int B_is_usable;
-  complex<double> w;
+  complex<double> w{};
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
   const volatile double pio2_lo = 6.1232339957367659e-17; /*  0x11a62633145c07.0p-106 */
 
@@ -507,10 +507,8 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
 {
-  complex<double> w;
+  const complex<double> w = cacos(z);
   double rx, ry;
-
-  w  = cacos(z);
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */

@@ -111,7 +111,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       { // The user passed a prvalue, which indicates we should own the resource
         return __with(prop{::cuda::mr::get_memory_resource,
                            ::cuda::mr::any_resource<> {
-                             ::cuda::std::move(__env)
+                             ::cuda::std::forward<_Env>(__env)
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
       }
@@ -149,7 +149,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       { // The user passed a prvalue, which indicates we should own the resource
         return __with(prop{__tag,
                            ::cuda::mr::any_resource<> {
-                             ::cuda::std::move(__value)
+                             ::cuda::std::forward<_Value>(__value)
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
       }

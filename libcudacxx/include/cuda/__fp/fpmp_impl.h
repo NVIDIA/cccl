@@ -87,24 +87,19 @@
     [5] Fukuda et al. (2010). FPAN: A Fast Pairwise Addition Normalization Algorithm. SC '10.
 */
 
-#include <cuda/__fp/fpmp_common.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cccl/preprocessor.h> // _CCCL_PP_FOR_EACH, to fold __CUDA_ARCH_LIST__
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/__fp/fpmp_common.h> // IWYU pragma: keep
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/rounding_functions.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cfloat> // LDBL_* , to recognize a binary128 long double
-#include <cuda/std/cmath>
+#include <cuda/std/cfloat>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring>
 
 #include <nv/target>
 
@@ -173,6 +168,9 @@ namespace cuda::experimental
 // whether it provides the type. ARM64 stays excluded, as in CCCL: no ARM64 toolchain
 // provides __float128 (aarch64 GCC does not even define __SIZEOF_FLOAT128__), and nvc++
 // there rejects the name outright - such hosts take the 128-bit long double path below.
+// GCC still provides the distinct IEC type _Float128 (including on x86, where
+// __fpmp_fp128 is __float128). fpmp2 converts to that spelling separately (see
+// fpmp.h) because GCC does not convert _Float128 to __fpmp_fp128 when they differ.
 */
 #ifndef _CCCL_FPMP_HAS_FLOAT128_TYPE
 #  if _CCCL_HAS_FLOAT128()
@@ -309,6 +307,36 @@ using __fpmp_fp128 = long double;
 #    error "_CCCL_FPMP_FP128_ENABLE=1 but this platform provides no 128-bit floating-point type"
 #  endif
 static_assert(sizeof(__fpmp_fp128) == 16, "__fpmp_fp128 must be a 128-bit floating-point type");
+#endif
+
+// IEC 60559 _Float128. GCC often treats this as a distinct binary128 type from
+// __fpmp_fp128 (__float128 on x86, long double on aarch64 IEEE-128) with no
+// implicit conversion. Declared when the compiler offers the type so fpmp2 can
+// convert to it without going through __fpmp_fp128; when the two types are
+// already the same, the extra members are SFINAE'd out.
+//
+// __FLT128_MANT_DIG__ alone does not answer the question: it describes the
+// format, and both GCC and Clang predefine it on x86 without accepting the
+// _Float128 *token* in C++. GCC 13 is the first release to spell the C23
+// interchange types in C++ (P1467). Godbolt gcc 16.2 x86: sizeof(_Float128)==16
+// and is_same with both long double and __float128 is false, so the extra
+// members are not redundant on that host. Clang still does not implement
+// P1467R9 (https://clang.llvm.org/cxx_status.html); llvm/llvm-project#78503
+// only covers float16_t / bfloat16_t, and #80195 remains open for C23
+// _Float128. Godbolt x86-64 clang 23.1 (-std=c++17 and c++23) rejects the
+// token. armv8-a clang accepts it as an alias of long double (is_same true,
+// __STDCPP_FLOAT128_T__ unset): from 12 with -std=c++17, from 17 with
+// -std=c++23 (16 with c++23 does not). Extra members would SFINAE out there,
+// so this gate stays GCC. __STDCPP_FLOAT128_T__ is the portable on-ramp if a
+// later Clang/libstdc++/libc++ provides a distinct type. Requiring GCC also
+// rules out NVRTC, NVHPC and MSVC. nvcc with a GCC 13 host parses _Float128
+// in both passes, which is what the aarch64 quad reductions need.
+#ifndef _CCCL_FPMP_HAS_IEC_FLOAT128
+#  if defined(__FLT128_MANT_DIG__) && (_CCCL_COMPILER(GCC, >=, 13) || defined(__STDCPP_FLOAT128_T__))
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 1
+#  else
+#    define _CCCL_FPMP_HAS_IEC_FLOAT128 0
+#  endif
 #endif
 
 /*
@@ -514,7 +542,7 @@ inline constexpr bool __fpmp2_is_lossless_int_v =
 */
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_internal_fabs(float __x) noexcept
 {
-  return fabsf(__x);
+  return ::fabsf(__x);
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __fpmp_internal_isnan(float __x) noexcept
 {
@@ -534,7 +562,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_add_rz(float __x, float __y) noexcept
                       {
                         return __sum;
                       }
-                      float __error = fmaf(-1.0f, __sum, __x) + __y;
+                      float __error = ::fmaf(-1.0f, __sum, __x) + __y;
                       if (__error == 0.0f)
                       {
                         return __sum;
@@ -560,7 +588,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_mul_rn(float __x, float __y) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return fmaf(__x, __y, __z);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return ::fmaf(__x, __y, __z);))
 }
 // On device the approximate SFU reciprocal / reciprocal square root are emitted as
 // inline asm rather than through __frcp_rn / __frsqrt_rn: they are the fastest option
@@ -584,7 +612,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_rsqrt_rn(float __x) noexcept
                       asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
                       return __r;
                     }),
-                    (return 1.0f / sqrtf(__x);))
+                    (return 1.0f / ::sqrtf(__x);))
 }
 // Fast single-precision base-2 exp / log mapped to the FP32 SFU approximation units
 // (ex2.approx / lg2.approx) on device and to the libm single-precision routines on the
@@ -616,7 +644,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(roundf(__x));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(::roundf(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
@@ -657,11 +685,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -677,11 +705,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -697,11 +725,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -717,11 +745,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -833,7 +861,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcep
                       long double __exact = static_cast<long double>(__x);
                       if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -846,7 +874,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexc
                       long double __exact = static_cast<long double>(__x);
                       if (__d > __exact)
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -899,7 +927,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
                         const int32_t __xi = ::__float2int_rd(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return floorf(__x);))
+                      (return ::floorf(__x);))
   }
   else
   {
@@ -922,7 +950,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
                         const int32_t __xi = ::__float2int_ru(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return ceilf(__x);))
+                      (return ::ceilf(__x);))
   }
   else
   {

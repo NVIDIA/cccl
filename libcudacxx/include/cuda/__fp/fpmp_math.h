@@ -25,7 +25,8 @@
     ======================================================================================================
     This header provides transcendental mathematical functions for fpmp2 types
     (fp32mp2 = double-float, fp64mp2 = double-double) beyond core arithmetic.
-    Include this header after fpmp.h to enable mathematical functions.
+    It is reached through <cuda/fpmp>, which includes it after fpmp.h; it is not
+    an entry point of its own.
 
     All dedicated fp32mp2 implementations use pure float-float arithmetic
     (no double-precision operations), making them suitable for GPU architectures
@@ -54,9 +55,9 @@
     - cos(x)    : Cosine - dedicated fp32mp2
     - tan(x)    : Tangent - dedicated fp32mp2
     - sincos(x) : Simultaneous sine and cosine - dedicated fp32mp2
-    - sinpi(x)  : sin(pix) - placeholder (host: sin(x*pi))
-    - cospi(x)  : cos(pix) - placeholder (host: cos(x*pi))
-    - sincospi(x): Simultaneous sin(pix) and cos(pix) - placeholder
+    - sinpi(x)  : sin(pix) - dedicated fp32mp2
+    - cospi(x)  : cos(pix) - dedicated fp32mp2
+    - sincospi(x): Simultaneous sin(pix) and cos(pix) - dedicated fp32mp2
     - asin(x)   : Arcsine - dedicated fp32mp2
     - acos(x)   : Arccosine - dedicated fp32mp2
     - atan(x)   : Arctangent - dedicated fp32mp2
@@ -339,6 +340,13 @@
       sincos computes both kernels; sin/cos call sincos internally.
       Quadrant mapping via n mod 4 with sign/swap adjustment.
 
+    sinpi(x), cospi(x), sincospi(x) for fp32mp2:
+      The argument is already in units of pi, so reduction is an integer/fraction
+      split rather than a radian Payne-Hanek or Cody-Waite reduction.
+      x = n + f with |f| <= 1/2, then f is folded into [-1/4, 1/4] and multiplied
+      by a 3-piece pi. sin(r) and cos(r) reuse the sincos Taylor kernels.
+      sinpi and cospi call sincospi. fp64mp2 stays on the double-precision fallback.
+
     Placeholder functions:
     - Delegate to standard double-precision system functions
     - Intended as API stubs; they do not provide full multi-precision accuracy yet
@@ -377,7 +385,6 @@
 */
 #include <cuda/__fp/fpmp.h>
 #include <cuda/std/cassert>
-#include <cuda/std/cmath>
 
 // Header-mode implementations are provided by the per-family implementation
 // headers below (see docs/libcudacxx/fp/fpmp_spec.rst, "Function Families").

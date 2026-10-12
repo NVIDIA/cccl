@@ -137,6 +137,13 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
             )
         )
 
+    # Scanning 2^32 elements of I128 allocates too much memory on DGX Spark. See NVBug 6683746
+    if algname in [
+        "cub.bench.scan.exclusive.sum",
+        "cub.bench.scan.exclusive.deterministic",
+    ]:
+        ct_space = list(filter(lambda variant: "T{ct}=I128" not in variant, ct_space))
+
     if algname == "cub.bench.merge_sort.pairs":
         for subbench in rt_values:
             for axis in rt_values[subbench]:

@@ -40,7 +40,8 @@ __global__ void thread_reduce_kernel(const T* __restrict__ d_in, T* __restrict__
 template <int NumItems, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
-  cuda::std::array<T, NumItems> thread_data;
+  // The input loop fills every entry before reduction.
+  cuda::std::array<T, NumItems> thread_data; // NOLINT(cppcoreguidelines-pro-type-member-init)
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NumItems; ++i)

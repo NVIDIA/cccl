@@ -27,7 +27,7 @@
 //     Alternatively, one can compute the exact output size by
 //     outputting to a discard_iterator.  This approach is more computationally
 //     expensive (approximately 2x), but conserves memory capacity.
-//     Refer to the SetIntersectionSize function for implementation details.
+//     Refer to the set_intersection_size function for implementation details.
 //   - Sets are allowed to have duplicate elements, which are carried
 //     through to the output in a algorithm-specific manner.  Refer
 //     to the full documentation for precise semantics.
@@ -45,18 +45,18 @@ void print(const String& s, const Vector& v)
 }
 
 template <typename Vector>
-void Merge(const Vector& A, const Vector& B)
+void merge(const Vector& A, const Vector& B)
 {
   // merged output is always exactly A.size() + B.size()
   Vector C(A.size() + B.size());
 
   thrust::merge(A.begin(), A.end(), B.begin(), B.end(), C.begin());
 
-  print("Merge(A,B)", C);
+  print("merge(A,B)", C);
 }
 
 template <typename Vector>
-void SetUnion(const Vector& A, const Vector& B)
+void set_union(const Vector& A, const Vector& B)
 {
   // union output is at most A.size() + B.size()
   Vector C(A.size() + B.size());
@@ -73,7 +73,7 @@ void SetUnion(const Vector& A, const Vector& B)
 }
 
 template <typename Vector>
-void SetIntersection(const Vector& A, const Vector& B)
+void set_intersection(const Vector& A, const Vector& B)
 {
   // intersection output is at most min(A.size(), B.size())
   Vector C(thrust::min(A.size(), B.size()));
@@ -90,7 +90,7 @@ void SetIntersection(const Vector& A, const Vector& B)
 }
 
 template <typename Vector>
-void SetDifference(const Vector& A, const Vector& B)
+void set_difference(const Vector& A, const Vector& B)
 {
   // difference output is at most A.size()
   Vector C(A.size());
@@ -107,7 +107,7 @@ void SetDifference(const Vector& A, const Vector& B)
 }
 
 template <typename Vector>
-void SetSymmetricDifference(const Vector& A, const Vector& B)
+void set_symmetric_difference(const Vector& A, const Vector& B)
 {
   // symmetric difference output is at most A.size() + B.size()
   Vector C(A.size() + B.size());
@@ -124,13 +124,13 @@ void SetSymmetricDifference(const Vector& A, const Vector& B)
 }
 
 template <typename Vector>
-void SetIntersectionSize(const Vector& A, const Vector& B)
+void set_intersection_size(const Vector& A, const Vector& B)
 {
   // computes the exact size of the intersection without allocating output
   const thrust::discard_iterator<> C_begin;
   const auto C_end = thrust::set_intersection(A.begin(), A.end(), B.begin(), B.end(), C_begin);
 
-  std::cout << "SetIntersectionSize(A,B) " << (C_end - C_begin) << '\n';
+  std::cout << "set_intersection_size(A,B) " << (C_end - C_begin) << '\n';
 }
 
 int main()
@@ -144,13 +144,13 @@ int main()
   print("Set A", A);
   print("Set B", B);
 
-  Merge(A, B);
-  SetUnion(A, B);
-  SetIntersection(A, B);
-  SetDifference(A, B);
-  SetSymmetricDifference(A, B);
+  merge(A, B);
+  set_union(A, B);
+  set_intersection(A, B);
+  set_difference(A, B);
+  set_symmetric_difference(A, B);
 
-  SetIntersectionSize(A, B);
+  set_intersection_size(A, B);
 
   return 0;
 }

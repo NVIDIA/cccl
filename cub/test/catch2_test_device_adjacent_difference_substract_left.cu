@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <numeric>
 
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/custom_type.h>
@@ -119,43 +120,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeft works with user provided memory
     REQUIRE(reference == in);
   };
 
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_subtract_left(stream.get());
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_subtract_left(stream);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_subtract_left(stream_ref);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_subtract_left(env);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_subtract_left(policy);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeft works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_subtract_left(policy);
-  }
+  test_with_custom_streams(test_subtract_left);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -223,43 +188,7 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with user provided me
     REQUIRE(reference == out);
   };
 
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cudaStream_t")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_subtract_left_copy(stream.get());
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    test_subtract_left_copy(stream);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::stream_ref")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const cuda::stream_ref stream_ref{stream};
-    test_subtract_left_copy(stream_ref);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_subtract_left_copy(env);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_subtract_left_copy(policy);
-  }
-
-  SECTION("DeviceAdjacentDifference::SubtractLeftCopy works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream = c2h::make_current_device_stream();
-    const auto policy         = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_subtract_left_copy(policy);
-  }
+  test_with_custom_streams(test_subtract_left_copy);
 }
 
 CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy accepts cuda::device_buffer input",

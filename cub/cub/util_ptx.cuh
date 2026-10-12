@@ -218,6 +218,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
+  // The shuffle instructions fill every output word.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   T output;
   ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
@@ -296,6 +298,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
+  // The shuffle instructions fill every output word.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   T output;
   ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);

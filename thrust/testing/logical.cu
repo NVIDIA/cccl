@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <class Vector>
-void TestAllOf()
+void test_all_of()
 {
   using T = typename Vector::value_type;
 
@@ -22,7 +22,7 @@ void TestAllOf()
   REQUIRE_FALSE(thrust::all_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE_FALSE(thrust::all_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestAllOf);
+DECLARE_VECTOR_UNITTEST(test_all_of);
 
 template <class InputIterator, class Predicate>
 bool all_of(my_system& system, InputIterator, InputIterator, Predicate)
@@ -58,7 +58,7 @@ TEST_CASE("TestAllOfDispatchImplicit", "[logical]")
 }
 
 template <class Vector>
-void TestAnyOf()
+void test_any_of()
 {
   using T = typename Vector::value_type;
 
@@ -75,7 +75,7 @@ void TestAnyOf()
   REQUIRE(thrust::any_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE_FALSE(thrust::any_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestAnyOf);
+DECLARE_VECTOR_UNITTEST(test_any_of);
 
 template <class InputIterator, class Predicate>
 bool any_of(my_system& system, InputIterator, InputIterator, Predicate)
@@ -111,7 +111,7 @@ TEST_CASE("TestAnyOfDispatchImplicit", "[logical]")
 }
 
 template <class Vector>
-void TestNoneOf()
+void test_none_of()
 {
   using T = typename Vector::value_type;
 
@@ -128,7 +128,7 @@ void TestNoneOf()
   REQUIRE_FALSE(thrust::none_of(v.begin() + 0, v.begin() + 2, ::cuda::std::identity{}));
   REQUIRE(thrust::none_of(v.begin() + 1, v.begin() + 2, ::cuda::std::identity{}));
 }
-DECLARE_VECTOR_UNITTEST(TestNoneOf);
+DECLARE_VECTOR_UNITTEST(test_none_of);
 
 template <class InputIterator, class Predicate>
 bool none_of(my_system& system, InputIterator, InputIterator, Predicate)

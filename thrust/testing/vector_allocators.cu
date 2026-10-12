@@ -120,7 +120,7 @@ using host_vector_nsp   = thrust::host_vector<int, host_alloc_nsp>;
 using device_vector_nsp = thrust::device_vector<int, device_alloc_nsp>;
 
 template <typename Vector>
-void TestVectorAllocatorConstructors()
+void test_vector_allocator_constructors()
 {
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -163,16 +163,16 @@ void TestVectorAllocatorConstructors()
 
 TEST_CASE("TestVectorAllocatorConstructorsHost", "[vector_allocators]")
 {
-  TestVectorAllocatorConstructors<host_vector>();
+  test_vector_allocator_constructors<host_vector>();
 }
 
 TEST_CASE("TestVectorAllocatorConstructorsDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorConstructors<device_vector>();
+  test_vector_allocator_constructors<device_vector>();
 }
 
 template <typename Vector>
-void TestVectorAllocatorPropagateOnCopyAssignment()
+void test_vector_allocator_propagate_on_copy_assignment()
 {
   REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
 
@@ -192,16 +192,16 @@ void TestVectorAllocatorPropagateOnCopyAssignment()
 
 TEST_CASE("TestVectorAllocatorPropagateOnCopyAssignmentHost", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnCopyAssignment<host_vector>();
+  test_vector_allocator_propagate_on_copy_assignment<host_vector>();
 }
 
 TEST_CASE("TestVectorAllocatorPropagateOnCopyAssignmentDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnCopyAssignment<device_vector>();
+  test_vector_allocator_propagate_on_copy_assignment<device_vector>();
 }
 
 template <typename Vector>
-void TestVectorAllocatorPropagateOnMoveAssignment()
+void test_vector_allocator_propagate_on_move_assignment()
 {
   using Alloc = typename Vector::allocator_type;
   REQUIRE(cuda::std::allocator_traits<typename Vector::allocator_type>::propagate_on_container_copy_assignment::value);
@@ -225,16 +225,16 @@ void TestVectorAllocatorPropagateOnMoveAssignment()
 
 TEST_CASE("TestVectorAllocatorPropagateOnMoveAssignmentHost", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnMoveAssignment<host_vector>();
+  test_vector_allocator_propagate_on_move_assignment<host_vector>();
 }
 
 TEST_CASE("TestVectorAllocatorPropagateOnMoveAssignmentDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnMoveAssignment<device_vector>();
+  test_vector_allocator_propagate_on_move_assignment<device_vector>();
 }
 
 template <typename Vector>
-void TestVectorAllocatorPropagateOnSwap()
+void test_vector_allocator_propagate_on_swap()
 {
   using Alloc = typename Vector::allocator_type;
   const Alloc alloc1(1);
@@ -259,10 +259,10 @@ void TestVectorAllocatorPropagateOnSwap()
 
 TEST_CASE("TestVectorAllocatorPropagateOnSwapHost", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnSwap<host_vector_nsp>();
+  test_vector_allocator_propagate_on_swap<host_vector_nsp>();
 }
 
 TEST_CASE("TestVectorAllocatorPropagateOnSwapDevice", "[vector_allocators]")
 {
-  TestVectorAllocatorPropagateOnSwap<device_vector_nsp>();
+  test_vector_allocator_propagate_on_swap<device_vector_nsp>();
 }

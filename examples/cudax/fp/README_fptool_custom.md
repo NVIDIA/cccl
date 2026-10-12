@@ -169,6 +169,18 @@ side.
 Using the type
 --------------
 
+The feature is opt-in. `fp_custom`'s runtime field sizes live in mutable variables at
+namespace scope, one copy shared by every translation unit, so an `#include` left behind
+after an experiment would put that state into a shipping binary. `<cuda/fptool>` therefore
+refuses to compile until the project asks for it:
+
+```bash
+nvcc -DCCCL_ENABLE_FPTOOL ...
+```
+
+Define it for the whole project rather than per file, since the state above is shared
+across translation units.
+
 ```c++
 #include <cuda/fptool>     // one header for the whole feature
 ```
@@ -238,7 +250,7 @@ copy into a non-volatile local first. The type stays trivially copyable, the sam
 alignment as a `double`, and `bit_cast` through `double` is the sanctioned route to the raw
 bits.
 
-### Two gaps worth knowing
+### The math-function gap
 
 Only **`sqrt` and `fma`** have reducing implementations. They are also redeclared in
 `cuda::std`, so the qualified spellings select the reducing version rather than narrowing
@@ -250,9 +262,6 @@ Every other math function does not. There is no `fabs`, `exp`, `log`, `sin` or `
 that is a real trap: the emulated format quietly stops applying for that part of the
 expression. Where an algorithm leans on transcendentals, check what is actually being reduced
 before trusting the answer.
-
-There is also no `numeric_limits` specialization, so generic code that queries limits will
-not see the emulated format's.
 
 The example
 -----------

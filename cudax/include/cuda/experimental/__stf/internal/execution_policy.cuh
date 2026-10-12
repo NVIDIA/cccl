@@ -334,7 +334,7 @@ public:
    */
   static inline constexpr size_t static_width(size_t level)
   {
-    size_t data[] = {width, lower_levels...};
+    const size_t data[] = {width, lower_levels...};
     return data[2 * level];
   }
 

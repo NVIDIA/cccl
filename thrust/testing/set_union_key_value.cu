@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename U>
-void TestSetUnionKeyValue(size_t n)
+void test_set_union_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -42,10 +42,10 @@ void TestSetUnionKeyValue(size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_set_union_key_value);
 
 template <typename U>
-void TestSetUnionKeyValueDescending(size_t n)
+void test_set_union_key_value_descending(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -84,4 +84,4 @@ void TestSetUnionKeyValueDescending(size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValueDescending);
+DECLARE_VARIABLE_UNITTEST(test_set_union_key_value_descending);

@@ -62,7 +62,7 @@ struct __equal_wrapper
   //! @param __empty Empty sentinel value
   //! @param __erased Erased sentinel value
   //! @param __eq Equality binary callable
-  _CCCL_HOST_DEVICE_API constexpr __equal_wrapper(_Tp __empty, _Tp __erased, const _Equal& __eq) noexcept
+  _CCCL_HOST_DEVICE_API constexpr __equal_wrapper(_Tp __empty, _Tp __erased, const _Equal& __eq)
       : __empty_sentinel{__empty}
       , __erased_sentinel{__erased}
       , __equal{__eq}

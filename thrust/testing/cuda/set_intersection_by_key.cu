@@ -80,7 +80,7 @@ TEST_CASE("TestSetIntersectionByKeyDeviceNoSync", "[set_intersection_by_key]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
+void test_set_intersection_by_key_cuda_streams(ExecutionPolicy policy)
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -112,10 +112,10 @@ void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestSetIntersectionByKeyCudaStreamsSync", "[set_intersection_by_key]")
 {
-  TestSetIntersectionByKeyCudaStreams(thrust::cuda::par);
+  test_set_intersection_by_key_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestSetIntersectionByKeyCudaStreamsNoSync", "[set_intersection_by_key]")
 {
-  TestSetIntersectionByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_set_intersection_by_key_cuda_streams(thrust::cuda::par_nosync);
 }

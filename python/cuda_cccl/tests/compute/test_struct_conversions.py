@@ -15,6 +15,19 @@ from _utils.device_array import DeviceArray
 import cuda.compute
 from cuda.compute import gpu_struct
 
+
+def test_gpu_struct_ignores_numpy_field_titles():
+    """Field titles are aliases and must not become additional struct fields."""
+    dtype = np.dtype([(("label", "a"), np.int32), ("b", np.float32)], align=True)
+
+    struct_type = gpu_struct(dtype)
+
+    assert struct_type.dtype.names == ("a", "b")
+    assert struct_type.dtype.fields["a"][1] == 0
+    assert struct_type.dtype.fields["b"][1] == 4
+    assert struct_type.dtype.itemsize == 8
+
+
 # Signed inputs whose sign must survive being widened into a wider field.
 NEGATIVE_INPUT = np.array([-1, -2147483648, -7, 0, 5], dtype=np.int32)
 

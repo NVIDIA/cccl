@@ -123,8 +123,7 @@ class WarpBitonicSort
   WarpBitonicSort() = default;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
@@ -451,8 +450,7 @@ class WarpBitonicSort<KeyT, 1, LogicalWarpThreads, ValueT>
   WarpBitonicSort() = default;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   explicit _CCCL_DEVICE_API _CCCL_FORCEINLINE WarpBitonicSort(TempStorage&) {}
 
