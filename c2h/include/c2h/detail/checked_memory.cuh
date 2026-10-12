@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cuda/__device/attributes.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__numeric/add_overflow.h>
@@ -205,12 +206,12 @@ inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::s
 
   // C2H test sessions target a single device, so the first queried device is the only device this function will see.
   static const bool result = [device] {
-    cudaDeviceProp prop{};
-    if (cudaGetDeviceProperties(&prop, device) != cudaSuccess)
+    int integrated{};
+    if (cudaDeviceGetAttribute(&integrated, ::cuda::device_attributes::integrated, device) != cudaSuccess)
     {
       throw std::bad_alloc{};
     }
-    return prop.integrated != 0;
+    return integrated != 0;
   }();
   return result;
 }
