@@ -27,6 +27,7 @@
 #include <cub/util_type.cuh>
 
 #include <cuda/__argument/argument.h>
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/__stream/get_stream.h>
@@ -49,8 +50,6 @@
 #include <cuda/experimental/mgmn/__concepts/common.h>
 #include <cuda/experimental/mgmn/__concepts/communicator.h>
 
-#include <vector>
-
 #include <cuda/std/__cccl/prologue.h>
 
 // NOLINTBEGIN(bugprone-reserved-identifier)
@@ -61,7 +60,7 @@ namespace __detail::__scan
 enum class __kind : ::cuda::std::uint8_t
 {
   __exclusive,
-  __inclusive
+  __inclusive,
 };
 
 template <__kind _Kind,
@@ -110,9 +109,8 @@ _CCCL_HOST_API void __scan(
                                                       : "cuda::experimental::mgmn::inclusive_scan");
 
   constexpr auto __ROOT_RANK = 0;
-  auto __partials            = ::std::vector<typename __properties::__buffer_type>{};
+  auto __partials = ::cuda::__simple_vector<typename __properties::__buffer_type>{__num_local, ::cuda::no_init};
 
-  __partials.reserve(__num_local);
   // TODO(jfaibussowit): can just be ranges::zip | ranges::transform | ranges::to() (and then
   // we don't need to do the env, and buffer type deduction upfront)
   for (auto&& [__comm, __env, __input_it, __num_items] :

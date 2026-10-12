@@ -25,6 +25,7 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 
+#include <cuda/__container/simple_vector.h>
 #include <cuda/__functional/operator_properties.h>
 #include <cuda/__nvtx/nvtx.h>
 #include <cuda/__runtime/ensure_current_context.h>
@@ -47,8 +48,6 @@
 #include <cuda/experimental/mgmn/__concepts/common.h>
 #include <cuda/experimental/mgmn/__concepts/communicator.h>
 #include <cuda/experimental/mgmn/__concepts/has_all_reduce.h>
-
-#include <vector>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -98,7 +97,7 @@ template <class _Buffer, class _Comm, class _Env, class _InputIt, class _SizeT, 
 
 template <class _CommRange, class _OutputItRange, class _BinaryOp, class _Buffer>
 _CCCL_HOST_API void __direct_reduction(
-  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::std::vector<_Buffer>* __partials)
+  _CommRange&& __comms, _OutputItRange&& __outputs, const _BinaryOp& __op, ::cuda::__simple_vector<_Buffer>* __partials)
 {
   auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
 
@@ -120,7 +119,7 @@ _CCCL_HOST_API void __two_stage_gather_reduction(
   _EnvRange&& __envs,
   _OutputItRange&& __outputs,
   const _BinaryOp& __op,
-  ::std::vector<_Buffer>* __partials)
+  ::cuda::__simple_vector<_Buffer>* __partials)
 {
   {
     auto&& __guard = ::cuda::std::ranges::begin(__comms)->group_guard();
@@ -274,9 +273,8 @@ _CCCL_HOST_API void reduce(
 
   _CCCL_NVTX_RANGE_SCOPE("cuda::experimental::mgmn::reduce");
 
-  auto __partials = ::std::vector<typename __properties::__buffer_type>{};
+  auto __partials = ::cuda::__simple_vector<typename __properties::__buffer_type>{__num_local, ::cuda::no_init};
 
-  __partials.reserve(__num_local);
   // TODO(jfaibussowit): can just be ranges::zip | ranges::transform | ranges::to() (and then
   // we don't need to do the env, and buffer type deduction upfront)
   for (auto&& [__comm, __env, __input_it, __num_items] :
