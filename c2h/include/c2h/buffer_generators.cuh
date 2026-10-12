@@ -91,7 +91,9 @@ template <typename T>
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  auto d_items = ::c2h::make_device_buffer<T>(stream, num_items, cuda::no_init);
+  // gen only overwrites key and val for custom_type_t which may have padding bytes;
+  // initialize the remaining members from min without requiring T to be default constructible.
+  auto d_items = ::c2h::make_device_buffer<T>(stream, num_items, min);
   ::c2h::gen(seed, d_items, min, max);
 
   const auto items_count = d_items.size();
