@@ -14,6 +14,14 @@ set(
   "CUDA architectures for CCCL"
 )
 
+# cuda_cccl adds CCCL as a developer sub-build, which requires the global CXX
+# and CUDA dialects to match. Use the package's C++17 baseline for both while
+# allowing callers to override the cache entries explicitly.
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard for cuda_cccl")
+set(CMAKE_CUDA_STANDARD 17 CACHE STRING "CUDA C++ standard for cuda_cccl")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
 project(cuda_cccl DESCRIPTION "Python package cuda_cccl" LANGUAGES CUDA CXX C)
 
 find_package(CUDAToolkit REQUIRED)
@@ -105,16 +113,7 @@ endif()
 
 # -3 generates source for Python 3
 # -M generates depfile
-# -t cythonizes if PYX is newer than preexisting output
-# -w sets working directory
-set(
-  CYTHON_FLAGS
-  -3
-  -M
-  -t
-  -w
-  "${cuda_cccl_SOURCE_DIR}"
-)
+set(CYTHON_FLAGS -3 -M)
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(pyx_source_file "${cuda_cccl_SOURCE_DIR}/cuda/compute/_bindings_impl.pyx")
@@ -131,6 +130,7 @@ if (CCCL_PYTHON_USE_V2)
 else()
   set(_backend_suffix "v1")
 endif()
+set(_bindings_backend_pxi_files)
 foreach (
   _pxi_stem
   segmented_reduce_backend
@@ -139,11 +139,16 @@ foreach (
   serialization
   build_config
 )
+  set(
+    _configured_backend_pxi
+    "${CMAKE_CURRENT_BINARY_DIR}/_bindings_${_pxi_stem}.pxi"
+  )
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cuda/compute/_bindings_${_pxi_stem}_${_backend_suffix}.pxi"
-    "${CMAKE_CURRENT_BINARY_DIR}/_bindings_${_pxi_stem}.pxi"
+    "${_configured_backend_pxi}"
     COPYONLY
   )
+  list(APPEND _bindings_backend_pxi_files "${_configured_backend_pxi}")
 endforeach()
 
 # Custom Cython compilation command. `-I ${BINARY_DIR}` lets the .pyx's
@@ -159,7 +164,7 @@ add_custom_command(
     "${pyx_source_file}"
     --output-file "${_generated_extension_src}"
   # gersemi: on
-  DEPENDS "${pyx_source_file}"
+  DEPENDS "${pyx_source_file}" ${_bindings_backend_pxi_files}
   DEPFILE "${_depfile}"
   COMMENT "Cythonizing ${pyx_source_file} for CUDA ${CUDA_VERSION_MAJOR}"
 )

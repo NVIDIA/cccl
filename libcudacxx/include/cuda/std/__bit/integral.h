@@ -26,13 +26,15 @@
 #  include <cuda/__ptx/instructions/shl.h>
 #  include <cuda/__ptx/instructions/shr.h>
 #endif // _CCCL_CUDA_COMPILATION()
-#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/max.h> // IWYU pragma: keep
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

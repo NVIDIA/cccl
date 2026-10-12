@@ -22,6 +22,7 @@
 #endif // no system header
 
 // IWYU pragma: begin_exports
+#include <cuda/__type_traits/is_arithmetic.h>
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>

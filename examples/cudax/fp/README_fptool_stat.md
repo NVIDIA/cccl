@@ -63,8 +63,8 @@ under suspicion and leave the rest as plain `fpmp2`, and the counters describe t
 variable's arithmetic instead of the whole kernel's:
 
 ```c++
-cudax::fp32mp2      sum{0.0f}, term{1.0f};
-cudax::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
+cuda::fp32mp2      sum{0.0f}, term{1.0f};
+cuda::fp32mp2_stat compensation{0.0f};   // the only instrumented variable
 
 auto y = term - compensation;   // counted: compensation is instrumented, y becomes so
 auto t = sum + y;               // counted: y is instrumented, t becomes so
@@ -121,11 +121,10 @@ across translation units.
 ```
 
 ```c++
-namespace cudax = cuda::experimental;
 
-cudax::fpmp2_stat_reset_device_data(stream);
+cuda::fpmp2_stat_reset_device_data(stream);
 cuda::launch(stream, config, my_kernel, ...);
-const auto record = cudax::fpmp2_stat_read_device_data(stream);
+const auto record = cuda::fpmp2_stat_read_device_data(stream);
 ```
 
 Both functions take a stream and are host-only. The reset enqueues a cleared record, so

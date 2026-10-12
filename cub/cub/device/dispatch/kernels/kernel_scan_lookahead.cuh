@@ -330,11 +330,11 @@ struct lookahead_scan_closure
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void load_current_tile(
     const warpspeed::Squad& squad,
-    warpspeed::SmemPhase<in_out_t>& phaseInOutW,
+    warpspeed::SmemPhase<in_out_t>& phaseInOutL,
     const warpspeed::CpAsyncOobInfo<InputT>& loadInfo) const
   {
-    warpspeed::SmemRef refInOutW = phaseInOutW.acquireRef();
-    warpspeed::squadLoadBulk(squad, refInOutW, loadInfo);
+    warpspeed::SmemRef refInOutL = phaseInOutL.acquireRef();
+    warpspeed::squadLoadBulk(squad, refInOutL, loadInfo);
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void lookahead(
@@ -811,7 +811,7 @@ struct lookahead_scan_closure
       // readable by a set of threads. To acquire and release a phase, we need to arrive and wait on certain barriers.
       // The selection of the barriers is handled under the hood.
       auto [phaseNextBlockIdxW, phaseNextBlockIdxR]           = warpspeed::bindPhases<2>(stageNextBlockIdx);
-      auto [phaseInOutW, phaseInOutRW, phaseInOutS]           = warpspeed::bindPhases<3>(stageInOut);
+      auto [phaseInOutL, phaseInOutRW, phaseInOutS]           = warpspeed::bindPhases<3>(stageInOut);
       auto [phaseThreadAndWarpAggrW, phaseThreadAndWarpAggrR] = warpspeed::bindPhases<2>(stageThreadAndWarpAggr);
       auto [phaseAggrExclusiveCtaW, phaseAggrExclusiveCtaR]   = warpspeed::bindPhases<2>(stageAggrExclusiveCta);
 
@@ -833,7 +833,7 @@ struct lookahead_scan_closure
         _CCCL_IKET_RANGE_START(SquadLoadAndNextIdx);
 
         _CCCL_IKET_RANGE_PUSH(Load);
-        load_current_tile(squad, phaseInOutW, loadInfo);
+        load_current_tile(squad, phaseInOutL, loadInfo);
         _CCCL_IKET_RANGE_POP();
 
         _CCCL_IKET_RANGE_PUSH(NextIdx);

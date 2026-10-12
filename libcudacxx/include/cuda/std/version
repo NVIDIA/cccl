@@ -37,6 +37,7 @@
 #define __cccl_lib_byte                         201603L
 #define __cccl_lib_byteswap                     202110L
 #define __cccl_lib_clamp                        201603L
+#define __cccl_lib_constant_wrapper             202606L
 #define __cccl_lib_endian                       201907L
 #define __cccl_lib_forward_like                 202207L
 #define __cccl_lib_gcd_lcm                      201606L
@@ -213,9 +214,6 @@
 // # define __cccl_lib_syncbuf                              201803L
 // # define __cccl_lib_three_way_comparison                 201907L
 #  define __cccl_lib_unwrap_ref 201811L
-
-// todo(dabayer): Uncomment this once constant_wrapper is exposed.
-// #  define __cccl_lib_constant_wrapper 202606L
 #endif // _CCCL_STD_VER >= 2020
 
 #if _CCCL_STD_VER >= 2023
