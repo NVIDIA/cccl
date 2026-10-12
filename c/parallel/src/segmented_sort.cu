@@ -43,6 +43,7 @@
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
+#include <nvrtc/user_source_prelude.h>
 #include <util/build_utils.h>
 
 struct device_segmented_sort_policy_selector;
@@ -221,11 +222,12 @@ extern "C" __device__ void {0}(void* state_ptr, const void* arg_ptr, void* resul
     cccl_type_enum_to_name(end_offset_iterator.value_type.type),
     comparison);
 
-  selector_op.type = cccl_op_kind_t::CCCL_STATEFUL;
-  selector_op.name = selector_op_name;
+  selector_op.type               = cccl_op_kind_t::CCCL_STATEFUL;
+  selector_op.name               = selector_op_name;
+  const std::string selector_src = with_user_source_prelude(code);
   auto [lto_size, lto_buf] =
     begin_linking_nvrtc_program(static_cast<uint32_t>(num_lto_opts), lto_opts)
-      ->add_program(nvrtc_translation_unit{code.c_str(), selector_op_name})
+      ->add_program(nvrtc_translation_unit{selector_src.c_str(), selector_op_name})
       ->compile_program({compile_args, num_compile_args})
       ->get_program_ltoir();
   char* code_copy = static_cast<char*>(std::malloc(lto_size));
@@ -408,7 +410,7 @@ CUresult cccl_device_segmented_sort_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   if (cccl_iterator_kind_t::CCCL_POINTER != keys_in_it.type || cccl_iterator_kind_t::CCCL_POINTER != values_in_it.type)
@@ -797,7 +799,7 @@ CUresult cccl_device_segmented_sort_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult result = cccl_device_segmented_sort_compile(
     build_ptr,

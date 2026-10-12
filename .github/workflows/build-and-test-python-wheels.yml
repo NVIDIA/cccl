@@ -98,6 +98,7 @@ jobs:
       - dispatch-groups-linux-standalone
       - dispatch-groups-windows-standalone
     permissions:
+      actions: read
       contents: read
     runs-on: ubuntu-latest
     steps:

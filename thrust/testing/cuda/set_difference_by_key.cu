@@ -74,20 +74,18 @@ void TestSetDifferenceByKeyDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }
 
-void TestSetDifferenceByKeyDeviceSeq()
+TEST_CASE("TestSetDifferenceByKeyDeviceSeq", "[set_difference_by_key]")
 {
   TestSetDifferenceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceSeq);
 
-void TestSetDifferenceByKeyDeviceDevice()
+TEST_CASE("TestSetDifferenceByKeyDeviceDevice", "[set_difference_by_key]")
 {
   TestSetDifferenceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDeviceDevice);
 #endif
 
-void TestSetDifferenceByKeyCudaStreams()
+TEST_CASE("TestSetDifferenceByKeyCudaStreams", "[set_difference_by_key]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -115,4 +113,3 @@ void TestSetDifferenceByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_key, {2, 5});
   test_runtime::assert_equal(stream, result_val, {0, 0});
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyCudaStreams);

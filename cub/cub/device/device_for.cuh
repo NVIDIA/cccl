@@ -39,7 +39,6 @@
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/array>
 
 CUB_NAMESPACE_BEGIN
 
@@ -1281,23 +1280,23 @@ public:
     using namespace cub::detail;
     using extents_type             = typename LayoutMapping::extents_type;
     using extent_index_type        = typename extents_type::index_type;
-    using fast_mod_array_t         = ::cuda::std::array<fast_div_mod<extent_index_type>, extents_type::rank()>;
     static constexpr auto seq      = ::cuda::std::make_index_sequence<extents_type::rank()>{};
     constexpr bool is_layout_right = ::cuda::std::__is_cuda_std_layout_right_mapping_v<LayoutMapping>;
     const auto extents             = layout_mapping.extents();
+    using fast_mod_array_t         = decltype(cub::detail::extents_fast_mod_div(extents, seq));
     using ShapeT                   = implicit_prom_t<extent_index_type>;
     const auto shape               = static_cast<ShapeT>(cub::detail::size(extents));
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant, for fully static extents */
-    // must precede the fast_div_mod arrays below, whose constructor asserts a positive divisor
+    // must precede the fast_mod_div arrays below, whose constructor asserts a positive divisor
     if (shape == 0)
     {
       return cudaSuccess;
     }
     _CCCL_DIAG_POP
 
-    const fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod<is_layout_right>(extents, seq);
-    const fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(extents, seq);
+    const fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_mod_div<is_layout_right>(extents, seq);
+    const fast_mod_array_t extents_div_array   = cub::detail::extents_fast_mod_div(extents, seq);
     const for_each::op_wrapper_extents_t<OpType, extents_type, is_layout_right, fast_mod_array_t> op_wrapper{
       op, extents, sub_sizes_div_array, extents_div_array};
     return __bulk(shape, op_wrapper, env);

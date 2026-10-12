@@ -3,17 +3,10 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/partition.h>
 
+#include <cuda/functional>
+
 #include "thrust/detail/raw_pointer_cast.h"
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
 
 template <typename T>
 struct mod_n
@@ -58,7 +51,7 @@ void TestPartitionDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_even<T>(), result.begin());
+  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), cuda::__is_even{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
@@ -73,23 +66,20 @@ void TestPartitionDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestPartitionDeviceSeq()
+TEST_CASE("TestPartitionDeviceSeq", "[partition]")
 {
   TestPartitionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionDeviceSeq);
 
-void TestPartitionDeviceDevice()
+TEST_CASE("TestPartitionDeviceDevice", "[partition]")
 {
   TestPartitionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionDeviceDevice);
 
-void TestPartitionDeviceNoSync()
+TEST_CASE("TestPartitionDeviceNoSync", "[partition]")
 {
   TestPartitionDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionDeviceNoSync);
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
 __global__ void partition_kernel(
@@ -120,7 +110,7 @@ void TestPartitionStencilDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), is_even<T>(), result.begin());
+  partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), cuda::__is_even{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
@@ -135,23 +125,20 @@ void TestPartitionStencilDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestPartitionStencilDeviceSeq()
+TEST_CASE("TestPartitionStencilDeviceSeq", "[partition]")
 {
   TestPartitionStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionStencilDeviceSeq);
 
-void TestPartitionStencilDeviceDevice()
+TEST_CASE("TestPartitionStencilDeviceDevice", "[partition]")
 {
   TestPartitionStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionStencilDeviceDevice);
 
-void TestPartitionStencilDeviceNoSync()
+TEST_CASE("TestPartitionStencilDeviceNoSync", "[partition]")
 {
   TestPartitionStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionStencilDeviceNoSync);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -191,7 +178,7 @@ void TestPartitionCopyDevice(ExecutionPolicy exec)
   thrust::device_vector<pair_type> iterators(1);
 
   partition_copy_kernel<<<1, 1>>>(
-    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>(), iterators.begin());
+    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), cuda::__is_even{}, iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
@@ -212,23 +199,20 @@ void TestPartitionCopyDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestPartitionCopyDeviceSeq()
+TEST_CASE("TestPartitionCopyDeviceSeq", "[partition]")
 {
   TestPartitionCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionCopyDeviceSeq);
 
-void TestPartitionCopyDeviceDevice()
+TEST_CASE("TestPartitionCopyDeviceDevice", "[partition]")
 {
   TestPartitionCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionCopyDeviceDevice);
 
-void TestPartitionCopyDeviceNoSync()
+TEST_CASE("TestPartitionCopyDeviceNoSync", "[partition]")
 {
   TestPartitionCopyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionCopyDeviceNoSync);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -283,7 +267,7 @@ void TestPartitionCopyStencilDevice(ExecutionPolicy exec)
     stencil.begin(),
     true_results.begin(),
     false_results.begin(),
-    is_even<T>(),
+    cuda::__is_even{},
     iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
@@ -305,23 +289,20 @@ void TestPartitionCopyStencilDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestPartitionCopyStencilDeviceSeq()
+TEST_CASE("TestPartitionCopyStencilDeviceSeq", "[partition]")
 {
   TestPartitionCopyStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDeviceSeq);
 
-void TestPartitionCopyStencilDeviceDevice()
+TEST_CASE("TestPartitionCopyStencilDeviceDevice", "[partition]")
 {
   TestPartitionCopyStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDeviceDevice);
 
-void TestPartitionCopyStencilDeviceNoSync()
+TEST_CASE("TestPartitionCopyStencilDeviceNoSync", "[partition]")
 {
   TestPartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionCopyStencilDeviceNoSync);
 
 template <typename ExecutionPolicy, typename Iterator1, typename Predicate, typename Iterator2>
 __global__ void
@@ -345,7 +326,7 @@ void TestStablePartitionDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), is_even<T>(), result.begin());
+  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), cuda::__is_even{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
@@ -360,23 +341,20 @@ void TestStablePartitionDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestStablePartitionDeviceSeq()
+TEST_CASE("TestStablePartitionDeviceSeq", "[partition]")
 {
   TestStablePartitionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionDeviceSeq);
 
-void TestStablePartitionDeviceDevice()
+TEST_CASE("TestStablePartitionDeviceDevice", "[partition]")
 {
   TestStablePartitionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionDeviceDevice);
 
-void TestStablePartitionDeviceNoSync()
+TEST_CASE("TestStablePartitionDeviceNoSync", "[partition]")
 {
   TestStablePartitionDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionDeviceNoSync);
 
 template <typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
 __global__ void stable_partition_kernel(
@@ -407,7 +385,7 @@ void TestStablePartitionStencilDevice(ExecutionPolicy exec)
 
   thrust::device_vector<iterator> result(1);
 
-  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), is_even<T>(), result.begin());
+  stable_partition_kernel<<<1, 1>>>(exec, data.begin(), data.end(), stencil.begin(), cuda::__is_even{}, result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
@@ -422,23 +400,20 @@ void TestStablePartitionStencilDevice(ExecutionPolicy exec)
   REQUIRE(ref == data);
 }
 
-void TestStablePartitionStencilDeviceSeq()
+TEST_CASE("TestStablePartitionStencilDeviceSeq", "[partition]")
 {
   TestStablePartitionStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDeviceSeq);
 
-void TestStablePartitionStencilDeviceDevice()
+TEST_CASE("TestStablePartitionStencilDeviceDevice", "[partition]")
 {
   TestStablePartitionStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDeviceDevice);
 
-void TestStablePartitionStencilDeviceNoSync()
+TEST_CASE("TestStablePartitionStencilDeviceNoSync", "[partition]")
 {
   TestStablePartitionStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionStencilDeviceNoSync);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -478,7 +453,7 @@ void TestStablePartitionCopyDevice(ExecutionPolicy exec)
   thrust::device_vector<pair_type> iterators(1);
 
   stable_partition_copy_kernel<<<1, 1>>>(
-    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>(), iterators.begin());
+    exec, data.begin(), data.end(), true_results.begin(), false_results.begin(), cuda::__is_even{}, iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
@@ -499,23 +474,20 @@ void TestStablePartitionCopyDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestStablePartitionCopyDeviceSeq()
+TEST_CASE("TestStablePartitionCopyDeviceSeq", "[partition]")
 {
   TestStablePartitionCopyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDeviceSeq);
 
-void TestStablePartitionCopyDeviceDevice()
+TEST_CASE("TestStablePartitionCopyDeviceDevice", "[partition]")
 {
   TestStablePartitionCopyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDeviceDevice);
 
-void TestStablePartitionCopyDeviceNoSync()
+TEST_CASE("TestStablePartitionCopyDeviceNoSync", "[partition]")
 {
   TestStablePartitionCopyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyDeviceNoSync);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -570,7 +542,7 @@ void TestStablePartitionCopyStencilDevice(ExecutionPolicy exec)
     stencil.begin(),
     true_results.begin(),
     false_results.begin(),
-    is_even<T>(),
+    cuda::__is_even{},
     iterators.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
@@ -592,23 +564,20 @@ void TestStablePartitionCopyStencilDevice(ExecutionPolicy exec)
   REQUIRE(false_ref == false_results);
 }
 
-void TestStablePartitionCopyStencilDeviceSeq()
+TEST_CASE("TestStablePartitionCopyStencilDeviceSeq", "[partition]")
 {
   TestStablePartitionCopyStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceSeq);
 
-void TestStablePartitionCopyStencilDeviceDevice()
+TEST_CASE("TestStablePartitionCopyStencilDeviceDevice", "[partition]")
 {
   TestStablePartitionCopyStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceDevice);
 
-void TestStablePartitionCopyStencilDeviceNoSync()
+TEST_CASE("TestStablePartitionCopyStencilDeviceNoSync", "[partition]")
 {
   TestStablePartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceNoSync);
 
 void TestPartitionIfWithMagnitude(int magnitude)
 {
@@ -674,7 +643,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
   }
 }
 
-void TestPartitionIfWithLargeNumberOfItems()
+TEST_CASE("TestPartitionIfWithLargeNumberOfItems", "[partition]")
 {
   TestPartitionIfWithMagnitude(30);
   // These require 64-bit dispatches even when magnitude < 32.
@@ -684,11 +653,10 @@ void TestPartitionIfWithLargeNumberOfItems()
   TestPartitionIfWithMagnitude(33);
 #  endif
 }
-DECLARE_UNITTEST(TestPartitionIfWithLargeNumberOfItems);
 #endif
 
 template <typename ExecutionPolicy>
-void TestPartitionCudaStreams(ExecutionPolicy policy)
+void test_partition_cuda_streams(ExecutionPolicy policy)
 {
   using Vector   = thrust::device_vector<int>;
   using T        = Vector::value_type;
@@ -706,7 +674,7 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
 
   auto streampolicy = policy.on(s);
 
-  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), is_even<T>());
+  const Iterator iter = thrust::partition(streampolicy, data.begin(), data.end(), cuda::__is_even{});
 
   Vector ref(5);
   ref[0] = 2;
@@ -721,14 +689,12 @@ void TestPartitionCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestPartitionCudaStreamsSync()
+TEST_CASE("TestPartitionCudaStreamsSync", "[partition]")
 {
-  TestPartitionCudaStreams(thrust::cuda::par);
+  test_partition_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestPartitionCudaStreamsSync);
 
-void TestPartitionCudaStreamsNoSync()
+TEST_CASE("TestPartitionCudaStreamsNoSync", "[partition]")
 {
-  TestPartitionCudaStreams(thrust::cuda::par_nosync);
+  test_partition_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestPartitionCudaStreamsNoSync);

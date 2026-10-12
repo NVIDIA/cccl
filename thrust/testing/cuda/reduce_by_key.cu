@@ -1,6 +1,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 #include <thrust/execution_policy.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/reduce.h>
 
@@ -8,6 +9,13 @@
 #include <cuda/std/functional>
 
 #include <cstdint>
+
+#if _CCCL_HAS_NVFP16()
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
+#  include <cuda_bf16.h>
+#endif // _CCCL_HAS_NVBF16()
 
 #include <unittest/unittest.h>
 
@@ -265,27 +273,24 @@ void TestReduceByKeyDevice(ExecutionPolicy exec)
   REQUIRE(output_values[4] == 15);
 }
 
-void TestReduceByKeyDeviceSeq()
+TEST_CASE("TestReduceByKeyDeviceSeq", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceSeq);
 
-void TestReduceByKeyDeviceDevice()
+TEST_CASE("TestReduceByKeyDeviceDevice", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceDevice);
 
-void TestReduceByKeyDeviceNoSync()
+TEST_CASE("TestReduceByKeyDeviceNoSync", "[reduce_by_key]")
 {
   TestReduceByKeyDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
+void test_reduce_by_key_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -378,17 +383,15 @@ void TestReduceByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestReduceByKeyCudaStreamsSync()
+TEST_CASE("TestReduceByKeyCudaStreamsSync", "[reduce_by_key]")
 {
-  TestReduceByKeyCudaStreams(thrust::cuda::par);
+  test_reduce_by_key_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsSync);
 
-void TestReduceByKeyCudaStreamsNoSync()
+TEST_CASE("TestReduceByKeyCudaStreamsNoSync", "[reduce_by_key]")
 {
-  TestReduceByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_reduce_by_key_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestReduceByKeyCudaStreamsNoSync);
 
 // Maps indices to key ids
 class div_op
@@ -427,7 +430,7 @@ public:
   }
 };
 
-void TestReduceByKeyWithBigIndexesHelper(int magnitude)
+void test_reduce_by_key_with_big_indexes_helper(int magnitude)
 {
   const std::int64_t key_size_magnitude = 8;
   REQUIRE(key_size_magnitude < magnitude);
@@ -474,18 +477,17 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
   }
 }
 
-void TestReduceByKeyWithBigIndexes()
+TEST_CASE("TestReduceByKeyWithBigIndexes", "[reduce_by_key]")
 {
-  TestReduceByKeyWithBigIndexesHelper(30);
+  test_reduce_by_key_with_big_indexes_helper(30);
 #ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
-  TestReduceByKeyWithBigIndexesHelper(31);
-  TestReduceByKeyWithBigIndexesHelper(32);
-  TestReduceByKeyWithBigIndexesHelper(33);
+  test_reduce_by_key_with_big_indexes_helper(31);
+  test_reduce_by_key_with_big_indexes_helper(32);
+  test_reduce_by_key_with_big_indexes_helper(33);
 #endif
 }
-DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);
 
-void TestReduceByKeyWithCustomEqualityOp()
+TEST_CASE("TestReduceByKeyWithCustomEqualityOp", "[reduce_by_key]")
 {
   using key_vector_t = thrust::device_vector<cuda::std::int32_t>;
   using val_vector_t = thrust::device_vector<cuda::std::int32_t>;
@@ -527,9 +529,7 @@ void TestReduceByKeyWithCustomEqualityOp()
   REQUIRE(all_values_correct);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithCustomEqualityOp);
-
-void TestReduceByKeyWithDifferentAccumulatorT()
+TEST_CASE("TestReduceByKeyWithDifferentAccumulatorT", "[reduce_by_key]")
 {
   using key_t          = cuda::std::uint32_t;
   using val_t          = cuda::std::uint8_t;
@@ -574,4 +574,35 @@ void TestReduceByKeyWithDifferentAccumulatorT()
   REQUIRE(aggregates_out[0] == expected_aggregate);
 }
 
-DECLARE_UNITTEST(TestReduceByKeyWithDifferentAccumulatorT);
+// https://github.com/NVIDIA/cccl/issues/11816
+template <typename T>
+void test_reduce_by_key_extended_fp()
+{
+  thrust::device_vector<int> keys{0, 0, 1, 1, 1};
+  thrust::device_vector<T> values(5, T{1.5f});
+  thrust::device_vector<int> keys_out(2, thrust::no_init);
+  thrust::device_vector<T> values_out(2, thrust::no_init);
+
+  auto [keys_end, values_end] =
+    thrust::reduce_by_key(keys.begin(), keys.end(), values.begin(), keys_out.begin(), values_out.begin());
+
+  REQUIRE(keys_end - keys_out.begin() == 2);
+  REQUIRE(values_end - values_out.begin() == 2);
+  thrust::host_vector<T> h_values_out = values_out;
+  REQUIRE(static_cast<float>(h_values_out[0]) == 3.0f);
+  REQUIRE(static_cast<float>(h_values_out[1]) == 4.5f);
+}
+
+#if _CCCL_HAS_NVFP16()
+TEST_CASE("TestReduceByKeyHalf", "[reduce_by_key]")
+{
+  test_reduce_by_key_extended_fp<__half>();
+}
+#endif // _CCCL_HAS_NVFP16()
+
+#if _CCCL_HAS_NVBF16()
+TEST_CASE("TestReduceByKeyBFloat16", "[reduce_by_key]")
+{
+  test_reduce_by_key_extended_fp<__nv_bfloat16>();
+}
+#endif // _CCCL_HAS_NVBF16()

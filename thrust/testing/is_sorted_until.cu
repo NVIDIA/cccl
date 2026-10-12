@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestIsSortedUntilSimple()
+void test_is_sorted_until_simple()
 {
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
@@ -54,19 +54,19 @@ void TestIsSortedUntilSimple()
   ref   = v.begin() + 4;
   REQUIRE(ref == thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 }
-DECLARE_VECTOR_UNITTEST(TestIsSortedUntilSimple);
+DECLARE_VECTOR_UNITTEST(test_is_sorted_until_simple);
 
 template <typename Vector>
-void TestIsSortedUntilRepeatedElements()
+void test_is_sorted_until_repeated_elements()
 {
   Vector v{0, 1, 1, 2, 3, 4, 5, 5, 5, 6};
 
   REQUIRE(v.end() == thrust::is_sorted_until(v.begin(), v.end()));
 }
-DECLARE_VECTOR_UNITTEST(TestIsSortedUntilRepeatedElements);
+DECLARE_VECTOR_UNITTEST(test_is_sorted_until_repeated_elements);
 
 template <class Vector>
-void TestIsSortedUntil()
+void test_is_sorted_until()
 {
   using T = typename Vector::value_type;
 
@@ -83,7 +83,7 @@ void TestIsSortedUntil()
 
   REQUIRE(v.end() == thrust::is_sorted_until(v.begin(), v.end()));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsSortedUntil);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_is_sorted_until);
 
 template <typename ForwardIterator>
 ForwardIterator is_sorted_until(my_system& system, ForwardIterator first, ForwardIterator)
@@ -92,7 +92,7 @@ ForwardIterator is_sorted_until(my_system& system, ForwardIterator first, Forwar
   return first;
 }
 
-void TestIsSortedUntilExplicit()
+TEST_CASE("TestIsSortedUntilExplicit", "[is_sorted_until]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -101,7 +101,6 @@ void TestIsSortedUntilExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestIsSortedUntilExplicit);
 
 template <typename ForwardIterator>
 ForwardIterator is_sorted_until(my_tag, ForwardIterator first, ForwardIterator)
@@ -110,7 +109,7 @@ ForwardIterator is_sorted_until(my_tag, ForwardIterator first, ForwardIterator)
   return first;
 }
 
-void TestIsSortedUntilImplicit()
+TEST_CASE("TestIsSortedUntilImplicit", "[is_sorted_until]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -118,4 +117,3 @@ void TestIsSortedUntilImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestIsSortedUntilImplicit);

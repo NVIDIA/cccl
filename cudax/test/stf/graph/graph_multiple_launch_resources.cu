@@ -33,7 +33,7 @@ int main()
   };
 
   // Get reusable graph without finalizing context
-  ::std::shared_ptr<cudaGraph_t> graph = ctx.to_graph_ctx().finalize_as_graph();
+  const ::std::shared_ptr<cudaGraph_t> graph = ctx.to_graph_ctx().finalize_as_graph();
 
   // Instantiate the graph for multiple launches
   cudaGraphExec_t graphExec;

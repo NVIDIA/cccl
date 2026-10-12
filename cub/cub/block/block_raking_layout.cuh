@@ -91,8 +91,7 @@ struct BlockRakingLayout
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   /**
    * @brief Returns the location for the calling thread to place data into the grid

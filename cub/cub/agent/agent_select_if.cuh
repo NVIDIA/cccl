@@ -235,7 +235,7 @@ struct AgentSelectIf
   using FlagT = it_value_t<FlagsInputIteratorT>;
 
   // Constants
-  enum
+  enum class selection_method
   {
     USE_SELECT_OP,
     USE_SELECT_FLAGS,
@@ -252,10 +252,10 @@ struct AgentSelectIf
   static constexpr bool has_flags_it        = (!::cuda::std::is_same_v<FlagT, NullType>);
   static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
   static constexpr auto SELECT_METHOD =
-    use_stencil_with_op ? USE_STENCIL_WITH_OP
-    : has_select_op     ? USE_SELECT_OP
-    : has_flags_it      ? USE_SELECT_FLAGS
-                        : USE_DISCONTINUITY;
+    use_stencil_with_op ? selection_method::USE_STENCIL_WITH_OP
+    : has_select_op     ? selection_method::USE_SELECT_OP
+    : has_flags_it      ? selection_method::USE_SELECT_FLAGS
+                        : selection_method::USE_DISCONTINUITY;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
   // Wrap the native input pointer with CacheModifiedValuesInputIterator
@@ -319,8 +319,7 @@ struct AgentSelectIf
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -404,11 +403,11 @@ struct AgentSelectIf
   /**
    * Load input items for the current tile.
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadItems(OffsetT tile_offset, int num_tile_items, InputT (&items)[ITEMS_PER_THREAD])
   {
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockLoadT(temp_storage.load_items)
         .Load((d_in + streaming_context.input_offset()) + tile_offset, items, num_tile_items);
@@ -422,7 +421,7 @@ struct AgentSelectIf
   /**
    * Load input items and initialize selection flags for the current tile.
    */
-  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  template <bool IsFirstTile, bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void PrepareTile(
     OffsetT tile_offset,
     int num_tile_items,
@@ -430,7 +429,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD])
   {
     constexpr bool can_initialize_before_items =
-      SELECT_METHOD == USE_SELECT_FLAGS || SELECT_METHOD == USE_STENCIL_WITH_OP;
+      SELECT_METHOD == selection_method::USE_SELECT_FLAGS || SELECT_METHOD == selection_method::USE_STENCIL_WITH_OP;
     constexpr bool prefetch_before_items =
       can_initialize_before_items && AgentSelectIfPolicyT::LOAD_PREFETCH != LoadPrefetch::none;
 
@@ -439,19 +438,19 @@ struct AgentSelectIf
       BlockPrefetch<BLOCK_THREADS, AgentSelectIfPolicyT::LOAD_PREFETCH>::Prefetch(
         (GetInputIterator() + streaming_context.input_offset()) + tile_offset, num_tile_items);
 
-      InitializeSelections<IS_FIRST_TILE, IS_LAST_TILE>(
+      InitializeSelections<IsFirstTile, IsLastTile>(
         tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
 
       // Ensure temporary storage used to load flags can be reused to load items.
       __syncthreads();
 
-      LoadItems<IS_LAST_TILE>(tile_offset, num_tile_items, items);
+      LoadItems<IsLastTile>(tile_offset, num_tile_items, items);
     }
     else
     {
       // Preserve the legacy item-before-selection load order so benchmarks measure only prefetching, not a separate
       // load-order change. This ordering is not known to be faster when prefetching is disabled.
-      LoadItems<IS_LAST_TILE>(tile_offset, num_tile_items, items);
+      LoadItems<IsLastTile>(tile_offset, num_tile_items, items);
 
       if constexpr (can_initialize_before_items)
       {
@@ -459,7 +458,7 @@ struct AgentSelectIf
         __syncthreads();
       }
 
-      InitializeSelections<IS_FIRST_TILE, IS_LAST_TILE>(
+      InitializeSelections<IsFirstTile, IsLastTile>(
         tile_offset, num_tile_items, items, selection_flags, constant_v<SELECT_METHOD>);
     }
   }
@@ -467,13 +466,13 @@ struct AgentSelectIf
   /**
    * Initialize selections (specialized for selection operator)
    */
-  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  template <bool IsFirstTile, bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT /*tile_offset*/,
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_SELECT_OP> /*select_method*/)
+    constant_t<selection_method::USE_SELECT_OP> /*select_method*/)
   {
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -481,7 +480,7 @@ struct AgentSelectIf
       // Out-of-bounds items are selection_flags
       selection_flags[ITEM] = 1;
 
-      if (!IS_LAST_TILE || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+      if (!IsLastTile || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
       {
         selection_flags[ITEM] = static_cast<bool>(select_op(items[ITEM]));
       }
@@ -491,16 +490,16 @@ struct AgentSelectIf
   /**
    * Initialize selections (specialized for selection_op applied to d_flags_in)
    */
-  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  template <bool IsFirstTile, bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT tile_offset,
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_STENCIL_WITH_OP> /*select_method*/)
+    constant_t<selection_method::USE_STENCIL_WITH_OP> /*select_method*/)
   {
     FlagT flags[ITEMS_PER_THREAD];
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Initialize the out-of-bounds flags
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -521,7 +520,7 @@ struct AgentSelectIf
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
-      if ((!IS_LAST_TILE) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+      if ((!IsLastTile) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
       {
         selection_flags[ITEM] = static_cast<bool>(select_op(flags[ITEM]));
       }
@@ -531,17 +530,17 @@ struct AgentSelectIf
   /**
    * Initialize selections (specialized for valid flags)
    */
-  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  template <bool IsFirstTile, bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT tile_offset,
     OffsetT num_tile_items,
     InputT (& /*items*/)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_SELECT_FLAGS> /*select_method*/)
+    constant_t<selection_method::USE_SELECT_FLAGS> /*select_method*/)
   {
     FlagT flags[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Out-of-bounds items are selection_flags
       BlockLoadFlags(temp_storage.load_flags)
@@ -563,13 +562,13 @@ struct AgentSelectIf
   /**
    * Initialize selections (specialized for discontinuity detection)
    */
-  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  template <bool IsFirstTile, bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
     OffsetT tile_offset,
     OffsetT num_tile_items,
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-    constant_t<USE_DISCONTINUITY> /*select_method*/)
+    constant_t<selection_method::USE_DISCONTINUITY> /*select_method*/)
   {
     // We previously invoked the equality operator on out-of-bounds items
     // While fixing that issue there were some performance regressions that we had to work around
@@ -582,11 +581,11 @@ struct AgentSelectIf
       && (::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<>>
           || ::cuda::std::is_same_v<EqualityOpT, ::cuda::std::equal_to<InputT>>);
 
-    if (IS_FIRST_TILE && streaming_context.is_first_partition())
+    if (IsFirstTile && streaming_context.is_first_partition())
     {
       __syncthreads();
 
-      if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
+      if constexpr (IsLastTile && !use_flag_fixup_code_path)
       {
         // Use custom flag operator to additionally flag the first out-of-bounds item
         const guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
@@ -611,7 +610,7 @@ struct AgentSelectIf
 
       __syncthreads();
 
-      if constexpr (IS_LAST_TILE && !use_flag_fixup_code_path)
+      if constexpr (IsLastTile && !use_flag_fixup_code_path)
       {
         // Use custom flag operator to additionally flag the first out-of-bounds item
         const guarded_inequality_op<EqualityOpT> flag_op{equality_op, num_tile_items};
@@ -635,7 +634,7 @@ struct AgentSelectIf
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set selection_flags for out-of-bounds items
-        if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+        if ((IsLastTile) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
         {
           selection_flags[ITEM] = 1;
         }
@@ -650,7 +649,7 @@ struct AgentSelectIf
   /**
    * Scatter flagged items to output offsets (specialized for direct scattering).
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedDirect(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -665,7 +664,7 @@ struct AgentSelectIf
       {
         // selection_indices could potentially overflow on the last tile if that's close to INT_MAX,
         // so in the streaming invocation we split at INT_MAX round down to a integer multiple of TILE_ITEMS.
-        if ((!IS_LAST_TILE) || selection_indices[ITEM] < num_selections)
+        if ((!IsLastTile) || selection_indices[ITEM] < num_selections)
         {
           *((d_selected_out + streaming_context.num_previously_selected()) + selection_indices[ITEM]) = items[ITEM];
         }
@@ -691,7 +690,7 @@ struct AgentSelectIf
    * @param is_keep_rejects
    *   Marker type indicating whether to keep rejected items in the second partition
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedTwoPhase(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -740,7 +739,7 @@ struct AgentSelectIf
    * @param num_selections
    *   Total number of selections including this tile
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -756,12 +755,12 @@ struct AgentSelectIf
     // greater than one
     if (TWO_PHASE_SCATTER && (num_tile_selections > BLOCK_THREADS))
     {
-      ScatterSelectedTwoPhase<IS_LAST_TILE>(
+      ScatterSelectedTwoPhase<IsLastTile>(
         items, selection_flags, selection_indices, num_tile_selections, num_selections_prefix);
     }
     else
     {
-      ScatterSelectedDirect<IS_LAST_TILE>(items, selection_flags, selection_indices, num_selections);
+      ScatterSelectedDirect<IsLastTile>(items, selection_flags, selection_indices, num_selections);
     }
   }
 
@@ -784,7 +783,7 @@ struct AgentSelectIf
    * @param is_keep_rejects
    *   Marker type indicating whether to keep rejected items in the second partition
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -817,7 +816,7 @@ struct AgentSelectIf
     __syncthreads();
 
     // Gather items from shared memory and scatter to global
-    ScatterPartitionsToGlobal<IS_LAST_TILE>(
+    ScatterPartitionsToGlobal<IsLastTile>(
       num_tile_items, tile_num_rejections, num_selections_prefix, num_rejected_prefix, d_selected_out);
   }
 
@@ -825,7 +824,7 @@ struct AgentSelectIf
    * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to two
    * distinct partitions.
    */
-  template <bool IS_LAST_TILE, typename SelectedItT, typename RejectedItT>
+  template <bool IsLastTile, typename SelectedItT, typename RejectedItT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
@@ -847,7 +846,7 @@ struct AgentSelectIf
 
       const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
-      if (!IS_LAST_TILE || (item_idx < num_tile_items))
+      if (!IsLastTile || (item_idx < num_tile_items))
       {
         if (item_idx >= tile_num_rejections)
         {
@@ -866,7 +865,7 @@ struct AgentSelectIf
    * iterator, where selected items are written in order from the beginning of the iterator and rejected items are
    * writtem from the iterators end backwards.
    */
-  template <bool IS_LAST_TILE, typename PartitionedOutputItT>
+  template <bool IsLastTile, typename PartitionedOutputItT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
@@ -891,7 +890,7 @@ struct AgentSelectIf
              + static_cast<total_offset_t>(selection_idx));
 
       const InputT item = temp_storage.raw_exchange.Alias()[item_idx];
-      if (!IS_LAST_TILE || (item_idx < num_tile_items))
+      if (!IsLastTile || (item_idx < num_tile_items))
       {
         partitioned_out_it[scatter_offset] = item;
       }
@@ -917,7 +916,7 @@ struct AgentSelectIf
    *
    * @return The running count of selections (including this tile)
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
@@ -925,7 +924,7 @@ struct AgentSelectIf
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
-    PrepareTile<true, IS_LAST_TILE>(tile_offset, num_tile_items, items, selection_flags);
+    PrepareTile<true, IsLastTile>(tile_offset, num_tile_items, items, selection_flags);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -939,20 +938,20 @@ struct AgentSelectIf
     if (threadIdx.x == 0)
     {
       // Update tile status if this is not the last tile
-      if (!IS_LAST_TILE)
+      if (!IsLastTile)
       {
         tile_state_wrapper.SetInclusive(0, num_tile_selections);
       }
     }
 
     // Discount any out-of-bounds selections
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       num_tile_selections -= (TILE_ITEMS - num_tile_items);
     }
 
     // Scatter flagged items
-    Scatter<IS_LAST_TILE>(
+    Scatter<IsLastTile>(
       items,
       selection_flags,
       selection_indices,
@@ -984,7 +983,7 @@ struct AgentSelectIf
    *
    * @return The running count of selections (including this tile)
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(
     int num_tile_items, int tile_idx, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
@@ -992,7 +991,7 @@ struct AgentSelectIf
     OffsetT selection_flags[ITEMS_PER_THREAD];
     OffsetT selection_indices[ITEMS_PER_THREAD];
 
-    PrepareTile<false, IS_LAST_TILE>(tile_offset, num_tile_items, items, selection_flags);
+    PrepareTile<false, IsLastTile>(tile_offset, num_tile_items, items, selection_flags);
 
     // Ensure temporary storage used during block load can be reused
     // Also, in case of in-place stream compaction, this is needed to order the loads of
@@ -1010,7 +1009,7 @@ struct AgentSelectIf
     OffsetT num_rejected_prefix   = tile_offset - num_selections_prefix;
 
     // Discount any out-of-bounds selections
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       const int num_discount = TILE_ITEMS - num_tile_items;
       num_selections -= num_discount;
@@ -1022,7 +1021,7 @@ struct AgentSelectIf
     // previous tiles' input items, in case of in-place compaction), because this is implicitly ensured through
     // execution dependency: The scatter stage requires the offset from the prefix-sum and it can only know the
     // prefix-sum after having read that from the decoupled look-back. Scatter flagged items
-    Scatter<IS_LAST_TILE>(
+    Scatter<IsLastTile>(
       items,
       selection_flags,
       selection_indices,
@@ -1052,18 +1051,18 @@ struct AgentSelectIf
    *   A global tile state descriptor wrapped in a MemoryOrderedTileStateT that ensures consistent memory order across
    *   all tile status updates and loads
    */
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
   ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, MemoryOrderedTileStateT& tile_state_wrapper)
   {
     OffsetT num_selections;
     if (tile_idx == 0)
     {
-      num_selections = ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state_wrapper);
+      num_selections = ConsumeFirstTile<IsLastTile>(num_tile_items, tile_offset, tile_state_wrapper);
     }
     else
     {
-      num_selections = ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state_wrapper);
+      num_selections = ConsumeSubsequentTile<IsLastTile>(num_tile_items, tile_idx, tile_offset, tile_state_wrapper);
     }
 
     return num_selections;
@@ -1095,7 +1094,7 @@ struct AgentSelectIf
     // TODO (elstehle): replacing this term with just `blockIdx.x` degrades perf for partition. Once we get to re-tune
     // the algorithm, we want to replace this term with `blockIdx.x`
     int tile_idx{};
-    if constexpr (SELECT_METHOD != USE_DISCONTINUITY)
+    if constexpr (SELECT_METHOD != selection_method::USE_DISCONTINUITY)
     {
       tile_idx = static_cast<int>((blockIdx.x * gridDim.y) + blockIdx.y); // Current tile index
     }

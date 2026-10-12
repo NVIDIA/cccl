@@ -424,12 +424,7 @@ struct dispatch_scan_by_key
 
     // Log init_kernel configuration
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -467,24 +462,16 @@ struct dispatch_scan_by_key
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
       // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread\n",
-              start_tile,
-              scan_grid_size,
-              active_policy.lookback.threads_per_block,
-              (long long) stream,
-              active_policy.lookback.items_per_thread);
-#else // CUB_DEBUG_LOG
-      detail::log(
-        "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-        "per thread\n",
-        start_tile,
+      _CUB_LOG_KERNEL_LAUNCH(
+        "scan_kernel",
         scan_grid_size,
+        1,
+        1,
         active_policy.lookback.threads_per_block,
-        (long long) stream,
-        active_policy.lookback.items_per_thread);
-#endif // CUB_DEBUG_LOG
+        0,
+        stream,
+        ", epoch: %d",
+        start_tile);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -622,18 +609,7 @@ struct dispatch_scan_by_key
 
     const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   ::std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
     detail::log_dispatch("DeviceScanByKey", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 
     return dispatch_scan_by_key<
              KeysInputIteratorT,
@@ -730,18 +706,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const ScanByKeyPolicy active_policy = policy_selector(cc);
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 ::std::stringstream ss;
-                 ss << active_policy;
-                 _CubLog("Dispatching DeviceScanByKey to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  log_dispatch("DeviceScanByKey", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+  detail::log_dispatch("DeviceScanByKey", cc, active_policy);
 
   // Get device ordinal
   int device_ordinal;
@@ -790,11 +755,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   // Log init_kernel configuration
   const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#else // CUB_DEBUG_LOG
-  detail::log("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
   // Invoke init_kernel to initialize tile descriptors
   if (const auto error = CubDebug(
@@ -832,24 +793,16 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
     // Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread\n",
-            start_tile,
-            scan_grid_size,
-            active_policy.lookback.threads_per_block,
-            (long long) stream,
-            active_policy.lookback.items_per_thread);
-#else // CUB_DEBUG_LOG
-    detail::log(
-      "Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-      "per thread\n",
-      start_tile,
+    _CUB_LOG_KERNEL_LAUNCH(
+      "scan_kernel",
       scan_grid_size,
+      1,
+      1,
       active_policy.lookback.threads_per_block,
-      (long long) stream,
-      active_policy.lookback.items_per_thread);
-#endif // CUB_DEBUG_LOG
+      0,
+      stream,
+      ", epoch: %d",
+      start_tile);
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(

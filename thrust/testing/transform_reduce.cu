@@ -13,7 +13,7 @@ transform_reduce(my_system& system, InputIterator, InputIterator, UnaryFunction,
   return init;
 }
 
-void TestTransformReduceDispatchExplicit()
+TEST_CASE("TestTransformReduceDispatchExplicit", "[transform_reduce]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -22,7 +22,6 @@ void TestTransformReduceDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestTransformReduceDispatchExplicit);
 
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
 OutputType transform_reduce(my_tag, InputIterator first, InputIterator, UnaryFunction, OutputType init, BinaryFunction)
@@ -31,7 +30,7 @@ OutputType transform_reduce(my_tag, InputIterator first, InputIterator, UnaryFun
   return init;
 }
 
-void TestTransformReduceDispatchImplicit()
+TEST_CASE("TestTransformReduceDispatchImplicit", "[transform_reduce]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -39,10 +38,9 @@ void TestTransformReduceDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestTransformReduceDispatchImplicit);
 
 template <class Vector>
-void TestTransformReduceSimple()
+void test_transform_reduce_simple()
 {
   using T = typename Vector::value_type;
 
@@ -54,10 +52,10 @@ void TestTransformReduceSimple()
 
   REQUIRE(result == 8);
 }
-DECLARE_VECTOR_UNITTEST(TestTransformReduceSimple);
+DECLARE_VECTOR_UNITTEST(test_transform_reduce_simple);
 
 template <typename T>
-void TestTransformReduce(const size_t n)
+void test_transform_reduce(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -71,10 +69,10 @@ void TestTransformReduce(const size_t n)
 
   ASSERT_ALMOST_EQUAL(cpu_result, gpu_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestTransformReduce);
+DECLARE_VARIABLE_UNITTEST(test_transform_reduce);
 
 template <typename T>
-void TestTransformReduceFromConst(const size_t n)
+void test_transform_reduce_from_const(const size_t n)
 {
   const thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   const thrust::device_vector<T> d_data = h_data;
@@ -88,10 +86,10 @@ void TestTransformReduceFromConst(const size_t n)
 
   ASSERT_ALMOST_EQUAL(cpu_result, gpu_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestTransformReduceFromConst);
+DECLARE_VARIABLE_UNITTEST(test_transform_reduce_from_const);
 
 template <class Vector>
-void TestTransformReduceCountingIterator()
+void test_transform_reduce_counting_iterator()
 {
   using T     = typename Vector::value_type;
   using space = typename thrust::iterator_system<typename Vector::iterator>::type;
@@ -103,4 +101,4 @@ void TestTransformReduceCountingIterator()
 
   REQUIRE(result == -6);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformReduceCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_transform_reduce_counting_iterator);

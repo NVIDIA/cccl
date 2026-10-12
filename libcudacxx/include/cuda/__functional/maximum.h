@@ -55,9 +55,9 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
-  template <class Tp, class Up, class _Common = ::cuda::std::common_type_t<Tp, Up>>
-  [[nodiscard]] _CCCL_API constexpr _Common _CCCL_STATIC_CALL_OPERATOR(const Tp& __lhs, const Up& __rhs) noexcept(
-    __is_maximum_minimum_noexcept_v<Tp, Up, _Common>)
+  template <class _Tp, class _Up, class _Common = ::cuda::std::common_type_t<_Tp, _Up>>
+  [[nodiscard]] _CCCL_API constexpr _Common _CCCL_STATIC_CALL_OPERATOR(const _Tp& __lhs, const _Up& __rhs) noexcept(
+    __is_maximum_minimum_noexcept_v<_Tp, _Up, _Common>)
   {
     if constexpr (::cuda::std::is_floating_point_v<_Common> || ::cuda::std::__is_extended_floating_point_v<_Common>)
     {

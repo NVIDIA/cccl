@@ -1,40 +1,35 @@
 #include <unittest/unittest.h>
 
-void TestAssertEqual()
+TEST_CASE("TestAssertEqual", "[unittest_tester]")
 {
   REQUIRE(0 == 0);
   REQUIRE(1 == 1);
   REQUIRE(-15.0f == -15.0f);
 }
-DECLARE_UNITTEST(TestAssertEqual);
 
-void TestAssertLEqual()
+TEST_CASE("TestAssertLEqual", "[unittest_tester]")
 {
   REQUIRE(0 <= 1);
   REQUIRE(0 <= 0);
 }
-DECLARE_UNITTEST(TestAssertLEqual);
 
-void TestAssertGEqual()
+TEST_CASE("TestAssertGEqual", "[unittest_tester]")
 {
   REQUIRE(1 >= 0);
   REQUIRE(0 >= 0);
 }
-DECLARE_UNITTEST(TestAssertGEqual);
 
-void TestAssertLess()
+TEST_CASE("TestAssertLess", "[unittest_tester]")
 {
   REQUIRE(0 < 1);
 }
-DECLARE_UNITTEST(TestAssertLess);
 
-void TestAssertGreater()
+TEST_CASE("TestAssertGreater", "[unittest_tester]")
 {
   REQUIRE(1 > 0);
 }
-DECLARE_UNITTEST(TestAssertGreater);
 
-void TestTypeName()
+TEST_CASE("TestTypeName", "[unittest_tester]")
 {
   REQUIRE(unittest::type_name<char>() == "char");
   REQUIRE(unittest::type_name<signed char>() == "signed char");
@@ -43,4 +38,3 @@ void TestTypeName()
   REQUIRE(unittest::type_name<float>() == "float");
   REQUIRE(unittest::type_name<double>() == "double");
 }
-DECLARE_UNITTEST(TestTypeName);

@@ -119,7 +119,7 @@ bool are_same(const T&, const T&)
   return true;
 }
 
-void TestSelectSystemDifferentTypes()
+TEST_CASE("TestSelectSystemDifferentTypes", "[memory]")
 {
   using thrust::system::detail::generic::select_system;
 
@@ -134,9 +134,8 @@ void TestSelectSystemDifferentTypes()
   is_device_system_tag = are_same(device_sys, select_system(device_sys, my_sys));
   REQUIRE(is_device_system_tag);
 }
-DECLARE_UNITTEST(TestSelectSystemDifferentTypes);
 
-void TestSelectSystemSameTypes()
+TEST_CASE("TestSelectSystemSameTypes", "[memory]")
 {
   using thrust::system::detail::generic::select_system;
 
@@ -156,9 +155,8 @@ void TestSelectSystemSameTypes()
   const bool is_my_system = are_same(my_sys, select_system(my_sys, my_sys));
   REQUIRE(is_my_system);
 }
-DECLARE_UNITTEST(TestSelectSystemSameTypes);
 
-void TestGetTemporaryBuffer()
+TEST_CASE("TestGetTemporaryBuffer", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -177,9 +175,8 @@ void TestGetTemporaryBuffer()
 
   thrust::return_temporary_buffer(dev_tag, ptr_and_sz.first, ptr_and_sz.second);
 }
-DECLARE_UNITTEST(TestGetTemporaryBuffer);
 
-void TestMalloc()
+TEST_CASE("TestMalloc", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -196,7 +193,6 @@ void TestMalloc()
 
   thrust::free(dev_tag, ptr);
 }
-DECLARE_UNITTEST(TestMalloc);
 
 thrust::pointer<void, my_memory_system> malloc(my_memory_system& system, std::size_t)
 {
@@ -205,7 +201,7 @@ thrust::pointer<void, my_memory_system> malloc(my_memory_system& system, std::si
   return thrust::pointer<void, my_memory_system>();
 }
 
-void TestMallocDispatchExplicit()
+TEST_CASE("TestMallocDispatchExplicit", "[memory]")
 {
   const size_t n = 0;
 
@@ -214,7 +210,6 @@ void TestMallocDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMallocDispatchExplicit);
 
 template <typename Pointer>
 void free(my_memory_system& system, Pointer)
@@ -222,7 +217,7 @@ void free(my_memory_system& system, Pointer)
   system.validate_dispatch();
 }
 
-void TestFreeDispatchExplicit()
+TEST_CASE("TestFreeDispatchExplicit", "[memory]")
 {
   const thrust::pointer<my_memory_system, void> ptr{};
 
@@ -231,7 +226,6 @@ void TestFreeDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestFreeDispatchExplicit);
 
 template <typename T>
 cuda::std::pair<thrust::pointer<T, my_memory_system>, std::ptrdiff_t>
@@ -245,7 +239,7 @@ get_temporary_buffer(my_memory_system& system, std::ptrdiff_t n)
   return cuda::std::make_pair(thrust::pointer<T, my_memory_system>(result.first.get()), result.second);
 }
 
-void TestGetTemporaryBufferDispatchExplicit()
+TEST_CASE("TestGetTemporaryBufferDispatchExplicit", "[memory]")
 {
   const std::ptrdiff_t n = 9001;
 
@@ -265,11 +259,10 @@ void TestGetTemporaryBufferDispatchExplicit()
 
   thrust::return_temporary_buffer(sys, ptr_and_sz.first, ptr_and_sz.second);
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDispatchExplicit);
 
 #ifndef WAR_BUG_1731
 
-void TestGetTemporaryBufferDispatchImplicit()
+TEST_CASE("TestGetTemporaryBufferDispatchImplicit", "[memory]")
 {
   // skip cpp system, since the scalar backend currently elides user tags
   if (are_same(thrust::device_system_tag(), thrust::system::cpp::tag()))
@@ -290,11 +283,10 @@ void TestGetTemporaryBufferDispatchImplicit()
   REQUIRE(thrust::is_sorted(vec.begin(), vec.end()));
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGetTemporaryBufferDispatchImplicit);
 
 #endif
 
-void TestTemporaryBufferOldCustomization()
+TEST_CASE("TestTemporaryBufferOldCustomization", "[memory]")
 {
   using system           = my_old_namespace::my_old_temporary_allocation_system;
   using pointer          = thrust::pointer<int, system>;
@@ -312,9 +304,8 @@ void TestTemporaryBufferOldCustomization()
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
 }
-DECLARE_UNITTEST(TestTemporaryBufferOldCustomization);
 
-void TestTemporaryBufferNewCustomization()
+TEST_CASE("TestTemporaryBufferNewCustomization", "[memory]")
 {
   using system           = my_new_namespace::my_new_temporary_allocation_system;
   using pointer          = thrust::pointer<int, system>;
@@ -332,4 +323,3 @@ void TestTemporaryBufferNewCustomization()
     thrust::return_temporary_buffer(sys, ps.first, ps.second);
   }
 }
-DECLARE_UNITTEST(TestTemporaryBufferNewCustomization);

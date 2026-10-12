@@ -2,6 +2,8 @@
 #include <thrust/functional.h>
 #include <thrust/partition.h>
 
+#include <cuda/functional>
+
 #include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -11,15 +13,6 @@ is_partitioned_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Predi
 {
   *result = thrust::is_partitioned(exec, first, last, pred);
 }
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
-};
 
 template <typename ExecutionPolicy>
 void TestIsPartitionedDevice(ExecutionPolicy exec)
@@ -35,7 +28,7 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   v[0] = 1;
   v[1] = 0;
 
-  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
+  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
@@ -43,9 +36,9 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
 
   REQUIRE_FALSE(result[0]);
 
-  thrust::partition(v.begin(), v.end(), is_even<int>());
+  thrust::partition(v.begin(), v.end(), cuda::__is_even{});
 
-  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), is_even<int>(), result.begin());
+  is_partitioned_kernel<<<1, 1>>>(exec, v.begin(), v.end(), cuda::__is_even{}, result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
@@ -54,20 +47,18 @@ void TestIsPartitionedDevice(ExecutionPolicy exec)
   REQUIRE(result[0]);
 }
 
-void TestIsPartitionedDeviceSeq()
+TEST_CASE("TestIsPartitionedDeviceSeq", "[is_partitioned]")
 {
   TestIsPartitionedDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestIsPartitionedDeviceSeq);
 
-void TestIsPartitionedDeviceDevice()
+TEST_CASE("TestIsPartitionedDeviceDevice", "[is_partitioned]")
 {
   TestIsPartitionedDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestIsPartitionedDeviceDevice);
 #endif
 
-void TestIsPartitionedCudaStreams()
+TEST_CASE("TestIsPartitionedCudaStreams", "[is_partitioned]")
 {
   thrust::device_vector<int> v(4);
   v[0] = 1;
@@ -103,7 +94,6 @@ void TestIsPartitionedCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestIsPartitionedCudaStreams);
 
 template <typename T>
 struct is_even_non_const
@@ -114,7 +104,7 @@ struct is_even_non_const
   }
 };
 
-void TestIsPartitionedWithNonConstPredicate()
+TEST_CASE("TestIsPartitionedWithNonConstPredicate", "[is_partitioned]")
 {
   thrust::device_vector<int> partitioned   = {0, 2, 4, 1, 3, 5};
   thrust::device_vector<int> unpartitioned = {0, 1, 2, 3};
@@ -124,4 +114,3 @@ void TestIsPartitionedWithNonConstPredicate()
   REQUIRE_FALSE(
     thrust::is_partitioned(thrust::cuda::par, unpartitioned.begin(), unpartitioned.end(), is_even_non_const<int>{}));
 }
-DECLARE_UNITTEST(TestIsPartitionedWithNonConstPredicate);

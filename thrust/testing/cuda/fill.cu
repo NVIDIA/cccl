@@ -171,7 +171,7 @@ void TestFillNDeviceDevice(size_t n)
 DECLARE_VARIABLE_UNITTEST(TestFillNDeviceDevice);
 #endif
 
-void TestFillCudaStreams()
+TEST_CASE("TestFillCudaStreams", "[fill]")
 {
   thrust::device_vector<int> v{0, 1, 2, 3, 4};
 
@@ -204,4 +204,3 @@ void TestFillCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestFillCudaStreams);

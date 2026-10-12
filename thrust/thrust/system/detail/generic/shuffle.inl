@@ -13,6 +13,7 @@
 #include <thrust/system/detail/generic/shuffle.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
@@ -76,7 +77,7 @@ shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, R
 
   // copy input to temp buffer
   thrust::detail::temporary_array<InputType, ExecutionPolicy> temp(exec, first, last);
-  thrust::shuffle_copy(exec, temp.begin(), temp.end(), first, g);
+  thrust::shuffle_copy(exec, temp.begin(), temp.end(), first, ::cuda::std::forward<URBG>(g));
 }
 
 template <typename ExecutionPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
@@ -90,7 +91,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   // m is the length of the input
   // we have an available bijection of length n via a feistel cipher
   const std::size_t m = last - first;
-  const thrust::detail::feistel_bijection bijection(m, g);
+  const thrust::detail::feistel_bijection bijection(m, ::cuda::std::forward<URBG>(g));
   std::uint64_t n = bijection.size();
 
   // perform stream compaction over length n bijection to get length m

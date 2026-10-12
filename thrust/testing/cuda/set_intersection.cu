@@ -35,27 +35,24 @@ void TestSetIntersectionDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result, {0, 4});
 }
 
-void TestSetIntersectionDeviceSeq()
+TEST_CASE("TestSetIntersectionDeviceSeq", "[set_intersection]")
 {
   TestSetIntersectionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetIntersectionDeviceSeq);
 
-void TestSetIntersectionDeviceDevice()
+TEST_CASE("TestSetIntersectionDeviceDevice", "[set_intersection]")
 {
   TestSetIntersectionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetIntersectionDeviceDevice);
 
-void TestSetIntersectionDeviceNoSync()
+TEST_CASE("TestSetIntersectionDeviceNoSync", "[set_intersection]")
 {
   TestSetIntersectionDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
+void test_set_intersection_cuda_streams(ExecutionPolicy policy)
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -73,14 +70,12 @@ void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
   test_runtime::assert_equal(stream, result, {0, 4});
 }
 
-void TestSetIntersectionCudaStreamsSync()
+TEST_CASE("TestSetIntersectionCudaStreamsSync", "[set_intersection]")
 {
-  TestSetIntersectionCudaStreams(thrust::cuda::par);
+  test_set_intersection_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestSetIntersectionCudaStreamsSync);
 
-void TestSetIntersectionCudaStreamsNoSync()
+TEST_CASE("TestSetIntersectionCudaStreamsNoSync", "[set_intersection]")
 {
-  TestSetIntersectionCudaStreams(thrust::cuda::par_nosync);
+  test_set_intersection_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestSetIntersectionCudaStreamsNoSync);

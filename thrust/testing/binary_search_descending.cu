@@ -10,7 +10,7 @@
 //////////////////////
 
 template <class Vector>
-void TestScalarLowerBoundDescendingSimple()
+void test_scalar_lower_bound_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -27,10 +27,10 @@ void TestScalarLowerBoundDescendingSimple()
   REQUIRE(vec.begin() + 0 == thrust::lower_bound(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
   REQUIRE(vec.begin() + 0 == thrust::lower_bound(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
-DECLARE_VECTOR_UNITTEST(TestScalarLowerBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_scalar_lower_bound_descending_simple);
 
 template <class Vector>
-void TestScalarUpperBoundDescendingSimple()
+void test_scalar_upper_bound_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -47,10 +47,10 @@ void TestScalarUpperBoundDescendingSimple()
   REQUIRE(vec.begin() + 1 == thrust::upper_bound(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
   REQUIRE(vec.begin() + 0 == thrust::upper_bound(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
-DECLARE_VECTOR_UNITTEST(TestScalarUpperBoundDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_scalar_upper_bound_descending_simple);
 
 template <class Vector>
-void TestScalarBinarySearchDescendingSimple()
+void test_scalar_binary_search_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -67,10 +67,10 @@ void TestScalarBinarySearchDescendingSimple()
   REQUIRE(thrust::binary_search(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()));
   REQUIRE_FALSE(thrust::binary_search(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()));
 }
-DECLARE_VECTOR_UNITTEST(TestScalarBinarySearchDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_scalar_binary_search_descending_simple);
 
 template <class Vector>
-void TestScalarEqualRangeDescendingSimple()
+void test_scalar_equal_range_descending_simple()
 {
   using T = typename Vector::value_type;
 
@@ -98,4 +98,4 @@ void TestScalarEqualRangeDescendingSimple()
   REQUIRE(vec.begin() + 1 == thrust::equal_range(vec.begin(), vec.end(), T{8}, ::cuda::std::greater<T>()).second);
   REQUIRE(vec.begin() + 0 == thrust::equal_range(vec.begin(), vec.end(), T{9}, ::cuda::std::greater<T>()).second);
 }
-DECLARE_VECTOR_UNITTEST(TestScalarEqualRangeDescendingSimple);
+DECLARE_VECTOR_UNITTEST(test_scalar_equal_range_descending_simple);

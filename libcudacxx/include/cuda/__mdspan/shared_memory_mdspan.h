@@ -37,7 +37,6 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/delegate_constructors.h>
-#include <cuda/std/__utility/swap.h>
 #include <cuda/std/span> // __maybe_static_ext
 
 #include <cuda/std/__cccl/prologue.h>

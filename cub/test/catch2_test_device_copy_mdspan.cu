@@ -10,11 +10,11 @@
 #include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
-#include <cuda/devices>
 #include <cuda/std/array>
 #include <cuda/std/execution>
 #include <cuda/std/mdspan>
 
+#include "catch2_test_custom_streams.cuh"
 #include "cub_test_macros.h"
 #include <catch2_test_launch_helper.h>
 
@@ -105,47 +105,7 @@ CUB_TEST("DeviceCopy::Copy: 1D, 2D, 4D mdspan with matching layouts and user pro
     REQUIRE(d_input == d_output);
   };
 
-  int current_device;
-  auto error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceCopy::Copy works with cudaStream_t")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_mdspan_copy(stream.get());
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_mdspan_copy(stream);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::stream_ref")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const cuda::stream_ref stream_ref{stream};
-    test_mdspan_copy(stream_ref);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_mdspan_copy(env);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_mdspan_copy(policy);
-  }
-
-  SECTION("DeviceCopy::Copy works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_mdspan_copy(policy);
-  }
+  test_with_custom_streams(test_mdspan_copy);
 }
 #endif // TEST_LAUNCH == 0
 

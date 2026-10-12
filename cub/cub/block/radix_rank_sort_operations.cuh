@@ -530,7 +530,7 @@ struct traits_t<T, false /* is_fundamental */>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! Twiddling keys for radix sort
-template <bool IS_DESCENDING, typename KeyT>
+template <bool IsDescending, typename KeyT>
 struct RadixSortTwiddle
 {
 private:
@@ -545,7 +545,7 @@ public:
   bit_ordered_type In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
-    if constexpr (IS_DESCENDING)
+    if constexpr (IsDescending)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -556,7 +556,7 @@ public:
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
   bit_ordered_type Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
-    if constexpr (IS_DESCENDING)
+    if constexpr (IsDescending)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -568,7 +568,7 @@ public:
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE //
   bit_ordered_type DefaultKey(DecomposerT decomposer = {})
   {
-    return IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+    return IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
   }
 };
 

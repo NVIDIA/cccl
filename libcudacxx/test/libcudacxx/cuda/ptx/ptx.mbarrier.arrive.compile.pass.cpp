@@ -13,10 +13,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/mbarrier_arrive.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/mbarrier_arrive.h>
 
 #include "generated/mbarrier_arrive.h"
 #include "generated/mbarrier_arrive_drop.h"

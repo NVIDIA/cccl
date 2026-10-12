@@ -313,6 +313,7 @@ jobs:
       - dispatch-groups-linux-standalone
       - dispatch-groups-windows-standalone
     permissions:
+      actions: read
       contents: read
       pull-requests: write # Posts a comment back to the PR.
     runs-on: ubuntu-latest
@@ -565,6 +566,8 @@ jobs:
       archs: ${{ matrix.archs }}
       target_filters_json: ${{ matrix.target_filters_json }}
       base_ref: ${{ needs.build-workflow.outputs.merge_base_sha }}
+    secrets:
+      inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
 
   bench-results:
     name: Post benchmark results

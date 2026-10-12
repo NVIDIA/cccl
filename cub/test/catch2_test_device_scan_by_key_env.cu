@@ -20,6 +20,7 @@ struct stream_registry_factory_t;
 
 #include "block_size_extracting_helpers.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/device_and_stream.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveSumByKey, device_scan_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScanByKey, device_scan_exclusive_scan_by_key);
@@ -57,11 +58,8 @@ CUB_TEST_CASE("Device scan exclusive-scan-by-key works with default environment"
 
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, c2h::current_device().get()));
 
   const auto target_block_size =
     selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).lookback.threads_per_block;
@@ -104,11 +102,8 @@ CUB_TEST_CASE("Device scan inclusive-scan-by-key works with default environment"
 
   using selector_t = cub::detail::scan_by_key::policy_selector_from_types<key_t, accum_t, value_t, block_size_check_t>;
 
-  int current_device{};
-  REQUIRE(cudaSuccess == cudaGetDevice(&current_device));
-
   cudaDeviceProp device_props{};
-  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, current_device));
+  REQUIRE(cudaSuccess == cudaGetDeviceProperties(&device_props, c2h::current_device().get()));
 
   const auto target_block_size =
     selector_t{}(cuda::compute_capability{device_props.major, device_props.minor}).lookback.threads_per_block;

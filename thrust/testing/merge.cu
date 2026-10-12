@@ -9,7 +9,7 @@
 #include <unittest/unittest.h>
 
 template <typename Vector>
-void TestMergeSimple()
+void test_merge_simple()
 {
   const Vector a{0, 2, 4}, b{0, 3, 3, 4};
   const Vector ref{0, 0, 2, 3, 3, 4, 4};
@@ -20,7 +20,7 @@ void TestMergeSimple()
   REQUIRE(result.end() == end);
   REQUIRE(ref == result);
 }
-DECLARE_VECTOR_UNITTEST(TestMergeSimple);
+DECLARE_VECTOR_UNITTEST(test_merge_simple);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator
@@ -30,7 +30,7 @@ merge(my_system& system, InputIterator1, InputIterator1, InputIterator2, InputIt
   return result;
 }
 
-void TestMergeDispatchExplicit()
+TEST_CASE("TestMergeDispatchExplicit", "[merge]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -39,7 +39,6 @@ void TestMergeDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestMergeDispatchExplicit);
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 OutputIterator merge(my_tag, InputIterator1, InputIterator1, InputIterator2, InputIterator2, OutputIterator result)
@@ -48,7 +47,7 @@ OutputIterator merge(my_tag, InputIterator1, InputIterator1, InputIterator2, Inp
   return result;
 }
 
-void TestMergeDispatchImplicit()
+TEST_CASE("TestMergeDispatchImplicit", "[merge]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -60,10 +59,9 @@ void TestMergeDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestMergeDispatchImplicit);
 
 template <typename T>
-void TestMerge(size_t n)
+void test_merge(size_t n)
 {
   const size_t sizes[]   = {0, 1, n / 2, n, n + 1, 2 * n};
   const size_t num_sizes = sizeof(sizes) / sizeof(size_t);
@@ -94,10 +92,10 @@ void TestMerge(size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestMerge);
+DECLARE_VARIABLE_UNITTEST(test_merge);
 
 template <typename T>
-void TestMergeToDiscardIterator(size_t n)
+void test_merge_to_discard_iterator(size_t n)
 {
   thrust::host_vector<T> h_a = unittest::random_integers<T>(n);
   thrust::host_vector<T> h_b = unittest::random_integers<T>(n);
@@ -116,10 +114,10 @@ void TestMergeToDiscardIterator(size_t n)
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_merge_to_discard_iterator);
 
 template <typename T>
-void TestMergeDescending(size_t n)
+void test_merge_descending(size_t n)
 {
   thrust::host_vector<T> h_a = unittest::random_integers<T>(n);
   thrust::host_vector<T> h_b = unittest::random_integers<T>(n);
@@ -142,4 +140,4 @@ void TestMergeDescending(size_t n)
   REQUIRE(h_end == h_result.end());
   REQUIRE(d_end == d_result.end());
 }
-DECLARE_VARIABLE_UNITTEST(TestMergeDescending);
+DECLARE_VARIABLE_UNITTEST(test_merge_descending);

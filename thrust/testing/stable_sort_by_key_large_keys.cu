@@ -4,7 +4,7 @@
 #include <unittest/unittest.h>
 
 template <unsigned int N>
-void _TestStableSortByKeyWithLargeKeys()
+void test_stable_sort_by_key_with_large_keys()
 {
   const size_t n = (128 * 1024) / sizeof(FixedVector<int, N>);
 
@@ -29,10 +29,9 @@ void _TestStableSortByKeyWithLargeKeys()
   REQUIRE((h_vals == d_vals));
 }
 
-void TestStableSortByKeyWithLargeKeys()
+TEST_CASE("TestStableSortByKeyWithLargeKeys", "[stable_sort_by_key_large_keys]")
 {
-  _TestStableSortByKeyWithLargeKeys<4>();
-  _TestStableSortByKeyWithLargeKeys<8>();
-  _TestStableSortByKeyWithLargeKeys<16>();
+  test_stable_sort_by_key_with_large_keys<4>();
+  test_stable_sort_by_key_with_large_keys<8>();
+  test_stable_sort_by_key_with_large_keys<16>();
 }
-DECLARE_UNITTEST(TestStableSortByKeyWithLargeKeys);

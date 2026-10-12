@@ -28,6 +28,7 @@
 #  include <cuda/__cmath/pow2.h>
 #  include <cuda/__driver/driver_api.h>
 #  include <cuda/__functional/address_stability.h>
+#  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__mdspan/__copy/copy_contiguous.h>
 #  include <cuda/__mdspan/__copy/copy_dst_contiguous.h>
 #  include <cuda/__mdspan/__copy/copy_optimized.h>
@@ -54,6 +55,7 @@
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/is_signed.h>
 #  include <cuda/std/__type_traits/remove_cv.h>
+#  include <cuda/std/tuple>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -83,7 +85,7 @@ _CCCL_HOST_API void __copy_simplified_rank(
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst,
   ::cuda::stream_ref __stream,
   const _SrcAccessor& __src_accessor,
-  const _DstAccessor& __dst_accessor) noexcept
+  const _DstAccessor& __dst_accessor)
 {
   // create a copy of the tensors with compile-time rank
   const auto __src_narrow = ::cuda::__narrow_raw_tensor_rank<_RankOut>(__src);
@@ -111,10 +113,13 @@ _CCCL_HOST_API void __copy_simplified_rank(
       }
     }
 
-    if (::cuda::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
+    if constexpr (::cuda::__can_stage_in_shared_mem_v<_TpIn, _SrcAccessor, _DstAccessor>)
     {
-      ::cuda::__launch_copy_shared_mem_kernel(__src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
-      return;
+      if (::cuda::__use_shared_mem_kernel(__src_narrow, __dst_narrow, __stream.device()))
+      {
+        ::cuda::__launch_copy_shared_mem_kernel(__src_narrow, __dst_narrow, __stream, __src_accessor, __dst_accessor);
+        return;
+      }
     }
   }
   ::cuda::__copy_optimized(
@@ -158,6 +163,10 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
   {
     _CCCL_THROW(::std::invalid_argument, "mdspans must have the same size");
   }
+  if (!::cuda::__same_non_singleton_extents(__src.extents(), __dst.extents()))
+  {
+    _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
+  }
   const auto __tensor_size = __src.size();
   if (__tensor_size == 0)
   {
@@ -194,7 +203,7 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     && ::cuda::is_trivially_copyable_v<_TpIn> //
     && __have_default_accessors;
 
-  if (__tensor_size == 1 && __are_byte_copyable)
+  if (__tensor_size == 1)
   {
     auto __src_ptr = __src.data_handle();
     auto __dst_ptr = __dst.data_handle();
@@ -206,7 +215,16 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     {
       __dst_ptr += __dst.mapping().offset();
     }
-    ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_TpIn), __stream.get());
+    if constexpr (__are_byte_copyable)
+    {
+      ::cuda::__driver::__memcpyAsync(__dst_ptr, __src_ptr, sizeof(_TpIn), __stream.get());
+    }
+    else
+    {
+      const __raw_tensor<int, int, _TpIn, 1> __src_raw{__src_ptr, 1, {1}, {1}};
+      const __raw_tensor<int, int, _TpOut, 1> __dst_raw{__dst_ptr, 1, {1}, {1}};
+      ::cuda::__copy_optimized(__src_raw, __dst_raw, 1, __stream, __src.accessor(), __dst.accessor());
+    }
     return;
   }
 
@@ -226,10 +244,6 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     static constexpr auto __max_rank = ::cuda::std::max(_ExtentsIn::rank(), _ExtentsOut::rank());
     const auto __src_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __src_stride_t, __max_rank>(__src);
     const auto __dst_raw             = ::cuda::__to_raw_tensor<__common_extent_t, __dst_stride_t, __max_rank>(__dst);
-    if (!::cuda::__same_extents(__src_raw, __dst_raw))
-    {
-      _CCCL_THROW(::std::invalid_argument, "mdspans must have the same extents (after removing singleton dimensions)");
-    }
 
     auto __src_simplified = __src_raw;
     auto __dst_simplified = __dst_raw;
@@ -270,11 +284,12 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
       if (static_cast<::cuda::std::size_t>(__tile_size) == __tensor_size)
       {
         _CCCL_TRY_RUNTIME_API(
-          CUB_NS_QUALIFIER::DeviceTransform::Transform,
+          CUB_NS_QUALIFIER::DeviceTransform::__transform_internal,
           "cub::DeviceTransform::Transform failed",
-          __src_simplified.__data,
+          ::cuda::std::make_tuple(__src_simplified.__data),
           __dst_simplified.__data,
           __tensor_size,
+          ::cuda::always_true{},
           ::cuda::proclaim_copyable_arguments(::cuda::std::identity{}),
           __stream.get());
         return;
@@ -303,7 +318,8 @@ _CCCL_HOST_API void copy(::cuda::device_mdspan<_TpIn, _ExtentsIn, _LayoutPolicyI
     }
 
     const auto __try_shared_mem_copy = [&]() {
-      if constexpr (__max_rank >= 2 && __max_rank <= ::cuda::__max_shared_mem_kernel_rank)
+      if constexpr (__max_rank >= 2 && __max_rank <= ::cuda::__max_shared_mem_kernel_rank
+                    && ::cuda::__can_stage_in_shared_mem_v<_TpIn, _AccessorPolicyIn, _AccessorPolicyOut>)
       {
         if (__src_simplified.__rank == 2) // Optimize when the actual rank is 2
         {

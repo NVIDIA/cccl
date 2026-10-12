@@ -12,7 +12,7 @@
 
 #include <unittest/unittest.h>
 
-void TestCopyNFromConstIterator()
+TEST_CASE("TestCopyNFromConstIterator", "[copy_n]")
 {
   using T = int;
 
@@ -36,9 +36,8 @@ void TestCopyNFromConstIterator()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_UNITTEST(TestCopyNFromConstIterator);
 
-void TestCopyNToDiscardIterator()
+TEST_CASE("TestCopyNToDiscardIterator", "[copy_n]")
 {
   using T = int;
 
@@ -58,10 +57,9 @@ void TestCopyNToDiscardIterator()
   REQUIRE(reference == h_result);
   REQUIRE(reference == d_result);
 }
-DECLARE_UNITTEST(TestCopyNToDiscardIterator);
 
 template <class Vector>
-void TestCopyNMatchingTypes()
+void test_copy_n_matching_types()
 {
   using T = typename Vector::value_type;
 
@@ -81,13 +79,13 @@ void TestCopyNMatchingTypes()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_VECTOR_UNITTEST(TestCopyNMatchingTypes);
+DECLARE_VECTOR_UNITTEST(test_copy_n_matching_types);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // '=': conversion from 'int' to '_Ty', possible loss of data
 
 template <class Vector>
-void TestCopyNMixedTypes()
+void test_copy_n_mixed_types()
 {
   Vector v{0, 1, 2, 3, 4};
 
@@ -106,11 +104,11 @@ void TestCopyNMixedTypes()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNMixedTypes);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_copy_n_mixed_types);
 
 _CCCL_DIAG_POP
 
-void TestCopyNVectorBool()
+TEST_CASE("TestCopyNVectorBool", "[copy_n]")
 {
   std::vector<bool> v{true, false, true};
 
@@ -128,10 +126,9 @@ void TestCopyNVectorBool()
 
   REQUIRE(d == dref);
 }
-DECLARE_UNITTEST(TestCopyNVectorBool);
 
 template <class Vector>
-void TestCopyNListTo()
+void test_copy_n_list_to()
 {
   using T = typename Vector::value_type;
 
@@ -164,10 +161,10 @@ void TestCopyNListTo()
   REQUIRE(*iter == T(4));
   iter++;
 }
-DECLARE_VECTOR_UNITTEST(TestCopyNListTo);
+DECLARE_VECTOR_UNITTEST(test_copy_n_list_to);
 
 template <typename Vector>
-void TestCopyNCountingIterator()
+void test_copy_n_counting_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -180,10 +177,10 @@ void TestCopyNCountingIterator()
   Vector ref{1, 2, 3, 4};
   REQUIRE(vec == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyNCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_copy_n_counting_iterator);
 
 template <typename Vector>
-void TestCopyNZipIterator()
+void test_copy_n_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -198,10 +195,10 @@ void TestCopyNZipIterator()
   REQUIRE(v1 == v3);
   REQUIRE(v2 == v4);
 };
-DECLARE_VECTOR_UNITTEST(TestCopyNZipIterator);
+DECLARE_VECTOR_UNITTEST(test_copy_n_zip_iterator);
 
 template <typename Vector>
-void TestCopyNConstantIteratorToZipIterator()
+void test_copy_n_constant_iterator_to_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -218,7 +215,7 @@ void TestCopyNConstantIteratorToZipIterator()
   REQUIRE(v1 == ref1);
   REQUIRE(v2 == ref2);
 };
-DECLARE_VECTOR_UNITTEST(TestCopyNConstantIteratorToZipIterator);
+DECLARE_VECTOR_UNITTEST(test_copy_n_constant_iterator_to_zip_iterator);
 
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(my_system& system, InputIterator, Size, OutputIterator result)
@@ -227,7 +224,7 @@ OutputIterator copy_n(my_system& system, InputIterator, Size, OutputIterator res
   return result;
 }
 
-void TestCopyNDispatchExplicit()
+TEST_CASE("TestCopyNDispatchExplicit", "[copy_n]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -236,7 +233,6 @@ void TestCopyNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestCopyNDispatchExplicit);
 
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(my_tag, InputIterator, Size, OutputIterator result)
@@ -245,7 +241,7 @@ OutputIterator copy_n(my_tag, InputIterator, Size, OutputIterator result)
   return result;
 }
 
-void TestCopyNDispatchImplicit()
+TEST_CASE("TestCopyNDispatchImplicit", "[copy_n]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -253,4 +249,3 @@ void TestCopyNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestCopyNDispatchImplicit);

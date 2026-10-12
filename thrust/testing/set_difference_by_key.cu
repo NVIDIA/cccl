@@ -26,7 +26,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetDifferenceByKeyDispatchExplicit()
+TEST_CASE("TestSetDifferenceByKeyDispatchExplicit", "[set_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -36,7 +36,6 @@ void TestSetDifferenceByKeyDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchExplicit);
 
 template <typename InputIterator1,
           typename InputIterator2,
@@ -59,7 +58,7 @@ cuda::std::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
   return cuda::std::make_pair(keys_result, values_result);
 }
 
-void TestSetDifferenceByKeyDispatchImplicit()
+TEST_CASE("TestSetDifferenceByKeyDispatchImplicit", "[set_difference_by_key]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -75,10 +74,9 @@ void TestSetDifferenceByKeyDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestSetDifferenceByKeyDispatchImplicit);
 
 template <typename Vector>
-void TestSetDifferenceByKeySimple()
+void test_set_difference_by_key_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -108,10 +106,10 @@ void TestSetDifferenceByKeySimple()
   REQUIRE(ref_key == result_key);
   REQUIRE(ref_val == result_val);
 }
-DECLARE_VECTOR_UNITTEST(TestSetDifferenceByKeySimple);
+DECLARE_VECTOR_UNITTEST(test_set_difference_by_key_simple);
 
 template <typename T>
-void TestSetDifferenceByKey(const size_t n)
+void test_set_difference_by_key(const size_t n)
 {
   thrust::host_vector<T> random_keys = unittest::random_integers<unittest::int8_t>(n);
   thrust::host_vector<T> random_vals = unittest::random_integers<unittest::int8_t>(n);
@@ -175,10 +173,10 @@ void TestSetDifferenceByKey(const size_t n)
     REQUIRE(h_result_vals == d_result_vals);
   }
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKey);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key);
 
 template <typename T>
-void TestSetDifferenceByKeyEquivalentRanges(const size_t n)
+void test_set_difference_by_key_equivalent_ranges(const size_t n)
 {
   const thrust::host_vector<T> temp = unittest::random_integers<T>(n);
 
@@ -229,10 +227,10 @@ void TestSetDifferenceByKeyEquivalentRanges(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyEquivalentRanges);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key_equivalent_ranges);
 
 template <typename T>
-void TestSetDifferenceByKeyMultiset(const size_t n)
+void test_set_difference_by_key_multiset(const size_t n)
 {
   thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
@@ -293,4 +291,4 @@ void TestSetDifferenceByKeyMultiset(const size_t n)
   REQUIRE(h_result_key == d_result_key);
   REQUIRE(h_result_val == d_result_val);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetDifferenceByKeyMultiset);
+DECLARE_VARIABLE_UNITTEST(test_set_difference_by_key_multiset);

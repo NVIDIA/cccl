@@ -24,7 +24,6 @@
 #include <cuda/__utility/__basic_any/access.h>
 #include <cuda/__utility/__basic_any/basic_any_from.h>
 #include <cuda/__utility/__basic_any/basic_any_fwd.h>
-#include <cuda/__utility/__basic_any/interfaces.h>
 #include <cuda/__utility/__basic_any/virtual_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>

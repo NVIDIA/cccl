@@ -73,20 +73,18 @@ void TestSetUnionByKeyDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
 }
 
-void TestSetUnionByKeyDeviceSeq()
+TEST_CASE("TestSetUnionByKeyDeviceSeq", "[set_union_by_key]")
 {
   TestSetUnionByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetUnionByKeyDeviceSeq);
 
-void TestSetUnionByKeyDeviceDevice()
+TEST_CASE("TestSetUnionByKeyDeviceDevice", "[set_union_by_key]")
 {
   TestSetUnionByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetUnionByKeyDeviceDevice);
 #endif
 
-void TestSetUnionByKeyCudaStreams()
+TEST_CASE("TestSetUnionByKeyCudaStreams", "[set_union_by_key]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -114,4 +112,3 @@ void TestSetUnionByKeyCudaStreams()
   test_runtime::assert_equal(stream, result_key, {0, 2, 3, 3, 4});
   test_runtime::assert_equal(stream, result_val, {0, 0, 1, 1, 0});
 }
-DECLARE_UNITTEST(TestSetUnionByKeyCudaStreams);

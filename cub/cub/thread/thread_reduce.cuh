@@ -26,6 +26,7 @@
 
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__functional/maximum.h>
+#include <cuda/__functional/operator_properties.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
@@ -266,7 +267,7 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionO
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
-  && (is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
+  && (::cuda::__is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
@@ -452,8 +453,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     if constexpr (enable_ternary_reduction_sm90_v<ValueT, ReductionOp>)
     {
       // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
-      if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
-                     && is_one_of_v<PromT, int32_t, uint32_t>)
+      if constexpr ((::cuda::__is_cuda_std_plus_v<ReductionOp, PromT> && is_one_of_v<PromT, int32_t, uint32_t>)
                     // the compiler generates bad code for int8/uint8 and min/max for SM90
                     || (is_cuda_minimum_maximum_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
       {

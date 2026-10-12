@@ -10,7 +10,7 @@
 #include <unittest/unittest.h>
 
 // ensure that we properly support thrust::transform_output_iterator from cuda::std
-void TestTransformOutputIteratorTraits()
+TEST_CASE("TestTransformOutputIteratorTraits", "[transform_output_iterator]")
 {
   using func    = ::cuda::std::negate<int>;
   using base_it = thrust::host_vector<int>::iterator;
@@ -37,10 +37,9 @@ void TestTransformOutputIteratorTraits()
   static_assert(!cuda::std::random_access_iterator<it>);
   static_assert(!cuda::std::contiguous_iterator<it>);
 }
-DECLARE_UNITTEST(TestTransformOutputIteratorTraits);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformOutputIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_transform_output_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -63,10 +62,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformOutputIterator()
 
   REQUIRE(output == gold_output);
 }
-DECLARE_VECTOR_UNITTEST(TestTransformOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_transform_output_iterator);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformOutputIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_make_transform_output_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -83,7 +82,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformOutputIterator()
   Vector gold_output{1, 4, 9, 16};
   REQUIRE(output == gold_output);
 }
-DECLARE_VECTOR_UNITTEST(TestMakeTransformOutputIterator);
+DECLARE_VECTOR_UNITTEST(test_make_transform_output_iterator);
 
 template <typename T>
 struct TestTransformOutputIteratorScan

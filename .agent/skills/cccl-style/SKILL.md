@@ -7,7 +7,7 @@ description: Use when editing or reviewing CCCL code for style conventions; read
 
 ## Workflow
 
-1. Read the [CCCL C++ Coding Guidelines](https://nvidia.github.io/cccl/unstable/cccl/development/coding_guidelines.html),
+1. Read the [CCCL C++ Coding Conventions](https://nvidia.github.io/cccl/unstable/cccl/development/coding_conventions.html),
    which supersede everything.
 2. Then read `references/common.md`.
 3. For `cub/**/*`, also read `references/cub.md`.

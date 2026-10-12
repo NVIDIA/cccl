@@ -22,12 +22,11 @@
 #endif // no system header
 
 #include <cuda/std/__bit/shl.h>
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
-#include <cuda/std/limits>
 
 #if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-#  include <cuda/__ptx/instructions/bmsk.h>
+#  include <cuda/__ptx/instructions/bmsk.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
 
 #include <cuda/std/__cccl/prologue.h>

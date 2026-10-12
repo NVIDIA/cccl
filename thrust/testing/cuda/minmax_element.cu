@@ -68,20 +68,18 @@ void TestMinMaxElementDevice(ExecutionPolicy exec)
   REQUIRE(h_max - h_data.begin() == d_max - d_data.begin());
 }
 
-void TestMinMaxElementDeviceSeq()
+TEST_CASE("TestMinMaxElementDeviceSeq", "[minmax_element]")
 {
   TestMinMaxElementDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMinMaxElementDeviceSeq);
 
-void TestMinMaxElementDeviceDevice()
+TEST_CASE("TestMinMaxElementDeviceDevice", "[minmax_element]")
 {
   TestMinMaxElementDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMinMaxElementDeviceDevice);
 #endif
 
-void TestMinMaxElementCudaStreams()
+TEST_CASE("TestMinMaxElementCudaStreams", "[minmax_element]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -97,9 +95,8 @@ void TestMinMaxElementCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestMinMaxElementCudaStreams);
 
-void TestMinMaxElementDevicePointer()
+TEST_CASE("TestMinMaxElementDevicePointer", "[minmax_element]")
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -117,4 +114,3 @@ void TestMinMaxElementDevicePointer()
   REQUIRE(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).first - raw_ptr == 2);
   REQUIRE(thrust::minmax_element(thrust::device, raw_ptr, raw_ptr + n).second - raw_ptr == 1);
 }
-DECLARE_UNITTEST(TestMinMaxElementDevicePointer);

@@ -85,6 +85,7 @@ public:
   //! @p target_device
   SwitchDevice(const int target_device)
       : target_device_(target_device)
+      , original_device_(target_device)
   {
     CubDebug(cudaGetDevice(&original_device_));
     if (original_device_ != target_device_)
@@ -192,17 +193,17 @@ struct PerDeviceAttributeCache
   // `DeviceEntryInitializing` state, and then proceeds to the
   // `DeviceEntryReady` state. These are the only state transitions allowed;
   // i.e. a linear sequence of transitions.
-  enum DeviceEntryStatus
+  enum DeviceEntryStatus // NOLINT(cppcoreguidelines-use-enum-class)
   {
     DeviceEntryEmpty = 0,
     DeviceEntryInitializing,
     DeviceEntryReady
   };
 
-  struct DeviceEntry
+  struct DeviceEntry // NOLINT(cppcoreguidelines-pro-type-member-init)
   {
     ::std::atomic<DeviceEntryStatus> flag;
-    DevicePayload payload;
+    DevicePayload payload{};
   };
 
 private:
@@ -236,16 +237,19 @@ public:
     auto& flag    = entry.flag;
     auto& payload = entry.payload;
 
-    DeviceEntryStatus old_status = DeviceEntryEmpty;
+    DeviceEntryStatus old_status = DeviceEntryStatus::DeviceEntryEmpty;
 
     // First, check for the common case of the entry being ready.
-    if (flag.load(::std::memory_order_acquire) != DeviceEntryReady)
+    if (flag.load(::std::memory_order_acquire) != DeviceEntryStatus::DeviceEntryReady)
     {
       // Assume the entry is empty and attempt to lock it so we can fill
       // it by trying to set the state from `DeviceEntryReady` to
       // `DeviceEntryInitializing`.
       if (flag.compare_exchange_strong(
-            old_status, DeviceEntryInitializing, ::std::memory_order_acq_rel, ::std::memory_order_acquire))
+            old_status,
+            DeviceEntryStatus::DeviceEntryInitializing,
+            ::std::memory_order_acq_rel,
+            ::std::memory_order_acquire))
       {
         // We successfully set the state to `DeviceEntryInitializing`;
         // we have the lock and it's our job to initialize this entry
@@ -263,13 +267,13 @@ public:
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
-        flag.store(DeviceEntryReady, ::std::memory_order_release);
+        flag.store(DeviceEntryStatus::DeviceEntryReady, ::std::memory_order_release);
       }
 
       // If the `compare_exchange_weak` failed, then `old_status` has
       // been updated with the value of `flag` that it observed.
 
-      else if (old_status == DeviceEntryInitializing)
+      else if (old_status == DeviceEntryStatus::DeviceEntryInitializing)
       {
         // Another execution agent is initializing this entry; we need
         // to wait for them to finish; we'll know they're done when we
@@ -277,7 +281,7 @@ public:
         do
         {
           old_status = flag.load(::std::memory_order_acquire);
-        } while (old_status != DeviceEntryReady);
+        } while (old_status != DeviceEntryStatus::DeviceEntryReady);
         // FIXME: Use `atomic::wait` instead when we have access to
         // host-side C++20 atomics. We could use libcu++, but it only
         // supports atomics for SM60 and up, even if you're only using
@@ -306,7 +310,7 @@ CUB_RUNTIME_FUNCTION cudaError_t PtxVersionUncached(int& ptx_version)
   cudaError_t result = cudaSuccess; // NOLINT(misc-const-correctness)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     ({
-                      cudaFuncAttributes empty_kernel_attrs;
+                      cudaFuncAttributes empty_kernel_attrs{};
                       result      = CubDebug(cudaFuncGetAttributes(&empty_kernel_attrs, (const void*) empty_kernel));
                       ptx_version = empty_kernel_attrs.ptxVersion * 10;
                     }),
@@ -395,12 +399,18 @@ namespace detail
 template <class T = void>
 CUB_RUNTIME_FUNCTION cudaError_t ptx_compute_cap(::cuda::compute_capability& cc)
 {
+  // When compiling with nvc++ in CUDA mode, we always use the minimum cc tuning for all architectures, because we don't
+  // implement nvc++-compatible arch dispatch on device.
+#  if _CCCL_CUDA_COMPILER(NVHPC)
+  cc = ::cuda::compute_capability{NV_TARGET_MINIMUM_SM_INTEGER};
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   int ptx_version = 0;
   if (const auto error = PtxVersion<T>(ptx_version))
   {
     return error;
   }
   cc = ::cuda::compute_capability{ptx_version / 10};
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
 #  if _CCCL_CUDA_COMPILATION()
   // PtxVersion() (via cudaFuncGetAttributes() and .ptxVersion) can report a virtual architecture that does not

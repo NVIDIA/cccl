@@ -46,10 +46,10 @@ Parameters
 - ``dst``: The destination device mdspan.
 - ``stream``: The stream on which the copy is enqueued.
 
-Constraints
------------
+Mandates
+--------
 
-- ``TpIn`` is convertible to ``TpOut``.
+- The destination mdspan reference type is assignable from the source mdspan reference type.
 - ``TpOut`` is not ``const``.
 - ``LayoutPolicyIn`` and ``LayoutPolicyOut`` are each one of ``cuda::std::layout_left``,
   ``cuda::std::layout_right``, ``cuda::std::layout_stride``, or ``cuda::layout_stride_relaxed``.

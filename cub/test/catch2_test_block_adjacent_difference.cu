@@ -81,9 +81,8 @@ struct last_tile_op_t
       : m_valid_items(valid_items)
   {}
 
-  template <int ITEMS_PER_THREAD, typename T, typename BlockAdjDiff>
-  __device__ void
-  operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
+  template <int ItemsPerThread, typename T, typename BlockAdjDiff>
+  __device__ void operator()(BlockAdjDiff& block_adj_diff, T (&input)[ItemsPerThread], T (&output)[ItemsPerThread]) const
   {
     const custom_difference_t<T> diff{};
 
@@ -107,9 +106,8 @@ struct middle_tile_op_t
       : m_neighbour_tile_value(neighbour_tile_value)
   {}
 
-  template <int ITEMS_PER_THREAD, typename BlockAdjDiff>
-  __device__ void
-  operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
+  template <int ItemsPerThread, typename BlockAdjDiff>
+  __device__ void operator()(BlockAdjDiff& block_adj_diff, T (&input)[ItemsPerThread], T (&output)[ItemsPerThread]) const
   {
     const custom_difference_t<T> diff{};
 
@@ -135,9 +133,8 @@ struct last_tile_with_pred_op_t
       , m_neighbour_tile_value(neighbour_tile_value)
   {}
 
-  template <int ITEMS_PER_THREAD, typename BlockAdjDiff>
-  __device__ void
-  operator()(BlockAdjDiff& block_adj_diff, T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD]) const
+  template <int ItemsPerThread, typename BlockAdjDiff>
+  __device__ void operator()(BlockAdjDiff& block_adj_diff, T (&input)[ItemsPerThread], T (&output)[ItemsPerThread]) const
   {
     const custom_difference_t<T> diff{};
     block_adj_diff.SubtractLeftPartialTile(input, output, diff, m_valid_items, m_neighbour_tile_value);

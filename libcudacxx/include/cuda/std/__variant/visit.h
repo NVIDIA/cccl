@@ -88,13 +88,14 @@ private:
 };
 
 template <class... _Types>
-[[nodiscard]] _CCCL_API constexpr variant<_Types...>& __as_variant(variant<_Types...>& __vs) noexcept
+[[nodiscard]] _CCCL_API constexpr variant<_Types...>& __as_variant(variant<_Types...>& __vs _CCCL_LIFETIMEBOUND) noexcept
 {
   return __vs;
 }
 
 template <class... _Types>
-[[nodiscard]] _CCCL_API constexpr const variant<_Types...>& __as_variant(const variant<_Types...>& __vs) noexcept
+[[nodiscard]] _CCCL_API constexpr const variant<_Types...>&
+__as_variant(const variant<_Types...>& __vs _CCCL_LIFETIMEBOUND) noexcept
 {
   return __vs;
 }
