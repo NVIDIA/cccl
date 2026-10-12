@@ -147,6 +147,9 @@ struct policy_selector_from_types
   // Whether a one-worker-per-segment baseline policy fits the static max segment size in shared memory; feeds the
   // backend decision below. Evaluated per distinct baseline policy (the check instantiates the agent, so it needs the
   // policy as a compile-time constant); operator() picks the result matching the baseline it returns for `cc`.
+  // TODO(bgruber): this covers the baseline policies that are currently tuned per CC by naming each one. For a general
+  // per-CC baseline, recover the compile-time CC by folding over ::cuda::__target_compute_capabilities() (as
+  // detail::dispatch_to_cc_list does) and evaluate baseline_can_cover_v for the matching CC.
   template <baseline_topk_policy (*MakeBaseline)()>
   struct baseline_policy_getter_17 // TODO(bgruber): remove in C++20 and pass policy by value
   {

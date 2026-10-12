@@ -1943,8 +1943,9 @@ static_assert(is_valid_cluster_policy(make_sm103_keys_cluster_policy(262144, 102
 make_sm120_keys_cluster_policy(::cuda::std::int64_t static_max_segment_size, ::cuda::std::int64_t max_k)
   -> cluster_topk_policy
 {
-  // k >= segment size degenerates to the select-all copy path, which keeps the default policy, as do segments small
-  // enough for the single-CTA path, where the extra pass of the narrower digit does not pay off.
+  // Requests with max_k >= static_max_segment_size were not measured and keep the default policy (segments with
+  // k < segment size can still occur in such batches and run the cluster backend). So do segments small enough for the
+  // single-CTA path, where the extra pass of the narrower digit does not pay off.
   if (max_k >= static_max_segment_size || static_max_segment_size <= 8 * 1024)
   {
     return make_cluster_policy();
