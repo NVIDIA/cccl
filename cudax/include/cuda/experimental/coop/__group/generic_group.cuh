@@ -59,17 +59,6 @@ template <class _Unit, class _ParentGroup, class _MappingResult, class _Synchron
 {
   using _ParentMappingResult  = typename _ParentGroup::__mapping_result_type;
   using _SynchronizerInstance = decltype(__synchronizer.make_instance(__unit, __parent, __mapping_result));
-
-  // Do not invoke the synchronizer instance creation for threads that are not part of the parent group. On the other
-  // hand threads that are not part of this group must create the synchronizer instance, too, because the operation
-  // can synchronize the parent group.
-  if constexpr (!_ParentMappingResult::is_always_exhaustive())
-  {
-    if (!__parent.__mapping_result().is_valid())
-    {
-      return _SynchronizerInstance::invalid();
-    }
-  }
   return __synchronizer.make_instance(__unit, __parent, __mapping_result);
 }
 
