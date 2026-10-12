@@ -18,6 +18,8 @@ from typing import Literal, TypeVar
 
 import numpy
 
+import cuda.coop.numba_mlir
+
 from ..._typing import (
     CommonNumericScalar,
     CommonThreadDataLike,
@@ -28,7 +30,6 @@ from ..._typing import (
     ValidItems,
 )
 from .._compiler._operations import group_operation
-from .._stateful_function import StatefulFunction
 from .._thread_group import BlockGroup, WarpGroup
 from ._marker import group_primitive_marker
 
@@ -55,7 +56,7 @@ def scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
     prefix_op: Callable[[_ItemT], _ItemT]
-    | StatefulFunction[_PrefixStateT, _ItemT]
+    | cuda.coop.numba_mlir.StatefulFunction[_PrefixStateT, _ItemT]
     | None = None,
 ) -> ThreadDataLike[_ItemT] | _ItemT:
     """Scan with device operators, aggregate outputs, or prefix callbacks.
@@ -168,7 +169,7 @@ def exclusive_scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
     prefix_op: Callable[[_ItemT], _ItemT]
-    | StatefulFunction[_PrefixStateT, _ItemT]
+    | cuda.coop.numba_mlir.StatefulFunction[_PrefixStateT, _ItemT]
     | None = None,
 ) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return an exclusive prefix using a built-in or device operator.
@@ -224,7 +225,7 @@ def inclusive_scan(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
     prefix_op: Callable[[_ItemT], _ItemT]
-    | StatefulFunction[_PrefixStateT, _ItemT]
+    | cuda.coop.numba_mlir.StatefulFunction[_PrefixStateT, _ItemT]
     | None = None,
 ) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return an inclusive prefix using a built-in or device operator.
@@ -278,7 +279,7 @@ def exclusive_sum(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
     prefix_op: Callable[[_ItemT], _ItemT]
-    | StatefulFunction[_PrefixStateT, _ItemT]
+    | cuda.coop.numba_mlir.StatefulFunction[_PrefixStateT, _ItemT]
     | None = None,
 ) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return exclusive sums, optionally carrying a prefix across block tiles.
@@ -333,7 +334,7 @@ def inclusive_sum(
     valid_items: ValidItems | None = None,
     aggregate_output: ThreadDataLike[_ItemT] | numpy.ndarray | None = None,
     prefix_op: Callable[[_ItemT], _ItemT]
-    | StatefulFunction[_PrefixStateT, _ItemT]
+    | cuda.coop.numba_mlir.StatefulFunction[_PrefixStateT, _ItemT]
     | None = None,
 ) -> ThreadDataLike[_ItemT] | _ItemT:
     """Return inclusive sums, optionally carrying a prefix across block tiles.
