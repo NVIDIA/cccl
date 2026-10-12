@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_SHARED_BARRIER_H
-#define _CUDA___BARRIER_SHARED_BARRIER_H
+#ifndef _CUDA___BARRIER_SHARED_MEMORY_BARRIER_H
+#define _CUDA___BARRIER_SHARED_MEMORY_BARRIER_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,24 +43,24 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_barrier`.
-[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_barrier& __b);
+//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_memory_barrier`.
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_memory_barrier& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
 //! @brief A block-scope shared-memory barrier backed by an mbarrier layout-v1 object.
 //!
-//! `cuda::shared_barrier` is a device-side barrier type for local shared-memory storage. It exposes the common
+//! `cuda::shared_memory_barrier` is a device-side barrier type for local shared-memory storage. It exposes the common
 //! `cuda::barrier<cuda::thread_scope_block>` arrival and wait operations, plus layout-v1 status-reporting waits,
 //! conditional-phase waits, and transaction-count operations.
 //!
 //! The object must be placed in local shared memory and initialized with `cuda::init`. Host and non-shared-memory
 //! fallback behavior is not provided by this type.
-class shared_barrier : private ::cuda::__shared_mbarrier_impl
+class shared_memory_barrier : private ::cuda::__shared_mbarrier_impl
 {
   _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
-    ::cuda::shared_barrier& __b);
+    ::cuda::shared_memory_barrier& __b);
 
 public:
   //! @brief Result of a status-bearing wait operation.
@@ -89,12 +89,12 @@ public:
         , __report_value_(__result.__complete ? __result.__report_value : 0)
     {}
 
-    friend class shared_barrier;
+    friend class shared_memory_barrier;
 
     _CCCL_HOST_DEVICE_API void __verify_report_inspected() const noexcept
     {
       _CCCL_VERIFY(!__report_predicate_ || __report_inspected_,
-                   "shared_barrier operation_status report was not inspected");
+                   "shared_memory_barrier operation_status report was not inspected");
     }
 
   public:
@@ -157,7 +157,7 @@ public:
   private:
     _CCCL_DEVICE_API static void __verify_fabric_status(::cudaError_t __status) noexcept
     {
-      _CCCL_VERIFY(__status == ::cudaSuccess, "failed to decode shared_barrier status");
+      _CCCL_VERIFY(__status == ::cudaSuccess, "failed to decode shared_memory_barrier status");
     }
 
     [[nodiscard]] _CCCL_HOST_DEVICE_API static bool __encodes_fabric_errors(status_source __source) noexcept
@@ -198,7 +198,8 @@ public:
     [[nodiscard]] _CCCL_DEVICE_API ::cudaFabricOpStatusInfo
     __error_status(status_source __source, unsigned int __status_index) const noexcept
     {
-      _CCCL_ASSERT(__encodes_fabric_errors(__source), "shared_barrier status source does not encode fabric errors");
+      _CCCL_ASSERT(__encodes_fabric_errors(__source),
+                   "shared_memory_barrier status source does not encode fabric errors");
       ::cudaFabricOpStatusInfo __status_info{};
       auto __report_value = __report_value_;
       __verify_fabric_status(
@@ -237,7 +238,7 @@ public:
     [[nodiscard]] _CCCL_DEVICE_API status_action classify(status_source __source) const noexcept
     {
       __report_inspected_ = true;
-      _CCCL_VERIFY(__report_predicate_, "cannot classify a shared_barrier operation_status without a report");
+      _CCCL_VERIFY(__report_predicate_, "cannot classify a shared_memory_barrier operation_status without a report");
       return __error_count(__source) == 0 ? status_action::retry : status_action::abort;
     }
   };
@@ -254,25 +255,25 @@ public:
         : __token_(__token)
     {}
 
-    friend class shared_barrier;
+    friend class shared_memory_barrier;
 
   public:
     //! @brief Constructs a token with no associated arrival.
     _CCCL_HOST_DEVICE_API constexpr arrival_token() noexcept {}
   };
 
-  //! @brief Constructs an uninitialized `shared_barrier` object.
+  //! @brief Constructs an uninitialized `shared_memory_barrier` object.
   //!
   //! The object must be initialized with `cuda::init` before use.
-  _CCCL_HIDE_FROM_ABI shared_barrier() = default;
+  _CCCL_HIDE_FROM_ABI shared_memory_barrier() = default;
 
-  shared_barrier(const shared_barrier&)            = delete;
-  shared_barrier& operator=(const shared_barrier&) = delete;
+  shared_memory_barrier(const shared_memory_barrier&)            = delete;
+  shared_memory_barrier& operator=(const shared_memory_barrier&) = delete;
 
 private:
   [[noreturn]] _CCCL_HOST_DEVICE_API static void __unsupported_storage() noexcept
   {
-    _CCCL_VERIFY(false, "shared_barrier requires local shared memory and mbarrier layout v1 support");
+    _CCCL_VERIFY(false, "shared_memory_barrier requires local shared memory and mbarrier layout v1 support");
     _CCCL_UNREACHABLE();
   }
 
@@ -305,7 +306,7 @@ private:
       NV_IF_TARGET(
         NV_PROVIDES_SM_90,
         (_CCCL_ASSERT(!::cuda::device::is_object_from(__storage_ref(), ::cuda::device::address_space::cluster_shared),
-                      "shared_barrier must not be in another block's cluster shared memory");))
+                      "shared_memory_barrier must not be in another block's cluster shared memory");))
       __unsupported_storage();
     }
   }
@@ -518,23 +519,23 @@ public:
   //! @brief Destroys the mbarrier object.
   //!
   //! The storage must not be reused for another purpose until the mbarrier object is invalidated.
-  _CCCL_HOST_DEVICE_API ~shared_barrier()
+  _CCCL_HOST_DEVICE_API ~shared_memory_barrier()
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (__inval(); return;))
 
     __unsupported_storage();
   }
 
-  //! @brief Initializes a `shared_barrier`.
+  //! @brief Initializes a `shared_memory_barrier`.
   //!
-  //! @param __b Pointer to a `shared_barrier` object in local shared memory.
+  //! @param __b Pointer to a `shared_memory_barrier` object in local shared memory.
   //! @param __expected Expected arrival count for each phase.
   _CCCL_HOST_DEVICE_API friend void
-  init([[maybe_unused]] shared_barrier* __b, [[maybe_unused]] ::cuda::std::ptrdiff_t __expected)
+  init([[maybe_unused]] shared_memory_barrier* __b, [[maybe_unused]] ::cuda::std::ptrdiff_t __expected)
   {
     _CCCL_ASSERT(1 <= __expected, "Expected arrival count must be at least one.");
     _CCCL_ASSERT(__expected <= __max_expected_count(),
-                 "Expected arrival count cannot exceed the shared_barrier layout-v1 limit.");
+                 "Expected arrival count cannot exceed the shared_memory_barrier layout-v1 limit.");
 
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
@@ -554,7 +555,7 @@ public:
   {
     _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__update <= __max_expected_count(),
-                 "Arrival count update cannot exceed the shared_barrier layout-v1 limit.");
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
 
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return arrival_token(__arrive(__update));))
 
@@ -587,7 +588,7 @@ public:
   {
     _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__arrive_count_update <= __max_expected_count(),
-                 "Arrival count update cannot exceed the shared_barrier layout-v1 limit.");
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
     _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
     _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
                  "Transaction count update cannot exceed the mbarrier transaction count limit.");
@@ -941,8 +942,8 @@ _CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_barrier`.
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_barrier& __b)
+//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_memory_barrier`.
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_memory_barrier& __b)
 {
   return __b.__native_handle();
 }
@@ -953,4 +954,4 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 
-#endif // _CUDA___BARRIER_SHARED_BARRIER_H
+#endif // _CUDA___BARRIER_SHARED_MEMORY_BARRIER_H
