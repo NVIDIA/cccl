@@ -4242,11 +4242,14 @@ public:
 
   //! @brief Erase a policy. Implicit, so any sink converts where a `dynamic` is expected:
   //! `void release_all(pool&, dynamic sink); release_all(pl, notify & abort);`. A raw reaction
-  //! is normalized first.
+  //! is normalized first. The `dynamic` exclusion is a separate template parameter so that
+  //! substitution stops there for `dynamic` itself ([temp.deduct]/7, lexical order): otherwise
+  //! `__normalize(const dynamic&)`, whose copy considers this constructor, would ask for
+  //! `__normalized_t<const dynamic&>`, i.e. its own return type while it is being deduced
+  //! (EDG/nvcc: "cannot deduce the return type ... it has not been defined").
   template <class _P,
-            ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_P>
-                                       && !::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, dynamic>,
-                                     int> = 0>
+            ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, dynamic>, int> = 0,
+            ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_P>, int>                       = 0>
   dynamic(_P&& __p)
       : __p_(new __model<detail::__normalized_t<_P>>(detail::__normalize(::cuda::std::forward<_P>(__p))))
   {}
