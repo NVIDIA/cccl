@@ -442,6 +442,6 @@ C2H_CCCLRT_TEST("direct fabric data completion then alias fence then flag", "[fa
 #else
 C2H_TEST("direct fabric transfers runtime tests require CUDA 13.4", "[fabric]")
 {
-  SUCCEED("fabric operations and shared_barrier require CUDA 13.4");
+  SUCCEED("fabric operations and shared_memory_barrier require CUDA 13.4");
 }
 #endif

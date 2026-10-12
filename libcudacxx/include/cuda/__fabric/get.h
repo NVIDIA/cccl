@@ -49,7 +49,7 @@ try_get(::cuda::unicast_logical_endpoint_ref __src,
         ::cuda::std::uint64_t __offset,
         _Tp* __shared,
         ::cuda::std::size_t __bytes,
-        ::cuda::shared_barrier& __barrier) noexcept
+        ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_get(

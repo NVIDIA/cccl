@@ -50,7 +50,7 @@ _CCCL_DEVICE_API void try_reduce_add(
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red(
@@ -84,7 +84,7 @@ _CCCL_DEVICE_API void try_reduce_counted_add(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_counted(
@@ -115,7 +115,7 @@ _CCCL_DEVICE_API void try_reduce_min(
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red(
@@ -149,7 +149,7 @@ _CCCL_DEVICE_API void try_reduce_counted_min(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_counted(
@@ -180,7 +180,7 @@ _CCCL_DEVICE_API void try_reduce_max(
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red(
@@ -214,7 +214,7 @@ _CCCL_DEVICE_API void try_reduce_counted_max(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_counted(
@@ -247,7 +247,7 @@ _CCCL_DEVICE_API void try_reduce_add(
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem(
@@ -282,7 +282,7 @@ _CCCL_DEVICE_API void try_reduce_counted_add(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem_counted(
@@ -315,7 +315,7 @@ _CCCL_DEVICE_API void try_reduce_min(
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem(
@@ -350,7 +350,7 @@ _CCCL_DEVICE_API void try_reduce_counted_min(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem_counted(
@@ -383,7 +383,7 @@ _CCCL_DEVICE_API void try_reduce_max(
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem(
@@ -418,7 +418,7 @@ _CCCL_DEVICE_API void try_reduce_counted_max(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem_counted(

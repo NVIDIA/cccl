@@ -44,9 +44,9 @@ constexpr cuda::std::uint32_t initial_payload_value = 8;
 
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 // Collective callers must synchronize before using the initialized barrier.
-TEST_DEVICE_FUNC inline cuda::shared_barrier& make_barrier(cuda::std::size_t rank = 0)
+TEST_DEVICE_FUNC inline cuda::shared_memory_barrier& make_barrier(cuda::std::size_t rank = 0)
 {
-  __shared__ cuda::shared_barrier bar;
+  __shared__ cuda::shared_memory_barrier bar;
   if (rank == 0)
   {
     init(&bar, 1);
@@ -55,7 +55,7 @@ TEST_DEVICE_FUNC inline cuda::shared_barrier& make_barrier(cuda::std::size_t ran
 }
 _CCCL_END_NV_DIAG_SUPPRESS()
 
-TEST_DEVICE_FUNC inline void wait_success(cuda::shared_barrier& bar, int count)
+TEST_DEVICE_FUNC inline void wait_success(cuda::shared_memory_barrier& bar, int count)
 {
   const auto token = bar.arrive_tx(1, count);
   auto status      = bar.try_wait_for(token, cuda::std::chrono::seconds{1}, cuda::return_status);

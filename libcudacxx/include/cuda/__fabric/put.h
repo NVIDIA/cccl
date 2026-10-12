@@ -50,7 +50,7 @@ try_put(::cuda::unicast_logical_endpoint_ref __dst,
         ::cuda::std::uint64_t __offset,
         const _Tp* __shared,
         ::cuda::std::size_t __bytes,
-        ::cuda::shared_barrier& __barrier) noexcept
+        ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put(
@@ -83,7 +83,7 @@ _CCCL_DEVICE_API void try_put_counted(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_counted(
@@ -115,7 +115,7 @@ _CCCL_DEVICE_API void try_put_masked(
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
   ::cuda::std::uint16_t __mask,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_cp_mask(
@@ -147,7 +147,7 @@ try_put(::cuda::multicast_logical_endpoint_ref __dst,
         ::cuda::std::uint64_t __offset,
         const _Tp* __shared,
         ::cuda::std::size_t __bytes,
-        ::cuda::shared_barrier& __barrier) noexcept
+        ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_multimem(
@@ -181,7 +181,7 @@ _CCCL_DEVICE_API void try_put_counted(
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_multimem_counted(
@@ -215,7 +215,7 @@ _CCCL_DEVICE_API void try_put_masked(
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
   ::cuda::std::uint16_t __mask,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_multimem_cp_mask(

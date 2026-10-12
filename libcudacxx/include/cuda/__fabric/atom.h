@@ -54,7 +54,7 @@ _CCCL_DEVICE_API void try_fetch_add(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -143,7 +143,7 @@ _CCCL_DEVICE_API void try_fetch_min(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -216,7 +216,7 @@ _CCCL_DEVICE_API void try_fetch_max(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -289,7 +289,7 @@ _CCCL_DEVICE_API void try_fetch_and(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -342,7 +342,7 @@ _CCCL_DEVICE_API void try_fetch_or(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -395,7 +395,7 @@ _CCCL_DEVICE_API void try_fetch_xor(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -448,7 +448,7 @@ _CCCL_DEVICE_API void try_exchange(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const atomic_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),
@@ -509,7 +509,7 @@ _CCCL_DEVICE_API void try_compare_exchange(
   ::cuda::std::uint64_t __offset,
   atomic_block<_Tp>* __old_shared,
   const compare_exchange_block<_Tp>* __operand_shared,
-  ::cuda::shared_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier& __barrier) noexcept
 {
   _CCCL_ASSERT(__offset % sizeof(_Tp) == 0, "invalid atomic endpoint offset");
   _CCCL_ASSERT(::cuda::device::is_address_from(__old_shared, ::cuda::device::address_space::shared),

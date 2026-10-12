@@ -430,6 +430,6 @@ C2H_CCCLRT_TEST("direct fabric packed half and bfloat16 atomic operations", "[fa
 #else
 C2H_TEST("direct fabric atom runtime tests require CUDA 13.4", "[fabric]")
 {
-  SUCCEED("fabric operations and shared_barrier require CUDA 13.4");
+  SUCCEED("fabric operations and shared_memory_barrier require CUDA 13.4");
 }
 #endif
