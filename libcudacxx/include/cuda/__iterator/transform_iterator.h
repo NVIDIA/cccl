@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/__fwd/iterator.h>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/__iterator/contiguous_iterator_adaptor.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
@@ -40,6 +42,7 @@
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
@@ -231,6 +234,17 @@ public:
   [[nodiscard]] _CCCL_API constexpr _Iter base() && noexcept(::cuda::std::is_nothrow_move_constructible_v<_Iter>)
   {
     return ::cuda::std::move(__iter());
+  }
+
+  //! @brief Retargets the stored iterator at @p __ptr. The stored functor is left unchanged. It is then invoked on the
+  //! elements at @p __ptr, so it must proclaim copyable arguments.
+  //! @param[in] __ptr The address that replaces the contiguous storage this adaptor reads from.
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(::cuda::proclaims_copyable_arguments_v<_Fn> _CCCL_AND(
+    __iterator_can_rebase<_Iter, _Tp> || ::cuda::std::is_pointer_v<_Iter>))
+  _CCCL_API constexpr void __rebase(_Tp* __ptr) &
+  {
+    ::cuda::__rebase_contiguous_iterator_adaptor(__iter(), __ptr);
   }
 
   //! @brief Dereferences the stored iterator and applies the stored functor to the result
