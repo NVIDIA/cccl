@@ -13,9 +13,12 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/equal.h>
+#include <thrust/random.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/sequence.h>
+#include <thrust/shuffle.h>
 
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
@@ -23,6 +26,7 @@
 #include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/iterator>
+#include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -1110,6 +1114,109 @@ CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break returns the 
     reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
 
   c2h::host_vector<val_t> h_values_out = values_out_buffer;
+  for (segment_index_t seg = 0; seg < num_segments; ++seg)
+  {
+    const auto seg_begin = h_values_out.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);
+    std::sort(seg_begin, seg_begin + k);
+  }
+
+  REQUIRE(ref == h_values_out);
+}
+
+// Compares floats bitwise, since float == treats -0.0 and +0.0 as equal
+struct float_bitwise_equal_op
+{
+  __device__ bool operator()(float a, float b) const
+  {
+    return cuda::std::bit_cast<cuda::std::uint32_t>(a) == cuda::std::bit_cast<cuda::std::uint32_t>(b);
+  }
+};
+
+// -0.0 and +0.0 compare equal, so a tie-break among zeros at the k-th boundary must follow the index preference
+// alone, as in the host reference (which ranks with `operator<`). Keys are drawn from {-1, -0, +0, 1}, and every k
+// selects and rejects zeros of both signs, so a ranking that orders -0.0 below +0.0 selects the wrong indices.
+CUB_TEST("DeviceBatchedTopK::{Min,Max}Pairs deterministic tie-break treats -0.0 and +0.0 as equal",
+         "[pairs][segmented][topk][device][cluster][determinism]",
+         CUB_SMALL,
+         select_direction_list,
+         tie_break_pref_list)
+{
+  using key_t           = float;
+  using val_t           = cuda::std::int32_t;
+  using segment_size_t  = cuda::std::int64_t;
+  using segment_index_t = cuda::std::int64_t;
+
+  constexpr auto direction     = c2h::get<0, TestType>::value;
+  constexpr auto tie_break     = c2h::get<1, TestType>::value;
+  constexpr auto determinism   = cuda::execution::determinism::__determinism_t::__gpu_to_gpu;
+  constexpr bool prefer_larger = tie_break == cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
+
+  constexpr segment_size_t static_max_segment_size = 896 * 1024;
+  constexpr segment_index_t num_segments           = 2;
+  const segment_size_t segment_size                = GENERATE_COPY(
+    values({segment_size_t{16}, segment_size_t{4096}, segment_size_t{64 * 1024}, segment_size_t{896 * 1024}}));
+  // Exactly a quarter of the keys are +1, a quarter -1 and half zeros per segment, in shuffled positions, with the
+  // zeros' signs alternating in index order. Each k below selects z = k - n/4 zeros with 2 <= z <= n/2 - 2, so the
+  // index preference selects at least one zero of each sign and rejects at least one of each sign, for max and for
+  // min. That is exactly the case a ranking that separates -0.0 from +0.0 gets wrong.
+  const segment_size_t k = GENERATE_COPY(values({segment_size * 3 / 8, segment_size / 2, segment_size * 5 / 8}));
+  const segment_size_t num_items = num_segments * segment_size;
+
+  CAPTURE(segment_size, k, num_segments, direction, prefer_larger);
+
+  thrust::default_random_engine rng(static_cast<cuda::std::uint32_t>(C2H_SEED(1).get()));
+  c2h::host_vector<key_t> h_keys(static_cast<cuda::std::size_t>(num_items));
+  for (segment_index_t seg = 0; seg < num_segments; ++seg)
+  {
+    const auto seg_begin = h_keys.begin() + static_cast<cuda::std::ptrdiff_t>(seg * segment_size);
+    const auto seg_end   = seg_begin + static_cast<cuda::std::ptrdiff_t>(segment_size);
+    std::fill_n(seg_begin, segment_size / 4, 1.0f);
+    std::fill_n(seg_begin + segment_size / 4, segment_size / 2, 0.0f);
+    std::fill_n(seg_begin + 3 * segment_size / 4, segment_size / 4, -1.0f);
+    thrust::shuffle(seg_begin, seg_end, rng);
+    int zero_rank = 0;
+    for (auto it = seg_begin; it != seg_end; ++it)
+    {
+      if (*it == 0.0f)
+      {
+        *it = (zero_rank++ % 2 == 0) ? 0.0f : -0.0f;
+      }
+    }
+  }
+  c2h::device_vector<key_t> keys_in_buffer(h_keys);
+
+  auto d_keys_in_ptr = thrust::raw_pointer_cast(keys_in_buffer.data());
+  auto d_keys_in     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_in_ptr), segment_size);
+
+  c2h::device_vector<key_t> keys_out_buffer(num_segments * k, thrust::no_init);
+  auto d_keys_out_ptr = thrust::raw_pointer_cast(keys_out_buffer.data());
+  auto d_keys_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_keys_out_ptr), k);
+
+  auto values_in_it = cuda::make_counting_iterator(val_t{0});
+  auto d_values_in  = cuda::make_strided_iterator(cuda::make_counting_iterator(values_in_it), segment_size);
+  c2h::device_vector<val_t> values_out_buffer(num_segments * k, thrust::no_init);
+  auto d_values_out_ptr = thrust::raw_pointer_cast(values_out_buffer.data());
+  auto d_values_out     = cuda::make_strided_iterator(cuda::make_counting_iterator(d_values_out_ptr), k);
+
+  const auto seg_arg =
+    cuda::args::immediate{segment_size, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
+  const auto k_arg  = cuda::args::immediate{k, cuda::args::bounds<segment_size_t{1}, static_max_segment_size>()};
+  const auto ns_arg = cuda::args::immediate{num_segments};
+  skip_unless_batched_topk_pairs_supported<direction, determinism, tie_break>(
+    static_max_segment_size, d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
+  batched_topk_pairs<direction, determinism, tie_break>(
+    d_keys_in, d_keys_out, d_values_in, d_values_out, seg_arg, k_arg, ns_arg);
+
+  const c2h::host_vector<val_t> ref =
+    reference_deterministic_topk_indices<key_t, val_t>(h_keys, num_segments, segment_size, k, direction, prefer_larger);
+
+  // Output keys keep their sign: each selected key is bitwise the input key at the selected index
+  auto expected_keys_it = cuda::make_permutation_iterator(keys_in_buffer.cbegin(), values_out_buffer.cbegin());
+  const bool keys_bitwise_equal =
+    thrust::equal(keys_out_buffer.cbegin(), keys_out_buffer.cend(), expected_keys_it, float_bitwise_equal_op{});
+  REQUIRE(keys_bitwise_equal);
+  c2h::host_vector<val_t> h_values_out = values_out_buffer;
+
   for (segment_index_t seg = 0; seg < num_segments; ++seg)
   {
     const auto seg_begin = h_values_out.begin() + static_cast<cuda::std::ptrdiff_t>(seg * k);

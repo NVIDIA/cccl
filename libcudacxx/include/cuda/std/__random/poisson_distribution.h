@@ -23,16 +23,20 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/normal_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

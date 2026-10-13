@@ -20,20 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
-#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
-#include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
-#include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/disjunction.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -46,18 +41,13 @@
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/lazy.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

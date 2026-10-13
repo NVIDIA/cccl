@@ -35,19 +35,17 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 namespace cs = cuda::std;
 
 template <class T>
 using nl = cs::numeric_limits<T>;
 
-using fp64 = cudax::fp64_custom<>;
-using fp32 = cudax::fp64_custom<8, 23>;
-using fp16 = cudax::fp64_custom<5, 10>;
-using bf16 = cudax::fp64_custom<8, 7>;
-using po2  = cudax::fp64_custom<11, 0>;
-using dyn  = cudax::fp64_custom<cudax::fp_custom_dynamic_size, cudax::fp_custom_dynamic_size>;
+using fp64 = cuda::fp64_custom<>;
+using fp32 = cuda::fp64_custom<8, 23>;
+using fp16 = cuda::fp64_custom<5, 10>;
+using bf16 = cuda::fp64_custom<8, 7>;
+using po2  = cuda::fp64_custom<11, 0>;
+using dyn  = cuda::fp64_custom<cuda::fp_custom_dynamic_size, cuda::fp_custom_dynamic_size>;
 
 // numeric_limits::has_denorm and numeric_limits::has_denorm_loss have been deprecated since C++23
 #if _CCCL_STD_VER >= 2023
@@ -68,7 +66,7 @@ TEST_HOST_DEVICE_FUNC constexpr cs::uint64_t bits(T v)
 static_assert(nl<fp64>::is_specialized, "static sizes describe a format");
 static_assert(nl<fp32>::is_specialized, "static sizes describe a format");
 static_assert(!nl<dyn>::is_specialized, "runtime sizes describe no compile-time format");
-static_assert(!nl<cudax::fp64_custom<8, cudax::fp_custom_dynamic_size>>::is_specialized,
+static_assert(!nl<cuda::fp64_custom<8, cuda::fp_custom_dynamic_size>>::is_specialized,
               "one runtime size is enough to leave the format undescribed");
 
 // The members are still well-formed and carry double's limits.
@@ -160,7 +158,7 @@ static_assert(bits(nl<po2>::epsilon()) == bits(1.0), "");
 
 // Where the native exponent keeps subnormals, the mantissa reduction quantizes them.
 static_assert(bits(nl<po2>::denorm_min()) == bits(0x1p-1022), "");
-static_assert(bits(nl<cudax::fp64_custom<11, 10>>::denorm_min()) == bits(0x1p-1032), "");
+static_assert(bits(nl<cuda::fp64_custom<11, 10>>::denorm_min()) == bits(0x1p-1032), "");
 #endif // _CCCL_HAS_CONSTEXPR_BIT_CAST()
 
 //==========================================================================================

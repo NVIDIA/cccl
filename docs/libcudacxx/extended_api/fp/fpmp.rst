@@ -174,12 +174,10 @@ accuracy-explicit functions:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    using ffloat = cudax::fp32mp2_low;              // low accuracy for the bulk of the work
+    using ffloat = cuda::fp32mp2_low;              // low accuracy for the bulk of the work
     ffloat a = ..., b = ...;
 
-    ffloat r = cudax::add<cudax::fpmp2_accuracy::high>(a, b);   // this one step at high
+    ffloat r = cuda::add<cuda::fpmp2_accuracy::high>(a, b);   // this one step at high
 
 ``add``, ``sub``, ``mul``, ``div``, ``fma`` and ``mad`` all take the level this way. The result
 type is the operand type, so nothing else in the expression changes — useful where a low-accuracy
@@ -197,7 +195,7 @@ Using the types
 
 One header carries the whole interface, the transcendental math functions included.
 
-The component lives in ``cuda::experimental`` namespace. Two spellings
+The component lives in the ``cuda`` namespace. Two spellings
 then appear, and the convention below is worth following even though, for most of these functions,
 either one compiles. The standard-named math functions are left **unqualified**, found by
 argument-dependent lookup. The component's own functions have no counterpart for ``double``, so
@@ -206,11 +204,9 @@ so:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fp64mp2 x{2.0};
+    cuda::fp64mp2 x{2.0};
     auto r = sqrt(x);                  // unqualified: ADL finds the fpmp2 overload
-    auto s = cudax::renormalize(x);    // component-specific; renormalize(x) also compiles
+    auto s = cuda::renormalize(x);    // component-specific; renormalize(x) also compiles
 
 Leaving the standard names unqualified is what lets an existing body of ``double`` code keep its
 call sites unchanged when the type underneath is swapped. ``sqrt(x)`` beats ``::sqrt(double)`` for
@@ -235,8 +231,8 @@ exactly is a narrowing conversion, and by default it must be written out:
 
 .. code-block:: cuda
 
-    cudax::fp32mp2 x = 1.2345678901234567;                                 // error by default
-    cudax::fp32mp2 y = static_cast<cudax::fp32mp2>(1.2345678901234567);    // correct, and constexpr
+    cuda::fp32mp2 x = 1.2345678901234567;                                // error by default
+    cuda::fp32mp2 y = static_cast<cuda::fp32mp2>(1.2345678901234567);    // correct, and constexpr
 
 The reason is that an implicit narrowing conversion has only one place to go — the single-limb
 constructor, which sets ``lo`` to zero and reports nothing. A value would silently arrive carrying
@@ -329,8 +325,8 @@ arithmetic will use, so it does not change by accident:
 
 .. code-block:: cuda
 
-    cudax::fp32mp2_low fast = ...;
-    cudax::fp32mp2     safe(fast);      // explicit; renormalizes on the way
+    cuda::fp32mp2_low fast = ...;
+    cuda::fp32mp2     safe(fast);      // explicit; renormalizes on the way
 
 Conversion **out of** ``low`` renormalizes. The reason is the state ``low`` leaves its results
 in: they can carry overlapping limbs, while the ``mid`` and ``high`` algorithms are written
@@ -379,7 +375,7 @@ hardware where FP64 is rationed:
   ``remainder``
 - **Probability** — ``normcdfinv``, and ``icdf`` for ``fp32mp2`` only, which turns a 32- or 64-bit
   uniform integer into a Gaussian variate. Taking an integer rather than a pair, it is the one
-  function here that ADL cannot find, so it has to be written ``cudax::icdf(bits)``, and its
+  function here that ADL cannot find, so it has to be written ``cuda::icdf(bits)``, and its
   accuracy level is a defaulted template parameter rather than a deduced one
 - **Special** — ``boys_f0``, the zeroth-order Boys function
 
