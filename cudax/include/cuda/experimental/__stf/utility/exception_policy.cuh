@@ -3660,11 +3660,11 @@ struct always_t
       }
       _CCCL_CATCH (const ::std::exception& __cur)
       {
-        static_cast<void>(__fin_(&__cur, __loc, __fn));
+        static_cast<void>(detail::__call_hook(__fin_, &__cur, __loc, __fn));
       }
       _CCCL_CATCH_ALL
       {
-        static_cast<void>(__fin_(nullptr, __loc, __fn));
+        static_cast<void>(detail::__call_hook(__fin_, nullptr, __loc, __fn));
       }
       _CCCL_RETHROW;
     }
