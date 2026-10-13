@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cub/block/block_reduce.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
