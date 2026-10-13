@@ -69,29 +69,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceHistogram") AgentHi
 
 namespace detail::histogram
 {
-struct HistogramPrivatizedStaticSmem
-{};
-
-struct HistogramPrivatizedDynamicSmem
-{};
-
-struct HistogramPrivatizedGmem
-{};
-
-inline constexpr auto histogram_privatized_static_smem  = HistogramPrivatizedStaticSmem{};
-inline constexpr auto histogram_privatized_dynamic_smem = HistogramPrivatizedDynamicSmem{};
-inline constexpr auto histogram_privatized_gmem         = HistogramPrivatizedGmem{};
-
-template <class PrivatizationMode>
-inline constexpr bool is_privatized_static_smem_v =
-  ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedStaticSmem>;
-
-template <class PrivatizationMode>
-inline constexpr bool is_privatized_dynamic_smem_v =
-  ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedDynamicSmem>;
-
-template <class PrivatizationMode>
-inline constexpr bool is_privatized_gmem_v = ::cuda::std::is_same_v<PrivatizationMode, HistogramPrivatizedGmem>;
+enum class privatization_mode
+{
+  gmem,
+  static_smem,
+  dynamic_smem
+};
 
 // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
 template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
@@ -142,7 +125,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto NativePointer(IteratorT itr)
 //! @tparam OutputCounterT
 //!   Integer type for final output histogram bins. May be wider than `CounterT`.
 template <typename PolicySelector,
-          typename PrivatizationMode,
+          privatization_mode PrivatizationMode,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
@@ -155,11 +138,9 @@ struct AgentHistogram
 {
   static_assert(sizeof(CounterT) <= sizeof(OutputCounterT),
                 "The output histogram counter must be at least as wide as the local counter");
-  static_assert(is_privatized_static_smem_v<PrivatizationMode> || is_privatized_dynamic_smem_v<PrivatizationMode>
-                || is_privatized_gmem_v<PrivatizationMode>);
-  static constexpr bool uses_static_smem  = is_privatized_static_smem_v<PrivatizationMode>;
-  static constexpr bool uses_dynamic_smem = is_privatized_dynamic_smem_v<PrivatizationMode>;
-  static constexpr bool uses_gmem         = is_privatized_gmem_v<PrivatizationMode>;
+  static constexpr bool uses_static_smem  = PrivatizationMode == privatization_mode::static_smem;
+  static constexpr bool uses_dynamic_smem = PrivatizationMode == privatization_mode::dynamic_smem;
+  static constexpr bool uses_gmem         = PrivatizationMode == privatization_mode::gmem;
   static constexpr auto policy            = current_policy<PolicySelector>();
   static constexpr auto privatization_policy =
     uses_static_smem ? policy.static_smem

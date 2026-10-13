@@ -23,6 +23,7 @@
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 namespace detail::histogram
@@ -435,14 +436,14 @@ _CCCL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
   }
 }
 
-template <typename PolicySelector, typename PrivatizationMode>
+template <typename PolicySelector, privatization_mode PrivatizationMode>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto histogram_privatization_policy() -> HistogramPrivatizationPolicy
 {
-  if constexpr (is_privatized_static_smem_v<PrivatizationMode>)
+  if constexpr (PrivatizationMode == privatization_mode::static_smem)
   {
     return current_policy<PolicySelector>().static_smem;
   }
-  else if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
+  else if constexpr (PrivatizationMode == privatization_mode::dynamic_smem)
   {
     return current_policy<PolicySelector>().dynamic_smem;
   }
@@ -452,10 +453,10 @@ template <typename PolicySelector, typename PrivatizationMode>
   }
 }
 
-template <typename PolicySelector, typename PrivatizationMode>
+template <typename PolicySelector, privatization_mode PrivatizationMode>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int histogram_min_blocks_per_sm()
 {
-  if constexpr (is_privatized_static_smem_v<PrivatizationMode>)
+  if constexpr (PrivatizationMode == privatization_mode::static_smem)
   {
     return current_policy<PolicySelector>().static_smem_min_blocks_per_sm;
   }
@@ -537,7 +538,7 @@ template <typename PolicySelector, typename PrivatizationMode>
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
 template <typename PolicySelector,
-          typename PrivatizationMode,
+          privatization_mode PrivatizationMode,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
@@ -578,10 +579,10 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
                    OutputCounterT>;
 
   __shared__ typename AgentHistogramT::TempStorage static_smem;
-  extern __shared__ __align__(16) unsigned char dynamic_smem[];
+  extern __shared__ __align__(16)::cuda::std::byte dynamic_smem[];
 
   CounterT* dynamic_smem_privatized_histograms = nullptr;
-  if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
+  if constexpr (PrivatizationMode == privatization_mode::dynamic_smem)
   {
     dynamic_smem_privatized_histograms = reinterpret_cast<CounterT*>(dynamic_smem);
   }
@@ -691,7 +692,7 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
 //! @param tile_queue
 //!   Drain queue descriptor for dynamically mapping tile data onto thread blocks
 template <typename PolicySelector,
-          typename PrivatizationMode,
+          privatization_mode PrivatizationMode,
           int NumChannels,
           int NumActiveChannels,
           typename SampleIteratorT,
@@ -763,10 +764,10 @@ __launch_bounds__(int(histogram_privatization_policy<PolicySelector, Privatizati
                    OutputCounterT>;
 
   __shared__ typename AgentHistogramT::TempStorage static_smem;
-  extern __shared__ __align__(16) unsigned char dynamic_smem[];
+  extern __shared__ __align__(16)::cuda::std::byte dynamic_smem[];
 
   CounterT* dynamic_smem_privatized_histograms = nullptr;
-  if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
+  if constexpr (PrivatizationMode == privatization_mode::dynamic_smem)
   {
     dynamic_smem_privatized_histograms = reinterpret_cast<CounterT*>(dynamic_smem);
   }

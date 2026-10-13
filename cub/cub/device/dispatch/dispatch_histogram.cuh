@@ -41,6 +41,7 @@
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__tuple_dir/apply.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/array>
@@ -93,7 +94,7 @@ struct DeviceHistogramKernelSource
   }
 
   /// Returns the default histogram sweep kernel that receives pre-initialized decode operators from the host.
-  template <typename PolicyT, typename PrivatizationMode, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  template <typename PolicyT, privatization_mode PrivatizationMode, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
   {
     return &DeviceHistogramSweepKernel<
@@ -111,7 +112,7 @@ struct DeviceHistogramKernelSource
 
   /// Returns the device-init histogram sweep kernel that initializes decode operators from level arrays in the kernel.
   template <typename PolicyT,
-            typename PrivatizationMode,
+            privatization_mode PrivatizationMode,
             typename FirstLevelArrayT,
             typename SecondLevelArrayT,
             bool IsEven,
@@ -187,7 +188,7 @@ struct DeviceHistogramKernelSource
 
 template <int NumChannels,
           int NumActiveChannels,
-          typename PrivatizationMode,
+          privatization_mode PrivatizationMode,
           bool IsDeviceInit,
           bool IsEven,
           bool IsByteSample,
@@ -254,15 +255,15 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }();
 
   const HistogramPrivatizationPolicy sweep =
-    is_privatized_static_smem_v<PrivatizationMode> ? active_policy.static_smem
-    : is_privatized_dynamic_smem_v<PrivatizationMode>
+    PrivatizationMode == privatization_mode::static_smem ? active_policy.static_smem
+    : PrivatizationMode == privatization_mode::dynamic_smem
       ? active_policy.dynamic_smem
       : active_policy.gmem;
   const int threads_per_block = sweep.threads_per_block;
   const int items_per_thread  = sweep.items_per_thread;
 
   const int dynamic_smem_bytes = [&] {
-    if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
+    if constexpr (PrivatizationMode == privatization_mode::dynamic_smem)
     {
       int result = 0;
       for (int channel = 0; channel < NumActiveChannels; ++channel)
@@ -276,7 +277,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       return 0;
     }
   }();
-  if constexpr (is_privatized_dynamic_smem_v<PrivatizationMode>)
+  if constexpr (PrivatizationMode == privatization_mode::dynamic_smem)
   {
     int max_dynamic_smem_bytes{};
     NV_IF_ELSE_TARGET(
@@ -304,7 +305,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     if (dynamic_smem_bytes > max_dynamic_smem_bytes)
     {
       return detail::histogram::
-        dispatch<NumChannels, NumActiveChannels, HistogramPrivatizedGmem, IsDeviceInit, IsEven, IsByteSample>(
+        dispatch<NumChannels, NumActiveChannels, privatization_mode::gmem, IsDeviceInit, IsEven, IsByteSample>(
           d_temp_storage,
           temp_storage_bytes,
           d_samples,
@@ -380,7 +381,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   void* allocations[NUM_ALLOCATIONS] = {};
   size_t allocation_sizes[NUM_ALLOCATIONS];
 
-  constexpr bool requires_global_privatization = is_privatized_gmem_v<PrivatizationMode>;
+  constexpr bool requires_global_privatization = PrivatizationMode == privatization_mode::gmem;
   for (int CHANNEL = 0; CHANNEL < NumActiveChannels; ++CHANNEL)
   {
     allocation_sizes[CHANNEL] =
@@ -657,7 +658,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NumChannels,
                                        NumActiveChannels,
-                                       HistogramPrivatizedDynamicSmem,
+                                       privatization_mode::dynamic_smem,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
                                        /* IsByteSample = */ false>(
@@ -687,7 +688,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NumChannels,
                                        NumActiveChannels,
-                                       HistogramPrivatizedGmem,
+                                       privatization_mode::gmem,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
                                        /* IsByteSample = */ false>(
@@ -717,7 +718,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
     if (const auto error = CubDebug(
           (detail::histogram::dispatch<NumChannels,
                                        NumActiveChannels,
-                                       HistogramPrivatizedStaticSmem,
+                                       privatization_mode::static_smem,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
                                        /* IsByteSample = */ false>(
@@ -872,11 +873,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
     }
   }();
 
-  const auto dispatch_with = [&](auto mode) {
-    using privatization_mode_t = decltype(mode);
+  const auto dispatch_with = [&](auto mode_constant) {
+    constexpr auto mode = decltype(mode_constant)::value;
     return detail::histogram::dispatch<NumChannels,
                                        NumActiveChannels,
-                                       privatization_mode_t,
+                                       mode,
                                        /* IsDeviceInit = */ true,
                                        /* IsEven = */ true,
                                        /* IsByteSample = */ true>(
@@ -899,10 +900,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t __dispatch_even_device_init(
   };
 
   const auto error =
-    privatization == privatization_mode::static_smem ? dispatch_with(HistogramPrivatizedStaticSmem{})
+    privatization == privatization_mode::static_smem
+      ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::static_smem>{})
     : privatization == privatization_mode::dynamic_smem
-      ? dispatch_with(HistogramPrivatizedDynamicSmem{})
-      : dispatch_with(HistogramPrivatizedGmem{});
+      ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::dynamic_smem>{})
+      : dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::gmem>{});
   if (CubDebug(error))
   {
     return error;
@@ -1071,11 +1073,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     const auto privatization =
       select_privatization_mode<false, LocalCounterT, NumActiveChannels>(active_policy, num_privatized_bins);
 
-    const auto dispatch_with = [&](auto mode) {
-      using privatization_mode_t = decltype(mode);
+    const auto dispatch_with = [&](auto mode_constant) {
+      constexpr auto mode = decltype(mode_constant)::value;
       return detail::histogram::dispatch<NumChannels,
                                          NumActiveChannels,
-                                         privatization_mode_t,
+                                         mode,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = (unused for host-init) */ false,
                                          /* IsByteSample = (unused for host-init) */ false>(
@@ -1098,10 +1100,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     };
 
     const auto error =
-      privatization == privatization_mode::static_smem ? dispatch_with(HistogramPrivatizedStaticSmem{})
+      privatization == privatization_mode::static_smem
+        ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::static_smem>{})
       : privatization == privatization_mode::dynamic_smem
-        ? dispatch_with(HistogramPrivatizedDynamicSmem{})
-        : dispatch_with(HistogramPrivatizedGmem{});
+        ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::dynamic_smem>{})
+        : dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::gmem>{});
     if (CubDebug(error))
     {
       return error;
@@ -1143,10 +1146,10 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     }
 
     const auto dispatch_with = [&](auto mode) {
-      using privatization_mode_t = decltype(mode);
+      constexpr auto mode_value = decltype(mode)::value;
       return detail::histogram::dispatch<NumChannels,
                                          NumActiveChannels,
-                                         privatization_mode_t,
+                                         mode_value,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
                                          /* IsByteSample = */ false>(
@@ -1169,10 +1172,11 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_range(
     };
 
     const auto error =
-      privatization == privatization_mode::static_smem ? dispatch_with(HistogramPrivatizedStaticSmem{})
+      privatization == privatization_mode::static_smem
+        ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::static_smem>{})
       : privatization == privatization_mode::dynamic_smem
-        ? dispatch_with(HistogramPrivatizedDynamicSmem{})
-        : dispatch_with(HistogramPrivatizedGmem{});
+        ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::dynamic_smem>{})
+        : dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::gmem>{});
     if (CubDebug(error))
     {
       return error;
@@ -1271,10 +1275,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       select_privatization_mode<true, LocalCounterT, NumActiveChannels>(active_policy, num_privatized_bins);
 
     const auto dispatch_with = [&](auto mode) {
-      using privatization_mode_t = decltype(mode);
+      constexpr auto mode_value = decltype(mode)::value;
       return detail::histogram::dispatch<NumChannels,
                                          NumActiveChannels,
-                                         privatization_mode_t,
+                                         mode_value,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
                                          /* IsByteSample = */ false>(
@@ -1297,10 +1301,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     };
 
     const auto error =
-      privatization == privatization_mode::static_smem ? dispatch_with(HistogramPrivatizedStaticSmem{})
+      privatization == privatization_mode::static_smem
+        ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::static_smem>{})
       : privatization == privatization_mode::dynamic_smem
-        ? dispatch_with(HistogramPrivatizedDynamicSmem{})
-        : dispatch_with(HistogramPrivatizedGmem{});
+        ? dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::dynamic_smem>{})
+        : dispatch_with(::cuda::std::integral_constant<privatization_mode, privatization_mode::gmem>{});
     if (CubDebug(error))
     {
       return error;
@@ -1356,7 +1361,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
     {
       return CubDebug((detail::histogram::dispatch<NumChannels,
                                                    NumActiveChannels,
-                                                   HistogramPrivatizedDynamicSmem,
+                                                   privatization_mode::dynamic_smem,
                                                    /* IsDeviceInit = */ false,
                                                    /* IsEven = */ true,
                                                    /* IsByteSample = */ false>(
@@ -1383,7 +1388,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NumChannels,
                                          NumActiveChannels,
-                                         HistogramPrivatizedGmem,
+                                         privatization_mode::gmem,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
                                          /* IsByteSample = */ false>(
@@ -1412,7 +1417,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
       if (const auto error = CubDebug(
             (detail::histogram::dispatch<NumChannels,
                                          NumActiveChannels,
-                                         HistogramPrivatizedStaticSmem,
+                                         privatization_mode::static_smem,
                                          /* IsDeviceInit = */ false,
                                          /* IsEven = */ false,
                                          /* IsByteSample = */ false>(
