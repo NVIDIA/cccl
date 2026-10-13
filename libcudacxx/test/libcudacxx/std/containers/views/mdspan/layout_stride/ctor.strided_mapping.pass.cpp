@@ -216,7 +216,7 @@ struct throwing_stride_layout
     using rank_type    = typename Extents::rank_type;
     using layout_type  = throwing_stride_layout;
 
-    TEST_FUNC constexpr mapping() = default;
+    constexpr mapping() = default;
 
     TEST_FUNC constexpr const extents_type& extents() const
     {
