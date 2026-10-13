@@ -26,6 +26,7 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/__memory/as_bytes_vectorized.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/identity.h>
@@ -199,8 +200,9 @@ struct AgentReduceImpl
   /// The input value type
   using InputT = it_value_t<InputIteratorT>;
 
-  /// Vector type of InputT for data movement
-  using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;
+  /// Vector type of InputT for data movement. Cache modified loads are at most 16 bytes wide, so they gain nothing from
+  /// a stricter alignment
+  using VectorT = ::cuda::__as_bytes_vectorized_t<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>;
 
   /// Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
@@ -219,7 +221,7 @@ struct AgentReduceImpl
   // pointer to a primitive type
   // TODO(bgruber): we should not check for `is_pointer_v` but `contiguous_iterator` and unwrap it
   static constexpr bool ATTEMPT_VECTORIZATION =
-    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0)
+    (vec_size > 1) && (ITEMS_PER_THREAD % vec_size == 0) && ::cuda::__is_vectorizable<InputT>()
     && (::cuda::std::is_pointer_v<InputIteratorT>)
          // TODO(bgruber): remove the check for is_primitive<ValueT> in CCCL 4.0
          &&(is_primitive<InputT>::value || ::cuda::is_trivially_copyable_v<InputT>)

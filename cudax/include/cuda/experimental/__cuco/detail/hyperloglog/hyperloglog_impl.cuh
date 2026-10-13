@@ -28,6 +28,7 @@
 #include <cuda/__hierarchy/hierarchy_levels.h>
 #include <cuda/__launch/configuration.h>
 #include <cuda/__launch/launch.h>
+#include <cuda/__memory/as_bytes_vectorized.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/__memory_resource/legacy_pinned_memory_resource.h>
 #include <cuda/__runtime/api_wrapper.h>
@@ -223,10 +224,9 @@ public:
     }();
     if constexpr (__can_vectorize)
     {
-      const auto __ptr                  = ::cuda::std::to_address(__first);
-      constexpr auto __max_vector_bytes = 32;
+      const auto __ptr = ::cuda::std::to_address(__first);
       const auto __alignment =
-        1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | __max_vector_bytes);
+        1u << ::cuda::std::countr_zero(reinterpret_cast<::cuda::std::uintptr_t>(__ptr) | ::cuda::__max_vector_access);
       const auto __vector_size = __alignment / sizeof(__value_type);
 
       switch (__vector_size)

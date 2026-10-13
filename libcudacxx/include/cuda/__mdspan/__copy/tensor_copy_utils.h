@@ -25,7 +25,7 @@
 
 #  include <cuda/__mdspan/__copy/abs_integer.h>
 #  include <cuda/__mdspan/__copy/types.h>
-#  include <cuda/__mdspan/__copy/vector_access.h>
+#  include <cuda/__memory/as_bytes_vectorized.h>
 #  include <cuda/__memory/ptr_alignment.h>
 #  include <cuda/__memory/ranges_overlap.h>
 #  include <cuda/__utility/in_range.h>
@@ -89,8 +89,8 @@ __max_alignment(const __raw_tensor<_ExtentT, _StrideT, _Tp, _MaxRank>& __tensor)
 template <::cuda::std::size_t _VectorBytes, typename _Tp>
 using __reshape_vector_type _CCCL_NODEBUG =
   ::cuda::std::conditional_t<::cuda::std::is_const_v<_Tp>,
-                             const ::cuda::__vector_access_t<_VectorBytes>,
-                             ::cuda::__vector_access_t<_VectorBytes>>;
+                             const ::cuda::__as_bytes_vectorized_t<char, _VectorBytes>,
+                             ::cuda::__as_bytes_vectorized_t<char, _VectorBytes>>;
 
 //! @brief Reshape a raw tensor for vectorized access by widening the element type.
 //!

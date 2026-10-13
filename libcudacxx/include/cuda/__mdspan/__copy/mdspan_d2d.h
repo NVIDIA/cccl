@@ -37,9 +37,9 @@
 #  include <cuda/__mdspan/__copy/simplify_paired.h>
 #  include <cuda/__mdspan/__copy/tensor_copy_utils.h>
 #  include <cuda/__mdspan/__copy/tensor_query.h>
-#  include <cuda/__mdspan/__copy/vector_access.h>
 #  include <cuda/__mdspan/host_device_mdspan.h>
 #  include <cuda/__mdspan/traits.h>
+#  include <cuda/__memory/as_bytes_vectorized.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
 #  include <cuda/std/__algorithm/max.h>
