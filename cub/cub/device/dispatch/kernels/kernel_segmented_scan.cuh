@@ -528,9 +528,6 @@ public:
     const logical_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
     const logical_offset_t n_tiles         = ::cuda::ceil_div(items_per_block, logical_offset_t{tile_items});
 
-    mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, logical_offset_t{0}, items_per_block);
-    __syncthreads();
-
     using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
     augmented_scan_op_t augmented_scan_op{scan_op};
 
@@ -538,8 +535,11 @@ public:
     AccumT exclusive_prefix{};
     worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
 
-    for (logical_offset_t tile_id = 0; tile_id < n_tiles;)
+    for (logical_offset_t tile_id = 0; tile_id < n_tiles; ++tile_id)
     {
+      mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, tile_id, items_per_block);
+      __syncthreads();
+
       const logical_offset_t tile_begin = tile_id * tile_items;
       const logical_offset_t tile_end   = (::cuda::std::min) (tile_begin + tile_items, items_per_block);
 
@@ -666,13 +666,6 @@ public:
             d_out[indices[item]] = thread_values[item];
           }
         }
-      }
-
-      // The next tile's heads are marked here so that it needs no barrier of its own.
-      if (++tile_id < n_tiles)
-      {
-        mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, tile_id, items_per_block);
-        __syncthreads();
       }
     }
   }
