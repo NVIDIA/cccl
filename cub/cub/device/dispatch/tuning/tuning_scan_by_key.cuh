@@ -1129,6 +1129,7 @@ struct policy_selector
   type_t value_type;
   type_t accum_type;
   op_kind_t operation_t;
+  bool input_synthesizing = false;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto get_lookback_policy(::cuda::compute_capability cc) const
@@ -2050,11 +2051,18 @@ private:
 public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
   {
-    return ScanByKeyPolicy{ScanByKeyAlgorithm::lookback, get_lookback_policy(cc)};
+    auto policy                    = ScanByKeyPolicy{ScanByKeyAlgorithm::lookback, get_lookback_policy(cc)};
+    policy.lookback.load_algorithm = load_algorithm_for_input(policy.lookback.load_algorithm, input_synthesizing);
+    return policy;
   }
 };
 
-template <typename KeyT, typename AccumT, typename ValueT, typename ScanOpT>
+template <typename KeyT,
+          typename AccumT,
+          typename ValueT,
+          typename ScanOpT,
+          typename KeyIteratorT   = void,
+          typename ValueIteratorT = void>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const -> ScanByKeyPolicy
@@ -2070,7 +2078,8 @@ struct policy_selector_from_types
       classify_type<KeyT>,
       classify_type<ValueT>,
       classify_type<AccumT>,
-      classify_op<ScanOpT>}(cc);
+      classify_op<ScanOpT>,
+      ::cuda::__is_synthesizing_iterator_v<KeyIteratorT> && ::cuda::__is_synthesizing_iterator_v<ValueIteratorT>}(cc);
   }
 };
 

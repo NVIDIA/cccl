@@ -1247,7 +1247,8 @@ template <
     DeviceSegmentedSortKernelSource<PolicySelector, Order, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>,
   typename PartitionPolicySelector = detail::three_way_partition::policy_selector_from_types<
     cub::detail::it_value_t<THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>>,
-    three_way_partition::per_partition_offset_t>,
+    three_way_partition::per_partition_offset_t,
+    THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>>,
   typename PartitionKernelSource = detail::three_way_partition::DeviceThreeWayPartitionKernelSource<
     PartitionPolicySelector,
     THRUST_NS_QUALIFIER::counting_iterator<local_segment_index_t>,

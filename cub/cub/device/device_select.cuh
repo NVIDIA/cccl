@@ -1932,7 +1932,9 @@ struct DeviceSelect
 
     using default_policy_selector =
       detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
-                                                        detail::it_value_t<ValueInputIteratorT>>;
+                                                        detail::it_value_t<ValueInputIteratorT>,
+                                                        KeyInputIteratorT,
+                                                        ValueInputIteratorT>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return detail::unique_by_key::dispatch(
@@ -2636,7 +2638,9 @@ struct DeviceSelect
 
     using default_policy_selector =
       detail::unique_by_key::policy_selector_from_types<detail::it_value_t<KeyInputIteratorT>,
-                                                        detail::it_value_t<ValueInputIteratorT>>;
+                                                        detail::it_value_t<ValueInputIteratorT>,
+                                                        KeyInputIteratorT,
+                                                        ValueInputIteratorT>;
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       d_temp_storage, temp_storage_bytes, env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
         return detail::unique_by_key::dispatch(

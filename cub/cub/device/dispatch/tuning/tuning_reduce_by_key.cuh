@@ -1048,6 +1048,7 @@ struct policy_selector
   bool key_is_trivially_copyable;
   bool accum_is_primitive;
   bool op_is_primitive;
+  bool input_synthesizing = false;
 
 private:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
@@ -1766,7 +1767,9 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
     -> ReduceByKeyPolicy
   {
-    return ReduceByKeyPolicy{ReduceByKeyAlgorithm::lookback, get_lookback_policy(cc)};
+    auto policy     = ReduceByKeyPolicy{ReduceByKeyAlgorithm::lookback, get_lookback_policy(cc)};
+    policy.lookback = block_load_for_synthesized_input(policy.lookback, input_synthesizing, key_size + accum_size);
+    return policy;
   }
 };
 
@@ -1795,7 +1798,7 @@ struct policy_selector_from_hub
   }
 };
 
-template <class ReductionOpT, class AccumT, class KeyT>
+template <class ReductionOpT, class AccumT, class KeyT, class KeyIteratorT = void, class ValueIteratorT = void>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
@@ -1808,7 +1811,8 @@ struct policy_selector_from_types
       is_primitive_v<KeyT>,
       ::cuda::is_trivially_copyable_v<KeyT>,
       is_primitive_v<AccumT>,
-      basic_binary_op_v<ReductionOpT>}(cc);
+      basic_binary_op_v<ReductionOpT>,
+      ::cuda::__is_synthesizing_iterator_v<KeyIteratorT> && ::cuda::__is_synthesizing_iterator_v<ValueIteratorT>}(cc);
   }
 };
 } // namespace detail::reduce_by_key

@@ -342,7 +342,7 @@ public:
     using accum_t = detail::segmented_scan::
       deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -603,7 +603,7 @@ public:
     using accum_t = detail::segmented_scan::
       deduced_accum_t<scan_op_t, detail::InputValue<init_value_t>, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -864,7 +864,7 @@ public:
     using accum_t = detail::segmented_scan::
       deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -1142,7 +1142,7 @@ public:
     using accum_t = detail::segmented_scan::
       deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -1370,7 +1370,7 @@ public:
 
     using accum_t = detail::segmented_scan::deduced_accum_t<scan_op_t, NullType, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -1629,7 +1629,7 @@ public:
 
     using accum_t = detail::segmented_scan::deduced_accum_t<scan_op_t, NullType, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -1856,7 +1856,7 @@ public:
 
     using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, NullType, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -2127,7 +2127,7 @@ public:
 
     using accum_t = detail::segmented_scan::deduced_accum_t<ScanOpT, NullType, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -2391,7 +2391,7 @@ public:
     using accum_t = detail::segmented_scan::
       deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {
@@ -2673,7 +2673,7 @@ public:
     using accum_t = detail::segmented_scan::
       deduced_accum_t<ScanOpT, detail::InputValue<InitValueT>, detail::it_value_t<InputIteratorT>>;
 
-    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t>;
+    using default_policy_selector = detail::segmented_scan::policy_selector_from_types<accum_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* d_temp_storage, size_t& temp_storage_bytes, cudaStream_t stream) {

@@ -16,6 +16,7 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
@@ -101,6 +102,7 @@ struct policy_selector
   // size and alignment of accumulator type, that would be used by non-segmented scan
   int accum_size;
   int accum_align;
+  bool input_synthesizing = false;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const -> SegmentedScanPolicy
   {
@@ -126,7 +128,7 @@ struct policy_selector
     const auto scan_transposed_blockstore =
       large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
-    return SegmentedScanPolicy{SegmentedScanBlockPolicy{
+    auto policy                 = SegmentedScanPolicy{SegmentedScanBlockPolicy{
       block_scaled.threads_per_block,
       block_scaled.items_per_thread,
       scan_transposed_blockload,
@@ -134,6 +136,8 @@ struct policy_selector
       scan_transposed_blockstore,
       BLOCK_SCAN_WARP_SCANS,
       max_segments_per_block}};
+    policy.block.load_algorithm = load_algorithm_for_input(policy.block.load_algorithm, input_synthesizing);
+    return policy;
   }
 };
 
@@ -142,7 +146,7 @@ static_assert(segmented_scan_policy_selector<policy_selector>);
 #endif // _CCCL_HAS_CONCEPTS()
 
 // stateless version which can be passed to kernels
-template <typename AccumT>
+template <typename AccumT, typename InputIteratorT = void>
 struct policy_selector_from_types
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability cc) const
@@ -150,7 +154,7 @@ struct policy_selector_from_types
   {
     constexpr auto accum_size  = static_cast<int>(sizeof(AccumT));
     constexpr auto accum_align = static_cast<int>(alignof(AccumT));
-    return policy_selector{accum_size, accum_align}(cc);
+    return policy_selector{accum_size, accum_align, ::cuda::__is_synthesizing_iterator_v<InputIteratorT>}(cc);
   }
 };
 } // namespace detail::segmented_scan

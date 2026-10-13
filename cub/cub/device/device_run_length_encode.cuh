@@ -578,11 +578,12 @@ struct DeviceRunLengthEncode
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceRunLengthEncode::NonTrivialRuns");
 
-    using global_offset_t         = detail::choose_signed_offset_t<NumItemsT>;
-    using equality_op             = ::cuda::std::equal_to<>;
-    using length_t                = detail::non_void_value_t<LengthsOutputIteratorT, global_offset_t>;
-    using key_t                   = detail::it_value_t<InputIteratorT>;
-    using default_policy_selector = detail::rle::non_trivial_runs::policy_selector_from_types<length_t, key_t>;
+    using global_offset_t = detail::choose_signed_offset_t<NumItemsT>;
+    using equality_op     = ::cuda::std::equal_to<>;
+    using length_t        = detail::non_void_value_t<LengthsOutputIteratorT, global_offset_t>;
+    using key_t           = detail::it_value_t<InputIteratorT>;
+    using default_policy_selector =
+      detail::rle::non_trivial_runs::policy_selector_from_types<length_t, key_t, InputIteratorT>;
 
     return detail::dispatch_with_env_and_tuning<default_policy_selector>(
       env, [&](auto policy_selector, void* storage, size_t& bytes, auto stream) {
