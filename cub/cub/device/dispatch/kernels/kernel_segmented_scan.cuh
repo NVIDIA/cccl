@@ -510,12 +510,13 @@ public:
         {
           // Compared modulo 2^n, as positions are unsigned.
           const logical_offset_t work_begin = prefix - segment_size;
-          const bool contiguous =
-            (static_cast<logical_offset_t>(input_segment_begin) - work_begin
-             == static_cast<logical_offset_t>(temp_storage.block_input_begin))
-            && (static_cast<logical_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
-                == static_cast<logical_offset_t>(temp_storage.block_output_begin));
-          if (!contiguous)
+          const bool input_is_contiguous    = static_cast<logical_offset_t>(input_segment_begin) - work_begin
+                                           == static_cast<logical_offset_t>(temp_storage.block_input_begin);
+          const bool output_is_contiguous =
+            input_is_contiguous
+            && static_cast<logical_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
+                 == static_cast<logical_offset_t>(temp_storage.block_output_begin);
+          if (!input_is_contiguous || !output_is_contiguous)
           {
             ::cuda::atomic_ref<unsigned int, ::cuda::thread_scope_block>{temp_storage.contiguous_mask}.store(
               0u, ::cuda::std::memory_order_relaxed);
