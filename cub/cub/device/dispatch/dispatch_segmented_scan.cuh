@@ -90,7 +90,7 @@ struct device_segmented_scan_kernel_source
 template <typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OutputBeginOffsetIteratorT = reuse_input_begin>
-struct general_segments
+struct noncontiguous_segments
 {
   BeginOffsetIteratorT begin;
   EndOffsetIteratorT end;
@@ -98,19 +98,19 @@ struct general_segments
 };
 
 template <typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-using general_segments_offset_t = common_iterator_value_t<
+using noncontiguous_segments_offset_t = common_iterator_value_t<
   BeginOffsetIteratorT,
   EndOffsetIteratorT,
   ::cuda::std::conditional_t<::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>,
                              BeginOffsetIteratorT,
                              OutputBeginOffsetIteratorT>>;
 
-static_assert(::cuda::std::is_same_v<general_segments_offset_t<const int*, const long long*, reuse_input_begin>,
+static_assert(::cuda::std::is_same_v<noncontiguous_segments_offset_t<const int*, const long long*, reuse_input_begin>,
                                      common_iterator_value_t<const int*, const long long*, const int*>>);
 
 template <typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-[[nodiscard]] CUB_RUNTIME_FUNCTION auto
-output_begin_offsets(general_segments<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments)
+[[nodiscard]] CUB_RUNTIME_FUNCTION auto output_begin_offsets(
+  noncontiguous_segments<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments)
 {
   if constexpr (::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>)
   {
@@ -140,7 +140,7 @@ struct device_segmented_scan_load_balanced_kernel_source
   static constexpr bool publishes_contiguity = ::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>;
   using work_index_scan_state_t              = ScanTileState<work_index_value_t<OffsetT, publishes_contiguity>>;
   using scan_tile_state_t                    = ReduceByKeyScanTileState<AccumT, int>;
-  using addressing_t                         = general_addressing<BeginOffsetIteratorT, OutputBeginOffsetIteratorT>;
+  using addressing_t = noncontiguous_addressing<BeginOffsetIteratorT, OutputBeginOffsetIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(segmented_scan_load_balanced_init_kernel,
                            device_segmented_scan_load_balanced_init_kernel<work_index_scan_state_t>);
@@ -220,7 +220,7 @@ CUB_RUNTIME_FUNCTION cudaError_t plan_work_index(::cuda::std::int64_t num_segmen
   {
     return CubDebug(cudaErrorInvalidValue);
   }
-  // P[0..num_segments] and the contiguity flag
+  // num_segments + 1 prefix sums of the segment sizes, then the contiguity flag
   plan.index_bytes = static_cast<size_t>(num_segments + 2) * sizeof(work_t);
   if (plan.scan_tiles > 1)
   {
@@ -455,8 +455,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   return cudaSuccess;
 }
 
-// A block's exact work is unavailable here, so use the mean to target two tiles and avoid ending a block just past a
-// tile boundary. Scan several segments only when at least four fit.
+// Segments per block such that a block holds about two tiles of items at the mean segment size. Scan several segments
+// only when at least four fit.
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int segments_per_block_for_mean(
   int tile_items, int max_segments, ::cuda::std::int64_t num_segments, ::cuda::std::int64_t num_items) noexcept
 {
@@ -633,8 +633,9 @@ template <
   typename OutputBeginOffsetIteratorT,
   typename ScanOpT,
   typename InitValueT,
-  typename AccumT  = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
-  typename OffsetT = general_segments_offset_t<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT>,
+  typename AccumT = deduced_accum_t<ScanOpT, InitValueT, it_value_t<InputIteratorT>>,
+  typename OffsetT =
+    noncontiguous_segments_offset_t<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT>,
   typename PolicySelector             = policy_selector_from_types<AccumT>,
   typename LoadBalancedPolicySelector = load_balanced_policy_selector_from_types<AccumT>,
   typename KernelSource               = device_segmented_scan_load_balanced_kernel_source<
@@ -660,7 +661,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
   InputIteratorT d_in,
   OutputIteratorT d_out,
   ::cuda::std::int64_t num_segments,
-  general_segments<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments,
+  noncontiguous_segments<BeginOffsetIteratorT, EndOffsetIteratorT, OutputBeginOffsetIteratorT> segments,
   ScanOpT scan_op,
   InitValueT init_value,
   ::cuda::std::optional<::cuda::std::int64_t> num_items,

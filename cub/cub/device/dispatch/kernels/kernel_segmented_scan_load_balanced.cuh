@@ -217,7 +217,8 @@ template <typename OffsetT, bool PublishContiguity>
 using work_index_value_t =
   ::cuda::std::conditional_t<PublishContiguity, contiguity_work_index_value<OffsetT>, load_balanced_work_t<OffsetT>>;
 
-//! @brief Scans segment sizes into the work index P with a decoupled look-back. The grid also initializes the
+//! @brief Scans segment sizes with a decoupled look-back into the work index, where work_index[i] is the number of
+//!        items in the segments before segment i, for i in [0, num_segments]. The grid also initializes the
 //!        main kernel's tile state. scan_state is initialized by a previous launch when scan_tiles is greater
 //!        than one.
 //!
@@ -234,7 +235,7 @@ using work_index_value_t =
 //!   Tile status interface type of the main kernel
 //!
 //! @tparam PublishContiguity
-//!   Also store after P whether every segment is followed by a segment beginning at its end
+//!   Also store in work_index[num_segments + 1] whether every segment is followed by a segment beginning at its end
 //!
 template <typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
@@ -364,8 +365,8 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
 struct reuse_input_begin
 {};
 
-//! @brief Addresses of the load-balanced scan's work items: item w of segment i lies at
-//!        input_begin[i] + (w - P[i]) and output_begin[i] + (w - P[i]).
+//! @brief Addresses of the load-balanced scan's work items: work item w, in segment i, lies at
+//!        input_begin[i] + (w - work_index[i]) and output_begin[i] + (w - work_index[i]).
 //!
 //! @tparam InputBeginIteratorT
 //!   Random-access input iterator type for the beginning offsets of the input segments
@@ -375,7 +376,7 @@ struct reuse_input_begin
 //!   reuse_input_begin
 //!
 template <typename InputBeginIteratorT, typename OutputBeginIteratorT = reuse_input_begin>
-struct general_addressing
+struct noncontiguous_addressing
 {
   InputBeginIteratorT input_begin;
   OutputBeginIteratorT output_begin;
@@ -409,7 +410,7 @@ struct general_addressing
 //!   Scan inclusively although an initial value is provided
 //!
 //! @tparam AddressingT
-//!   Specialization of general_addressing
+//!   Specialization of noncontiguous_addressing
 //!
 template <typename PolicyGetter,
           typename InputIteratorT,
@@ -646,7 +647,8 @@ private:
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void discover_general_heads(work_t tile_begin, work_t tile_end, OffsetT num_segments)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  discover_noncontiguous_heads(work_t tile_begin, work_t tile_end, OffsetT num_segments)
   {
     if (threadIdx.x >= detail::warp_threads)
     {
@@ -696,7 +698,7 @@ private:
     finish_tile_deltas();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void load_general_tile(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void load_noncontiguous_tile(
     work_t tile_begin,
     work_t tile_end,
     OffsetT num_segments,
@@ -704,7 +706,7 @@ private:
     int (&entries)[items_per_thread])
   {
     const int valid_items = static_cast<int>(tile_end - tile_begin);
-    discover_general_heads(tile_begin, tile_end, num_segments);
+    discover_noncontiguous_heads(tile_begin, tile_end, num_segments);
     __syncthreads();
 
     auto& shared_head_flags = temp_storage.local.head_flags.Alias();
@@ -823,7 +825,7 @@ private:
         return;
       }
     }
-    load_general_tile(tile_begin, tile_end, num_segments, items, entries);
+    load_noncontiguous_tile(tile_begin, tile_end, num_segments, items, entries);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_contiguous_tile(
@@ -1188,7 +1190,7 @@ struct range_split
 //!   Scan inclusively although an initial value is provided
 //!
 //! @tparam AddressingT
-//!   Specialization of general_addressing
+//!   Specialization of noncontiguous_addressing
 //!
 template <typename LoadBalancedPolicySelector,
           typename InputIteratorT,

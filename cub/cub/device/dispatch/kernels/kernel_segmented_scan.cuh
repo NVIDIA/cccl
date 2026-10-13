@@ -434,7 +434,7 @@ public:
     }
   }
 
-  //! @brief Scan dynamically specified number of segments without a per-item search. Each tile of the block's
+  //! @brief Scan dynamically specified number of segments. Each tile of the block's
   //!        items has its segment starts marked once. A tile inside one segment takes scan_one_segment's
   //!        path; a tile holding a segment start scans value-and-flag pairs, loaded and stored as a block when
   //!        the block's segments are back to back in the input and the output, item by item otherwise.
@@ -543,7 +543,7 @@ public:
       const logical_offset_t tile_begin = tile_id * tile_items;
       const logical_offset_t tile_end   = (::cuda::std::min) (tile_begin + tile_items, items_per_block);
 
-      // tile_size <= TILE_ITEMS, casting to int is safe
+      // tile_size <= tile_items, casting to int is safe
       const int tile_size = static_cast<int>(tile_end - tile_begin);
 
       const OffsetT input_begin  = temp_storage.tile_input_begin;

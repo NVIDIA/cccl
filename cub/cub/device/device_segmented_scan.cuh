@@ -125,7 +125,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
         d_in,
         d_out,
         num_segments,
-        general_segments<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>{input_begin_offsets, input_end_offsets, {}},
+        noncontiguous_segments<BeginOffsetIteratorInputT, EndOffsetIteratorInputT>{
+          input_begin_offsets, input_end_offsets, {}},
         scan_op,
         init_value,
         num_items,
@@ -141,7 +142,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
         d_in,
         d_out,
         num_segments,
-        general_segments<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>{
+        noncontiguous_segments<BeginOffsetIteratorInputT, EndOffsetIteratorInputT, BeginOffsetIteratorOutputT>{
           input_begin_offsets, input_end_offsets, output_begin_offsets},
         scan_op,
         init_value,
