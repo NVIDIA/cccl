@@ -1564,6 +1564,21 @@ struct mixed_counter_histogram_tuning
   }
 };
 
+struct no_static_smem_histogram_tuning : histogram_tuning<128>
+{
+  _CCCL_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::HistogramPolicy
+  {
+    auto policy                                                  = histogram_tuning<128>::operator()(cc);
+    policy.max_privatized_static_smem_single_channel_bytes       = 0;
+    policy.max_privatized_dynamic_smem_single_channel_bytes      = 0;
+    policy.max_privatized_dynamic_smem_multi_channel_range_bytes = 0;
+    policy.max_privatized_dynamic_smem_2_channel_even_bytes      = 0;
+    policy.max_privatized_dynamic_smem_3_channel_even_bytes      = 0;
+    policy.max_privatized_dynamic_smem_4_channel_even_bytes      = 0;
+    return policy;
+  }
+};
+
 static_assert(
   cuda::std::is_same_v<
     cub::detail::histogram::local_counter_t<histogram_tuning_with_local_counter<128, unsigned int>, unsigned long long>,
@@ -1616,6 +1631,24 @@ CUB_TEST("DeviceHistogram::HistogramEven can be tuned", "[histogram][device]", C
   histogram_even(
     d_samples, thrust::raw_pointer_cast(d_histogram.data()), num_levels, lower_level, upper_level, num_samples, env);
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("DeviceHistogram supports policies without shared-memory privatization", "[histogram][device]", CUB_SMALL)
+{
+  c2h::device_vector<int> d_samples{0, 1, 2, 3};
+  c2h::device_vector<int> d_histogram(4, 0);
+  auto env = cuda::execution::tune(no_static_smem_histogram_tuning{});
+
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    5,
+    0,
+    4,
+    static_cast<int>(d_samples.size()),
+    env);
+
+  REQUIRE(d_histogram == c2h::host_vector<int>{1, 1, 1, 1});
 }
 
 CUB_TEST("DeviceHistogram::HistogramRange can be tuned", "[histogram][device]", CUB_SMALL, block_sizes)

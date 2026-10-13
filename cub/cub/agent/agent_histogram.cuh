@@ -149,8 +149,6 @@ struct AgentHistogram
       : policy.gmem;
   static constexpr int privatized_static_smem_bins =
     uses_static_smem ? policy.max_privatized_static_smem_single_channel_bytes / int{sizeof(CounterT)} : 0;
-  static_assert(!uses_static_smem || privatized_static_smem_bins > 0,
-                "Static-SMEM privatization requires room for at least one bin");
   static constexpr int vec_size                    = privatization_policy.vec_size;
   static constexpr int threads_per_block           = privatization_policy.threads_per_block;
   static constexpr int items_per_thread            = privatization_policy.items_per_thread;
@@ -269,7 +267,7 @@ struct AgentHistogram
       {
         if (bins[pixel] != bins[pixel + 1])
         {
-          if (bins[pixel] >= 0)
+          if (bins[pixel] >= 0 && bins[pixel] < num_privatized_bins[ch])
           {
             atomicAdd_block(privatized_histogram + bins[pixel], accumulator);
           }
@@ -280,7 +278,7 @@ struct AgentHistogram
       }
 
       // Last pixel
-      if (bins[items_per_thread - 1] >= 0)
+      if (bins[items_per_thread - 1] >= 0 && bins[items_per_thread - 1] < num_privatized_bins[ch])
       {
         atomicAdd_block(privatized_histogram + bins[items_per_thread - 1], accumulator);
       }
@@ -302,7 +300,7 @@ struct AgentHistogram
         CounterT* privatized_histogram = PrivatizedHistogram(ch);
         int bin                        = -1;
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
-        if (bin >= 0)
+        if (bin >= 0 && bin < num_privatized_bins[ch])
         {
           atomicAdd_block(privatized_histogram + bin, 1);
         }

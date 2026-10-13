@@ -231,9 +231,8 @@ public:
   {
     // SM107 adds dedicated single-channel HistogramRange sweep tuning for 16-bit samples and non-floating-point
     // 32-bit samples. Other cases retain the established SM90 policy.
-    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && num_channels == 1
-        && num_active_channels == 1 && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive
-        && !is_even)
+    if (cc == ::cuda::compute_capability{10, 7} && num_channels == 1 && num_active_channels == 1
+        && counter_size_bytes == int{sizeof(::cuda::std::uint32_t)} && sample_is_primitive && !is_even)
     {
       auto sweep = HistogramPrivatizationPolicy{384, t_scale(16), 4, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false};
       if (sample_size_bytes == 2)
