@@ -369,6 +369,16 @@ public:
       __local_native_handle(),
       static_cast<::cuda::std::uint32_t>(__transaction_count_update));
   }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __remote_complete_tx(::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    ::cuda::ptx::mbarrier_complete_tx(
+      ::cuda::ptx::sem_relaxed,
+      ::cuda::ptx::scope_cluster,
+      ::cuda::ptx::space_cluster,
+      __cluster_native_handle(),
+      static_cast<::cuda::std::uint32_t>(__transaction_count_update));
+  }
 };
 
 static_assert(sizeof(__shared_mbarrier_impl<thread_scope_block>) == sizeof(::cuda::std::uint64_t),

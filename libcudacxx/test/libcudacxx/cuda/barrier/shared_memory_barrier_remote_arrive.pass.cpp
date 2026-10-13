@@ -16,7 +16,6 @@
 // Cluster operations are unavailable in tile code.
 
 #include <cuda/barrier>
-#include <cuda/ptx>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -39,6 +38,10 @@ static_assert(
   cuda::std::is_same_v<
     decltype(cuda::std::declval<cuda::shared_memory_barrier<cuda::thread_scope_cluster>&>().remote_expect_tx(0)),
     void>);
+static_assert(
+  cuda::std::is_same_v<
+    decltype(cuda::std::declval<cuda::shared_memory_barrier<cuda::thread_scope_cluster>&>().remote_complete_tx(0)),
+    void>);
 
 template <int Id, bool WithTransactions, bool SeparateExpectation = false>
 TEST_DEVICE_FUNC void test_remote_arrive(int arrivals, int transactions = 0)
@@ -54,7 +57,6 @@ TEST_DEVICE_FUNC void test_remote_arrive(int arrivals, int transactions = 0)
     new ((void*) bar) cuda::shared_memory_barrier<cuda::thread_scope_cluster>;
     init(bar, arrivals);
     value = 0;
-    cuda::ptx::fence_mbarrier_init(cuda::ptx::sem_release, cuda::ptx::scope_cluster);
   }
   cluster.sync();
 
@@ -75,12 +77,7 @@ TEST_DEVICE_FUNC void test_remote_arrive(int arrivals, int transactions = 0)
       }
       if (transactions != 0)
       {
-        cuda::ptx::mbarrier_complete_tx(
-          cuda::ptx::sem_relaxed,
-          cuda::ptx::scope_cluster,
-          cuda::ptx::space_cluster,
-          cuda::device::barrier_native_handle(*remote_bar),
-          static_cast<cuda::std::uint32_t>(transactions));
+        remote_bar->remote_complete_tx(transactions);
       }
     }
     else if (arrivals == 1)

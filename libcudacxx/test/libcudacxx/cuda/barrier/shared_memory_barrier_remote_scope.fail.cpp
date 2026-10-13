@@ -21,6 +21,7 @@ TEST_DEVICE_FUNC void test_block_scope(cuda::shared_memory_barrier<>& bar)
   bar.remote_arrive();
   bar.remote_arrive_tx(1, 0);
   bar.remote_expect_tx(0);
+  bar.remote_complete_tx(0);
 }
 
 int main(int, char**)

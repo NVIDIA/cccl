@@ -670,6 +670,25 @@ public:
     __unsupported_storage();
   }
 
+  //! @brief Signals transaction completion on a cluster-shared barrier.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. It has relaxed
+  //! semantics at cluster scope and does not perform an arrival. It only updates the transaction count; it does not
+  //! wait for or order memory operations. Transactions completed by hardware must not also be completed by this call.
+  //!
+  //! @param[in] __transaction_count_update Number of completed transactions.
+  _CCCL_HOST_DEVICE_API void remote_complete_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_complete_tx requires cluster scope");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_complete_tx(__transaction_count_update); return;))
+
+    __unsupported_storage();
+  }
+
   //! @brief Tests whether an arrival token's phase completed and returns the status.
   //!
   //! This performs a single completion check.
