@@ -44,6 +44,16 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
+// A function rather than a generic lambda, which crashes GCC 7
+template <typename DispatchOffsetT, typename OffsetT, typename DispatchT>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+dispatch_as(DispatchT& dispatch, OffsetT num_row_pixels, OffsetT num_rows, ::cuda::std::size_t row_stride_samples)
+{
+  return dispatch(static_cast<DispatchOffsetT>(num_row_pixels),
+                  static_cast<DispatchOffsetT>(num_rows),
+                  static_cast<DispatchOffsetT>(row_stride_samples));
+}
+
 // Calls `dispatch` with `int` sizes, or with 64-bit sizes if the input spans `INT_MAX` bytes or more
 template <typename SampleT, bool MayExceedOffsetT, typename OffsetT, typename DispatchT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_offset_type(
@@ -51,12 +61,6 @@ template <typename SampleT, bool MayExceedOffsetT, typename OffsetT, typename Di
 {
   constexpr auto int_max        = (::cuda::std::numeric_limits<int>::max)();
   const auto row_stride_samples = row_stride_bytes / sizeof(SampleT);
-  const auto dispatch_as        = [&](auto offset) {
-    using offset_t = decltype(offset);
-    return dispatch(static_cast<offset_t>(num_row_pixels),
-                    static_cast<offset_t>(num_rows),
-                    static_cast<offset_t>(row_stride_samples));
-  };
   // 64-bit kernels are only instantiated if the sizes can describe more than INT_MAX samples
   if constexpr (MayExceedOffsetT || ::cuda::std::cmp_greater((::cuda::std::numeric_limits<OffsetT>::max)(), int_max))
   {
@@ -67,10 +71,10 @@ template <typename SampleT, bool MayExceedOffsetT, typename OffsetT, typename Di
     }
     if (::cuda::std::cmp_greater_equal(num_bytes.value, int_max))
     {
-      return dispatch_as(::cuda::std::int64_t{});
+      return dispatch_as<::cuda::std::int64_t>(dispatch, num_row_pixels, num_rows, row_stride_samples);
     }
   }
-  return dispatch_as(int{});
+  return dispatch_as<int>(dispatch, num_row_pixels, num_rows, row_stride_samples);
 }
 } // namespace detail::histogram
 
@@ -123,7 +127,7 @@ private:
             typename OffsetT,
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t multi_histogram_even_impl(
-    void* d_temp_storage,
+    [[maybe_unused]] void* d_temp_storage,
     ::cuda::std::size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
@@ -135,7 +139,10 @@ private:
     ::cuda::std::size_t row_stride_bytes,
     const EnvT& env)
   {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant, when !TwoPhase */
     _CCCL_NVTX_RANGE_SCOPE_IF(!TwoPhase || d_temp_storage, "cub::DeviceHistogram::MultiHistogramEven");
+    _CCCL_DIAG_POP
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.
@@ -186,7 +193,7 @@ private:
             typename OffsetT,
             typename EnvT>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t multi_histogram_range_impl(
-    void* d_temp_storage,
+    [[maybe_unused]] void* d_temp_storage,
     ::cuda::std::size_t& temp_storage_bytes,
     SampleIteratorT d_samples,
     ::cuda::std::array<CounterT*, NumActiveChannels> d_histogram,
@@ -197,7 +204,10 @@ private:
     ::cuda::std::size_t row_stride_bytes,
     const EnvT& env)
   {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant, when !TwoPhase */
     _CCCL_NVTX_RANGE_SCOPE_IF(!TwoPhase || d_temp_storage, "cub::DeviceHistogram::MultiHistogramRange");
+    _CCCL_DIAG_POP
 
     using SampleT = cub::detail::it_value_t<SampleIteratorT>;
     // Signed byte samples must not use the pass-thru path: negative values would yield negative privatized bins.

@@ -923,9 +923,9 @@ CUB_TEST(
 CUB_TEST("DeviceHistogram::MultiHistogram* sample positions exceed INT_MAX", "[histogram][device]", CUB_SMALL)
 {
   // The pixel count fits in int, but the 2^31 sample positions do not
-  constexpr int num_pixels      = 1 << 29;
-  constexpr int channels        = 4;
-  constexpr int active_channels = 3;
+  static constexpr int num_pixels = 1 << 29;
+  constexpr int channels          = 4;
+  constexpr int active_channels   = 3;
 
   // Channel c sees (4 * pixel + c) % 256, the 64 values congruent to c modulo 4, each num_pixels / 64 times
   const auto expected = [](int channel) {
