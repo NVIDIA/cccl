@@ -966,21 +966,13 @@ public:
     {
       if (__result.__state == detail::__equal_result::__unequal)
       {
-        switch (__self.__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
-          __key, __self.__extract_key(__bucket_slots[__i()])))
+        const auto __state = __self.__predicate.template operator()<detail::__is_insert::__yes, _SupportsErase>(
+          __key, __self.__extract_key(__bucket_slots[__i()]));
+        // The insertion predicate handles duplicate policy and never returns __empty.
+        __result.__state = __state;
+        if (__state != detail::__equal_result::__unequal)
         {
-          case detail::__equal_result::__available:
-            __result = __bucket_probing_results{detail::__equal_result::__available, __i()};
-            break;
-          case detail::__equal_result::__equal:
-            if constexpr (!__allows_duplicates)
-            {
-              __result = __bucket_probing_results{detail::__equal_result::__equal, __i()};
-            }
-            break;
-          case detail::__equal_result::__unequal:
-          case detail::__equal_result::__empty:
-            break;
+          __result.__intra_bucket_index = __i();
         }
       }
     }
