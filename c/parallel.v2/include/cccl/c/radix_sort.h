@@ -81,7 +81,7 @@ CCCL_C_API CUresult cccl_device_radix_sort_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config);
+  const cccl_build_config* config);
 
 CCCL_C_API CUresult cccl_device_radix_sort_load(cccl_device_radix_sort_build_result_t* build, const char* ctk_path);
 
