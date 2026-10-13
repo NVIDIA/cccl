@@ -35,8 +35,12 @@ static_assert(
   cuda::std::is_same_v<
     decltype(cuda::std::declval<cuda::shared_memory_barrier<cuda::thread_scope_cluster>&>().remote_arrive_tx(1, 0)),
     void>);
+static_assert(
+  cuda::std::is_same_v<
+    decltype(cuda::std::declval<cuda::shared_memory_barrier<cuda::thread_scope_cluster>&>().remote_expect_tx(0)),
+    void>);
 
-template <int Id, bool WithTransactions>
+template <int Id, bool WithTransactions, bool SeparateExpectation = false>
 TEST_DEVICE_FUNC void test_remote_arrive(int arrivals, int transactions = 0)
 {
   alignas(cuda::shared_memory_barrier<cuda::thread_scope_cluster>)
@@ -60,7 +64,15 @@ TEST_DEVICE_FUNC void test_remote_arrive(int arrivals, int transactions = 0)
     *cluster.map_shared_rank(&value, 0) = 42;
     if constexpr (WithTransactions)
     {
-      remote_bar->remote_arrive_tx(arrivals, transactions);
+      if constexpr (SeparateExpectation)
+      {
+        remote_bar->remote_expect_tx(transactions);
+        remote_bar->remote_arrive(arrivals);
+      }
+      else
+      {
+        remote_bar->remote_arrive_tx(arrivals, transactions);
+      }
       if (transactions != 0)
       {
         cuda::ptx::mbarrier_complete_tx(
@@ -107,6 +119,9 @@ int main(int, char**)
       test_remote_arrive<2, true>(1, 0);
       test_remote_arrive<3, true>(1, 16);
       test_remote_arrive<4, true>(3, 16);
+      test_remote_arrive<5, true, true>(1, 16);
+      test_remote_arrive<6, true, true>(3, 16);
+      test_remote_arrive<7, true, true>(1, 0);
     }))
   return 0;
 }

@@ -604,6 +604,25 @@ public:
     __unsupported_storage();
   }
 
+  //! @brief Increases the expected transaction count of a cluster-shared barrier.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. It has relaxed
+  //! semantics at cluster scope and does not perform an arrival. The expectation must be established before the
+  //! barrier phase completes.
+  //!
+  //! @param[in] __transaction_count_update Transaction count update.
+  _CCCL_HOST_DEVICE_API void remote_expect_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_expect_tx requires cluster scope");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_expect_tx(__transaction_count_update); return;))
+
+    __unsupported_storage();
+  }
+
   //! @brief Arrives at the current phase and increases the expected transaction count.
   //!
   //! The returned token may be discarded when waits use an explicitly tracked phase number.

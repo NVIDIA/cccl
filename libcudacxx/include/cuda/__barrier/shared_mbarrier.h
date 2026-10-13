@@ -320,6 +320,16 @@ public:
     return __arrive(__arrive_count_update);
   }
 
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __remote_expect_tx(::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    ::cuda::ptx::mbarrier_expect_tx(
+      ::cuda::ptx::sem_relaxed,
+      ::cuda::ptx::scope_cluster,
+      ::cuda::ptx::space_cluster,
+      __cluster_native_handle(),
+      static_cast<::cuda::std::uint32_t>(__transaction_count_update));
+  }
+
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   __remote_arrive_tx(::cuda::std::ptrdiff_t __arrive_count_update, ::cuda::std::ptrdiff_t __transaction_count_update)
   {
