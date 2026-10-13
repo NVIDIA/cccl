@@ -15,6 +15,7 @@
 #include <cuda/std/algorithm>
 #include <cuda/std/array>
 #include <cuda/std/bit>
+#include <cuda/std/cmath>
 #include <cuda/std/type_traits>
 #include <cuda/type_traits>
 
@@ -388,7 +389,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       }
       else
       {
-        return static_cast<int>((sample - min) * fp_scales[channel]);
+        return (cs::min) (static_cast<int>((sample - min) * fp_scales[channel]), n - 2);
       }
       _CCCL_UNREACHABLE();
     };
@@ -685,6 +686,29 @@ CUB_TEST("DeviceHistogram::HistogramEven sample iterator", "[histogram_even][dev
 CUB_TEST("DeviceHistogram::Histogram* regression NVIDIA/cub#479", "[histogram][device]", CUB_SMALL)
 {
   test_even_and_range<float, 4, 3, int>(12, 7, 1920, 1080);
+}
+
+CUB_TEST("DeviceHistogram::HistogramEven clamps a rounded upper-bound bin", "[histogram_even][device]", CUB_SMALL)
+{
+  using sample_t         = float;
+  constexpr int num_bins = 4600;
+  constexpr sample_t min = -6999471.5F;
+  constexpr sample_t max = 1501504.5F;
+  const sample_t sample  = cuda::std::nextafter(max, min);
+
+  c2h::device_vector<sample_t> d_samples{sample};
+  c2h::device_vector<int> d_histogram(num_bins, 0);
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_bins + 1,
+    min,
+    max,
+    static_cast<int>(d_samples.size()));
+
+  c2h::host_vector<int> expected(num_bins, 0);
+  expected.back() = 1;
+  REQUIRE(d_histogram == expected);
 }
 
 CUB_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogram][device]", CUB_SMALL)
