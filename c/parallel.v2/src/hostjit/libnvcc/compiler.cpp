@@ -243,6 +243,75 @@ static void setDefaultOptions(CompilerOptions& options)
 #endif
 }
 
+// Highest PTX ISA version LLVM's NVPTX backend knows about (see NVPTX.td). Asking for a newer
+// `+ptxNN` feature is not an error, but it is silently ignored.
+static constexpr int llvm_max_ptx_version = 90;
+
+// Highest PTX ISA version (major * 10 + minor) that the nvJitLink we are running against can
+// assemble, derived from its version, or 0 if it cannot be determined.
+//
+// This is the same thing nvcc and NVRTC do implicitly: they target the PTX ISA of their own
+// toolkit. CUB/libcu++ are compiled against that toolkit's CUDA version macros and use PTX
+// features accordingly (e.g. cp.async.bulk to .shared::cta needs PTX 8.6 even on sm_90), so
+// the PTX we emit must be at least as new as what the headers assume -- and no newer than
+// what ptxas, inside nvJitLink, accepts.
+static int jitLinkMaxPtxVersion()
+{
+  static const int cached = [] {
+    unsigned int major = 0;
+    unsigned int minor = 0;
+    if (nvJitLinkVersion(&major, &minor) != NVJITLINK_SUCCESS)
+    {
+      return 0;
+    }
+    int ptx = 0;
+    if (major == 12)
+    {
+      // CTK 12.0-12.5 -> PTX 8.0-8.5, 12.6 -> 8.5, 12.8 -> 8.7, 12.9 -> 8.8
+      constexpr int ptx_for_12_minor[] = {80, 81, 82, 83, 84, 85, 85, 86, 87, 88};
+      constexpr unsigned int count     = sizeof(ptx_for_12_minor) / sizeof(ptx_for_12_minor[0]);
+      ptx                              = ptx_for_12_minor[minor < count ? minor : count - 1];
+    }
+    else if (major >= 13)
+    {
+      ptx = 90; // 13.0 -> 9.0; later versions are clamped to what LLVM supports below
+    }
+    return ptx > llvm_max_ptx_version ? llvm_max_ptx_version : ptx;
+  }();
+  return cached;
+}
+
+// PTX ISA version (major * 10 + minor) to target for a given SM.
+//
+// The floor is 7.8: some generated device code uses features added in PTX 7.6
+// (e.g. `bmsk`), so older versions can fail to assemble even on sm_75/sm_80.
+// Newer SMs have a minimum PTX version enforced by LLVM (a hard error, not a
+// diagnostic): sm_100 needs 8.6, sm_120 needs 8.7, sm_110 needs 9.0.
+//
+// On top of that floor we use the PTX ISA of the toolkit (see jitLinkMaxPtxVersion).
+static int ptxVersionForSm(int sm_version)
+{
+  int floor = 78;
+  if (sm_version >= 120)
+  {
+    floor = 87;
+  }
+  else if (sm_version >= 110)
+  {
+    floor = 90;
+  }
+  else if (sm_version >= 100)
+  {
+    floor = 86;
+  }
+  else if (sm_version >= 90)
+  {
+    floor = 80;
+  }
+  const int toolkit = jitLinkMaxPtxVersion();
+  return toolkit > floor ? toolkit : floor;
+}
+
 static bool pathExists(const std::filesystem::path& path)
 {
   std::error_code ec;
@@ -950,22 +1019,7 @@ public:
 
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    int ptx_version = ptxVersionForSm(config.sm_version);
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
@@ -1352,22 +1406,7 @@ public:
     std::string source_file  = temp_dir + "/" + input_file;
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    int ptx_version = ptxVersionForSm(config.sm_version);
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
@@ -1961,19 +2000,7 @@ public:
 
     if (kind == LIBNVCC_PCH_DEVICE)
     {
-      int ptx_version = 78;
-      if (config.sm_version >= 120)
-      {
-        ptx_version = 87;
-      }
-      else if (config.sm_version >= 100)
-      {
-        ptx_version = 85;
-      }
-      else if (config.sm_version >= 90)
-      {
-        ptx_version = 80;
-      }
+      int ptx_version = ptxVersionForSm(config.sm_version);
 
       arg_strings.push_back("-triple");
       arg_strings.push_back("nvptx64-nvidia-cuda");
@@ -2575,4 +2602,9 @@ extern "C" libnvccResult libnvccGetProgramLog(libnvccProgram prog, char* log)
   }
   std::memcpy(log, prog->log.c_str(), prog->log.size() + 1);
   return LIBNVCC_SUCCESS;
+}
+
+extern "C" int libnvccPtxVersionForSm(int sm_version)
+{
+  return libnvcc::ptxVersionForSm(sm_version);
 }
