@@ -221,11 +221,11 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
   // extra = {force_inclusive (u8), init_kind (u32)}
-  std::vector<char> extra(sizeof(uint8_t) + sizeof(uint32_t));
-  uint8_t force_inclusive_u8 = build_ptr->force_inclusive ? 1 : 0;
-  uint32_t init_kind_u32     = static_cast<uint32_t>(build_ptr->init_kind);
-  std::memcpy(extra.data(), &force_inclusive_u8, sizeof(force_inclusive_u8));
-  std::memcpy(extra.data() + sizeof(force_inclusive_u8), &init_kind_u32, sizeof(init_kind_u32));
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put<uint8_t>(build_ptr->force_inclusive ? 1 : 0)
+      .put<uint32_t>(build_ptr->init_kind)
+      .take();
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_SCAN,
@@ -234,10 +234,7 @@ try
     extra,
     build_ptr->payload,
     build_ptr->payload_size);
-  auto* buf = new char[blob.size()];
-  std::memcpy(buf, blob.data(), blob.size());
-  *out_buf  = buf;
-  *out_size = blob.size();
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -255,14 +252,13 @@ try
   }
   cccl::serialization_v2::parsed_blob parsed =
     cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_SCAN, buf, size);
-  if (parsed.extra.size() != sizeof(uint8_t) + sizeof(uint32_t))
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  const auto force_inclusive_u8 = extra.get<uint8_t>();
+  const auto init_kind_u32      = extra.get<uint32_t>();
+  if (!extra.ok())
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  uint8_t force_inclusive_u8;
-  uint32_t init_kind_u32;
-  std::memcpy(&force_inclusive_u8, parsed.extra.data(), sizeof(force_inclusive_u8));
-  std::memcpy(&init_kind_u32, parsed.extra.data() + sizeof(force_inclusive_u8), sizeof(init_kind_u32));
 
   cccl_device_scan_build_result_t result{};
   result.cc = parsed.cc;

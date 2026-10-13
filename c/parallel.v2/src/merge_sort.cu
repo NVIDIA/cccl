@@ -240,22 +240,13 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  // extra = {keys_only (u32), key_type (size,alignment,type: 2xu64+u32), item_type (2xu64+u32)}
-  std::vector<char> extra;
-  auto append_type = [&](cccl_type_info t) {
-    uint64_t size = t.size, alignment = t.alignment;
-    uint32_t type = static_cast<uint32_t>(t.type);
-    extra.insert(extra.end(), reinterpret_cast<char*>(&size), reinterpret_cast<char*>(&size) + sizeof(size));
-    extra.insert(
-      extra.end(), reinterpret_cast<char*>(&alignment), reinterpret_cast<char*>(&alignment) + sizeof(alignment));
-    extra.insert(extra.end(), reinterpret_cast<char*>(&type), reinterpret_cast<char*>(&type) + sizeof(type));
-  };
-  uint32_t keys_only_u32 = static_cast<uint32_t>(build_ptr->keys_only);
-  extra.insert(extra.end(),
-               reinterpret_cast<char*>(&keys_only_u32),
-               reinterpret_cast<char*>(&keys_only_u32) + sizeof(keys_only_u32));
-  append_type(build_ptr->key_type);
-  append_type(build_ptr->item_type);
+  // extra = {keys_only (u32), key_type (size,alignment,type: 2xu64+u32), item_type (same)}
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put<uint32_t>(build_ptr->keys_only)
+      .put_type(build_ptr->key_type)
+      .put_type(build_ptr->item_type)
+      .take();
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_MERGE_SORT,
@@ -265,10 +256,7 @@ try
     build_ptr->payload,
     build_ptr->payload_size);
 
-  auto* buf = new char[blob.size()];
-  std::memcpy(buf, blob.data(), blob.size());
-  *out_buf  = buf;
-  *out_size = blob.size();
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
 
   return CUDA_SUCCESS;
 }
@@ -290,37 +278,25 @@ try
   cccl::serialization_v2::parsed_blob parsed =
     cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_MERGE_SORT, buf, size);
 
-  constexpr size_t type_sz  = sizeof(uint64_t) * 2 + sizeof(uint32_t);
-  constexpr size_t extra_sz = sizeof(uint32_t) + type_sz * 2;
-  if (parsed.extra.size() != extra_sz || parsed.symbol_names.size() != 1)
+  if (parsed.symbol_names.size() != 1)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-
-  size_t pos = 0;
-  uint32_t keys_only_u32;
-  std::memcpy(&keys_only_u32, parsed.extra.data() + pos, sizeof(keys_only_u32));
-  pos += sizeof(keys_only_u32);
-
-  auto read_type = [&](cccl_type_info& out) {
-    uint64_t type_size, alignment;
-    uint32_t type;
-    std::memcpy(&type_size, parsed.extra.data() + pos, sizeof(type_size));
-    pos += sizeof(type_size);
-    std::memcpy(&alignment, parsed.extra.data() + pos, sizeof(alignment));
-    pos += sizeof(alignment);
-    std::memcpy(&type, parsed.extra.data() + pos, sizeof(type));
-    pos += sizeof(type);
-    out =
-      cccl_type_info{static_cast<size_t>(type_size), static_cast<size_t>(alignment), static_cast<cccl_type_enum>(type)};
-  };
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  const auto keys_only_u32 = extra.get<uint32_t>();
+  const auto key_type      = extra.get_type();
+  const auto item_type     = extra.get_type();
+  if (!extra.ok())
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
   // Commit-on-success: build a local result{} and only assign to
   // *build_ptr after every read succeeds, so *build_ptr is left unchanged
   // on failure (matches v1's deserialize contract).
   cccl_device_merge_sort_build_result_t result{};
-  read_type(result.key_type);
-  read_type(result.item_type);
+  result.key_type  = key_type;
+  result.item_type = item_type;
 
   result.cc = parsed.cc;
   cccl::detail::copy_bytes(

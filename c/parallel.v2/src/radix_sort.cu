@@ -378,25 +378,14 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  // extra = {key_type (size,alignment,type: 3xu64), value_type (3xu64), order (u32), keys_only (u32)}
-  std::vector<char> extra;
-  auto append_type = [&](cccl_type_info t) {
-    uint64_t size = t.size, alignment = t.alignment;
-    uint32_t type = static_cast<uint32_t>(t.type);
-    extra.insert(extra.end(), reinterpret_cast<char*>(&size), reinterpret_cast<char*>(&size) + sizeof(size));
-    extra.insert(
-      extra.end(), reinterpret_cast<char*>(&alignment), reinterpret_cast<char*>(&alignment) + sizeof(alignment));
-    extra.insert(extra.end(), reinterpret_cast<char*>(&type), reinterpret_cast<char*>(&type) + sizeof(type));
-  };
-  append_type(build_ptr->key_type);
-  append_type(build_ptr->value_type);
-  uint32_t order_u32     = static_cast<uint32_t>(build_ptr->order);
-  uint32_t keys_only_u32 = static_cast<uint32_t>(build_ptr->keys_only);
-  extra.insert(
-    extra.end(), reinterpret_cast<char*>(&order_u32), reinterpret_cast<char*>(&order_u32) + sizeof(order_u32));
-  extra.insert(extra.end(),
-               reinterpret_cast<char*>(&keys_only_u32),
-               reinterpret_cast<char*>(&keys_only_u32) + sizeof(keys_only_u32));
+  // extra = {key_type (size,alignment,type: 2xu64+u32), value_type (same), order (u32), keys_only (u32)}
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put_type(build_ptr->key_type)
+      .put_type(build_ptr->value_type)
+      .put<uint32_t>(build_ptr->order)
+      .put<uint32_t>(build_ptr->keys_only)
+      .take();
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_RADIX_SORT,
@@ -405,10 +394,7 @@ try
     extra,
     build_ptr->payload,
     build_ptr->payload_size);
-  auto* buf = new char[blob.size()];
-  std::memcpy(buf, blob.data(), blob.size());
-  *out_buf  = buf;
-  *out_size = blob.size();
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
@@ -427,33 +413,23 @@ try
   }
   cccl::serialization_v2::parsed_blob parsed =
     cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_RADIX_SORT, buf, size);
-  constexpr size_t type_sz  = sizeof(uint64_t) * 2 + sizeof(uint32_t);
-  constexpr size_t extra_sz = type_sz * 2 + sizeof(uint32_t) * 2;
-  if (parsed.extra.size() != extra_sz || parsed.symbol_names.size() != 2)
+  if (parsed.symbol_names.size() != 2)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  const auto key_type      = extra.get_type();
+  const auto value_type    = extra.get_type();
+  const auto order_u32     = extra.get<uint32_t>();
+  const auto keys_only_u32 = extra.get<uint32_t>();
+  if (!extra.ok())
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  size_t pos     = 0;
-  auto read_type = [&](cccl_type_info& out) {
-    uint64_t size, alignment;
-    uint32_t type;
-    std::memcpy(&size, parsed.extra.data() + pos, sizeof(size));
-    pos += sizeof(size);
-    std::memcpy(&alignment, parsed.extra.data() + pos, sizeof(alignment));
-    pos += sizeof(alignment);
-    std::memcpy(&type, parsed.extra.data() + pos, sizeof(type));
-    pos += sizeof(type);
-    out = cccl_type_info{static_cast<size_t>(size), static_cast<size_t>(alignment), static_cast<cccl_type_enum>(type)};
-  };
-
   cccl_device_radix_sort_build_result_t result{};
-  read_type(result.key_type);
-  read_type(result.value_type);
-  uint32_t order_u32, keys_only_u32;
-  std::memcpy(&order_u32, parsed.extra.data() + pos, sizeof(order_u32));
-  pos += sizeof(order_u32);
-  std::memcpy(&keys_only_u32, parsed.extra.data() + pos, sizeof(keys_only_u32));
+  result.key_type   = key_type;
+  result.value_type = value_type;
 
   result.cc = parsed.cc;
   cccl::detail::copy_bytes(

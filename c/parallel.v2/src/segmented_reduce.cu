@@ -187,10 +187,7 @@ try
     build->payload,
     build->payload_size);
 
-  auto* buf = new char[blob.size()];
-  std::memcpy(buf, blob.data(), blob.size());
-  *out_buf  = buf;
-  *out_size = blob.size();
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)

@@ -339,28 +339,16 @@ try
     return CUDA_ERROR_INVALID_VALUE;
   }
 
-  // extra = {counter_type (size,alignment,type: 3xu64/u32), level_type (3x...),
-  //          sample_type (3x...), num_channels (i32), num_active_channels (i32)}
-  std::vector<char> extra;
-  auto append_type = [&](cccl_type_info t) {
-    uint64_t size = t.size, alignment = t.alignment;
-    uint32_t type = static_cast<uint32_t>(t.type);
-    extra.insert(extra.end(), reinterpret_cast<char*>(&size), reinterpret_cast<char*>(&size) + sizeof(size));
-    extra.insert(
-      extra.end(), reinterpret_cast<char*>(&alignment), reinterpret_cast<char*>(&alignment) + sizeof(alignment));
-    extra.insert(extra.end(), reinterpret_cast<char*>(&type), reinterpret_cast<char*>(&type) + sizeof(type));
-  };
-  append_type(build->counter_type);
-  append_type(build->level_type);
-  append_type(build->sample_type);
-  int32_t num_channels_i32        = build->num_channels;
-  int32_t num_active_channels_i32 = build->num_active_channels;
-  extra.insert(extra.end(),
-               reinterpret_cast<char*>(&num_channels_i32),
-               reinterpret_cast<char*>(&num_channels_i32) + sizeof(num_channels_i32));
-  extra.insert(extra.end(),
-               reinterpret_cast<char*>(&num_active_channels_i32),
-               reinterpret_cast<char*>(&num_active_channels_i32) + sizeof(num_active_channels_i32));
+  // extra = {counter_type, level_type, sample_type (size,alignment,type: 2xu64+u32 each),
+  //          num_channels (i32), num_active_channels (i32)}
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put_type(build->counter_type)
+      .put_type(build->level_type)
+      .put_type(build->sample_type)
+      .put<int32_t>(build->num_channels)
+      .put<int32_t>(build->num_active_channels)
+      .take();
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_HISTOGRAM,
@@ -370,10 +358,7 @@ try
     build->payload,
     build->payload_size);
 
-  auto* buf = new char[blob.size()];
-  std::memcpy(buf, blob.data(), blob.size());
-  *out_buf  = buf;
-  *out_size = blob.size();
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
 
   return CUDA_SUCCESS;
 }
@@ -397,35 +382,17 @@ try
   // Commit-on-success: build a local result{} and only assign to
   // *build_ptr after every read succeeds, so *build_ptr is left unchanged
   // on failure (matches v1's deserialize contract).
-  constexpr size_t type_sz  = sizeof(uint64_t) * 2 + sizeof(uint32_t);
-  constexpr size_t extra_sz = type_sz * 3 + sizeof(int32_t) * 2;
-  if (parsed.extra.size() != extra_sz)
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  cccl_device_histogram_build_result_t result{};
+  result.counter_type         = extra.get_type();
+  result.level_type           = extra.get_type();
+  result.sample_type          = extra.get_type();
+  const auto num_channels_i32 = extra.get<int32_t>();
+  const auto num_active_i32   = extra.get<int32_t>();
+  if (!extra.ok())
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-
-  size_t pos     = 0;
-  auto read_type = [&](cccl_type_info& out) {
-    uint64_t size, alignment;
-    uint32_t type;
-    std::memcpy(&size, parsed.extra.data() + pos, sizeof(size));
-    pos += sizeof(size);
-    std::memcpy(&alignment, parsed.extra.data() + pos, sizeof(alignment));
-    pos += sizeof(alignment);
-    std::memcpy(&type, parsed.extra.data() + pos, sizeof(type));
-    pos += sizeof(type);
-    out = cccl_type_info{static_cast<size_t>(size), static_cast<size_t>(alignment), static_cast<cccl_type_enum>(type)};
-  };
-
-  cccl_device_histogram_build_result_t result{};
-  read_type(result.counter_type);
-  read_type(result.level_type);
-  read_type(result.sample_type);
-  int32_t num_channels_i32, num_active_channels_i32;
-  std::memcpy(&num_channels_i32, parsed.extra.data() + pos, sizeof(num_channels_i32));
-  pos += sizeof(num_channels_i32);
-  std::memcpy(&num_active_channels_i32, parsed.extra.data() + pos, sizeof(num_active_channels_i32));
-  pos += sizeof(num_active_channels_i32);
 
   result.cc = parsed.cc;
   cccl::detail::copy_bytes(
@@ -433,7 +400,7 @@ try
   result.jit_compiler        = nullptr;
   result.histogram_fn        = nullptr;
   result.num_channels        = num_channels_i32;
-  result.num_active_channels = num_active_channels_i32;
+  result.num_active_channels = num_active_i32;
 
   *build_ptr = result;
   return CUDA_SUCCESS;

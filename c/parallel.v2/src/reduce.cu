@@ -323,21 +323,17 @@ try
   }
 
   // extra = {accumulator_size (u64), determinism (u32), init_kind (u32)}
-  std::vector<char> extra(sizeof(uint64_t) + 2 * sizeof(uint32_t));
-  uint64_t accum_size_le  = build->accumulator_size;
-  uint32_t determinism_le = static_cast<uint32_t>(build->determinism);
-  uint32_t init_kind_le   = static_cast<uint32_t>(build->init_kind);
-  std::memcpy(extra.data(), &accum_size_le, sizeof(accum_size_le));
-  std::memcpy(extra.data() + sizeof(accum_size_le), &determinism_le, sizeof(determinism_le));
-  std::memcpy(extra.data() + sizeof(accum_size_le) + sizeof(determinism_le), &init_kind_le, sizeof(init_kind_le));
+  std::vector<char> extra =
+    cccl::serialization_v2::extra_writer{}
+      .put<uint64_t>(build->accumulator_size)
+      .put<uint32_t>(build->determinism)
+      .put<uint32_t>(build->init_kind)
+      .take();
 
   std::vector<char> blob = cccl::serialization_v2::write_blob(
     CCCL_SERIALIZATION_V2_ALGO_REDUCE, build->cc, {"cccl_jit_reduce"}, extra, build->payload, build->payload_size);
 
-  auto* buf = new char[blob.size()];
-  std::memcpy(buf, blob.data(), blob.size());
-  *out_buf  = buf;
-  *out_size = blob.size();
+  cccl::serialization_v2::release_blob(blob, out_buf, out_size);
 
   return CUDA_SUCCESS;
 }
@@ -361,16 +357,14 @@ try
   // Commit-on-success: build a local result{} and only assign to
   // *build_ptr after every read succeeds, so *build_ptr is left unchanged
   // on failure (matches v1's deserialize contract).
-  if (parsed.extra.size() != sizeof(uint64_t) + 2 * sizeof(uint32_t))
+  cccl::serialization_v2::extra_reader extra(parsed.extra);
+  const auto accum_size      = extra.get<uint64_t>();
+  const auto determinism_raw = extra.get<uint32_t>();
+  const auto init_kind_raw   = extra.get<uint32_t>();
+  if (!extra.ok())
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
-  uint64_t accum_size;
-  uint32_t determinism_raw;
-  uint32_t init_kind_raw;
-  std::memcpy(&accum_size, parsed.extra.data(), sizeof(accum_size));
-  std::memcpy(&determinism_raw, parsed.extra.data() + sizeof(accum_size), sizeof(determinism_raw));
-  std::memcpy(&init_kind_raw, parsed.extra.data() + sizeof(accum_size) + sizeof(determinism_raw), sizeof(init_kind_raw));
 
   cccl_device_reduce_build_result_t result{};
   result.cc = parsed.cc;
