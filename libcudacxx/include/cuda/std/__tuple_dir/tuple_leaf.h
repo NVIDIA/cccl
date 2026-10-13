@@ -20,18 +20,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
-#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/tuple_constraints.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_indices.h>
-#include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_final.h>
@@ -43,7 +41,9 @@
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 

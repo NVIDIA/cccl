@@ -802,6 +802,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - For floating-point types, the minimum follows ``cuda::std::fmin``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -914,6 +916,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - For floating-point types, the minimum follows ``cuda::std::fmin``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
@@ -1446,6 +1450,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - For floating-point types, the maximum follows ``cuda::std::fmax``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1555,6 +1561,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - For floating-point types, the maximum follows ``cuda::std::fmax``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
