@@ -6099,6 +6099,7 @@ UNITTEST("effect")
     EXPECT(v == 7);
     EXPECT(what == "seen");
   }
+#  ifdef _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
   // on a status: sees the code; the status is left unchanged
   {
     cudaError_t seen = cudaSuccess;
@@ -6109,6 +6110,7 @@ UNITTEST("effect")
     EXPECT(r == cudaErrorInvalidValue);
     EXPECT(seen == cudaErrorInvalidValue);
   }
+#  endif
   // an effect may not stand after a value-chooser: subst(1) & effect is rejected (static); the
   // legal order runs the effect first
   {
@@ -6121,7 +6123,8 @@ UNITTEST("effect")
         ->*[]() -> int {
       throw ::std::runtime_error("x");
     };
-    EXPECT(v == 3 && hits == 1);
+    EXPECT(v == 3);
+    EXPECT(hits == 1);
   }
 #  endif
 };
