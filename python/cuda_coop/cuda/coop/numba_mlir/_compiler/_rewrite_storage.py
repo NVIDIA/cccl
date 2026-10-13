@@ -1475,21 +1475,33 @@ class _StorageRewrite:
     def _validate_temp_storage_uses(
         self, func_ir: ir.FunctionIR, matches: dict[ir.Assign, _RewriteMatch]
     ) -> None:
-        """Reject storage descriptors that escape their compile-time role.
+        """Require TempStorage descriptors to be used only for storage planning.
 
-        After recording all constructors and matches, inspect every use
-        through its alias provenance. Allow simple alias, cast, and phi
-        assignments and one ``temp_storage=`` keyword on a recognized
-        primitive; descriptor values cannot be ordinary runtime operands,
-        returned objects, or arbitrary call arguments. Subscripted-provider
-        syntax is not an accepted descriptor use. Every canonical constructor
-        must have a primitive consumer.
+        A descriptor describes scratch requirements; it is not a runtime
+        array. An "escape" is a use such as ``storage[0]``, ``len(storage)``,
+        or ``return storage`` that would expose the descriptor as runtime
+        data. The rewrite later replaces it with an internal shared-memory
+        view or ``None``, depending on its consumers. Rejecting these uses
+        prevents user code from depending on that implementation detail.
 
-        Validation runs after device-helper inlining. If a call that passes a
-        descriptor to a helper remains, report that the helper was not
-        inlined. Perform these checks before compiling providers so invalid
-        descriptor escapes fail without materialization. The scan updates the
-        current block lookup state; its caller restores it.
+        After recording all constructors and matches, follow aliases to
+        check every use. Allow simple alias, cast, and phi assignments and
+        one ``temp_storage=`` keyword on a recognized primitive.
+        Subscripted-provider syntax and other call arguments are not
+        accepted descriptor uses. Every canonical constructor must have a
+        primitive consumer, so an
+        otherwise unused ``storage = coop.TempStorage()`` is also rejected.
+
+        Validation runs after device-helper inlining. Passing a descriptor
+        to a helper is supported when inlining exposes its uses in the
+        kernel; a surviving helper call receives an inlining diagnostic.
+
+        Check the entire function before preparing provider bundles or
+        compiling provider invocables ("materialization"). Even a descriptor
+        with a valid primitive consumer may have an invalid later use, as
+        below. Reject that use before compiling the otherwise valid call.
+        The scan updates the current block lookup state; its caller restores
+        it.
 
         Parameters
         ----------
@@ -1507,8 +1519,26 @@ class _StorageRewrite:
         ------
         CoopSinglePhaseRewriteError
             A storage argument lacks local constructor provenance, a
-            descriptor escapes to runtime, or a constructor has no
+            descriptor has an unsupported use, or a constructor has no
             primitive consumer.
+
+        Examples
+        --------
+        With ``from cuda import coop``, this kernel body contains a valid
+        primitive consumer followed by an invalid descriptor read::
+
+            block = coop.this_block()
+            storage = coop.TempStorage()
+            items = coop.ThreadData(items_per_thread=1)
+            coop.load(
+                block, source, items,
+                algorithm="transpose", temp_storage=storage,
+            )
+            output[0] = storage[0]  # Rejected: storage is a descriptor.
+
+        Replacing the last line with ``output[0] = len(storage)`` or
+        ``storage[0] = 0`` is also invalid, even though ``load`` consumes
+        the descriptor correctly.
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
