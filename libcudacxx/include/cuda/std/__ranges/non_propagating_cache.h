@@ -21,15 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/concepts.h> // indirectly_readable
-#include <cuda/std/__iterator/iterator_traits.h> // iter_reference_t
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/forward.h>
 

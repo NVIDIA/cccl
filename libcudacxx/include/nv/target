@@ -247,6 +247,8 @@ using detail::provides;
 
 #endif // C++  && !defined(__CUDACC_RTC__)
 
+// IWYU pragma: begin_exports
 #include <nv/detail/__target_macros>
+// IWYU pragma: end_exports
 
 #endif // __NV_TARGET_H
