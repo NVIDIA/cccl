@@ -2538,7 +2538,7 @@ __handle_via_exception(_P& __policy, const _Status __status, const ::cuda::std::
   {
     const auto __exception = status_traits<_Status>::to_exception(__status, __loc);
     return __interpret_status<_Final>(__status, [&]() -> decltype(auto) {
-      return __policy(&__exception, __loc, __fn);
+      return __call_hook(__policy, &__exception, __loc, __fn);
     });
   }
   else
@@ -2552,7 +2552,7 @@ __handle_via_exception(_P& __policy, const _Status __status, const ::cuda::std::
       _CCCL_TRY
       {
         return __interpret_status<_Final>(__status, [&]() -> decltype(auto) {
-          return __policy(&__current, __loc, __fn);
+          return __call_hook(__policy, &__current, __loc, __fn);
         });
       }
       _CCCL_CATCH (const ::std::exception& __again)
