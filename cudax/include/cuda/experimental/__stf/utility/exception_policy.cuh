@@ -3515,7 +3515,7 @@ auto returned(_X&& __x)
 template <class _L,
           class _R,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
-auto operator&(_L&& __l, _R&& __r)
+[[nodiscard]] auto operator&(_L&& __l, _R&& __r)
 {
   return detail::__policy_and{
     detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
@@ -3523,7 +3523,7 @@ auto operator&(_L&& __l, _R&& __r)
 
 //! @brief Left identity of `&`: `noop & p` is `__normalize(p)` when that result is sink-tagged.
 template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_R>, int> = 0>
-auto operator&(noop_t, _R&& __r)
+[[nodiscard]] auto operator&(noop_t, _R&& __r)
 {
   return detail::__normalize(::cuda::std::forward<_R>(__r));
 }
@@ -3533,7 +3533,7 @@ template <class _L,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, noop_t>
                                      && detail::__normalizes_to_exception_sink_v<_L>,
                                    int> = 0>
-auto operator&(_L&& __l, noop_t)
+[[nodiscard]] auto operator&(_L&& __l, noop_t)
 {
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
@@ -3546,7 +3546,7 @@ auto operator&(_L&& __l, noop_t)
 template <class _L,
           class _R,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
-auto operator|(_L&& __l, _R&& __r)
+[[nodiscard]] auto operator|(_L&& __l, _R&& __r)
 {
   return detail::__policy_or{
     detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
@@ -3554,7 +3554,7 @@ auto operator|(_L&& __l, _R&& __r)
 
 //! @brief Left identity of `|`: `fwd | p` is `__normalize(p)` when that result is sink-tagged.
 template <class _R, ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_R>, int> = 0>
-auto operator|(fwd_t, _R&& __r)
+[[nodiscard]] auto operator|(fwd_t, _R&& __r)
 {
   return detail::__normalize(::cuda::std::forward<_R>(__r));
 }
@@ -3564,7 +3564,7 @@ template <class _L,
           ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_L>, fwd_t>
                                      && detail::__normalizes_to_exception_sink_v<_L>,
                                    int> = 0>
-auto operator|(_L&& __l, fwd_t)
+[[nodiscard]] auto operator|(_L&& __l, fwd_t)
 {
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
@@ -3580,7 +3580,7 @@ template <class _P,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<::cuda::std::remove_cvref_t<_P>>
                                      || detail::__has_any_capability<::cuda::std::remove_cvref_t<_P>>,
                                    int> = 0>
-auto operator*(_P&& __p, int __n)
+[[nodiscard]] auto operator*(_P&& __p, int __n)
 {
   _CCCL_ASSERT(__n >= 0, "repetition requires a non-negative count");
   using _Np = detail::__normalized_t<_P>;
@@ -3592,7 +3592,7 @@ template <class _P,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<::cuda::std::remove_cvref_t<_P>>
                                      || detail::__has_any_capability<::cuda::std::remove_cvref_t<_P>>,
                                    int> = 0>
-auto operator*(int __n, _P&& __p)
+[[nodiscard]] auto operator*(int __n, _P&& __p)
 {
   return ::cuda::std::forward<_P>(__p) * __n;
 }
