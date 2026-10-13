@@ -17,6 +17,7 @@
 #endif // no system header
 
 #include <cub/block/block_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>

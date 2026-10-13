@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>

@@ -22,6 +22,7 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 

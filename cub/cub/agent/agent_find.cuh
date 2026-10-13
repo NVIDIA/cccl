@@ -4,6 +4,7 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
