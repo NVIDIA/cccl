@@ -389,7 +389,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       }
       else
       {
-        return static_cast<int>((sample - min) * fp_scales[channel]);
+        return (cs::min) (static_cast<int>((sample - min) * fp_scales[channel]), n - 2);
       }
       _CCCL_UNREACHABLE();
     };
@@ -704,7 +704,7 @@ CUB_TEST("DeviceHistogram::Histogram* regression NVIDIA/cub#479", "[histogram][d
   test_even_and_range<float, 4, 3, int>(12, 7, 1920, 1080);
 }
 
-CUB_TEST("DeviceHistogram::HistogramEven rejects a rounded upper-bound bin", "[histogram_even][device]", CUB_SMALL)
+CUB_TEST("DeviceHistogram::HistogramEven clamps a rounded upper-bound bin", "[histogram_even][device]", CUB_SMALL)
 {
   using sample_t         = float;
   constexpr int num_bins = 4600;
@@ -722,7 +722,9 @@ CUB_TEST("DeviceHistogram::HistogramEven rejects a rounded upper-bound bin", "[h
     max,
     static_cast<int>(d_samples.size()));
 
-  REQUIRE(d_histogram == c2h::host_vector<int>(num_bins, 0));
+  c2h::host_vector<int> expected(num_bins, 0);
+  expected.back() = 1;
+  REQUIRE(d_histogram == expected);
 }
 
 CUB_TEST("DeviceHistogram::Histogram* down-conversion size_t to int", "[histogram][device]", CUB_SMALL)

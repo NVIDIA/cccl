@@ -20,6 +20,7 @@
 
 #include <cuda/__numeric/sub_overflow.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__numeric/reduce.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
@@ -170,7 +171,11 @@ struct Transforms
       } fraction;
 
       // Used when CommonT is floating-point as an optimization.
-      CommonT reciprocal;
+      struct ReciprocalT
+      {
+        CommonT value;
+        int bins;
+      } reciprocal;
     };
 
     CommonT m_max; // Max sample level (exclusive)
@@ -184,7 +189,8 @@ struct Transforms
       // The active scale representation is assigned below.
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
-      result.reciprocal = static_cast<T>(static_cast<T>(num_levels - 1) / static_cast<T>(max_level - min_level));
+      result.reciprocal.value = static_cast<T>(static_cast<T>(num_levels - 1) / static_cast<T>(max_level - min_level));
+      result.reciprocal.bins  = num_levels - 1;
       return result;
     }
 
@@ -219,9 +225,10 @@ struct Transforms
       // The active scale representation is assigned below.
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
+      result.reciprocal.bins = num_levels - 1;
       NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
-                        (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
-                        (result.reciprocal = __float2half(
+                        (result.reciprocal.value = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
+                        (result.reciprocal.value = __float2half(
                            static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
       return result;
     }
@@ -234,10 +241,11 @@ struct Transforms
       // The active scale representation is assigned below.
       // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       ScaleT result;
+      result.reciprocal.bins = num_levels - 1;
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_80,
-        (result.reciprocal = __hdiv(__float2bfloat16(num_levels - 1), __hsub(max_level, min_level));),
-        (result.reciprocal = __float2bfloat16(
+        (result.reciprocal.value = __hdiv(__float2bfloat16(num_levels - 1), __hsub(max_level, min_level));),
+        (result.reciprocal.value = __float2bfloat16(
            static_cast<float>(num_levels - 1) / (__bfloat162float(max_level) - __bfloat162float(min_level)));))
       return result;
     }
@@ -287,22 +295,26 @@ struct Transforms
       {
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_53,
-          (return static_cast<int>(::__hmul(::__hsub(sample, min_level), scale.reciprocal));),
-          (return static_cast<int>(
-                    (::__half2float(sample) - ::__half2float(min_level)) * ::__half2float(scale.reciprocal));));
+          (return (::cuda::std::min) (static_cast<int>(::__hmul(::__hsub(sample, min_level), scale.reciprocal.value)),
+                                      scale.reciprocal.bins - 1);),
+          (return (::cuda::std::min) (static_cast<int>((::__half2float(sample) - ::__half2float(min_level))
+                                                       * ::__half2float(scale.reciprocal.value)),
+                                      scale.reciprocal.bins - 1);));
       }
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
       else if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
       {
         // Compute in float on all architectures: bfloat16 cannot represent all bin indices beyond 256.
-        return static_cast<int>(
-          (::__bfloat162float(sample) - ::__bfloat162float(min_level)) * ::__bfloat162float(scale.reciprocal));
+        return (::cuda::std::min) (static_cast<int>((::__bfloat162float(sample) - ::__bfloat162float(min_level))
+                                                    * ::__bfloat162float(scale.reciprocal.value)),
+                                   scale.reciprocal.bins - 1);
       }
 #endif // _CCCL_HAS_NVBF16()
       else if constexpr (::cuda::std::is_floating_point_v<T>)
       {
-        return static_cast<int>((sample - min_level) * scale.reciprocal);
+        return (::cuda::std::min) (static_cast<int>((sample - min_level) * scale.reciprocal.value),
+                                   scale.reciprocal.bins - 1);
       }
       else
       {
