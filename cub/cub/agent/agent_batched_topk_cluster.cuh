@@ -1087,7 +1087,7 @@ private:
       {
         const int drain_stage = ::cuda::std::countr_zero(stream_inflight_mask);
         wait_stage(drain_stage);
-        stream_inflight_mask &= ~(::cuda::std::uint32_t{1} << drain_stage);
+        stream_inflight_mask &= stream_inflight_mask - 1;
       }
       stream_is_forward = !stream_is_forward;
     }
@@ -2804,14 +2804,17 @@ private:
     // blocks use to reach the leader (its per-pass `state` and the Step 2 histogram reduction target) are hoisted here,
     // once per segment, rather than repeated every pass. `leader_state32` is always mapped -- the single-CTA path runs
     // in a size-1 cluster, so rank 0 maps to itself and the state reads take the same `ld.shared::cluster` path as a
-    // wide cluster. `leader_hist` is skipped there because the single CTA never reduces (`cluster_block_rank ==
-    // leader_rank`).
+    // wide cluster. `leader_hist` remapping is skipped there because the single CTA never reduces (`cluster_block_rank
+    // == leader_rank`).
     const ::cuda::std::uint32_t state_smem32 =
       static_cast<::cuda::std::uint32_t>(__cvta_generic_to_shared(&temp_storage.state));
     asm("mapa.shared::cluster.u32 %0, %1, %2;"
         : "=r"(layout.leader_state32)
         : "r"(state_smem32), "r"(layout.leader_rank));
-    if (!is_single_cta)
+    // Keep a shared-memory pointer on both paths. Leaving the unused single-CTA value undefined can increase
+    // register pressure in the multi-CTA path.
+    layout.leader_hist = temp_storage.hist;
+    if (!is_single_cta) [[unlikely]]
     {
       layout.leader_hist = static_cast<offset_t*>(__cluster_map_shared_rank(temp_storage.hist, layout.leader_rank));
     }
