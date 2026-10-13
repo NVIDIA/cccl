@@ -14,9 +14,12 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <cccl/c/serialization.h>
+#include <cccl/c/types.h>
 
 namespace cccl::serialization_v2
 {
@@ -204,5 +207,95 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
   result.payload_size = static_cast<size_t>(psize);
 
   return result;
+}
+
+// Packs an algorithm's `extra` metadata span for write_blob(). Fields are
+// written in call order with no padding, so the byte layout is exactly the
+// sequence of put() calls. Pair with extra_reader, which must read the same
+// sequence back.
+class extra_writer
+{
+public:
+  // Fixed-width arithmetic types only (cast enums explicitly at the call site
+  // so the on-disk width never depends on the enum's underlying type).
+  template <typename T>
+  extra_writer& put(T value)
+  {
+    static_assert(std::is_arithmetic_v<T>, "extra_writer::put takes fixed-width arithmetic types");
+    const char* p = reinterpret_cast<const char*>(&value);
+    bytes_.insert(bytes_.end(), p, p + sizeof(T));
+    return *this;
+  }
+
+  // {size (u64), alignment (u64), type (u32)}
+  extra_writer& put_type(const cccl_type_info& t)
+  {
+    return put<uint64_t>(t.size).put<uint64_t>(t.alignment).put<uint32_t>(static_cast<uint32_t>(t.type));
+  }
+
+  std::vector<char> take()
+  {
+    return std::move(bytes_);
+  }
+
+private:
+  std::vector<char> bytes_;
+};
+
+// Reads back what extra_writer wrote. Never throws: reading past the end
+// yields zeros and latches a failure, so a caller can read every field and
+// then check ok() once (which also requires the span to be fully consumed).
+class extra_reader
+{
+public:
+  explicit extra_reader(const std::vector<char>& bytes)
+      : bytes_(bytes)
+  {}
+  // The reader only views the bytes; refuse temporaries that would dangle.
+  extra_reader(std::vector<char>&&) = delete;
+
+  template <typename T>
+  T get()
+  {
+    static_assert(std::is_arithmetic_v<T>, "extra_reader::get takes fixed-width arithmetic types");
+    T value{};
+    if (sizeof(T) > bytes_.size() - pos_)
+    {
+      failed_ = true;
+      return value;
+    }
+    std::memcpy(&value, bytes_.data() + pos_, sizeof(T));
+    pos_ += sizeof(T);
+    return value;
+  }
+
+  cccl_type_info get_type()
+  {
+    const auto size      = get<uint64_t>();
+    const auto alignment = get<uint64_t>();
+    const auto type      = get<uint32_t>();
+    return cccl_type_info{static_cast<size_t>(size), static_cast<size_t>(alignment), static_cast<cccl_type_enum>(type)};
+  }
+
+  // True iff every read succeeded and no bytes are left over.
+  bool ok() const
+  {
+    return !failed_ && pos_ == bytes_.size();
+  }
+
+private:
+  const std::vector<char>& bytes_;
+  size_t pos_  = 0;
+  bool failed_ = false;
+};
+
+// Hands a finished blob to the caller as a `new char[]` (the buffer the
+// *_serialize C API documents as caller-owned).
+inline void release_blob(const std::vector<char>& blob, void** out_buf, size_t* out_size)
+{
+  auto* buf = new char[blob.size()];
+  std::memcpy(buf, blob.data(), blob.size());
+  *out_buf  = buf;
+  *out_size = blob.size();
 }
 } // namespace cccl::serialization_v2
