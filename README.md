@@ -320,18 +320,22 @@ When using a CCCL repository checkout, pass the following options to `nvrtcCompi
 
 ```text
 --std=c++17
---include-path=/path/to/cccl/libcudacxx/include
---include-path=/path/to/cccl/cub
---include-path=/path/to/cccl/thrust
---include-path=/path/to/cuda/include
+--include-path=/<path-to-cccl>/libcudacxx/include
+--include-path=/<path-to-cccl>/cub
+--include-path=/<path-to-cccl>/thrust
+--include-path=/<path-to-cuda>/include
 ```
 
 Use `--std=c++20` instead if your program requires C++20, and select a GPU architecture supported by your CUDA Toolkit with `--gpu-architecture`.
 These include paths match those used by the [CUB NVRTC test](cub/test/catch2_test_nvrtc.cu).
 
-To use the CCCL headers bundled with CUDA Toolkit 13 or later instead of a repository checkout, add `/path/to/cuda/include/cccl` to NVRTC's include paths as well as `/path/to/cuda/include`.
-Earlier CUDA Toolkits place the CCCL headers directly under `/path/to/cuda/include`.
+To use the CCCL headers bundled with CUDA Toolkit 13 or later instead of a repository checkout, add `/<path-to-cuda>/include/cccl` to NVRTC's include paths as well as `/<path-to-cuda>/include`.
+Earlier CUDA Toolkits place the CCCL headers directly under `/<path-to-cuda>/include`.
 Keep includes in your source as `<cuda/...>`, `<cub/...>`, or `<thrust/...>`; do not add `cccl/` to them.
+
+Starting with CUDA Toolkit 13.3, NVRTC can also extract and use its bundled CUDA and CCCL headers by passing `--use-bundled-headers=/<path-to-extract-headers>` to `nvrtcCompileProgram`.
+This option installs the headers into the specified directory if needed and automatically adds the appropriate include paths.
+See the [NVRTC bundled headers documentation](https://docs.nvidia.com/cuda/nvrtc/index.html#bundled-headers-cuda-13-3) for details.
 
 An example of using CCCL with NVRTC is tracked in [#5032](https://github.com/NVIDIA/cccl/issues/5032).
 
