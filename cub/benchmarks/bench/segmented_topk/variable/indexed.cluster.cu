@@ -22,7 +22,7 @@
 #endif
 
 #ifndef TUNE_REQUIREMENT
-#  define TUNE_REQUIREMENT 1 // deterministic + prefer-smaller-index (forward): the safe, least-surprising default
+#  define TUNE_REQUIREMENT 2 // deterministic + prefer-larger-index (reverse)
 #endif
 
 #include "indexed_common.cuh"

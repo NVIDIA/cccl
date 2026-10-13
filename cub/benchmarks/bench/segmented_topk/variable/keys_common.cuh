@@ -270,12 +270,15 @@ void decode_style_variable_topk_keys(
     return;
   }
 
-  const auto num_segments                                     = static_cast<int>(state.get_int64("NumSegments"));
-  const thrust::device_vector<segment_size_t> d_segment_sizes = generate(
-    static_cast<std::size_t>(num_segments),
-    bit_entropy::_1_000,
-    static_cast<segment_size_t>(K),
-    static_cast<segment_size_t>(MaxSegmentSize));
+  const auto num_segments = static_cast<int>(state.get_int64("NumSegments"));
+  // Maximum-length segments exercise the multi-CTA paths even when variable lengths would collapse to one CTA.
+  const thrust::device_vector<segment_size_t> d_segment_sizes =
+    state.get_string("SegmentSizes") == "maximum"
+      ? thrust::device_vector<segment_size_t>(num_segments, MaxSegmentSize)
+      : generate(static_cast<std::size_t>(num_segments),
+                 bit_entropy::_1_000,
+                 static_cast<segment_size_t>(K),
+                 static_cast<segment_size_t>(MaxSegmentSize));
   const auto input_elements  = thrust::reduce(d_segment_sizes.begin(), d_segment_sizes.end());
   const auto output_elements = static_cast<std::size_t>(num_segments) * K;
 
@@ -324,4 +327,5 @@ NVBENCH_BENCH_TYPES(decode_style_variable_topk_keys, NVBENCH_TYPE_AXES(key_type_
   .set_name("decode_style_variable_topk_keys")
   .set_type_axes_names({"KeyT{ct}", "MaxSegmentSize{ct}", "K{ct}"})
   .add_int64_axis("NumSegments", {1, 2, 4, 8, 16, 32})
+  .add_string_axis("SegmentSizes", {"variable", "maximum"})
   .add_string_axis("Pattern", valid_patterns);
