@@ -58,7 +58,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 private:
   using _BaseT = __tuple_impl<__make_tuple_indices_t<sizeof...(_Tp)>, _Tp...>;
 
-  _BaseT __base_;
+  _BaseT32 __base_;
 
 #if _CCCL_COMPILER(MSVC)
   // MSVC crashes when the disambiguation functions are called directly inside an enable_if while synthesizing
