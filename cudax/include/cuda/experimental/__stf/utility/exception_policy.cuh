@@ -230,6 +230,13 @@ inline constexpr bool __needs_future_v = false;
 template <class _P>
 inline constexpr bool __produces_value_v = false;
 
+// Whether the policy always diverges (unwind, abort, terminate): its hook never returns and never
+// passes the failure on. Not detectable from the hook's type, since unwind and fwd both rethrow,
+// so the leaves are marked and `&` carries the mark when its left side always reaches the right.
+// Rule 1b: such a policy cannot stand on the left of `|` or be repeated.
+template <class _P>
+inline constexpr bool __diverges_v = false;
+
 // Whether the policy contains a selector that matches exceptions by type, or failing statuses by
 // value or type (rule 4: each must match a kind the operand can produce).
 template <class _P>
@@ -593,6 +600,18 @@ struct unwind_t
     _CCCL_UNREACHABLE();
   }
 };
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail
+{
+template <>
+inline constexpr bool __diverges_v<abort_t> = true;
+template <>
+inline constexpr bool __diverges_v<terminate_t> = true;
+template <>
+inline constexpr bool __diverges_v<unwind_t> = true;
+} // namespace detail
+#endif // _CCCL_DOXYGEN_INVOKED
 inline constexpr unwind_t unwind{};
 
 /**
@@ -2163,6 +2182,8 @@ inline constexpr unsigned __domain_v<__policy_and<_L, _R>> = __both(__domain_v<_
 template <class _L, class _R>
 inline constexpr bool __needs_future_v<__policy_and<_L, _R>> = __either(__needs_future_v<_L>, __needs_future_v<_R>);
 template <class _L, class _R>
+inline constexpr bool __diverges_v<__policy_and<_L, _R>> = __never_passes_through_v<_L> && __diverges_v<_R>;
+template <class _L, class _R>
 inline constexpr bool __produces_value_v<__policy_and<_L, _R>> =
   __either(__produces_value_v<_L>, __produces_value_v<_R>);
 template <class _L, class _R>
@@ -2212,6 +2233,8 @@ struct __policy_or : __composite_hooks<_L, _R>
                 "both sides of | must answer the exception path (have an exception hook)");
   static_assert(!__never_passes_through_v<_L>,
                 "the left policy never passes through; alternatives after it are unreachable");
+  static_assert(!__diverges_v<_L>,
+                "the left policy always diverges (unwind, abort, terminate); alternatives after it are unreachable");
   static_assert(!__right_arm_starved<_L, _R>,
                 "the left type guard already claims every exception type the right arm lists; "
                 "the right alternative is unreachable");
@@ -2323,6 +2346,8 @@ struct __policy_pow : __forwards_success<_P>
                 "the repeated policy must answer the exception path (have an exception hook)");
   static_assert(!__never_passes_through_v<_P>,
                 "the repeated policy never passes through; repetitions after the first are unreachable");
+  static_assert(!__diverges_v<_P>,
+                "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are unreachable");
 
   template <class _Fn>
   // An explicit result type, so that presence probes (which call with a `void (&)()` stand-in)
@@ -3535,6 +3560,12 @@ template <class _L,
                                    int> = 0>
 [[nodiscard]] auto operator&(_L&& __l, noop_t)
 {
+  using _NL = detail::__normalized_t<_L>;
+  static_assert(!detail::__produces_value_v<_NL>,
+                "the left side of & chooses a value (subst, as_expected, defer, retry, a converter) that & would "
+                "discard or override; put the value-producing policy on the right, or use | for a fallback");
+  static_assert(!detail::__answers_nothing<_NL> || detail::__selects_returned_v<_NL>,
+                "policies after a never-returning policy are unreachable");
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
 
@@ -3566,6 +3597,11 @@ template <class _L,
                                    int> = 0>
 [[nodiscard]] auto operator|(_L&& __l, fwd_t)
 {
+  using _NL = detail::__normalized_t<_L>;
+  static_assert(!detail::__never_passes_through_v<_NL>,
+                "the left policy never passes through; alternatives after it are unreachable");
+  static_assert(!detail::__diverges_v<_NL>,
+                "the left policy always diverges (unwind, abort, terminate); alternatives after it are unreachable");
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
 
@@ -5186,7 +5222,7 @@ UNITTEST("policy algebra")
   // Identity elimination is type-level: composing with a neutral element adds no wrapper.
   static_assert(::cuda::std::is_same_v<decltype(noop & subst(1)), decltype(subst(1))>,
                 "noop is eliminated on the left");
-  static_assert(::cuda::std::is_same_v<decltype(subst(1) & noop), decltype(subst(1))>,
+  static_assert(::cuda::std::is_same_v<decltype(notify & noop), decltype(notify)>,
                 "noop is eliminated on the right");
   static_assert(::cuda::std::is_same_v<decltype(fwd | subst(1)), decltype(subst(1))>, "fwd is eliminated on the left");
   static_assert(::cuda::std::is_same_v<decltype(subst(1) | fwd), decltype(subst(1))>, "fwd is eliminated on the right");
