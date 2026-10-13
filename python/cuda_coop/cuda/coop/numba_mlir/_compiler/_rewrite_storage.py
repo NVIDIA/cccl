@@ -1633,12 +1633,12 @@ class _StorageRewrite:
 
         After recording all constructors and matches, follow aliases to
         check every use. Allow simple alias, cast, and phi assignments and
-        one ``temp_storage=`` keyword on a recognized primitive.
-        Subscripted-provider syntax and other call arguments are not
-        accepted descriptor uses. Recognized reserve methods are validated
-        separately. Every canonical constructor must have a primitive or
-        reservation consumer, so an otherwise unused
-        ``storage = coop.TempStorage()`` is also rejected.
+        one ``temp_storage=`` keyword on a recognized primitive. Recognized
+        ``reserve()`` methods are validated separately; the arrays they
+        return may be used at runtime. Subscripted-provider syntax and other
+        call arguments are not accepted descriptor uses. Every canonical
+        constructor must have a primitive or reservation consumer, so an otherwise
+        unused ``storage = coop.TempStorage()`` is also rejected.
 
         Validation runs after device-helper inlining. Passing a descriptor
         to a helper is supported when inlining exposes its uses in the
