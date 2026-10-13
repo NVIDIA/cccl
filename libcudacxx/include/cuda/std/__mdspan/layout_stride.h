@@ -229,6 +229,12 @@ struct __constraints
         || __mdspan_detail::__is_mapping_of<layout_right, _StridedLayoutMapping>
         || __mdspan_detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>);
 };
+
+// Must not be a class member: naming one in the exception specification of a constructor used for CTAD breaks
+// implicit deduction guides with nvcc and ICEs MSVC 19.50.
+template <class _Extents, class _OtherIndexType>
+inline constexpr bool __is_nothrow_index_constructible =
+  is_nothrow_constructible_v<typename _Extents::index_type, const _OtherIndexType&>;
 } // namespace __layout_stride_detail
 
 template <class _Extents>
@@ -332,12 +338,6 @@ private:
                   || ::cuda::std::__mdspan_detail::__required_span_size_is_representable(extents_type()),
                 "layout_stride::mapping product of static extents must be representable as index_type.");
 
-  // MSVC 19.50 ICEs (C1001) when this trait is written directly in a constructor
-  // exception specification that participates in class template argument deduction.
-  template <class _OtherIndexType>
-  static constexpr bool __is_nothrow_stride_index_constructible =
-    is_nothrow_constructible_v<index_type, const _OtherIndexType&>;
-
   // Rank zero does not call stride(). A potentially throwing stride() must not be instantiated there.
   template <class _StridedLayoutMapping>
   [[nodiscard]] _CCCL_API static constexpr bool __is_nothrow_constructible_from_strided_mapping() noexcept
@@ -404,7 +404,7 @@ public:
             enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
             enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
   _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept(
-    __is_nothrow_stride_index_constructible<_OtherIndexType>)
+    __layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>)
       : __base(__ext, __to_strides_array(__strides, __rank_sequence))
   {
     _CCCL_ASSERT(__check_strides(__strides, __rank_sequence),
@@ -419,9 +419,10 @@ public:
   template <class _OtherIndexType,
             enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
             enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
-  _CCCL_API constexpr mapping(const extents_type& __ext,
-                              const array<_OtherIndexType, extents_type::rank()>&
-                                __strides) noexcept(__is_nothrow_stride_index_constructible<_OtherIndexType>)
+  _CCCL_API constexpr mapping(
+    const extents_type& __ext,
+    const array<_OtherIndexType, extents_type::rank()>&
+      __strides) noexcept(__layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>)
       : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))
   {}
 
