@@ -58,6 +58,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA
 //!
 //! The object must be placed in local shared memory and initialized with `cuda::init`. Host and non-shared-memory
 //! fallback behavior is not provided by this type. Cluster scope does not change this local-storage requirement.
+//! Cluster-scoped barriers additionally provide explicit remote arrivals to initialized barriers in cluster shared
+//! memory. Waiting, initialization, and invalidation must still be performed by threads in the owning block.
 //!
 //! @tparam _Scope Synchronization scope: `cuda::thread_scope_block` (the default) or `cuda::thread_scope_cluster`.
 template <thread_scope _Scope>
@@ -568,6 +570,26 @@ public:
     __unsupported_storage();
   }
 
+  //! @brief Arrives at a cluster-shared barrier without returning an arrival token.
+  //!
+  //! This operation is available only for `cuda::thread_scope_cluster`. The target must be an initialized barrier
+  //! in shared memory of the calling cluster; it may belong to the calling block or another block. The owning block
+  //! must publish initialization before remote arrivals and keep the storage alive until those arrivals complete.
+  //! The operation has release semantics at cluster scope. Wait operations remain local to the owning block.
+  //!
+  //! @param[in] __update Arrival count update.
+  _CCCL_HOST_DEVICE_API void remote_arrive([[maybe_unused]] ::cuda::std::ptrdiff_t __update = 1)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_arrive requires cluster scope");
+    _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
+    _CCCL_ASSERT(__update <= __max_expected_count(),
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_arrive(__update); return;))
+
+    __unsupported_storage();
+  }
+
   //! @brief Increases the expected transaction count for the current phase.
   //!
   //! @param __transaction_count_update Transaction count update.
@@ -601,6 +623,30 @@ public:
 
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return arrival_token(this->__arrive_tx(__arrive_count_update, __transaction_count_update));))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Arrives at a cluster-shared barrier and increases its expected transaction count without returning a token.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. The transaction
+  //! expectation is updated before arrival. Arrival has release semantics at cluster scope.
+  //!
+  //! @param[in] __arrive_count_update Arrival count update.
+  //! @param[in] __transaction_count_update Transaction count update.
+  _CCCL_HOST_DEVICE_API void remote_arrive_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __arrive_count_update,
+                                              [[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_arrive_tx requires cluster scope");
+    _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
+    _CCCL_ASSERT(__arrive_count_update <= __max_expected_count(),
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (this->__remote_arrive_tx(__arrive_count_update, __transaction_count_update); return;))
 
     __unsupported_storage();
   }

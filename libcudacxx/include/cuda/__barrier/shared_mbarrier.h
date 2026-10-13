@@ -63,6 +63,13 @@ class __shared_mbarrier_impl
     return __native_handle();
   }
 
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE ::cuda::std::uint64_t* __cluster_native_handle() const noexcept
+  {
+    _CCCL_ASSERT(::cuda::device::is_object_from(__barrier_, ::cuda::device::address_space::cluster_shared),
+                 "remote shared_memory_barrier operation requires shared memory in the calling cluster");
+    return __native_handle();
+  }
+
 public:
   struct __wait_status
   {
@@ -112,6 +119,16 @@ public:
       __scope(),
       ::cuda::ptx::space_shared,
       __local_native_handle(),
+      static_cast<::cuda::std::uint32_t>(__update));
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void __remote_arrive(::cuda::std::ptrdiff_t __update)
+  {
+    ::cuda::ptx::mbarrier_arrive(
+      ::cuda::ptx::sem_release,
+      ::cuda::ptx::scope_cluster,
+      ::cuda::ptx::space_cluster,
+      __cluster_native_handle(),
       static_cast<::cuda::std::uint32_t>(__update));
   }
 
@@ -301,6 +318,36 @@ public:
 
     __expect_tx(__transaction_count_update);
     return __arrive(__arrive_count_update);
+  }
+
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void
+  __remote_arrive_tx(::cuda::std::ptrdiff_t __arrive_count_update, ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    auto* __handle = __cluster_native_handle();
+    if (__arrive_count_update == 1)
+    {
+      ::cuda::ptx::mbarrier_arrive_expect_tx(
+        ::cuda::ptx::sem_release,
+        ::cuda::ptx::scope_cluster,
+        ::cuda::ptx::space_cluster,
+        __handle,
+        static_cast<::cuda::std::uint32_t>(__transaction_count_update));
+    }
+    else
+    {
+      ::cuda::ptx::mbarrier_expect_tx(
+        ::cuda::ptx::sem_relaxed,
+        ::cuda::ptx::scope_cluster,
+        ::cuda::ptx::space_cluster,
+        __handle,
+        static_cast<::cuda::std::uint32_t>(__transaction_count_update));
+      ::cuda::ptx::mbarrier_arrive(
+        ::cuda::ptx::sem_release,
+        ::cuda::ptx::scope_cluster,
+        ::cuda::ptx::space_cluster,
+        __handle,
+        static_cast<::cuda::std::uint32_t>(__arrive_count_update));
+    }
   }
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __complete_tx(::cuda::std::ptrdiff_t __transaction_count_update)
