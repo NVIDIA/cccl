@@ -33,6 +33,7 @@ benchmarks:
   filters:
     # CUB C++ benchmark filters (regex matched against ninja target names).
     cub:
+      - '^cub\.bench\.segmented_topk\.variable\.(keys|indexed)\.cluster\.base$'
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
@@ -45,6 +46,8 @@ benchmarks:
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
+    - "h100"       # sm_90
+    - "rtxpro6000" # sm_120
     # - "t4"         # sm_75, 16 GB
     # - "rtx2080"    # sm_75,  8 GB
     # - "rtxa6000"   # sm_86, 48 GB
@@ -58,16 +61,20 @@ benchmarks:
   launch_args: "" # Latest nvcc + gcc
 
   # Advanced:
-  base_ref: "origin/main"
+  # Identical benchmark coverage with the original inline-PTX implementation.
+  base_ref: "e7427a36c73efafd3451f87baf27e3b5b99d2db0"
   test_ref: "HEAD"
   arch: "native"
   nvbench_args: >-
     --timeout 30
-    --skip-time 5e-6
+    --skip-time 0
     --stopping-criterion entropy
     --throttle-threshold 90
     --throttle-recovery-delay 0.15
     --cold-warmup-runs 10
     --cold-max-warmup-walltime 0.05
+    -a 'MaxSegmentSize{ct}=[8192,16384,32768,65536,131072,262144]'
+    -a 'NumSegments=[1,8,32]'
+    -a 'Pattern=[random,tie_heavy,pivot_tie]'
   nvbench_compare_args: ""
   nvbench_compare_legacy_args: ""
