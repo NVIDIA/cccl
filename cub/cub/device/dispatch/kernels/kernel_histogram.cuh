@@ -41,6 +41,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void histocache_atomic_add_block(CounterT* counte
 {
   if constexpr (::cuda::std::is_integral_v<CounterT> && sizeof(CounterT) == sizeof(::cuda::std::uint64_t))
   {
+    // On LP64 targets, uint64_t is unsigned long, but the legacy CUDA atomic overloads accept only unsigned int and
+    // unsigned long long integer counters. Cast the 64-bit counter to the supported unsigned-long-long overload.
     atomicAdd_block(reinterpret_cast<unsigned long long*>(counter), static_cast<unsigned long long>(contribution));
   }
   else
@@ -786,8 +788,8 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! Spills cache misses directly into the final output histogram with device-scope atomics.
 //!
 //! A spill operation owns the representation and initialization of its destination. Per-sample misses enter through
-//! `consume`, cache flushes bypass probing and per-sample aggregation through `spill`, `finish` flushes per-thread
-//! aggregation, and `finalize` performs any cooperative reduction required by the destination.
+//! `consume`, cache flushes bypass probing and per-sample aggregation through `spill`, `flush_thread` flushes
+//! per-thread aggregation, and `finalize_output` performs any cooperative reduction required by the destination.
 template <typename CounterT, typename OutputCounterT>
 struct global_output_spill
 {
@@ -843,10 +845,10 @@ struct global_output_spill
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish() {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush_thread() {}
 
   template <typename GridGroup>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize(GridGroup, ::cuda::std::uint32_t, ::cuda::std::uint32_t)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finalize_output(GridGroup, ::cuda::std::uint32_t, ::cuda::std::uint32_t)
   {}
 };
 
@@ -899,11 +901,11 @@ struct block_private_spill
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish() {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush_thread() {}
 
   template <typename GridGroup>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  finalize(GridGroup grid, ::cuda::std::uint32_t global_thread, ::cuda::std::uint32_t total_threads)
+  finalize_output(GridGroup grid, ::cuda::std::uint32_t global_thread, ::cuda::std::uint32_t total_threads)
   {
     grid.sync();
     const ::cuda::std::uint32_t channel_bins = static_cast<::cuda::std::uint32_t>(num_bins);
@@ -984,16 +986,16 @@ struct warp_coalesced_spill
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush_thread()
   {
-    underlying.finish();
+    underlying.flush_thread();
   }
 
   template <typename GridGroup>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  finalize(GridGroup grid, ::cuda::std::uint32_t global_thread, ::cuda::std::uint32_t total_threads)
+  finalize_output(GridGroup grid, ::cuda::std::uint32_t global_thread, ::cuda::std::uint32_t total_threads)
   {
-    underlying.finalize(grid, global_thread, total_threads);
+    underlying.finalize_output(grid, global_thread, total_threads);
   }
 };
 
@@ -1046,17 +1048,17 @@ struct rle_spill
     pending_count = contribution;
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void flush_thread()
   {
     flush_pending();
-    underlying.finish();
+    underlying.flush_thread();
   }
 
   template <typename GridGroup>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  finalize(GridGroup grid, ::cuda::std::uint32_t global_thread, ::cuda::std::uint32_t total_threads)
+  finalize_output(GridGroup grid, ::cuda::std::uint32_t global_thread, ::cuda::std::uint32_t total_threads)
   {
-    underlying.finalize(grid, global_thread, total_threads);
+    underlying.finalize_output(grid, global_thread, total_threads);
   }
 
 private:
@@ -1303,14 +1305,14 @@ struct AgentHistoCache
     const int thread_idx    = static_cast<int>(threadIdx.x);
     const int block_threads = static_cast<int>(blockDim.x);
 
-    using PixelOffsetT =
+    using ItemOffsetT =
       ::cuda::std::conditional_t<(sizeof(OffsetT) < sizeof(::cuda::std::int64_t)), ::cuda::std::int64_t, OffsetT>;
-    constexpr int items_per_thread  = histocache.items_per_thread;
-    const PixelOffsetT total_pixels = static_cast<PixelOffsetT>(num_rows) * num_row_items;
-    const PixelOffsetT step         = static_cast<PixelOffsetT>(total_threads);
-    const PixelOffsetT chunk        = static_cast<PixelOffsetT>(items_per_thread) * step;
-    const PixelOffsetT chunk_count  = ::cuda::ceil_div(total_pixels, chunk);
-    const bool contiguous_input     = num_rows == 1;
+    constexpr int items_per_thread = histocache.items_per_thread;
+    const ItemOffsetT total_items  = static_cast<ItemOffsetT>(num_rows) * num_row_items;
+    const ItemOffsetT step         = static_cast<ItemOffsetT>(total_threads);
+    const ItemOffsetT chunk        = static_cast<ItemOffsetT>(items_per_thread) * step;
+    const ItemOffsetT chunk_count  = ::cuda::ceil_div(total_items, chunk);
+    const bool contiguous_input    = num_rows == 1;
 
     PrivatizedDecodeOpT decode_op[NumActiveChannels];
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -1346,33 +1348,33 @@ struct AgentHistoCache
     {
       if constexpr (NumActiveChannels == 1)
       {
-        for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+        for (ItemOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
         {
-          const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
+          const ItemOffsetT first_item = static_cast<ItemOffsetT>(tid_global) + chunk_idx * chunk;
           SampleT staged_samples[items_per_thread];
           bool valid_samples[items_per_thread];
           int bins[items_per_thread];
 
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int pixel_index = 0; pixel_index < items_per_thread; ++pixel_index)
+          for (int item_index = 0; item_index < items_per_thread; ++item_index)
           {
-            const PixelOffsetT pixel      = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
-            valid_samples[pixel_index]    = pixel < total_pixels;
-            const PixelOffsetT safe_pixel = valid_samples[pixel_index] ? pixel : PixelOffsetT{0};
-            staged_samples[pixel_index]   = d_samples[safe_pixel * NumChannels];
+            const ItemOffsetT item      = first_item + static_cast<ItemOffsetT>(item_index) * step;
+            valid_samples[item_index]   = item < total_items;
+            const ItemOffsetT safe_item = valid_samples[item_index] ? item : ItemOffsetT{0};
+            staged_samples[item_index]  = d_samples[safe_item * NumChannels];
           }
 
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int pixel_index = 0; pixel_index < items_per_thread; ++pixel_index)
+          for (int item_index = 0; item_index < items_per_thread; ++item_index)
           {
-            bins[pixel_index] = select_valid_bin(
-              decode_op[0], staged_samples[pixel_index], num_output_bins_wrapper[0], valid_samples[pixel_index]);
+            bins[item_index] = select_valid_bin(
+              decode_op[0], staged_samples[item_index], num_output_bins_wrapper[0], valid_samples[item_index]);
           }
 
           _CCCL_PRAGMA_UNROLL_FULL()
-          for (int pixel_index = 0; pixel_index < items_per_thread; ++pixel_index)
+          for (int item_index = 0; item_index < items_per_thread; ++item_index)
           {
-            spill_ops[0].consume(probe_ops[0], bins[pixel_index], CounterT{1});
+            spill_ops[0].consume(probe_ops[0], bins[item_index], CounterT{1});
           }
         }
       }
@@ -1394,17 +1396,17 @@ struct AgentHistoCache
             native_base != nullptr && (reinterpret_cast<size_t>(native_base) & (alignof(ItemT) - 1)) == 0;
           if (vectorizable)
           {
-            const ItemT* const pixels = reinterpret_cast<const ItemT*>(native_base);
-            for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+            const ItemT* const items = reinterpret_cast<const ItemT*>(native_base);
+            for (ItemOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
             {
-              const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
+              const ItemOffsetT first_item = static_cast<ItemOffsetT>(tid_global) + chunk_idx * chunk;
               _CCCL_PRAGMA_UNROLL_FULL()
-              for (int pixel_index = 0; pixel_index < items_per_thread; ++pixel_index)
+              for (int item_index = 0; item_index < items_per_thread; ++item_index)
               {
-                const PixelOffsetT pixel = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
-                const bool valid         = pixel < total_pixels;
-                const ItemT packed       = pixels[valid ? pixel : PixelOffsetT{0}];
-                const SampleT* lanes     = reinterpret_cast<const SampleT*>(&packed);
+                const ItemOffsetT item = first_item + static_cast<ItemOffsetT>(item_index) * step;
+                const bool valid       = item < total_items;
+                const ItemT packed     = items[valid ? item : ItemOffsetT{0}];
+                const SampleT* lanes   = reinterpret_cast<const SampleT*>(&packed);
                 int bins[NumActiveChannels];
 
                 _CCCL_PRAGMA_UNROLL_FULL()
@@ -1422,21 +1424,21 @@ struct AgentHistoCache
           }
           else
           {
-            for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+            for (ItemOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
             {
-              const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
+              const ItemOffsetT first_item = static_cast<ItemOffsetT>(tid_global) + chunk_idx * chunk;
               _CCCL_PRAGMA_UNROLL_FULL()
-              for (int pixel_index = 0; pixel_index < items_per_thread; ++pixel_index)
+              for (int item_index = 0; item_index < items_per_thread; ++item_index)
               {
-                const PixelOffsetT pixel      = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
-                const bool valid              = pixel < total_pixels;
-                const PixelOffsetT safe_pixel = valid ? pixel : PixelOffsetT{0};
+                const ItemOffsetT item      = first_item + static_cast<ItemOffsetT>(item_index) * step;
+                const bool valid            = item < total_items;
+                const ItemOffsetT safe_item = valid ? item : ItemOffsetT{0};
                 int bins[NumActiveChannels];
 
                 _CCCL_PRAGMA_UNROLL_FULL()
                 for (int ch = 0; ch < NumActiveChannels; ++ch)
                 {
-                  const SampleT sample = d_samples[safe_pixel * NumChannels + ch];
+                  const SampleT sample = d_samples[safe_item * NumChannels + ch];
                   bins[ch]             = select_valid_bin(decode_op[ch], sample, num_output_bins_wrapper[ch], valid);
                 }
                 _CCCL_PRAGMA_UNROLL_FULL()
@@ -1450,21 +1452,21 @@ struct AgentHistoCache
         }
         else
         {
-          for (PixelOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
+          for (ItemOffsetT chunk_idx = 0; chunk_idx < chunk_count; ++chunk_idx)
           {
-            const PixelOffsetT first_pixel = static_cast<PixelOffsetT>(tid_global) + chunk_idx * chunk;
+            const ItemOffsetT first_item = static_cast<ItemOffsetT>(tid_global) + chunk_idx * chunk;
             _CCCL_PRAGMA_UNROLL_FULL()
-            for (int pixel_index = 0; pixel_index < items_per_thread; ++pixel_index)
+            for (int item_index = 0; item_index < items_per_thread; ++item_index)
             {
-              const PixelOffsetT pixel      = first_pixel + static_cast<PixelOffsetT>(pixel_index) * step;
-              const bool valid              = pixel < total_pixels;
-              const PixelOffsetT safe_pixel = valid ? pixel : PixelOffsetT{0};
+              const ItemOffsetT item      = first_item + static_cast<ItemOffsetT>(item_index) * step;
+              const bool valid            = item < total_items;
+              const ItemOffsetT safe_item = valid ? item : ItemOffsetT{0};
               int bins[NumActiveChannels];
 
               _CCCL_PRAGMA_UNROLL_FULL()
               for (int ch = 0; ch < NumActiveChannels; ++ch)
               {
-                const SampleT sample = d_samples[safe_pixel * NumChannels + ch];
+                const SampleT sample = d_samples[safe_item * NumChannels + ch];
                 bins[ch]             = select_valid_bin(decode_op[ch], sample, num_output_bins_wrapper[ch], valid);
               }
               _CCCL_PRAGMA_UNROLL_FULL()
@@ -1479,17 +1481,17 @@ struct AgentHistoCache
     }
     else
     {
-      for (PixelOffsetT pixel = static_cast<PixelOffsetT>(tid_global); pixel < total_pixels; pixel += step)
+      for (ItemOffsetT item = static_cast<ItemOffsetT>(tid_global); item < total_items; item += step)
       {
-        const PixelOffsetT row = pixel / num_row_items;
-        const PixelOffsetT pixel_offset =
-          row * static_cast<PixelOffsetT>(row_stride_samples) + (pixel - row * num_row_items) * NumChannels;
+        const ItemOffsetT row = item / num_row_items;
+        const ItemOffsetT item_offset =
+          row * static_cast<ItemOffsetT>(row_stride_samples) + (item - row * num_row_items) * NumChannels;
 
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int ch = 0; ch < NumActiveChannels; ++ch)
         {
           const int bin =
-            select_valid_bin(decode_op[ch], d_samples[pixel_offset + ch], num_output_bins_wrapper[ch], true);
+            select_valid_bin(decode_op[ch], d_samples[item_offset + ch], num_output_bins_wrapper[ch], true);
           spill_ops[ch].consume(probe_ops[ch], bin, CounterT{1});
         }
       }
@@ -1499,7 +1501,7 @@ struct AgentHistoCache
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      spill_ops[ch].finish();
+      spill_ops[ch].flush_thread();
     }
 
     // Phase 3: flush cached counts through the selected spill operation.
@@ -1509,12 +1511,12 @@ struct AgentHistoCache
       probe_ops[ch].flush(spill_ops[ch], thread_idx, block_threads);
     }
 
-    // Phase 4: finalize the spill destination. Block-private storage performs its cooperative gather here; direct
+    // Phase 4: finalize the spill output. Block-private storage performs its cooperative gather here; direct
     // output spilling has no final work.
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int ch = 0; ch < NumActiveChannels; ++ch)
     {
-      spill_ops[ch].finalize(grid, tid_global, total_threads);
+      spill_ops[ch].finalize_output(grid, tid_global, total_threads);
     }
   }
 };
