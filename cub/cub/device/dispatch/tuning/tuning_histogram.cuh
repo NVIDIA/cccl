@@ -120,13 +120,6 @@ struct HistogramPolicy
 
 namespace detail::histogram
 {
-enum class privatization_mode
-{
-  gmem,
-  static_smem,
-  dynamic_smem
-};
-
 template <typename CounterT, int NumActiveChannels>
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int max_privatized_smem_bins(int max_privatized_smem_bytes)
 {

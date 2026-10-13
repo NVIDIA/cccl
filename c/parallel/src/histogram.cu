@@ -56,7 +56,7 @@ struct histogram_kernel_source
   }
 
   template <typename PolicyT,
-            typename PrivatizationMode,
+            cub::detail::histogram::privatization_mode PrivatizationMode,
             typename FirstLevelArrayT,
             typename SecondLevelArrayT,
             bool IsEven,
@@ -339,10 +339,10 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
           active_policy, num_privatized_bins, counter_size_bytes);
   const std::string_view privatization_mode_t =
     privatization == cub::detail::histogram::privatization_mode::static_smem
-      ? "cub::detail::histogram::HistogramPrivatizedStaticSmem"
+      ? "cub::detail::histogram::privatization_mode::static_smem"
     : privatization == cub::detail::histogram::privatization_mode::dynamic_smem
-      ? "cub::detail::histogram::HistogramPrivatizedDynamicSmem"
-      : "cub::detail::histogram::HistogramPrivatizedGmem";
+      ? "cub::detail::histogram::privatization_mode::dynamic_smem"
+      : "cub::detail::histogram::privatization_mode::gmem";
 
   std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
   std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
