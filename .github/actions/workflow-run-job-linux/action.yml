@@ -64,10 +64,11 @@ runs:
 
         echo "::endgroup::"
 
-    - name: Add NVCC problem matcher
+    - name: Add compiler problem matchers
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
+        # The matchers strip container roots so GitHub resolves files in the host checkout.
         echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
 
     - name: Get AWS credentials for sccache bucket

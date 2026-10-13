@@ -49,7 +49,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Add NVCC problem matcher
+      - name: Add compiler problem matchers
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
         if: ${{ github.repository == 'NVIDIA/cccl' }}

@@ -1,11 +1,94 @@
 {
   "problemMatcher": [
     {
-      "owner": "nvcc",
+      "owner": "cccl-gcc-clang-unix",
       "pattern": [
         {
-          "regexp": "^\\/home\\/coder\\/(.+):(\\d+):(\\d+): (\\w+): \"(.+)\"$",
+          "regexp": "^.*?/cccl/(.+?):(\\d+)(?::(\\d+))?:\\s*(?:fatal )?(warning|error):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
           "severity": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "cccl-gcc-clang-windows",
+      "pattern": [
+        {
+          "regexp": "^.*?\\\\cccl\\\\(.+?):(\\d+)(?::(\\d+))?:\\s*(?:fatal )?(warning|error):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "cccl-nvcc-unix",
+      "pattern": [
+        {
+          "regexp": "^.*?/cccl/(.+?)\\((\\d+)\\):\\s*(?:fatal )?(warning|error)(?:\\s+(#\\d+(?:-D)?))?:\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "code": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "cccl-nvcc-windows",
+      "pattern": [
+        {
+          "regexp": "^.*?\\\\cccl\\\\(.+?)\\((\\d+)\\):\\s*(?:fatal )?(warning|error)(?:\\s+(#\\d+(?:-D)?))?:\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "code": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "cccl-msvc-unix",
+      "pattern": [
+        {
+          "regexp": "^.*?/cccl/(.+?)\\((\\d+)(?:,\\s*(\\d+))?\\)\\s*:\\s*(?:fatal )?(warning|error)\\s+(C\\d+):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "code": 5,
+          "message": 6
+        }
+      ]
+    },
+    {
+      "owner": "cccl-msvc-windows",
+      "pattern": [
+        {
+          "regexp": "^.*?\\\\cccl\\\\(.+?)\\((\\d+)(?:,\\s*(\\d+))?\\)\\s*:\\s*(?:fatal )?(warning|error)\\s+(C\\d+):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "code": 5,
+          "message": 6
+        }
+      ]
+    },
+    {
+      "owner": "cccl-nvhpc",
+      "pattern": [
+        {
+          "regexp": "^.*?/cccl/(.+?)\", line (\\d+):\\s*(?:(?:fatal|catastrophic) )?(warning|error)(?:\\s+#(\\d+(?:-[A-Za-z])?))?:\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "code": 4,
           "message": 5
         }
       ]
