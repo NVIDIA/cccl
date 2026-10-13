@@ -79,7 +79,7 @@ CCCL_C_API CUresult cccl_device_segmented_reduce_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config);
+  const cccl_build_config* config);
 
 CCCL_C_API CUresult
 cccl_device_segmented_reduce_load(cccl_device_segmented_reduce_build_result_t* build, const char* ctk_path);

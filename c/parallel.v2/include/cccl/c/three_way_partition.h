@@ -85,7 +85,7 @@ CCCL_C_API CUresult cccl_device_three_way_partition_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config);
+  const cccl_build_config* config);
 
 // Loads a build_result populated by cccl_device_three_way_partition_compile
 // or cccl_device_three_way_partition_deserialize, populating
