@@ -48,6 +48,7 @@ One of the limitations of CTK's Cooperative Groups is that they lack static info
 
 .. code:: cuda
 
+  // What cooperative_groups::this_block().thread_rank() would compute.
   const auto thread_rank = (threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x + threadIdx.x;
 
 independently of whether the thread block is 1D or 3D. If the thread block is actually 1D, this computation wastes precious registers and introduces unnecessary overhead.
@@ -56,6 +57,7 @@ CCCL Cooperative Groups, on the other hand, are hierarchy-aware. They are design
 
 .. code:: cuda
 
+  // What CCCL Cooperative Groups equivalent computes.
   const auto thread_rank = threadIdx.x;
 
 which can make the difference between register spilling to local memory and fitting everything within registers.
