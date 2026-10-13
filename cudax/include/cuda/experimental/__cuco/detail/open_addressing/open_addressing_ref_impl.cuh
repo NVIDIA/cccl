@@ -868,6 +868,10 @@ public:
             return;
           case detail::__equal_result::__equal:
             __callback_op(__bucket_slots[__i]);
+            if constexpr (!__allows_duplicates)
+            {
+              return;
+            }
             break;
           default:
             break;
@@ -911,22 +915,26 @@ public:
     {
       const auto __bucket_slots = __storage_ref[*__probing_iter];
 
-      bool __empty = false;
-      for (::cuda::std::int32_t __i = 0; __i < __bucket_size && !__empty; ++__i)
+      bool __should_return = false;
+      for (::cuda::std::int32_t __i = 0; __i < __bucket_size && !__should_return; ++__i)
       {
         switch (__predicate.template operator()<detail::__is_insert::__no>(__key, __extract_key(__bucket_slots[__i])))
         {
           case detail::__equal_result::__empty:
-            __empty = true;
+            __should_return = true;
             break;
           case detail::__equal_result::__equal:
             __callback_op(__bucket_slots[__i]);
+            if constexpr (!__allows_duplicates)
+            {
+              __should_return = true;
+            }
             break;
           default:
             break;
         }
       }
-      if (__group.any(__empty))
+      if (__group.any(__should_return))
       {
         return;
       }
