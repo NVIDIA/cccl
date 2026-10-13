@@ -42,6 +42,7 @@
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/sfinae_traits.h>
@@ -374,6 +375,13 @@ struct __tuple_constraints
   static constexpr bool __all_const_copy_assignable = (is_copy_assignable_v<const _Types> && ...);
   // [tuple.assign]-12: is_assignable_v<const Types&, Types> is true for all i.
   static constexpr bool __all_const_move_assignable = (is_assignable_v<const _Types&, _Types> && ...);
+
+  // [tuple.swap]: is_swappable_v<T> / is_swappable_v<const T> for every element.
+  static constexpr bool __all_swappable       = (is_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_const_swappable = (is_swappable_v<const _Types> && ... && true);
+
+  static constexpr bool __all_nothrow_swappable       = (is_nothrow_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_nothrow_const_swappable = (is_nothrow_swappable_v<const _Types> && ... && true);
 
   template <bool _IsConst, class... _UTypes>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __select_converting_assignable() noexcept
