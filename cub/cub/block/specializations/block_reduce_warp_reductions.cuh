@@ -161,15 +161,6 @@ struct BlockReduceWarpReductions
   template <bool FullTile, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
   {
-    // Nothing to reduce when the tile has no valid items.
-    if constexpr (!FullTile)
-    {
-      if (num_valid <= 0)
-      {
-        return warp_aggregate;
-      }
-    }
-
     // Share lane aggregates
     if (lane_id == 0)
     {
@@ -195,7 +186,8 @@ struct BlockReduceWarpReductions
         {
           if (FullTile || (warp_idx * logical_warp_size < num_valid))
           {
-            warp_aggregate = reduction_op(warp_aggregate, temp_storage.warp_aggregates[warp_idx]);
+            const auto addend = temp_storage.warp_aggregates[warp_idx];
+            warp_aggregate    = reduction_op(warp_aggregate, addend);
           }
         }
       }
