@@ -22,6 +22,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(if_isa<::std::bad_alloc>(noop))->*cudaErrorInvalidValue;
+  errsink(if_isa<::std::bad_alloc>(noop)) << cudaErrorInvalidValue;
   return EXIT_FAILURE;
 }

@@ -3034,8 +3034,8 @@ template <class _Reaction,
 void __run_under(__on_throw_policy<_Reaction>&, _X&&)
 {
   static_assert(!::cuda::std::is_same_v<_X, _X>,
-                "the right operand of errsink(policy) ->* ... or << ... is a callable or a status (a type with a "
-                "status_traits specialization); a raw integer is never a status");
+                "the right operand of errsink(policy) ->* ... is a callable; the right operand of << ... is a callable "
+                "or a status (a type with a status_traits specialization); a raw integer is never a status");
 }
 
 // `errsink(p) ->* x`: evaluate and yield. A callable yields its own value; a status yields what
@@ -3048,12 +3048,13 @@ decltype(auto) operator->*(__on_throw_policy<_Reaction> __policy,
   return __run_under(__policy, ::cuda::std::forward<_Fn>(__fn));
 }
 
+// `errsink(p) ->* status` is ill-formed: `->*` yields the value of a callable; a status (whose
+// value is of no interest once handled) goes on the right of `<<`.
 template <class _Reaction, class _Status, ::cuda::std::enable_if_t<__is_status_v<_Status>, int> = 0>
-// NOLINTNEXTLINE(bugprone-exception-escape)
-_Status operator->*(__on_throw_policy<_Reaction> __policy, const _Status __status) noexcept(
-  __status_path_nothrow_v<_Reaction, _Status, __past_result<_Status>>)
+void operator->*(__on_throw_policy<_Reaction>, const _Status)
 {
-  return __run_under(__policy, __status);
+  static_assert(!::cuda::std::is_same_v<_Status, _Status>,
+                "errsink(policy) ->* x: x must be a callable; feed a status with << instead");
 }
 
 // Fails, inside `<<`, for an action whose return type is not a status; the diagnostic's
@@ -3414,7 +3415,7 @@ auto if_monomorphic(_P&& __p)
  * same type. On the exception channel there is nothing to match and the exception passes
  * through, so the selector can head a `|`:
  * @code
- * while (errsink(if_equal(cudaErrorNotReady)(noop) | unwind) ->* cudaStreamQuery(s)) { ... }
+ * errsink(if_equal(cudaErrorNotReady)(noop) | unwind) << cudaStreamQuery(s); // not-ready is fine; anything else unwinds
  * @endcode
  *
  * @param[in] __first The first status value to match.
@@ -6103,11 +6104,9 @@ UNITTEST("effect")
   // on a status: sees the code; the status is left unchanged
   {
     cudaError_t seen = cudaSuccess;
-    const auto r     = errsink(effect([&](cudaError_t s) {
-                     seen = s;
-                       }))
-                         ->*cudaErrorInvalidValue;
-    EXPECT(r == cudaErrorInvalidValue);
+    errsink(effect([&](cudaError_t s) {
+      seen = s;
+    })) << cudaErrorInvalidValue;
     EXPECT(seen == cudaErrorInvalidValue);
   }
 #  endif
@@ -6794,11 +6793,9 @@ UNITTEST("error sinks: success costs nothing")
   using namespace cuda::experimental::stf;
   using error_sinks_test::spy;
   int hits = 0;
-  auto r   = errsink(spy{hits})->*cudaSuccess;
-  EXPECT(r == cudaSuccess);
+  errsink(spy{hits}) << cudaSuccess;
   EXPECT(hits == 0);
-  auto d = errsink(spy{hits})->*CUDA_SUCCESS;
-  EXPECT(d == CUDA_SUCCESS);
+  errsink(spy{hits}) << CUDA_SUCCESS;
   EXPECT(hits == 0);
 };
 
@@ -6807,26 +6804,18 @@ UNITTEST("error sinks: notify on a code handles it without throwing")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
-  auto r = errsink(notify(log))->*cudaErrorInvalidValue;
-  EXPECT(r == cudaErrorInvalidValue); // handled (reported), left unchanged
+  errsink(notify(log)) << cudaErrorInvalidValue;
   EXPECT(log.str().find("cudaErrorInvalidValue") != ::std::string::npos);
-  auto d = errsink(notify(log))->*CUDA_ERROR_INVALID_VALUE;
-  EXPECT(d == CUDA_ERROR_INVALID_VALUE);
-  using carrier = decltype(errsink(notify(log)));
-  static_assert(noexcept(::cuda::std::declval<carrier>()->*::cuda::std::declval<cudaError_t>()),
-                "a never-passing-through policy on a code operand is noexcept");
+  errsink(notify(log)) << CUDA_ERROR_INVALID_VALUE;
 };
 
 UNITTEST("error sinks: fwd yields the code")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
-  EXPECT((errsink(fwd)->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
-  EXPECT((errsink(fwd)->*cudaSuccess) == cudaSuccess);
-  EXPECT((errsink(fwd)->*CUDA_ERROR_NOT_READY) == CUDA_ERROR_NOT_READY);
-  using carrier = decltype(errsink(fwd));
-  static_assert(noexcept(::cuda::std::declval<carrier>()->*::cuda::std::declval<cudaError_t>()),
-                "fwd on the code channel never throws");
+  errsink(fwd) << cudaErrorInvalidValue;
+  errsink(fwd) << cudaSuccess;
+  errsink(fwd) << CUDA_ERROR_NOT_READY;
 };
 
 UNITTEST("error sinks: unwind throws the trait's exception")
@@ -6836,15 +6825,13 @@ UNITTEST("error sinks: unwind throws the trait's exception")
   bool caught = false;
   try
   {
-    errsink(unwind)->*cudaErrorInvalidValue;
+    errsink(unwind) << cudaErrorInvalidValue;
   }
   catch (const cuda_exception& e)
   {
     caught = ::std::string(e.what()).find("cudaErrorInvalidValue") != ::std::string::npos;
   }
   EXPECT(caught);
-  using carrier = decltype(errsink(unwind));
-  static_assert(!noexcept(::cuda::std::declval<carrier>()->*::cuda::std::declval<cudaError_t>()));
 };
 
 UNITTEST("error sinks: polling idiom")
@@ -6855,13 +6842,13 @@ UNITTEST("error sinks: polling idiom")
   // if_isa<E>(fwd) | p on the exception channel), so "stop here and yield this code" is a
   // substitution of the code by itself.
   auto pol = if_equal(cudaErrorNotReady)(noop) | unwind; // noop on a code: handled, status unchanged
-  EXPECT((errsink(pol)->*cudaErrorNotReady) == cudaErrorNotReady);
-  EXPECT((errsink(pol)->*cudaSuccess) == cudaSuccess);
-  EXPECT((errsink(if_equal(cudaErrorNotReady)(noop) | unwind)->*cudaErrorNotReady) == cudaErrorNotReady);
+  errsink(pol) << cudaErrorNotReady;
+  errsink(pol) << cudaSuccess;
+  errsink(if_equal(cudaErrorNotReady)(noop) | unwind) << cudaErrorNotReady;
   bool threw = false;
   try
   {
-    errsink(pol)->*cudaErrorInvalidValue;
+    errsink(pol) << cudaErrorInvalidValue;
   }
   catch (const cuda_exception&)
   {
@@ -6875,8 +6862,8 @@ UNITTEST("error sinks: subst remaps a code")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
   auto pol = if_equal(cudaErrorCudartUnloading)(subst(cudaSuccess)) | fwd;
-  EXPECT((errsink(pol)->*cudaErrorCudartUnloading) == cudaSuccess);
-  EXPECT((errsink(pol)->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  errsink(pol) << cudaErrorCudartUnloading;
+  errsink(pol) << cudaErrorInvalidValue;
 };
 
 UNITTEST("error sinks: notify & fwd logs and yields")
@@ -6884,8 +6871,7 @@ UNITTEST("error sinks: notify & fwd logs and yields")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
   ::std::ostringstream log;
-  auto r = errsink(notify(log) & fwd)->*cudaErrorInvalidValue;
-  EXPECT(r == cudaErrorInvalidValue);
+  errsink(notify(log) & fwd) << cudaErrorInvalidValue;
   EXPECT(log.str().find("cudaErrorInvalidValue") != ::std::string::npos);
 };
 
@@ -6894,8 +6880,7 @@ UNITTEST("error sinks: store on a code stores the trait's exception")
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
   ::std::exception_ptr err;
-  auto r = errsink(store(&err))->*cudaErrorInvalidValue;
-  EXPECT(r == cudaErrorInvalidValue); // handled (stored), left unchanged
+  errsink(store(&err)) << cudaErrorInvalidValue;
   EXPECT(static_cast<bool>(err));
   bool typed = false;
   try
@@ -6959,11 +6944,11 @@ UNITTEST("error sinks: a hook-only user leaf works on the code channel")
 {
   using namespace cuda::experimental::stf;
   using namespace error_sinks_test;
-  EXPECT((errsink(picky{})->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  errsink(picky{}) << cudaErrorInvalidValue;
   bool caught = false;
   try
   {
-    errsink(converter{})->*cudaErrorInvalidValue;
+    errsink(converter{}) << cudaErrorInvalidValue;
   }
   catch (const my_error& e)
   {
@@ -6984,12 +6969,12 @@ UNITTEST("error sinks: & stops at the first fwd on both channels")
                     },
                     notify(log))
                   | fwd)
-            ->*cudaErrorInvalidValue)
+            << cudaErrorInvalidValue)
          == cudaErrorInvalidValue);
   EXPECT(log.str().empty());
   // fwd & notify(log) does not compile: notify could run on neither channel
   // ("policies after a never-returning policy are unreachable").
-  EXPECT((errsink(notify(log) & fwd)->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  errsink(notify(log) & fwd) << cudaErrorInvalidValue;
   EXPECT(log.str().find("cudaErrorInvalidValue") != ::std::string::npos);
 };
 
@@ -7051,7 +7036,7 @@ UNITTEST("error sinks: ->* yields, << does not convert")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
-  const cudaError_t e = errsink(fwd)->*cudaErrorNotReady;
+  const cudaError_t e = errsink(fwd) << cudaErrorNotReady;
   EXPECT(e == cudaErrorNotReady);
   int n       = 0;
   const int v = errsink(notify(::std::cerr))->*[&] {
@@ -7118,7 +7103,6 @@ UNITTEST("error sinks: ->* yields an action's return verbatim")
     }
     return 0;
   };
-  EXPECT(r == -1);
 };
 
 UNITTEST("error sinks: << treats an action's return as an error code")
@@ -7244,7 +7228,7 @@ UNITTEST("error sinks: code to exception with returned<S>(f)")
   bool caught = false;
   try
   {
-    errsink(pol)->*cudaErrorInvalidValue;
+    errsink(pol) << cudaErrorInvalidValue;
   }
   catch (const ::std::runtime_error& e)
   {
@@ -7286,12 +7270,12 @@ UNITTEST("error sinks: polling idiom under section 1's |")
   // A status that if_equal(...)(fwd) passes through goes on to the right arm of |; keeping the
   // not-ready code is a substitution that handles it.
   auto pol = if_equal(cudaErrorNotReady)(subst(cudaErrorNotReady)) | unwind;
-  EXPECT((errsink(pol)->*cudaErrorNotReady) == cudaErrorNotReady);
-  EXPECT((errsink(pol)->*cudaSuccess) == cudaSuccess);
+  errsink(pol) << cudaErrorNotReady;
+  errsink(pol) << cudaSuccess;
   bool threw = false;
   try
   {
-    errsink(pol)->*cudaErrorInvalidValue;
+    errsink(pol) << cudaErrorInvalidValue;
   }
   catch (const cuda_exception& e)
   {
@@ -7306,12 +7290,12 @@ UNITTEST("error sinks: composites and the bridge on a code")
   using namespace cuda::experimental::stf::sump;
   // A hook-only user policy sees the status's exception through the bridge; one that passes
   // through hands the status on unchanged.
-  EXPECT((errsink(error_sinks_test::succeed_on<cuda_exception>{})->*cudaErrorInvalidValue) == cudaSuccess);
-  EXPECT((errsink(error_sinks_test::succeed_on<::std::bad_alloc>{} | fwd)->*cudaErrorInvalidValue)
+  errsink(error_sinks_test::succeed_on<cuda_exception>{}) << cudaErrorInvalidValue;
+  EXPECT((errsink(error_sinks_test::succeed_on<::std::bad_alloc>{} | fwd) << cudaErrorInvalidValue)
          == cudaErrorInvalidValue);
   // `*` offers the status again while it passes through, then the next arm answers.
   ::std::ostringstream log;
-  EXPECT((errsink((notify(log) & fwd) * 3 | subst(cudaSuccess))->*cudaErrorNotReady) == cudaSuccess);
+  errsink((notify(log) & fwd) * 3 | subst(cudaSuccess)) << cudaErrorNotReady;
   size_t lines = 0;
   for (const char c : log.str())
   {
@@ -7320,11 +7304,11 @@ UNITTEST("error sinks: composites and the bridge on a code")
   EXPECT(lines == 3);
   // always: the finalizer runs whether the head handles the status or passes it through.
   ::std::string note;
-  EXPECT((errsink(always(fwd, store(&note)))->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  errsink(always(fwd, store(&note))) << cudaErrorInvalidValue;
   EXPECT(note.find("cudaErrorInvalidValue") != ::std::string::npos);
   // Nothing leaves the status unchanged; a nullary guard gates the sequence, and whether the
   // status was handled or passed through shows in the chain.
-  EXPECT((errsink(noop)->*CUDA_ERROR_NOT_READY) == CUDA_ERROR_NOT_READY);
+  errsink(noop) << CUDA_ERROR_NOT_READY;
   bool open       = false;
   const auto gate = [&] {
     return open;
@@ -7334,14 +7318,14 @@ UNITTEST("error sinks: composites and the bridge on a code")
   EXPECT(!(errsink(when(gate, noop) | fwd) << cudaErrorInvalidValue).forwarded());
   // The text targets of store take the trait's name, allocation-bounded for a span.
   char buffer[64]{};
-  EXPECT((errsink(store(::cuda::std::span<char>(buffer)))->*cudaErrorInvalidValue) == cudaErrorInvalidValue);
+  errsink(store(::cuda::std::span<char>(buffer))) << cudaErrorInvalidValue;
   EXPECT(::std::string_view{buffer}.find("cudaErrorInvalidValue") != ::std::string_view::npos);
   // A substitution of the status type keeps the code channel noexcept; the bridge does not, since
   // building the exception may throw.
   using subst_carrier = decltype(errsink(subst(cudaSuccess)));
-  static_assert(noexcept(::cuda::std::declval<subst_carrier>()->*::cuda::std::declval<cudaError_t>()));
+  static_assert(noexcept(::cuda::std::declval<subst_carrier>() << ::cuda::std::declval<cudaError_t>()));
   using bridged_carrier = decltype(errsink(error_sinks_test::succeed_on<cuda_exception>{}));
-  static_assert(!noexcept(::cuda::std::declval<bridged_carrier>()->*::cuda::std::declval<cudaError_t>()));
+  static_assert(!noexcept(::cuda::std::declval<bridged_carrier>() << ::cuda::std::declval<cudaError_t>()));
 };
 
 UNITTEST("error sinks: the callable channel is unchanged")
