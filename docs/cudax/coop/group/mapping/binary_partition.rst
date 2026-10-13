@@ -1,0 +1,53 @@
+.. _cudax-coop-group-mapping-binary-partition:
+
+``cudax::coop::binary_partition``
+=================================
+
+.. code:: cuda
+
+  namespace cudax::coop {
+
+  template <typename Fn>
+  class binary_partition
+  {
+    Fn /*fn_*/; // exposition-only
+
+  public:
+    __device__ explicit binary_partition(Fn fn) noexcept(cuda::std::is_nothrow_move_constructible_v<Fn>)
+      : /*fn_*/(cuda::std::move(fn))
+    {}
+
+    template <typename Unit, typename ParentGroup, typename PrevMappingResult>
+    [[nodiscard]] __device__
+    auto map(const Unit&, const ParentGroup&, const PrevMappingResult&)
+      noexcept(cuda::std::is_nothrow_invocable_v<Fn&, const PrevMappingResult&>);
+  };
+
+  template <typename Fn>
+  binary_partition(Fn) -> binary_partition<Fn>;
+
+  } // namespace cudax::coop
+
+Overview
+--------
+
+``cudax::coop::binary_partition`` is a mapping that splits units from the previous mapping result into 2 groups based on a boolean value. The boolean value is obtained by invoking the ``/*fn_*/`` callable with the previous mapping result. It is possible that all of the units will end up in the same group. Currently, it can only be used to group threads within the warp level.
+
+The returned mapping result is always exhaustive.
+
+The returned mapping result is not always contiguous.
+
+Examples
+--------
+
+.. code:: cuda
+
+  #include <cuda/experimental/coop/group>
+
+  namespace cudax = cuda::experimental;
+
+  __global__ void kernel()
+  {
+    // Creates a mapping that splits units into even/odd groups.
+    cudax::coop::binary_partition m{[](const auto& prev_mapping_result){ return prev_mapping_result.unit_rank() % 2 == 1; }};
+  }
