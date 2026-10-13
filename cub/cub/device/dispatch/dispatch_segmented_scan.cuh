@@ -64,12 +64,12 @@ template <typename PolicySelector,
           typename InitValueT,
           typename AccumT,
           ForceInclusive EnforceInclusive,
-          bool WalkSegments = false>
+          bool MarkSegmentHeads = false>
 struct device_segmented_scan_kernel_source
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
 
-  // WalkSegments selects the several-segments path of scan_segments_walked.
+  // MarkSegmentHeads selects the several-segments path of scan_segments_marked_heads.
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_kernel,
     device_segmented_scan_kernel<
@@ -84,7 +84,7 @@ struct device_segmented_scan_kernel_source
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes,
-      WalkSegments>);
+      MarkSegmentHeads>);
 };
 
 template <typename BeginOffsetIteratorT,
@@ -553,9 +553,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_num_items(
     const int tile_items = active_policy.block.threads_per_block * active_policy.block.items_per_thread;
     segments_per_block =
       segments_per_block_for_mean(tile_items, active_policy.block.max_segments, num_segments, num_items);
-    // The walked path places a block's items in make_unsigned_t<OffsetT>, and its last tile must not wrap.
-    using walk_offset_t = ::cuda::std::make_unsigned_t<OffsetT>;
-    if (::cuda::std::cmp_greater(num_items, ::cuda::std::numeric_limits<walk_offset_t>::max() - tile_items))
+    // The marked-heads path places a block's items in make_unsigned_t<OffsetT>, and its last tile must not wrap.
+    using logical_offset_t = ::cuda::std::make_unsigned_t<OffsetT>;
+    if (::cuda::std::cmp_greater(num_items, ::cuda::std::numeric_limits<logical_offset_t>::max() - tile_items))
     {
       segments_per_block = 1;
     }

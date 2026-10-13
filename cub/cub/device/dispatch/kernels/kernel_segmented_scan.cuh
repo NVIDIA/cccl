@@ -66,8 +66,8 @@ namespace detail::segmented_scan
 //! @tparam AccumT
 //!   The type of intermediate accumulator (according to P2322R6)
 //!
-//! @tparam WalkSegments
-//!   Give the several-segments temporary storage the per-tile head state `scan_segments_walked` needs
+//! @tparam MarkSegmentHeads
+//!   Give the several-segments temporary storage the per-tile head state `scan_segments_marked_heads` needs
 //!
 template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
@@ -76,8 +76,8 @@ template <typename SegmentedScanPolicyGetterT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
-          bool ForceInclusive = false,
-          bool WalkSegments   = false>
+          bool ForceInclusive   = false,
+          bool MarkSegmentHeads = false>
 struct agent_segmented_scan
 {
 private:
@@ -138,9 +138,9 @@ private:
   using block_offset_scan_t = BlockScan<OffsetT, threads_per_block, scan_algorithm>;
   using block_reduce_t      = BlockReduce<unsigned int, threads_per_block>;
 
-  // In-block positions of scan_segments_walked. A block's summed sizes can reach the offset maximum plus one.
-  using walk_offset_t            = ::cuda::std::make_unsigned_t<OffsetT>;
-  using block_walk_offset_scan_t = BlockScan<walk_offset_t, threads_per_block, scan_algorithm>;
+  // In-block positions of scan_segments_marked_heads. A block's summed sizes can reach the offset maximum plus one.
+  using logical_offset_t            = ::cuda::std::make_unsigned_t<OffsetT>;
+  using block_logical_offset_scan_t = BlockScan<logical_offset_t, threads_per_block, scan_algorithm>;
 
   union _multiple_segment_algorithms_storage_t
   {
@@ -161,19 +161,19 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  // scan_segments_walked loads and stores plain values, so it needs no augmented load or store storage.
-  union _walked_segment_algorithms_storage_t
+  // scan_segments_marked_heads loads and stores plain values, so it needs no augmented load or store storage.
+  union _marked_heads_algorithms_storage_t
   {
     typename block_load_t::TempStorage load;
     typename block_store_t::TempStorage store;
     typename block_scan_t::TempStorage scan;
     typename block_scan_aug_t::TempStorage scan_aug;
-    typename block_walk_offset_scan_t::TempStorage walk_offset_scan;
+    typename block_logical_offset_scan_t::TempStorage logical_offset_scan;
   };
 
-  struct _walked_segment_temp_storage_t
+  struct _marked_heads_temp_storage_t
   {
-    walk_offset_t logical_segment_offsets[max_segments];
+    logical_offset_t logical_segment_offsets[max_segments];
     // The tile's first item in the input and in the output, and whether it starts a segment. Valid for the
     // whole tile when it lies inside one segment or the block's segments are back to back.
     OffsetT tile_input_begin;
@@ -186,12 +186,12 @@ private:
     // Whether the tile holds a segment start after its first item.
     bool tile_has_heads;
     unsigned char head_flags[tile_items];
-    _walked_segment_algorithms_storage_t reused;
+    _marked_heads_algorithms_storage_t reused;
   };
 
   using _TempStorage = ::cuda::std::conditional_t<
     multi_segment_enabled,
-    ::cuda::std::conditional_t<WalkSegments, _walked_segment_temp_storage_t, _multi_segment_temp_storage_t>,
+    ::cuda::std::conditional_t<MarkSegmentHeads, _marked_heads_temp_storage_t, _multi_segment_temp_storage_t>,
     _single_segment_temp_storage_t>;
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
@@ -443,13 +443,13 @@ public:
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments                  = max_segments,
             ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_walked(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_marked_heads(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
     int n_segments)
   {
-    static_assert(WalkSegments, "scan_segments_walked needs the walked temporary storage");
+    static_assert(MarkSegmentHeads, "scan_segments_marked_heads needs the marked-heads temporary storage");
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputEndOffsetIteratorT>, OffsetT>,
@@ -476,10 +476,10 @@ public:
 
     // cooperatively compute inclusive scan of sizes of segments to be processed by this block
     {
-      n_segments                     = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      const int n_chunks             = ::cuda::ceil_div(n_segments, threads_per_block);
-      walk_offset_t exclusive_prefix = 0;
-      using plus_t                   = ::cuda::std::plus<>;
+      n_segments                        = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
+      const int n_chunks                = ::cuda::ceil_div(n_segments, threads_per_block);
+      logical_offset_t exclusive_prefix = 0;
+      using plus_t                      = ::cuda::std::plus<>;
       const plus_t offsets_scan_op{};
       worker_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
 
@@ -489,13 +489,13 @@ public:
 
         const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
         const OffsetT input_segment_end   = (work_id < n_segments) ? input_end_idx_it[work_id] : 0;
-        const walk_offset_t segment_size =
-          static_cast<walk_offset_t>(::cuda::std::max(input_segment_end, input_segment_begin))
-          - static_cast<walk_offset_t>(input_segment_begin);
+        const logical_offset_t segment_size =
+          static_cast<logical_offset_t>(::cuda::std::max(input_segment_end, input_segment_begin))
+          - static_cast<logical_offset_t>(input_segment_begin);
 
-        block_walk_offset_scan_t offset_scanner(temp_storage.reused.walk_offset_scan);
+        block_logical_offset_scan_t offset_scanner(temp_storage.reused.logical_offset_scan);
 
-        walk_offset_t prefix;
+        logical_offset_t prefix;
         offset_scanner.InclusiveSum(segment_size, prefix, prefix_callback_op);
 
         if (work_id < n_segments)
@@ -509,12 +509,12 @@ public:
         if (segment_size > 0)
         {
           // Compared modulo 2^n, as positions are unsigned.
-          const walk_offset_t work_begin = prefix - segment_size;
+          const logical_offset_t work_begin = prefix - segment_size;
           const bool contiguous =
-            (static_cast<walk_offset_t>(input_segment_begin) - work_begin
-             == static_cast<walk_offset_t>(temp_storage.block_input_begin))
-            && (static_cast<walk_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
-                == static_cast<walk_offset_t>(temp_storage.block_output_begin));
+            (static_cast<logical_offset_t>(input_segment_begin) - work_begin
+             == static_cast<logical_offset_t>(temp_storage.block_input_begin))
+            && (static_cast<logical_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
+                == static_cast<logical_offset_t>(temp_storage.block_output_begin));
           if (!contiguous)
           {
             ::cuda::atomic_ref<unsigned int, ::cuda::thread_scope_block>{temp_storage.contiguous_mask}.store(
@@ -524,10 +524,10 @@ public:
       }
     }
 
-    const walk_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
-    const walk_offset_t n_tiles         = ::cuda::ceil_div(items_per_block, walk_offset_t{tile_items});
+    const logical_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
+    const logical_offset_t n_tiles         = ::cuda::ceil_div(items_per_block, logical_offset_t{tile_items});
 
-    mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, walk_offset_t{0}, items_per_block);
+    mark_tile_heads(input_begin_idx_it, output_begin_idx_it, n_segments, logical_offset_t{0}, items_per_block);
     __syncthreads();
 
     using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
@@ -537,10 +537,10 @@ public:
     AccumT exclusive_prefix{};
     worker_prefix_callback_t prefix_op{exclusive_prefix, scan_op};
 
-    for (walk_offset_t tile_id = 0; tile_id < n_tiles;)
+    for (logical_offset_t tile_id = 0; tile_id < n_tiles;)
     {
-      const walk_offset_t tile_begin = tile_id * tile_items;
-      const walk_offset_t tile_end   = (::cuda::std::min) (tile_begin + tile_items, items_per_block);
+      const logical_offset_t tile_begin = tile_id * tile_items;
+      const logical_offset_t tile_end   = (::cuda::std::min) (tile_begin + tile_items, items_per_block);
 
       // tile_size <= TILE_ITEMS, casting to int is safe
       const int tile_size = static_cast<int>(tile_end - tile_begin);
@@ -580,7 +580,7 @@ public:
       else
       {
         OffsetT indices[items_per_thread];
-        walked_item_indices(input_begin_idx_it, n_segments, tile_begin, heads, indices);
+        item_indices_from_heads(input_begin_idx_it, n_segments, tile_begin, heads, indices);
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < items_per_thread; ++item)
         {
@@ -656,7 +656,7 @@ public:
       else
       {
         OffsetT indices[items_per_thread];
-        walked_item_indices(output_begin_idx_it, n_segments, tile_begin, heads, indices);
+        item_indices_from_heads(output_begin_idx_it, n_segments, tile_begin, heads, indices);
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < items_per_thread; ++item)
         {
@@ -685,17 +685,17 @@ private:
     InputBeginOffsetIteratorT input_begin_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
     int n_segments,
-    walk_offset_t tile_id,
-    walk_offset_t items_per_block)
+    logical_offset_t tile_id,
+    logical_offset_t items_per_block)
   {
-    const walk_offset_t tile_begin = tile_id * tile_items;
-    const walk_offset_t tile_end   = tile_begin + tile_items;
+    const logical_offset_t tile_begin = tile_id * tile_items;
+    const logical_offset_t tile_end   = tile_begin + tile_items;
 
     for (int segment = static_cast<int>(threadIdx.x); segment < n_segments; segment += threads_per_block)
     {
-      const walk_offset_t segment_begin =
-        segment == 0 ? walk_offset_t{0} : temp_storage.logical_segment_offsets[segment - 1];
-      const walk_offset_t segment_end = temp_storage.logical_segment_offsets[segment];
+      const logical_offset_t segment_begin =
+        segment == 0 ? logical_offset_t{0} : temp_storage.logical_segment_offsets[segment - 1];
+      const logical_offset_t segment_end = temp_storage.logical_segment_offsets[segment];
       if (segment_begin <= tile_begin && tile_begin < segment_end)
       {
         // Below one segment's size, so it fits in OffsetT.
@@ -716,23 +716,23 @@ private:
   // Where each of the thread's items lies through begin_idx_it, searching the block's segments only for the
   // thread's first item and for a head.
   template <typename BeginOffsetIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void walked_item_indices(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void item_indices_from_heads(
     BeginOffsetIteratorT begin_idx_it,
     int n_segments,
-    walk_offset_t tile_begin,
+    logical_offset_t tile_begin,
     const bool (&heads)[items_per_thread],
     OffsetT (&indices)[items_per_thread])
   {
-    const walk_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
-    const walk_offset_t thread_begin =
-      tile_begin + static_cast<walk_offset_t>(static_cast<int>(threadIdx.x) * items_per_thread);
+    const logical_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
+    const logical_offset_t thread_begin =
+      tile_begin + static_cast<logical_offset_t>(static_cast<int>(threadIdx.x) * items_per_thread);
     // Unsigned, as the items past the block's end are stepped over too.
-    walk_offset_t index{};
+    logical_offset_t index{};
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
-      const walk_offset_t position = thread_begin + static_cast<walk_offset_t>(item);
+      const logical_offset_t position = thread_begin + static_cast<logical_offset_t>(item);
       if (position < items_per_block && (item == 0 || heads[item]))
       {
         // Count the segments that end at or before position; empty segments are passed over.
@@ -746,9 +746,9 @@ private:
             segment += step;
           }
         }
-        const walk_offset_t segment_begin =
-          segment == 0 ? walk_offset_t{0} : temp_storage.logical_segment_offsets[segment - 1];
-        index = static_cast<walk_offset_t>(static_cast<OffsetT>(begin_idx_it[segment])) + (position - segment_begin);
+        const logical_offset_t segment_begin =
+          segment == 0 ? logical_offset_t{0} : temp_storage.logical_segment_offsets[segment - 1];
+        index = static_cast<logical_offset_t>(static_cast<OffsetT>(begin_idx_it[segment])) + (position - segment_begin);
       }
       else
       {
@@ -944,7 +944,7 @@ template <typename PolicySelector,
           typename InitValueT,
           typename AccumT,
           bool ForceInclusive,
-          bool WalkSegments         = false,
+          bool MarkSegmentHeads     = false,
           typename ActualInitValueT = typename InitValueT::value_type>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
@@ -982,7 +982,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     ActualInitValueT,
     AccumT,
     ForceInclusive,
-    WalkSegments>;
+    MarkSegmentHeads>;
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
@@ -1031,9 +1031,10 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     }
     else
     {
-      if constexpr (WalkSegments)
+      if constexpr (MarkSegmentHeads)
       {
-        agent.scan_segments_walked(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
+        agent.scan_segments_marked_heads(
+          worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
       }
       else
       {
