@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -207,6 +207,9 @@ inline constexpr ::cuda::std::size_t __max_portable_dyn_smem_size = 48 * 1024;
  * In order to allocate more dynamic shared memory than the portable
  * limit, opt-in NonPortableSize template argument should be set to true,
  * otherwise kernel launch will fail.
+ * With CUDA Toolkit and driver 13.2 or newer, this option configures shared
+ * memory for each launch without changing the function's dynamic shared memory
+ * limit. Older versions increase the function limit when necessary.
  *
  * @par Snippet
  * @code
@@ -264,6 +267,9 @@ public:
 
   static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
+#  if _CCCL_CTK_AT_LEAST(13, 2)
+  static constexpr bool needs_attribute_space = true;
+#  endif // _CCCL_CTK_AT_LEAST(13, 2)
 
   //! @brief Gets the size of the dynamic shared memory in bytes.
   [[nodiscard]] _CCCL_API constexpr ::cuda::std::size_t size_bytes() const noexcept
@@ -343,14 +349,6 @@ template <class _Tp>
     return __status;
   }
 
-  int __max_dyn_smem_size{};
-  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
-    __max_dyn_smem_size, ::CU_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, __kernel);
-  if (__status != ::cudaSuccess)
-  {
-    return __status;
-  }
-
   const auto __dyn_smem_size = ::cuda::overflow_cast<int>(__opt.size_bytes());
   if (__dyn_smem_size.overflow)
   {
@@ -361,6 +359,28 @@ template <class _Tp>
   if (static_cast<::cuda::std::size_t>(__smem_size) > __max_portable_dyn_smem_size && !__opt.__non_portable_)
   {
     return ::cudaErrorInvalidValue;
+  }
+
+#  if _CCCL_CTK_AT_LEAST(13, 2)
+  if (::cuda::__driver::__version_at_least(13, 2))
+  {
+    // Opt in for this launch without changing the function's dynamic shared memory limit.
+    ::CUlaunchAttribute __attr{};
+    __attr.id = ::CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE;
+    __attr.value.sharedMemoryMode =
+      __opt.__non_portable_ ? ::CU_SHARED_MEMORY_MODE_ALLOW_NON_PORTABLE : ::CU_SHARED_MEMORY_MODE_REQUIRE_PORTABLE;
+    __config.attrs[__config.numAttrs++] = __attr;
+    __config.sharedMemBytes             = static_cast<unsigned>(__dyn_smem_size.value);
+    return ::cudaSuccess;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 2)
+
+  int __max_dyn_smem_size{};
+  __status = ::cuda::__driver::__functionGetAttributeNoThrow(
+    __max_dyn_smem_size, ::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, __kernel);
+  if (__status != ::cudaSuccess)
+  {
+    return __status;
   }
 
   if (__max_dyn_smem_size < __dyn_smem_size.value)

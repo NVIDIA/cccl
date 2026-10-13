@@ -135,12 +135,11 @@ The level can also be chosen per operation instead of per type, which is the poi
 accuracy-explicit functions:
 
 ```c++
-namespace cudax = cuda::experimental;
 
-using ffloat = cudax::fp32mp2_low;              // low accuracy for the bulk of the work
+using ffloat = cuda::fp32mp2_low;              // low accuracy for the bulk of the work
 ffloat a = ..., b = ...;
 
-ffloat r = cudax::add<cudax::fpmp2_accuracy::high>(a, b);   // this one step at high
+ffloat r = cuda::add<cuda::fpmp2_accuracy::high>(a, b);   // this one step at high
 ```
 
 `add`, `sub`, `mul`, `div`, `fma` and `mad` all take the level this way. The result type is
@@ -159,23 +158,19 @@ Using the types
 
 One header carries the whole interface, the transcendental math functions included.
 
-The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
-examples abbreviate it rather than using a using-directive:
-
-```c++
-namespace cudax = cuda::experimental;
-```
+The CCCL FP component lives in the `cuda` namespace. The examples qualify its names rather
+than using a using-directive.
 
 Two spellings then appear, and the split is deliberate. Type names and the component's own
-functions — `renormalize`, the accuracy-selecting `add<>` — carry the `cudax::` prefix,
+functions — `renormalize`, the accuracy-selecting `add<>` — carry the `cuda::` prefix,
 since they have no counterpart for `double` and so only occur in code written against the
 component to begin with. The standard-named math functions are left **unqualified** and found
 by argument-dependent lookup:
 
 ```c++
-cudax::fp64mp2 x{2.0};
+cuda::fp64mp2 x{2.0};
 auto r = sqrt(x);                  // unqualified: ADL finds the fpmp2 overload
-auto s = cudax::renormalize(x);    // component-specific: qualified
+auto s = cuda::renormalize(x);    // component-specific: qualified
 ```
 
 This is what lets an existing body of `double` code keep its call sites unchanged when the
@@ -190,8 +185,8 @@ the first thing a new user is likely to hit. A conversion **into** the pair that
 represented exactly is a narrowing conversion, and by default it must be written out:
 
 ```c++
-cudax::fp32mp2 x = 1.2345678901234567;                       // error by default
-cudax::fp32mp2 y = static_cast<cudax::fp32mp2>(1.2345678901234567);   // correct, and constexpr
+cuda::fp32mp2 x = 1.2345678901234567;                       // error by default
+cuda::fp32mp2 y = static_cast<cuda::fp32mp2>(1.2345678901234567);   // correct, and constexpr
 ```
 
 The reason is that an implicit narrowing conversion has only one place to go — the
@@ -239,8 +234,8 @@ written out, not how precisely it is done.
 Changing the accuracy tag is a separate matter, and always explicit in both directions:
 
 ```c++
-cudax::fp32mp2_low fast = ...;
-cudax::fp32mp2      safe(fast);    // explicit; renormalizes on the way
+cuda::fp32mp2_low fast = ...;
+cuda::fp32mp2      safe(fast);    // explicit; renormalizes on the way
 ```
 
 Converting **out of** `low` renormalizes. The `low` algorithms skip the closing

@@ -949,7 +949,9 @@ template <typename PolicySelector>
 // Internal entry point: the single dispatch that replaces the standalone baseline / cluster dispatches. It resolves the
 // runtime compute capability, then uses `dispatch_compute_cap` to pick, per architecture, the backend chosen by the
 // resolved policy selector (deterministic -> cluster; otherwise the arch+size crossover). Both host arms launch the
-// same kernel symbol. `Determinism`/`TieBreak` are compile-time selection inputs.
+// same kernel symbol. `Determinism`/`TieBreak` are compile-time selection inputs. Called by `dispatch` with the
+// annotated parameters already normalized (see `params::normalize_param`), so the wrapper types that reach the kernel
+// are identical in both nvcc compilation passes.
 //
 // `tuning_env` carries an optional `tune`d policy selector (keyed on `topk_policy`): when present it fully replaces the
 // automatic selector -- its `.backend` chooses the arm and its `.baseline`/`.cluster` carry the tunings. Matching
@@ -1202,11 +1204,11 @@ template <
   class KeyOutputItItT,
   class ValueInputItItT,
   class ValueOutputItItT,
-  class SegmentSizeParameterT,
-  class KParameterT,
+  class SegmentSizeArgT,
+  class KArgT,
   class SelectDirectionT,
-  class NumSegmentsParameterT,
-  class TotalNumItemsGuaranteeT,
+  class NumSegmentsArgT,
+  class TotalNumItemsGuaranteeArgT,
   class TuningEnvT            = ::cuda::std::execution::env<>,
   class KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 _CCCL_HOST_API cudaError_t dispatch(
@@ -1216,15 +1218,31 @@ _CCCL_HOST_API cudaError_t dispatch(
   KeyOutputItItT d_key_segments_out_it,
   ValueInputItItT d_value_segments_it,
   ValueOutputItItT d_value_segments_out_it,
-  SegmentSizeParameterT segment_sizes,
-  KParameterT k,
+  SegmentSizeArgT segment_sizes_arg,
+  KArgT k_arg,
   SelectDirectionT select_direction,
-  NumSegmentsParameterT num_segments,
-  TotalNumItemsGuaranteeT total_num_items_guarantee,
+  NumSegmentsArgT num_segments_arg,
+  TotalNumItemsGuaranteeArgT total_num_items_guarantee_arg,
   cudaStream_t stream,
   const TuningEnvT& tuning_env           = {},
   KernelLauncherFactory launcher_factory = {})
 {
+  // Rebuild the annotated parameters from the information that survives nvcc's host re-emission (see
+  // params::normalize_param) *before* any kernel or policy-selector type is named: from here on only the normalized
+  // parameters and their types take part in a kernel's identity. Types are derived through declval rather than from
+  // the variables so they can feed the constant initializers below (GCC 7, see the select-direction note in
+  // `dispatch_select`).
+  using SegmentSizeParameterT = decltype(detail::params::normalize_param(::cuda::std::declval<SegmentSizeArgT>()));
+  using KParameterT           = decltype(detail::params::normalize_param(::cuda::std::declval<KArgT>()));
+  using NumSegmentsParameterT = decltype(detail::params::normalize_param(::cuda::std::declval<NumSegmentsArgT>()));
+  using TotalNumItemsGuaranteeT =
+    decltype(detail::params::normalize_param(::cuda::std::declval<TotalNumItemsGuaranteeArgT>()));
+  const SegmentSizeParameterT segment_sizes = detail::params::normalize_param(segment_sizes_arg);
+  const KParameterT k                       = detail::params::normalize_param(k_arg);
+  const NumSegmentsParameterT num_segments  = detail::params::normalize_param(num_segments_arg);
+  const TotalNumItemsGuaranteeT total_num_items_guarantee =
+    detail::params::normalize_param(total_num_items_guarantee_arg);
+
   // Both selection arms and the sort grid resolve `num_segments` on the host.
   static_assert(::cuda::args::__traits<NumSegmentsParameterT>::is_single_value
                   && !::cuda::args::__traits<NumSegmentsParameterT>::is_deferred,

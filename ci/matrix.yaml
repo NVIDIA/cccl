@@ -95,23 +95,23 @@ workflows:
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'minmax', ctk: '13.0', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2019', 'msvc2022' ]}
     # Old CTK: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', ctk: '12.0', std: 'minmax', cxx: ['gcc9',  'gcc12', 'clang14',            'msvc14.39']}
-    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc14',   'clang14', 'clang19', 'msvc2022']}
-    - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc15',   'clang15', 'clang20', 'msvc2022']}
+    - {jobs: ['build'], project: 'cudax', ctk: '12.X', std: 'minmax', cxx: ['gcc9',  'gcc14', 'clang14', 'clang19', 'msvc2022']}
+    - {jobs: ['build'], project: 'cudax', ctk: '13.0', std: 'minmax', cxx: ['gcc11', 'gcc15', 'clang15', 'clang20', 'msvc2022']}
     # Current CTK build-only:
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'] }
-    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'] }
+    - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21'] }
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'max',    cxx: ['msvc2022'] }
     - {jobs: ['build'],                     project: ['libcudacxx', 'thrust'], std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Latest
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2019'] } # Oldest
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'max',    cxx: ['gcc12', 'gcc13', 'gcc14'] }
-    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20'] }
+    - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21'] }
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'max',    cxx: ['msvc2022'] }
     - {jobs: ['build_nolid', 'build_lid0'], project: 'cub',                   std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Latest
     # Current CTK build-only: cudax has a different support matrix:
     - {jobs: ['build'], project: 'cudax', std: 'minmax', cxx: ['gcc11', 'clang15', 'msvc2022']} # Oldest
     - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['gcc12']}
-    - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20']}
+    - {jobs: ['build'], project: 'cudax', std: 'max',    cxx: ['clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
     - {jobs: ['build'], project: 'cudax', std: 'all',    cxx: ['gcc', 'clang', 'msvc']} # Newest
     # CTK '13.X' build with tile support: default projects
     - {jobs: ['build'],                     std: 'all', project: ['libcudacxx', 'thrust', cudax], ctk: '13.X', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
@@ -294,7 +294,7 @@ workflows:
     - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['msvc2019', 'msvc2022']}
     # CTK '13.X' full matrix build: default projects
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
-    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
+    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21', 'clang22']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['msvc2019', 'msvc2022', 'msvc2026']}
     # CTK '13.X' full matrix build with tile support: default projects
     - {jobs: ['build'], project: ['libcudacxx', 'thrust'], ctk: '13.X', std: 'all', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
@@ -313,7 +313,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.0', cxx: ['msvc2022']}
     # CTK '13.X' full matrix build: cudax
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
-    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21', 'clang22']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
     # CTK '13.X' full matrix build with tile support: cudax
     - {jobs: ['build'], project: 'cudax', ctk: '13.X', std: 'all', cxx: ['gcc', 'clang', 'msvc'], args: '-enable-tile'}
@@ -438,7 +438,7 @@ workflows:
     - {jobs: ['build'], std: 'all', ctk: '13.0', cxx: ['msvc2019', 'msvc2022']}
     # CTK '13.X' full matrix build: default projects
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
-    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
+    - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21', 'clang22']}
     - {jobs: ['build'], std: 'all', ctk: '13.X', cxx: ['msvc2019', 'msvc2022', 'msvc2026']}
     # CTK 12.0 full matrix build: cudax
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '12.0', cxx: ['gcc9', 'gcc10', 'gcc11', 'gcc12']}
@@ -454,7 +454,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.0', cxx: ['msvc2022']}
     # CTK '13.X' full matrix build: cudax
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['gcc11', 'gcc12', 'gcc13', 'gcc14', 'gcc15']}
-    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21']}
+    - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19', 'clang20', 'clang21', 'clang22']}
     - {jobs: ['build'], project: 'cudax', std: 'all', ctk: '13.X', cxx: ['msvc2022', 'msvc2026']}
     # CTK 12.X testing:
     - {jobs: ['test'], project: 'libcudacxx', ctk: '12.X', std: 'minmax', cxx: ['gcc14', 'clang19', 'msvc2022'], gpu: 'rtx2080'}
@@ -569,6 +569,7 @@ workflows:
     - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc13', 'gcc14']}
     - {jobs: ['dc'],     ctk: [                '13.0', '13.X'], cxx: ['gcc15']}
     - {jobs: ['dc'],     ctk: [        '12.X', '13.0', '13.X'], cxx: ['clang15', 'clang16', 'clang17', 'clang18', 'clang19']}
+    - {jobs: ['dc'],     ctk: [                        '13.X'], cxx: ['clang22']}
     - {jobs: ['dc_ext'], ctk: [        '12.X', '13.0', '13.X'], cxx: ['gcc14', 'clang20']}
     # Clang21+CTK12.9 is currently only used for cuda-clang testing. nvcc 12.9 doesn't support clang21.
     - {jobs: ['dc_ext'], ctk: [        '12.X',         '13.X'], cxx: ['clang21']}
@@ -695,6 +696,7 @@ host_compilers:
       19: { stds: [17, 20, 23] }
       20: { stds: [17, 20, 23] }
       21: { stds: [17, 20, 23], alias: 'cuda' }
+      22: { stds: [17, 20, 23] }
   clang_preview:
     name: 'Clang'
     container_tag: 'llvm'
