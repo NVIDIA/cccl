@@ -192,9 +192,17 @@ bool create_pch_if_needed(
   config.appendCommandLineArguments(options);
 
   const std::string label = kind_name + "_sm" + std::to_string(config.sm_version);
-  const std::string key   = hash_pch_options(options, kind_name);
-  pch_path                = get_pch_path(cache_dir, label, key);
-  const auto source_path  = get_pch_source_path(cache_dir, label, key);
+  // The PTX ISA version is derived inside libnvcc (from sm_version and the nvJitLink in use) rather
+  // than serialized into `options`, but it is baked into a device PCH as a target feature, so it
+  // has to be part of the cache key. Hash a copy: `options` is what libnvcc is invoked with.
+  std::vector<std::string> key_options = options;
+  if (kind_name == "device")
+  {
+    key_options.push_back("ptx-isa=" + std::to_string(libnvccPtxVersionForSm(config.sm_version)));
+  }
+  const std::string key  = hash_pch_options(key_options, kind_name);
+  pch_path               = get_pch_path(cache_dir, label, key);
+  const auto source_path = get_pch_source_path(cache_dir, label, key);
 
   auto present = [&] {
     std::error_code ec;
