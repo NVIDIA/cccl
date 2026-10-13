@@ -493,13 +493,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
-  template <class _Constraints = __tuple_constraints<_Tp...>, enable_if_t<_Constraints::__all_swappable, int> = 0>
+  template <class _Constraints = __tuple_swap_constraints<_Tp...>, enable_if_t<_Constraints::__all_swappable, int> = 0>
   _CCCL_API constexpr void swap(__tuple_impl& __t) noexcept(_Constraints::__all_nothrow_swappable)
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
   }
 
-  template <class _Constraints = __tuple_constraints<_Tp...>, enable_if_t<_Constraints::__all_const_swappable, int> = 0>
+  template <class _Constraints                                    = __tuple_swap_constraints<_Tp...>,
+            enable_if_t<_Constraints::__all_const_swappable, int> = 0>
   _CCCL_API constexpr void swap(const __tuple_impl& __t) const noexcept(_Constraints::__all_nothrow_const_swappable)
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<const __tuple_leaf<_Indx, _Tp>&>(__t)), ...);

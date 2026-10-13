@@ -562,13 +562,14 @@ public:
     return *this;
   }
 
-  template <class _Constraints = __tuple_constraints<_Tp...>, enable_if_t<_Constraints::__all_swappable, int> = 0>
+  template <class _Constraints = __tuple_swap_constraints<_Tp...>, enable_if_t<_Constraints::__all_swappable, int> = 0>
   _CCCL_API constexpr void swap(tuple& __t) noexcept(_Constraints::__all_nothrow_swappable)
   {
     __base_.swap(__t.__base_);
   }
 
-  template <class _Constraints = __tuple_constraints<_Tp...>, enable_if_t<_Constraints::__all_const_swappable, int> = 0>
+  template <class _Constraints                                    = __tuple_swap_constraints<_Tp...>,
+            enable_if_t<_Constraints::__all_const_swappable, int> = 0>
   _CCCL_API constexpr void swap(const tuple& __t) const noexcept(_Constraints::__all_nothrow_const_swappable)
   {
     __base_.swap(__t.__base_);
@@ -657,7 +658,7 @@ public:
 };
 
 template <class... _Types,
-          class _Constraints                              = __tuple_constraints<_Types...>,
+          class _Constraints                              = __tuple_swap_constraints<_Types...>,
           enable_if_t<_Constraints::__all_swappable, int> = 0>
 _CCCL_API constexpr void
 swap(tuple<_Types...>& __t, tuple<_Types...>& __u) noexcept(_Constraints::__all_nothrow_swappable)
@@ -666,7 +667,7 @@ swap(tuple<_Types...>& __t, tuple<_Types...>& __u) noexcept(_Constraints::__all_
 }
 
 template <class... _Types,
-          class _Constraints                                    = __tuple_constraints<_Types...>,
+          class _Constraints                                    = __tuple_swap_constraints<_Types...>,
           enable_if_t<_Constraints::__all_const_swappable, int> = 0>
 _CCCL_API constexpr void
 swap(const tuple<_Types...>& __t, const tuple<_Types...>& __u) noexcept(_Constraints::__all_nothrow_const_swappable)

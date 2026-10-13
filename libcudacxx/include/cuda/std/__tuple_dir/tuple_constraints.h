@@ -376,13 +376,6 @@ struct __tuple_constraints
   // [tuple.assign]-12: is_assignable_v<const Types&, Types> is true for all i.
   static constexpr bool __all_const_move_assignable = (is_assignable_v<const _Types&, _Types> && ...);
 
-  // [tuple.swap]: is_swappable_v<T> / is_swappable_v<const T> for every element.
-  static constexpr bool __all_swappable       = (is_swappable_v<_Types> && ... && true);
-  static constexpr bool __all_const_swappable = (is_swappable_v<const _Types> && ... && true);
-
-  static constexpr bool __all_nothrow_swappable       = (is_nothrow_swappable_v<_Types> && ... && true);
-  static constexpr bool __all_nothrow_const_swappable = (is_nothrow_swappable_v<const _Types> && ... && true);
-
   template <bool _IsConst, class... _UTypes>
   [[nodiscard]] _CCCL_TRIVIAL_API static _CCCL_CONSTEVAL bool __select_converting_assignable() noexcept
   {
@@ -509,6 +502,19 @@ struct __tuple_constraints
   template <class... _UTypes>
   static constexpr bool __is_nothrow_less_than_comparable_v =
     (__is_cpp17_nothrow_less_than_comparable_v<_Types, _UTypes> && ...);
+};
+
+// Kept out of __tuple_constraints, which tuple and pair instantiate for their constructors: NVRTC evaluates static data
+// member initializers on class instantiation, and is_swappable_v crashes NVRTC for references to incomplete types.
+template <class... _Types>
+struct __tuple_swap_constraints
+{
+  // [tuple.swap]: is_swappable_v<T> / is_swappable_v<const T> for every element.
+  static constexpr bool __all_swappable       = (is_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_const_swappable = (is_swappable_v<const _Types> && ... && true);
+
+  static constexpr bool __all_nothrow_swappable       = (is_nothrow_swappable_v<_Types> && ... && true);
+  static constexpr bool __all_nothrow_const_swappable = (is_nothrow_swappable_v<const _Types> && ... && true);
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD
