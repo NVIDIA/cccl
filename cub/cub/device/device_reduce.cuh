@@ -55,6 +55,7 @@
 #include <cuda/std/__iterator/indirectly_comparable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
@@ -311,12 +312,12 @@ private:
       gpu_gpu_determinism && ::cuda::std::is_integral_v<AccumT> && (detail::is_cuda_binary_operator<ReductionOpT>);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
-    constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<AccumT, float, double> && ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
+    constexpr auto float_double_plus = gpu_gpu_determinism && ::cuda::std::__is_one_of_v<AccumT, float, double>
+                                    && ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
 
     constexpr auto float_double_min_max_fallback =
       gpu_gpu_determinism
-      && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+      && ::cuda::std::__is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
 
     constexpr auto supported =
       integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
