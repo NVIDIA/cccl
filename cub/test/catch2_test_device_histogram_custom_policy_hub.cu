@@ -11,6 +11,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/std/array>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
@@ -128,4 +129,122 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
 
   const c2h::host_vector<counter_t> h_histogram = d_histogram;
   REQUIRE(h_histogram == expected_histogram);
+}
+
+CUB_TEST("DispatchHistogram: uint64_t counters", "[histogram][device]", CUB_SMALL)
+{
+  using sample_t                                     = cuda::std::uint8_t;
+  using counter_t                                    = cuda::std::uint64_t;
+  using level_t                                      = int;
+  using offset_t                                     = cuda::std::int32_t;
+  constexpr int num_channels                         = 1;
+  [[maybe_unused]] constexpr int num_active_channels = 1;
+  constexpr int num_bins                             = 16;
+  constexpr offset_t num_row_pixels                  = 256;
+  constexpr int num_output_levels                    = num_bins + 1;
+
+  c2h::host_vector<sample_t> h_samples(num_row_pixels);
+  for (offset_t i = 0; i < num_row_pixels; ++i)
+  {
+    h_samples[i] = static_cast<sample_t>(i % num_bins);
+  }
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  const cuda::std::array<int, num_active_channels> num_levels{num_output_levels};
+
+  using dispatch_t = DispatchHistogram<num_channels, num_active_channels, sample_t*, counter_t, level_t, offset_t>;
+
+  SECTION("HistogramEven")
+  {
+    c2h::device_vector<counter_t> d_histogram(num_bins, 0);
+    const cuda::std::array<counter_t*, num_active_channels> d_histograms{thrust::raw_pointer_cast(d_histogram.data())};
+    const cuda::std::array<level_t, num_active_channels> lower_level{0};
+    const cuda::std::array<level_t, num_active_channels> upper_level{num_bins};
+
+    size_t temp_size = 0;
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchEven(
+        nullptr,
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        lower_level,
+        upper_level,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_size, thrust::no_init);
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchEven(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        lower_level,
+        upper_level,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
+    REQUIRE(d_histogram == expected_histogram);
+  }
+
+  SECTION("HistogramRange")
+  {
+    c2h::host_vector<level_t> h_levels(num_output_levels);
+    for (int i = 0; i < num_output_levels; ++i)
+    {
+      h_levels[i] = i;
+    }
+    c2h::device_vector<level_t> d_levels_storage = h_levels;
+    const cuda::std::array<const level_t*, num_active_channels> d_levels{
+      thrust::raw_pointer_cast(d_levels_storage.data())};
+
+    c2h::device_vector<counter_t> d_histogram(num_bins, 0);
+    const cuda::std::array<counter_t*, num_active_channels> d_histograms{thrust::raw_pointer_cast(d_histogram.data())};
+
+    size_t temp_size = 0;
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchRange(
+        nullptr,
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        d_levels,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_size, thrust::no_init);
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchRange(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        d_levels,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
+    REQUIRE(d_histogram == expected_histogram);
+  }
 }

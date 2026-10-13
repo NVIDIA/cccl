@@ -30,6 +30,7 @@
 
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstdint>
 
@@ -75,6 +76,33 @@ enum class privatization_mode
   static_smem,
   dynamic_smem
 };
+
+// CUDA's 64-bit integer atomic overloads use unsigned long long, while uint64_t is unsigned long on LP64 targets.
+template <typename CounterT, typename ContributionT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void histogram_atomic_add(CounterT* counter, ContributionT contribution)
+{
+  if constexpr (::cuda::std::is_integral_v<CounterT> && sizeof(CounterT) == sizeof(::cuda::std::uint64_t))
+  {
+    atomicAdd(reinterpret_cast<unsigned long long*>(counter), static_cast<unsigned long long>(contribution));
+  }
+  else
+  {
+    atomicAdd(counter, static_cast<CounterT>(contribution));
+  }
+}
+
+template <typename CounterT, typename ContributionT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void histogram_atomic_add_block(CounterT* counter, ContributionT contribution)
+{
+  if constexpr (::cuda::std::is_integral_v<CounterT> && sizeof(CounterT) == sizeof(::cuda::std::uint64_t))
+  {
+    atomicAdd_block(reinterpret_cast<unsigned long long*>(counter), static_cast<unsigned long long>(contribution));
+  }
+  else
+  {
+    atomicAdd_block(counter, static_cast<CounterT>(contribution));
+  }
+}
 
 // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
 template <CacheLoadModifier Modifier, typename ValueT, typename OffsetT>
@@ -269,7 +297,7 @@ struct AgentHistogram
         {
           if (bins[pixel] >= 0 && bins[pixel] < num_privatized_bins[ch])
           {
-            atomicAdd_block(privatized_histogram + bins[pixel], accumulator);
+            histogram_atomic_add_block(privatized_histogram + bins[pixel], accumulator);
           }
 
           accumulator = 0;
@@ -280,7 +308,7 @@ struct AgentHistogram
       // Last pixel
       if (bins[items_per_thread - 1] >= 0 && bins[items_per_thread - 1] < num_privatized_bins[ch])
       {
-        atomicAdd_block(privatized_histogram + bins[items_per_thread - 1], accumulator);
+        histogram_atomic_add_block(privatized_histogram + bins[items_per_thread - 1], accumulator);
       }
     }
   }
@@ -302,7 +330,7 @@ struct AgentHistogram
         privatized_decode_op[ch].template BinSelect<load_modifier>(samples[pixel][ch], bin, is_valid[pixel]);
         if (bin >= 0 && bin < num_privatized_bins[ch])
         {
-          atomicAdd_block(privatized_histogram + bin, 1);
+          histogram_atomic_add_block(privatized_histogram + bin, 1);
         }
       }
     }
@@ -654,7 +682,7 @@ struct AgentHistogram
 
         if (output_bin >= 0)
         {
-          atomicAdd(&output_histogram[ch][output_bin], static_cast<OutputCounterT>(count));
+          histogram_atomic_add(&output_histogram[ch][output_bin], count);
         }
       }
     }
