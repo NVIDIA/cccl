@@ -114,7 +114,7 @@ public:
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {})
       : __impl_{::cuda::std::make_unique<__impl_type>(
-          __stream, __mr, _Capacity, key_type(__empty_key_sentinel), __pred, __probing_scheme)}
+          __stream, __mr, _Capacity, static_cast<key_type>(__empty_key_sentinel), __pred, __probing_scheme)}
   {}
 
   //! @brief Constructs a dynamically sized set and enqueues empty-slot initialization.
@@ -137,7 +137,7 @@ public:
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {})
       : __impl_{::cuda::std::make_unique<__impl_type>(
-          __stream, __mr, __capacity, key_type(__empty_key_sentinel), __pred, __probing_scheme)}
+          __stream, __mr, __capacity, static_cast<key_type>(__empty_key_sentinel), __pred, __probing_scheme)}
   {}
 
   //! @brief Constructs a dynamic set sized for the expected key count and load factor.
@@ -163,7 +163,13 @@ public:
     const _KeyEqual& __pred                = {},
     const _ProbingScheme& __probing_scheme = {})
       : __impl_{::cuda::std::make_unique<__impl_type>(
-          __stream, __mr, __n, __desired_load_factor, key_type(__empty_key_sentinel), __pred, __probing_scheme)}
+          __stream,
+          __mr,
+          __n,
+          __desired_load_factor,
+          static_cast<key_type>(__empty_key_sentinel),
+          __pred,
+          __probing_scheme)}
   {}
 
   _CCCL_HIDE_FROM_ABI fixed_capacity_set()                                     = delete;

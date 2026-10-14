@@ -32,7 +32,7 @@ using extents   = c2h::type_list<cuda::std::false_type, cuda::std::true_type>;
 
 struct half_key
 {
-  __half2 bits;
+  __half2 bits{};
 };
 
 // This test deliberately uses representation equality, including NaN and signed-zero bits.

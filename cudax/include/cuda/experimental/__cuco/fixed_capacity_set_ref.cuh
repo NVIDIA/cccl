@@ -127,7 +127,7 @@ public:
     const _KeyEqual& __predicate,
     const _ProbingScheme& __probing_scheme,
     storage_span_type __slots)
-      : __impl_{key_type(__empty_key_sentinel),
+      : __impl_{static_cast<key_type>(__empty_key_sentinel),
                 __predicate,
                 __probing_scheme,
                 __storage_ref_type{__slots.data(), __checked_capacity(__slots)}}
