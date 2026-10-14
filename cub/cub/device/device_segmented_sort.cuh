@@ -27,6 +27,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
+#include <cub/device/dispatch/dispatch_segmented_sort_fixed.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__type_traits/enable_if.h>
@@ -4678,6 +4679,459 @@ public:
       });
   }
 
+  //! @}
+
+private:
+  template <SortOrder Order, typename KeyT, typename ValueT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_fixed(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    bool is_overwrite_okay,
+    const EnvT& env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    using policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
+    return detail::dispatch_with_env_and_tuning<policy_selector_t>(
+      d_temp_storage,
+      temp_storage_bytes,
+      env,
+      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::segmented_sort::dispatch_fixed<Order>(
+          storage, bytes, d_keys, d_values, segment_size, num_segments, is_overwrite_okay, stream, policy_selector);
+      });
+  }
+
+  template <SortOrder Order, typename KeyT, typename ValueT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT>
+  CUB_RUNTIME_FUNCTION static cudaError_t sort_fixed(
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    bool is_overwrite_okay,
+    const EnvT& env)
+  {
+    _CCCL_NVTX_RANGE_SCOPE(GetName());
+    using policy_selector_t = detail::segmented_sort::policy_selector_from_types<KeyT, ValueT>;
+    return detail::dispatch_with_env_and_tuning<policy_selector_t>(
+      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+        return detail::segmented_sort::dispatch_fixed<Order>(
+          storage, bytes, d_keys, d_values, segment_size, num_segments, is_overwrite_okay, stream, policy_selector);
+      });
+  }
+
+public:
+  //! @name Fixed-size segments
+  //! @{
+  //! @rst
+  //! These overloads sort ``num_segments`` contiguous segments, each containing ``segment_size`` items.
+  //!
+  //! .. versionadded:: 3.6.0
+  //!
+  //! Segment ``i`` occupies ``[i * segment_size, (i + 1) * segment_size)``. No offset arrays are needed.
+  //! The segment size and count can be plain integral values, ``cuda::args::immediate`` annotations, or
+  //! ``cuda::args::constant`` annotations. Both must be known on the host and nonnegative.
+  //! Each value and their product must fit in a signed 64-bit offset. Invalid sizes return ``cudaErrorInvalidValue``.
+  //! A zero size or count performs no work and leaves DoubleBuffer selectors unchanged.
+  //!
+  //! The supported key types and ordering are the same as for the variable-size overloads.
+  //! Sorting is not guaranteed to be stable. Pointer overloads preserve the inputs and require all input/output
+  //! ranges to be disjoint. DoubleBuffer overloads may modify both buffers; their selectors identify the results.
+  //! The key and value buffers of a pair sort must not overlap.
+  //!
+  //! The implementation selects a sorting algorithm directly from the common segment size, avoiding segment
+  //! classification. Small segments need only constant auxiliary storage. Larger segments may require temporary
+  //! storage proportional to the number of items when using the pointer overloads.
+  //!
+  //! The last argument is an optional execution environment, which can also be a CUDA stream.
+  //! Both explicit temporary storage and environment-managed allocation are supported.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    // Input: [8, 6, 7, 5, 3, 0]; output: [6, 7, 8, 0, 3, 5].
+  //!    size_t bytes = 0;
+  //!    cub::DeviceSegmentedSort::SortKeys(
+  //!      nullptr, bytes, d_in, d_out, cuda::args::constant<3>{}, 2);
+  //!    // Allocate d_temp_storage with at least bytes bytes, then:
+  //!    cub::DeviceSegmentedSort::SortKeys(
+  //!      d_temp_storage, bytes, d_in, d_out, cuda::args::constant<3>{}, 2);
+  //!
+  //!    // Or let the environment provide temporary storage:
+  //!    cub::DeviceSegmentedSort::SortKeys(d_in, d_out, cuda::args::immediate{3}, 2);
+  //! @endrst
+
+  //! Sorts fixed-size segments of keys in ascending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of keys in ascending order using environment-managed storage.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    const KeyT* d_keys_in, KeyT* d_keys_out, SegmentSizeT segment_size, NumSegmentsT num_segments, const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Ascending>(d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of keys in ascending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of keys in ascending order using environment-managed storage.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t
+  SortKeys(DoubleBuffer<KeyT>& d_keys, SegmentSizeT segment_size, NumSegmentsT num_segments, const EnvT& env = {})
+  {
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Ascending>(d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of keys in descending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of keys in descending order using environment-managed storage.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    const KeyT* d_keys_in, KeyT* d_keys_out, SegmentSizeT segment_size, NumSegmentsT num_segments, const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Descending>(d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of keys in descending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of keys in descending order using environment-managed storage.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT, typename SegmentSizeT, typename NumSegmentsT, typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    DoubleBuffer<KeyT>& d_keys, SegmentSizeT segment_size, NumSegmentsT num_segments, const EnvT& env = {})
+  {
+    DoubleBuffer<NullType> d_values;
+    return sort_fixed<SortOrder::Descending>(d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in ascending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] d_values_in Input values associated with the keys.
+  //! @param[out] d_values_out Output values associated with the sorted keys.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+    return sort_fixed<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in ascending order using environment-managed storage.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] d_values_in Input values associated with the keys.
+  //! @param[out] d_values_out Output values associated with the sorted keys.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+    return sort_fixed<SortOrder::Ascending>(d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in ascending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in,out] d_values Double buffer of values; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    return sort_fixed<SortOrder::Ascending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in ascending order using environment-managed storage.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in,out] d_values Double buffer of values; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    return sort_fixed<SortOrder::Ascending>(d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in descending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] d_values_in Input values associated with the keys.
+  //! @param[out] d_values_out Output values associated with the sorted keys.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+    return sort_fixed<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in descending order using environment-managed storage.
+  //! @param[in] d_keys_in Input keys, containing segment_size * num_segments items.
+  //! @param[out] d_keys_out Output keys, containing segment_size * num_segments items.
+  //! @param[in] d_values_in Input values associated with the keys.
+  //! @param[out] d_values_out Output values associated with the sorted keys.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
+    return sort_fixed<SortOrder::Descending>(d_keys, d_values, segment_size, num_segments, false, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in descending order.
+  //! @param[in] d_temp_storage @devicestorage
+  //! @param[in,out] temp_storage_bytes Size of the temporary storage allocation in bytes.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in,out] d_values Double buffer of values; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    return sort_fixed<SortOrder::Descending>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, segment_size, num_segments, true, env);
+  }
+
+  //! Sorts fixed-size segments of key-value pairs in descending order using environment-managed storage.
+  //! @param[in,out] d_keys Double buffer of keys; Current() identifies the result after execution.
+  //! @param[in,out] d_values Double buffer of values; Current() identifies the result after execution.
+  //! @param[in] segment_size Number of items per segment, optionally annotated with cuda::args.
+  //! @param[in] num_segments Number of segments, optionally annotated with cuda::args.
+  //! @param[in] env Execution environment or CUDA stream.
+  template <typename KeyT,
+            typename ValueT,
+            typename SegmentSizeT,
+            typename NumSegmentsT,
+            typename EnvT = ::cuda::std::execution::env<>>
+  [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    SegmentSizeT segment_size,
+    NumSegmentsT num_segments,
+    const EnvT& env = {})
+  {
+    return sort_fixed<SortOrder::Descending>(d_keys, d_values, segment_size, num_segments, true, env);
+  }
   //! @}
 };
 
