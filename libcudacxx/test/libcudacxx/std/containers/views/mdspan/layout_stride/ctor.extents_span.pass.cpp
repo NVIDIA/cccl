@@ -10,11 +10,14 @@
 // <mdspan>
 
 // template<class OtherIndexType>
-//  constexpr mapping(const extents_type& e, span<OtherIndexType, rank_> s) noexcept;
+//  constexpr mapping(const extents_type& e, span<OtherIndexType, rank_> s) noexcept(see below);
 //
 // Constraints:
-//    - is_convertible_v<const OtherIndexType&, index_type> is true, and
-//    - is_nothrow_constructible_v<index_type, const OtherIndexType&> is true.
+//    - is_constructible_v<index_type, const OtherIndexType&> is true, and
+//    - is_convertible_v<const OtherIndexType&, index_type> is true.
+//
+// Remarks: The expression inside noexcept is equivalent to
+//    is_nothrow_constructible_v<index_type, const OtherIndexType&>.
 //
 // Preconditions:
 //    - s[i] > 0 is true for all i in the range [0, rank_).

@@ -230,8 +230,8 @@ struct __constraints
         || __mdspan_detail::__is_mapping_of<layout_stride, _StridedLayoutMapping>);
 };
 
-// Used as constructor constraints. A dependent exception specification on these constructors breaks
-// nvcc's implicit deduction guides and ICEs MSVC 19.50 while it synthesizes them.
+// Namespace scope so a constructor exception specification does not name a class member. nvcc fails to
+// synthesize implicit deduction guides when it does. These predicates are not constructor constraints.
 template <class _Extents, class _OtherIndexType>
 inline constexpr bool __is_nothrow_index_constructible =
   is_nothrow_constructible_v<typename _Extents::index_type, const _OtherIndexType&>;
@@ -393,9 +393,13 @@ public:
     return true;
   }
 
-  template <class _OtherIndexType>
-  _CCCL_API constexpr void __check_extents_strides_ctor(
-    const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides) const noexcept
+  // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
+  template <class _OtherIndexType,
+            enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
+            enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
+  _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept(
+    __layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>)
+      : __base(__ext, __to_strides_array(__strides, __rank_sequence))
   {
     _CCCL_ASSERT(__check_strides(__strides, __rank_sequence),
                  "layout_stride::mapping ctor: all strides must be greater than 0");
@@ -405,44 +409,14 @@ public:
                  "layout_stride::mapping ctor: the provided extents and strides lead to a non-unique mapping");
   }
 
-  // nvcc cannot deduce these constructors when using _CCCL_REQUIRES.
-  // The nothrow condition is a constraint so the exception specification stays non-dependent.
+  // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
   template <class _OtherIndexType,
-            enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int>                              = 0,
-            enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>                                = 0,
-            enable_if_t<__layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>, int> = 0>
-  _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides) noexcept
-      : __base(__ext, __to_strides_array(__strides, __rank_sequence))
-  {
-    __check_extents_strides_ctor(__ext, __strides);
-  }
-
-  template <
-    class _OtherIndexType,
-    enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int>                                = 0,
-    enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>                                  = 0,
-    enable_if_t<!__layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>, int*> = nullptr>
-  _CCCL_API constexpr mapping(const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides)
-      : __base(__ext, __to_strides_array(__strides, __rank_sequence))
-  {
-    __check_extents_strides_ctor(__ext, __strides);
-  }
-
-  template <class _OtherIndexType,
-            enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int>                              = 0,
-            enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>                                = 0,
-            enable_if_t<__layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>, int> = 0>
-  _CCCL_API constexpr mapping(const extents_type& __ext,
-                              const array<_OtherIndexType, extents_type::rank()>& __strides) noexcept
-      : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))
-  {}
-
-  template <
-    class _OtherIndexType,
-    enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int>                                = 0,
-    enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>                                  = 0,
-    enable_if_t<!__layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>, int*> = nullptr>
-  _CCCL_API constexpr mapping(const extents_type& __ext, const array<_OtherIndexType, extents_type::rank()>& __strides)
+            enable_if_t<is_constructible_v<index_type, const _OtherIndexType&>, int> = 0,
+            enable_if_t<is_convertible_v<const _OtherIndexType&, index_type>, int>   = 0>
+  _CCCL_API constexpr mapping(
+    const extents_type& __ext,
+    const array<_OtherIndexType, extents_type::rank()>&
+      __strides) noexcept(__layout_stride_detail::__is_nothrow_index_constructible<_Extents, _OtherIndexType>)
       : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))
   {}
 
@@ -467,8 +441,12 @@ public:
     return true;
   }
 
-  template <class _StridedLayoutMapping>
-  _CCCL_API constexpr void __check_converting_ctor(const _StridedLayoutMapping& __other) const noexcept
+  _CCCL_TEMPLATE(class _StridedLayoutMapping)
+  _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
+                   __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
+  _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept(
+    __layout_stride_detail::__is_nothrow_constructible_from_strided_mapping<_Extents, _StridedLayoutMapping>)
+      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
     _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
                  "layout_stride::mapping converting ctor: all strides must be greater than 0");
@@ -478,50 +456,20 @@ public:
     _CCCL_ASSERT(index_type{0} == __offset(__other),
                  "layout_stride::mapping converting ctor: base offset of mapping must be zero.");
   }
-
-  // The nothrow condition is a constraint so the exception specification stays non-dependent.
   _CCCL_TEMPLATE(class _StridedLayoutMapping)
-  _CCCL_REQUIRES(
-    __layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
-      __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents> _CCCL_AND
-        __layout_stride_detail::__is_nothrow_constructible_from_strided_mapping<_Extents, _StridedLayoutMapping>)
-  _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other) noexcept
+  _CCCL_REQUIRES(__layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
+    !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>))
+  _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept(
+    __layout_stride_detail::__is_nothrow_constructible_from_strided_mapping<_Extents, _StridedLayoutMapping>)
       : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
   {
-    __check_converting_ctor(__other);
-  }
-  // The extra template parameter keeps this overload distinct from the non-throwing one.
-  _CCCL_TEMPLATE(class _StridedLayoutMapping, int = 0)
-  _CCCL_REQUIRES(
-    __layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND
-      __layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents> _CCCL_AND(
-        !__layout_stride_detail::__is_nothrow_constructible_from_strided_mapping<_Extents, _StridedLayoutMapping>))
-  _CCCL_API constexpr mapping(const _StridedLayoutMapping& __other)
-      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
-  {
-    __check_converting_ctor(__other);
-  }
-  _CCCL_TEMPLATE(class _StridedLayoutMapping)
-  _CCCL_REQUIRES(
-    __layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
-      !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
-      _CCCL_AND __layout_stride_detail::__is_nothrow_constructible_from_strided_mapping<_Extents, _StridedLayoutMapping>)
-  _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other) noexcept
-      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
-  {
-    __check_converting_ctor(__other);
-  }
-  // The extra template parameter keeps this overload distinct from the non-throwing one.
-  _CCCL_TEMPLATE(class _StridedLayoutMapping, int = 0)
-  _CCCL_REQUIRES(
-    __layout_stride_detail::__can_convert<_StridedLayoutMapping, _Extents> _CCCL_AND(
-      !__layout_stride_detail::__constraints::__converts_implicit<_StridedLayoutMapping, _Extents>)
-      _CCCL_AND(
-        !__layout_stride_detail::__is_nothrow_constructible_from_strided_mapping<_Extents, _StridedLayoutMapping>))
-  _CCCL_API explicit constexpr mapping(const _StridedLayoutMapping& __other)
-      : __base(extents_type(__other.extents()), __to_strides_array(__other, __rank_sequence))
-  {
-    __check_converting_ctor(__other);
+    _CCCL_ASSERT(__check_mapped_strides(__other, __rank_sequence),
+                 "layout_stride::mapping converting ctor: all strides must be greater than 0");
+    _CCCL_ASSERT(::cuda::std::__mdspan_detail::__is_representable_as<index_type>(__other.required_span_size()),
+                 "layout_stride::mapping converting ctor: other.required_span_size() must be representable as "
+                 "index_type.");
+    _CCCL_ASSERT(index_type{0} == __offset(__other),
+                 "layout_stride::mapping converting ctor: base offset of mapping must be zero.");
   }
 
   _CCCL_HIDE_FROM_ABI constexpr mapping& operator=(const mapping&) noexcept = default;
