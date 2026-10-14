@@ -11,7 +11,7 @@
 
 // template<class StridedLayoutMapping>
 //   constexpr explicit(see below)
-//     mapping(const StridedLayoutMapping& other) noexcept;
+//     mapping(const StridedLayoutMapping& other) noexcept(see below);
 //
 // Constraints:
 //   - layout-mapping-alike<StridedLayoutMapping> is satisfied.
@@ -28,11 +28,14 @@
 // Effects: Direct-non-list-initializes extents_ with other.extents(), and for all d in the range [0, rank_),
 //          direct-non-list-initializes strides_[d] with other.stride(d).
 //
-// Remarks: The expression inside explicit is equivalent to:
-//   - !(is_convertible_v<typename StridedLayoutMapping::extents_type, extents_type> &&
-//       (is-mapping-of<layout_left, LayoutStrideMapping> ||
-//        is-mapping-of<layout_right, LayoutStrideMapping> ||
-//        is-mapping-of<layout_stride, LayoutStrideMapping>))
+// Remarks:
+//   - The expression inside explicit is equivalent to:
+//       !(is_convertible_v<typename StridedLayoutMapping::extents_type, extents_type> &&
+//         (is-mapping-of<layout_left, LayoutStrideMapping> ||
+//          is-mapping-of<layout_right, LayoutStrideMapping> ||
+//          is-mapping-of<layout_stride, LayoutStrideMapping>))
+//   - The expression inside noexcept is equivalent to true when rank_ is zero, and otherwise to
+//       noexcept(index_type(other.stride(rank_type{}))).
 
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
