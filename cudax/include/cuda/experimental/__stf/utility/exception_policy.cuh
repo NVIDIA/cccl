@@ -157,6 +157,8 @@ struct status_traits;
  */
 namespace sump
 {
+class dynamic; // defined below; the composites consult its metadata when they are built
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
@@ -3097,8 +3099,42 @@ struct __errsink_unknown_return
 // turn, `void` feeds nothing, and any other type is ill-formed. A status the policy forwards is
 // recorded if it is the chain's first; one it handles is not, whatever it yields. Returns the
 // carrier itself.
+//
+// The noexcept surface of `<<`: a status operand keeps the code channel's; an action keeps the
+// runner's for what it returns; anything else reads as potentially throwing (and does not compile).
 template <class _Reaction, class _X>
-void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
+constexpr bool __feed_nothrow()
+{
+  using _T = ::cuda::std::remove_cvref_t<_X>;
+  if constexpr (__is_status_v<_T>)
+  {
+    return __status_path_nothrow_v<_Reaction, _T, __past_result<_T>>;
+  }
+  else if constexpr (::cuda::std::is_invocable_v<_X&>)
+  {
+    using _Expr = decltype(::cuda::std::declval<_X&>()());
+    if constexpr (::cuda::std::is_void_v<_Expr>)
+    {
+      return __callable_runner_nothrow_v<_Reaction, _X, false>;
+    }
+    else if constexpr (__is_status_v<::cuda::std::remove_cvref_t<_Expr>>)
+    {
+      return __callable_runner_nothrow_v<_Reaction, _X, true>;
+    }
+    else
+    {
+      return false;
+    }
+  }
+  else
+  {
+    return false;
+  }
+}
+
+template <class _Reaction, class _X>
+// NOLINTNEXTLINE(bugprone-exception-escape)
+void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x) noexcept(__feed_nothrow<_Reaction, _X>())
 {
   if constexpr (__is_status_v<::cuda::std::remove_cvref_t<_X>>)
   {
@@ -3136,7 +3172,8 @@ void __feed(__on_throw_policy<_Reaction>& __sink, _X&& __x)
 }
 
 template <class _Reaction, class _X>
-__on_throw_policy<_Reaction>& operator<<(__on_throw_policy<_Reaction>& __sink, _X&& __x)
+__on_throw_policy<_Reaction>&
+operator<<(__on_throw_policy<_Reaction>& __sink, _X&& __x) noexcept(__feed_nothrow<_Reaction, _X>())
 {
   __feed(__sink, ::cuda::std::forward<_X>(__x));
   return __sink;
@@ -3144,7 +3181,8 @@ __on_throw_policy<_Reaction>& operator<<(__on_throw_policy<_Reaction>& __sink, _
 
 // A temporary carrier is handed back by value, so that `auto&& c = errsink(p) << a;` does not dangle.
 template <class _Reaction, class _X>
-__on_throw_policy<_Reaction> operator<<(__on_throw_policy<_Reaction>&& __sink, _X&& __x)
+__on_throw_policy<_Reaction>
+operator<<(__on_throw_policy<_Reaction>&& __sink, _X&& __x) noexcept(__feed_nothrow<_Reaction, _X>())
 {
   __feed(__sink, ::cuda::std::forward<_X>(__x));
   return ::cuda::std::move(__sink);
@@ -3384,6 +3422,15 @@ inline constexpr bool __selects_returned_v<__returned_fn_t<_F, _S>> = true;
 template <class _X>
 inline constexpr bool __is_policy_argument_v =
   __is_exception_sink_v<_X> || __has_any_capability<::cuda::std::remove_cvref_t<_X>>;
+// The checks that `|`, `&`, and `*` perform statically cannot see through a type-erased
+// operand. When an operand is a `dynamic`, the operators run the same checks against the
+// metadata it carries, at the moment the composite is built, and throw `std::logic_error`
+// on a dead arm. Declared here, defined after `dynamic`.
+template <class _P>
+inline constexpr bool __is_dynamic_v = ::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, dynamic>;
+inline void __check_dynamic_left_of_or(const dynamic& __p);
+inline void __check_dynamic_left_of_and(const dynamic& __p);
+inline void __check_dynamic_repeated(const dynamic& __p);
 } // namespace detail
 #endif // !_CCCL_DOXYGEN_INVOKED
 
@@ -3542,6 +3589,10 @@ template <class _L,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
 [[nodiscard]] auto operator&(_L&& __l, _R&& __r)
 {
+  if constexpr (detail::__is_dynamic_v<_L>)
+  {
+    detail::__check_dynamic_left_of_and(__l);
+  }
   return detail::__policy_and{
     detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
 }
@@ -3566,6 +3617,10 @@ template <class _L,
                 "discard or override; put the value-producing policy on the right, or use | for a fallback");
   static_assert(!detail::__answers_nothing<_NL> || detail::__selects_returned_v<_NL>,
                 "policies after a never-returning policy are unreachable");
+  if constexpr (detail::__is_dynamic_v<_L>)
+  {
+    detail::__check_dynamic_left_of_and(__l);
+  }
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
 
@@ -3579,6 +3634,10 @@ template <class _L,
           ::cuda::std::enable_if_t<detail::__is_exception_sink_v<_L> || detail::__is_exception_sink_v<_R>, int> = 0>
 [[nodiscard]] auto operator|(_L&& __l, _R&& __r)
 {
+  if constexpr (detail::__is_dynamic_v<_L>)
+  {
+    detail::__check_dynamic_left_of_or(__l);
+  }
   return detail::__policy_or{
     detail::__normalize(::cuda::std::forward<_L>(__l)), detail::__normalize(::cuda::std::forward<_R>(__r))};
 }
@@ -3602,6 +3661,10 @@ template <class _L,
                 "the left policy never passes through; alternatives after it are unreachable");
   static_assert(!detail::__diverges_v<_NL>,
                 "the left policy always diverges (unwind, abort, terminate); alternatives after it are unreachable");
+  if constexpr (detail::__is_dynamic_v<_L>)
+  {
+    detail::__check_dynamic_left_of_or(__l);
+  }
   return detail::__normalize(::cuda::std::forward<_L>(__l));
 }
 
@@ -3620,6 +3683,10 @@ template <class _P,
 {
   _CCCL_ASSERT(__n >= 0, "repetition requires a non-negative count");
   using _Np = detail::__normalized_t<_P>;
+  if constexpr (detail::__is_dynamic_v<_P>)
+  {
+    detail::__check_dynamic_repeated(__p);
+  }
   return detail::__policy_pow<_Np>{{detail::__normalize(::cuda::std::forward<_P>(__p))}, __n};
 }
 
@@ -3801,7 +3868,11 @@ auto always(_A&& __a, _B&& __b, _Cs&&... __cs)
  * internally; that box reaches the user only when the callable itself returns
  * `std::any`. Retrying policies keep their internal loops, state, and
  * rethrow-on-exhaustion; composites erase whole; a sink composes with `&`, `|`,
- * `*`, `when`, `always` and re-erases.
+ * `*`, `when`, `always` and re-erases. The checks that `|`, `&`, and `*` perform
+ * statically run against the erased policy's metadata when the composite is built,
+ * and throw `std::logic_error` on a dead arm: a `dynamic` that never passes through
+ * or always diverges to the left of `|` or under `*`, and one that chooses a value
+ * or never returns to the left of `&`.
  *
  * Custom runtime policies derive from the public @ref sink_base and implement
  * `hook` (and `clone`); `on_success` defaults to identity. Hand-written models
@@ -3842,6 +3913,9 @@ public:
     //! Whether the policy may throw. Equal to `may_passthrough` for now: on the
     //! exception channel the only way out of a hook is a throw.
     const bool may_throw;
+    //! Whether the policy always diverges (unwind, abort, terminate): alternatives and
+    //! repetitions after it are unreachable even though it passes an exception through.
+    const bool diverges;
     //! Inclusive range of a stored integral answer; unused for other kinds.
     const long long min_value;
     const unsigned long long max_value;
@@ -3854,10 +3928,12 @@ public:
               long long __min_value                 = 0,
               unsigned long long __max_value        = 0,
               const ::std::type_info* __answer_type = nullptr,
-              ::std::string_view __answer_name      = {})
+              ::std::string_view __answer_name      = {},
+              bool __diverges                       = false)
         : kind(__kind)
         , may_passthrough(__may_passthrough)
         , may_throw(__may_passthrough)
+        , diverges(__diverges)
         , min_value(__min_value)
         , max_value(__max_value)
         , answer_type(__answer_type)
@@ -3995,7 +4071,8 @@ private:
              || __skind == answer_kind::effects)
               ? nullptr
               : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
-            type_name<::cuda::std::remove_cvref_t<__ans_t>>)
+            type_name<::cuda::std::remove_cvref_t<__ans_t>>,
+            detail::__diverges_v<_P>)
         , __p_(::cuda::std::move(__p))
     {}
 
@@ -4327,6 +4404,11 @@ public:
   {
     return __p_->may_throw;
   }
+  //! @brief Whether the erased policy always diverges (unwind, abort, terminate).
+  [[nodiscard]] bool diverges() const noexcept
+  {
+    return __p_->diverges;
+  }
   //! @brief Former name of @ref may_passthrough (deprecated).
   CCCL_DEPRECATED_BECAUSE("use may_passthrough()") bool may_rethrow() const noexcept
   {
@@ -4406,6 +4488,54 @@ public:
     static_cast<void>(__p_->on_success());
   }
 };
+
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+namespace detail
+{
+inline void __check_dynamic_left_of_or(const dynamic& __p)
+{
+  if (__p.diverges())
+  {
+    _CCCL_THROW(::std::logic_error,
+                "the left policy always diverges (unwind, abort, terminate); alternatives after it are unreachable");
+  }
+  if (!__p.may_passthrough())
+  {
+    _CCCL_THROW(::std::logic_error, "the left policy never passes through; alternatives after it are unreachable");
+  }
+}
+
+inline void __check_dynamic_left_of_and(const dynamic& __p)
+{
+  const auto __kind = __p.kind();
+  if (__kind == dynamic::answer_kind::dies)
+  {
+    _CCCL_THROW(::std::logic_error, "policies after a never-returning policy are unreachable");
+  }
+  if (__kind != dynamic::answer_kind::effects && __kind != dynamic::answer_kind::resumes)
+  {
+    _CCCL_THROW(::std::logic_error,
+                "the left side of & chooses a value (subst, as_expected, defer, retry, a converter) that & would "
+                "discard or override; put the value-producing policy on the right, or use | for a fallback");
+  }
+}
+
+inline void __check_dynamic_repeated(const dynamic& __p)
+{
+  if (__p.diverges())
+  {
+    _CCCL_THROW(
+      ::std::logic_error,
+      "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are unreachable");
+  }
+  if (!__p.may_passthrough())
+  {
+    _CCCL_THROW(::std::logic_error,
+                "the repeated policy never passes through; repetitions after the first are unreachable");
+  }
+}
+} // namespace detail
+#endif // _CCCL_DOXYGEN_INVOKED
 } // namespace sump
 
 // The abort tripwire that once lived at this spot is retired. It caught bare abort() calls
@@ -5067,7 +5197,7 @@ UNITTEST("policy algebra")
     throw ::std::runtime_error("x");
   };
   EXPECT(r6 == 7);
-  const int r7 = errsink(subst(8) | fwd)->*[]() -> int {
+  const int r7 = errsink(if_isa<::std::runtime_error>(subst(8)) | fwd)->*[]() -> int {
     throw ::std::runtime_error("x");
   };
   EXPECT(r7 == 8);
@@ -5218,6 +5348,10 @@ UNITTEST("policy algebra")
                 "nothrow policy chain must keep the expression noexcept");
   static_assert(!noexcept(errsink(fwd, ::cuda::std::source_location{})->*::cuda::std::declval<void (&)()>()),
                 "a throwing policy must surface in the expression's noexcept");
+  static_assert(noexcept(errsink(notify, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
+                "<< keeps a nothrow policy chain noexcept");
+  static_assert(!noexcept(errsink(fwd, ::cuda::std::source_location{}) << ::cuda::std::declval<void (&)()>()),
+                "<< surfaces a throwing policy");
 
   // Identity elimination is type-level: composing with a neutral element adds no wrapper.
   static_assert(::cuda::std::is_same_v<decltype(noop & subst(1)), decltype(subst(1))>,
@@ -6432,6 +6566,60 @@ UNITTEST("type erasure")
   EXPECT((dynamic(translate<::std::runtime_error, ::std::logic_error>).kind() == dynamic::answer_kind::dies));
   EXPECT(dynamic(retry * 3).may_passthrough());
   EXPECT(!dynamic(noop).may_passthrough());
+  EXPECT(dynamic(unwind).diverges());
+  EXPECT(!dynamic(retry * 3).diverges());
+  // The checks `|`, `&`, and `*` perform statically run against this metadata when an operand
+  // is erased, and reject a dead arm with std::logic_error when the composite is built.
+  {
+    const auto rejected = [](auto&& __build) {
+      bool __thrown = false;
+      _CCCL_TRY
+      {
+        __build();
+      }
+      _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& __e)
+      {
+        __thrown = true;
+      }
+      return __thrown;
+    };
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(subst(1)) | subst(2)); // never passes through
+    }));
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(subst(1)) | fwd);
+    }));
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(unwind) | subst(2)); // always diverges
+    }));
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(subst(1)) & noop); // chooses a value
+    }));
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(retry) & subst(2));
+    }));
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(unwind) & subst(2)); // never returns
+    }));
+    EXPECT(rejected([] {
+      static_cast<void>(dynamic(subst(1)) * 2);
+    }));
+    EXPECT(!rejected([] {
+      static_cast<void>(dynamic(if_isa<::std::logic_error>(subst(1))) | subst(2)); // may decline
+    }));
+    EXPECT(!rejected([] {
+      static_cast<void>(dynamic(noop) & subst(2)); // effect only
+    }));
+    EXPECT(!rejected([] {
+      static_cast<void>(dynamic(retry) * 2);
+    }));
+  }
+  {
+    const int x = errsink(dynamic(noop) & subst(2))->*[]() -> int {
+      throw ::std::runtime_error("x");
+    };
+    EXPECT(x == 2);
+  }
   // Re-erasure: fwd composite; first-throw unbox is the backstop.
   {
     const int x = errsink(dynamic(dynamic(subst(5))))->*[]() -> int {
@@ -7007,6 +7195,7 @@ UNITTEST("error sinks: & stops at the first fwd on both channels")
                     notify(log))
                   | fwd)
             << cudaErrorInvalidValue)
+           .status<cudaError_t>()
          == cudaErrorInvalidValue);
   EXPECT(log.str().empty());
   // fwd & notify(log) does not compile: notify could run on neither channel
@@ -7073,8 +7262,9 @@ UNITTEST("error sinks: ->* yields, << does not convert")
 {
   using namespace cuda::experimental::stf;
   using namespace cuda::experimental::stf::sump;
-  const cudaError_t e = errsink(fwd) << cudaErrorNotReady;
-  EXPECT(e == cudaErrorNotReady);
+  const auto c = errsink(fwd) << cudaErrorNotReady;
+  EXPECT(c.forwarded());
+  EXPECT(c.status<cudaError_t>() == cudaErrorNotReady);
   int n       = 0;
   const int v = errsink(notify(::std::cerr))->*[&] {
     ++n;
@@ -7329,6 +7519,7 @@ UNITTEST("error sinks: composites and the bridge on a code")
   // through hands the status on unchanged.
   errsink(error_sinks_test::succeed_on<cuda_exception>{}) << cudaErrorInvalidValue;
   EXPECT((errsink(error_sinks_test::succeed_on<::std::bad_alloc>{} | fwd) << cudaErrorInvalidValue)
+           .status<cudaError_t>()
          == cudaErrorInvalidValue);
   // `*` offers the status again while it passes through, then the next arm answers.
   ::std::ostringstream log;
