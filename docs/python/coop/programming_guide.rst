@@ -142,7 +142,7 @@ Compilation and kernel reuse
 CUDA devices and context lifetime
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-With Numba-CUDA-MLIR 0.5.0 through 0.5.3, select the CUDA device before a
+With Numba-CUDA-MLIR 0.5.0 through 0.5.4, select the CUDA device before a
 kernel's first compilation and keep its dispatcher and configured launch
 callables in that CUDA context. Reusing them on another device or after
 destroying and recreating the context is not qualified: the compiler can
