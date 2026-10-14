@@ -17,7 +17,6 @@ import re
 from typing import Any
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
-from numba_cuda_mlir import cuda
 
 from cuda.coop._core import (
     SynchronizationScope,
@@ -30,7 +29,11 @@ from cuda.coop._core import (
 from .._compiler import _nvrtc
 from .._compiler._operations import StorageABI
 from .._compiler._parameters import normalize_dtype_param
-from .._types import NUMBA_TYPES_TO_CPP, RawCAbiInvocable
+from .._types import (
+    NUMBA_TYPES_TO_CPP,
+    RawCAbiInvocable,
+    _current_compile_target,
+)
 
 _LEVEL_ORDER = {
     "thread": 0,
@@ -60,15 +63,6 @@ def _cpp_type(dtype: Any) -> str:
             "cuda.coop.numba_mlir group queries support built-in integral "
             f"dtypes; got {dtype!r}"
         ) from exc
-
-
-def _current_cc() -> int:
-    # The CUDA module reexports this accessor but omits it from its stub.
-    device = (
-        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
-    )
-    major, minor = device.compute_capability
-    return int(major) * 10 + int(minor)
 
 
 def _native_query_expr(
@@ -287,7 +281,8 @@ def make_group_method_invocable(
     elif operation not in {"is_member", "sync", "sync_aligned"}:
         raise ValueError(f"unsupported group method operation {operation!r}")
 
-    cc = _current_cc()
+    target = _current_compile_target()
+    arch = target.arch
     if compile_context is None:
         compile_context = _nvrtc.resolve_compile_context()
     group_component = _symbol_component(group.symbol_suffix)
@@ -296,7 +291,7 @@ def make_group_method_invocable(
         symbol = (
             "cuda_coop_numba_mlir_group_"
             f"{group_component}_{operation}_{level}_{_symbol_component(dtype)}_"
-            f"cc{cc}_ctx_{compile_context.symbol_suffix}"
+            f"cc{arch}_ctx_{compile_context.symbol_suffix}"
         )
         lines = [
             f'extern "C" __device__ {cpp_type} {symbol}() {{',
@@ -309,7 +304,7 @@ def make_group_method_invocable(
     elif operation == "is_member":
         symbol = (
             "cuda_coop_numba_mlir_group_"
-            f"{group_component}_is_member_cc{cc}_ctx_"
+            f"{group_component}_is_member_cc{arch}_ctx_"
             f"{compile_context.symbol_suffix}"
         )
         lines = [
@@ -322,7 +317,7 @@ def make_group_method_invocable(
     else:
         symbol = (
             "cuda_coop_numba_mlir_group_"
-            f"{group_component}_{operation}_cc{cc}_ctx_"
+            f"{group_component}_{operation}_cc{arch}_ctx_"
             f"{compile_context.symbol_suffix}"
         )
         lines = [
@@ -340,7 +335,7 @@ def make_group_method_invocable(
         return_type=return_type,
         parameters=(),
         abi_transforms=(),
-        cc=cc,
+        target=target,
         compile_context=compile_context,
         storage_abi=StorageABI.NONE,
         execution_scope=_execution_scope(group),
