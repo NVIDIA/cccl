@@ -274,6 +274,7 @@ projects:
 
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
+  - '^cudax/LICENSE\.TXT$'
   - '^libcudacxx/test/LICENSE\.TXT$'
   - '.+\.md$'
   - '\.branch_notes/'
