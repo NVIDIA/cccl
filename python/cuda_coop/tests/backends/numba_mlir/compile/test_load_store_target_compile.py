@@ -6,7 +6,9 @@
 
 Device discovery reports SM90 while kernels explicitly target other chips.
 Record actual NVRTC requests and compile/link the complete kernels to verify
-architecture suffixes, line information, and debug-link compatibility.
+architecture suffixes, lineinfo options, and debug-link compatibility.
+The SM80 case also relinks the actual inputs explicitly for SM80 because the
+compiler can promote its normal final link to the current device's target.
 """
 
 from types import SimpleNamespace
@@ -27,10 +29,11 @@ _LAUNCH_CONFIG_KEY = (
 
 
 def _record_compilations(monkeypatch: pytest.MonkeyPatch):
-    """Fix device discovery and record real provider compilations."""
+    """Fix device discovery and record provider compilation and link inputs."""
 
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda
+    from numba_cuda_mlir.linker import Linker
 
     from cuda.coop.numba_mlir._compiler import _nvrtc
 
@@ -48,7 +51,7 @@ def _record_compilations(monkeypatch: pytest.MonkeyPatch):
         lambda: SimpleNamespace(compute_capability=_DEVICE_COMPUTE_CAPABILITY),
     )
 
-    recorded = SimpleNamespace(nvrtc=[])
+    recorded = SimpleNamespace(nvrtc=[], links=[])
     compile_impl = _nvrtc.compile_impl
 
     def recording_compile_impl(*args, **kwargs):
@@ -56,6 +59,20 @@ def _record_compilations(monkeypatch: pytest.MonkeyPatch):
         return compile_impl(*args, **kwargs)
 
     monkeypatch.setattr(_nvrtc, "compile_impl", recording_compile_impl)
+    complete = Linker.complete
+
+    def recording_complete(self):
+        result = complete(self)
+        recorded.links.append(
+            SimpleNamespace(
+                arch=self.arch,
+                inputs=tuple(self._object_codes),
+                cubin=result.code,
+            )
+        )
+        return result
+
+    monkeypatch.setattr(Linker, "complete", recording_complete)
     return cuda, recorded
 
 
@@ -104,6 +121,18 @@ def test_load_store_targets_the_kernel_not_the_current_device(
     result = _compile_kernel(cuda, items_per_thread, **jit_options)
 
     assert result.metadata["cubin"]
+    if arch == "80":
+        from cuda.core import Linker, LinkerOptions
+
+        final_link = recorded.links[-1]
+        assert final_link.cubin == result.metadata["cubin"]
+        assert len(final_link.inputs) > 1
+        linked = Linker(
+            *final_link.inputs,
+            options=LinkerOptions(arch="sm_80", link_time_optimization=True),
+        ).link("cubin")
+        assert linked.code
+
     assert recorded.nvrtc
     for request in recorded.nvrtc:
         assert request["cc"] == cc
