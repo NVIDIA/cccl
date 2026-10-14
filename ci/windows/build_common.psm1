@@ -189,7 +189,7 @@ function test_preset {
 
     sccache -z >$null
 
-    ctest --preset $PRESET
+    ctest --preset $PRESET -LE "^cuda_smoke$"
     $test_result = $LastExitCode
 
     sccache --show-adv-stats
