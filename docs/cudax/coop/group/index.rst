@@ -64,6 +64,24 @@ which can make the difference between register spilling to local memory and fitt
 
 Having statically known information about the launched hierarchy has another great benefit. An API taking a group can statically allocate resources such as shared memory precisely for the given group without the need to pass this information separately via a template parameter. This is a property that is very valuable for cooperative algorithms.
 
+Group Queries
+^^^^^^^^^^^^^
+
+CTK's Cooperative Groups provide ``cg_group.thread_rank()`` and ``cg_group.num_threads()`` methods to query the thread rank/count in a group. CCCL Cooperative Groups could do the same thing; however, these queries would be good enough only for groups with a thread-level unit type. When the unit type of a group is, for example, warp-level, we'd like to query the warp rank/count of the current warp within the group.
+
+For this reason, CCCL Cooperative Groups implement group queries in a similar fashion to hierarchy queries that allow querying information about any level below the group's unit type. We call them *sub-unit* queries. Similarly, a group might be queried for its rank/count within the parent group or a hierarchy level, when the group is an implicit group. These are called *super-level* queries.
+
+.. figure:: images/group-queries.svg
+   :width: 100%
+   :alt: Two views of a block containing four warps, with a group containing the first three warps and thread 75 in the third warp highlighted. CTK Cooperative Groups query its thread rank; CCCL Cooperative Groups query both its thread rank and warp rank 2.
+
+   Rank queries for the highlighted thread in a group containing the first three
+   of a block's four warps. CTK Cooperative Groups group threads within the block
+   level and expose the thread rank. CCCL Cooperative Groups group warps within
+   the block level and expose both thread and warp ranks. The dashed blue
+   outline marks the group; the
+   fourth warp is outside it. Both ranks are zero-based.
+
 Separation of Partition and Synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -72,13 +90,6 @@ When creating a group, it is necessary to define *how the units are grouped* and
 CTK's Cooperative Groups fuse these 2 properties together, providing free functions that partition the group and select a suitable synchronization mechanism for the group.
 
 CCCL Cooperative Groups instead try to give the user control over both properties by separating them. This is implemented by a family of types that implement a well-defined interface. The information about *how the units are grouped* is passed by :ref:`cudax-coop-group-mapping` and *how the units are synchronized* is passed by :ref:`cudax-coop-group-synchronizer`. The design can be likened to ``std::mdspan``'s layout mappings and accessors.
-
-Group Queries
-^^^^^^^^^^^^^
-
-CTK's Cooperative Groups provide ``cg_group.thread_rank()`` and ``cg_group.num_threads()`` methods to query the thread rank/count in a group. CCCL Cooperative Groups could do the same thing; however, these queries would be good enough only for groups with a ``thread_level`` unit type. When the unit type of a group is, for example, ``warp_level``, we'd like to query the warp rank/count of the current warp within the group.
-
-For this reason, CCCL Cooperative Groups implement group queries in a similar fashion to hierarchy queries that allow querying information about any level below the group's unit type. We call them *sub-unit* queries. Similarly, a group might be queried for its rank/count within the parent group or a hierarchy level, when the group is an implicit group. These are called *super-level* queries.
 
 Optional Participation
 ^^^^^^^^^^^^^^^^^^^^^^
