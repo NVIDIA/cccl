@@ -1416,11 +1416,53 @@ struct __as_policy : __forwards_success<_P>
 // Normalize any reaction into a policy object, returned by value (first match wins). A
 // value stored inside carries its own ref-ness (e.g. subst_t<int&> for a reference result).
 // Every normal form is sink-tagged: raw capability-bearing callables wrap in `__as_policy`.
+template <class _P>
+inline constexpr bool __is_erased_v = false;
+} // namespace detail
+class exception_sink;
+namespace detail
+{
+template <>
+inline constexpr bool __is_erased_v<exception_sink> = true;
+//! @brief A sink-tagged view of an lvalue exception_sink: forwards the hook, the success
+//! channel and the entry gate without copying the sink (a copy clones and allocates).
+//! Produced by __normalize for lvalues. A template over the sink type because exception_sink
+//! is incomplete here; the members are checked at the use sites, after the class.
+template <class _S>
+struct __erased_ref_t
+{
+  using __exception_sink_tag = void;
+  _S& __s_;
+  template <class _Fn>
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  {
+    return __s_(__exception, __loc, __fn);
+  }
+  template <class _R>
+  _CCCL_FORCEINLINE _R on_success(_R&& __r)
+  {
+    return __s_.on_success(::cuda::std::forward<_R>(__r));
+  }
+  _CCCL_FORCEINLINE void on_success()
+  {
+    __s_.on_success();
+  }
+  _CCCL_FORCEINLINE void on_enter()
+  {
+    __s_.on_enter();
+  }
+};
 template <class _R>
 auto __normalize(_R&& __r)
 {
   using _P = ::cuda::std::remove_cvref_t<_R>;
-  if constexpr (__is_exception_sink_v<_P>)
+  if constexpr (__is_erased_v<_P> && ::cuda::std::is_lvalue_reference_v<_R>)
+  {
+    // An erased sink is a heap object: copying it clones and allocates. An lvalue is referred to.
+    return __erased_ref_t<_P>{__r};
+  }
+  else if constexpr (__is_exception_sink_v<_P>)
   {
     // Already sink-tagged (named policies, composites, adapters, noop, ...).
     return static_cast<_P>(::cuda::std::forward<_R>(__r));
@@ -2397,19 +2439,26 @@ public:
     //! Exact stored type for `udt` checks; `nullptr` encodes `passthrough`.
     const ::std::type_info* answer_type;
     const ::std::string_view answer_name;
+    //! Whether the wrapped policy has a success hook at all. When it has none, the shell
+    //! returns the callable's value without boxing it: the success path of an erased
+    //! sink then costs the virtual-free fast path, not a `std::any` round trip.
+    //! Conservative (`true`) for hand-written models.
+    const bool has_success_hook;
 
     sink_base(answer_kind __kind                    = answer_kind::passthrough,
               bool __may_rethrow                    = true,
               long long __min_value                 = 0,
               unsigned long long __max_value        = 0,
               const ::std::type_info* __answer_type = nullptr,
-              ::std::string_view __answer_name      = {})
+              ::std::string_view __answer_name      = {},
+              bool __has_success_hook               = true)
         : kind(__kind)
         , may_rethrow(__may_rethrow)
         , min_value(__min_value)
         , max_value(__max_value)
         , answer_type(__answer_type)
         , answer_name(__answer_name)
+        , has_success_hook(__has_success_hook)
     {}
     virtual ~sink_base()             = default;
     virtual sink_base* clone() const = 0;
@@ -2543,7 +2592,8 @@ private:
              || __skind == answer_kind::effects)
               ? nullptr
               : &typeid(::cuda::std::remove_cvref_t<__ans_t>),
-            type_name<::cuda::std::remove_cvref_t<__ans_t>>)
+            type_name<::cuda::std::remove_cvref_t<__ans_t>>,
+            detail::__has_on_success_with<_P, ::std::any> || detail::__has_on_success_void<_P>)
         , __p_(::cuda::std::move(__p))
     {}
 
@@ -2930,12 +2980,19 @@ public:
     else
     {
       __check_compatible<_R>();
+      if (!__p_->has_success_hook)
+      {
+        return ::cuda::std::forward<_R>(__r); // no hook to run: the value passes without a box
+      }
       return __unbox<_R>(__p_->on_success(::std::any(::cuda::std::forward<_R>(__r))));
     }
   }
   void on_success()
   {
-    static_cast<void>(__p_->on_success());
+    if (__p_->has_success_hook)
+    {
+      static_cast<void>(__p_->on_success());
+    }
   }
 };
 
