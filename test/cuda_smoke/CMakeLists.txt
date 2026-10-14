@@ -11,4 +11,7 @@ cccl_get_catch2()
 
 cccl_add_executable(${CCCL_CUDA_SMOKE_TARGET} SOURCES cuda_runtime_smoke.cu)
 
-target_link_libraries(${CCCL_CUDA_SMOKE_TARGET} PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(
+  ${CCCL_CUDA_SMOKE_TARGET}
+  PRIVATE cccl.compiler_interface Catch2::Catch2WithMain
+)
