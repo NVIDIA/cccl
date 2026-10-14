@@ -3528,7 +3528,8 @@ class RawCAbiInvocable:
         One transform per parameter. Arrays become opaque pointers; scalar
         operands retain their value type.
     target : nvrtc.CompileTarget
-        Device target of the kernel that calls this code.
+        Device target and line-information option of the kernel that calls
+        this code.
     compile_context : nvrtc.CompileContext
         Resolved header and toolkit context for compiling this source.
     storage_abi : StorageABI
