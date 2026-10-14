@@ -5222,10 +5222,11 @@ UNITTEST("policy algebra")
   // Identity elimination is type-level: composing with a neutral element adds no wrapper.
   static_assert(::cuda::std::is_same_v<decltype(noop & subst(1)), decltype(subst(1))>,
                 "noop is eliminated on the left");
-  static_assert(::cuda::std::is_same_v<decltype(notify & noop), decltype(notify)>,
+  static_assert(::cuda::std::is_same_v<decltype(notify & noop), notify_t>,
                 "noop is eliminated on the right");
   static_assert(::cuda::std::is_same_v<decltype(fwd | subst(1)), decltype(subst(1))>, "fwd is eliminated on the left");
-  static_assert(::cuda::std::is_same_v<decltype(subst(1) | fwd), decltype(subst(1))>, "fwd is eliminated on the right");
+  static_assert(::cuda::std::is_same_v<decltype(retry | fwd), retry_t>,
+                "fwd is eliminated on the right (the left must be able to forward)");
 
   // noop & abort eliminates to abort itself -- no adapter in the type.
   static_assert(::cuda::std::is_same_v<decltype(noop & sump::abort), abort_t>,
