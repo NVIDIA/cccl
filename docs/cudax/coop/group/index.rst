@@ -73,14 +73,7 @@ For this reason, CCCL Cooperative Groups implement group queries in a similar fa
 
 .. figure:: images/group-queries.svg
    :width: 100%
-   :alt: Two views of a block containing four warps, with a group containing the first three warps and thread 75 in the third warp highlighted. CTK Cooperative Groups query its thread rank; CCCL Cooperative Groups query both its thread rank and warp rank 2.
-
-   Rank queries for the highlighted thread in a group containing the first three
-   of a block's four warps. CTK Cooperative Groups group threads within the block
-   level and expose the thread rank. CCCL Cooperative Groups group warps within
-   the block level and expose both thread and warp ranks. The dashed blue
-   outline marks the group; the
-   fourth warp is outside it. Both ranks are zero-based.
+   :alt: Comparison of available queries for a group of 3 warps within a block of 128 threads between CTK's Cooperative Groups and CCCL Cooperative Groups. CTK's Cooperative Groups allow only thread rank query, while CCCL Cooperative Groups allow both thread and warp rank queries.
 
 Separation of Partition and Synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
