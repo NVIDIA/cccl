@@ -17,6 +17,8 @@
 #include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 
+#include <cuda/std/__type_traits/integral_constant.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -44,24 +46,24 @@ struct cross_system : execution_policy<cross_system<Sys1, Sys2>>
 template <class Sys1, class Sys2>
 constexpr _CCCL_HOST_DEVICE auto
 direction_of_copy(thrust::system::cuda::execution_policy<Sys1> const&, thrust::cpp::execution_policy<Sys2> const&)
-  THRUST_DECLTYPE_RETURNS(thrust::detail::integral_constant<cudaMemcpyKind, cudaMemcpyDeviceToHost>{})
+  THRUST_DECLTYPE_RETURNS(::cuda::std::integral_constant<cudaMemcpyKind, cudaMemcpyDeviceToHost>{})
 
   // Host to device.
   template <class Sys1, class Sys2>
   constexpr _CCCL_HOST_DEVICE auto direction_of_copy(thrust::cpp::execution_policy<Sys1> const&,
                                                      thrust::system::cuda::execution_policy<Sys2> const&)
-    THRUST_DECLTYPE_RETURNS(thrust::detail::integral_constant<cudaMemcpyKind, cudaMemcpyHostToDevice>{})
+    THRUST_DECLTYPE_RETURNS(::cuda::std::integral_constant<cudaMemcpyKind, cudaMemcpyHostToDevice>{})
 
   // Device to device.
   template <class Sys1, class Sys2>
   constexpr _CCCL_HOST_DEVICE auto direction_of_copy(thrust::system::cuda::execution_policy<Sys1> const&,
                                                      thrust::system::cuda::execution_policy<Sys2> const&)
-    THRUST_DECLTYPE_RETURNS(thrust::detail::integral_constant<cudaMemcpyKind, cudaMemcpyDeviceToDevice>{})
+    THRUST_DECLTYPE_RETURNS(::cuda::std::integral_constant<cudaMemcpyKind, cudaMemcpyDeviceToDevice>{})
 
   // Device to device.
   template <class DerivedPolicy>
   constexpr _CCCL_HOST_DEVICE auto direction_of_copy(execution_policy<DerivedPolicy> const&)
-    THRUST_DECLTYPE_RETURNS(thrust::detail::integral_constant<cudaMemcpyKind, cudaMemcpyDeviceToDevice>{})
+    THRUST_DECLTYPE_RETURNS(::cuda::std::integral_constant<cudaMemcpyKind, cudaMemcpyDeviceToDevice>{})
 
       template <class Sys1, class Sys2>
       constexpr
@@ -74,7 +76,7 @@ direction_of_copy(thrust::system::cuda::execution_policy<Sys1> const&, thrust::c
                 // MSVC2015 WAR: put decltype here instead of in trailing return type
                 typename Direction =
                   decltype(direction_of_copy(std::declval<ExecutionPolicy0>(), std::declval<ExecutionPolicy1>()))>
-      constexpr _CCCL_HOST_DEVICE thrust::detail::
+      constexpr _CCCL_HOST_DEVICE ::cuda::std::
         integral_constant<bool, cudaMemcpyDeviceToHost == Direction::value> is_device_to_host_copy(
           ExecutionPolicy0 const&, ExecutionPolicy1 const&) noexcept
 {
@@ -84,7 +86,7 @@ direction_of_copy(thrust::system::cuda::execution_policy<Sys1> const&, thrust::c
 template <typename ExecutionPolicy,
           // MSVC2015 WAR: put decltype here instead of in trailing return type
           typename Direction = decltype(direction_of_copy(std::declval<ExecutionPolicy>()))>
-constexpr _CCCL_HOST_DEVICE thrust::detail::integral_constant<bool, cudaMemcpyDeviceToHost == Direction::value>
+constexpr _CCCL_HOST_DEVICE ::cuda::std::integral_constant<bool, cudaMemcpyDeviceToHost == Direction::value>
 is_device_to_host_copy(ExecutionPolicy const&) noexcept
 {
   return {};
@@ -95,7 +97,7 @@ template <
   typename ExecutionPolicy1,
   // MSVC2015 WAR: put decltype here instead of in trailing return type
   typename Direction = decltype(direction_of_copy(std::declval<ExecutionPolicy0>(), std::declval<ExecutionPolicy1>()))>
-constexpr _CCCL_HOST_DEVICE thrust::detail::integral_constant<bool, cudaMemcpyHostToDevice == Direction::value>
+constexpr _CCCL_HOST_DEVICE ::cuda::std::integral_constant<bool, cudaMemcpyHostToDevice == Direction::value>
 is_host_to_device_copy(ExecutionPolicy0 const&, ExecutionPolicy1 const&) noexcept
 {
   return {};
@@ -104,7 +106,7 @@ is_host_to_device_copy(ExecutionPolicy0 const&, ExecutionPolicy1 const&) noexcep
 template <typename ExecutionPolicy,
           // MSVC2015 WAR: put decltype here instead of in trailing return type
           typename Direction = decltype(direction_of_copy(std::declval<ExecutionPolicy>()))>
-constexpr _CCCL_HOST_DEVICE thrust::detail::integral_constant<bool, cudaMemcpyHostToDevice == Direction::value>
+constexpr _CCCL_HOST_DEVICE ::cuda::std::integral_constant<bool, cudaMemcpyHostToDevice == Direction::value>
 is_host_to_device_copy(ExecutionPolicy const&) noexcept
 {
   return {};
@@ -115,7 +117,7 @@ template <
   typename ExecutionPolicy1,
   // MSVC2015 WAR: put decltype here instead of in trailing return type
   typename Direction = decltype(direction_of_copy(std::declval<ExecutionPolicy0>(), std::declval<ExecutionPolicy1>()))>
-constexpr _CCCL_HOST_DEVICE thrust::detail::integral_constant<bool, cudaMemcpyDeviceToDevice == Direction::value>
+constexpr _CCCL_HOST_DEVICE ::cuda::std::integral_constant<bool, cudaMemcpyDeviceToDevice == Direction::value>
 is_device_to_device_copy(ExecutionPolicy0 const&, ExecutionPolicy1 const&) noexcept
 {
   return {};
@@ -124,7 +126,7 @@ is_device_to_device_copy(ExecutionPolicy0 const&, ExecutionPolicy1 const&) noexc
 template <typename ExecutionPolicy,
           // MSVC2015 WAR: put decltype here instead of in trailing return type
           typename Direction = decltype(direction_of_copy(std::declval<ExecutionPolicy>()))>
-constexpr _CCCL_HOST_DEVICE thrust::detail::integral_constant<bool, cudaMemcpyDeviceToDevice == Direction::value>
+constexpr _CCCL_HOST_DEVICE ::cuda::std::integral_constant<bool, cudaMemcpyDeviceToDevice == Direction::value>
 is_device_to_device_copy(ExecutionPolicy const&) noexcept
 {
   return {};

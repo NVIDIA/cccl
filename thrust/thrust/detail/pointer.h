@@ -28,6 +28,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_comparable.h>
 #include <cuda/std/__type_traits/is_reference.h>
@@ -66,24 +67,22 @@ struct pointer_base
 {
   // void pointers should have no element type
   // note that we remove_cv from the Element type to get the value_type
-  using value_type = typename eval_if<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
-                                      ::cuda::std::type_identity<void>,
-                                      ::cuda::std::remove_cv<Element>>::type;
+  using value_type = typename ::cuda::std::conditional_t<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
+                                                         ::cuda::std::type_identity<void>,
+                                                         ::cuda::std::remove_cv<Element>>::type;
 
   // if no Derived type is given, just use pointer
-  using derived_type =
-    typename eval_if<::cuda::std::is_same_v<Derived, use_default>,
-                     ::cuda::std::type_identity<pointer<Element, Tag, Reference, Derived>>,
-                     ::cuda::std::type_identity<Derived>>::type;
+  using derived_type = ::cuda::std::
+    conditional_t<::cuda::std::is_same_v<Derived, use_default>, pointer<Element, Tag, Reference, Derived>, Derived>;
 
   // void pointers should have no reference type
   // if no Reference type is given, just use reference
-  using reference_type =
-    typename eval_if<::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
-                     ::cuda::std::type_identity<void>,
-                     eval_if<::cuda::std::is_same_v<Reference, use_default>,
-                             ::cuda::std::type_identity<reference<Element, derived_type>>,
-                             ::cuda::std::type_identity<Reference>>>::type;
+  using reference_type = typename ::cuda::std::conditional_t<
+    ::cuda::std::is_void_v<::cuda::std::remove_cvref_t<Element>>,
+    ::cuda::std::type_identity<void>,
+    ::cuda::std::conditional_t<::cuda::std::is_same_v<Reference, use_default>,
+                               ::cuda::std::type_identity<reference<Element, derived_type>>,
+                               ::cuda::std::type_identity<Reference>>>::type;
 
   using type =
     iterator_adaptor<derived_type, Element*, value_type, Tag, random_access_traversal_tag, reference_type, std::ptrdiff_t>;

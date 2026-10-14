@@ -27,6 +27,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__iterator/readable_traits.h>
+#include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 CUB_NAMESPACE_BEGIN
@@ -125,7 +126,7 @@ private:
     // These restrictions could be relaxed to allow type-conversions
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<InputT>, T>, "Input element type must match T");
     static_assert(::cuda::std::is_same_v<::cuda::std::iter_value_t<OutputT>, T>, "Output element type must match T");
-    static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
+    static_assert(::cuda::std::__is_callable_v<ReductionOp, T, T>,
                   "ReductionOp must have the binary call operator: operator(T, T)");
   };
 
