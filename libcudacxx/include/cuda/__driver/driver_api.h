@@ -38,14 +38,16 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-#  define _CCCL_TRY_DRIVER_API(_NAME, _MSG, ...)                                                \
-    do                                                                                          \
-    {                                                                                           \
-      const auto __cccl_try_driver_api_status = static_cast<::cudaError_t>(_NAME(__VA_ARGS__)); \
-      if (__cccl_try_driver_api_status != ::cudaSuccess)                                        \
-      {                                                                                         \
-        _CCCL_THROW(::cuda::cuda_error, __cccl_try_driver_api_status, _MSG, #_NAME);            \
-      }                                                                                         \
+#  define _CCCL_TRY_DRIVER_API(_NAME, _MSG, ...)                                              \
+    do                                                                                        \
+    {                                                                                         \
+      /* keeps the callee's status type (CUresult, or cudaError_t from a NoThrow wrapper), */ \
+      /* so the thrown error records which one it was; both use 0 for success */              \
+      const auto __cccl_try_driver_api_status = _NAME(__VA_ARGS__);                           \
+      if (static_cast<int>(__cccl_try_driver_api_status) != 0)                                \
+      {                                                                                       \
+        _CCCL_THROW(::cuda::cuda_error, __cccl_try_driver_api_status, _MSG, #_NAME);          \
+      }                                                                                       \
     } while (0)
 
 #  define _CCCL_ASSERT_DRIVER_API(_NAME, _MSG, ...)                                                                 \
@@ -279,16 +281,14 @@ __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception
        ? _CCCLRT_DEFAULT_STREAM_WITHOUT_CONTEXT_MESSAGE(_MSG)               \
        : _MSG)
 
-#  define _CCCLRT_CALL_STREAM_DRIVER_FN(_FN, _DIAGNOSTIC_STREAM, _MSG, ...)  \
-    do                                                                       \
-    {                                                                        \
-      const ::CUresult __status = _FN(__VA_ARGS__);                          \
-      if (__status != ::CUDA_SUCCESS)                                        \
-      {                                                                      \
-        _CCCL_THROW(::cuda::cuda_error,                                      \
-                    static_cast<::cudaError_t>(__status),                    \
-                    _CCCLRT_STREAM_ERROR_MESSAGE(_DIAGNOSTIC_STREAM, _MSG)); \
-      }                                                                      \
+#  define _CCCLRT_CALL_STREAM_DRIVER_FN(_FN, _DIAGNOSTIC_STREAM, _MSG, ...)                                \
+    do                                                                                                     \
+    {                                                                                                      \
+      const ::CUresult __status = _FN(__VA_ARGS__);                                                        \
+      if (__status != ::CUDA_SUCCESS)                                                                      \
+      {                                                                                                    \
+        _CCCL_THROW(::cuda::cuda_error, __status, _CCCLRT_STREAM_ERROR_MESSAGE(_DIAGNOSTIC_STREAM, _MSG)); \
+      }                                                                                                    \
     } while (0)
 
 // Memory management

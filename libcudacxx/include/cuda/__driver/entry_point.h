@@ -153,16 +153,24 @@ __get_driver_entry_point_no_init(const char* __name, int __major = 12, int __min
   return __fn;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline const char* __getErrorString(::cudaError_t __error)
+[[nodiscard]] _CCCL_HOST_API inline const char* __getErrorString(::CUresult __error)
 {
   // cuGetErrorString doesn't require the driver to be initialized.
   static const auto __driver_fn = reinterpret_cast<decltype(::cuGetErrorString)*>(
     ::cuda::__driver::__get_driver_entry_point_no_init("cuGetErrorString"));
 
-  // We can emulate the cudaGetErrorString behaviour by falling back to the "unrecognized error code" string.
+  // Unknown codes get the same fallback text cudaGetErrorString would print.
   const char* __ret{};
-  (void) __driver_fn(static_cast<::CUresult>(__error), &__ret);
+  (void) __driver_fn(__error, &__ret);
   return (__ret != nullptr) ? __ret : "unrecognized error code";
+}
+
+[[nodiscard]] _CCCL_HOST_API inline const char* __getErrorString(::cudaError_t __error)
+{
+  // The CUDA Runtime numbers its error codes to match the driver's for every failure both can report, so
+  // the driver's description applies to a runtime status as well. Runtime-only codes are unknown to the
+  // driver and get the fallback text. This is the one place that relies on that numbering.
+  return ::cuda::__driver::__getErrorString(static_cast<::CUresult>(__error));
 }
 
 //! @brief Initializes the CUDA Driver.
