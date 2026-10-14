@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile generated device code for the kernel's own target.
+"""Compile generated device code for the kernel's own target and options.
 
 A kernel can target an architecture other than the current device with
-``chip=`` or ``cc=``. Group-method helpers, providers, and Python callbacks
-are compiled separately from the kernel and linked into it, so they must use
-that same target. Device discovery is fixed to a different compute capability,
-and every NVRTC and callback compilation request is recorded while the real
-compile and link run.
+``chip=`` or ``cc=``, and can request line information. Group-method helpers,
+providers, and Python callbacks are compiled separately from the kernel and
+linked into it, so they must use that same target and options. Device
+discovery is fixed to a different compute capability, and every NVRTC and
+callback compilation request is recorded while the real compile and link run.
 """
 
 from types import SimpleNamespace
@@ -140,3 +140,35 @@ def test_generated_code_targets_the_kernel_not_the_current_device(
     assert helper_sources
     assert all(f"_cc{arch}_ctx_" in source for source in helper_sources)
     assert recorded.callbacks == [callback_cc]
+
+
+def test_lineinfo_reaches_generated_code(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cuda, recorded = _record_compilations(monkeypatch)
+
+    result = _compile_kernel(cuda, lineinfo=True)
+
+    assert result.metadata["cubin"]
+    assert recorded.nvrtc
+    assert all(
+        b"-lineinfo" in request["compiler_options"]
+        for request in recorded.nvrtc
+    )
+
+
+@pytest.mark.parametrize("lineinfo", [False, True])
+def test_debug_kernel_links_generated_code_without_debug_information(
+    monkeypatch: pytest.MonkeyPatch, lineinfo
+) -> None:
+    # A debug kernel is linked with -g, and nvJitLink then rejects more than
+    # one LTO input that carries debug or line information.
+    cuda, recorded = _record_compilations(monkeypatch)
+
+    result = _compile_kernel(cuda, debug=True, opt=False, lineinfo=lineinfo)
+
+    assert result.metadata["cubin"]
+    assert recorded.nvrtc
+    for request in recorded.nvrtc:
+        assert b"-lineinfo" not in request["compiler_options"]
+        assert b"-G" not in request["compiler_options"]
