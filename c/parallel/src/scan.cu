@@ -416,6 +416,8 @@ try
 #include <cub/block/block_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/null_type.cuh>
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
