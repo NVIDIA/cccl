@@ -773,11 +773,64 @@ class _StorageRewrite:
     def _reject_conflicting_user_shared_arrays(
         self, plan: _TempStorageGlobalPlan
     ) -> None:
-        """Reject static/dynamic overlap in supported compiler releases.
+        """Keep user shared arrays separate from cooperative scratch memory.
 
-        Runtime-sized arrays and zero-sized views use the dynamic window.
-        Static globals currently overlap that window as well, so coexistence
-        is safe only when both user and cooperative allocations are static.
+        User data must survive while a primitive writes its temporary storage.
+        The supported compiler can place static shared allocations over the
+        dynamic shared-memory window, so these allocations can overwrite each
+        other. A zero-sized ``cuda.shared.array`` declares a view of that
+        window; a runtime-sized array also uses it.
+
+        Allow user shared arrays only when both they and the cooperative
+        backing use static shared-memory allocations. A compile-time-known
+        cooperative size can still require dynamic backing. In that case,
+        reject every user shared allocation. Check constructors throughout
+        the function after device-helper inlining, regardless of barriers or
+        apparent lifetimes. Restore the block lookup state even on failure.
+
+        Parameters
+        ----------
+        plan : _TempStorageGlobalPlan
+            Combined cooperative allocation, including its static or dynamic
+            placement and total byte count.
+
+        Raises
+        ------
+        CoopSinglePhaseRewriteError
+            A user shared array can overlap the cooperative backing.
+
+        Examples
+        --------
+        This kernel keeps user data in dynamic shared memory across a
+        transpose load. For 128 threads and four int32 items per thread, the
+        load's static scratch allocation can overlap ``user_data``::
+
+            import numpy as np
+            from numba_cuda_mlir import cuda
+            from cuda import coop
+
+            @cuda.jit
+            def conflicting_storage(source, output, items_per_thread):
+                block = coop.this_block()
+                thread = cuda.threadIdx.x
+                user_data = cuda.shared.array(0, dtype=np.int32)
+                user_data[thread] = source[thread]
+                cuda.syncthreads()
+
+                items = coop.ThreadData(items_per_thread)
+                coop.load(block, source, items, algorithm="transpose")
+                items[0] += user_data[thread]
+                coop.store(block, output, items)
+
+            source = cuda.to_device(np.arange(512, dtype=np.int32))
+            output = cuda.device_array(512, dtype=np.int32)
+            conflicting_storage[1, 128, 0, 512](source, output, 4)
+
+        Compilation rejects this launch before the arrays can overwrite each
+        other. The 512 launch bytes provide room for ``user_data``; they do
+        not separate it from the primitive's scratch. Replacing its shape
+        ``0`` with ``128`` makes both allocations static and passes this
+        check; that version needs no dynamic launch bytes.
         """
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
