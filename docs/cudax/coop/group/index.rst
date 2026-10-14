@@ -84,6 +84,10 @@ CTK's Cooperative Groups fuse these 2 properties together, providing free functi
 
 CCCL Cooperative Groups instead try to give the user control over both properties by separating them. This is implemented by a family of types that implement a well-defined interface. The information about *how the units are grouped* is passed by :ref:`cudax-coop-group-mapping` and *how the units are synchronized* is passed by :ref:`cudax-coop-group-synchronizer`. The design can be likened to ``std::mdspan``'s layout mappings and accessors.
 
+.. figure:: images/group-design.svg
+   :width: 100%
+   :alt: Four choices when creating a group: which units to group, within which boundary, how to partition the units, and how to synchronize them. Examples include threads or warps, a block or another group, groups of four or a predicate, and a barrier or __syncwarp().
+
 Optional Participation
 ^^^^^^^^^^^^^^^^^^^^^^
 
