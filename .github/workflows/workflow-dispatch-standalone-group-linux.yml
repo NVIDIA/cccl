@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: "Workflow/Dispatch/StandaloneGroup/Linux"
 
 defaults:
@@ -12,7 +15,7 @@ on:
         type: string
         required: true
       repo:
-        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        description: "Repository to checkout."
         type: string
         required: false
         default: ${{ github.repository }}

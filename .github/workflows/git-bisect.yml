@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: "Git Bisect"
 
 defaults:
@@ -6,10 +9,10 @@ defaults:
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &input_args
       runner:
         description: "Runner label. Ex: 'linux-amd64-cpu16', 'linux-amd64-gpu-rtxa6000-latest-1'"
-        required: true
+        required: false
         default: linux-amd64-cpu16
         type: string
       launch_args:
@@ -19,7 +22,7 @@ on:
         type: string
       preset:
         description: "CMake preset. Ex: cub-cpp20"
-        required: true
+        required: false
         default: "cub-cpp20"
         type: string
       cmake_options:
@@ -56,53 +59,7 @@ on:
         required: false
         type: string
   workflow_call:
-    inputs:
-      runner:
-        description: "Runner label. Ex: 'linux-amd64-cpu16', 'linux-amd64-gpu-rtxa6000-latest-1'"
-        required: true
-        type: string
-      launch_args:
-        description: "'.devcontainer/launch.sh -d' add'l args. Ex: '--ctk 12.9 --host gcc13'"
-        required: false
-        default: ""
-        type: string
-      preset:
-        description: "CMake preset. Ex: cub-cpp20"
-        required: true
-        type: string
-      cmake_options:
-        description: "Additional options passed to CMake preset configure (e.g. -DVAR=ON)"
-        required: false
-        default: ""
-        type: string
-      build_targets:
-        description: "Space separated ninja build targets to build."
-        required: false
-        default: ""
-        type: string
-      ctest_targets:
-        description: "Space separated CTest -R regexes to run."
-        required: false
-        default: ""
-        type: string
-      lit_precompile_tests:
-        description: "Space-separated libcudacxx lit test paths to compile without execution"
-        required: false
-        default: ""
-        type: string
-      lit_tests:
-        description: "Space-separated libcudacxx lit test paths to compile and execute"
-        required: false
-        default: ""
-        type: string
-      good_ref:
-        description: "Good ref/sha/tag/branch. Defaults to latest release tag. '-Nd' means 'N days ago on main'."
-        required: false
-        type: string
-      bad_ref:
-        description: "Bad ref/sha/tag/branch. Defaults to main. '-Nd' means 'N days ago on main'."
-        required: false
-        type: string
+    inputs: *input_args
 
 jobs:
   # Hash all of the inputs and generate a descriptive, but unique, name for the bisect job.

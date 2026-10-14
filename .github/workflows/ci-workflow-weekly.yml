@@ -26,6 +26,20 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 8 * * 0" # Every Sunday at 00:00 PST, 03:00 EST, 08:00 UTC
+  workflow_call:
+    secrets:
+      NVINFERENCE_API_KEY:
+        description: NVIDIA Inference Hub API key for CI failure analysis and SASS triage.
+        required: false
+      SLACK_CHANNEL_CI_ALERT:
+        description: Slack channel ID for CI failure alerts.
+        required: false
+      SLACK_CHANNEL_CI_LOG:
+        description: Slack channel ID for CI logs.
+        required: false
+      SLACK_NOTIFIER_BOT_TOKEN:
+        description: Slack bot token for CI notifications.
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
@@ -34,7 +48,7 @@ jobs:
 
   matrix-build:
     name: Build & dispatch CI matrix
-    uses: ./.github/workflows/ci-matrix-build.yml
+    uses: $/.github/workflows/ci-matrix-build.yml
     secrets: inherit
     with:
       workflows: weekly

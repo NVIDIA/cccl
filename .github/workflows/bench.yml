@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: Benchmark Compare
 
 defaults:
@@ -6,10 +9,10 @@ defaults:
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &input_args
       gpu:
         description: "GPU selector. Ex: 'rtxa6000'. See ci/bench.yaml for all options."
-        required: true
+        required: false
         default: "rtxa6000"
         type: string
       launch_args:
@@ -63,61 +66,7 @@ on:
         default: ""
         type: string
   workflow_call:
-    inputs:
-      gpu:
-        description: "GPU selector. Ex: 'rtxa6000'. See ci/bench.yaml for all options."
-        required: true
-        type: string
-      launch_args:
-        description: "'.devcontainer/launch.sh -d' additional args. Ex: '--cuda 13.4 --host gcc14'"
-        required: false
-        default: "--cuda 13.4 --host gcc14"
-        type: string
-      arch:
-        description: "CMAKE_CUDA_ARCHITECTURES value passed as ci/bench/bench.sh --arch"
-        required: false
-        default: "native"
-        type: string
-      base_ref:
-        description: "Base Ref/SHA"
-        required: false
-        default: "origin/main"
-        type: string
-      test_ref:
-        description: "Test Ref/SHA"
-        required: false
-        default: ""
-        type: string
-      cub_filters:
-        description: "CUB filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
-        required: false
-        default: ""
-        type: string
-      python_filters:
-        description: "Python filters, space-separated (ex: 'compute/reduce/sum\\.py')"
-        required: false
-        default: ""
-        type: string
-      nvbench_args:
-        description: "NVBench extra args"
-        required: false
-        default: ""
-        type: string
-      nvbench_compare_args:
-        description: "nvbench-compare-robust extra args"
-        required: false
-        default: ""
-        type: string
-      nvbench_compare_legacy_args:
-        description: "nvbench-compare-legacy extra args"
-        required: false
-        default: ""
-        type: string
-      raw_args:
-        description: "Raw Args (advanced, bypasses all other inputs)"
-        required: false
-        default: ""
-        type: string
+    inputs: *input_args
 
 jobs:
   run:

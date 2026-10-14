@@ -44,6 +44,16 @@ def generate_job_id_map(workflow):
     return job_id_map
 
 
+def resolve_job_id(name, job_id_map):
+    """Match matrix job names after any reusable workflow caller prefixes."""
+    while True:
+        if name in job_id_map:
+            return job_id_map[name]
+        _, separator, name = name.partition(" / ")
+        if not separator:
+            return None
+
+
 def main():
     # Accept two command line arguments: <workflow.json> <jobs.json>
     parser = argparse.ArgumentParser(description="Parse job times")
@@ -54,8 +64,13 @@ def main():
     jobs = get_jobs_json(args.jobs)
     workflow = get_workflow_json(args.workflow)
 
-    # Converts full github job names into job ids:
-    job_id_map = generate_job_id_map(workflow)
+    # GitHub prefixes job names with each reusable workflow caller's job name.
+    matrix_job_id_map = generate_job_id_map(workflow)
+    job_id_map = {}
+    for job in jobs:
+        job_id = resolve_job_id(job["name"], matrix_job_id_map)
+        if job_id is not None:
+            job_id_map[job["name"]] = job_id
 
     # Map of id -> { <job stats> }
     result = {}

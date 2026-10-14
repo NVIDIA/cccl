@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: Verify devcontainers
 
 on:
@@ -7,7 +10,6 @@ on:
         type: string
         description: 'For PRs, set the base SHA to conditionally run this workflow only when relevant files are modified.'
         required: false
-
 
 defaults:
   run:
