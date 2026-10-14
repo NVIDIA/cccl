@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__fwd/array.h>
-#include <cuda/std/__fwd/complex.h>
-#include <cuda/std/__fwd/pair.h>
-#include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__fwd/array.h> // IWYU pragma: keep
+#include <cuda/std/__fwd/complex.h> // IWYU pragma: keep
+#include <cuda/std/__fwd/pair.h> // IWYU pragma: keep
+#include <cuda/std/__fwd/tuple.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_const.h>

@@ -143,12 +143,124 @@ balanced_path(It1 keys1, It2 keys2, Offset num_keys1, Offset num_keys2, Offset d
 
     index1 = start1 + advance1;
   }
-  return ::cuda::std::make_pair(index1, (diag - index1) + Offset{star});
+  return {index1, (diag - index1) + Offset{star}};
 }
 
-// Serial set operation. The functor walks the two per-thread sub-ranges of the shared [keys1 | keys2] buffer, writes
+// Serial set operations. Each functor walks the two per-thread sub-ranges of the shared [keys1 | keys2] buffer, writes
 // up to items_per_thread results to @p output (with source indices in @p indices for by-key value gather), and returns
 // a per-item live-slot bitmask. The buffer is over-allocated so the trailing ++begin stays in bounds without a check.
+
+//! Emit A when A and B are both in range and equal.
+struct serial_set_intersection
+{
+  // max_input_size <= 32
+  template <typename T, typename CompareOp, int ItemsPerThread>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
+    const T* keys,
+    int keys1_beg,
+    int keys2_beg,
+    int keys1_count,
+    int keys2_count,
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
+    CompareOp compare_op) const
+  {
+    unsigned active_mask = 0;
+
+    int a_begin     = keys1_beg;
+    int b_begin     = keys2_beg;
+    const int a_end = keys1_beg + keys1_count;
+    const int b_end = keys2_beg + keys2_count;
+
+    T a_key = keys[a_begin];
+    T b_key = keys[b_begin];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      const bool p_a = compare_op(a_key, b_key);
+      const bool p_b = compare_op(b_key, a_key);
+
+      // The outputs must come from A by definition of set intersection.
+      output[i]  = a_key;
+      indices[i] = a_begin;
+
+      if ((a_begin < a_end) && (b_begin < b_end) && p_a == p_b)
+      {
+        active_mask |= 1u << i;
+      }
+
+      if (!p_b)
+      {
+        a_key = keys[++a_begin];
+      }
+      if (!p_a)
+      {
+        b_key = keys[++b_begin];
+      }
+    }
+    return static_cast<int>(active_mask);
+  }
+};
+
+//! Emit A when A < B and B when B < A.
+struct serial_set_symmetric_difference
+{
+  // max_input_size <= 32
+  template <typename T, typename CompareOp, int ItemsPerThread>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
+    const T* keys,
+    int keys1_beg,
+    int keys2_beg,
+    int keys1_count,
+    int keys2_count,
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
+    CompareOp compare_op) const
+  {
+    unsigned active_mask = 0;
+
+    int a_begin     = keys1_beg;
+    int b_begin     = keys2_beg;
+    const int a_end = keys1_beg + keys1_count;
+    const int b_end = keys2_beg + keys2_count;
+    const int end   = a_end + b_end;
+
+    T a_key = keys[a_begin];
+    T b_key = keys[b_begin];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      bool p_b = a_begin >= a_end;
+      bool p_a = !p_b && b_begin >= b_end;
+
+      if (!p_a && !p_b)
+      {
+        p_a = compare_op(a_key, b_key);
+        p_b = !p_a && compare_op(b_key, a_key);
+      }
+
+      output[i]  = p_a ? a_key : b_key;
+      indices[i] = p_a ? a_begin : b_begin;
+
+      if (a_begin + b_begin < end && p_a != p_b)
+      {
+        active_mask |= 1u << i;
+      }
+
+      if (!p_b)
+      {
+        a_key = keys[++a_begin];
+      }
+      if (!p_a)
+      {
+        b_key = keys[++b_begin];
+      }
+    }
+    return static_cast<int>(active_mask);
+  }
+};
 
 //! Emit A when A < B.
 struct serial_set_difference
@@ -210,9 +322,69 @@ struct serial_set_difference
   }
 };
 
+//! Emit A when A <= B, otherwise emit B.
+struct serial_set_union
+{
+  // max_input_size <= 32
+  template <typename T, typename CompareOp, int ItemsPerThread>
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE int operator()(
+    const T* keys,
+    int keys1_beg,
+    int keys2_beg,
+    int keys1_count,
+    int keys2_count,
+    T (&output)[ItemsPerThread],
+    int (&indices)[ItemsPerThread],
+    CompareOp compare_op) const
+  {
+    unsigned active_mask = 0;
+
+    int a_begin     = keys1_beg;
+    int b_begin     = keys2_beg;
+    const int a_end = keys1_beg + keys1_count;
+    const int b_end = keys2_beg + keys2_count;
+    const int end   = a_end + b_end;
+
+    T a_key = keys[a_begin];
+    T b_key = keys[b_begin];
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < ItemsPerThread; ++i)
+    {
+      bool p_b = a_begin >= a_end;
+      bool p_a = !p_b && b_begin >= b_end;
+
+      if (!p_a && !p_b)
+      {
+        p_a = compare_op(a_key, b_key);
+        p_b = !p_a && compare_op(b_key, a_key);
+      }
+
+      // Output A in case of a tie, so check if b < a.
+      output[i]  = p_b ? b_key : a_key;
+      indices[i] = p_b ? b_begin : a_begin;
+
+      if (a_begin + b_begin < end)
+      {
+        active_mask |= 1u << i;
+      }
+
+      if (!p_b)
+      {
+        a_key = keys[++a_begin];
+      }
+      if (!p_a)
+      {
+        b_key = keys[++b_begin];
+      }
+    }
+    return static_cast<int>(active_mask);
+  }
+};
+
 //! One block consumes one tile. @p partitions holds the balanced-partition boundaries (one per tile plus a sentinel);
 //! @p tile_state carries the decoupled look-back scan state placing each tile's compacted output; the last tile writes
-//! the total count to @p output_count. @p PolicyGetter returns the SetOpsPolicy by value at constant evaluation.
+//! the total count to @p output_count. @p PolicyGetter returns the @ref SetOpsPolicy by value at constant evaluation.
 template <typename PolicyGetter,
           typename KeysIt1,
           typename KeysIt2,
@@ -238,7 +410,7 @@ struct agent_set_op
   static constexpr int items_per_thread = policy.items_per_thread;
   // One item is left in reserve so the serial set operations can read one past their range without a bounds check.
   static constexpr int items_per_tile = block_threads * items_per_thread - 1;
-  static_assert(items_per_thread <= 32, "the serial set operation packs one live-slot bit per item into an int mask");
+  static_assert(items_per_thread <= 32, "the serial set operations pack one live-slot bit per item into an int mask");
   // A partition coordinate is packed into the high 16 bits of a signed int and recovered with an arithmetic >> 16, so
   // it must stay below 2^15 to keep the packed value non-negative.
   static_assert(items_per_tile < (1 << 15),
@@ -316,6 +488,25 @@ struct agent_set_op
         {
           output[item] = (idx < count1) ? static_cast<T>(input1[idx]) : static_cast<T>(input2[idx - count1]);
         }
+      }
+    }
+  }
+
+  // Loads only the first @p count1 logical items from a single input range into registers (blocked layout), leaving the
+  // remaining register slots untouched. Used for the value load of operations whose output comes exclusively from the
+  // first input (set difference/intersection): the second input's values are never gathered, so its buffer must not be
+  // read - it may legitimately be shorter than the second key range (e.g. Thrust's by-key difference/intersection pass
+  // the first input's values as a placeholder second value range).
+  template <typename T, typename It1>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void gmem_to_reg_first(T (&output)[items_per_thread], It1 input1, int count1)
+  {
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 0; item < items_per_thread; ++item)
+    {
+      const int idx = block_threads * item + threadIdx.x;
+      if (idx < count1)
+      {
+        output[item] = static_cast<T>(input1[idx]);
       }
     }
   }
@@ -453,9 +644,18 @@ struct agent_set_op
     if constexpr (has_values)
     {
       const auto values1_load = detail::try_make_cache_modified_iterator<load_modifier>(values1_in);
-      const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
       value_type values_loc[items_per_thread];
-      gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
+      // Set difference and intersection emit values exclusively from the first input.
+      if constexpr (::cuda::std::is_same_v<SetOp, serial_set_difference>
+                    || ::cuda::std::is_same_v<SetOp, serial_set_intersection>)
+      {
+        gmem_to_reg_first(values_loc, values1_load + keys1_beg, num_keys1);
+      }
+      else
+      {
+        const auto values2_load = detail::try_make_cache_modified_iterator<load_modifier>(values2_in);
+        gmem_to_reg<!IsLastTile>(values_loc, values1_load + keys1_beg, values2_load + keys2_beg, num_keys1, num_keys2);
+      }
       __syncthreads();
 
       reg_to_shared(&storage.load_storage.values_shared[0], values_loc);

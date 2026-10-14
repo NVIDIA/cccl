@@ -55,6 +55,7 @@
 #include <cuda/std/__iterator/indirectly_comparable.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstdint>
@@ -311,12 +312,12 @@ private:
       gpu_gpu_determinism && ::cuda::std::is_integral_v<AccumT> && (detail::is_cuda_binary_operator<ReductionOpT>);
 
     // use gpu-to-gpu determinism only for float and double types with ::cuda::std::plus operator
-    constexpr auto float_double_plus =
-      gpu_gpu_determinism && detail::is_one_of_v<AccumT, float, double> && ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
+    constexpr auto float_double_plus = gpu_gpu_determinism && ::cuda::std::__is_one_of_v<AccumT, float, double>
+                                    && ::cuda::__is_cuda_std_plus_v<ReductionOpT>;
 
     constexpr auto float_double_min_max_fallback =
       gpu_gpu_determinism
-      && detail::is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
+      && ::cuda::std::__is_one_of_v<AccumT, float, double> && detail::is_cuda_minimum_maximum_v<ReductionOpT>;
 
     constexpr auto supported =
       integral_fallback || float_double_plus || float_double_min_max_fallback || !gpu_gpu_determinism;
@@ -802,6 +803,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - For floating-point types, the minimum follows ``cuda::std::fmin``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -914,6 +917,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction.
+  //! - For floating-point types, the minimum follows ``cuda::std::fmin``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.
@@ -1446,6 +1451,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - For floating-point types, the maximum follows ``cuda::std::fmax``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -1555,6 +1562,8 @@ public:
   //!    First appears in CUDA Toolkit 12.3.
   //!
   //! - Uses ``cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //! - For floating-point types, the maximum follows ``cuda::std::fmax``: NaN inputs are ignored. If all inputs are
+  //!   NaN, the result is the initial value.
   //! - Provides determinism based on the environment's determinism requirements.
   //!   To request "run-to-run" determinism, pass ``cuda::execution::require(cuda::execution::determinism::run_to_run)``
   //!   as the `env` parameter.

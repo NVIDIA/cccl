@@ -165,7 +165,8 @@ void TestDriver(GenMode gen_mode)
   CubDebugExit(cudaDeviceSynchronize());
 
   // Check keys results
-  const bool compare = CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose);
+  const bool compare =
+    CompareDeviceResults(h_reference_ranks.get(), d_ranks.data(), tile_size, g_verbose, g_verbose, stream);
   AssertEquals(0, compare);
 }
 
