@@ -62,8 +62,9 @@ class CoopWholeFunctionPlanner(
         During call rewriting, keep those original definitions until every
         block replacement and the final binding cleanup are complete.
 
-        Both phases generate device code for the kernel's resolved ``chip``,
-        including any ``a``/``f`` suffix, not for the current device.
+        Both phases generate device code for the kernel's resolved ``chip``
+        (including any ``a``/``f`` suffix) and ``lineinfo`` option, not for
+        the current device.
 
         Both phases run even when group resolution makes no changes; payload
         constructors and private provider calls can still need rewriting.
