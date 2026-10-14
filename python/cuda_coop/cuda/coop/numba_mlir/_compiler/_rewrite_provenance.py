@@ -1266,6 +1266,13 @@ class _ProvenanceRewrite(Rewrite):
                 int(entry.size_in_bytes) for entry in domain_uses
             )
             instance_stride = _align_up(per_instance_size, domain_alignment)
+            # Topology tells us how many independent groups need scratch: four
+            # 32-thread warps in a 128-thread block need four separate slots.
+            # Calls in a reuse domain agree on that count, so the first plan
+            # is sufficient; an exclusive domain contains only one call.
+            # Legacy block providers have no topology and need one slot. The
+            # aligned instance_stride spaces groups' slots apart, while
+            # compatible calls reuse the same set of slots.
             first_plan = domain_uses[0].lowering_plan
             instances = (
                 1
@@ -1292,36 +1299,49 @@ class _ProvenanceRewrite(Rewrite):
     def _finalize_temp_storage_plan_for_var(
         self, var_name: str
     ) -> _TempStoragePlan:
-        """Combine a descriptor contract with its primitive requirements.
+        """Finalize the storage layout for one ``TempStorage`` variable.
 
-        Lay out the uses, infer capacity when the constructor omitted it, and
-        check that an explicit capacity covers the result. Alignment is raised
-        to satisfy both the constructor and every consumer, with a
-        pointer-sized minimum. An unspecified ``auto_sync`` means
-        caller-managed synchronization.
+        Requirement collection has already recorded the constructor options
+        and the bytes needed by each primitive using this variable. Turn
+        those requirements into a plan for its shared memory: the total size,
+        alignment, and slice assigned to each call. The constructor's
+        ``sharing`` setting controls which calls may reuse the same bytes.
 
-        Cache the resulting region plan before the function-wide allocation
-        adds its base offset. A descriptor with no uses needs an explicit
-        capacity and the default sharing/synchronization policy here;
-        whole-function descriptor validation separately rejects constructors
-        without primitive consumers.
+        Infer an omitted ``size_in_bytes`` from the layout, or check that an
+        explicit size is large enough. Choose an alignment that satisfies the
+        constructor and all calls, with a pointer-sized minimum. Record an
+        omitted ``auto_sync`` as false, leaving synchronization to the caller.
+
+        Cache the plan under the constructor's canonical variable name. New
+        plans describe offsets within this variable's storage region;
+        ``_ensure_temp_storage_global_plan`` later assigns the region's base
+        offset within the function's shared-memory allocation.
 
         Parameters
         ----------
         var_name : str
-            Known constructor owner name; aliases are canonicalized first.
+            IR variable name identifying a recorded ``TempStorage``
+            constructor. Merged constructor names share one cached plan.
 
         Returns
         -------
         _TempStoragePlan
-            Cached or newly finalized region plan with slices for each call.
+            Existing cached plan or the newly computed layout and
+            sharing/synchronization settings.
 
         Raises
         ------
         CoopSinglePhaseRewriteError
-            Constructor metadata is missing, capacity cannot be inferred
-            or is insufficient, or the descriptor policy is invalid for
-            the known uses.
+            Constructor metadata is missing, size cannot be inferred or is
+            invalid or insufficient, or alignment is invalid. With no
+            recorded uses, this helper requires an explicit size,
+            ``sharing="shared"``, and ``auto_sync=False`` (or omitted).
+
+        Notes
+        -----
+        Whole-function validation separately rejects constructors with no
+        primitive consumer. An explicit size alone does not make an unused
+        descriptor valid.
         """
 
         var_name = self._canonical_temp_storage_ctor_key(var_name)
