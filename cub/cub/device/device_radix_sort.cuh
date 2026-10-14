@@ -377,6 +377,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -635,6 +640,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -881,6 +891,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1103,6 +1118,11 @@ public:
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -1339,6 +1359,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1540,6 +1565,11 @@ public:
   //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -1762,6 +1792,11 @@ public:
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -2019,6 +2054,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2158,6 +2198,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2293,6 +2338,11 @@ public:
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -2529,6 +2579,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2650,6 +2705,11 @@ public:
   //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -3050,6 +3110,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3279,6 +3344,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3485,6 +3555,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3676,6 +3751,11 @@ public:
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -3901,6 +3981,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4068,6 +4153,11 @@ public:
   //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -4255,6 +4345,11 @@ public:
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -4484,6 +4579,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4608,6 +4708,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4730,6 +4835,11 @@ public:
   //!
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
@@ -4955,6 +5065,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -5063,6 +5178,11 @@ public:
   //!   ``cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
+  //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
   //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
