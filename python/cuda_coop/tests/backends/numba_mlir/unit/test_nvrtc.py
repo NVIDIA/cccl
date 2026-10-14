@@ -304,6 +304,14 @@ def test_compile_forwards_complete_context_into_cache_key(
         ({"chip": "sm_90a"}, _nvrtc.CompileTarget(cc=90, arch_suffix="a")),
         ({"chip": "sm_100f"}, _nvrtc.CompileTarget(cc=100, arch_suffix="f")),
         ({"chip": "sm_120"}, _nvrtc.CompileTarget(cc=120)),
+        (
+            {"chip": "sm_120", "lineinfo": True},
+            _nvrtc.CompileTarget(cc=120, lineinfo=True),
+        ),
+        (
+            {"chip": "sm_120", "lineinfo": True, "debug": True},
+            _nvrtc.CompileTarget(cc=120),
+        ),
     ],
 )
 def test_compile_target_reads_the_resolved_kernel_target(
@@ -318,8 +326,8 @@ def test_compile_target_rejects_an_unresolved_chip(chip) -> None:
         _nvrtc.CompileTarget.from_targetoptions({"chip": chip})
 
 
-def test_compile_target_selects_the_architecture_option() -> None:
-    target = _nvrtc.CompileTarget(cc=100, arch_suffix="f")
+def test_compile_target_selects_architecture_and_line_options() -> None:
+    target = _nvrtc.CompileTarget(cc=100, arch_suffix="f", lineinfo=True)
     options = _nvrtc._compiler_options(
         rdc=True, code="lto", include_dirs=(), **target.nvrtc_kwargs()
     )
@@ -328,9 +336,10 @@ def test_compile_target_selects_the_architecture_option() -> None:
     )
 
     assert b"--gpu-architecture=compute_100f" in options
+    assert b"-lineinfo" in options
     assert identity.target == target
     assert identity != _nvrtc.compiler_identity(
-        context=_context(), rdc=True, code="lto", cc=100
+        context=_context(), rdc=True, code="lto", cc=100, arch_suffix="f"
     )
 
 
