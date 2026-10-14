@@ -20,6 +20,7 @@ import struct
 from collections import defaultdict
 from collections.abc import Mapping
 from enum import Enum
+from functools import partial
 from types import BuiltinFunctionType, FunctionType, MethodType, ModuleType
 from typing import Any
 
@@ -218,7 +219,17 @@ def _semantic_token(value: Any, state: _TokenState) -> Any:
                     for field in dataclasses.fields(value)
                 ),
             )
-        elif isinstance(value, (BuiltinFunctionType, FunctionType, MethodType)):
+        elif isinstance(
+            value,
+            (
+                BuiltinFunctionType,
+                FunctionType,
+                MethodType,
+                partial,
+                staticmethod,
+                classmethod,
+            ),
+        ):
             raise TypeError(
                 "callable values are not supported in specialization keys"
             )
@@ -272,9 +283,10 @@ def semantic_token(value: Any) -> Any:
     Raises
     ------
     TypeError
-        A visited value is a Python function, built-in function, or bound
-        method. Backends must supply their own compiled-callback identity
-        instead of using a function object as a core specialization value.
+        A visited value is a Python function, built-in function, bound method,
+        ``functools.partial``, ``staticmethod``, or ``classmethod``. Backends
+        must supply their own compiled-callback identity instead of using a
+        function object as a core specialization value.
     """
 
     return _semantic_token(value, _TokenState())
