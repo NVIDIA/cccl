@@ -385,8 +385,8 @@ def _load_defaulting_invalid(
         items_per_thread,
         dtype=types.int32,
     )
-    payload[0] = 19
-    payload[1] = 19
+    for item in range(items_per_thread):
+        payload[item] = 19
     qualified_coop.load(
         qualified_coop.this_block(),
         source,

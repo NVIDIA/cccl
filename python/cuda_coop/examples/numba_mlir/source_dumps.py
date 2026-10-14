@@ -74,13 +74,8 @@ def main():
         "direct": copy_direct,
         "transpose": copy_transpose,
     }[example]
-    if example == "scan":
-        kernel[1, 128](source, destination)
-    else:
-        items_per_thread = 4
-        kernel[1, count // items_per_thread](
-            source, destination, items_per_thread
-        )
+    items_per_thread = 4
+    kernel[1, count // items_per_thread](source, destination, items_per_thread)
     cuda.synchronize()
     expected = source
     np.testing.assert_array_equal(destination, expected)
