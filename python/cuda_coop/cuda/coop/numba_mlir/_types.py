@@ -335,7 +335,8 @@ def _current_compile_target() -> nvrtc.CompileTarget:
 
     During a kernel compilation this is the kernel's own target, set by
     ``kernel_compile_target``. Outside one, such as when a provider is
-    specialized directly, fall back to the current device.
+    specialized directly, fall back to the current device without line
+    information.
     """
 
     target = _KERNEL_COMPILE_TARGET.get()
@@ -1692,7 +1693,7 @@ class DependentStatefulOperator:
         self.name = name
 
     def specialize(self, template_arguments):
-        """Compile a typed callback for the current device target.
+        """Compile a typed callback for the enclosing kernel's target.
 
         Algorithm specialization calls this before compiling its Scan
         wrapper. The state pointer is a device operand at each call, so only
