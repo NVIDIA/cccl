@@ -94,7 +94,6 @@ _COOP_SPECIALIZATION_COLLECTOR: ContextVar[list[Algorithm] | None] = ContextVar(
 _DEVICE_LTOIR_CACHE: dict[
     tuple[object, tuple[int, int], str, tuple[tuple[str, object], ...]], bytes
 ] = {}
-
 _KERNEL_COMPILE_TARGET: ContextVar[nvrtc.CompileTarget | None] = ContextVar(
     "cuda_coop_numba_mlir_kernel_compile_target", default=None
 )
@@ -107,8 +106,9 @@ def kernel_compile_target(
     """Generate device code for the kernel being compiled in this context.
 
     The whole-function planner enters this once per compiler attempt with
-    the kernel's resolved target. Providers created inside then follow the
-    kernel's ``chip`` and ``lineinfo`` options instead of the current device.
+    the kernel's resolved target. Generated helpers and providers follow its
+    ``chip`` and ``lineinfo`` options. Python callbacks use its base compute
+    capability, as supported by ``cuda.compile``.
     ``None`` selects the current device. Exiting restores the previous target,
     so a nested kernel compilation does not leak its target to its caller.
     """
@@ -118,26 +118,6 @@ def kernel_compile_target(
         yield
     finally:
         _KERNEL_COMPILE_TARGET.reset(token)
-
-
-def _current_compile_target() -> nvrtc.CompileTarget:
-    """Return the target for generated device code.
-
-    During a kernel compilation this is the kernel's own target, set by
-    ``kernel_compile_target``. Outside one, such as when a provider is
-    specialized directly, fall back to the current device without line
-    information.
-    """
-
-    target = _KERNEL_COMPILE_TARGET.get()
-    if target is not None:
-        return target
-    # The CUDA module reexports this accessor but omits it from its stub.
-    device = (
-        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
-    )
-    cc_major, cc_minor = device.compute_capability
-    return nvrtc.CompileTarget(cc=int(cc_major) * 10 + int(cc_minor))
 
 
 @contextmanager
@@ -343,14 +323,34 @@ def _normalize_compute_capability(compute_capability) -> tuple[int, int]:
     return int(major), int(minor)
 
 
-def _current_compute_capability() -> tuple[int, int]:
-    """Return the exact target used for callback device compilation."""
+def _current_compile_target() -> nvrtc.CompileTarget:
+    """Return the target for generated device code.
 
+    During a kernel compilation this is the kernel's own target, set by
+    ``kernel_compile_target``. Outside one, such as when a provider is
+    specialized directly, fall back to the current device.
+    """
+
+    target = _KERNEL_COMPILE_TARGET.get()
+    if target is not None:
+        return target
     # The CUDA module reexports this accessor but omits it from its stub.
     device = (
         cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
     )
-    return _normalize_compute_capability(device.compute_capability)
+    return nvrtc.CompileTarget(
+        cc=_compute_capability_number(
+            _normalize_compute_capability(device.compute_capability)
+        )
+    )
+
+
+def _current_compute_capability() -> tuple[int, int]:
+    """Return the exact target used for callback device compilation."""
+
+    return _normalize_compute_capability(
+        divmod(_current_compile_target().cc, 10)
+    )
 
 
 def _compute_capability_number(compute_capability: tuple[int, int]) -> int:
@@ -1455,9 +1455,9 @@ class DependentPythonOperator:
 
         Resolve the callable and dtype dependencies from
         ``template_arguments``. Build pointer transforms for aggregate values,
-        derive the stable symbol, and compile for the current device's compute
-        capability. Aggregate returns use void plus a final output pointer;
-        scalar returns remain by value.
+        derive the stable symbol, and compile for the enclosing kernel's
+        compute capability. Aggregate returns use void plus a final output
+        pointer; scalar returns remain by value.
 
         Return a ``StatelessOperator`` carrying declarations, LTO IR, and
         target identity for later provider linkage. A non-callable resolution
@@ -3527,8 +3527,8 @@ class RawCAbiInvocable:
     abi_transforms : sequence of {"ptr", "value"}
         One transform per parameter. Arrays become opaque pointers; scalar
         operands retain their value type.
-    cc : int
-        Positive target compute capability encoded as major * 10 + minor.
+    target : nvrtc.CompileTarget
+        Device target of the kernel that calls this code.
     compile_context : nvrtc.CompileContext
         Resolved header and toolkit context for compiling this source.
     storage_abi : StorageABI
@@ -3548,7 +3548,7 @@ class RawCAbiInvocable:
         return_type: numba_types.Type,
         parameters: Sequence[Parameter | numba_types.Type],
         abi_transforms: Sequence[str],
-        cc: int,
+        target: nvrtc.CompileTarget,
         compile_context: nvrtc.CompileContext,
         storage_abi: StorageABI,
         execution_scope: SynchronizationScope,
@@ -3563,8 +3563,8 @@ class RawCAbiInvocable:
             raise ValueError("raw C-ABI symbol must be a valid C identifier")
         if not isinstance(return_type, numba_types.Type):
             raise TypeError("raw C-ABI return_type must be a Numba type")
-        if isinstance(cc, bool) or not isinstance(cc, int) or cc < 1:
-            raise ValueError("raw C-ABI cc must be a positive integer")
+        if not isinstance(target, nvrtc.CompileTarget):
+            raise TypeError("raw C-ABI target must be a CompileTarget")
         if not isinstance(compile_context, nvrtc.CompileContext):
             raise TypeError(
                 "raw C-ABI compile_context must be a CompileContext"
@@ -3612,10 +3612,10 @@ class RawCAbiInvocable:
         )
         _, lto_ir = nvrtc.compile(
             cpp=source,
-            cc=cc,
             rdc=True,
             code="lto",
             context=compile_context,
+            **target.nvrtc_kwargs(),
         )
 
         from ._compiler._artifacts import make_binary_tempfile
@@ -3627,7 +3627,7 @@ class RawCAbiInvocable:
         self.parameters = parameters
         self.abi_transforms = abi_transforms
         self.abi_types = abi_types
-        self.cc = cc
+        self.target = target
         self.compile_context = compile_context
         self.storage_abi = storage_abi
         self.execution_scope = execution_scope
