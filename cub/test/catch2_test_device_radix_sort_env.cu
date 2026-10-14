@@ -11,6 +11,8 @@ struct stream_registry_factory_t;
 
 #include <thrust/device_vector.h>
 
+#include <cuda/execution>
+#include <cuda/std/cstdint>
 #include <cuda/std/utility>
 #include <cuda/stream>
 
@@ -2411,6 +2413,806 @@ CUB_TEST_CASE("DeviceRadixSort::SortPairsDescending DB decomposer+bits can be tu
   const auto bytes32  = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 32>{});
   const auto bytes128 = measure_allocated_bytes(l, tiny_onesweep_policy_selector<int, int, 128>{});
   CHECK(bytes32 != bytes128);
+}
+
+// The two-phase overloads take the same environment as the single-phase ones but never allocate, so they do not go
+// through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test them with host launch only.
+
+template <class TwoPhaseFn>
+void test_two_phase_env_kinds(TwoPhaseFn two_phase)
+{
+  const cuda::stream stream = c2h::make_current_device_stream();
+  const cuda::stream_ref default_stream{cudaStream_t{}};
+
+  size_t expected_temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, expected_temp_storage_bytes, stdexec::env<>{}));
+
+  auto run = [&](const auto& env, cuda::stream_ref expected_stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+    REQUIRE(temp_storage_bytes == expected_temp_storage_bytes);
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    {
+      // fails if a kernel is launched on another stream
+      const stream_scope scope{expected_stream.get()};
+      REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+    }
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    expected_stream.sync();
+  };
+
+  SECTION("default environment")
+  {
+    run(stdexec::env<>{}, default_stream);
+  }
+
+  SECTION("cudaStream_t")
+  {
+    run(stream.get(), cuda::stream_ref{stream});
+  }
+
+  SECTION("cuda::stream")
+  {
+    run(stream, cuda::stream_ref{stream});
+  }
+
+  SECTION("cuda::stream_ref")
+  {
+    run(cuda::stream_ref{stream}, cuda::stream_ref{stream});
+  }
+
+  SECTION("environment with stream")
+  {
+    run(stdexec::env{cuda::stream_ref{stream}}, cuda::stream_ref{stream});
+  }
+
+  SECTION("cuda::execution::gpu")
+  {
+    run(cuda::execution::gpu, default_stream);
+  }
+
+  SECTION("cuda::execution::gpu with stream")
+  {
+    run(cuda::execution::gpu.with(cuda::get_stream, cuda::stream_ref{stream}), cuda::stream_ref{stream});
+  }
+}
+
+CUB_TEST_CASE("Device radix sort keys works with user provided memory and environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
+{
+  constexpr int end_bit = static_cast<int>(sizeof(int) * 8);
+
+  SECTION("pointer")
+  {
+    auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_out = c2h::device_vector<int>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        d_temp_storage, temp_storage_bytes, keys_in.data().get(), keys_out.data().get(), 7, 0, end_bit, env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<int>{0, 3, 5, 6, 7, 8, 9});
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    auto keys_buf0 = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_buf1 = c2h::device_vector<int>(7);
+    cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, 7, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == c2h::device_vector<int>{0, 3, 5, 6, 7, 8, 9});
+  }
+
+  SECTION("decomposer")
+  {
+    auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_out = c2h::device_vector<custom_key_t>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        d_temp_storage, temp_storage_bytes, keys_in.data().get(), keys_out.data().get(), 7, keys_decomposer_t{}, env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_key_t>{{0}, {3}, {5}, {6}, {7}, {8}, {9}});
+  }
+
+  SECTION("decomposer+bits")
+  {
+    auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_out = c2h::device_vector<custom_key_t>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        7,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_key_t>{{0}, {3}, {5}, {6}, {7}, {8}, {9}});
+  }
+
+  SECTION("DoubleBuffer decomposer")
+  {
+    auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
+    cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, 7, keys_decomposer_t{}, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_key_t>{{0}, {3}, {5}, {6}, {7}, {8}, {9}});
+  }
+
+  SECTION("DoubleBuffer decomposer+bits")
+  {
+    auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
+    cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        d_temp_storage, temp_storage_bytes, d_keys, 7, keys_decomposer_t{}, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_key_t>{{0}, {3}, {5}, {6}, {7}, {8}, {9}});
+  }
+}
+
+CUB_TEST_CASE("Device radix sort keys descending works with user provided memory and environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
+{
+  constexpr int end_bit = static_cast<int>(sizeof(int) * 8);
+
+  SECTION("pointer")
+  {
+    auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_out = c2h::device_vector<int>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        d_temp_storage, temp_storage_bytes, keys_in.data().get(), keys_out.data().get(), 7, 0, end_bit, env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<int>{9, 8, 7, 6, 5, 3, 0});
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    auto keys_buf0 = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_buf1 = c2h::device_vector<int>(7);
+    cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, 7, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == c2h::device_vector<int>{9, 8, 7, 6, 5, 3, 0});
+  }
+
+  SECTION("decomposer")
+  {
+    auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_out = c2h::device_vector<custom_key_t>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        d_temp_storage, temp_storage_bytes, keys_in.data().get(), keys_out.data().get(), 7, keys_decomposer_t{}, env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+  }
+
+  SECTION("decomposer+bits")
+  {
+    auto keys_in  = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_out = c2h::device_vector<custom_key_t>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        7,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+  }
+
+  SECTION("DoubleBuffer decomposer")
+  {
+    auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
+    cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        d_temp_storage, temp_storage_bytes, d_keys, 7, keys_decomposer_t{}, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+  }
+
+  SECTION("DoubleBuffer decomposer+bits")
+  {
+    auto keys_buf0 = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_buf1 = c2h::device_vector<custom_key_t>(7);
+    cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        d_temp_storage, temp_storage_bytes, d_keys, 7, keys_decomposer_t{}, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+  }
+}
+
+CUB_TEST_CASE("Device radix sort pairs works with user provided memory and environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
+{
+  constexpr int end_bit = static_cast<int>(sizeof(int) * 8);
+
+  SECTION("pointer")
+  {
+    auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_out   = c2h::device_vector<int>(7);
+    auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_out = c2h::device_vector<int>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        7,
+        0,
+        end_bit,
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<int>{0, 3, 5, 6, 7, 8, 9});
+    REQUIRE(values_out == c2h::device_vector<int>{5, 4, 3, 1, 2, 0, 6});
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_buf1   = c2h::device_vector<int>(7);
+    auto values_buf0 = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_buf1 = c2h::device_vector<int>(7);
+    cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_values, 7, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == c2h::device_vector<int>{0, 3, 5, 6, 7, 8, 9});
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == c2h::device_vector<int>{5, 4, 3, 1, 2, 0, 6});
+  }
+
+  SECTION("decomposer")
+  {
+    auto keys_in    = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
+    auto keys_out   = c2h::device_vector<custom_pair_key_t>(3);
+    auto values_in  = c2h::device_vector<int>{0, 1, 2};
+    auto values_out = c2h::device_vector<int>(3);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        3,
+        pairs_decomposer_t{},
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_pair_key_t>{{1, 200}, {2, 300}, {3, 100}});
+    REQUIRE(values_out == c2h::device_vector<int>{1, 2, 0});
+  }
+
+  SECTION("decomposer+bits")
+  {
+    auto keys_in    = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
+    auto keys_out   = c2h::device_vector<custom_pair_key_t>(3);
+    auto values_in  = c2h::device_vector<int>{0, 1, 2};
+    auto values_out = c2h::device_vector<int>(3);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        3,
+        pairs_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_pair_key_t>{{1, 200}, {2, 300}, {3, 100}});
+    REQUIRE(values_out == c2h::device_vector<int>{1, 2, 0});
+  }
+
+  SECTION("DoubleBuffer decomposer")
+  {
+    auto keys_buf0   = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
+    auto keys_buf1   = c2h::device_vector<custom_pair_key_t>(3);
+    auto values_buf0 = c2h::device_vector<int>{0, 1, 2};
+    auto values_buf1 = c2h::device_vector<int>(3);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        d_temp_storage, temp_storage_bytes, d_keys, d_values, 3, pairs_decomposer_t{}, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_pair_key_t>{{1, 200}, {2, 300}, {3, 100}});
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == c2h::device_vector<int>{1, 2, 0});
+  }
+
+  SECTION("DoubleBuffer decomposer+bits")
+  {
+    auto keys_buf0   = c2h::device_vector<custom_pair_key_t>{{3, 100}, {1, 200}, {2, 300}};
+    auto keys_buf1   = c2h::device_vector<custom_pair_key_t>(3);
+    auto values_buf0 = c2h::device_vector<int>{0, 1, 2};
+    auto values_buf1 = c2h::device_vector<int>(3);
+    cub::DoubleBuffer<custom_pair_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        d_temp_storage, temp_storage_bytes, d_keys, d_values, 3, pairs_decomposer_t{}, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_pair_key_t>{{1, 200}, {2, 300}, {3, 100}});
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == c2h::device_vector<int>{1, 2, 0});
+  }
+}
+
+CUB_TEST_CASE("Device radix sort pairs descending works with user provided memory and environment",
+              "[radix_sort][device]",
+              CUB_SMALL)
+{
+  constexpr int end_bit = static_cast<int>(sizeof(int) * 8);
+
+  SECTION("pointer")
+  {
+    auto keys_in    = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_out   = c2h::device_vector<int>(7);
+    auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_out = c2h::device_vector<int>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        7,
+        0,
+        end_bit,
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<int>{9, 8, 7, 6, 5, 3, 0});
+    REQUIRE(values_out == c2h::device_vector<int>{6, 0, 2, 1, 3, 4, 5});
+  }
+
+  SECTION("DoubleBuffer")
+  {
+    auto keys_buf0   = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+    auto keys_buf1   = c2h::device_vector<int>(7);
+    auto values_buf0 = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_buf1 = c2h::device_vector<int>(7);
+    cub::DoubleBuffer<int> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        d_temp_storage, temp_storage_bytes, d_keys, d_values, 7, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1) == c2h::device_vector<int>{9, 8, 7, 6, 5, 3, 0});
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == c2h::device_vector<int>{6, 0, 2, 1, 3, 4, 5});
+  }
+
+  SECTION("decomposer")
+  {
+    auto keys_in    = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_out   = c2h::device_vector<custom_key_t>(7);
+    auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_out = c2h::device_vector<int>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        7,
+        keys_decomposer_t{},
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+    REQUIRE(values_out == c2h::device_vector<int>{6, 0, 2, 1, 3, 4, 5});
+  }
+
+  SECTION("decomposer+bits")
+  {
+    auto keys_in    = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_out   = c2h::device_vector<custom_key_t>(7);
+    auto values_in  = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_out = c2h::device_vector<int>(7);
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        d_temp_storage,
+        temp_storage_bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        7,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+    REQUIRE(keys_out == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+    REQUIRE(values_out == c2h::device_vector<int>{6, 0, 2, 1, 3, 4, 5});
+  }
+
+  SECTION("DoubleBuffer decomposer")
+  {
+    auto keys_buf0   = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_buf1   = c2h::device_vector<custom_key_t>(7);
+    auto values_buf0 = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_buf1 = c2h::device_vector<int>(7);
+    cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        d_temp_storage, temp_storage_bytes, d_keys, d_values, 7, keys_decomposer_t{}, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == c2h::device_vector<int>{6, 0, 2, 1, 3, 4, 5});
+  }
+
+  SECTION("DoubleBuffer decomposer+bits")
+  {
+    auto keys_buf0   = c2h::device_vector<custom_key_t>{{8}, {6}, {7}, {5}, {3}, {0}, {9}};
+    auto keys_buf1   = c2h::device_vector<custom_key_t>(7);
+    auto values_buf0 = c2h::device_vector<int>{0, 1, 2, 3, 4, 5, 6};
+    auto values_buf1 = c2h::device_vector<int>(7);
+    cub::DoubleBuffer<custom_key_t> d_keys(keys_buf0.data().get(), keys_buf1.data().get());
+    cub::DoubleBuffer<int> d_values(values_buf0.data().get(), values_buf1.data().get());
+    test_two_phase_env_kinds([&](void* d_temp_storage, size_t& temp_storage_bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        d_temp_storage, temp_storage_bytes, d_keys, d_values, 7, keys_decomposer_t{}, 0, end_bit, env);
+    });
+    REQUIRE((d_keys.selector == 0 ? keys_buf0 : keys_buf1)
+            == c2h::device_vector<custom_key_t>{{9}, {8}, {7}, {6}, {5}, {3}, {0}});
+    REQUIRE((d_values.selector == 0 ? values_buf0 : values_buf1) == c2h::device_vector<int>{6, 0, 2, 1, 3, 4, 5});
+  }
+}
+
+// callers of the former `cudaStream_t stream = nullptr` parameter may pass nullptr or 0 explicitly
+CUB_TEST_CASE("Device radix sort keys two-phase overload accepts null stream arguments",
+              "[radix_sort][device]",
+              CUB_SMALL)
+{
+  auto keys_in  = c2h::device_vector<int>{8, 6, 7, 5, 3, 0, 9};
+  auto keys_out = c2h::device_vector<int>(7);
+
+  auto sort_keys_on = [&](const auto& stream) {
+    size_t temp_storage_bytes = 0;
+    REQUIRE(cudaSuccess
+            == cub::DeviceRadixSort::SortKeys(
+              nullptr, temp_storage_bytes, keys_in.data().get(), keys_out.data().get(), 7, 0, 32, stream));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    {
+      const stream_scope scope{cudaStream_t{}};
+      REQUIRE(
+        cudaSuccess
+        == cub::DeviceRadixSort::SortKeys(
+          thrust::raw_pointer_cast(temp_storage.data()),
+          temp_storage_bytes,
+          keys_in.data().get(),
+          keys_out.data().get(),
+          7,
+          0,
+          32,
+          stream));
+    }
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  };
+
+  SECTION("nullptr")
+  {
+    sort_keys_on(nullptr);
+  }
+
+  SECTION("literal 0")
+  {
+    sort_keys_on(0);
+  }
+
+  REQUIRE(keys_out == c2h::device_vector<int>{0, 3, 5, 6, 7, 8, 9});
+}
+
+// The two-phase overloads take the tuning from the same environment as the single-phase ones. Since radix sort cannot
+// observe the block size on the device (see above), check that two tunings lead to different temporary storage
+// requirements, and that each sort runs with exactly the storage requested for its tuning.
+template <class ValueT, class TwoPhaseFn>
+void test_two_phase_tuning(TwoPhaseFn two_phase)
+{
+  auto run = [&](auto policy_selector) {
+    const auto env            = cuda::execution::tune(policy_selector);
+    size_t temp_storage_bytes = 0;
+    REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes, env));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+    REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, env));
+    REQUIRE(cudaSuccess == cudaPeekAtLastError());
+    REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+    return temp_storage_bytes;
+  };
+
+  const auto bytes32  = run(tiny_onesweep_policy_selector<int, ValueT, 32>{});
+  const auto bytes128 = run(tiny_onesweep_policy_selector<int, ValueT, 128>{});
+  CHECK(bytes32 != bytes128);
+}
+
+CUB_TEST_CASE("Device radix sort can be tuned with user provided memory", "[radix_sort][device]", CUB_SMALL)
+{
+  constexpr int num_items = 10'000; // must be larger than the single tile path
+  constexpr int end_bit   = static_cast<int>(sizeof(int) * 8);
+
+  auto keys_in    = c2h::device_vector<int>(num_items);
+  auto keys_out   = c2h::device_vector<int>(num_items);
+  auto values_in  = c2h::device_vector<int>(num_items);
+  auto values_out = c2h::device_vector<int>(num_items);
+  cub::DoubleBuffer<int> d_keys(keys_in.data().get(), keys_out.data().get());
+  cub::DoubleBuffer<int> d_values(values_in.data().get(), values_out.data().get());
+
+  auto custom_keys_in  = c2h::device_vector<custom_key_t>(num_items);
+  auto custom_keys_out = c2h::device_vector<custom_key_t>(num_items);
+  cub::DoubleBuffer<custom_key_t> d_custom_keys(custom_keys_in.data().get(), custom_keys_out.data().get());
+
+  SECTION("SortKeys")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        tmp, bytes, keys_in.data().get(), keys_out.data().get(), num_items, 0, end_bit, env);
+    });
+  }
+  SECTION("SortKeys DoubleBuffer")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(tmp, bytes, d_keys, num_items, 0, end_bit, env);
+    });
+  }
+  SECTION("SortKeys decomposer")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        tmp, bytes, custom_keys_in.data().get(), custom_keys_out.data().get(), num_items, keys_decomposer_t{}, env);
+    });
+  }
+  SECTION("SortKeys decomposer+bits")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(
+        tmp,
+        bytes,
+        custom_keys_in.data().get(),
+        custom_keys_out.data().get(),
+        num_items,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+  }
+  SECTION("SortKeys DoubleBuffer decomposer")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(tmp, bytes, d_custom_keys, num_items, keys_decomposer_t{}, env);
+    });
+  }
+  SECTION("SortKeys DoubleBuffer decomposer+bits")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeys(tmp, bytes, d_custom_keys, num_items, keys_decomposer_t{}, 0, end_bit, env);
+    });
+  }
+  SECTION("SortKeysDescending")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        tmp, bytes, keys_in.data().get(), keys_out.data().get(), num_items, 0, end_bit, env);
+    });
+  }
+  SECTION("SortKeysDescending DoubleBuffer")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(tmp, bytes, d_keys, num_items, 0, end_bit, env);
+    });
+  }
+  SECTION("SortKeysDescending decomposer")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        tmp, bytes, custom_keys_in.data().get(), custom_keys_out.data().get(), num_items, keys_decomposer_t{}, env);
+    });
+  }
+  SECTION("SortKeysDescending decomposer+bits")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        tmp,
+        bytes,
+        custom_keys_in.data().get(),
+        custom_keys_out.data().get(),
+        num_items,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+  }
+  SECTION("SortKeysDescending DoubleBuffer decomposer")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(tmp, bytes, d_custom_keys, num_items, keys_decomposer_t{}, env);
+    });
+  }
+  SECTION("SortKeysDescending DoubleBuffer decomposer+bits")
+  {
+    test_two_phase_tuning<cub::NullType>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortKeysDescending(
+        tmp, bytes, d_custom_keys, num_items, keys_decomposer_t{}, 0, end_bit, env);
+    });
+  }
+  SECTION("SortPairs")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        tmp,
+        bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        0,
+        end_bit,
+        env);
+    });
+  }
+  SECTION("SortPairs DoubleBuffer")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(tmp, bytes, d_keys, d_values, num_items, 0, end_bit, env);
+    });
+  }
+  SECTION("SortPairs decomposer")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        tmp,
+        bytes,
+        custom_keys_in.data().get(),
+        custom_keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        keys_decomposer_t{},
+        env);
+    });
+  }
+  SECTION("SortPairs decomposer+bits")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        tmp,
+        bytes,
+        custom_keys_in.data().get(),
+        custom_keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+  }
+  SECTION("SortPairs DoubleBuffer decomposer")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(tmp, bytes, d_custom_keys, d_values, num_items, keys_decomposer_t{}, env);
+    });
+  }
+  SECTION("SortPairs DoubleBuffer decomposer+bits")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairs(
+        tmp, bytes, d_custom_keys, d_values, num_items, keys_decomposer_t{}, 0, end_bit, env);
+    });
+  }
+  SECTION("SortPairsDescending")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        tmp,
+        bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        0,
+        end_bit,
+        env);
+    });
+  }
+  SECTION("SortPairsDescending DoubleBuffer")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(tmp, bytes, d_keys, d_values, num_items, 0, end_bit, env);
+    });
+  }
+  SECTION("SortPairsDescending decomposer")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        tmp,
+        bytes,
+        custom_keys_in.data().get(),
+        custom_keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        keys_decomposer_t{},
+        env);
+    });
+  }
+  SECTION("SortPairsDescending decomposer+bits")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        tmp,
+        bytes,
+        custom_keys_in.data().get(),
+        custom_keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        keys_decomposer_t{},
+        0,
+        end_bit,
+        env);
+    });
+  }
+  SECTION("SortPairsDescending DoubleBuffer decomposer")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        tmp, bytes, d_custom_keys, d_values, num_items, keys_decomposer_t{}, env);
+    });
+  }
+  SECTION("SortPairsDescending DoubleBuffer decomposer+bits")
+  {
+    test_two_phase_tuning<int>([&](void* tmp, size_t& bytes, const auto& env) {
+      return cub::DeviceRadixSort::SortPairsDescending(
+        tmp, bytes, d_custom_keys, d_values, num_items, keys_decomposer_t{}, 0, end_bit, env);
+    });
+  }
 }
 
 #endif // TEST_LAUNCH == 0
