@@ -18,7 +18,7 @@
 <rect width="1440" height="620" fill="white"/>
 <path d="M 720 16 V 576" stroke="#dce3e9"/>
 <g id="panel-1" transform="translate(150 -96)">
-<text x="210" y="120" class="label" text-anchor="middle">Block</text>
+<text x="20" y="365" class="label" text-anchor="end">Block</text>
 <rect x="40" y="136" width="340" height="445" rx="12" class="block"/>
 <rect x="50" y="146" width="320" height="316" rx="16" class="boundary"/>
 <g id="panel-1-warp-0">
@@ -169,7 +169,7 @@
 <text x="410" y="406" class="note" text-anchor="start">Thread rank: 75</text>
 </g>
 <g id="panel-2" transform="translate(150 -96)">
-<text x="930" y="120" class="label" text-anchor="middle">Block</text>
+<text x="740" y="365" class="label" text-anchor="end">Block</text>
 <rect x="760" y="136" width="340" height="445" rx="12" class="block"/>
 <rect x="770" y="146" width="320" height="316" rx="16" class="boundary"/>
 <g id="panel-2-warp-0">
