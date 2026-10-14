@@ -12,6 +12,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
@@ -110,10 +111,9 @@ try
   const bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
 
 CUB_TEST("DeviceScan works for very large number of items", "[scan][device]", CUB_LARGE, offset_types)
@@ -154,8 +154,7 @@ try
   const bool all_results_correct = thrust::equal(d_items_out.cbegin(), d_items_out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }
