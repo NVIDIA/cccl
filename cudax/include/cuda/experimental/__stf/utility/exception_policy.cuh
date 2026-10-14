@@ -1426,8 +1426,9 @@ template <>
 inline constexpr bool __is_erased_v<exception_sink> = true;
 //! @brief A sink-tagged view of an lvalue exception_sink: forwards the hook, the success
 //! channel and the entry gate without copying the sink (a copy clones and allocates).
-//! Produced by __normalize for lvalues. A template over the sink type because exception_sink
-//! is incomplete here; the members are checked at the use sites, after the class.
+//! Produced by __normalize_for_guard for non-const lvalues passed to on_throw. A template over
+//! the sink type because exception_sink is incomplete here; the members are checked at the use
+//! sites, after the class.
 template <class _S>
 struct __erased_ref_t
 {
@@ -1457,12 +1458,7 @@ template <class _R>
 auto __normalize(_R&& __r)
 {
   using _P = ::cuda::std::remove_cvref_t<_R>;
-  if constexpr (__is_erased_v<_P> && ::cuda::std::is_lvalue_reference_v<_R>)
-  {
-    // An erased sink is a heap object: copying it clones and allocates. An lvalue is referred to.
-    return __erased_ref_t<_P>{__r};
-  }
-  else if constexpr (__is_exception_sink_v<_P>)
+  if constexpr (__is_exception_sink_v<_P>)
   {
     // Already sink-tagged (named policies, composites, adapters, noop, ...).
     return static_cast<_P>(::cuda::std::forward<_R>(__r));
@@ -1486,6 +1482,27 @@ auto __normalize(_R&& __r)
 // sink-tagged, so identity elimination fires for every operand (ADDENDUM-1 §A.5 superseded).
 template <class _R>
 using __normalized_t = decltype(__normalize(::cuda::std::declval<_R>()));
+
+//! @brief `__normalize` for the policy carried by `on_throw`, whose lifetime is the guarded
+//! call's full expression. A non-const lvalue erased sink is referred to through
+//! `__erased_ref_t` instead of being copied (a copy of an `exception_sink` clones the boxed
+//! policy and allocates). Everything else, including a `const` sink whose hooks are
+//! non-const, takes the ordinary path. The composition factories (`&`, `|`, `*`, `when`,
+//! `type_erase`) keep copying, so a composite or an erased wrapper never aliases its operand.
+template <class _R>
+auto __normalize_for_guard(_R&& __r)
+{
+  using _P = ::cuda::std::remove_cvref_t<_R>;
+  if constexpr (__is_erased_v<_P> && ::cuda::std::is_lvalue_reference_v<_R>
+                && !::cuda::std::is_const_v<::cuda::std::remove_reference_t<_R>>)
+  {
+    return __erased_ref_t<_P>{__r};
+  }
+  else
+  {
+    return __normalize(::cuda::std::forward<_R>(__r));
+  }
+}
 
 template <class _R>
 inline constexpr bool __normalizes_to_exception_sink_v = __is_exception_sink_v<__normalized_t<_R>>;
@@ -3084,7 +3101,7 @@ auto on_throw(_Reaction&& __reaction,
               const ::cuda::std::source_location __loc = ::cuda::std::source_location::current()) noexcept
 {
   return exception_policies::detail::__on_throw_policy{
-    exception_policies::detail::__normalize(::cuda::std::forward<_Reaction>(__reaction)), __loc};
+    exception_policies::detail::__normalize_for_guard(::cuda::std::forward<_Reaction>(__reaction)), __loc};
 }
 
 #ifdef ON_THROW
