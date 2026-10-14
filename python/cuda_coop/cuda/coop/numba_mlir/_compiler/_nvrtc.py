@@ -29,6 +29,7 @@ from __future__ import annotations
 import functools
 import hashlib
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias, cast
@@ -106,6 +107,58 @@ class CompileContext:
         return digest.hexdigest()[:16]
 
 
+_CHIP_PATTERN = re.compile(r"sm_([1-9][0-9]*[0-9])([af]?)")
+
+
+@dataclass(frozen=True)
+class CompileTarget:
+    """Describe the device target of a kernel.
+
+    ``cc`` is the compute capability encoded as major times ten plus minor.
+    ``arch_suffix`` is ``"a"`` or ``"f"`` for architecture- or
+    family-specific targets such as ``sm_90a`` or ``sm_100f``, otherwise
+    empty. Generated device code must use this target so that it matches the
+    kernel it is linked into, not whichever device happens to be current.
+    """
+
+    cc: int
+    arch_suffix: str = ""
+
+    @classmethod
+    def from_targetoptions(
+        cls, targetoptions: dict[str, Any]
+    ) -> CompileTarget | None:
+        """Read the target that Numba-CUDA-MLIR resolved for a kernel.
+
+        The compiler stores the resolved ``chip`` (for example ``sm_90`` or
+        ``sm_100f``) in the target options before any planner runs; explicit
+        ``cc=`` arguments are already mapped to it. Return ``None`` when no
+        chip has been resolved.
+        """
+
+        chip = targetoptions.get("chip")
+        if chip is None:
+            return None
+        match = _CHIP_PATTERN.fullmatch(chip) if isinstance(chip, str) else None
+        if match is None:
+            raise RuntimeError(
+                "cuda.coop.numba_mlir requires a resolved CUDA target of the "
+                f"form 'sm_XY[a|f]'; got chip={chip!r}"
+            )
+        return cls(cc=int(match.group(1)), arch_suffix=match.group(2))
+
+    @property
+    def arch(self) -> str:
+        """Return the architecture spelling used in generated symbols."""
+
+        return f"{self.cc}{self.arch_suffix}"
+
+    def nvrtc_kwargs(self) -> dict[str, Any]:
+        """Return keywords for ``compile`` and ``compiler_identity``."""
+
+        return {"cc": self.cc, "arch_suffix": self.arch_suffix}
+
+
 @dataclass(frozen=True)
 class CompilerIdentity:
     """Identify the target and options shared by compatible providers.
@@ -118,6 +171,11 @@ class CompilerIdentity:
     rdc: bool
     code: str
     compiler_options: tuple[bytes, ...]
+    arch_suffix: str = ""
+
+    @property
+    def target(self) -> CompileTarget:
+        return CompileTarget(cc=self.cc, arch_suffix=self.arch_suffix)
 
 
 def _load_nvrtc():
@@ -199,16 +257,22 @@ def _include_options(include_dirs: tuple[str, ...]) -> list[bytes]:
 
 
 def _compiler_options(
-    *, cc: int, rdc: bool, code: str, include_dirs: tuple[str, ...]
+    *,
+    cc: int,
+    rdc: bool,
+    code: str,
+    include_dirs: tuple[str, ...],
+    arch_suffix: str = "",
 ) -> tuple[bytes, ...]:
     """Return the exact ordered NVRTC option set used for cache identity."""
 
     check_in("rdc", rdc, [True, False])
     check_in("code", code, ["lto", "ptx"])
+    check_in("arch_suffix", arch_suffix, ["", "a", "f"])
     options = [
         b"--std=c++17",
         *_include_options(include_dirs),
-        f"--gpu-architecture=compute_{cc}".encode("ascii"),
+        f"--gpu-architecture=compute_{cc}{arch_suffix}".encode("ascii"),
     ]
     if rdc:
         options.append(b"--relocatable-device-code=true")
@@ -219,7 +283,12 @@ def _compiler_options(
 
 
 def compiler_identity(
-    *, context: CompileContext, cc: int, rdc: bool, code: str
+    *,
+    context: CompileContext,
+    cc: int,
+    rdc: bool,
+    code: str,
+    arch_suffix: str = "",
 ) -> CompilerIdentity:
     """Identify target and options that qualify provider symbols.
 
@@ -238,7 +307,9 @@ def compiler_identity(
             rdc=bool(rdc),
             code=str(code),
             include_dirs=context.include_dirs,
+            arch_suffix=str(arch_suffix),
         ),
+        arch_suffix=str(arch_suffix),
     )
 
 
@@ -261,6 +332,7 @@ def compile_impl(
     compiler_options: tuple[bytes, ...],
     layout_queries: tuple[str, ...] = (),
     layout_symbol: str = "",
+    arch_suffix: str = "",
 ) -> bytes | str | _LayoutResult:
     """Compile one source unit using a complete, explicit cache identity.
 
@@ -313,6 +385,8 @@ def compile_impl(
         positions in the returned layouts.
     layout_symbol : str, optional
         Expected symbol used to validate and decode lowered layout names.
+    arch_suffix : {"", "a", "f"}, optional
+        Architecture- or family-specific target suffix appended to ``cc``.
 
     Returns
     -------
@@ -347,6 +421,7 @@ def compile_impl(
         rdc=rdc,
         code=code,
         include_dirs=include_dirs,
+        arch_suffix=arch_suffix,
     )
     if compiler_options != expected_options:
         raise RuntimeError(
@@ -483,8 +558,10 @@ def compile(
         the library paths stored in it.
     **kwargs : dict
         Required ``cpp`` source string, integer ``cc`` target, boolean
-        ``rdc``, and ``code`` equal to ``"lto"`` or ``"ptx"``. These are
-        forwarded to ``compile_impl`` with the context and generated options.
+        ``rdc``, and ``code`` equal to ``"lto"`` or ``"ptx"``. Optional
+        ``arch_suffix`` completes the target; see
+        ``CompileTarget.nvrtc_kwargs``. These are forwarded to
+        ``compile_impl`` with the context and generated options.
         Internal callers can also supply ``layout_queries`` and
         ``layout_symbol``; use ``compile_with_layouts`` to prepare these from
         C++ type names.
@@ -510,6 +587,7 @@ def compile(
         rdc=kwargs["rdc"],
         code=kwargs["code"],
         include_dirs=context.include_dirs,
+        arch_suffix=kwargs.get("arch_suffix", ""),
     )
     _dump_source(kwargs["cpp"], kwargs["cc"], kwargs["code"], compiler_options)
     return context.nvrtc_version, compile_impl(

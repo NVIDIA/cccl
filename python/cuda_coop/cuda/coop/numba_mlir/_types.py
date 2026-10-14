@@ -92,6 +92,49 @@ _COOP_SPECIALIZATION_COLLECTOR: ContextVar[list[Algorithm] | None] = ContextVar(
     "cuda_coop_numba_mlir_specialization_collector", default=None
 )
 
+_KERNEL_COMPILE_TARGET: ContextVar[nvrtc.CompileTarget | None] = ContextVar(
+    "cuda_coop_numba_mlir_kernel_compile_target", default=None
+)
+
+
+@contextmanager
+def kernel_compile_target(
+    target: nvrtc.CompileTarget | None,
+) -> Iterator[None]:
+    """Generate device code for the kernel being compiled in this context.
+
+    The whole-function planner enters this once per compiler attempt with
+    the kernel's resolved target. Providers created inside then follow the
+    kernel's ``chip`` instead of the current device. ``None`` selects the
+    current device. Exiting restores the previous target, so a nested kernel
+    compilation does not leak its target to its caller.
+    """
+
+    token = _KERNEL_COMPILE_TARGET.set(target)
+    try:
+        yield
+    finally:
+        _KERNEL_COMPILE_TARGET.reset(token)
+
+
+def _current_compile_target() -> nvrtc.CompileTarget:
+    """Return the target for generated device code.
+
+    During a kernel compilation this is the kernel's own target, set by
+    ``kernel_compile_target``. Outside one, such as when a provider is
+    specialized directly, fall back to the current device.
+    """
+
+    target = _KERNEL_COMPILE_TARGET.get()
+    if target is not None:
+        return target
+    # The CUDA module reexports this accessor but omits it from its stub.
+    device = (
+        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
+    )
+    cc_major, cc_minor = device.compute_capability
+    return nvrtc.CompileTarget(cc=int(cc_major) * 10 + int(cc_minor))
+
 
 @contextmanager
 def collect_specializations() -> Iterator[list[Algorithm]]:
@@ -1286,26 +1329,21 @@ class Algorithm:
         return f"{self.c_name}{namespace}_{self.method_name}"
 
     def _current_provider_compile_identity(self) -> nvrtc.CompilerIdentity:
-        """Describe compilation for the current device and this provider.
+        """Describe compilation for the current target and this provider.
 
         ``_bind_provider_compile_identity`` calls this when its caller has
-        not supplied an identity. Query the device even when this object has
+        not supplied an identity. Query the target even when this object has
         cached artifacts so switching targets cannot silently reuse them.
         Return the NVRTC identity for relocatable LTO output, including the
-        resolved header/toolkit context and compute capability.
+        resolved header/toolkit context and the target from
+        ``_current_compile_target``.
         """
 
-        # The CUDA module reexports this accessor but omits it from its stub.
-        device = (
-            cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
-        )
-        cc_major, cc_minor = device.compute_capability
-        cc = int(cc_major) * 10 + int(cc_minor)
         return nvrtc.compiler_identity(
             context=self._resolved_compile_context(),
-            cc=cc,
             rdc=True,
             code="lto",
+            **_current_compile_target().nvrtc_kwargs(),
         )
 
     def _bind_provider_compile_identity(
@@ -1316,7 +1354,7 @@ class Algorithm:
         Symbol qualification, cache-key construction, and ``get_lto_ir`` call
         this so a specialization cannot reuse code for a different target or
         compiler setup. ``compile_identity`` is the record returned by
-        ``nvrtc.compiler_identity``; ``None`` queries the current device and
+        ``nvrtc.compiler_identity``; ``None`` queries the current target and
         this provider's resolved context.
 
         Store and return the first identity. Later calls return the same
@@ -2151,14 +2189,13 @@ class Algorithm:
             compile_identity=compile_identity,
         )
 
-        cc = compile_identity.cc
         _, (ltoir, layouts) = nvrtc.compile_with_layouts(
             cpp=src,
             layout_types=temp_storage_types,
-            cc=cc,
             rdc=True,
             code="lto",
             context=self._resolved_compile_context(),
+            **compile_identity.target.nvrtc_kwargs(),
         )
         ltoir_blob = bytes(cast(bytes, ltoir))
 
@@ -2595,17 +2632,12 @@ def prepare_ltoir_bundle(
             "coalesced providers must use one exact compiler context"
         )
     compile_context = next(iter(compile_contexts))
-    # The CUDA module reexports this accessor but omits it from its stub.
-    device = (
-        cuda.get_current_device()  # pyright: ignore[reportAttributeAccessIssue]
-    )
-    cc_major, cc_minor = device.compute_capability
-    cc = int(cc_major) * 10 + int(cc_minor)
+    target = _current_compile_target()
     compile_identity = nvrtc.compiler_identity(
         context=compile_context,
-        cc=cc,
         rdc=True,
         code="lto",
+        **target.nvrtc_kwargs(),
     )
 
     key_to_rep = OrderedDict()
@@ -2681,10 +2713,10 @@ def prepare_ltoir_bundle(
     _, (ltoir, layouts) = nvrtc.compile_with_layouts(
         cpp=src,
         layout_types=layout_types,
-        cc=cc,
         rdc=True,
         code="lto",
         context=compile_context,
+        **target.nvrtc_kwargs(),
     )
     ltoir_blob = bytes(cast(bytes, ltoir))
     layouts_by_type = dict(zip(layout_types, layouts, strict=True))
@@ -2934,6 +2966,7 @@ __all__ = [
     "algo_coalesce_key",
     "collect_specializations",
     "internal_mangle_cpp",
+    "kernel_compile_target",
     "make_invocable_from_specialization",
     "mangle_symbol",
     "numba_type_to_cpp",

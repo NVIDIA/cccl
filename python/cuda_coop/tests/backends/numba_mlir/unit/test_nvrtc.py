@@ -296,6 +296,44 @@ def test_compile_forwards_complete_context_into_cache_key(
     ]
 
 
+@pytest.mark.parametrize(
+    ("targetoptions", "expected"),
+    [
+        ({}, None),
+        ({"chip": "sm_90"}, _nvrtc.CompileTarget(cc=90)),
+        ({"chip": "sm_90a"}, _nvrtc.CompileTarget(cc=90, arch_suffix="a")),
+        ({"chip": "sm_100f"}, _nvrtc.CompileTarget(cc=100, arch_suffix="f")),
+        ({"chip": "sm_120"}, _nvrtc.CompileTarget(cc=120)),
+    ],
+)
+def test_compile_target_reads_the_resolved_kernel_target(
+    targetoptions, expected
+) -> None:
+    assert _nvrtc.CompileTarget.from_targetoptions(targetoptions) == expected
+
+
+@pytest.mark.parametrize("chip", ["90", "sm_9", "sm_90b", "compute_90", 90])
+def test_compile_target_rejects_an_unresolved_chip(chip) -> None:
+    with pytest.raises(RuntimeError, match="sm_XY"):
+        _nvrtc.CompileTarget.from_targetoptions({"chip": chip})
+
+
+def test_compile_target_selects_the_architecture_option() -> None:
+    target = _nvrtc.CompileTarget(cc=100, arch_suffix="f")
+    options = _nvrtc._compiler_options(
+        rdc=True, code="lto", include_dirs=(), **target.nvrtc_kwargs()
+    )
+    identity = _nvrtc.compiler_identity(
+        context=_context(), rdc=True, code="lto", **target.nvrtc_kwargs()
+    )
+
+    assert b"--gpu-architecture=compute_100f" in options
+    assert identity.target == target
+    assert identity != _nvrtc.compiler_identity(
+        context=_context(), rdc=True, code="lto", cc=100
+    )
+
+
 def test_resolve_context_rejects_loaded_nvrtc_version_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
