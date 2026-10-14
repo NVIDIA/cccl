@@ -1,7 +1,7 @@
 .. _cudax-coop-group-mapping-group-by:
 
 ``cuda::experimental::coop::group_by``
-=========================
+======================================
 
 .. code:: cuda
 
