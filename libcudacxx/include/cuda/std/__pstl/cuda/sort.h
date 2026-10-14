@@ -73,13 +73,12 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 {
-  // The environment overload takes streams by const reference, including when selected through a function pointer.
-  template <class _Tp>
+  template <class _Tp, class _Policy>
   using _DeviceRadixSort =
-    cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, const cudaStream_t&);
+    cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, const _Policy&);
 
-  template <class _Tp, class _BinaryPredicate>
-  [[nodiscard]] static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp> __select_radix_impl() noexcept
+  template <class _Tp, class _Policy, class _BinaryPredicate>
+  [[nodiscard]] static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp, _Policy> __select_radix_impl() noexcept
   {
     if constexpr (__is_one_of_v<remove_cvref_t<_BinaryPredicate>, less<>, less<_Tp>>)
     {
@@ -101,7 +100,8 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 
     CUB_NS_QUALIFIER::DoubleBuffer<_Tp> __buffer{__first, nullptr};
 
-    constexpr _DeviceRadixSort<_Tp> __device_radix_sort = __select_radix_impl<_Tp, _BinaryPredicate>();
+    constexpr _DeviceRadixSort<_Tp, _Policy> __device_radix_sort =
+      __select_radix_impl<_Tp, _Policy, _BinaryPredicate>();
 
     // Determine temporary device storage requirements for device_sort
     size_t __num_bytes = 0;
@@ -114,7 +114,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
       __count,
       0,
       static_cast<int>(sizeof(_Tp) * CHAR_BIT),
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, ::cuda::round_up(__count, 128)};
@@ -130,7 +130,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
         __count,
         0,
         static_cast<int>(sizeof(_Tp) * CHAR_BIT),
-        __stream.get());
+        __policy);
 
       // Need to copy the memory back
       if (__buffer.selector != 0)
