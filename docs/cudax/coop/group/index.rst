@@ -232,7 +232,7 @@ CCCL Cooperative Groups come with several predefined group types.
   - :ref:`cudax-coop-group-generic-group`
   - :ref:`cudax-coop-group-virtual-group`
 3. A non-owning group view over a group.
-  - :ref:`Group View <cudax-coop-group-group-view>`
+  - :ref:`cudax-coop-group-group-view`
 
 
 Interoperability with CTK's Cooperative Groups
