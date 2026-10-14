@@ -25,12 +25,12 @@ inline constexpr bool check_ldl_stl_in_sass = false;
 template <int device_id_ = 0>
 class BuildInformation
 {
-  int cc_major;
-  int cc_minor;
-  const char* cub_path;
-  const char* thrust_path;
-  const char* libcudacxx_path;
-  const char* ctk_path;
+  int cc_major{};
+  int cc_minor{};
+  const char* cub_path{};
+  const char* thrust_path{};
+  const char* libcudacxx_path{};
+  const char* ctk_path{};
 
   BuildInformation() = default;
   BuildInformation(int major, int minor, const char* cub, const char* thrust, const char* libcudacxx, const char* ctk)
