@@ -69,7 +69,7 @@ def _make_raw(monkeypatch, **overrides):
         "return_type": types.int32,
         "parameters": (_types.ExactValue(types.int32),),
         "abi_transforms": ("value",),
-        "cc": 90,
+        "target": _types.nvrtc.CompileTarget(cc=90),
         "compile_context": _compile_context(),
         "storage_abi": StorageABI.NONE,
         "execution_scope": SynchronizationScope.GROUP,
@@ -115,6 +115,7 @@ def test_raw_c_abi_invocable_compiles_exact_source_and_exposes_contract(
             {
                 "cpp": _SOURCE,
                 "cc": 90,
+                "arch_suffix": "",
                 "rdc": True,
                 "code": "lto",
                 "context": invocable.compile_context,

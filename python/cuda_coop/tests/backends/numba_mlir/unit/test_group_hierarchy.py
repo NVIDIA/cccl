@@ -84,7 +84,11 @@ def _capture_group_method_provider(monkeypatch):
 
     lowering = _thread_group_lowering_module()
     created = []
-    monkeypatch.setattr(lowering, "_current_cc", lambda: 90)
+    monkeypatch.setattr(
+        lowering,
+        "_current_compile_target",
+        lambda: _nvrtc.CompileTarget(cc=90),
+    )
     monkeypatch.setattr(
         lowering,
         "RawCAbiInvocable",
