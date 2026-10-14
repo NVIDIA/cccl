@@ -163,7 +163,7 @@ catch (const std::exception& exc)
 CUresult cccl_device_reduce_load(cccl_device_reduce_build_result_t* build, const char* ctk_path)
 try
 {
-  if (build == nullptr || build->payload == nullptr || build->payload_size == 0)
+  if (build == nullptr || build->payload == nullptr || build->payload_size == 0 || build->jit_compiler != nullptr)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -314,6 +314,10 @@ CUresult cccl_device_reduce_build(
 CUresult cccl_device_reduce_serialize(const cccl_device_reduce_build_result_t* build, void** out_buf, size_t* out_size)
 try
 {
+  if (out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   *out_buf  = nullptr;
   *out_size = 0;
 
@@ -361,7 +365,10 @@ try
   const auto accum_size      = extra.get<uint64_t>();
   const auto determinism_raw = extra.get<uint32_t>();
   const auto init_kind_raw   = extra.get<uint32_t>();
-  if (!extra.ok())
+  // cccl_device_reduce picks the call arity from init_kind, so reject values
+  // it can't dispatch.
+  if (!extra.ok() || determinism_raw > CCCL_GPU_TO_GPU
+      || (init_kind_raw != CCCL_NO_INIT && init_kind_raw != CCCL_VALUE_INIT))
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

@@ -309,7 +309,8 @@ catch (const std::exception& exc)
 CUresult cccl_device_segmented_sort_load(cccl_device_segmented_sort_build_result_t* build_ptr, const char* ctk_path)
 try
 {
-  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->jit_compiler != nullptr)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -347,6 +348,10 @@ CUresult cccl_device_segmented_sort_serialize(
   const cccl_device_segmented_sort_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
 {
+  if (out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   *out_buf  = nullptr;
   *out_size = 0;
   if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
