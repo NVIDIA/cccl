@@ -355,5 +355,8 @@ private:
   // the given collector. Factored out so the multi-compile path can share
   // one collector across several CubCalls.
   void collect_bitcode(class BitcodeCollector& bitcode, int& op_idx, int& in_idx, int& out_idx) const;
+
+  // Validates and assembles the merged source of a multi-function compile.
+  static std::string merged_source(std::initializer_list<CubCall> calls, const char* who);
 };
 } // namespace hostjit::codegen

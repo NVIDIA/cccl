@@ -285,6 +285,31 @@ bool build_and_serialize(std::vector<char>& out_blob)
     printf("[5/5] corrupted os_arch_tag correctly rejected (rc=%d)\n", (int) bogus_rc);
   }
 
+  // Trailing bytes after the payload are rejected.
+  {
+    std::vector<char> padded(static_cast<char*>(buf), static_cast<char*>(buf) + size);
+    padded.push_back('\0');
+    cccl_device_reduce_build_result_t padded_build{};
+    if (cccl_device_reduce_deserialize(&padded_build, padded.data(), padded.size()) == CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: deserialize should have rejected trailing bytes\n");
+      return false;
+    }
+  }
+
+  // Misuse is reported, not crashed on or leaked: load of an already loaded
+  // result, and serialize with null output pointers.
+  if (cccl_device_reduce_load(&deser_build, nullptr) != CUDA_ERROR_INVALID_VALUE)
+  {
+    fprintf(stderr, "FAIL: load of an already loaded build_result should return CUDA_ERROR_INVALID_VALUE\n");
+    return false;
+  }
+  if (cccl_device_reduce_serialize(&fused_build, nullptr, nullptr) != CUDA_ERROR_INVALID_VALUE)
+  {
+    fprintf(stderr, "FAIL: serialize with null outputs should return CUDA_ERROR_INVALID_VALUE\n");
+    return false;
+  }
+
   out_blob.assign(static_cast<char*>(buf), static_cast<char*>(buf) + size);
   cccl_serialization_v2_buffer_free(buf);
   return true;

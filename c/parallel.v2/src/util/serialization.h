@@ -135,7 +135,7 @@ struct parsed_blob
 
 // Parses and validates a blob written by write_blob(). Throws
 // std::runtime_error with a descriptive message on any validation failure
-// (bad magic, wrong algorithm, wrong OS/architecture, truncated buffer) —
+// (bad magic, wrong algorithm, wrong OS/architecture, truncated buffer, trailing bytes) —
 // callers must validate before ever calling dlopen/LoadLibrary on the
 // payload. Deliberately does NOT check `cc` against the current device:
 // that would make deserialize() require a live GPU, which breaks the
@@ -203,6 +203,10 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
   std::memcpy(&psize, p + pos, sizeof(psize));
   pos += sizeof(psize);
   need(static_cast<size_t>(psize));
+  if (size - pos != static_cast<size_t>(psize))
+  {
+    throw std::runtime_error("cccl.c.parallel.v2 serialization: trailing bytes after payload");
+  }
   result.payload      = p + pos;
   result.payload_size = static_cast<size_t>(psize);
 

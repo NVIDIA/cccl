@@ -175,7 +175,8 @@ catch (const std::exception& exc)
 CUresult cccl_device_scan_load(cccl_device_scan_build_result_t* build_ptr, const char* ctk_path)
 try
 {
-  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
+  if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0
+      || build_ptr->jit_compiler != nullptr)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
@@ -214,6 +215,10 @@ catch (const std::exception& exc)
 CUresult cccl_device_scan_serialize(const cccl_device_scan_build_result_t* build_ptr, void** out_buf, size_t* out_size)
 try
 {
+  if (out_buf == nullptr || out_size == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   *out_buf  = nullptr;
   *out_size = 0;
   if (build_ptr == nullptr || build_ptr->payload == nullptr || build_ptr->payload_size == 0)
@@ -255,7 +260,7 @@ try
   cccl::serialization_v2::extra_reader extra(parsed.extra);
   const auto force_inclusive_u8 = extra.get<uint8_t>();
   const auto init_kind_u32      = extra.get<uint32_t>();
-  if (!extra.ok())
+  if (!extra.ok() || init_kind_u32 > CCCL_NO_INIT)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

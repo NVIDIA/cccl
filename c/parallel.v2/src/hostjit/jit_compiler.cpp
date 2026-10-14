@@ -566,13 +566,9 @@ bool JITCompiler::compileOnly(const std::string& source_code)
 
 bool JITCompiler::loadFromBytes(const std::vector<char>& library_bytes)
 {
-  std::string config_error;
-  if (!validateConfig(config_, &config_error))
-  {
-    last_error_ = "Configuration error: " + config_error;
-    return false;
-  }
-
+  // Deliberately no validateConfig(): that requires the toolkit's headers, but
+  // loading a prebuilt artifact only needs the runtime library, which a
+  // load-only machine may well have without the headers.
   cleanup();
 
   temp_dir_ = createTempDirectory();
