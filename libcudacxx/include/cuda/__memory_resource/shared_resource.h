@@ -160,20 +160,44 @@ struct shared_resource
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  [[nodiscard]] _CCCL_HOST_API void*
-  allocate_sync(size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t))
+  [[nodiscard]] _CCCL_HOST_API void* allocate_sync(size_t __bytes, size_t __alignment)
   {
     return __block_.__payload().allocate_sync(__bytes, __alignment);
+  }
+
+  //! @brief Allocate memory of size at least \p __bytes using the stored resource with
+  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! @param __bytes The size in bytes of the allocation.
+  //! @return Pointer to the newly allocated memory
+  //! @deprecated Specify an explicit alignment argument. A wrapper cannot know the alignment
+  //! requirements of the resource it holds.
+  CCCL_DEPRECATED_BECAUSE("Specify an explicit alignment argument. The default alignment will be removed in a future "
+                          "release.") _CCCL_HOST_API void*
+  allocate_sync(size_t __bytes)
+  {
+    return allocate_sync(__bytes, alignof(::cuda::std::max_align_t));
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr using the stored resource.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
   //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the allocation call that returned \p __ptr.
-  _CCCL_HOST_API void
-  deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment = alignof(::cuda::std::max_align_t)) noexcept
+  _CCCL_HOST_API void deallocate_sync(void* __ptr, size_t __bytes, size_t __alignment) noexcept
   {
     __block_.__payload().deallocate_sync(__ptr, __bytes, __alignment);
+  }
+
+  //! @brief Deallocate memory pointed to by \p __ptr using the stored resource with
+  //! `alignof(::cuda::std::max_align_t)` as the alignment.
+  //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate` or `allocate_sync`
+  //! @param __bytes The number of bytes that was passed to the allocation call that returned \p __ptr.
+  //! @deprecated Specify an explicit alignment argument. A wrapper cannot know the alignment
+  //! requirements of the resource it holds.
+  CCCL_DEPRECATED_BECAUSE("Specify an explicit alignment argument. The default alignment will be removed in a future "
+                          "release.") _CCCL_HOST_API void
+  deallocate_sync(void* __ptr, size_t __bytes) noexcept
+  {
+    deallocate_sync(__ptr, __bytes, alignof(::cuda::std::max_align_t));
   }
 
   //! @brief Enqueues an allocation of memory of size at least \p __bytes using
