@@ -1,11 +1,11 @@
 .. _cudax-coop-group-virtual-group:
 
-``cudax::coop::virtual_group``
-==============================
+``cuda::experimental::coop::virtual_group``
+===========================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <typename Unit, typename ParentGroup, typename MappingResult>
   class virtual_group : public /*group-interface-for*/<virtual_group>
@@ -37,12 +37,12 @@
                       ParentGroup,
                       /*mapping-result-of*/<Unit, ParentGroup, Mapping>>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::virtual_group`` is a group type that provides an abstraction layer over a group. It allows you to take an existing group and split it into subgroups while still using the parent group's synchronization mechanism. This means that the created subgroups are not truly independent of each other and are required to share synchronization points.
+``cuda::experimental::coop::virtual_group`` is a group type that provides an abstraction layer over a group. It allows you to take an existing group and split it into subgroups while still using the parent group's synchronization mechanism. This means that the created subgroups are not truly independent of each other and are required to share synchronization points.
 
 Because of this limitation, a virtual group doesn't support optional participation in the group. If the input mapping outputs a unit without a valid mapping result, the behaviour is undefined.
 

@@ -1,11 +1,11 @@
 .. _cudax-coop-group-generic-group:
 
-``cudax::coop::generic_group``
-==============================
+``cuda::experimental::coop::generic_group``
+===========================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <typename Unit,
             typename ParentGroup,
@@ -48,12 +48,12 @@
                       MappingResult,
                       /*synchronizer-instance-for*/<Unit, ParentGroup, MappingResult, Synchronizer>>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::generic_group`` is a group type that splits the parent group into subgroups according to the ``mapping``. Every subgroup is instantiated with a synchronization mechanism provided by the ``synchronizer``, which makes the subgroups completely independent of each other. The group's constructor is the only statement that all of the units from the parent group are required to execute uniformly.
+``cuda::experimental::coop::generic_group`` is a group type that splits the parent group into subgroups according to the ``mapping``. Every subgroup is instantiated with a synchronization mechanism provided by the ``synchronizer``, which makes the subgroups completely independent of each other. The group's constructor is the only statement that all of the units from the parent group are required to execute uniformly.
 
 Queries
 -------

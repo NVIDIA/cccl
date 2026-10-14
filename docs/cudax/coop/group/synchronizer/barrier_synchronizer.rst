@@ -1,11 +1,11 @@
 .. _cudax-coop-group-synchronizer-barrier-synchronizer:
 
-``cudax::coop::barrier_synchronizer``
-=====================================
+``cuda::experimental::coop::barrier_synchronizer``
+==================================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template </*cuda-barrier-type*/ Barrier, ::cuda::std::size_t N>
   class barrier_synchronizer
@@ -30,12 +30,12 @@
   barrier_synchronizer(Container&)
     -> barrier_synchronizer</*span-element-type-of*/<Container>, /*span-element-extent-of*/<Container>>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::barrier_synchronizer`` is a synchronizer that uses a ``cuda::barrier`` object to synchronize the group. The type is constructible from a contiguous range of uninitialized ``cuda::barrier`` objects, which are sequentially assigned to each of the created groups during the synchronizer instance creation. It can be used with any group for which the barriers have a sufficient scope.
+``cuda::experimental::coop::barrier_synchronizer`` is a synchronizer that uses a ``cuda::barrier`` object to synchronize the group. The type is constructible from a contiguous range of uninitialized ``cuda::barrier`` objects, which are sequentially assigned to each of the created groups during the synchronizer instance creation. It can be used with any group for which the barriers have a sufficient scope.
 
 Users should always rely on template argument deduction and never set the template arguments themselves.
 

@@ -1,11 +1,11 @@
 .. _cudax-coop-group-mapping-composite-mapping:
 
-``cudax::coop::composite_mapping``
-==================================
+``cuda::experimental::coop::composite_mapping``
+===============================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <typename... Mappings>
   class composite_mapping
@@ -53,12 +53,12 @@
                                                     const LhsMappings&...,
                                                     const RhsMappings&...>);
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::composite_mapping`` is a mapping that combines multiple mappings together, so they can be used as one during group construction. The type itself shouldn't be used directly; users should use the pipe operator (``|``) to merge the mappings instead.
+``cuda::experimental::coop::composite_mapping`` is a mapping that combines multiple mappings together, so they can be used as one during group construction. The type itself shouldn't be used directly; users should use the pipe operator (``|``) to merge the mappings instead.
 
 Examples
 --------

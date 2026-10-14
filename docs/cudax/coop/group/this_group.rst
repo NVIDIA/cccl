@@ -1,11 +1,11 @@
 .. _cudax-coop-group-this-group:
 
-``cudax::coop::this_{level}``
-=============================
+``cuda::experimental::coop::this_{level}``
+==========================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <typename Level, typename Hierarchy>
   class /*this-group*/ : public /*group-interface-for*/</*this-group*/>
@@ -45,23 +45,23 @@
   [[nodiscard]] __device__
   auto make_this_group(const Level& level, const HierarchyLike& hierarchy_like) noexcept;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-*This* groups are the simplest groups that contain a single unit within the same level. They are the building blocks for all other groups. They are implemented by several classes named ``cudax::coop::this_{level}`` where ``level`` is any of the predefined CUDA levels. They can be explicitly constructed from a hierarchy-like object.
+*This* groups are the simplest groups that contain a single unit within the same level. They are the building blocks for all other groups. They are implemented by several classes named ``cuda::experimental::coop::this_{level}`` where ``level`` is any of the predefined CUDA levels. They can be explicitly constructed from a hierarchy-like object.
 
-Because every this group is a separate type, the ``cudax::coop::make_this_group(...)`` factory function is provided to construct any this group based on the parameters.
+Because every this group is a separate type, the ``cuda::experimental::coop::make_this_group(...)`` factory function is provided to construct any this group based on the parameters.
 
 *This* groups are always exhaustive and contiguous.
 
-*This* groups use the :ref:`cudax::coop::level_synchronizer <cudax-coop-group-synchronizer-level-synchronizer>` synchronizer for synchronization.
+*This* groups use the :ref:`cuda::experimental::coop::level_synchronizer <cudax-coop-group-synchronizer-level-synchronizer>` synchronizer for synchronization.
 
 Queries
 -------
 
-Sub-unit queries work as with any other group type; however, since *this* groups don't have a parent group, a native hierarchy level must be used in the super-level queries as the upper bound. For example, ``cudax::coop::this_warp{...}.count(cuda::block)`` queries the number of warps within a block.
+Sub-unit queries work as with any other group type; however, since *this* groups don't have a parent group, a native hierarchy level must be used in the super-level queries as the upper bound. For example, ``cuda::experimental::coop::this_warp{...}.count(cuda::block)`` queries the number of warps within a block.
 
 Examples
 --------

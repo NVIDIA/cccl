@@ -1,11 +1,11 @@
 .. _cudax-coop-group-mapping-group-by:
 
-``cudax::coop::group_by``
+``cuda::experimental::coop::group_by``
 =========================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <cuda::std::size_t StaticUnitCount, bool IsAlwaysExhaustive>
   class group_by
@@ -34,14 +34,14 @@
   template <typename T>
   group_by(const non_exhaustive_t&, T) -> group_by</*maybe-static-extent*/<T>, false>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::group_by`` is a mapping that splits every group from the previous mapping result into groups of ``unit_count`` units. The ``unit_count`` can be either static (when the type is ``/*integral_constant-like*/``) or dynamic otherwise.
+``cuda::experimental::coop::group_by`` is a mapping that splits every group from the previous mapping result into groups of ``unit_count`` units. The ``unit_count`` can be either static (when the type is ``/*integral_constant-like*/``) or dynamic otherwise.
 
-By default, the mapping is always exhaustive, so if the previous mapping result's ``unit_count`` is not divisible by ``unit_count`` without a remainder, the behaviour is undefined. This behaviour can be altered by passing the ``cudax::coop::non_exhaustive`` tag as the first parameter to the mapping. Then, all of the ranks that would not form a full group will be left without a group.
+By default, the mapping is always exhaustive, so if the previous mapping result's ``unit_count`` is not divisible by ``unit_count`` without a remainder, the behaviour is undefined. This behaviour can be altered by passing the ``cuda::experimental::coop::non_exhaustive`` tag as the first parameter to the mapping. Then, all of the ranks that would not form a full group will be left without a group.
 
 The returned mapping result is always contiguous if the previous mapping result was contiguous.
 

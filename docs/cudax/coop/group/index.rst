@@ -99,11 +99,11 @@ Such a unit cannot participate in any collective operations, such as creating a 
 Requirements on Groups
 ----------------------
 
-The requirements on groups are formally specified by the ``cudax::coop::group`` concept, which is defined as:
+The requirements on groups are formally specified by the ``cuda::experimental::coop::group`` concept, which is defined as:
 
 .. code:: cpp
 
-  namespace cudax::coop
+  namespace cuda::experimental::coop
   {
 
   template <typename T>
@@ -127,7 +127,7 @@ The requirements on groups are formally specified by the ``cudax::coop::group`` 
     { T::is_always_contiguous() } noexcept -> cuda::std::same_as<bool>; // (8), must be constexpr
   };
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Where:
 
@@ -240,17 +240,17 @@ Interoperability with CTK's Cooperative Groups
 
 CCCL Cooperative Groups don't provide an CTK's Cooperative Groups-like interface and thus cannot be used in algorithms that expect a CTK's Cooperative Groups group.
 
-However, CCCL Cooperative Groups provide the ``cudax::coop::make_cg_equivalent_group(...)`` function that converts a CTK Cooperative Groups group to an equivalent CCCL group.
+However, CCCL Cooperative Groups provide the ``cuda::experimental::coop::make_cg_equivalent_group(...)`` function that converts a CTK Cooperative Groups group to an equivalent CCCL group.
 
 .. code:: cuda
 
-  namespace cudax::coop
+  namespace cuda::experimental::coop
   {
 
   template <typename CgGroup, /*hierarchy-like-type*/ HierarchyLike>
   [[nodiscard]] __device__
   group auto make_cg_equivalent_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like) noexcept;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
-.. note:: The group returned by ``cudax::coop::make_cg_equivalent_group(...)`` doesn't take ownership of the resources owned by ``cg_group``, so ``cg_group`` should outlive the returned group.
+.. note:: The group returned by ``cuda::experimental::coop::make_cg_equivalent_group(...)`` doesn't take ownership of the resources owned by ``cg_group``, so ``cg_group`` should outlive the returned group.

@@ -1,11 +1,11 @@
 .. _cudax-coop-group-mapping-binary-partition:
 
-``cudax::coop::binary_partition``
-=================================
+``cuda::experimental::coop::binary_partition``
+==============================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <typename Fn>
   class binary_partition
@@ -26,12 +26,12 @@
   template <typename Fn>
   binary_partition(Fn) -> binary_partition<Fn>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::binary_partition`` is a mapping that splits units from the previous mapping result into 2 groups based on a boolean value. The boolean value is obtained by invoking the ``/*fn_*/`` callable with the previous mapping result. It is possible that all of the units will end up in the same group. Currently, it can only be used to group threads within the warp level.
+``cuda::experimental::coop::binary_partition`` is a mapping that splits units from the previous mapping result into 2 groups based on a boolean value. The boolean value is obtained by invoking the ``/*fn_*/`` callable with the previous mapping result. It is possible that all of the units will end up in the same group. Currently, it can only be used to group threads within the warp level.
 
 The returned mapping result is always exhaustive.
 

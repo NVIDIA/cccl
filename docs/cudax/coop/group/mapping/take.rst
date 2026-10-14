@@ -1,11 +1,11 @@
 .. _cudax-coop-group-mapping-take:
 
-``cudax::coop::take``
-=====================
+``cuda::experimental::coop::take``
+==================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <cuda::std::size_t StaticUnitCount>
   class take
@@ -25,12 +25,12 @@
   template <typename T>
   take(T) -> take</*maybe-static-extent*/<T>>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::take`` is a mapping that selects only the first ``unit_count`` units from the previous mapping result, keeping the same group count. The ``unit_count`` can be either static (when the type is ``/*integral_constant-like*/``) or dynamic otherwise.
+``cuda::experimental::coop::take`` is a mapping that selects only the first ``unit_count`` units from the previous mapping result, keeping the same group count. The ``unit_count`` can be either static (when the type is ``/*integral_constant-like*/``) or dynamic otherwise.
 
 The returned mapping result is always non-exhaustive except when both ``unit_count`` and the previous mapping result's static unit count are statically known and have the same value.
 

@@ -1,7 +1,7 @@
 .. _cudax-coop-group-mapping-group-as:
 
-``cudax::coop::group_as``
-=========================
+``cuda::experimental::coop::group_as``
+======================================
 
 .. TODO: Add signature.
 

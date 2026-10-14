@@ -1,11 +1,11 @@
 .. _cudax-coop-group-synchronizer-level-synchronizer:
 
-``cudax::coop::level_synchronizer``
-===================================
+``cuda::experimental::coop::level_synchronizer``
+================================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   class level_synchronizer
   {
@@ -17,12 +17,12 @@
     auto make_instance(const Unit&, const ParentGroup&, const MappingResult&) const noexcept;
   };
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::level_synchronizer`` is a synchronizer that synchronizes all threads within the group's level. The synchronization behaviour is equivalent to:
+``cuda::experimental::coop::level_synchronizer`` is a synchronizer that synchronizes all threads within the group's level. The synchronization behaviour is equivalent to:
 
 +--------------+---------------------------------------------------------------------+-----------------------------------------------------------------+
 | Level        | ``.do_sync(...)``                                                   | ``.do_sync_aligned(...)``                                       |

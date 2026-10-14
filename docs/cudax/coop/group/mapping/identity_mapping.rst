@@ -1,11 +1,11 @@
 .. _cudax-coop-group-mapping-identity-mapping:
 
-``cudax::coop::identity_mapping``
-=================================
+``cuda::experimental::coop::identity_mapping``
+==============================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   class identity_mapping
   {
@@ -17,11 +17,11 @@
     auto map(const Unit&, const ParentGroup&, const PrevMappingResult&) const noexcept;
   };
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::identity_mapping`` returns a copy of the previous mapping result, preserving its values, type, and properties. It is useful in generic code when no further partitioning is needed.
+``cuda::experimental::coop::identity_mapping`` returns a copy of the previous mapping result, preserving its values, type, and properties. It is useful in generic code when no further partitioning is needed.
 
 The type is empty and explicitly default constructible.

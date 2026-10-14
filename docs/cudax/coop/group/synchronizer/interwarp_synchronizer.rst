@@ -1,11 +1,11 @@
 .. _cudax-coop-group-synchronizer-interwarp-synchronizer:
 
-``cudax::coop::interwarp_synchronizer``
-=======================================
+``cuda::experimental::coop::interwarp_synchronizer``
+====================================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   using /*interwarp-barrier-id-type*/ = int;
 
@@ -33,12 +33,12 @@
   interwarp_synchronizer(Range&&)
     -> interwarp_synchronizer<cuda::std::ranges::views::all_t<Range>>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::interwarp_synchronizer`` is a synchronizer that uses one of the 16 built-in warp barriers to synchronize the group. The type is constructible from a range of barrier IDs, which are sequentially assigned to each of the created groups during the synchronizer instance creation. It can only be used with groups that group warps within the block level.
+``cuda::experimental::coop::interwarp_synchronizer`` is a synchronizer that uses one of the 16 built-in warp barriers to synchronize the group. The type is constructible from a range of barrier IDs, which are sequentially assigned to each of the created groups during the synchronizer instance creation. It can only be used with groups that group warps within the block level.
 
 Users should always rely on template argument deduction and never set the template arguments themselves. All of the barrier IDs must be less than ``16`` and can't be repeated multiple times.
 

@@ -1,11 +1,11 @@
 .. _cudax-coop-group-group-view:
 
-``cudax::coop::group_view``
-===========================
+``cuda::experimental::coop::group_view``
+========================================
 
 .. code:: cuda
 
-  namespace cudax::coop {
+  namespace cuda::experimental::coop {
 
   template <typename Unit, typename Group>
   class group_view : public /*group-interface-for*/<group_view>
@@ -48,21 +48,21 @@
     requires /*unit-same-as-or-below*/<Unit, OtherUnit>
   group_view(const Unit&, const group_view<OtherUnit, Group>&) -> group_view<Unit, Group>;
 
-  } // namespace cudax::coop
+  } // namespace cuda::experimental::coop
 
 Overview
 --------
 
-``cudax::coop::group_view`` provides a non-owning view over another group that also allows you to view a group as if it had its ``unit_type`` changed. These properties can be useful when you need to pass a group by value or need more fine-grained rank addressing.
+``cuda::experimental::coop::group_view`` provides a non-owning view over another group that also allows you to view a group as if it had its ``unit_type`` changed. These properties can be useful when you need to pass a group by value or need more fine-grained rank addressing.
 
-``cudax::coop::group_view`` has the same mapping-related properties as the viewed group, unless the unit type was changed. In that case, the (static) unit count and unit rank are recalculated.
+``cuda::experimental::coop::group_view`` has the same mapping-related properties as the viewed group, unless the unit type was changed. In that case, the (static) unit count and unit rank are recalculated.
 
-``cudax::coop::group_view`` uses the viewed group's synchronization mechanism.
+``cuda::experimental::coop::group_view`` uses the viewed group's synchronization mechanism.
 
 Queries
 -------
 
-``cudax::coop::group_view`` provides the exact same queries as the viewed group, unless the unit type was changed. In that case, the sub-unit queries are limited to the group view's unit type.
+``cuda::experimental::coop::group_view`` provides the exact same queries as the viewed group, unless the unit type was changed. In that case, the sub-unit queries are limited to the group view's unit type.
 
 Examples
 --------
