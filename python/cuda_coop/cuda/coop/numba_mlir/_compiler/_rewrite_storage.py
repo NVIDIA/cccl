@@ -1542,8 +1542,8 @@ class _StorageRewrite:
         one ``temp_storage=`` keyword on a recognized primitive.
         Subscripted-provider syntax and other call arguments are not
         accepted descriptor uses. Every canonical constructor must have a
-        primitive consumer, so an
-        otherwise unused ``storage = coop.TempStorage()`` is also rejected.
+        primitive consumer, so an otherwise unused
+        ``storage = coop.TempStorage()`` is also rejected.
 
         Validation runs after device-helper inlining. Passing a descriptor
         to a helper is supported when inlining exposes its uses in the

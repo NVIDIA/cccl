@@ -46,10 +46,10 @@ Backend compiler and runtime CI is configured for Linux x86-64 with Python
 contracts cover Python 3.10 and 3.14. Windows checks build and import the
 universal wheel and verify its headers; they do not execute the compiler
 backend. Other combinations need separate runtime qualification. See the
-[validation scope](https://nvidia.github.io/cccl/unstable/python/coop.html#coop-numba-validation)
+[validation scope](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html#coop-numba-validation)
 for tested platforms and coverage.
 
-With Numba-CUDA-MLIR 0.5.0 through 0.5.3, keep a compiled kernel's dispatcher
+With Numba-CUDA-MLIR 0.5.0 through 0.5.4, keep a compiled kernel's dispatcher
 and configured launch callables in their original CUDA context. Reuse on
 another device or after context teardown is not qualified because cached
 architecture or launch state can belong to the original context. The upstream
