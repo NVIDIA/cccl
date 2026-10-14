@@ -276,13 +276,7 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
     const ::cuda::std::uint16_t byteMaskStart = byteMask << cpAsyncOobInfo.smemStartSkipBytes;
     const ::cuda::std::uint16_t byteMaskEnd   = byteMask >> (16 - cpAsyncOobInfo.smemEndBytesAfter16BBoundary) % 16;
     // byteMaskStart contains zeroes at the left
-#  if _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
     const ::cuda::std::uint16_t byteMaskSmall = byteMaskStart & byteMaskEnd;
-#  else // _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
-    // `ptxas fatal   : (C7907) Internal compiler error`, see nvbug 5848313
-    const ::cuda::std::uint16_t byteMaskSmall =
-      byteMaskStart & (byteMask >> (16 - (cpAsyncOobInfo.ptrGmemEnd - cpAsyncOobInfo.ptrGmemStartAlignDown)));
-#  endif // _CCCL_CUDA_COMPILER(NVCC, >=, 13, 2)
 
     const ::cuda::std::byte* ptrSmemMiddle = srcSmem;
     if (doStartCopy)
@@ -326,11 +320,11 @@ squadStoreBulkSync(Squad squad, CpAsyncOobInfo<OutputT> cpAsyncOobInfo, const ::
       }
       if (doEndCopy)
       {
-#  if _CCCL_CUDA_COMPILER(NVHPC)
+#  if _CCCL_CUDA_COMPILER(NVHPC) && !defined(__circle_build__)
         // nvc++ seems to have an optimizer bug, crashing with an unaligned access error below. The addresses are fine
         // when printed, so let's shake the optimizer a bit.
         asm volatile("" : "+l"(cpAsyncOobInfo.ptrGmemEndAlignDown));
-#  endif // _CCCL_CUDA_COMPILER(NVHPC)
+#  endif // _CCCL_CUDA_COMPILER(NVHPC) && !defined(__circle_build__)
 
         // Copy a subset of the last 16 bytes
         squadStoreMasked16B(
