@@ -71,7 +71,7 @@ def radix_rank_keys(
     keys: CommonThreadDataLike[_RankKeyT],
     /,
     *,
-    begin_bit: int = 0,
+    begin_bit: IntegerValue = 0,
     end_bit: int | None = None,
     radix_bits: int | None = None,
     descending: bool = False,

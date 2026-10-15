@@ -15,14 +15,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .._algorithm import Algorithm
+from .._algorithm import Algorithm, TypeDefinition
 from .._bindings import ArgumentBinding
 from .._symbols import semantic_token
 from .._types import (
     INT32,
+    INT64,
     Array,
     CxxFunction,
     Dependency,
+    RuntimeValue,
     TemplateParameter,
     TempStorageParameter,
     Value,
@@ -74,8 +76,8 @@ class BlockRadixRankSemantics:
     block thread count lets the builder check that prefix array's extent.
 
     Static bit intervals produce CUB's ``BFEDigitExtractor`` argument. Runtime
-    intervals instead describe operands for a provider shim; this record
-    cannot specialize ``cub::BlockRadixRank`` until both bounds are static.
+    intervals describe operands for a provider shim. An explicit fixed digit
+    width also permits specialization with a runtime starting bit.
     """
 
     key_dtype: Any
@@ -85,6 +87,7 @@ class BlockRadixRankSemantics:
     block_threads: int | None
     exclusive_digit_prefix_items_per_thread: int | None
     parameters: tuple[Any, ...]
+    fixed_radix_bits: int | None = None
 
     @property
     def descending(self) -> bool:
@@ -92,7 +95,7 @@ class BlockRadixRankSemantics:
 
     @property
     def radix_bits(self) -> int | None:
-        return self.bit_range.radix_bits
+        return self.fixed_radix_bits or self.bit_range.radix_bits
 
     @property
     def has_exclusive_digit_prefix(self) -> bool:
@@ -109,7 +112,7 @@ class BlockRadixRankSemantics:
 
     @property
     def semantic_key(self) -> tuple[Any, ...]:
-        return (
+        key = (
             "block_radix_rank",
             semantic_token(self.key_dtype),
             self.items_per_thread,
@@ -119,6 +122,7 @@ class BlockRadixRankSemantics:
             self.exclusive_digit_prefix_items_per_thread,
             semantic_token(self.parameters),
         )
+        return key + ((self.fixed_radix_bits,) if self.fixed_radix_bits else ())
 
 
 @dataclass(frozen=True)
@@ -178,7 +182,8 @@ def make_block_radix_rank_semantics(
     key_dtype: Any,
     items_per_thread: int,
     begin_bit: int | ArgumentBinding,
-    end_bit: int | ArgumentBinding,
+    end_bit: int | ArgumentBinding | None,
+    radix_bits: int | None = None,
     key_bit_width: int | None = None,
     descending: bool | RadixOrder = False,
     block_threads: int | None = None,
@@ -188,10 +193,10 @@ def make_block_radix_rank_semantics(
 
     Normalize the bit range and order, then check the requested prefix extent
     when both the digit width and block thread count are known. Static bounds
-    create a CUB digit extractor; runtime bounds remain explicit operands for
-    a provider shim. Key dtype support and runtime checks belong to the
-    frontend or provider, rather than this compiler-independent argument
-    description.
+    create a CUB digit extractor. With an explicit radix width, a runtime
+    start becomes one wide operand; an omitted end follows that width, while
+    a supplied end must be static. Without a fixed width, runtime-bound
+    records only describe operands for a provider shim.
     """
 
     if key_dtype is None:
@@ -206,17 +211,34 @@ def make_block_radix_rank_semantics(
             "exclusive_digit_prefix_items_per_thread",
             exclusive_digit_prefix_items_per_thread,
         )
+    if radix_bits is not None:
+        radix_bits = normalize_positive_int("radix_bits", radix_bits)
+        if radix_bits > 8:
+            raise ValueError("radix_rank_keys bit width must be <= 8")
     bit_range = make_radix_bit_range(
         begin_bit=begin_bit,
-        end_bit=end_bit,
+        end_bit=RuntimeValue("end_bit")
+        if end_bit is None and radix_bits is not None
+        else end_bit,
         bit_width=key_bit_width,
     )
+    if radix_bits is not None:
+        if end_bit is not None and bit_range.static_end_bit is None:
+            raise ValueError("end_bit must be static with explicit radix_bits")
+        if bit_range.is_static and bit_range.radix_bits != radix_bits:
+            raise ValueError("radix_bits must match end_bit - begin_bit")
+        if (key_bit_width is not None and radix_bits > key_bit_width) or (
+            bit_range.static_end_bit is not None
+            and bit_range.static_end_bit < radix_bits
+        ):
+            raise ValueError("radix_bits exceeds the available key bits")
     order = normalize_radix_order(descending)
 
     expected_prefix_items = None
-    if bit_range.radix_bits is not None and block_threads is not None:
+    digit_bits = radix_bits or bit_range.radix_bits
+    if digit_bits is not None and block_threads is not None:
         expected_prefix_items = block_radix_rank_bins_per_thread(
-            bit_range.radix_bits,
+            digit_bits,
             block_threads,
         )
     if (
@@ -251,7 +273,7 @@ def make_block_radix_rank_semantics(
                 name="digit_extractor",
             )
         )
-    else:
+    elif radix_bits is None:
         # Provider shims may keep the interval runtime-valued even though the
         # native CUB class specialization requires a static RADIX_BITS value.
         parameters.extend(
@@ -270,6 +292,8 @@ def make_block_radix_rank_semantics(
                 is_return=False,
             )
         )
+    if radix_bits is not None and not bit_range.is_static:
+        parameters.append(Value(INT64, name="begin_bit"))
 
     return BlockRadixRankSemantics(
         key_dtype=key_dtype,
@@ -281,6 +305,7 @@ def make_block_radix_rank_semantics(
             exclusive_digit_prefix_items_per_thread
         ),
         parameters=tuple(parameters),
+        fixed_radix_bits=radix_bits,
     )
 
 
@@ -289,8 +314,9 @@ def make_block_radix_rank_specialization(
     key_dtype: Any,
     block_dim: tuple[int, int, int],
     items_per_thread: int,
-    begin_bit: int,
-    end_bit: int,
+    begin_bit: int | ArgumentBinding,
+    end_bit: int | ArgumentBinding | None,
+    radix_bits: int | None = None,
     key_bit_width: int | None = None,
     descending: bool | RadixOrder = False,
     with_exclusive_digit_prefix: bool = False,
@@ -310,22 +336,26 @@ def make_block_radix_rank_specialization(
     block_threads = block_dim[0] * block_dim[1] * block_dim[2]
     bit_range = make_radix_bit_range(
         begin_bit=begin_bit,
-        end_bit=end_bit,
+        end_bit=RuntimeValue("end_bit")
+        if end_bit is None and radix_bits is not None
+        else end_bit,
         bit_width=key_bit_width,
     )
-    if not bit_range.is_static or bit_range.radix_bits is None:
+    digit_bits = radix_bits or bit_range.radix_bits
+    if digit_bits is None:
         raise ValueError(
             "cub::BlockRadixRank requires a static radix bit range"
         )
     bins_per_thread = block_radix_rank_bins_per_thread(
-        bit_range.radix_bits,
+        digit_bits,
         block_threads,
     )
     call = make_block_radix_rank_semantics(
         key_dtype=key_dtype,
         items_per_thread=items_per_thread,
         begin_bit=bit_range.begin_bit,
-        end_bit=bit_range.end_bit,
+        end_bit=end_bit,
+        radix_bits=radix_bits,
         key_bit_width=key_bit_width,
         descending=descending,
         block_threads=block_threads,
@@ -333,13 +363,18 @@ def make_block_radix_rank_specialization(
             bins_per_thread if with_exclusive_digit_prefix else None
         ),
     )
+    runtime_begin = not bit_range.is_static
     specialization = Algorithm(
-        struct_name="BlockRadixRank",
+        struct_name="CudaCoopBlockRadixRank"
+        if runtime_begin
+        else "BlockRadixRank",
         method_name="RankKeys",
         c_name="block_radix_rank",
         includes=("cub/block/block_radix_rank.cuh",),
-        template_parameters=_TEMPLATE_PARAMETERS,
+        template_parameters=_TEMPLATE_PARAMETERS
+        + ((TemplateParameter("END_BIT"),) if runtime_begin else ()),
         parameters=(call.parameters,),
+        type_definitions=(_checked_radix_rank_type(),) if runtime_begin else (),
         template_arguments={
             "BLOCK_DIM_X": block_dim[0],
             "RADIX_BITS": call.radix_bits,
@@ -353,6 +388,11 @@ def make_block_radix_rank_specialization(
             "BLOCK_DIM_Z": block_dim[2],
             "KeyT": key_dtype,
             "ITEMS_PER_THREAD": call.items_per_thread,
+            **(
+                {"END_BIT": call.bit_range.static_end_bit or -1}
+                if runtime_begin
+                else {}
+            ),
         },
         metadata={
             "scope": "block",
@@ -367,6 +407,50 @@ def make_block_radix_rank_specialization(
         specialization=specialization,
         call=call,
         block_dim=block_dim,
+    )
+
+
+def _checked_radix_rank_type() -> TypeDefinition:
+    """Check a wide runtime start before constructing CUB's digit extractor."""
+
+    methods = []
+    for with_prefix in (False, True):
+        prefix_template = ", int PrefixItems" if with_prefix else ""
+        prefix_parameter = ", int (&prefix)[PrefixItems]" if with_prefix else ""
+        prefix_argument = ", prefix" if with_prefix else ""
+        methods.append(f"""
+  template <typename KeyT, int ItemsPerThread{prefix_template}>
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void RankKeys(
+    KeyT (&keys)[ItemsPerThread], int (&ranks)[ItemsPerThread]{prefix_parameter}, const long long begin_bit)
+  {{
+    if (begin_bit < 0 || begin_bit > static_cast<long long>(sizeof(KeyT) * 8) - RadixBits
+        || (EndBit >= 0 && begin_bit != EndBit - RadixBits))
+    {{
+      asm volatile("trap;");
+      return;
+    }}
+    PrimitiveT::RankKeys(keys, ranks,
+      ::cub::BFEDigitExtractor<KeyT>(static_cast<int>(begin_bit), RadixBits){prefix_argument});
+  }}
+""")  # noqa: E501 - Embedded C++ source.
+    return TypeDefinition(
+        name="cuda_coop_checked_block_radix_rank",
+        code=f"""
+namespace cub {{
+template <int BlockDimX, int RadixBits, bool IsDescending, bool MemoizeOuterScan,
+          BlockScanAlgorithm InnerScanAlgorithm, cudaSharedMemConfig SMemConfig,
+          int BlockDimY, int BlockDimZ, int EndBit>
+struct CudaCoopBlockRadixRank : BlockRadixRank<BlockDimX, RadixBits, IsDescending,
+  MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>
+{{
+  using PrimitiveT = BlockRadixRank<BlockDimX, RadixBits, IsDescending,
+    MemoizeOuterScan, InnerScanAlgorithm, SMemConfig, BlockDimY, BlockDimZ>;
+  using PrimitiveT::PrimitiveT;
+
+{"".join(methods)}
+}};
+}}
+""",  # noqa: E501 - Embedded C++ source.
     )
 
 

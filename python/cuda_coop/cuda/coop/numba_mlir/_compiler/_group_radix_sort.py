@@ -14,6 +14,7 @@ replacement statements are installed.
 
 from dataclasses import replace
 from numbers import Integral
+from typing import cast
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
 
@@ -117,8 +118,9 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     Ranking always uses integer keys and produces int32 ranks, regardless of
     the key width or signedness.
 
-    Rank digit bounds are static. Validate the optional int32 prefix array
-    against the number of bins assigned to each thread. Sort bounds may be
+    Rank digit width is static. An explicit width permits a runtime start.
+    Validate the optional int32 prefix array against the number of bins
+    assigned to each thread. Sort bounds may be
     runtime integers; retain their bindings for core validation and pass them
     to the provider. Order and output-layout selectors remain compile-time
     choices. Attach the selected plan and any caller-owned sort scratch.
@@ -210,17 +212,35 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
     prefix = None
     prefix_extent = None
     if rank:
-        begin_bit, end_bit = _radix_bounds(
-            operation,
-            key_dtype.bitwidth,
-            context.constant(bound.arguments["begin_bit"]),
-            context.constant(bound.arguments["end_bit"]),
-            context.constant(bound.arguments["radix_bits"]),
+        radix_bits = context.constant(bound.arguments["radix_bits"])
+        end_bit = context.constant(bound.arguments["end_bit"])
+        begin_bit = (
+            context.constant(bound.arguments["begin_bit"])
+            if radix_bits is None
+            else _sort_bit(
+                context, operation, "begin_bit", bound.arguments["begin_bit"]
+            )
         )
+        if isinstance(begin_bit, Integral):
+            begin_bit, end_bit = _radix_bounds(
+                operation,
+                key_dtype.bitwidth,
+                cast(int, begin_bit),
+                end_bit,
+                radix_bits,
+            )
+            digit_bits = end_bit - begin_bit
+            fixed_radix_bits = None
+        else:
+            # Validate the template width independently of the runtime start.
+            _, digit_bits = _radix_bounds(
+                operation, key_dtype.bitwidth, 0, None, radix_bits
+            )
+            fixed_radix_bits = digit_bits
         prefix = bound.arguments.get("exclusive_digit_prefix")
         if not context.is_none(prefix):
             expected = block_radix_rank_bins_per_thread(
-                end_bit - begin_bit, context.launch.exact_block_threads
+                digit_bits, context.launch.exact_block_threads
             )
             prefix_extent = context.array_extent(prefix)
             if (
@@ -240,8 +260,9 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             context.record_thread_data_dtype(prefix, numba_types.int32)
         primitive = make_block_radix_rank_semantics(
             **core_kwargs,
-            begin_bit=begin_bit,
+            begin_bit=context.planning_binding(begin_bit),
             end_bit=end_bit,
+            radix_bits=fixed_radix_bits,
             key_bit_width=key_dtype.bitwidth,
             block_threads=context.launch.exact_block_threads,
             exclusive_digit_prefix_items_per_thread=prefix_extent,
@@ -253,6 +274,8 @@ def _lower(context, inst, *, operation, group, bound, is_common_root):
             else GroupOperandKind.SCALAR,
         )
         kwargs.update(begin_bit=begin_bit, end_bit=end_bit)
+        if fixed_radix_bits is not None:
+            kwargs["radix_bits"] = fixed_radix_bits
     else:
         begin_bit = _sort_bit(
             context, operation, "begin_bit", bound.arguments["begin_bit"]
@@ -429,7 +452,7 @@ for _operation, _results, _count in (
             runtime_arg_counts=frozenset({2, 3})
             if _operation == "radix_rank_keys"
             else frozenset({_count}),
-            runtime_factory_kwargs=("with_exclusive_digit_prefix",)
+            runtime_factory_kwargs=("with_exclusive_digit_prefix", "begin_bit")
             if _operation == "radix_rank_keys"
             else (),
             runtime_factory_kw_prerequisites=(),
@@ -441,6 +464,7 @@ for _operation, _results, _count in (
                     "items_per_thread",
                     "begin_bit",
                     "end_bit",
+                    "radix_bits",
                     "descending",
                     "blocked_to_striped",
                     "with_exclusive_digit_prefix",
@@ -450,7 +474,9 @@ for _operation, _results, _count in (
                 {"dtype", "threads_per_block", "items_per_thread"}
             ),
             accepts_temp_storage=_operation != "radix_rank_keys",
-            scalar_binding_kwargs=frozenset(),
+            scalar_binding_kwargs=frozenset({"begin_bit"})
+            if _operation == "radix_rank_keys"
+            else frozenset(),
             runtime_offset_kwarg=None,
             infer_payload=infer_radix_payload,
         ),
