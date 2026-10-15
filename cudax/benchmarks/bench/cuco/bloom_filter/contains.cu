@@ -144,11 +144,11 @@ NVBENCH_BENCH_TYPES(
   bloom_filter_contains,
   NVBENCH_TYPE_AXES(
     nvbench::type_list<bench::defaults::bloom_filter_key_type>,
-    nvbench::type_list<nvbench::uint32_t>, ///< Word
-    nvbench::enum_type_list<256>, ///< BlockBits
-    nvbench::enum_type_list<8>, ///< PatternBits
-    nvbench::enum_type_list<1>, ///< HorizontalLayout
-    nvbench::enum_type_list<8> ///< VerticalLayout
+    nvbench::type_list<nvbench::uint32_t>, // Word
+    nvbench::enum_type_list<256>, // BlockBits
+    nvbench::enum_type_list<8>, // PatternBits
+    nvbench::enum_type_list<1>, // HorizontalLayout
+    nvbench::enum_type_list<8> // VerticalLayout
     ))
   .set_name("bloom_filter_contains_unique_size")
   .set_type_axes_names({"Key", "Word", "BlockBits", "PatternBits", "HorizontalLayout", "VerticalLayout"})
