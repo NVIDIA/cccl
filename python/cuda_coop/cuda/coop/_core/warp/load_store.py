@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from numbers import Integral
 from typing import Any
 
 from .._algorithm import Algorithm
@@ -127,7 +128,7 @@ def _normalize_algorithm(
 
 def _normalize_items_per_thread(items_per_thread: Any) -> int:
     if (
-        not isinstance(items_per_thread, int)
+        not isinstance(items_per_thread, Integral)
         or isinstance(items_per_thread, bool)
         or items_per_thread < 1
     ):
@@ -139,7 +140,7 @@ def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
     """Require a power-of-two width that fits within one physical warp."""
 
     if (
-        not isinstance(threads_in_warp, int)
+        not isinstance(threads_in_warp, Integral)
         or isinstance(threads_in_warp, bool)
         or threads_in_warp not in _SUPPORTED_LOGICAL_WARP_THREADS
     ):
@@ -150,7 +151,7 @@ def _normalize_logical_warp_threads(threads_in_warp: Any) -> int:
             "Warp Load/Store requires threads_in_warp in "
             f"{{{supported}}}; got {threads_in_warp!r}"
         )
-    return threads_in_warp
+    return int(threads_in_warp)
 
 
 def _base_parameters(kind: WarpLoadStoreKind) -> list[Any]:

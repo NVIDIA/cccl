@@ -196,7 +196,12 @@ def _patch_compiler_loaders(
 
 @pytest.mark.parametrize(
     "os_name,library_dir_name",
-    [("posix", "lib"), ("nt", "bin"), ("nt", "bin/x64")],
+    [
+        ("posix", "lib"),
+        ("nt", "bin"),
+        ("nt", "bin/x64"),
+        ("nt", "bin/x86_64"),
+    ],
 )
 def test_preload_loads_one_same_root_monolithic_set_and_reuses_exact_handles(
     monkeypatch: pytest.MonkeyPatch,
