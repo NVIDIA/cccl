@@ -131,4 +131,13 @@ root. The resulting compiler artifacts and caches include the launch
 dimensions, dtype and item extent, storage ABI, compute capability, compiler
 options, ordered header identity, and toolkit-library identity.
 
+Numba-CUDA-MLIR providers created during one compiler attempt share header and
+toolkit identity when they select the same ordered include roots. Root selection
+is checked for each new provider; header contents are fingerprinted once per
+selection in that attempt. Keep headers and the toolkit installation unchanged
+while compilation is in progress. A later attempt resolves current headers for
+new providers, so edits between attempts do not require a cache-clearing call.
+Existing provider contexts retain their original identity; recreate providers
+and recompile kernels after changing headers.
+
 See :doc:`../coop_api` for the public API reference.

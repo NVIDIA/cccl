@@ -25,7 +25,7 @@ from numba_cuda_mlir.extending import WholeFunctionPlanner
 
 from .._types import kernel_compile_target
 from ._group_planner import _GroupPlanning
-from ._nvrtc import CompileTarget
+from ._nvrtc import CompileTarget, compile_context_scope
 from ._rewrite import _CallRewriting
 
 
@@ -83,7 +83,7 @@ class CoopWholeFunctionPlanner(
         target = CompileTarget.from_targetoptions(
             self.state.metadata.get("targetoptions") or {}
         )
-        with kernel_compile_target(target):
+        with kernel_compile_target(target), compile_context_scope():
             groups_changed = self._resolve_groups()
             if groups_changed:
                 # Group resolution changes IR statements. Use Numba's repair
