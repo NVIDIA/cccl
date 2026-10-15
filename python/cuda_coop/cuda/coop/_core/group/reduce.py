@@ -277,11 +277,15 @@ def _plan_cub_reduce(
     A block request without an algorithm records ``WARP_REDUCTIONS`` in both
     the operation and the plan's call, making it part of the semantic key.
 
-    Validate static prefix counts here. Runtime counts remain a caller
-    precondition recorded in the core plan. The backend plans CUB scratch.
-    Counts must be uniform across the group. Where a backend supports
-    stateful callbacks, their runtime state must also be uniform; the core
-    descriptor alone does not establish that support.
+    ``valid_items`` is the number of scalar inputs to reduce, starting at
+    group rank zero. Validate static ``operation.valid_items`` values as
+    integers in ``[1, resolved.static_size]``. Record the same bounds for
+    runtime values as caller preconditions in the core plan. All group
+    members must supply the same ``valid_items`` value.
+
+    The backend plans CUB scratch. Where a backend supports stateful
+    callbacks, their runtime state must also be uniform; the core descriptor
+    alone does not establish that support.
     """
 
     if resolved.kind not in {"block", "warp", "threads_within_warp"}:
