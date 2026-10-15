@@ -6416,6 +6416,25 @@ UNITTEST("store")
 #  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
+// Whether building a composite throws std::logic_error. A function template rather than a generic
+// lambda inside the test body: EDG (nvcc) rejects a generic lambda instantiated at a lambda argument
+// within the UNITTEST initializer ("a variable declared with an auto type specifier cannot appear in
+// its own initializer").
+template <class _Build>
+bool __erasure_rejects(_Build&& __build)
+{
+  bool __thrown = false;
+  _CCCL_TRY
+  {
+    __build();
+  }
+  _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& __e)
+  {
+    __thrown = true;
+  }
+  return __thrown;
+}
+
 UNITTEST("type erasure")
 {
   using namespace cuda::experimental::stf;
@@ -6571,55 +6590,43 @@ UNITTEST("type erasure")
   // The checks `|`, `&`, and `*` perform statically run against this metadata when an operand
   // is erased, and reject a dead arm with std::logic_error when the composite is built.
   {
-    const auto rejected = [](auto&& __build) {
-      bool __thrown = false;
-      _CCCL_TRY
-      {
-        __build();
-      }
-      _CCCL_CATCH ([[maybe_unused]] const ::std::logic_error& __e)
-      {
-        __thrown = true;
-      }
-      return __thrown;
-    };
-    const bool __r1 = rejected([] {
+    const bool __r1 = __erasure_rejects([] {
       static_cast<void>(dynamic(subst(1)) | subst(2)); // never passes through
     });
     EXPECT(__r1);
-    const bool __r2 = rejected([] {
+    const bool __r2 = __erasure_rejects([] {
       static_cast<void>(dynamic(subst(1)) | fwd);
     });
     EXPECT(__r2);
-    const bool __r3 = rejected([] {
+    const bool __r3 = __erasure_rejects([] {
       static_cast<void>(dynamic(unwind) | subst(2)); // always diverges
     });
     EXPECT(__r3);
-    const bool __r4 = rejected([] {
+    const bool __r4 = __erasure_rejects([] {
       static_cast<void>(dynamic(subst(1)) & noop); // chooses a value
     });
     EXPECT(__r4);
-    const bool __r5 = rejected([] {
+    const bool __r5 = __erasure_rejects([] {
       static_cast<void>(dynamic(retry) & subst(2));
     });
     EXPECT(__r5);
-    const bool __r6 = rejected([] {
+    const bool __r6 = __erasure_rejects([] {
       static_cast<void>(dynamic(unwind) & subst(2)); // never returns
     });
     EXPECT(__r6);
-    const bool __r7 = rejected([] {
+    const bool __r7 = __erasure_rejects([] {
       static_cast<void>(dynamic(subst(1)) * 2);
     });
     EXPECT(__r7);
-    const bool __r8 = rejected([] {
+    const bool __r8 = __erasure_rejects([] {
       static_cast<void>(dynamic(if_isa<::std::logic_error>(subst(1))) | subst(2)); // may decline
     });
     EXPECT(!__r8);
-    const bool __r9 = rejected([] {
+    const bool __r9 = __erasure_rejects([] {
       static_cast<void>(dynamic(noop) & subst(2)); // effect only
     });
     EXPECT(!__r9);
-    const bool __r10 = rejected([] {
+    const bool __r10 = __erasure_rejects([] {
       static_cast<void>(dynamic(retry) * 2);
     });
     EXPECT(!__r10);
