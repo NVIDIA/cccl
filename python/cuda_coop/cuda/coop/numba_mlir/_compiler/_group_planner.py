@@ -162,9 +162,9 @@ class _GroupCallPlanner:
         """
 
         if self._compile_context is None:
-            from ._nvrtc import resolve_compile_context
+            from ._nvrtc import resolve_shared_compile_context
 
-            self._compile_context = resolve_compile_context()
+            self._compile_context = resolve_shared_compile_context()
         return self._compile_context
 
     @staticmethod
