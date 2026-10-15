@@ -52,10 +52,10 @@ namespace cuda::experimental::cuco
 //! `_WordsPerBlock` for a fully horizontal add
 //! @tparam _AddVerticalLayout Words per thread per `add` step (the paper's Phi). Defaults to `1`
 //! for a fully horizontal add
-//! @tparam _ContainsHorizontalLayout Cooperative-group size for `contains`. Defaults to `1` for a
-//! fully vertical contains
+//! @tparam _ContainsHorizontalLayout Cooperative-group size for `contains`. Defaults to one thread
+//! per 32-byte sector, or `1` when the block fits in one sector
 //! @tparam _ContainsVerticalLayout Words per thread per `contains` step. Defaults to
-//! `_WordsPerBlock` for a fully vertical contains
+//! `_WordsPerBlock / _ContainsHorizontalLayout`
 //! @tparam _ConditionalAdd Whether `add` reads each word before the atomic OR and skips the write
 //! when the required bits are already set
 //! @tparam _EarlyExitContains Whether `contains` short-circuits on the first missing fingerprint
@@ -67,8 +67,8 @@ template <class _Key,
           int _PatternBits                            = _WordsPerBlock,
           int _AddHorizontalLayout                    = _WordsPerBlock,
           int _AddVerticalLayout                      = 1,
-          int _ContainsHorizontalLayout               = 1,
-          int _ContainsVerticalLayout                 = _WordsPerBlock,
+          int _ContainsHorizontalLayout               = static_cast<int>((_WordsPerBlock * sizeof(_Word) + 31) / 32),
+          int _ContainsVerticalLayout                 = _WordsPerBlock / _ContainsHorizontalLayout,
           conditional_add_mode _ConditionalAdd        = conditional_add_mode::off,
           early_exit_contains_mode _EarlyExitContains = early_exit_contains_mode::off>
 using bloom_filter_policy = __bloom_filter_ns::__bloom_filter_policy<

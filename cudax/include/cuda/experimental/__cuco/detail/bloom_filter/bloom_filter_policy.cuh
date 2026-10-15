@@ -53,8 +53,8 @@ namespace cuda::experimental::cuco::__bloom_filter_ns
 //! `add` and `contains` take independent vectorization layouts (horizontal = cooperative-group
 //! size, vertical = contiguous words per thread per step) because they favor opposite access
 //! patterns: `add` spreads a block's words across cooperating threads so atomic writes proceed in
-//! parallel (default: fully horizontal), while `contains` lets one thread read the whole block
-//! with wide, coalesced loads (default: fully vertical). `_PatternBits` trades false-positive rate
+//! parallel (default: fully horizontal), while `contains` assigns at most one 32-byte sector per
+//! thread with wide, coalesced loads by default. `_PatternBits` trades false-positive rate
 //! against space.
 //!
 //! @note This class should NOT be used directly. Use
