@@ -14,6 +14,9 @@ compiler can promote its normal final link to the current device's target.
 from types import SimpleNamespace
 
 import pytest
+
+pytest.importorskip("numba_cuda_mlir")
+
 from numba_cuda_mlir import types
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]

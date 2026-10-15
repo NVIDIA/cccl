@@ -201,10 +201,10 @@ warp. Complete sibling logical groups can follow different paths.
 
 In particular, putting a block primitive inside ``if index < count``
 breaks participation on a partial tile. Keep the primitive outside the
-per-element condition. Use guarded loads or initialized values to handle
-missing input, as in the first kernel. An early return by some block threads
-has the same problem if the remaining threads later execute a block
-primitive.
+per-element condition. For a partial Load, supply ``valid_items`` and
+``oob_default``, or initialize invalid slots after the Load and before reading
+them. An early return by some block threads has the same problem if the
+remaining threads later execute a block primitive.
 
 Use ``cuda.syncthreads()`` for explicit block synchronization in
 Numba kernels. Every thread in the block must reach the barrier.
