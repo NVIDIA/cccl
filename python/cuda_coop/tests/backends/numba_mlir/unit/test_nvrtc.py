@@ -217,6 +217,63 @@ def test_resolve_context_preserves_order_and_recursive_header_identity(
     assert reverse.header_identity != mutated.header_identity
 
 
+def test_shared_context_scope_is_lazy_ordered_and_restored_after_errors(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    first, second = tmp_path / "first", tmp_path / "second"
+    for path in (first, second):
+        path.mkdir()
+        (path / "header.cuh").write_text("original")
+    ordered = [first, second]
+    selections = []
+
+    def resolve_paths(**kwargs):
+        selections.append(tuple(ordered))
+        return SimpleNamespace(as_tuple=lambda: tuple(ordered), cuda=(second,))
+
+    monkeypatch.setattr(_nvrtc, "resolve_include_paths", resolve_paths)
+    monkeypatch.setattr(
+        _nvrtc, "preload_toolkit_compiler_libraries", lambda paths: _libraries()
+    )
+    monkeypatch.setattr(_nvrtc, "_load_nvrtc", lambda: _fake_nvrtc((13, 3)))
+
+    with _nvrtc.compile_context_scope():
+        pass
+    assert not selections
+
+    with _nvrtc.compile_context_scope():
+        original = _nvrtc.resolve_shared_compile_context()
+        assert _nvrtc.resolve_shared_compile_context() is original
+        # Re-select roots even when a context already exists in this attempt.
+        ordered.reverse()
+        reversed_context = _nvrtc.resolve_shared_compile_context()
+        assert reversed_context.header_identity != original.header_identity
+        ordered.reverse()
+        assert _nvrtc.resolve_shared_compile_context() is original
+
+        with (
+            pytest.raises(RuntimeError, match="failed attempt"),
+            _nvrtc.compile_context_scope(),
+        ):
+            nested = _nvrtc.resolve_shared_compile_context()
+            assert nested == original
+            assert nested is not original
+            raise RuntimeError("failed attempt")
+        assert _nvrtc.resolve_shared_compile_context() is original
+
+    (first / "header.cuh").write_text("edited between attempts")
+    with _nvrtc.compile_context_scope():
+        edited = _nvrtc.resolve_shared_compile_context()
+        assert edited.header_identity != original.header_identity
+        assert _nvrtc.resolve_shared_compile_context() is edited
+
+    # Leaving the outermost scope restores ordinary fresh resolution.
+    unscoped = _nvrtc.resolve_shared_compile_context()
+    assert unscoped == edited
+    assert unscoped is not edited
+    assert _nvrtc.resolve_shared_compile_context() is not unscoped
+
+
 @pytest.mark.parametrize(
     ("field", "replacement"),
     (

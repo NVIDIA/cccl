@@ -12,8 +12,12 @@ symbols, and reuse; runtime suites check values from launched kernels.
 from __future__ import annotations
 
 import gc
+import json
 import os
 import re
+import subprocess
+import sys
+import textwrap
 import weakref
 from dataclasses import replace
 from pathlib import Path
@@ -490,14 +494,37 @@ def test_representative_dtypes_compile_for_each_additional_algorithm(
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize(
+    "bundle_failure", [False, True], ids=["bundle", "fallback"]
+)
 def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread
+    monkeypatch: pytest.MonkeyPatch, items_per_thread, bundle_failure
 ) -> None:
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda as compiler_cuda
 
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop
+    from cuda.coop.numba_mlir._compiler import _rewrite_invocables
+
+    if bundle_failure:
+
+        def fail_bundle(algorithms):
+            raise RuntimeError("exercise individual provider fallback")
+
+        monkeypatch.setattr(
+            _rewrite_invocables, "prepare_ltoir_bundle", fail_bundle
+        )
+
+    identities = []
+    identify = _nvrtc.include_dirs_identity
+
+    def record_identity(paths):
+        identity = identify(paths)
+        identities.append(identity.digest)
+        return identity
+
+    monkeypatch.setattr(_nvrtc, "include_dirs_identity", record_identity)
 
     fixed_device = SimpleNamespace(compute_capability=_FIXED_COMPUTE_CAPABILITY)
 
@@ -562,12 +589,17 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
         ("sharedmem", 0),
         ("cluster", None),
     )
-    results = [
-        dispatcher._compile_launch_config_signature(
-            signature, launch_config_key
+    results = []
+    for dispatcher in (storage_free, storage_bearing):
+        before = len(identities)
+        results.append(
+            dispatcher._compile_launch_config_signature(
+                signature, launch_config_key
+            )
         )
-        for dispatcher in (storage_free, storage_bearing)
-    ]
+        # Newly created Load and Store providers share discovery even when
+        # bundle preparation fails and materialization retries individually.
+        assert len(identities) == before + 1
     for result in results:
         assert isinstance(result.metadata["ltoir"], bytes)
         assert result.metadata["ltoir"]
@@ -583,6 +615,73 @@ def test_production_routes_compile_storage_free_and_storage_bearing_kernels(
     assert ".visible .entry" in storage_bearing_ptx
     assert ".shared" in storage_bearing_ptx
     assert "bar.sync" in storage_bearing_ptx
+
+
+def test_header_edits_do_not_poison_the_persistent_cache(
+    tmp_path: Path,
+) -> None:
+    """Revert headers in a fresh process after compiling the edited bytes."""
+    probe = textwrap.dedent(
+        r"""
+        import json
+        import re
+        import sys
+        from pathlib import Path
+        from cuda.coop.numba_mlir._compiler import _nvrtc
+
+        root = Path(sys.argv[1])
+        for name in (*_nvrtc._REQUIRED_HEADERS, "cub/version.cuh"):
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+        header = root / "probe.cuh"
+        header.write_text("#define PROBE_VALUE 17\n")
+        with _nvrtc.compile_context_scope():
+            original = _nvrtc.resolve_shared_compile_context()
+        if sys.argv[2] == "prime":
+            header.write_text("#define PROBE_VALUE 29\n")
+        with _nvrtc.compile_context_scope():
+            context = _nvrtc.resolve_shared_compile_context()
+            _, ptx = _nvrtc.compile(
+                cpp='#include "probe.cuh"\nextern "C" __global__ '
+                    'void probe(int* out) { *out = PROBE_VALUE; }\n',
+                cc=80, rdc=False, code="ptx", context=context,
+            )
+        assert isinstance(ptx, str)
+        print(json.dumps({
+            "original": original.header_identity,
+            "compiled": context.header_identity,
+            "constants": re.findall(r"mov\.u32\s+%r\d+,\s*(\d+);", ptx),
+        }))
+        """
+    )
+    root = tmp_path / "headers"
+    env = dict(
+        os.environ,
+        CUDA_COOP_CCCL_ROOT=str(root),
+        XDG_CACHE_HOME=str(tmp_path / "cache"),
+        LOCALAPPDATA=str(tmp_path / "cache"),
+    )
+    results = []
+    for mode, enabled, expected in (
+        ("prime", "1", "29"),
+        ("read", "1", "17"),
+        ("read", "0", "17"),
+    ):
+        completed = subprocess.run(
+            [sys.executable, "-c", probe, str(root), mode],
+            env=dict(env, CUDA_COOP_ENABLE_CACHE=enabled),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        result = json.loads(completed.stdout)
+        assert result["constants"] == [expected]
+        results.append(result)
+    assert results[0]["original"] != results[0]["compiled"]
+    assert results[1]["compiled"] == results[0]["original"]
+    assert results[2] == results[1]
+    assert _cache_files(tmp_path / "cache")
 
 
 def test_real_nvrtc_cache_hits_and_invalidates_every_compile_axis(
