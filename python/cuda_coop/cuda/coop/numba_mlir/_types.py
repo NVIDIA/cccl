@@ -1466,7 +1466,7 @@ class Algorithm:
     def _resolved_compile_context(self):
         """Resolve header and toolkit identity once for this provider."""
         if self._compile_context is None:
-            self._compile_context = nvrtc.resolve_compile_context()
+            self._compile_context = nvrtc.resolve_shared_compile_context()
         return self._compile_context
 
     def mangled_name(self, parameters):

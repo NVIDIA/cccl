@@ -30,12 +30,15 @@ import functools
 import hashlib
 import os
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias, cast
 
 from cuda.coop._core._source_dump import dump_source
-from cuda.coop._headers import resolve_include_paths
+from cuda.coop._headers import CoopIncludePaths, resolve_include_paths
 from cuda.coop._headers._identity import include_dirs_identity
 from cuda.coop._headers._toolkit import (
     preload_toolkit_compiler_libraries,
@@ -515,6 +518,39 @@ def compile_impl(
             raise RuntimeError(f"nvrtcDestroyProgram error: {destroy_err}")
 
 
+_COMPILE_CONTEXTS: ContextVar[dict[tuple[str, ...], CompileContext] | None] = (
+    ContextVar("cuda_coop_numba_mlir_compile_contexts", default=None)
+)
+
+
+@contextmanager
+def compile_context_scope() -> Iterator[None]:
+    """Share lazily resolved contexts during one planner attempt.
+
+    Headers and toolkit files must remain stable until the attempt finishes.
+    Nested attempts get independent maps and restore their caller on exit.
+    """
+
+    token = _COMPILE_CONTEXTS.set({})
+    try:
+        yield
+    finally:
+        _COMPILE_CONTEXTS.reset(token)
+
+
+def resolve_shared_compile_context() -> CompileContext:
+    """Reuse an identity only inside the active attempt's selected roots."""
+
+    contexts = _COMPILE_CONTEXTS.get()
+    if contexts is None:
+        return resolve_compile_context()
+    include_paths = _resolve_compile_include_paths()
+    include_dirs = tuple(str(path) for path in include_paths.as_tuple())
+    if include_dirs not in contexts:
+        contexts[include_dirs] = _build_compile_context(include_paths)
+    return contexts[include_dirs]
+
+
 def resolve_compile_context() -> CompileContext:
     """Resolve one header/toolkit identity and preload its compiler libraries.
 
@@ -546,11 +582,22 @@ def resolve_compile_context() -> CompileContext:
         roots, and header identity for a provider compilation.
     """
 
-    include_paths = resolve_include_paths(
+    return _build_compile_context(_resolve_compile_include_paths())
+
+
+def _resolve_compile_include_paths() -> CoopIncludePaths:
+    """Select and validate ordered header roots for the current request."""
+
+    return resolve_include_paths(
         start=Path(__file__),
         configured_roots=(os.environ.get("CUDA_COOP_CCCL_ROOT"),),
         required_headers=_REQUIRED_HEADERS,
     )
+
+
+def _build_compile_context(include_paths: CoopIncludePaths) -> CompileContext:
+    """Preload the selected toolkit and fingerprint the current headers."""
+
     include_dirs = tuple(str(path) for path in include_paths.as_tuple())
     libraries = preload_toolkit_compiler_libraries(include_paths.cuda)
     nvrtc = _load_nvrtc()
