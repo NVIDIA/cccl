@@ -18,6 +18,10 @@ tu_csv=""
 perfetto_output_dir=""
 baseline_ref=""
 baseline_worktree=""
+current_worktree=""
+comparison_worktrees=""
+comparison_build_started=0
+build_order="auto"
 max_detail_len=180
 cloc_processes=0
 
@@ -33,6 +37,7 @@ declare -a bench_cmake_args=(
   "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
   "-DCMAKE_CUDA_COMPILER_LAUNCHER="
   "-DCMAKE_CXX_COMPILER_LAUNCHER="
+  "-DCMAKE_C_COMPILER_LAUNCHER="
   "-DCCCL_ENABLE_TESTING=OFF"
   "-DCCCL_ENABLE_EXAMPLES=OFF"
   "-DCCCL_ENABLE_BENCHMARKS=OFF"
@@ -63,6 +68,8 @@ Build options:
   -target <name>              Build target; repeatable
                               (default: public include-check target set)
   -baseline-ref <commit-ish>  Build this commit-ish as a comparison baseline
+  -build-order <order>        auto, current-first, or baseline-first (default: auto)
+                              auto alternates CI run attempts; baseline-first locally
   -skip-configure             Do not run cmake configure
   -skip-build                 Do not run cmake --build
   -cuda, -cxx, -std, -arch    Common compiler/standard/arch options from ci/build_common.sh
@@ -106,9 +113,28 @@ require_command() {
 }
 
 cleanup_baseline_worktree() {
+  # Keep measured partial traces on failure, while preventing an older
+  # successful summary from being uploaded for this invocation.
+  if (( comparison_build_started )); then
+    if [[ ! -d "${trace_dir}" && -d "${current_measurement_trace_dir}" ]]; then
+      mkdir -p "${report_root}"
+      cp -a "${current_measurement_trace_dir}" "${trace_dir}" || :
+    fi
+    if [[ ! -d "${baseline_artifact_trace_dir}" && -d "${baseline_trace_dir}" ]]; then
+      mkdir -p "${report_root}"
+      cp -a "${baseline_trace_dir}" "${baseline_artifact_trace_dir}" || :
+    fi
+  fi
   if [[ -n "${baseline_worktree}" && -d "${baseline_worktree}" ]]; then
     git -C "${repo_root}" worktree remove --force "${baseline_worktree}" >/dev/null 2>&1 \
       || rm -rf "${baseline_worktree}"
+  fi
+  if [[ -n "${current_worktree}" && -d "${current_worktree}" ]]; then
+    git -C "${repo_root}" worktree remove --force "${current_worktree}" >/dev/null 2>&1 \
+      || rm -rf "${current_worktree}"
+  fi
+  if [[ -n "${comparison_worktrees}" && -d "${comparison_worktrees}" ]]; then
+    rmdir "${comparison_worktrees}" 2>/dev/null || :
   fi
 }
 
@@ -128,15 +154,16 @@ install_baseline_cleanup_traps() {
 
 overlay_current_bench_file() {
   local rel_path="$1"
-  mkdir -p "$(dirname "${baseline_worktree}/${rel_path}")"
-  rm -rf "${baseline_worktree:?}/${rel_path}"
-  ln -s "${repo_root}/${rel_path}" "${baseline_worktree}/${rel_path}"
+  local worktree="$2"
+  mkdir -p "$(dirname "${worktree}/${rel_path}")"
+  rm -rf "${worktree:?}/${rel_path}"
+  ln -s "${repo_root}/${rel_path}" "${worktree}/${rel_path}"
 }
 
 overlay_current_bench_logic() {
-  overlay_current_bench_file "ci"
-  overlay_current_bench_file "CMakePresets.json"
-  overlay_current_bench_file "cmake/CCCLGenerateHeaderTests.cmake"
+  overlay_current_bench_file "ci" "$1"
+  overlay_current_bench_file "CMakePresets.json" "$1"
+  overlay_current_bench_file "cmake/CCCLGenerateHeaderTests.cmake" "$1"
 }
 
 for arg in "$@"; do
@@ -175,6 +202,7 @@ while (($#)); do
     -preset) preset="$2"; shift 2 ;;
     -target) build_targets+=("$2"); shift 2 ;;
     -baseline-ref) baseline_ref="$2"; shift 2 ;;
+    -build-order) build_order="$2"; shift 2 ;;
     -tu-csv) explicit_tu_csv=1; write_tu_csv=1; tu_csv="$2"; shift 2 ;;
     -perfetto-output) perfetto_output_dir="$2"; shift 2 ;;
     -max-detail-len) max_detail_len="$2"; shift 2 ;;
@@ -210,6 +238,7 @@ run_bench_build() {
   local build_name="$2"
   local build_root="$3"
   local build_dir="$4"
+  local phase="${5:-both}"
 
   (
     # build_common.sh keeps the active build tree in these globals; override
@@ -219,14 +248,19 @@ run_bench_build() {
     BUILD_ROOT="${build_root}"
     # shellcheck disable=SC2030
     BUILD_DIR="${build_dir}"
+    # CMake's compiler checks can inherit these even when cache entries are
+    # empty. A cache hit must never substitute for a measured compilation.
+    export CMAKE_C_COMPILER_LAUNCHER=""
+    export CMAKE_CXX_COMPILER_LAUNCHER=""
+    export CMAKE_CUDA_COMPILER_LAUNCHER=""
     cd "${source_root}/ci"
 
-    if (( ! skip_configure )); then
+    if [[ "${phase}" != build ]] && (( ! skip_configure )); then
       status "Configuring preset '${preset}' with compile-time bench instrumentation (${build_name})..."
       configure_preset "${build_name}" "${preset}" "${bench_cmake_args[@]}"
     fi
 
-    if (( ! skip_build )); then
+    if [[ "${phase}" != configure ]] && (( ! skip_build )); then
       status "Building target(s) (${build_name}): ${build_targets[*]}"
       build_preset "${build_name}" "${preset}" --target "${build_targets[@]}"
     fi
@@ -255,19 +289,62 @@ fi
 
 preset_build_dir="${current_build_dir}/${preset}"
 baseline_trace_dir=""
+current_trace_repo_root="${repo_root}"
+generated_tu_build_dir="${preset_build_dir}"
+
+case "${build_order}" in
+  auto|current-first|baseline-first) ;;
+  *) echo "error: -build-order must be auto, current-first, or baseline-first" >&2; exit 1 ;;
+esac
 
 if [[ -n "${baseline_ref}" ]]; then
+  if (( skip_configure || skip_build )); then
+    echo "error: -baseline-ref requires fresh configure/build; replay existing traces with summarize_events.py" >&2
+    exit 1
+  fi
   baseline_commit="$(git -C "${repo_root}" rev-parse --verify "${baseline_ref}^{commit}")"
-  baseline_worktree="$(mktemp -d "${TMPDIR:-/tmp}/cccl-compile-time-baseline.XXXXXX")"
-  rmdir "${baseline_worktree}"
+  current_commit="$(git -C "${repo_root}" rev-parse HEAD)"
+  comparison_worktrees="$(mktemp -d "${current_build_dir}/compile-time-pair.XXXXXX")"
+  baseline_worktree="${comparison_worktrees}/source-a"
+  current_worktree="${comparison_worktrees}/source-b"
   install_baseline_cleanup_traps
   status "Creating baseline worktree for ${baseline_ref} (${baseline_commit})..."
   git -C "${repo_root}" worktree add --detach "${baseline_worktree}" "${baseline_commit}" >/dev/null
-  overlay_current_bench_logic
+  git -C "${repo_root}" worktree add --detach "${current_worktree}" "${current_commit}" >/dev/null
+  # Preserve tracked staged/unstaged current changes without touching the
+  # user's source tree. New files are copied as well, including local headers.
+  git -C "${repo_root}" diff --no-ext-diff --no-textconv --binary HEAD \
+    | git -C "${current_worktree}" apply --allow-empty
+  while IFS= read -r -d '' rel_path; do
+    # Never copy the build tree containing these temporary worktrees into
+    # itself, even if a local .gitignore exposes build outputs.
+    case "${rel_path}" in
+      build/*) continue ;;
+      *) ;;
+    esac
+    mkdir -p "$(dirname "${current_worktree}/${rel_path}")"
+    cp -a "${repo_root}/${rel_path}" "${current_worktree}/${rel_path}"
+  done < <(git -C "${repo_root}" ls-files --others --exclude-standard -z)
+  overlay_current_bench_logic "${baseline_worktree}"
+  overlay_current_bench_logic "${current_worktree}"
 
   baseline_build_root="$(build_root_for_source "${baseline_worktree}")"
   baseline_build_dir="$(build_dir_for_source "${baseline_worktree}" "${baseline_build_root}")"
   baseline_trace_dir="${baseline_build_dir}/${preset}/compile_time/raw_traces"
+  current_measurement_build_root="$(build_root_for_source "${current_worktree}")"
+  current_measurement_build_dir="$(build_dir_for_source "${current_worktree}" "${current_measurement_build_root}")"
+  current_measurement_trace_dir="${current_measurement_build_dir}/${preset}/compile_time/raw_traces"
+  current_trace_repo_root="${current_worktree}"
+  generated_tu_build_dir="${current_measurement_build_dir}/${preset}"
+  if [[ "${build_order}" == auto ]]; then
+    if [[ -z "${GITHUB_RUN_NUMBER:-}" ]]; then
+      build_order="baseline-first"
+    elif (( (GITHUB_RUN_NUMBER + ${GITHUB_RUN_ATTEMPT:-1}) % 2 )); then
+      build_order="current-first"
+    else
+      build_order="baseline-first"
+    fi
+  fi
 fi
 
 report_root="${preset_build_dir}/compile_time"
@@ -288,17 +365,57 @@ if (( run_ctadvisor )); then
   require_command ctadvisor
 fi
 
-run_bench_build "${repo_root}" "Compile-time Bench (current)" "${current_build_root}" "${current_build_dir}"
-if $CONFIGURE_ONLY; then
-  exit 0
-fi
-
 if [[ -n "${baseline_ref}" ]]; then
-  run_bench_build \
-    "${baseline_worktree}" \
-    "Compile-time Bench (baseline)" \
-    "${baseline_build_root}" \
-    "${baseline_build_dir}"
+  mkdir -p "${report_root}"
+  rm -rf "${event_output_dir}" "${trace_dir}" "${baseline_artifact_trace_dir}" "${perfetto_output_dir}"
+  python3 - "${report_root}/build_pair.json" "${baseline_commit}" "${current_commit}" "${build_order}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+Path(sys.argv[1]).write_text(json.dumps({
+    "baseline_commit": sys.argv[2], "current_commit": sys.argv[3],
+    "build_order": sys.argv[4], "warmup_tus_per_side": 1,
+    "current_includes_working_tree_changes": True,
+}, indent=2) + "\n")
+PY
+  status "Comparison build order: ${build_order}"
+  declare -a sides=(current baseline)
+  if [[ "${build_order}" == baseline-first ]]; then
+    sides=(baseline current)
+  fi
+  for phase in configure warmup build; do
+    if [[ "${phase}" == build ]]; then
+      comparison_build_started=1
+    fi
+    for side in "${sides[@]}"; do
+      if [[ "${side}" == current ]]; then
+        source_root="${current_worktree}"
+        side_build_root="${current_measurement_build_root}"
+        side_build_dir="${current_measurement_build_dir}"
+        peer_build_dir="${baseline_build_dir}"
+      else
+        source_root="${baseline_worktree}"
+        side_build_root="${baseline_build_root}"
+        side_build_dir="${baseline_build_dir}"
+        peer_build_dir="${current_measurement_build_dir}"
+      fi
+      if [[ "${phase}" == warmup ]]; then
+        python3 "${tool_dir}/warmup.py" "${side_build_dir}/${preset}" --peer-build-dir "${peer_build_dir}/${preset}"
+      else
+        run_bench_build "${source_root}" "Compile-time Bench (${side})" "${side_build_root}" "${side_build_dir}" "${phase}"
+      fi
+    done
+    if $CONFIGURE_ONLY; then
+      exit 0
+    fi
+  done
+  cp -a "${current_measurement_trace_dir}" "${trace_dir}"
+else
+  run_bench_build "${repo_root}" "Compile-time Bench (current)" "${current_build_root}" "${current_build_dir}"
+  if $CONFIGURE_ONLY; then
+    exit 0
+  fi
 fi
 
 shopt -s nullglob globstar
@@ -322,7 +439,7 @@ if (( prepare_perfetto )); then
     prepare_perfetto_traces \
       "${trace_dir}" \
       "${perfetto_output_dir}/current" \
-      "${repo_root}" \
+      "${current_trace_repo_root}" \
       "current"
     prepare_perfetto_traces \
       "${baseline_trace_dir}" \
@@ -341,7 +458,7 @@ fi
 if (( write_tu_csv )); then
   status "Writing generated-TU summary CSV..."
   "${tool_dir}/summarize_tus.py" \
-    --build-dir "${preset_build_dir}" \
+    --build-dir "${generated_tu_build_dir}" \
     --output-csv "${tu_csv}" \
     --cloc-processes "${cloc_processes}"
   status "Generated-TU summary CSV: ${tu_csv}"
@@ -356,6 +473,9 @@ if [[ -n "${baseline_ref}" ]]; then
   summary_args+=(
     --baseline-dir "${baseline_trace_dir}"
     --baseline-repo-root "${baseline_worktree}"
+    --repo-root "${current_trace_repo_root}"
+    --stability-filter
+    --build-metadata "${report_root}/build_pair.json"
   )
 fi
 status "Writing event summary..."

@@ -222,6 +222,8 @@ jobs:
             --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
             --env "BASELINE_REF=${BASELINE_REF}" \
             --env "CCCL_BUILD_INFIX=${build_infix}" \
+            --env "GITHUB_RUN_NUMBER=${GITHUB_RUN_NUMBER}" \
+            --env "GITHUB_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}" \
             --env "PRESET=${PRESET}" \
             --env "SCCACHE_REGION=${AWS_REGION:-}" \
             --env "WRAPPER_ARGS=${WRAPPER_ARGS}" \
@@ -336,8 +338,7 @@ jobs:
   comment:
     name: "Compile-time comment: ${{ inputs.name }}"
     needs: run
-    # Temporarily disable posting compile-time results to pull requests.
-    if: ${{ false && always() && inputs.comment == 'true' && inputs.pr_number != '' }}
+    if: ${{ always() && inputs.comment == 'true' && inputs.pr_number != '' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read

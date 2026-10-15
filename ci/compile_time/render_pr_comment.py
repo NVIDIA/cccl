@@ -179,6 +179,8 @@ def render_comment(
     *,
     artifacts_url: str,
 ) -> str:
+    if summary.get("overall", {}).get("stability_filter"):
+        return render_stability_comment(summary, config, artifacts_url=artifacts_url)
     config_id = str(config["id"])
     slices = summary.get("slices", [])
     sections = [
@@ -217,6 +219,129 @@ def render_comment(
         lines.append(
             "No compile-time benchmark changes exceeded the configured thresholds."
         )
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def iter_slices(slices: list[dict[str, Any]]):
+    for slice_data in slices:
+        yield slice_data
+        yield from iter_slices(slice_data.get("children", []))
+
+
+def render_diagnostics(rows: list[dict[str, Any]]) -> str:
+    lines = [
+        "| Event | Raw Δ (s) | Beyond build drift (s) | TUs changing in this direction | Adjusted p-value | Consistency across TUs |",
+        "| --- | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in rows:
+        consistency = {
+            "consistent": "Reliable across TU contexts",
+            "localized": "Context-dependent; not established",
+            "insufficient-tus": "Too few TU contexts",
+            "inconsistent": "Directional consistency not established",
+            "aggregate-only": "Not assessed",
+        }.get(row["stability"], row["stability"])
+        lines.append(
+            f"| {render_event_name(row)} | {md_escape(row['impact_delta_s'])} | "
+            f"{md_escape(row['adjusted_delta_s'])} | "
+            f"{row.get('same_direction_tus', 0)}/{row['matched_tu_count']} | "
+            f"{row.get('consistency_adjusted_pvalue', 1.0):.3g} | "
+            f"{md_escape(consistency)} |"
+        )
+    return "\n".join(lines)
+
+
+def render_stability_comment(
+    summary: dict[str, Any], config: dict[str, Any], *, artifacts_url: str
+) -> str:
+    overall = summary["overall"]
+    relative = overall["relative_delta_pct"]
+    relative_text = (
+        f"{relative:+.2f}%" if relative is not None else "relative change unavailable"
+    )
+    slices = list(iter_slices(summary.get("slices", [])))
+    warnings = [warning for data in slices for warning in data.get("warnings", [])]
+
+    def ranked(direction: str, kind: str = "rows") -> list[dict[str, Any]]:
+        rows = [
+            row
+            for data in slices
+            if data.get("filter") != "total-compilation"
+            for row in data.get("comparison", {}).get(direction, {}).get(kind, [])
+        ]
+        rows.sort(
+            key=lambda row: (
+                -abs(float(row["adjusted_delta_s"])),
+                row["event_name"],
+                row["event_key"],
+            )
+        )
+        return rows
+
+    worse = ranked("worse")[:5]
+    better = ranked("better")[:3]
+    common = sorted(
+        ranked("worse", "common_headers") + ranked("better", "common_headers"),
+        key=lambda row: -abs(float(row["adjusted_delta_s"])),
+    )[:3]
+    unconfirmed = sorted(
+        ranked("worse", "unconfirmed") + ranked("better", "unconfirmed"),
+        key=lambda row: -abs(float(row["adjusted_delta_s"])),
+    )[:3]
+    lines = [
+        f"<!-- cccl-compile-time-bench: {md_escape(config['id'])} -->",
+        f"## ⏱️ {md_escape(config.get('name', config['id']))}",
+        "",
+        f"**Total compilation:** {overall['baseline_s']} → {overall['current_s']} s "
+        f"(**{float(overall['delta_s']):+.3f} s**, {relative_text}).",
+        f"Matched corpus: {overall['matched_tu_count']} TUs, {overall['matched_trace_count']} traces. "
+        "Times sum compiler trace durations; they are not elapsed build time.",
+        "",
+        f"Baseline: {md_code_span(config.get('baseline_ref', ''))}. "
+        f"[Full CSV reports and raw traces]({artifacts_url}).",
+        "",
+        "Consistency tests look for more than 75% of TU contexts moving in the same direction, using exact binomial tests and report-wide Holm adjustment at 5%. "
+        "They assume independent TU directions and cannot distinguish shared runner bias from code effects. Raw totals retain observed impact; diagnostic ranks subtract median build drift. Build-total confidence intervals are unavailable from one build pair.",
+        "",
+    ]
+    if warnings:
+        lines.append("**Warnings:**")
+        lines.append("")
+        lines.extend(f"- {md_escape(warning)}" for warning in dict.fromkeys(warnings))
+        lines.append("")
+    if worse:
+        lines.extend(
+            ["**Largest regression candidates**", "", render_diagnostics(worse), ""]
+        )
+    else:
+        message = (
+            "Regression candidates affecting common headers passed the tests and appear below."
+            if any(float(row["adjusted_delta_s"]) > 0 for row in common)
+            else "No diagnostic regression candidates passed the impact and directional consistency tests."
+        )
+        lines.extend(
+            [
+                message,
+                "",
+            ]
+        )
+    for title, rows in (
+        ("Largest improvement candidates", better),
+        ("Common headers (present in at least 80% of matched TUs)", common),
+        ("Context-dependent or sparse changes", unconfirmed),
+    ):
+        if rows:
+            lines.extend(
+                [
+                    "<details>",
+                    f"<summary>{title}</summary>",
+                    "",
+                    render_diagnostics(rows),
+                    "",
+                    "</details>",
+                    "",
+                ]
+            )
     return "\n".join(lines).rstrip() + "\n"
 
 

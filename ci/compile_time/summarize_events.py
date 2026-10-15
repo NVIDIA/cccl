@@ -12,7 +12,27 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, field, replace
 from pathlib import Path
+from statistics import median
 from typing import Any, Callable, Iterator
+
+# Support both direct script execution and package imports in tests.
+if __package__:
+    from .consistency import (
+        CONSISTENCY_PROPORTION,
+        FAMILY_ALPHA,
+        consistency_pvalue,
+        holm_adjust,
+    )
+else:
+    # CI may set PYTHONSAFEPATH, which excludes the script directory. Resolve
+    # the trusted sibling module explicitly instead of depending on the cwd.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from consistency import (
+        CONSISTENCY_PROPORTION,
+        FAMILY_ALPHA,
+        consistency_pvalue,
+        holm_adjust,
+    )
 
 DEFAULT_SCOPE_FILTER = r"(^|[^A-Za-z0-9_:])(?:::)?(?:cuda|thrust|cub|cccl)::"
 SYMBOL_SCOPE_EVENT_NAMES = {
@@ -45,6 +65,7 @@ class ReportConfig:
     tag: str | None
     threshold_us: float = 0.0
     scope_filter: re.Pattern[str] | None = None
+    stability_filter: bool = False
 
 
 @dataclass
@@ -89,6 +110,16 @@ class ComparisonStats:
     baseline: EventStats
     current: EventStats
     matched_trace_paths: set[str] = field(default_factory=set)
+    # Sum occurrences and trace fragments within a TU before measuring spread.
+    paired_tus: dict[str, tuple[int, int, int, int, int, int]] = field(
+        default_factory=dict
+    )
+    positive_tus: int = 0
+    negative_tus: int = 0
+    positive_pvalue: float = 1.0
+    negative_pvalue: float = 1.0
+    positive_adjusted_pvalue: float = 1.0
+    negative_adjusted_pvalue: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -99,6 +130,16 @@ class ComparisonRow:
     baseline_metric_us: float
     current_metric_us: float
     impact_magnitude_us: float
+    adjusted_delta_us: float = 0.0
+    median_tu_delta_us: float = 0.0
+    mad_tu_delta_us: float = 0.0
+    median_change_per_baseline_event_us: float = 0.0
+    mad_change_per_baseline_event_us: float = 0.0
+    stability: str = "aggregate-only"
+    common_header: bool = False
+    same_direction_tus: int = 0
+    consistency_pvalue: float = 1.0
+    consistency_adjusted_pvalue: float = 1.0
 
     @property
     def impact_delta_us(self) -> float:
@@ -162,12 +203,14 @@ class SliceAggregate:
     comparison_stats: dict[tuple[str, str], ComparisonStats] = field(
         default_factory=dict
     )
+    paired_totals: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 @dataclass
 class SliceTraceResult:
     sides: dict[str, dict[tuple[str, str], EventStats]]
     comparison: dict[tuple[str, str], ComparisonStats]
+    paired_totals: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 def merged_interval_duration(intervals: list[tuple[int, int]]) -> int:
@@ -883,6 +926,16 @@ def comparison_pair_stats(
             exclusive_config=exclusive_config,
         )
         merge_comparison_side_stats(comparison_stats, side.name, side_stats)
+    tu = generated_tu_input(baseline_events[0].root_tu)
+    for comparison in comparison_stats.values():
+        comparison.paired_tus[tu] = (
+            comparison.baseline.total_inclusive_us,
+            comparison.baseline.total_exclusive_us,
+            comparison.current.total_inclusive_us,
+            comparison.current.total_exclusive_us,
+            comparison.baseline.event_count,
+            comparison.current.event_count,
+        )
     return comparison_stats
 
 
@@ -1013,6 +1066,10 @@ def comparison_row_dict(
     rank: int, row: ComparisonRow, timing: str
 ) -> dict[str, object]:
     stats = row.stats
+    offset = 0 if timing == "inclusive" else 1
+    raw_deltas = [v[offset + 2] - v[offset] for v in stats.paired_tus.values()]
+    positive_tus = sum(d > 0 for d in raw_deltas)
+    negative_tus = sum(d < 0 for d in raw_deltas)
     return {
         "rank": rank,
         "event_name": stats.event_name,
@@ -1020,7 +1077,7 @@ def comparison_row_dict(
         "baseline_impact_s": seconds(row.baseline_impact_us),
         "current_impact_s": seconds(row.current_impact_us),
         "impact_delta_s": seconds(row.impact_delta_us),
-        "impact_magnitude_s": seconds(row.impact_magnitude_us),
+        "impact_magnitude_s": seconds(abs(row.impact_delta_us)),
         "baseline_selected_s": seconds(row.baseline_metric_us),
         "current_selected_s": seconds(row.current_metric_us),
         "selected_delta_s": seconds(row.selected_delta_us),
@@ -1032,6 +1089,23 @@ def comparison_row_dict(
         "baseline_event_count": stats.baseline.event_count,
         "current_event_count": stats.current.event_count,
         "matched_trace_count": len(stats.matched_trace_paths),
+        "matched_tu_count": len(stats.paired_tus),
+        "adjusted_delta_s": seconds(row.adjusted_delta_us),
+        "adjusted_magnitude_s": seconds(abs(row.adjusted_delta_us)),
+        "median_tu_delta_s": seconds(row.median_tu_delta_us),
+        "mad_tu_delta_s": seconds(row.mad_tu_delta_us),
+        "median_change_per_baseline_event_s": f"{row.median_change_per_baseline_event_us / 1_000_000:.9f}",
+        "mad_change_per_baseline_event_s": f"{row.mad_change_per_baseline_event_us / 1_000_000:.9f}",
+        "baseline_avg_per_event_s": f"{selected_avg_us(stats.baseline, timing) / 1_000_000:.9f}",
+        "current_avg_per_event_s": f"{selected_avg_us(stats.current, timing) / 1_000_000:.9f}",
+        "stability": row.stability,
+        "common_header": row.common_header,
+        "same_direction_tus": row.same_direction_tus,
+        "positive_tus": positive_tus,
+        "negative_tus": negative_tus,
+        "zero_tus": len(raw_deltas) - positive_tus - negative_tus,
+        "consistency_pvalue": row.consistency_pvalue,
+        "consistency_adjusted_pvalue": row.consistency_adjusted_pvalue,
     }
 
 
@@ -1045,6 +1119,10 @@ def comparison_rows(
     stats: dict[tuple[str, str], ComparisonStats],
     config: ReportConfig,
     direction: str,
+    *,
+    drift_factor: float = 1.0,
+    matched_tu_count: int = 0,
+    include_filtered: bool = False,
 ) -> list[ComparisonRow]:
     if direction == "worse":
         multiplier = 1
@@ -1064,8 +1142,82 @@ def comparison_rows(
             comparison.current, config.timing, config.sort_by
         )
         delta = current_impact - baseline_impact
-        magnitude = multiplier * delta
-        if magnitude <= config.threshold_us:
+        adjusted_delta = delta
+        center = spread = normalized_center = normalized_spread = 0.0
+        stability = "aggregate-only"
+        common_header = False
+        same_direction_tus = 0
+        pvalue = adjusted_pvalue = 1.0
+        if (
+            config.stability_filter
+            and comparison.event_name != "Total Compilation Time"
+        ):
+            offset = 0 if config.timing == "inclusive" else 1
+            pairs = [values for _, values in sorted(comparison.paired_tus.items())]
+            deltas = [
+                values[offset + 2] - drift_factor * values[offset] for values in pairs
+            ]
+            # Treat exposure as a weight in total impact, not as independent
+            # replication. Normalize within each TU before measuring spread.
+            # This also preserves costs from changing occurrence counts: a
+            # doubling of inclusions still changes (C - factor*B)/baseline_n.
+            normalized_deltas = [
+                delta / values[4] for delta, values in zip(deltas, pairs)
+            ]
+            adjusted_delta = sum(deltas)
+            center = median(deltas) if deltas else 0.0
+            spread = median(abs(value - center) for value in deltas) if deltas else 0.0
+            normalized_center = median(normalized_deltas) if normalized_deltas else 0.0
+            normalized_spread = (
+                median(abs(value - normalized_center) for value in normalized_deltas)
+                if normalized_deltas
+                else 0.0
+            )
+            # Inference uses RAW paired changes. Estimating drift from these
+            # same observations would invalidate a simple binomial reference.
+            # Drift correction is an additional diagnostic presentation filter.
+            same_direction_tus = (
+                comparison.positive_tus if multiplier > 0 else comparison.negative_tus
+            )
+            pvalue = (
+                comparison.positive_pvalue
+                if multiplier > 0
+                else comparison.negative_pvalue
+            )
+            adjusted_pvalue = (
+                comparison.positive_adjusted_pvalue
+                if multiplier > 0
+                else comparison.negative_adjusted_pvalue
+            )
+            # Even perfect consensus needs enough contexts to pass both
+            # registered directions. Keep low-resolution tests visible as
+            # inspection candidates instead of silently hiding their impact.
+            if 2 * consistency_pvalue(len(deltas), len(deltas)) > FAMILY_ALPHA:
+                stability = "insufficient-tus"
+            elif adjusted_pvalue <= FAMILY_ALPHA and delta * adjusted_delta > 0:
+                stability = "consistent"
+            elif any(
+                abs(value) > config.threshold_us and value * adjusted_delta > 0
+                for value in deltas
+            ):
+                # A concentrated cost change is useful even when most TUs did
+                # not move. Keep it visible without claiming consistency.
+                stability = "localized"
+            else:
+                stability = "inconsistent"
+            common_header = (
+                comparison.event_name == "Processing Header File"
+                and len(deltas) >= 3
+                and len(deltas) >= 0.8 * matched_tu_count
+            )
+        magnitude = multiplier * adjusted_delta
+        if magnitude < 0 or (
+            magnitude == 0 and (not include_filtered or direction == "better")
+        ):
+            continue
+        if not include_filtered and (
+            magnitude <= config.threshold_us or stability == "inconsistent"
+        ):
             continue
         rows.append(
             ComparisonRow(
@@ -1075,6 +1227,16 @@ def comparison_rows(
                 baseline_metric,
                 current_metric,
                 magnitude,
+                adjusted_delta,
+                center,
+                spread,
+                normalized_center,
+                normalized_spread,
+                stability,
+                common_header,
+                same_direction_tus,
+                pvalue,
+                adjusted_pvalue,
             )
         )
 
@@ -1083,7 +1245,7 @@ def comparison_rows(
     # requested aggregate movement across matched traces", while the string
     # tie-breakers keep their natural ascending order.
     return heapq.nsmallest(
-        config.top_n,
+        len(rows) if include_filtered else config.top_n,
         rows,
         key=lambda row: (
             -row.impact_magnitude_us,
@@ -1121,6 +1283,23 @@ def write_comparison_csv(
                 "baseline_event_count",
                 "current_event_count",
                 "matched_trace_count",
+                "matched_tu_count",
+                "adjusted_delta_s",
+                "adjusted_magnitude_s",
+                "median_tu_delta_s",
+                "mad_tu_delta_s",
+                "median_change_per_baseline_event_s",
+                "mad_change_per_baseline_event_s",
+                "baseline_avg_per_event_s",
+                "current_avg_per_event_s",
+                "stability",
+                "common_header",
+                "same_direction_tus",
+                "positive_tus",
+                "negative_tus",
+                "zero_tus",
+                "consistency_pvalue",
+                "consistency_adjusted_pvalue",
             ],
         )
         writer.writeheader()
@@ -1368,6 +1547,17 @@ def process_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
         )
 
     both_sides = "baseline" in parsed and "current" in parsed
+    paired_totals: dict[str, tuple[int, int]] = {}
+    if both_sides:
+        totals = [
+            [event for event in parsed[side][0] if event.synthetic]
+            for side in ("baseline", "current")
+        ]
+        if all(totals):
+            paired_totals[generated_tu_input(totals[0][0].root_tu)] = (
+                totals[0][0].inclusive_us,
+                totals[1][0].inclusive_us,
+            )
     results: dict[str, SliceTraceResult] = {}
     for work in task.slices:
         config = config_from_slice_work(work)
@@ -1385,7 +1575,9 @@ def process_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
                 parsed["current"][1],
                 config,
             )
-        results[work.slice_id] = SliceTraceResult(sides=sides, comparison=comparison)
+        results[work.slice_id] = SliceTraceResult(
+            sides=sides, comparison=comparison, paired_totals=paired_totals
+        )
     return results
 
 
@@ -1413,6 +1605,13 @@ def merge_comparison_maps(
         merge_event_stats(existing.baseline, source_comparison.baseline)
         merge_event_stats(existing.current, source_comparison.current)
         existing.matched_trace_paths.update(source_comparison.matched_trace_paths)
+        merge_paired_totals(existing.paired_tus, source_comparison.paired_tus)
+
+
+def merge_paired_totals(target: dict, source: dict) -> None:
+    for tu, values in source.items():
+        previous = target.get(tu, (0,) * len(values))
+        target[tu] = tuple(a + b for a, b in zip(previous, values))
 
 
 def merge_trace_result(
@@ -1421,6 +1620,7 @@ def merge_trace_result(
 ) -> None:
     for slice_id, slice_result in result.items():
         aggregate = aggregates[slice_id]
+        merge_paired_totals(aggregate.paired_totals, slice_result.paired_totals)
         for side_name, stats in slice_result.sides.items():
             if side_name == "baseline":
                 merge_side_stats(aggregate.baseline_stats, stats)
@@ -1486,8 +1686,16 @@ def iter_trace_results(
     # Python 3.11 and newer.
     executor = ProcessPoolExecutor(max_workers=worker_count, mp_context=ctx)
     try:
-        futures = [executor.submit(summarize_trace_task, task) for task in tasks]
-        yield from emit(future.result() for future in as_completed(futures))
+        futures = {executor.submit(summarize_trace_task, task) for task in tasks}
+
+        def completed_results() -> Iterator[dict[str, SliceTraceResult]]:
+            for future in as_completed(futures):
+                # Per-TU maps are larger than aggregate-only results. Release
+                # each source result once it has been merged into the report.
+                futures.remove(future)
+                yield future.result()
+
+        yield from emit(completed_results())
     finally:
         # Cancel traces that have not started so one bad file does not wait
         # for the rest of the queue. Running workers finish on their own.
@@ -1565,6 +1773,64 @@ def write_stats_report(
     return report_csv, len(rows)
 
 
+def test_directional_consistency(
+    requests: list[SliceRequest], aggregates: dict[str, SliceAggregate]
+) -> dict[str, Any]:
+    # Register BOTH directions of EVERY comparable key before any threshold,
+    # drift, top-N or common-header selection. Overlapping slices are retained
+    # as separate hypotheses; this is conservative, and covers the whole report.
+    tests: list[tuple[ComparisonStats, str, float]] = []
+
+    def collect(request: SliceRequest) -> None:
+        offset = 0 if request.config.timing == "inclusive" else 1
+        for key, comparison in sorted(
+            aggregates[request.config.slice_id].comparison_stats.items()
+        ):
+            if comparison.event_name == "Total Compilation Time":
+                continue
+            deltas = [v[offset + 2] - v[offset] for v in comparison.paired_tus.values()]
+            comparison.positive_tus = sum(d > 0 for d in deltas)
+            comparison.negative_tus = sum(d < 0 for d in deltas)
+            comparison.positive_pvalue = consistency_pvalue(
+                len(deltas), comparison.positive_tus
+            )
+            comparison.negative_pvalue = consistency_pvalue(
+                len(deltas), comparison.negative_tus
+            )
+            tests.extend(
+                (
+                    (
+                        comparison,
+                        "positive_adjusted_pvalue",
+                        comparison.positive_pvalue,
+                    ),
+                    (
+                        comparison,
+                        "negative_adjusted_pvalue",
+                        comparison.negative_pvalue,
+                    ),
+                )
+            )
+        for child in request.children:
+            collect(child)
+
+    for request in requests:
+        collect(request)
+    for (comparison, attribute, _), adjusted in zip(
+        tests, holm_adjust([t[2] for t in tests])
+    ):
+        setattr(comparison, attribute, adjusted)
+    return {
+        "method": "exact-binomial-directional-consistency",
+        "minimum_direction_probability": CONSISTENCY_PROPORTION,
+        "family_alpha": FAMILY_ALPHA,
+        "hypothesis_count": len(tests),
+        "multiplicity": "Holm, both directions of all comparable diagnostic keys across all slices",
+        "input": "raw paired TU changes from the initial build pair",
+        "assumptions": "independent TU direction indicators with a common probability; shared runner bias is not identifiable from one build pair",
+    }
+
+
 def run_slice_report(
     request: SliceRequest,
     *,
@@ -1629,9 +1895,61 @@ def run_slice_report(
         comparison_manifest: dict[str, Any] = {
             "matched_trace_count": matched_trace_count,
         }
+        ratios = [
+            current / baseline
+            for baseline, current in aggregate.paired_totals.values()
+            if baseline > 0 and current > 0
+        ]
+        drift_factor = (
+            median(ratios) if config.stability_filter and len(ratios) >= 3 else 1.0
+        )
+        comparison_manifest["drift_factor"] = drift_factor
+        comparison_manifest["matched_tu_count"] = len(aggregate.paired_totals)
+        if config.stability_filter and len(ratios) < 3:
+            warnings.append(
+                "Fewer than three paired TUs have valid total durations; whole-build drift correction is disabled."
+            )
+        if (
+            matched_trace_count != current_trace_count
+            or matched_trace_count != baseline_trace_count
+        ):
+            warnings.append(
+                "Only the matched trace corpus is compared; unmatched baseline/current traces are excluded."
+            )
+        full_rows: list[ComparisonRow] = []
         wrote: list[tuple[Path, int]] = []
         for direction in ("worse", "better"):
-            rows = comparison_rows(comparison_stats, config, direction)
+            kwargs = {
+                "drift_factor": drift_factor,
+                "matched_tu_count": len(aggregate.paired_totals),
+            }
+            full_rows.extend(
+                comparison_rows(
+                    comparison_stats, config, direction, include_filtered=True, **kwargs
+                )
+            )
+            eligible_rows = comparison_rows(
+                comparison_stats,
+                replace(config, top_n=max(1, len(comparison_stats))),
+                direction,
+                **kwargs,
+            )
+            confirmed_rows = [
+                row
+                for row in eligible_rows
+                if row.stability not in ("localized", "insufficient-tus")
+            ]
+            unconfirmed_rows = [
+                row
+                for row in eligible_rows
+                if row.stability in ("localized", "insufficient-tus")
+            ][: config.top_n]
+            rows = [row for row in confirmed_rows if not row.common_header][
+                : config.top_n
+            ]
+            common_rows = [row for row in confirmed_rows if row.common_header][
+                : config.top_n
+            ]
             comparison_csv = comparison_output_path(
                 comparison_output_dir,
                 config,
@@ -1646,8 +1964,21 @@ def run_slice_report(
                 "csv": comparison_csv.as_posix(),
                 "row_count": len(rows),
                 "rows": row_dicts,
+                "common_headers": [
+                    comparison_row_dict(rank, row, config.timing)
+                    for rank, row in enumerate(common_rows, start=1)
+                ],
+                "unconfirmed": [
+                    comparison_row_dict(rank, row, config.timing)
+                    for rank, row in enumerate(unconfirmed_rows, start=1)
+                ],
             }
             wrote.append((comparison_csv, len(rows)))
+
+        full_csv = comparison_output_dir / "all.csv"
+        write_comparison_csv(full_csv, full_rows, config.timing)
+        comparison_manifest["all_csv"] = full_csv.as_posix()
+        comparison_manifest["all_row_count"] = len(full_rows)
 
         manifest["reports"] = {
             side: {"csv": path.as_posix(), "row_count": row_count}
@@ -1787,6 +2118,16 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--build-metadata",
+        type=Path,
+        help="build_pair.json produced by the comparison wrapper",
+    )
+    parser.add_argument(
+        "--stability-filter",
+        action="store_true",
+        help="test directional consistency across TUs with exact binomial tests and report-wide Holm correction; rank remaining diagnostic impact after build drift correction",
+    )
+    parser.add_argument(
         "--threshold",
         type=float,
         default=0.0,
@@ -1913,6 +2254,18 @@ def main() -> None:
         else [single_slice_request(args, parser)]
     )
 
+    def enable_stability(request: SliceRequest) -> SliceRequest:
+        return replace(
+            request,
+            config=replace(request.config, stability_filter=True),
+            children=tuple(enable_stability(child) for child in request.children),
+        )
+
+    if args.stability_filter:
+        if baseline_dir is None:
+            parser.error("--stability-filter requires --baseline-dir")
+        requests = [enable_stability(request) for request in requests]
+
     manifest = {
         "schema_version": 1,
         "mode": "comparison" if baseline_dir is not None else "single",
@@ -1922,6 +2275,10 @@ def main() -> None:
         "baseline_repo_root": baseline_repo_root.as_posix(),
         "slices": [],
     }
+    if args.build_metadata is not None:
+        manifest["build_pair"] = json.loads(
+            args.build_metadata.read_text(encoding="utf-8")
+        )
 
     works = tuple(work for request in requests for work in iter_slice_works(request))
     tasks, matched_trace_count, baseline_trace_count = trace_tasks_for_slices(
@@ -1932,7 +2289,30 @@ def main() -> None:
         works,
     )
     aggregates = summarize_trace_tasks(tasks, args.jobs)
+    if args.stability_filter:
+        manifest["consistency_test"] = test_directional_consistency(
+            requests, aggregates
+        )
     current_trace_count = sum(task.current_path is not None for task in tasks)
+    if baseline_dir is not None and aggregates:
+        paired_totals = next(iter(aggregates.values())).paired_totals
+        baseline_total = sum(pair[0] for pair in paired_totals.values())
+        current_total = sum(pair[1] for pair in paired_totals.values())
+        ratios = [c / b for b, c in paired_totals.values() if b > 0 and c > 0]
+        manifest["overall"] = {
+            "baseline_s": seconds(baseline_total),
+            "current_s": seconds(current_total),
+            "delta_s": seconds(current_total - baseline_total),
+            "relative_delta_pct": 100 * (current_total / baseline_total - 1)
+            if baseline_total
+            else None,
+            "matched_tu_count": len(paired_totals),
+            "matched_trace_count": matched_trace_count,
+            "baseline_trace_count": baseline_trace_count,
+            "current_trace_count": current_trace_count,
+            "median_drift_pct": 100 * (median(ratios) - 1) if ratios else None,
+            "stability_filter": args.stability_filter,
+        }
 
     for request in requests:
         slice_output_dir = (
