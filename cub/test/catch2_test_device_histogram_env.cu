@@ -1597,8 +1597,8 @@ CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange raw-array overload works wit
               "[histogram][device]",
               CUB_SMALL)
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS = 4;
+  constexpr int NUM_ACTIVE_CHANNELS           = 3;
 
   const auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   const int num_pixels = 2;
@@ -1780,8 +1780,8 @@ CUB_TEST_CASE("DeviceHistogram::MultiHistogramRange raw-array overload accepts l
               "[histogram][device]",
               CUB_SMALL)
 {
-  constexpr int NUM_CHANNELS        = 4;
-  constexpr int NUM_ACTIVE_CHANNELS = 3;
+  [[maybe_unused]] constexpr int NUM_CHANNELS = 4;
+  constexpr int NUM_ACTIVE_CHANNELS           = 3;
 
   const auto d_samples = c2h::device_vector<unsigned char>{0, 2, 1, 255, 3, 4, 2, 128};
   const int num_pixels = 2;
@@ -1860,9 +1860,9 @@ CUB_TEST("DeviceHistogram::MultiHistogramRange raw-array overload can be tuned w
          CUB_SMALL,
          block_sizes)
 {
-  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
-  constexpr int NUM_CHANNELS               = 4;
-  constexpr int NUM_ACTIVE_CHANNELS        = 3;
+  constexpr unsigned int target_block_size    = c2h::get<0, TestType>::value;
+  [[maybe_unused]] constexpr int NUM_CHANNELS = 4;
+  constexpr int NUM_ACTIVE_CHANNELS           = 3;
 
   c2h::device_vector<unsigned int> d_block_size(1);
   const block_size_extracting_constant_iterator d_samples(0, thrust::raw_pointer_cast(d_block_size.data()));
