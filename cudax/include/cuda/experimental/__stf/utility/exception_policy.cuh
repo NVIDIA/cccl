@@ -1419,6 +1419,21 @@ template <class _Expr, class _P, class _Fn>
 _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
 
+// The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
+// resume tag for a void callable. The composites below spell it as their declared return type
+// rather than `decltype(auto)`. The difference matters for the capability probes
+// (`__has_exception_hook`, `__hook_answer_t`), which call a hook with the `void (&)()` archetype:
+// a deduced return type forces the body to be instantiated under that archetype, and the body's
+// `__interpret_answer<void>` of a value-answering arm is a hard static_assert, not a substitution
+// failure. With the type declared, the probe reads the declaration and the body is instantiated
+// only at a real guard. Without this, `notify & (catch_only<E>(subst(1)) | subst(2))` and any
+// three-arm `a | b | subst(v)` fail to compile while the same alternation outermost compiles.
+template <class _Fn>
+using __composite_answer_t =
+  ::cuda::std::conditional_t<::cuda::std::is_void_v<decltype(::cuda::std::declval<_Fn&>()())>,
+                             decltype(::std::ignore),
+                             decltype(::cuda::std::declval<_Fn&>()())>;
+
 // The left arm of `|` provably starves the right when both are catch_only wrappers, the left's
 // guard list claims every type the right lists, and the left's inner policy never declines a
 // claimed exception. Sound and incomplete, like every dead-code theorem here: nested
@@ -1462,7 +1477,8 @@ struct __policy_or : __composite_hooks<_L, _R>
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> && __has_exception_hook<_RR>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  __composite_answer_t<_Fn>
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Raw = decltype(__fn());
 
@@ -1533,7 +1549,8 @@ struct __policy_pow : __forwards_success<_P>
                 "the repeated policy never declines; repetitions after the first are unreachable");
 
   template <class _Fn>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  __composite_answer_t<_Fn>
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Expr = decltype(__fn());
     if (__n_ == 0)
@@ -3502,6 +3519,87 @@ UNITTEST("policy algebra")
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("alternation and repetition nested under & and |")
+{
+  // Regression: a value-answering `|` (or `*`) as a non-outermost operand. The capability probes
+  // call composite hooks with a `void (&)()` archetype; with a deduced return type that
+  // instantiated the body, whose `__interpret_answer<void>` of a `subst` arm hard-failed. The
+  // same expressions written with the alternation outermost always compiled, which is why the
+  // documented forms (`notify & retry * 3 | subst(-1)`) never exposed it.
+  using namespace ::cuda::experimental::stf::exception_policies;
+  struct key : ::std::logic_error
+  {
+    key()
+        : logic_error("key")
+    {}
+  };
+  struct boom : ::std::runtime_error
+  {
+    boom()
+        : runtime_error("boom")
+    {}
+  };
+  const auto throw_boom = []() -> int {
+    throw boom();
+  };
+  const auto throw_key = []() -> int {
+    throw key();
+  };
+  const auto throw_other = []() -> int {
+    throw ::std::overflow_error("other");
+  };
+  ::std::ostringstream quiet;
+
+  // `|` with a value answer as the right operand of `&` (the paper's figure shape).
+  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_boom) == 2);
+  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_key) == 1);
+
+  // Three arms, both associations.
+  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_boom) == 2);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_other) == 3);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_key) == 1);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_other) == 3);
+
+  // `*` with a value-answering fallback, nested under `&`.
+  int n = 0;
+  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << [&]() -> int {
+           if (++n < 3)
+           {
+             throw boom();
+           }
+           return n;
+         })
+         == 3);
+  n = 0;
+  EXPECT((on_throw(notify(quiet) & (retry * 1 | subst(-1))) << [&]() -> int {
+           ++n;
+           throw boom();
+         })
+         == -1);
+
+  // An alternation of two sequences, each ending in a value answer.
+  int effects     = 0;
+  const auto tick = when(
+    [&](const ::std::exception*) {
+      ++effects;
+      return true;
+    },
+    noop);
+  EXPECT((on_throw((tick & catch_only<key>(subst(1))) | (tick & subst(2))) << throw_boom) == 2);
+  EXPECT(effects == 2);
+
+  // The outermost forms that always worked still do.
+  EXPECT((on_throw(notify(quiet) & catch_only<key>(subst(1)) | subst(2)) << throw_boom) == 2);
+  EXPECT((on_throw(retry * 2 | subst(-1)) << throw_boom) == -1);
+
+  // Reference results keep their reference answer through a nested alternation.
+  static int cell = 7;
+  int& r          = on_throw(notify(quiet) & (catch_only<key>(cell) | cell)) << []() -> int& {
+    throw boom();
+  };
+  EXPECT(&r == &cell);
 };
 
 UNITTEST("policy inventory")
