@@ -64,6 +64,11 @@ CUresult cccl_device_segmented_sort_build_ex(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -160,9 +165,8 @@ try
   auto result =
     CubCall::compile({cb_copy, cb_overwrite}, cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build_ptr->cc      = cc_major * 10 + cc_minor;
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler      = result.compiler;
   build_ptr->sort_fn           = result.fn_ptrs[0];
   build_ptr->sort_fn_overwrite = result.fn_ptrs[1];
@@ -195,6 +199,11 @@ CUresult cccl_device_segmented_sort_compile(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -402,7 +411,7 @@ try
   const auto value_type    = extra.get_type();
   const auto order_u32     = extra.get<uint32_t>();
   const auto keys_only_u32 = extra.get<uint32_t>();
-  if (!extra.ok())
+  if (!extra.ok() || order_u32 > CCCL_DESCENDING || keys_only_u32 > 1)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

@@ -56,6 +56,11 @@ CUresult cccl_device_histogram_build_ex(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   if (num_channels != 1 || num_active_channels != 1)
   {
     fprintf(stderr,
@@ -90,13 +95,7 @@ try
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  // Populate payload with the compiled artifact bytes too (not just the
-  // live loaded state) so cccl_device_histogram_serialize works uniformly
-  // whether the build_result came from this fused path or from
-  // _compile()+_load(). Best-effort: a failed read leaves payload null,
-  // which only affects later serialize() calls, not this build itself.
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler        = result.compiler;
   build_ptr->histogram_fn        = result.fn_ptr;
   build_ptr->counter_type        = d_output_histograms.value_type;
@@ -133,6 +132,11 @@ CUresult cccl_device_histogram_compile(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   if (num_channels != 1 || num_active_channels != 1)
   {
     fprintf(stderr,

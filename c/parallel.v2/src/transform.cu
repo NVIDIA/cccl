@@ -69,9 +69,8 @@ try
       .with(in(d_in), out(d_out), num_items, unary_op(op, d_in.value_type, d_out.value_type), stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build_ptr->cc      = cc_major * 10 + cc_minor;
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
 #if CCCL_OS(WINDOWS)
   build_ptr->first_call_state = first_call_state.release();
@@ -212,6 +211,10 @@ try
   }
   cccl::serialization_v2::parsed_blob parsed =
     cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_UNARY_TRANSFORM, buf, size);
+  if (!parsed.extra.empty())
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
   cccl_device_transform_build_result_t result{};
   result.cc = parsed.cc;
@@ -273,9 +276,8 @@ try
       .with(force_accum_type(d_out.value_type), in(d_in1), in(d_in2), out(d_out), num_items, op, stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build_ptr->cc      = cc_major * 10 + cc_minor;
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
 #if CCCL_OS(WINDOWS)
   build_ptr->first_call_state = first_call_state.release();
@@ -418,6 +420,10 @@ try
   }
   cccl::serialization_v2::parsed_blob parsed =
     cccl::serialization_v2::read_blob(CCCL_SERIALIZATION_V2_ALGO_BINARY_TRANSFORM, buf, size);
+  if (!parsed.extra.empty())
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
 
   cccl_device_transform_build_result_t result{};
   result.cc = parsed.cc;

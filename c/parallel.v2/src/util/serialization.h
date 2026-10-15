@@ -202,6 +202,10 @@ inline parsed_blob read_blob(cccl_serialization_algo_v2_t expected_algo, const v
   uint64_t psize;
   std::memcpy(&psize, p + pos, sizeof(psize));
   pos += sizeof(psize);
+  if (psize == 0)
+  {
+    throw std::runtime_error("cccl.c.parallel.v2 serialization: empty payload");
+  }
   need(static_cast<size_t>(psize));
   if (size - pos != static_cast<size_t>(psize))
   {
@@ -278,6 +282,10 @@ public:
     const auto size      = get<uint64_t>();
     const auto alignment = get<uint64_t>();
     const auto type      = get<uint32_t>();
+    if (type > CCCL_BFLOAT16)
+    {
+      failed_ = true;
+    }
     return cccl_type_info{static_cast<size_t>(size), static_cast<size_t>(alignment), static_cast<cccl_type_enum>(type)};
   }
 
