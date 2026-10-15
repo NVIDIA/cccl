@@ -17,12 +17,15 @@ struct stream_registry_factory_t;
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/iterator>
+#include <cuda/std/cstdint>
 
 #include <sstream>
 
 #include "block_size_extracting_helpers.h"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/generators.h>
 
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveScan, device_scan_exclusive);
 DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceScan::ExclusiveSum, device_scan_exclusive_sum);
@@ -597,6 +600,440 @@ CUB_TEST("Device scan inclusive-scan in-place uses environment", "[scan][device]
   auto expected = c2h::device_vector<int>{1, 3, 6, 10};
   REQUIRE(d_data == expected);
 }
+
+#if TEST_LAUNCH == 0
+
+// The two-phase overloads take the same environment as the single-phase ones but never allocate, so they do not go
+// through the launch wrappers and would run identically in every TEST_LAUNCH variant. Test them with host launch only.
+
+// Runs the two-phase overload wrapped by two_phase: queries the temporary storage size and executes with user provided
+// storage.
+template <class TwoPhaseFn>
+void run_two_phase(TwoPhaseFn two_phase)
+{
+  size_t temp_storage_bytes = 0;
+  REQUIRE(cudaSuccess == two_phase(nullptr, temp_storage_bytes));
+
+  c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_storage_bytes, thrust::no_init);
+  REQUIRE(cudaSuccess == two_phase(thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes));
+  REQUIRE(cudaSuccess == cudaPeekAtLastError());
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+}
+
+CUB_TEST_CASE("Device scan exclusive-sum works with user provided memory and environment", "[scan][device]", CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveSum(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{0, 1, 3, 6};
+    REQUIRE(d_out == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan exclusive-sum in-place works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_data.begin(), num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{0, 1, 3, 6};
+    REQUIRE(d_data == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan exclusive-scan works with user provided memory and environment", "[scan][device]", CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveScan(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 10, num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{10, 11, 13, 16};
+    REQUIRE(d_out == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan exclusive-scan in-place works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveScan(
+        d_temp_storage, temp_storage_bytes, d_data.begin(), cuda::std::plus<>{}, 10, num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{10, 11, 13, 16};
+    REQUIRE(d_data == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan exclusive-scan with FutureValue works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  auto d_init     = c2h::device_vector<int>{10};
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveScan(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in.begin(),
+        d_out.begin(),
+        cuda::std::plus<>{},
+        cub::FutureValue<int>(thrust::raw_pointer_cast(d_init.data())),
+        num_items,
+        env);
+    });
+
+    const auto expected = c2h::device_vector<int>{10, 11, 13, 16};
+    REQUIRE(d_out == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan exclusive-scan with FutureValue in-place works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_init = c2h::device_vector<int>{10};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveScan(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_data.begin(),
+        cuda::std::plus<>{},
+        cub::FutureValue<int>(thrust::raw_pointer_cast(d_init.data())),
+        num_items,
+        env);
+    });
+
+    const auto expected = c2h::device_vector<int>{10, 11, 13, 16};
+    REQUIRE(d_data == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan inclusive-sum works with user provided memory and environment", "[scan][device]", CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::InclusiveSum(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
+    REQUIRE(d_out == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan inclusive-sum in-place works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_data.begin(), num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
+    REQUIRE(d_data == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan inclusive-scan works with user provided memory and environment", "[scan][device]", CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::InclusiveScan(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), cuda::std::plus<>{}, num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
+    REQUIRE(d_out == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan inclusive-scan in-place works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::InclusiveScan(
+        d_temp_storage, temp_storage_bytes, d_data.begin(), cuda::std::plus<>{}, num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
+    REQUIRE(d_data == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan inclusive-scan-init works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::InclusiveScanInit(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 10, num_items, env);
+    });
+
+    const auto expected = c2h::device_vector<int>{11, 13, 16, 20};
+    REQUIRE(d_out == expected);
+  });
+}
+
+CUB_TEST_CASE("Device scan inclusive-scan-init with deferred init works with user provided memory and environment",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  const auto d_in   = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out        = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const auto d_init = c2h::device_vector<int>{10};
+  const int num_items{static_cast<int>(d_in.size())};
+
+  test_with_custom_streams([&](const auto& env) {
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::InclusiveScanInit(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in.begin(),
+        d_out.begin(),
+        cuda::std::plus<>{},
+        cuda::args::deferred(d_init.begin()),
+        num_items,
+        env);
+    });
+
+    const auto expected = c2h::device_vector<int>{11, 13, 16, 20};
+    REQUIRE(d_out == expected);
+  });
+}
+
+// Before the environment parameter, the two-phase overloads took `cudaStream_t stream = nullptr`, so callers passing
+// nullptr or a literal 0 for the stream exist. Both must keep compiling and keep running on the default stream.
+CUB_TEST_CASE("Device scan two-phase overloads accept legacy null stream arguments", "[scan][device]", CUB_SMALL)
+{
+  const auto d_in = c2h::device_vector<int>{1, 2, 3, 4};
+  auto d_out      = c2h::device_vector<int>(d_in.size(), thrust::no_init);
+  const int num_items{static_cast<int>(d_in.size())};
+
+  auto exclusive_sum_on = [&](const auto& stream) {
+    const stream_scope scope{cudaStream_t{}};
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveSum(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_items, stream);
+    });
+  };
+
+  auto exclusive_scan_on = [&](const auto& stream) {
+    const stream_scope scope{cudaStream_t{}};
+    run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+      return cub::DeviceScan::ExclusiveScan(
+        d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), cuda::std::plus<>{}, 0, num_items, stream);
+    });
+  };
+
+  SECTION("exclusive-sum with nullptr")
+  {
+    exclusive_sum_on(nullptr);
+  }
+
+  SECTION("exclusive-sum with literal 0")
+  {
+    exclusive_sum_on(0);
+  }
+
+  SECTION("exclusive-scan with nullptr")
+  {
+    exclusive_scan_on(nullptr);
+  }
+
+  SECTION("exclusive-scan with literal 0")
+  {
+    exclusive_scan_on(0);
+  }
+
+  const auto expected = c2h::device_vector<int>{0, 1, 3, 6};
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST_CASE("Device scan in-place two-phase overloads accept a legacy nullptr stream", "[scan][device]", CUB_SMALL)
+{
+  auto d_data = c2h::device_vector<int>{1, 2, 3, 4};
+  const int num_items{static_cast<int>(d_data.size())};
+
+  const stream_scope scope{cudaStream_t{}};
+  run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    return cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_data.begin(), num_items, nullptr);
+  });
+
+  const auto expected = c2h::device_vector<int>{1, 3, 6, 10};
+  REQUIRE(d_data == expected);
+}
+
+CUB_TEST("Device scan exclusive-scan can be tuned with user provided memory", "[scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  const int num_items = 3;
+  auto d_in           = cuda::constant_iterator(1);
+  auto d_out          = c2h::device_vector<int>(num_items, thrust::no_init);
+  const int init{42};
+
+  // We are expecting that `unrelated_tuning` is ignored
+  const auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
+
+  run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    return cub::DeviceScan::ExclusiveScan(
+      d_temp_storage, temp_storage_bytes, d_in, d_out.begin(), block_size_check, init, num_items, env);
+  });
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init)));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device scan exclusive-sum can be tuned with user provided memory", "[scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+
+  const auto num_items = static_cast<int>(target_block_size);
+  c2h::device_vector<unsigned int> d_block_size(1, 0);
+  // ExclusiveSum can not take a custom scan_op, so the input iterator records the block size
+  auto d_in  = block_size_extracting_constant_iterator(1, thrust::raw_pointer_cast(d_block_size.data()));
+  auto d_out = c2h::device_vector<int>(num_items, thrust::no_init);
+
+  // We are expecting that `unrelated_tuning` is ignored
+  const auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
+
+  run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    return cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out.begin(), num_items, env);
+  });
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::counting_iterator<int>(0)));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST("Device scan inclusive-scan can be tuned with user provided memory", "[scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  const int num_items = 3;
+  auto d_in           = cuda::constant_iterator(1);
+  auto d_out          = c2h::device_vector<int>(num_items, thrust::no_init);
+
+  // We are expecting that `unrelated_tuning` is ignored
+  const auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
+
+  run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    return cub::DeviceScan::InclusiveScan(
+      d_temp_storage, temp_storage_bytes, d_in, d_out.begin(), block_size_check, num_items, env);
+  });
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(1)));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+CUB_TEST(
+  "Device scan inclusive-scan-init can be tuned with user provided memory", "[scan][device]", CUB_SMALL, block_sizes)
+{
+  constexpr unsigned int target_block_size = c2h::get<0, TestType>::value;
+  c2h::device_vector<unsigned int> d_block_size(1);
+  const block_size_check_t block_size_check{thrust::raw_pointer_cast(d_block_size.data())};
+
+  const int num_items = 3;
+  auto d_in           = cuda::constant_iterator(1);
+  auto d_out          = c2h::device_vector<int>(num_items, thrust::no_init);
+  const int init{10};
+
+  // We are expecting that `unrelated_tuning` is ignored
+  const auto env = cuda::execution::tune(scan_tuning<target_block_size>{}, unrelated_tuning{});
+
+  run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    return cub::DeviceScan::InclusiveScanInit(
+      d_temp_storage, temp_storage_bytes, d_in, d_out.begin(), block_size_check, init, num_items, env);
+  });
+
+  REQUIRE(thrust::equal(d_out.begin(), d_out.end(), thrust::make_counting_iterator(init + 1)));
+  REQUIRE(d_block_size[0] == target_block_size);
+}
+
+// The two-phase overloads read the determinism requirement from the environment like the single-phase ones: a
+// run_to_run floating-point sum selects the stable reduction order, so both overloads produce bitwise equal results.
+CUB_TEST_CASE("Device scan exclusive-scan with user provided memory honors determinism requirements",
+              "[scan][device]",
+              CUB_SMALL)
+{
+  const int num_items = 10'000;
+  c2h::device_vector<float> d_in(num_items, thrust::no_init);
+  c2h::gen(C2H_SEED(1), d_in, -100.0f, 100.0f);
+
+  const auto env = cuda::execution::require(cuda::execution::determinism::run_to_run);
+  const auto op  = cuda::std::plus<float>{};
+
+  c2h::device_vector<float> d_reference(num_items, thrust::no_init);
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveScan(d_in.begin(), d_reference.begin(), op, 0.0f, num_items, env));
+
+  c2h::device_vector<float> d_out(num_items, thrust::no_init);
+  run_two_phase([&](void* d_temp_storage, size_t& temp_storage_bytes) {
+    return cub::DeviceScan::ExclusiveScan(
+      d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), op, 0.0f, num_items, env);
+  });
+
+  REQUIRE_THAT(detail::to_vec(d_reference), detail::BitwiseEqualsRange(detail::to_vec(d_out)));
+}
+
+#endif // TEST_LAUNCH == 0
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
 CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
