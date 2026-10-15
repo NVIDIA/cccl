@@ -45,5 +45,6 @@
 #include <cuda/experimental/coop/__group/this_group.cuh>
 #include <cuda/experimental/coop/__group/traits.cuh>
 #include <cuda/experimental/coop/__group/virtual_group.cuh>
+#include <cuda/experimental/coop/__group/make_group.cuh>
 
 #endif // _CUDA_EXPERIMENTAL_COOP_GROUP

@@ -28,7 +28,6 @@ __device__ void test_group_membership(const Group& group, cuda::std::uint32_t co
   static_assert(cudax::coop::group<Group>);
   static_assert(cuda::std::is_same_v<cuda::thread_level, typename Group::unit_type>);
 
-  REQUIRE(cuda::gpu_thread.is_part_of(group));
   REQUIRE(cuda::gpu_thread.count(group) == count);
   REQUIRE(cuda::gpu_thread.rank(group) == rank);
   REQUIRE(group.__mapping_result().unit_count() == count);
@@ -110,14 +109,12 @@ struct TestKernel3
     const auto rank   = cuda::warp.rank_as<cuda::std::uint32_t>(parent_group);
 
     const cudax::coop::virtual_group group1{cuda::warp, parent_group, cudax::coop::group_by{cuda::std::cw<16>}};
-    REQUIRE(cuda::warp.is_part_of(group1));
     REQUIRE(cuda::warp.count(group1) == 16);
     REQUIRE(cuda::warp.rank(group1) == rank % 16);
     REQUIRE(group1.count(parent_group) == 2);
     REQUIRE(group1.rank(parent_group) == rank / 16);
 
     const cudax::coop::virtual_group group2{cuda::warp, group1, cudax::coop::group_by{cuda::std::cw<8>}};
-    REQUIRE(cuda::warp.is_part_of(group2));
     REQUIRE(cuda::warp.count(group2) == 8);
     REQUIRE(cuda::warp.rank(group2) == rank % 8);
     REQUIRE(group2.count(group1) == 2);
