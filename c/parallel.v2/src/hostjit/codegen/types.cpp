@@ -44,9 +44,20 @@ std::string get_type_name(cccl_type_enum type)
       return "double";
     case CCCL_BOOLEAN:
       return "bool";
+    case CCCL_FP64EMU_HIGH:
+      return "::cuda::experimental::fp64emu_high";
+    case CCCL_FP64EMU_MID:
+      return "::cuda::experimental::fp64emu_mid";
+    case CCCL_FP64EMU_LOW:
+      return "::cuda::experimental::fp64emu_low";
     default:
       return "";
   }
+}
+
+bool is_fpemu_type(cccl_type_enum type)
+{
+  return type == CCCL_FP64EMU_HIGH || type == CCCL_FP64EMU_MID || type == CCCL_FP64EMU_LOW;
 }
 
 std::string make_storage_type(const char* name, size_t size, size_t alignment)

@@ -80,6 +80,12 @@ def _type_info_from_dtype(dtype: np.dtype) -> TypeInfo:
     """
     dtype = np.dtype(dtype)
 
+    # Emulated floating-point dtypes are structured dtypes with a reserved
+    # field name; they must be recognized before the generic struct case.
+    fpemu_td = types._DTYPE_TO_TD.get(dtype)
+    if fpemu_td is not None and types.is_fpemu_type_enum(fpemu_td.info.typenum):
+        return fpemu_td.info
+
     # Handle structured dtypes
     if dtype.type == np.void and dtype.fields is not None:
         return TypeInfo(dtype.itemsize, dtype.alignment, TypeEnum.STORAGE)

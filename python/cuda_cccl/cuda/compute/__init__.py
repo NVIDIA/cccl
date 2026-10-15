@@ -108,6 +108,17 @@ else:
     )
     from .op import OpKind
     from .struct import gpu_struct
+    from .types import fp64emu_high as _fp64emu_high_td
+    from .types import fp64emu_low as _fp64emu_low_td
+    from .types import fp64emu_mid as _fp64emu_mid_td
+
+    # NumPy dtypes for emulated double precision (cuda::experimental::fpemu),
+    # v2 (HostJIT) backend only; None on other backends. Same layout as float64:
+    # create arrays with these dtypes, or ``.view()`` float64 data as them.
+    fp64emu_high = _fp64emu_high_td.dtype if _fp64emu_high_td is not None else None
+    fp64emu_mid = _fp64emu_mid_td.dtype if _fp64emu_mid_td is not None else None
+    fp64emu_low = _fp64emu_low_td.dtype if _fp64emu_low_td is not None else None
+    fp64emu = fp64emu_high  # default accuracy, as in libcudacxx
 
     __all__ = [
         "_BINDINGS_AVAILABLE",
@@ -115,6 +126,10 @@ else:
         "deserialize",
         "ProxyArray",
         "ProxyValue",
+        "fp64emu",
+        "fp64emu_high",
+        "fp64emu_mid",
+        "fp64emu_low",
         "binary_transform",
         "clear_all_caches",
         "clear_pch_cache",
