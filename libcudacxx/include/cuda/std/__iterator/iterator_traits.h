@@ -31,16 +31,18 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__fwd/iterator.h>
-#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__type_traits/add_const.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_complete.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/common_reference.h>
+#include <cuda/std/__type_traits/conditional.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_complete.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/priority_tag.h>
 #include <cuda/std/cstddef>

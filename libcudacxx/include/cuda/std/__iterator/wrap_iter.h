@@ -21,12 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
