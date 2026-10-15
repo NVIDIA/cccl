@@ -4,9 +4,9 @@
 #pragma once
 #include <cub/config.cuh>
 
+#include <cub/block/block_load.cuh>
 #include <cub/detail/cub_vector.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 
@@ -87,19 +87,10 @@ struct agent_t
   {
     using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
-    // vectorized loads begin
-    auto load_ptr = reinterpret_cast<const VectorT*>(d_in + tile_offset + (threadIdx.x * VecSize));
-    const CacheModifiedInputIterator<LoadModifier, VectorT> d_vec_in(load_ptr);
-
     alignas(VectorT) unsigned char input_bytes[ItemsPerThread * sizeof(InputT)];
-    auto* vec_items = reinterpret_cast<VectorT*>(input_bytes);
-
-    constexpr int number_of_vectors = ItemsPerThread / VecSize;
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < number_of_vectors; ++i)
-    {
-      vec_items[i] = d_vec_in[ThreadsPerBlock * i];
-    }
+    auto& input_items = *reinterpret_cast<InputT(*)[ItemsPerThread]>(input_bytes);
+    InternalLoadDirectStripedVectorized<ThreadsPerBlock, VecSize, LoadModifier>(
+      static_cast<int>(threadIdx.x), d_in + tile_offset, input_items);
 
     for (int i = 0; i < ItemsPerThread; ++i)
     {
@@ -109,7 +100,6 @@ struct agent_t
 
       OffsetT index = tile_offset + vector_of_tile * VecSize + element_in_vector;
 
-      auto* input_items = reinterpret_cast<InputT*>(input_bytes);
       if (index < num_items && predicate(input_items[i]))
       {
         atomicMin(&temp_storage.block_result, index);
