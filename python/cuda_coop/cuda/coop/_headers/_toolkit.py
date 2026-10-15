@@ -133,7 +133,7 @@ def _library_dirs(root: Path) -> tuple[Path, ...]:
     result: list[Path] = []
     names = ("lib", "lib64", "bin")
     if os.name == "nt":
-        names += ("bin/x64",)
+        names += ("bin/x64", "bin/x86_64")
     for name in names:
         candidate = root / name
         if candidate.is_dir():
