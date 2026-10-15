@@ -23,11 +23,12 @@
 
 #if _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__barrier/shared_memory_barrier.h>
 #  include <cuda/__fabric/common.h>
 #  include <cuda/__logical_endpoint/multicast.h>
 #  include <cuda/__logical_endpoint/unicast.h>
 #  include <cuda/__ptx/instructions/fabric_try_put.h>
-#  include <cuda/barrier>
+#  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
 
@@ -44,13 +45,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void
 try_put(::cuda::unicast_logical_endpoint_ref __dst,
         ::cuda::std::uint64_t __offset,
         const _Tp* __shared,
         ::cuda::std::size_t __bytes,
-        ::cuda::shared_memory_barrier& __barrier) noexcept
+        ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put(
@@ -76,14 +77,14 @@ try_put(::cuda::unicast_logical_endpoint_ref __dst,
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_put_counted(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_counted(
@@ -108,14 +109,14 @@ _CCCL_DEVICE_API void try_put_counted(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in] __mask Bit mask selecting the bytes written within each 16-byte chunk.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_put_masked(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
   ::cuda::std::uint16_t __mask,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_cp_mask(
@@ -141,13 +142,13 @@ _CCCL_DEVICE_API void try_put_masked(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void
 try_put(::cuda::multicast_logical_endpoint_ref __dst,
         ::cuda::std::uint64_t __offset,
         const _Tp* __shared,
         ::cuda::std::size_t __bytes,
-        ::cuda::shared_memory_barrier& __barrier) noexcept
+        ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_multimem(
@@ -174,14 +175,14 @@ try_put(::cuda::multicast_logical_endpoint_ref __dst,
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_put_counted(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_multimem_counted(
@@ -208,14 +209,14 @@ _CCCL_DEVICE_API void try_put_counted(
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in] __mask Bit mask selecting the bytes written within each 16-byte chunk.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_put_masked(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
   ::cuda::std::uint16_t __mask,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_put_multimem_cp_mask(
