@@ -21,11 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/hash.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__cuco/bloom_filter_modes.cuh>
 #include <cuda/experimental/__cuco/detail/bloom_filter/bloom_filter_policy.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -41,8 +42,9 @@ namespace cuda::experimental::cuco
 //!
 //! @tparam _Key Key type to hash
 //! @tparam _Hash 64-bit hash functor type. Defaults to
-//! `cuco::hash<_Key, hash_algorithm::xxhash_64>`
-//! @tparam _Word Underlying word type of a filter block. Defaults to `cuda::std::uint32_t`
+//! `cuda::hash<_Key, cuda::hash_algorithm::xxhash_64>`
+//! @tparam _Word Underlying word type of a filter block. Must be `unsigned int` or
+//! `unsigned long long`; defaults to `cuda::std::uint32_t`
 //! @tparam _WordsPerBlock Words per filter block. Defaults to the number of `_Word`s that fit in
 //! one 32-byte sector
 //! @tparam _PatternBits Fingerprint bits per key (the paper's k). Defaults to `_WordsPerBlock`
@@ -59,7 +61,7 @@ namespace cuda::experimental::cuco
 //! @tparam _EarlyExitContains Whether `contains` short-circuits on the first missing fingerprint
 //! slice
 template <class _Key,
-          class _Hash                                 = hash<_Key, hash_algorithm::xxhash_64>,
+          class _Hash                                 = ::cuda::hash<_Key, ::cuda::hash_algorithm::xxhash_64>,
           class _Word                                 = ::cuda::std::uint32_t,
           int _WordsPerBlock                          = static_cast<int>(32 / sizeof(_Word)),
           int _PatternBits                            = _WordsPerBlock,

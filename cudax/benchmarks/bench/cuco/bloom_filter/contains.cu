@@ -13,9 +13,10 @@
 #include <thrust/sequence.h>
 
 #include <cuda/buffer>
+#include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/memory_resource>
-#include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -23,7 +24,6 @@
 
 #include <cuda/experimental/__cuco/bloom_filter.cuh>
 #include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include "../common/defaults.cuh"
 #include <nvbench/nvbench.cuh>
@@ -31,9 +31,7 @@
 namespace cudax = cuda::experimental;
 namespace bench = cudax::cuco::benchmark;
 
-/**
- * @brief A benchmark evaluating `cudax::cuco::bloom_filter::contains_async` performance.
- */
+// A benchmark evaluating `cudax::cuco::bloom_filter::contains_async` performance.
 template <typename Key,
           typename Word,
           nvbench::int32_t BlockBits,
@@ -52,7 +50,7 @@ void bloom_filter_contains(
   constexpr auto words_per_block       = BlockBits / cuda::std::numeric_limits<Word>::digits;
   constexpr auto pattern_bits_per_word = (words_per_block == 0) ? 0 : PatternBits / words_per_block;
 
-  if constexpr (!cuda::std::has_single_bit(static_cast<cuda::std::uint32_t>(BlockBits)) || words_per_block == 0)
+  if constexpr (!cuda::is_power_of_two(BlockBits) || words_per_block == 0)
   {
     state.skip("Invalid filter block size");
   }
@@ -73,7 +71,7 @@ void bloom_filter_contains(
 
     using policy_type = cudax::cuco::bloom_filter_policy<
       Key,
-      cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::xxhash_64>,
+      cuda::hash<Key, cuda::hash_algorithm::xxhash_64>,
       Word,
       words_per_block,
       PatternBits,
@@ -122,12 +120,12 @@ void bloom_filter_contains(
     fpr_summary.set_string("description", "False-positive rate of the Bloom filter.");
     fpr_summary.set_float64("value", false_positives / static_cast<double>(num_keys));
 
-    // The CUPTI-based collectors (`collect_dram_throughput`, `collect_l2_hit_rates`) that the CUCO
-    // benchmark uses are deliberately omitted: they require elevated profiling privileges. The
-    // memory-traffic annotations below give nvbench enough information to report bandwidth
-    // utilization without them.
+#if CCCL_CUDAX_CUCO_BLOOM_FILTER_ENABLE_PROFILING
+    state.collect_dram_throughput();
+    state.collect_l2_hit_rates();
+#endif
     auto keys = cuda::make_device_buffer<Key>(stream, device, num_keys, cuda::no_init);
-    thrust::sequence(exec_policy, keys.begin(), keys.end(), Key{0});
+    thrust::sequence(exec_policy, keys.begin(), keys.end(), static_cast<Key>(num_build_keys));
     stream.sync();
 
     state.add_element_count(num_keys);

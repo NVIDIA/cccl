@@ -21,42 +21,40 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/device_for.cuh>
-#include <cub/device/device_transform.cuh>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/__atomic/atomic.h>
-#include <cuda/__memory/is_aligned.h>
-#include <cuda/__runtime/api_wrapper.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__fwd/extents.h>
-#include <cuda/std/__host_stdlib/stdexcept>
-#include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/__memory/assume_aligned.h>
-#include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__utility/pair.h>
-#include <cuda/std/array>
-#include <cuda/std/cstdint>
-#include <cuda/std/span>
+#  include <cub/device/device_for.cuh>
+#  include <cub/device/device_transform.cuh>
 
-#include <cuda/experimental/__cuco/detail/bloom_filter/bloom_filter_policy.cuh>
-#include <cuda/experimental/__cuco/detail/bloom_filter/kernels.cuh>
-#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
+#  include <cuda/__cmath/pow2.h>
+#  include <cuda/__launch/configuration.h>
+#  include <cuda/__launch/launch.h>
+#  include <cuda/__memory/is_aligned.h>
+#  include <cuda/__runtime/api_wrapper.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__algorithm/max.h>
+#  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__atomic/scopes.h>
+#  include <cuda/std/__cccl/assert.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/__mdspan/extents.h>
+#  include <cuda/std/__memory/assume_aligned.h>
+#  include <cuda/std/__type_traits/always_false.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__utility/pair.h>
+#  include <cuda/std/array>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/span>
 
-#include <cooperative_groups.h>
+#  include <cuda/experimental/__cuco/detail/bloom_filter/bloom_filter_policy.cuh>
+#  include <cuda/experimental/__cuco/detail/bloom_filter/kernels.cuh>
+#  include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cooperative_groups.h>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco::__bloom_filter_ns
 {
@@ -78,12 +76,9 @@ public:
   using __policy_type = _Policy;
   using __word_type   = typename __policy_type::word_type;
 
-  static_assert(sizeof(__word_type) == 4 || sizeof(__word_type) == 8,
-                "word_type must be 4 or 8 bytes wide for atomicOr");
-  //! `atomicOr` overloads resolve on canonical 32- and 64-bit unsigned integer types. Normalize by
-  //! size so any policy-provided `word_type` (`uint32_t`, `uint64_t`, `unsigned long`, ...)
-  //! resolves to a matching overload via the `reinterpret_cast` in `__do_atomic_or()`.
-  using __atomic_word_type = ::cuda::std::conditional_t<sizeof(__word_type) == 8, unsigned long long, unsigned int>;
+  static_assert(::cuda::std::is_same_v<__word_type, unsigned int>
+                  || ::cuda::std::is_same_v<__word_type, unsigned long long>,
+                "Policy::word_type must be unsigned int or unsigned long long for native atomicOr");
 
   static constexpr auto __thread_scope        = _Scope;
   static constexpr int __words_per_block      = __policy_type::words_per_block;
@@ -101,15 +96,8 @@ public:
   static constexpr int __contains_loop_count =
     __words_per_block / (__contains_vertical_layout * __contains_horizontal_layout);
 
-  static_assert(::cuda::std::has_single_bit(static_cast<unsigned>(__words_per_block)) && __words_per_block <= 32,
+  static_assert(::cuda::is_power_of_two(__words_per_block) && __words_per_block <= 32,
                 "Number of words per block must be a power-of-two and less than or equal to 32");
-  static_assert(::cuda::std::is_constructible_v<::cuda::atomic_ref<__word_type, _Scope>, __word_type&>
-                  && ::cuda::std::is_invocable_r_v<__word_type,
-                                                   decltype(&::cuda::atomic_ref<__word_type, _Scope>::fetch_or),
-                                                   ::cuda::atomic_ref<__word_type, _Scope>*,
-                                                   __word_type,
-                                                   ::cuda::std::memory_order>,
-                "Invalid word type");
   static_assert(_NumBlocks == ::cuda::std::dynamic_extent || _NumBlocks > 0,
                 "The number of filter blocks must be greater than zero");
   static_assert(_NumBlocks == ::cuda::std::dynamic_extent || _NumBlocks <= __policy_type::max_filter_blocks,
@@ -232,7 +220,7 @@ public:
   //! @param __stream CUDA stream used for device memory operations and kernel launches
   _CCCL_HOST_API void __clear_async(::cuda::stream_ref __stream)
   {
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       CUB_NS_QUALIFIER::DeviceTransform::Fill,
       "cuco: failed to clear the bloom filter",
       __words_,
@@ -247,7 +235,7 @@ public:
   //!
   //! @param __key The key to be added
   template <class _ProbeKey>
-  _CCCL_DEVICE_API void __add(const _ProbeKey& __key)
+  _CCCL_DEVICE_API void __add(const _ProbeKey& __key) noexcept
   {
     const auto __hashes      = __policy_.split_hash(__key);
     const auto __block_index = __policy_.block_index(__hashes.first, __block_extent());
@@ -274,7 +262,7 @@ public:
   //! @param __group The Cooperative Group this operation is executed with
   //! @param __key The key to be added
   template <class _CG, class _ProbeKey>
-  _CCCL_DEVICE_API void __add(_CG __group, const _ProbeKey& __key)
+  _CCCL_DEVICE_API void __add(_CG __group, const _ProbeKey& __key) noexcept
   {
     if constexpr (__add_horizontal_layout == 1 || detail::__tile_size_v<_CG> != __add_horizontal_layout)
     {
@@ -303,7 +291,7 @@ public:
   //! @param __group The Cooperative Group this operation is executed with
   //! @param __key The key owned by the calling thread
   template <class _CG, class _ProbeKey>
-  _CCCL_DEVICE_API void __add_coop(_CG __group, const _ProbeKey& __key)
+  _CCCL_DEVICE_API void __add_coop(_CG __group, const _ProbeKey& __key) noexcept
   {
     constexpr int __num_threads = detail::__tile_size_v<_CG>;
     static_assert(__num_threads == __add_horizontal_layout,
@@ -333,7 +321,7 @@ public:
   //! @param __idx Index of the key owned by the calling thread
   //! @param __is_valid `true` iff the calling thread owns a valid key
   template <class _CG, class _InputIt>
-  _CCCL_DEVICE_API void __add_coop(_CG __group, _InputIt __first, detail::__index_type __idx, bool __is_valid)
+  _CCCL_DEVICE_API void __add_coop(_CG __group, _InputIt __first, detail::__index_type __idx, bool __is_valid) noexcept
   {
     constexpr int __num_threads = detail::__tile_size_v<_CG>;
     static_assert(__num_threads == __add_horizontal_layout,
@@ -369,7 +357,7 @@ public:
   //! @param __first Beginning of the sequence of keys
   //! @param __last End of the sequence of keys
   template <class _CG, class _InputIt>
-  _CCCL_DEVICE_API void __add_range(_CG __group, _InputIt __first, _InputIt __last)
+  _CCCL_DEVICE_API void __add_range(_CG __group, _InputIt __first, _InputIt __last) noexcept
   {
     const auto __num_keys = detail::__distance(__first, __last);
 
@@ -412,15 +400,16 @@ public:
     {
       // The scalar path is a plain per-key loop, which CUB expresses directly
       __add_fn __op{__first, *this};
-      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to add keys", __num_keys, __op, __stream);
+      _CCCL_TRY_RUNTIME_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to add keys", __num_keys, __op, __stream);
     }
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys);
-
-      __add_n<__add_horizontal_layout, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, *this);
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel =
+        __add_n<__add_horizontal_layout, detail::__default_block_size, _InputIt, __bloom_filter_impl>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, *this);
     }
   }
 
@@ -440,7 +429,7 @@ public:
   //!
   //! @return `true` iff the key's fingerprint was present in the filter
   template <class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE_API bool __contains(const _ProbeKey& __key) const
+  [[nodiscard]] _CCCL_DEVICE_API bool __contains(const _ProbeKey& __key) const noexcept
   {
     const auto __hashes      = __policy_.split_hash(__key);
     const auto __block_index = __policy_.block_index(__hashes.first, __block_extent());
@@ -473,7 +462,7 @@ public:
   //!
   //! @return `true` iff the key's fingerprint was present in the filter
   template <class _CG, class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE_API bool __contains(_CG __group, const _ProbeKey& __key) const
+  [[nodiscard]] _CCCL_DEVICE_API bool __contains(_CG __group, const _ProbeKey& __key) const noexcept
   {
     if constexpr (__contains_horizontal_layout == 1 || detail::__tile_size_v<_CG> != __contains_horizontal_layout)
     {
@@ -501,7 +490,7 @@ public:
   //!
   //! @return `true` iff the calling thread's key was present in the filter
   template <class _CG, class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE_API bool __contains_coop(_CG __group, const _ProbeKey& __key) const
+  [[nodiscard]] _CCCL_DEVICE_API bool __contains_coop(_CG __group, const _ProbeKey& __key) const noexcept
   {
     constexpr int __num_threads = detail::__tile_size_v<_CG>;
     static_assert(__num_threads == __contains_horizontal_layout,
@@ -541,7 +530,7 @@ public:
   //! @return `true` iff the calling thread's key was present in the filter
   template <class _CG, class _InputIt>
   [[nodiscard]] _CCCL_DEVICE_API bool
-  __contains_coop(_CG __group, _InputIt __first, detail::__index_type __idx, bool __is_valid) const
+  __contains_coop(_CG __group, _InputIt __first, detail::__index_type __idx, bool __is_valid) const noexcept
   {
     constexpr int __num_threads = detail::__tile_size_v<_CG>;
     static_assert(__num_threads == __contains_horizontal_layout,
@@ -586,7 +575,8 @@ public:
   //! @param __last End of the sequence of keys
   //! @param __output_begin Beginning of the sequence of booleans for the presence of each key
   template <class _CG, class _InputIt, class _OutputIt>
-  _CCCL_DEVICE_API void __contains_range(_CG __group, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
+  _CCCL_DEVICE_API void
+  __contains_range(_CG __group, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
   {
     const auto __num_keys = detail::__distance(__first, __last);
 
@@ -637,15 +627,16 @@ public:
     {
       // The scalar path is a plain per-key loop, which CUB expresses directly
       __contains_fn __op{__first, __output_begin, *this};
-      _CCCL_TRY_CUDA_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
+      _CCCL_TRY_RUNTIME_API(CUB_NS_QUALIFIER::DeviceFor::Bulk, "cuco: failed to query keys", __num_keys, __op, __stream);
     }
     else
     {
       const auto __grid_size = detail::__grid_size(__num_keys);
-
-      __contains_n<__contains_horizontal_layout, detail::__default_block_size>
-        <<<static_cast<unsigned>(__grid_size), detail::__default_block_size, 0, __stream.get()>>>(
-          __first, __num_keys, __output_begin, *this);
+      const auto __config    = ::cuda::make_config(
+        ::cuda::grid_dims(static_cast<unsigned>(__grid_size)), ::cuda::block_dims<detail::__default_block_size>());
+      const auto& __kernel =
+        __contains_n<__contains_horizontal_layout, detail::__default_block_size, _InputIt, _OutputIt, __bloom_filter_impl>;
+      ::cuda::launch(__stream, __config, __kernel, __first, __num_keys, __output_begin, *this);
     }
   }
 
@@ -680,7 +671,7 @@ private:
   //!
   //! @note Precondition: `add_horizontal_layout == 1`.
   template <int _LoopIndex>
-  _CCCL_DEVICE_API void __add_pattern(::cuda::std::uint32_t __block_index, ::cuda::std::uint32_t __lower_hash)
+  _CCCL_DEVICE_API void __add_pattern(::cuda::std::uint32_t __block_index, ::cuda::std::uint32_t __lower_hash) noexcept
   {
     static_assert(__add_horizontal_layout == 1, "__add_pattern() requires add_horizontal_layout == 1");
 
@@ -705,8 +696,9 @@ private:
   //!
   //! @note Precondition: `add_horizontal_layout > 1`.
   template <int _LoopIndex>
-  _CCCL_DEVICE_API void __add_patterns(
-    ::cuda::std::uint32_t __block_index, ::cuda::std::uint32_t __lower_hash, ::cuda::std::uint32_t __thread_index)
+  _CCCL_DEVICE_API void __add_patterns(::cuda::std::uint32_t __block_index,
+                                       ::cuda::std::uint32_t __lower_hash,
+                                       ::cuda::std::uint32_t __thread_index) noexcept
   {
     static_assert(__add_horizontal_layout > 1, "__add_patterns() requires add_horizontal_layout > 1");
 
@@ -733,7 +725,7 @@ private:
   //! @brief Atomically ORs `__pattern` into `*__word_ptr`.
   _CCCL_DEVICE_API void __atomic_or(__word_type* __word_ptr, __word_type __pattern) const noexcept
   {
-    if constexpr (__conditional_add == ::cuda::experimental::cuco::conditional_add_mode::on)
+    if constexpr (__conditional_add == conditional_add_mode::on)
     {
       // @note Benign race: the non-atomic read below races with concurrent `atomicOr`s on the same
       // word. This is technically UB but is used throughout cuCollections; the worst outcome is a
@@ -753,24 +745,21 @@ private:
   _CCCL_DEVICE_API void __do_atomic_or(__word_type* __word_ptr, __word_type __pattern) const noexcept
   {
     // Native atomicOr: `cuda::atomic_ref::fetch_or` produces consistently slower codegen here.
-    auto* const __ptr  = reinterpret_cast<__atomic_word_type*>(__word_ptr);
-    const auto __value = static_cast<__atomic_word_type>(__pattern);
-
     if constexpr (__thread_scope == ::cuda::thread_scope_thread)
     {
-      *__ptr |= __value;
+      *__word_ptr |= __pattern;
     }
     else if constexpr (__thread_scope == ::cuda::thread_scope_block)
     {
-      ::atomicOr_block(__ptr, __value);
+      ::atomicOr_block(__word_ptr, __pattern);
     }
     else if constexpr (__thread_scope == ::cuda::thread_scope_device)
     {
-      ::atomicOr(__ptr, __value);
+      ::atomicOr(__word_ptr, __pattern);
     }
     else if constexpr (__thread_scope == ::cuda::thread_scope_system)
     {
-      ::atomicOr_system(__ptr, __value);
+      ::atomicOr_system(__word_ptr, __pattern);
     }
     else
     {
@@ -783,7 +772,7 @@ private:
   //! @note Precondition: `contains_horizontal_layout == 1`.
   template <int _LoopIndex>
   [[nodiscard]] _CCCL_DEVICE_API bool
-  __compare_pattern(::cuda::std::uint32_t __block_index, ::cuda::std::uint32_t __lower_hash) const
+  __compare_pattern(::cuda::std::uint32_t __block_index, ::cuda::std::uint32_t __lower_hash) const noexcept
   {
     static_assert(__contains_horizontal_layout == 1, "__compare_pattern() requires contains_horizontal_layout == 1");
 
@@ -803,7 +792,7 @@ private:
 
       // Recurse. Early exit in this implementation occurs at the granularity of
       // `contains_vertical_layout` words.
-      if constexpr (__early_exit_contains == ::cuda::experimental::cuco::early_exit_contains_mode::on)
+      if constexpr (__early_exit_contains == early_exit_contains_mode::on)
       {
         if (!__match)
         {
@@ -827,7 +816,9 @@ private:
   //! @note Precondition: `contains_horizontal_layout > 1`.
   template <int _LoopIndex>
   [[nodiscard]] _CCCL_DEVICE_API bool __compare_patterns(
-    ::cuda::std::uint32_t __block_index, ::cuda::std::uint32_t __lower_hash, ::cuda::std::uint32_t __thread_index) const
+    ::cuda::std::uint32_t __block_index,
+    ::cuda::std::uint32_t __lower_hash,
+    ::cuda::std::uint32_t __thread_index) const noexcept
   {
     static_assert(__contains_horizontal_layout > 1, "__compare_patterns() requires contains_horizontal_layout > 1");
 
@@ -849,7 +840,7 @@ private:
       }
 
       // Per-thread early exit: short-circuit this thread's recursion if its slice already missed.
-      if constexpr (__early_exit_contains == ::cuda::experimental::cuco::early_exit_contains_mode::on)
+      if constexpr (__early_exit_contains == early_exit_contains_mode::on)
       {
         if (!__match)
         {
@@ -870,8 +861,8 @@ private:
 };
 } // namespace cuda::experimental::cuco::__bloom_filter_ns
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___CUCO_DETAIL_BLOOM_FILTER_BLOOM_FILTER_IMPL_CUH
