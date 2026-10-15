@@ -11,6 +11,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 
 #include <cuda/std/array>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 #include "cub_test_macros.h"
@@ -20,16 +21,47 @@ using namespace cub;
 template <class SampleT, class CounterT, int NumChannels, int NumActiveChannels, bool IsEven>
 struct my_policy_hub
 {
-  // simplified from Policy500 of the CUB histogram tunings
-  struct MaxPolicy : cub::detail::chained_policy<500, MaxPolicy, MaxPolicy>
+  struct Policy500 : cub::detail::chained_policy<500, Policy500, Policy500>
   {
-    using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false>;
+    using AgentHistogramPolicyT = AgentHistogramPolicy<384, 16, BLOCK_LOAD_DIRECT, LOAD_LDG, true, false>;
+    static constexpr int init_kernel_pdl_trigger_max_bins = 0;
+  };
+
+  struct Policy900 : cub::detail::chained_policy<900, Policy900, Policy500>
+  {
+    using AgentHistogramPolicyT = AgentHistogramPolicy<256, 8, BLOCK_LOAD_DIRECT, LOAD_DEFAULT, false, false>;
     static constexpr int init_kernel_pdl_trigger_max_bins = 2048;
   };
+
+  using MaxPolicy = Policy900;
 };
 
 CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][device]", CUB_SMALL)
 {
+  using custom_max_policy_t = typename my_policy_hub<unsigned char, int, 1, 1, true>::MaxPolicy;
+  const auto custom_sm75_policy =
+    cub::detail::histogram::policy_selector_from_hub<custom_max_policy_t, int>{}(cuda::compute_capability{7, 5});
+  const auto custom_sm90_policy =
+    cub::detail::histogram::policy_selector_from_hub<custom_max_policy_t, int>{}(cuda::compute_capability{9, 0});
+  const auto custom_wide_counter_policy =
+    cub::detail::histogram::policy_selector_from_hub<custom_max_policy_t, unsigned long long>{}(
+      cuda::compute_capability{7, 5});
+  const auto custom_wide_counter_sm90_policy =
+    cub::detail::histogram::policy_selector_from_hub<custom_max_policy_t, unsigned long long>{}(
+      cuda::compute_capability{9, 0});
+  REQUIRE(custom_sm75_policy.gmem.threads_per_block == 384);
+  REQUIRE(custom_sm75_policy.gmem.items_per_thread == 16);
+  REQUIRE(custom_sm90_policy.gmem.threads_per_block == 256);
+  REQUIRE(custom_sm90_policy.gmem.items_per_thread == 8);
+  REQUIRE(custom_sm75_policy.max_privatized_static_smem_single_channel_bytes == 256 * sizeof(unsigned int));
+  REQUIRE(
+    custom_wide_counter_policy.max_privatized_static_smem_single_channel_bytes == 256 * sizeof(unsigned long long));
+  REQUIRE(custom_sm90_policy.max_privatized_dynamic_smem_single_channel_bytes == 0);
+  REQUIRE(custom_sm75_policy.max_output_histogram_bytes_for_init_kernel_pdl == 0);
+  REQUIRE(custom_sm90_policy.max_output_histogram_bytes_for_init_kernel_pdl == 8192);
+  REQUIRE(custom_wide_counter_policy.max_output_histogram_bytes_for_init_kernel_pdl == 0);
+  REQUIRE(custom_wide_counter_sm90_policy.max_output_histogram_bytes_for_init_kernel_pdl == 16384);
+
   using sample_t                                     = cuda::std::uint8_t;
   using counter_t                                    = int;
   using level_t                                      = int;
@@ -97,4 +129,122 @@ CUB_TEST("DispatchHistogram::DispatchEven: custom policy hub", "[histogram][devi
 
   const c2h::host_vector<counter_t> h_histogram = d_histogram;
   REQUIRE(h_histogram == expected_histogram);
+}
+
+CUB_TEST("DispatchHistogram: default kernel source uses the selected local counter", "[histogram][device]", CUB_SMALL)
+{
+  using sample_t                                     = cuda::std::uint8_t;
+  using counter_t                                    = cuda::std::uint64_t;
+  using level_t                                      = int;
+  using offset_t                                     = cuda::std::int32_t;
+  constexpr int num_channels                         = 1;
+  [[maybe_unused]] constexpr int num_active_channels = 1;
+  constexpr int num_bins                             = 16;
+  constexpr offset_t num_row_pixels                  = 256;
+  constexpr int num_output_levels                    = num_bins + 1;
+
+  c2h::host_vector<sample_t> h_samples(num_row_pixels);
+  for (offset_t i = 0; i < num_row_pixels; ++i)
+  {
+    h_samples[i] = static_cast<sample_t>(i % num_bins);
+  }
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  const cuda::std::array<int, num_active_channels> num_levels{num_output_levels};
+
+  using dispatch_t = DispatchHistogram<num_channels, num_active_channels, sample_t*, counter_t, level_t, offset_t>;
+
+  SECTION("HistogramEven")
+  {
+    c2h::device_vector<counter_t> d_histogram(num_bins, 0);
+    const cuda::std::array<counter_t*, num_active_channels> d_histograms{thrust::raw_pointer_cast(d_histogram.data())};
+    const cuda::std::array<level_t, num_active_channels> lower_level{0};
+    const cuda::std::array<level_t, num_active_channels> upper_level{num_bins};
+
+    size_t temp_size = 0;
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchEven(
+        nullptr,
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        lower_level,
+        upper_level,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_size, thrust::no_init);
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchEven(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        lower_level,
+        upper_level,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
+    REQUIRE(d_histogram == expected_histogram);
+  }
+
+  SECTION("HistogramRange")
+  {
+    c2h::host_vector<level_t> h_levels(num_output_levels);
+    for (int i = 0; i < num_output_levels; ++i)
+    {
+      h_levels[i] = i;
+    }
+    c2h::device_vector<level_t> d_levels_storage = h_levels;
+    const cuda::std::array<const level_t*, num_active_channels> d_levels{
+      thrust::raw_pointer_cast(d_levels_storage.data())};
+
+    c2h::device_vector<counter_t> d_histogram(num_bins, 0);
+    const cuda::std::array<counter_t*, num_active_channels> d_histograms{thrust::raw_pointer_cast(d_histogram.data())};
+
+    size_t temp_size = 0;
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchRange(
+        nullptr,
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        d_levels,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::device_vector<cuda::std::uint8_t> temp_storage(temp_size, thrust::no_init);
+    REQUIRE(
+      cudaSuccess
+      == dispatch_t::DispatchRange(
+        thrust::raw_pointer_cast(temp_storage.data()),
+        temp_size,
+        thrust::raw_pointer_cast(d_samples.data()),
+        d_histograms,
+        num_levels,
+        d_levels,
+        num_row_pixels,
+        1,
+        num_row_pixels,
+        nullptr,
+        cuda::std::true_type{}));
+
+    c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
+    REQUIRE(d_histogram == expected_histogram);
+  }
 }
