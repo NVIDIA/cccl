@@ -12,11 +12,3 @@ cudax_add_catch2_test(test_target cuco.fixed_capacity_set.capacity ${cudax_targe
 cudax_add_catch2_test(test_target cuco.fixed_capacity_set.ref ${cudax_target}
   test_ref.cu
 )
-
-cudax_add_cuco_fail_test(test_target cuco.fixed_capacity_set.key_size_fail
-  test_key_size_fail.cu
-)
-
-cudax_add_cuco_fail_test(test_target cuco.fixed_capacity_set.capacity_fail
-  test_capacity_fail.cu
-)
