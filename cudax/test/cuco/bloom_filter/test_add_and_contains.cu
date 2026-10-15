@@ -45,6 +45,11 @@ struct config
 using configs = c2h::type_list<
   // Default policy: 8 x uint32_t words, fully horizontal add, fully vertical contains
   config<cuda::std::int32_t, cudax::cuco::bloom_filter_policy<cuda::std::int32_t>>,
+  // Multi-sector blocks use one contains thread per sector by default
+  config<cuda::std::int32_t,
+         cudax::cuco::bloom_filter_policy<cuda::std::int32_t, hash64<cuda::std::int32_t>, unsigned int, 16>>,
+  config<cuda::std::int32_t,
+         cudax::cuco::bloom_filter_policy<cuda::std::int32_t, hash64<cuda::std::int32_t>, unsigned long long, 16>>,
   // Degenerate single-word block
   config<cuda::std::int32_t,
          cudax::cuco::

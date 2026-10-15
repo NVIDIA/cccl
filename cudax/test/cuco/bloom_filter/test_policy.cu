@@ -14,6 +14,30 @@ namespace cuco = cuda::experimental::cuco;
 
 using policy12 = cuco::bloom_filter_policy<int, cuda::hash<int, cuda::hash_algorithm::xxhash_64>, unsigned int, 8, 12>;
 
+C2H_TEST("bloom_filter default contains layout assigns one sector per thread", "[bloom_filter]")
+{
+  using hash_type      = cuda::hash<int, cuda::hash_algorithm::xxhash_64>;
+  using small_policy   = cuco::bloom_filter_policy<int, hash_type, unsigned int, 4>;
+  using default_policy = cuco::bloom_filter_policy<int>;
+  using large_policy   = cuco::bloom_filter_policy<int, hash_type, unsigned int, 16>;
+  using largest_policy = cuco::bloom_filter_policy<int, hash_type, unsigned int, 32>;
+  using wide_policy    = cuco::bloom_filter_policy<int, hash_type, unsigned long long, 16>;
+  using custom_policy  = cuco::bloom_filter_policy<int, hash_type, unsigned int, 16, 16, 16, 1, 4>;
+
+  STATIC_REQUIRE(small_policy::contains_horizontal_layout == 1);
+  STATIC_REQUIRE(small_policy::contains_vertical_layout == 4);
+  STATIC_REQUIRE(default_policy::contains_horizontal_layout == 1);
+  STATIC_REQUIRE(default_policy::contains_vertical_layout == 8);
+  STATIC_REQUIRE(large_policy::contains_horizontal_layout == 2);
+  STATIC_REQUIRE(large_policy::contains_vertical_layout == 8);
+  STATIC_REQUIRE(largest_policy::contains_horizontal_layout == 4);
+  STATIC_REQUIRE(largest_policy::contains_vertical_layout == 8);
+  STATIC_REQUIRE(wide_policy::contains_horizontal_layout == 4);
+  STATIC_REQUIRE(wide_policy::contains_vertical_layout == 4);
+  STATIC_REQUIRE(custom_policy::contains_horizontal_layout == 4);
+  STATIC_REQUIRE(custom_policy::contains_vertical_layout == 4);
+}
+
 // This independent reference assigns the first four words two salts each and
 // the remaining four words one salt each. Zero hashes also exercise bit collisions.
 constexpr cuda::std::array<unsigned int, 8> reference_pattern(cuda::std::uint32_t hash)
