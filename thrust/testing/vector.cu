@@ -827,12 +827,10 @@ struct LargeStruct
   }
 };
 
-TEST_CASE("TestVectorContainingLargeType", "[vector]")
+template <int N>
+void test_vector_containing_large_type()
 {
-  // Thrust issue #5
-  // http://code.google.com/p/thrust/issues/detail?id=5
-  const static int N = 100;
-  using T            = LargeStruct<N>;
+  using T = LargeStruct<N>;
 
   const thrust::device_vector<T> dv1;
   const thrust::host_vector<T> hv1;
@@ -864,6 +862,30 @@ TEST_CASE("TestVectorContainingLargeType", "[vector]")
   hv3[2] = ls;
 
   REQUIRE((dv3 == hv3));
+
+  dv3.resize(30);
+  hv3.resize(30);
+  dv3.resize(40, ls);
+  hv3.resize(40, ls);
+  dv3.insert(dv3.begin() + 1, 3, ls);
+  hv3.insert(hv3.begin() + 1, 3, ls);
+
+  REQUIRE((dv3 == hv3));
+
+  dv3.assign(10, ls);
+  hv3.assign(10, ls);
+
+  REQUIRE((dv3 == hv3));
+}
+
+TEST_CASE("TestVectorContainingLargeType", "[vector]")
+{
+  // Thrust issue #5
+  // http://code.google.com/p/thrust/issues/detail?id=5
+  test_vector_containing_large_type<100>();
+
+  // Exceeds the kernel parameter limit, see https://github.com/NVIDIA/cccl/issues/2777
+  test_vector_containing_large_type<10000>();
 }
 
 template <typename Vector>
