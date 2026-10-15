@@ -224,7 +224,7 @@ def radix_rank_keys(
     keys: CommonThreadDataLike[_RankKeyT] | _RankKeyT | numpy.ndarray,
     /,
     *,
-    begin_bit: int = 0,
+    begin_bit: IntegerValue = 0,
     end_bit: int | None = None,
     radix_bits: int | None = None,
     descending: bool = False,
@@ -238,18 +238,23 @@ def radix_rank_keys(
     ----------
     group : ThreadGroup
         The complete physical block. Every thread must participate with
-        identical compile-time controls and payload extents.
+        identical controls and payload extents.
     keys : scalar, ThreadDataLike, or local array
         int32, uint32, int64, or uint64 keys in blocked arrangement. Keys
         remain unchanged; signed keys invert the sign bit before extracting
         the selected digit.
-    begin_bit, end_bit : int, optional
-        Compile-time half-open interval within the key width. The digit has
-        one through eight bits. Begin defaults to zero; omitted end is begin
-        plus ``radix_bits``, or begin plus four if both are omitted.
+    begin_bit : int or compiler integer, optional
+        Block-uniform starting bit. May be runtime-valued when ``radix_bits``
+        is explicitly supplied; otherwise it must be known during compilation.
+        Defaults to zero.
+    end_bit : int, optional
+        Compile-time exclusive end within the key width. Omitted end is begin
+        plus ``radix_bits``, or begin plus four when the width is omitted.
     radix_bits : int, optional
-        Compile-time digit width; when end is explicit, must equal
-        ``end_bit - begin_bit``.
+        Compile-time digit width from one through eight. When end is supplied,
+        it must equal ``end_bit - begin_bit``. Invalid known bounds fail during
+        compilation; invalid runtime starts or disagreement with an explicit
+        end trap on the device before narrowing the starting bit.
     descending : bool
         Compile-time selector for descending digit ordering.
     exclusive_digit_prefix : ThreadDataLike or local array, optional
