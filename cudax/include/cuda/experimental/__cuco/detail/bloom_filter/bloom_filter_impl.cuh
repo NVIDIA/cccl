@@ -26,6 +26,7 @@
 #  include <cub/device/device_for.cuh>
 #  include <cub/device/device_transform.cuh>
 
+#  include <cuda/__cccl_config>
 #  include <cuda/__cmath/pow2.h>
 #  include <cuda/__launch/configuration.h>
 #  include <cuda/__launch/launch.h>
@@ -35,7 +36,6 @@
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
 #  include <cuda/std/__atomic/scopes.h>
-#  include <cuda/std/__cccl/assert.h>
 #  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/exception_macros.h>
 #  include <cuda/std/__host_stdlib/stdexcept>
