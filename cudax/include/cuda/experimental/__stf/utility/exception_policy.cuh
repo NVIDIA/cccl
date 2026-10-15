@@ -1232,7 +1232,8 @@ struct __catch_only_t : __forwards_success<_P>
   }
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     if (__matches_active<_Es...>(__exception))
     {
@@ -1268,7 +1269,8 @@ struct __catch_exactly_t : __forwards_success<_P>
   using __exception_sink_tag = void;
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     if (__exception != nullptr && ((typeid(*__exception) == typeid(_Es)) || ...))
     {
@@ -1287,7 +1289,8 @@ struct __as_policy : __forwards_success<_P>
   using __exception_sink_tag = void;
 
   template <class _Fn, class _Self = _P, ::cuda::std::enable_if_t<__has_exception_hook<_Self>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     return this->__p_(__exception, __loc, __fn);
   }
@@ -1398,7 +1401,8 @@ struct __policy_and : __composite_hooks<_L, _R>
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> || __has_exception_hook<_RR>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE decltype(auto)
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     if constexpr (__has_exception_hook<_L>)
     {
@@ -1416,8 +1420,23 @@ __policy_and(_L, _R) -> __policy_and<_L, _R>;
 
 // Forward declaration: `|` and `*` reuse this for arm answer interpretation (defined below).
 template <class _Expr, class _P, class _Fn>
-_Expr __interpret_answer(
+_CCCL_FORCEINLINE _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn);
+
+// The answer type of `|` and `*` is fixed by the callable alone: the callable's result, or the
+// resume tag for a void callable. The composites below spell it as their declared return type
+// rather than `decltype(auto)`. The difference matters for the capability probes
+// (`__has_exception_hook`, `__hook_answer_t`), which call a hook with the `void (&)()` archetype:
+// a deduced return type forces the body to be instantiated under that archetype, and the body's
+// `__interpret_answer<void>` of a value-answering arm is a hard static_assert, not a substitution
+// failure. With the type declared, the probe reads the declaration and the body is instantiated
+// only at a real guard. Without this, `notify & (catch_only<E>(subst(1)) | subst(2))` and any
+// three-arm `a | b | subst(v)` fail to compile while the same alternation outermost compiles.
+template <class _Fn>
+using __composite_answer_t =
+  ::cuda::std::conditional_t<::cuda::std::is_void_v<decltype(::cuda::std::declval<_Fn&>()())>,
+                             decltype(::std::ignore),
+                             decltype(::cuda::std::declval<_Fn&>()())>;
 
 // The left arm of `|` provably starves the right when both are catch_only wrappers, the left's
 // guard list claims every type the right lists, and the left's inner policy never declines a
@@ -1462,30 +1481,18 @@ struct __policy_or : __composite_hooks<_L, _R>
             class _LL                                                                             = _L,
             class _RR                                                                             = _R,
             ::cuda::std::enable_if_t<__has_exception_hook<_LL> && __has_exception_hook<_RR>, int> = 0>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Raw = decltype(__fn());
 
-    const auto __right = [&](const ::std::exception* __cur) -> _Raw {
-      return __interpret_answer<_Raw>(this->__r_, __cur, __loc, __fn);
-    };
-    const auto __reobserve_right = [&]() -> _Raw {
-      _CCCL_TRY
-      {
-        _CCCL_RETHROW;
-      }
-      _CCCL_CATCH (const ::std::exception& __e)
-      {
-        return __right(&__e);
-      }
-      _CCCL_CATCH_ALL
-      {
-        return __right(nullptr);
-      }
-    };
-
-    // Interpret both arms at the callable's result type. Void callables surface ignore so
-    // this composite can still sit as a top-level policy.
+    // Typed catch clauses on this try: a declined exception is caught once, with its
+    // `std::exception` funnel pointer recovered by the clause itself, instead of caught by a
+    // catch-all, rethrown, and caught again to recover it. One unwind per declined arm
+    // instead of two. No lambdas here: with the hooks inlined, a lambda-free body lets the
+    // compiler keep the policy, the location and the callable in registers on the path
+    // where nothing throws, which brings a composite guard to the same code as a hand-written
+    // try/catch.
     _CCCL_TRY
     {
       if constexpr (::cuda::std::is_void_v<_Raw>)
@@ -1498,16 +1505,28 @@ struct __policy_or : __composite_hooks<_L, _R>
         return __interpret_answer<_Raw>(this->__l_, __exception, __loc, __fn);
       }
     }
-    _CCCL_CATCH_ALL
+    _CCCL_CATCH (const ::std::exception& __e)
     {
       if constexpr (::cuda::std::is_void_v<_Raw>)
       {
-        __reobserve_right();
+        __interpret_answer<_Raw>(this->__r_, &__e, __loc, __fn);
         return ::std::ignore;
       }
       else
       {
-        return __reobserve_right();
+        return __interpret_answer<_Raw>(this->__r_, &__e, __loc, __fn);
+      }
+    }
+    _CCCL_CATCH_ALL
+    {
+      if constexpr (::cuda::std::is_void_v<_Raw>)
+      {
+        __interpret_answer<_Raw>(this->__r_, nullptr, __loc, __fn);
+        return ::std::ignore;
+      }
+      else
+      {
+        return __interpret_answer<_Raw>(this->__r_, nullptr, __loc, __fn);
       }
     }
   }
@@ -1517,7 +1536,7 @@ template <class _L, class _R>
 __policy_or(_L, _R) -> __policy_or<_L, _R>;
 
 // `p * n`: behaviorally the n-fold `|` of p with itself. One stored policy, invoked up to n
-// times; the active exception is re-observed between iterations exactly as `__policy_or` does
+// times; the active exception is caught once per iteration exactly as `__policy_or` does
 // between arms. `n == 0` declines immediately (the empty fold is rethrow). The stored policy's
 // hook is invoked up to n times; with the inventory now stateless this needs no copying --
 // user-defined policies should likewise tolerate re-invocation.
@@ -1533,7 +1552,8 @@ struct __policy_pow : __forwards_success<_P>
                 "the repeated policy never declines; repetitions after the first are unreachable");
 
   template <class _Fn>
-  decltype(auto) operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
+  _CCCL_FORCEINLINE __composite_answer_t<_Fn>
+  operator()(const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
   {
     using _Expr = decltype(__fn());
     if (__n_ == 0)
@@ -1541,11 +1561,11 @@ struct __policy_pow : __forwards_success<_P>
       _CCCL_RETHROW; // empty fold: decline with the still-active exception
     }
 
-    // Recurse inside the catch so the re-observed exception pointer stays alive for the
-    // next arm (same lifetime rule as `__policy_or`). The recursion is bounded: `__left`
-    // decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's
-    // -Winfinite-recursion is blind to exceptional exits and misreads instantiations whose
-    // only normal returns are the recursive calls (e.g. a never-returning repeated policy).
+    // Recurse inside the catch so the exception pointer the clause recovered stays alive for
+    // the next arm (same lifetime rule as `__policy_or`); typed clauses catch once per arm. The recursion is bounded:
+    // `__left` decreases every level and `__left == 1` declines by rethrowing. gcc 14.3+/15's -Winfinite-recursion is
+    // blind to exceptional exits and misreads instantiations whose only normal returns are the recursive calls (e.g. a
+    // never-returning repeated policy).
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_GCC("-Wpragmas") // gcc < 12 does not know the warning below; without this
                                          // line the unknown name itself trips -Werror=pragmas
@@ -1555,24 +1575,21 @@ struct __policy_pow : __forwards_success<_P>
       {
         return __interpret_answer<_Expr>(this->__p_, __cur, __loc, __fn);
       }
+      _CCCL_CATCH (const ::std::exception& __e)
+      {
+        if (__left == 1)
+        {
+          _CCCL_RETHROW;
+        }
+        return __self(__self, &__e, __left - 1);
+      }
       _CCCL_CATCH_ALL
       {
         if (__left == 1)
         {
           _CCCL_RETHROW;
         }
-        _CCCL_TRY
-        {
-          _CCCL_RETHROW;
-        }
-        _CCCL_CATCH (const ::std::exception& __e)
-        {
-          return __self(__self, &__e, __left - 1);
-        }
-        _CCCL_CATCH_ALL
-        {
-          return __self(__self, nullptr, __left - 1);
-        }
+        return __self(__self, nullptr, __left - 1);
       }
     };
     if constexpr (::cuda::std::is_void_v<_Expr>)
@@ -1653,7 +1670,7 @@ inline constexpr bool __value_preserving_v =
 
 // Interpret the final element's answer as the expression's value, converting to `_Expr`.
 template <class _Expr, class _P, class _Fn>
-_Expr __interpret_answer(
+_CCCL_FORCEINLINE _Expr __interpret_answer(
   _P& __policy, const ::std::exception* __exception, const ::cuda::std::source_location __loc, _Fn& __fn)
 {
   using _Answer = __hook_answer_t<_P, _Fn>;
@@ -1707,10 +1724,11 @@ _Expr __interpret_answer(
 // interpret. The parameters go unread in the propagate instantiation, which gcc 9 flags
 // without the attribute.
 template <class _Expr, class _P, class _Fn>
-_Expr __on_exception(_P& __policy,
-                     [[maybe_unused]] const ::std::exception* __exception,
-                     [[maybe_unused]] const ::cuda::std::source_location __loc,
-                     [[maybe_unused]] _Fn& __fn)
+_CCCL_FORCEINLINE _Expr __on_exception(
+  _P& __policy,
+  [[maybe_unused]] const ::std::exception* __exception,
+  [[maybe_unused]] const ::cuda::std::source_location __loc,
+  [[maybe_unused]] _Fn& __fn)
 {
   if constexpr (!__has_exception_hook<_P, _Fn>)
   {
@@ -3502,6 +3520,87 @@ UNITTEST("policy algebra")
   //  - on_throw(subst(8) | subst(9)) << []() -> int { throw 1; };
   //      -> "the left policy never declines; alternatives after it are unreachable"
 #  endif // _CCCL_HAS_EXCEPTIONS()
+};
+
+UNITTEST("alternation and repetition nested under & and |")
+{
+  // Regression: a value-answering `|` (or `*`) as a non-outermost operand. The capability probes
+  // call composite hooks with a `void (&)()` archetype; with a deduced return type that
+  // instantiated the body, whose `__interpret_answer<void>` of a `subst` arm hard-failed. The
+  // same expressions written with the alternation outermost always compiled, which is why the
+  // documented forms (`notify & retry * 3 | subst(-1)`) never exposed it.
+  using namespace ::cuda::experimental::stf::exception_policies;
+  struct key : ::std::logic_error
+  {
+    key()
+        : logic_error("key")
+    {}
+  };
+  struct boom : ::std::runtime_error
+  {
+    boom()
+        : runtime_error("boom")
+    {}
+  };
+  const auto throw_boom = []() -> int {
+    throw boom();
+  };
+  const auto throw_key = []() -> int {
+    throw key();
+  };
+  const auto throw_other = []() -> int {
+    throw ::std::overflow_error("other");
+  };
+  ::std::ostringstream quiet;
+
+  // `|` with a value answer as the right operand of `&` (the paper's figure shape).
+  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_boom) == 2);
+  EXPECT((on_throw(notify(quiet) & (catch_only<key>(subst(1)) | subst(2))) << throw_key) == 1);
+
+  // Three arms, both associations.
+  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_boom) == 2);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | catch_only<boom>(subst(2)) | subst(3)) << throw_other) == 3);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_key) == 1);
+  EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_other) == 3);
+
+  // `*` with a value-answering fallback, nested under `&`.
+  int n = 0;
+  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << [&]() -> int {
+           if (++n < 3)
+           {
+             throw boom();
+           }
+           return n;
+         })
+         == 3);
+  n = 0;
+  EXPECT((on_throw(notify(quiet) & (retry * 1 | subst(-1))) << [&]() -> int {
+           ++n;
+           throw boom();
+         })
+         == -1);
+
+  // An alternation of two sequences, each ending in a value answer.
+  int effects     = 0;
+  const auto tick = when(
+    [&](const ::std::exception*) {
+      ++effects;
+      return true;
+    },
+    noop);
+  EXPECT((on_throw((tick & catch_only<key>(subst(1))) | (tick & subst(2))) << throw_boom) == 2);
+  EXPECT(effects == 2);
+
+  // The outermost forms that always worked still do.
+  EXPECT((on_throw(notify(quiet) & catch_only<key>(subst(1)) | subst(2)) << throw_boom) == 2);
+  EXPECT((on_throw(retry * 2 | subst(-1)) << throw_boom) == -1);
+
+  // Reference results keep their reference answer through a nested alternation.
+  static int cell = 7;
+  int& r          = on_throw(notify(quiet) & (catch_only<key>(cell) | cell)) << []() -> int& {
+    throw boom();
+  };
+  EXPECT(&r == &cell);
 };
 
 UNITTEST("policy inventory")
