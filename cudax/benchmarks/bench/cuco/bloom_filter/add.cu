@@ -12,8 +12,9 @@
 #include <thrust/sequence.h>
 
 #include <cuda/buffer>
+#include <cuda/cmath>
+#include <cuda/functional>
 #include <cuda/memory_resource>
-#include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -21,7 +22,6 @@
 
 #include <cuda/experimental/__cuco/bloom_filter.cuh>
 #include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
-#include <cuda/experimental/__cuco/hash_functions.cuh>
 
 #include "../common/defaults.cuh"
 #include <nvbench/nvbench.cuh>
@@ -29,9 +29,7 @@
 namespace cudax = cuda::experimental;
 namespace bench = cudax::cuco::benchmark;
 
-/**
- * @brief A benchmark evaluating `cudax::cuco::bloom_filter::add_async` performance.
- */
+// A benchmark evaluating `cudax::cuco::bloom_filter::add_async` performance.
 template <typename Key,
           typename Word,
           nvbench::int32_t BlockBits,
@@ -50,7 +48,7 @@ void bloom_filter_add(
   constexpr auto words_per_block       = BlockBits / cuda::std::numeric_limits<Word>::digits;
   constexpr auto pattern_bits_per_word = (words_per_block == 0) ? 0 : PatternBits / words_per_block;
 
-  if constexpr (!cuda::std::has_single_bit(static_cast<cuda::std::uint32_t>(BlockBits)) || words_per_block == 0)
+  if constexpr (!cuda::is_power_of_two(BlockBits) || words_per_block == 0)
   {
     state.skip("Invalid filter block size");
   }
@@ -71,7 +69,7 @@ void bloom_filter_add(
 
     using policy_type = cudax::cuco::bloom_filter_policy<
       Key,
-      cudax::cuco::hash<Key, cudax::cuco::hash_algorithm::xxhash_64>,
+      cuda::hash<Key, cuda::hash_algorithm::xxhash_64>,
       Word,
       words_per_block,
       PatternBits,

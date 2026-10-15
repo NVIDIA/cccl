@@ -21,25 +21,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__container/buffer.h>
-#include <cuda/__memory_pool/device_memory_pool.h>
-#include <cuda/__memory_resource/allocation_alignment.h>
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/__utility/no_init.h>
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__exception/exception_macros.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__host_stdlib/stdexcept>
-#include <cuda/std/span>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
-#include <cuda/experimental/__cuco/bloom_filter_ref.cuh>
+#  include <cuda/__container/buffer.h>
+#  include <cuda/__memory_pool/device_memory_pool.h>
+#  include <cuda/__memory_resource/allocation_alignment.h>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/__utility/no_init.h>
+#  include <cuda/std/__atomic/scopes.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__exception/exception_macros.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__host_stdlib/stdexcept>
+#  include <cuda/std/span>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
+#  include <cuda/experimental/__cuco/bloom_filter_ref.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
@@ -67,7 +67,7 @@ namespace cuda::experimental::cuco
 //! positions are generated via branchless multiplicative hashing. Block size, the number of
 //! fingerprint bits, and separate horizontal/vertical vectorization layouts for bulk `add` and
 //! `contains` are configured by the `_Policy` type (see
-//! `cuda/experimental/__cuco/bloom_filter_policy.cuh`).
+//! `bloom_filter_policy`).
 //!
 //! @note Concurrency semantics: concurrent `add` operations are safe, and concurrent `contains`
 //! operations are safe, but mixing the two on the same filter is undefined behavior because
@@ -77,7 +77,7 @@ namespace cuda::experimental::cuco
 //! @tparam _NumBlocks Number of sub-filter blocks, or `cuda::std::dynamic_extent` for runtime sizing
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Policy Type that defines how to generate and store key fingerprints (see
-//! `cuda/experimental/__cuco/bloom_filter_policy.cuh`)
+//! `bloom_filter_policy`)
 //! @tparam _MemoryResource Type of memory resource used for device storage
 template <class _Key,
           ::cuda::std::size_t _NumBlocks = ::cuda::std::dynamic_extent,
@@ -189,7 +189,7 @@ public:
   //! @return Reference to the current `bloom_filter` object
   _CCCL_HIDE_FROM_ABI bloom_filter& operator=(bloom_filter&&) = default;
 
-  _CCCL_HIDE_FROM_ABI ~bloom_filter() = default; ///< Destructor
+  _CCCL_HOST_API ~bloom_filter() {} ///< Destructor
 
   //! @brief Asynchronously erases all information from the filter.
   //!
@@ -323,8 +323,8 @@ public:
 };
 } // namespace cuda::experimental::cuco
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___CUCO_BLOOM_FILTER_CUH

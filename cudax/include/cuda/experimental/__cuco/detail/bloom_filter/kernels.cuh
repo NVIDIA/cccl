@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/iterator_traits.h>
-
-#include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
-
-#include <cooperative_groups.h>
-
-#include <cuda/std/__cccl/prologue.h>
-
 #if _CCCL_CUDA_COMPILATION()
+
+#  include <cuda/std/__iterator/iterator_traits.h>
+
+#  include <cuda/experimental/__cuco/detail/utility/cuda.cuh>
+
+#  include <cooperative_groups.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
@@ -90,11 +90,11 @@ __add_n(_InputIt __first, detail::__index_type __n, _Ref __ref)
 
   const auto __idx          = detail::__global_thread_id();
   const auto __group        = ::cooperative_groups::tiled_partition<_CgSize>(::cooperative_groups::this_thread_block());
-  const auto __is_full_tile = (static_cast<detail::__index_type>(blockIdx.x) + 1) * _BlockSize <= __n;
+  const auto __is_full_tile = detail::__is_full_tile(__n);
 
   if (__is_full_tile)
   {
-    const __key_type& __key = *(__first + __idx);
+    const __key_type __key = *(__first + __idx);
     __ref.__add_coop(__group, __key);
   }
   else
@@ -123,11 +123,11 @@ __contains_n(_InputIt __first, detail::__index_type __n, _OutputIt __output_begi
 
   const auto __idx          = detail::__global_thread_id();
   const auto __group        = ::cooperative_groups::tiled_partition<_CgSize>(::cooperative_groups::this_thread_block());
-  const auto __is_full_tile = (static_cast<detail::__index_type>(blockIdx.x) + 1) * _BlockSize <= __n;
+  const auto __is_full_tile = detail::__is_full_tile(__n);
 
   if (__is_full_tile)
   {
-    const __key_type& __key   = *(__first + __idx);
+    const __key_type __key    = *(__first + __idx);
     *(__output_begin + __idx) = __ref.__contains_coop(__group, __key);
   }
   else
@@ -144,8 +144,8 @@ __contains_n(_InputIt __first, detail::__index_type __n, _OutputIt __output_begi
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_CUDA_COMPILATION()
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDAX___CUCO_DETAIL_BLOOM_FILTER_KERNELS_CUH

@@ -11,3 +11,13 @@
 cudax_add_catch2_test(test_target cuco.bloom_filter.add_and_contains ${cudax_target}
   test_add_and_contains.cu
 )
+
+foreach (
+  test_name
+  IN
+  ITEMS bulk_ref_equivalence variable_cg layout_equivalence arrow_compat policy
+)
+  cudax_add_catch2_test(test_target cuco.bloom_filter.${test_name} ${cudax_target}
+    test_${test_name}.cu
+  )
+endforeach()
