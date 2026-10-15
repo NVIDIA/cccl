@@ -6432,6 +6432,7 @@ bool __erasure_rejects(_Build&& __build)
   {
     __thrown = true;
   }
+  _CCCL_CATCH_FALLTHROUGH
   return __thrown;
 }
 
