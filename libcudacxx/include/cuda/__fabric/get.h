@@ -23,10 +23,11 @@
 
 #if _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__barrier/shared_memory_barrier.h>
 #  include <cuda/__fabric/common.h>
 #  include <cuda/__logical_endpoint/unicast.h>
 #  include <cuda/__ptx/instructions/fabric_try_get.h>
-#  include <cuda/barrier>
+#  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
 
@@ -43,13 +44,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[out] __shared Local CTA shared-memory destination, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void
 try_get(::cuda::unicast_logical_endpoint_ref __src,
         ::cuda::std::uint64_t __offset,
         _Tp* __shared,
         ::cuda::std::size_t __bytes,
-        ::cuda::shared_memory_barrier& __barrier) noexcept
+        ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_get(

@@ -23,11 +23,12 @@
 
 #if _CCCL_CUDACC_AT_LEAST(13, 4) && !_CCCL_COMPILER(NVRTC)
 
+#  include <cuda/__barrier/shared_memory_barrier.h>
 #  include <cuda/__fabric/common.h>
 #  include <cuda/__logical_endpoint/multicast.h>
 #  include <cuda/__logical_endpoint/unicast.h>
 #  include <cuda/__ptx/instructions/fabric_try_red.h>
-#  include <cuda/barrier>
+#  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/cstddef>
 #  include <cuda/std/cstdint>
 
@@ -44,13 +45,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_FABRIC
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_add(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red(
@@ -77,14 +78,14 @@ _CCCL_DEVICE_API void try_reduce_add(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_counted_add(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_counted(
@@ -109,13 +110,13 @@ _CCCL_DEVICE_API void try_reduce_counted_add(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_min(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red(
@@ -142,14 +143,14 @@ _CCCL_DEVICE_API void try_reduce_min(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_counted_min(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_counted(
@@ -174,13 +175,13 @@ _CCCL_DEVICE_API void try_reduce_counted_min(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_max(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red(
@@ -207,14 +208,14 @@ _CCCL_DEVICE_API void try_reduce_max(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_counted_max(
   ::cuda::unicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_counted(
@@ -241,13 +242,13 @@ _CCCL_DEVICE_API void try_reduce_counted_max(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_add(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem(
@@ -275,14 +276,14 @@ _CCCL_DEVICE_API void try_reduce_add(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_counted_add(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem_counted(
@@ -309,13 +310,13 @@ _CCCL_DEVICE_API void try_reduce_counted_add(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_min(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem(
@@ -343,14 +344,14 @@ _CCCL_DEVICE_API void try_reduce_min(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_counted_min(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem_counted(
@@ -377,13 +378,13 @@ _CCCL_DEVICE_API void try_reduce_counted_min(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_max(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem(
@@ -411,14 +412,14 @@ _CCCL_DEVICE_API void try_reduce_max(
 //! @param[in] __shared Local CTA shared-memory source, aligned to 16 bytes.
 //! @param[in] __bytes Nonzero byte count, a multiple of 16 that fits in uint32_t.
 //! @param[in,out] __barrier Status-reporting barrier in local CTA shared memory.
-template <class _Tp>
+template <class _Tp, ::cuda::thread_scope _Scope>
 _CCCL_DEVICE_API void try_reduce_counted_max(
   ::cuda::multicast_logical_endpoint_ref __dst,
   ::cuda::std::uint64_t __offset,
   ::cuda::std::uint64_t __counter_offset,
   const _Tp* __shared,
   ::cuda::std::size_t __bytes,
-  ::cuda::shared_memory_barrier& __barrier) noexcept
+  ::cuda::shared_memory_barrier<_Scope>& __barrier) noexcept
 {
   ::cuda::fabric::__check_transfer(__offset, __shared, __bytes);
   ::cuda::ptx::fabric_try_red_multimem_counted(
