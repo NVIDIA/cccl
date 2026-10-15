@@ -71,11 +71,9 @@ inline constexpr bool is_warp_redux_min_max_floating_point_supported =
 
 // redux.sync.{min,max}.f32
 
-// HW min/max fp32 reduction has been disabled because it is slower (!!) than mapping to integer and perform the
-// reductions
 template <typename T>
 inline constexpr bool is_warp_redux_min_max_f32_hw_supported =
-  false && __cccl_ptx_isa >= 860 && (::cuda::std::is_same_v<T, float> || is_half_v<T> || is_bfloat16_v<T>);
+  __cccl_ptx_isa >= 860 && (::cuda::std::is_same_v<T, float> || is_half_v<T> || is_bfloat16_v<T>);
 
 template <typename Op, typename T>
 inline constexpr bool is_warp_redux_op_supported =
