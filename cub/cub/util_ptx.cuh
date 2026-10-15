@@ -21,7 +21,9 @@
 
 #include <cub/detail/constant.cuh>
 #include <cub/detail/unit_word.cuh>
+#include <cub/warp/warp_utils.cuh>
 
+#include <cuda/__cccl_config>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/cstdint>
 
@@ -132,32 +134,39 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
 }
 
 /**
- * @brief Returns the warp mask for a warp of @p LogicalWarpThreads threads
+ * @brief Returns the warp mask for a logical warp of @p LogicalWarpThreads threads
  *
  * @par
- * If the number of threads assigned to the virtual warp is not a power of two,
- * it's assumed that only one virtual warp exists.
+ * If the number of threads assigned to the logical warp is not a power of two, it's assumed that only one logical warp
+ * exists within the hardware warp.
  *
- * @tparam LogicalWarpThreads <b>[optional]</b> The number of threads per
- *                              "logical" warp (may be less than the number of
- *                              hardware warp threads).
- * @param warp_id Id of virtual warp within architectural warp
+ * @pre @p LogicalWarpThreads must be in the range [1, 32].
+ * @pre @p warp_id must be less than `32 / LogicalWarpThreads`.
+ * @pre If @p LogicalWarpThreads is not a power of two, @p warp_id must be zero.
+ *
+ * @tparam LogicalWarpThreads The number of threads per logical warp
+ *                            (may be less than the number of hardware warp threads).
+ * @param warp_id Index of the logical warp within the hardware warp.
  */
 template <int LogicalWarpThreads>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
+[[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE unsigned WarpMask([[maybe_unused]] unsigned warp_id)
 {
-  constexpr bool is_pow_of_two = ::cuda::is_power_of_two(LogicalWarpThreads);
-  constexpr bool is_arch_warp  = LogicalWarpThreads == detail::warp_threads;
+  static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>, "invalid logical warp size");
+  _CCCL_ASSERT(warp_id < detail::warp_threads / LogicalWarpThreads, "invalid logical warp id");
 
-  // NOLINTNEXTLINE(misc-const-correctness)
-  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LogicalWarpThreads);
+  constexpr bool is_pow_of_two   = ::cuda::is_power_of_two(LogicalWarpThreads);
+  constexpr bool is_arch_warp    = LogicalWarpThreads == detail::warp_threads;
+  constexpr unsigned member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LogicalWarpThreads);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
-    member_mask <<= warp_id * LogicalWarpThreads;
+    return member_mask << warp_id * LogicalWarpThreads;
   }
-
-  return member_mask;
+  else
+  {
+    _CCCL_ASSERT(warp_id == 0, "non-power-of-two or full-warp sizes require warp_id to be zero");
+    return member_mask;
+  }
 }
 
 /**
