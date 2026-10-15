@@ -6,16 +6,33 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/iterator>
+
 #include "cub_test_macros.h"
 
-template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
-static __device__ int get_output_idx(int item)
+template <typename T, int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
+static __device__ int get_output_idx(int item, bool full_tile)
 {
-  if (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
+  if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED)
   {
     return static_cast<int>(threadIdx.x) + ThreadsInBlock * item;
   }
-  return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+  else if constexpr (LoadAlgorithm == cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED)
+  {
+    // Full tiles are striped vectors of the width BLOCK_LOAD_VECTORIZE loads, or of single items if that does not hold
+    // a whole number of T. Guarded loads are striped.
+    using vector_word_t = typename cuda::__as_bytes_vectorized_t<T, ItemsPerThread>::value_type;
+    constexpr int vec_size =
+      sizeof(vector_word_t) % sizeof(T) == 0 ? static_cast<int>(sizeof(vector_word_t) / sizeof(T)) : 1;
+    const int items_per_vector = full_tile ? vec_size : 1;
+    const int vector           = item / items_per_vector;
+    const int element          = item % items_per_vector;
+    return (static_cast<int>(threadIdx.x) + ThreadsInBlock * vector) * items_per_vector + element;
+  }
+  else
+  {
+    return static_cast<int>(threadIdx.x) * ItemsPerThread + item;
+  }
 }
 
 template <int ItemsPerThread,
@@ -33,7 +50,8 @@ __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIterato
   block_load_t block_load(storage);
   input_t data[ItemsPerThread];
 
-  if (ItemsPerThread * ThreadsInBlock == num_items)
+  const bool full_tile = ItemsPerThread * ThreadsInBlock == num_items;
+  if (full_tile)
   {
     block_load.Load(input, data);
   }
@@ -44,7 +62,7 @@ __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIterato
 
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const int idx = get_output_idx<ItemsPerThread, ThreadsInBlock, LoadAlgorithm>(i);
+    const int idx = get_output_idx<input_t, ItemsPerThread, ThreadsInBlock, LoadAlgorithm>(i, full_tile);
     if (idx < num_items)
     {
       output[idx] = data[i];
@@ -59,9 +77,11 @@ template <int ItemsPerThread,
           typename OutputIteratorT>
 __global__ void kernel(cuda::std::false_type, InputIteratorT input, OutputIteratorT output, int num_items)
 {
+  using input_t = cub::detail::it_value_t<InputIteratorT>;
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    const int idx = get_output_idx<ItemsPerThread, ThreadsInBlock, cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT>(i);
+    const int idx =
+      get_output_idx<input_t, ItemsPerThread, ThreadsInBlock, cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT>(i, true);
     if (idx < num_items)
     {
       output[idx] = input[idx];
@@ -100,6 +120,7 @@ using load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
@@ -109,7 +130,13 @@ using odd_load_algorithm =
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED,
                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
+
+using vectorized_load_algorithm =
+  c2h::enum_type_list<cub::BlockLoadAlgorithm,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED_VECTORIZED>;
 
 template <class TestType>
 struct params_t
@@ -205,11 +232,25 @@ CUB_TEST("Block load works with caching iterators", "[load][block]", CUB_SMALL, 
   test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, in);
 }
 
+CUB_TEST("Block load works with fancy iterators", "[load][block]", CUB_SMALL, items_per_thread, load_algorithm)
+{
+  using type                                              = int;
+  constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
+  constexpr int threads_in_block                          = 64;
+  constexpr int tile_size                                 = items_per_thread * threads_in_block;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
+
+  c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
+  c2h::gen(c2h::modulo_t{d_input.size()}, d_input);
+  test_block_load<items_per_thread, threads_in_block, load_algorithm>(d_input, cuda::counting_iterator<type>{0});
+}
+
 #if IPT == 1
 CUB_TEST("Vectorized block load with const and non-const datatype and different alignment cases",
          "[load][block]",
          CUB_SMALL,
-         c2h::type_list<const int*, int*>)
+         c2h::type_list<const int*, int*>,
+         vectorized_load_algorithm)
 {
   using type           = int;
   using input_ptr_type = c2h::get<0, TestType>;
@@ -218,7 +259,7 @@ CUB_TEST("Vectorized block load with const and non-const datatype and different 
   constexpr int items_per_thread                          = 4;
   constexpr int threads_in_block                          = 64;
   constexpr int tile_size                                 = items_per_thread * threads_in_block;
-  static constexpr cub::BlockLoadAlgorithm load_algorithm = cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE;
+  static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
 
   c2h::device_vector<type> d_input_ref(tile_size);
   c2h::gen(C2H_SEED(10), d_input_ref);
