@@ -48,7 +48,7 @@ class GroupRadixRankSemantics:
 
     Ranks have one int32 item per input key. The primitive record can also
     name a caller-provided prefix array, which is written separately from the
-    returned ranks. Group ranking requires a static digit interval; a scalar
+    returned ranks. Group ranking requires a static digit width; a scalar
     operand must contain exactly one item per thread.
     """
 
@@ -60,9 +60,9 @@ class GroupRadixRankSemantics:
 
         if not isinstance(self.primitive, BlockRadixRankSemantics):
             raise TypeError("primitive must be BlockRadixRankSemantics")
-        if not self.primitive.bit_range.is_static:
+        if self.primitive.radix_bits is None:
             raise ValueError(
-                "group radix_rank_keys requires a static bit interval"
+                "group radix_rank_keys requires a static digit width"
             )
         object.__setattr__(
             self, "operand_kind", GroupOperandKind(self.operand_kind)
@@ -214,8 +214,11 @@ def _plan(
             )
         specialization = make_block_radix_rank_specialization(
             **kwargs,
-            begin_bit=p.bit_range.static_begin_bit,
-            end_bit=p.bit_range.static_end_bit,
+            begin_bit=p.bit_range.begin_bit,
+            end_bit=p.bit_range.static_end_bit
+            if p.fixed_radix_bits is not None
+            else p.bit_range.end_bit,
+            radix_bits=p.fixed_radix_bits,
             key_bit_width=p.bit_range.bit_width,
             with_exclusive_digit_prefix=p.has_exclusive_digit_prefix,
         ).specialization
