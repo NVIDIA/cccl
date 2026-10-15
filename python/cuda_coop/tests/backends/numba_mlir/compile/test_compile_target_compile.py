@@ -6,8 +6,9 @@
 
 A kernel can target an architecture other than the current device with
 ``chip=`` or ``cc=``, and can request line information. Group-method helpers,
-providers, and Python callbacks are compiled separately from the kernel and
-linked into it, so they must use that same target and options. Device
+providers, and Python callbacks are compiled separately and linked into the
+kernel. Helpers and providers use its full target and options; Python callbacks
+use its base compute capability. Device
 discovery is fixed to a different compute capability, and every NVRTC and
 callback compilation request is recorded while the real compile and link run.
 """
@@ -15,6 +16,9 @@ callback compilation request is recorded while the real compile and link run.
 from types import SimpleNamespace
 
 import pytest
+
+pytest.importorskip("numba_cuda_mlir")
+
 from numba_cuda_mlir import types
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
@@ -39,6 +43,7 @@ def _record_compilations(monkeypatch: pytest.MonkeyPatch):
 
     import numba_cuda_mlir.tools as numba_mlir_tools
     from numba_cuda_mlir import cuda
+    from numba_cuda_mlir.linker import Linker
 
     from cuda.coop.numba_mlir import _types
     from cuda.coop.numba_mlir._compiler import _nvrtc
@@ -57,7 +62,7 @@ def _record_compilations(monkeypatch: pytest.MonkeyPatch):
         lambda: SimpleNamespace(compute_capability=_DEVICE_COMPUTE_CAPABILITY),
     )
 
-    recorded = SimpleNamespace(nvrtc=[], callbacks=[])
+    recorded = SimpleNamespace(nvrtc=[], callbacks=[], links=[])
     compile_impl = _nvrtc.compile_impl
 
     def recording_compile_impl(*args, **kwargs):
@@ -72,6 +77,14 @@ def _record_compilations(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(_nvrtc, "compile_impl", recording_compile_impl)
     monkeypatch.setattr(cuda, "compile", recording_compile_callback)
+    complete = Linker.complete
+
+    def recording_complete(self):
+        result = complete(self)
+        recorded.links.append(tuple(self._object_codes))
+        return result
+
+    monkeypatch.setattr(Linker, "complete", recording_complete)
     # Start without previously compiled callbacks so each one is recorded.
     monkeypatch.setattr(_types, "_DEVICE_LTOIR_CACHE", {})
     return cuda, recorded
@@ -125,6 +138,14 @@ def test_generated_code_targets_the_kernel_not_the_current_device(
     result = _compile_kernel(cuda, **jit_options)
 
     assert result.metadata["cubin"]
+    if arch == "80":
+        from cuda.core import Linker, LinkerOptions
+
+        linked = Linker(
+            *recorded.links[-1],
+            options=LinkerOptions(arch="sm_80", link_time_optimization=True),
+        ).link("cubin")
+        assert linked.code
     assert recorded.nvrtc
     for request in recorded.nvrtc:
         assert request["cc"] == callback_cc[0] * 10 + callback_cc[1]
