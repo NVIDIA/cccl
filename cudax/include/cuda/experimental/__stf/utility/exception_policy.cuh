@@ -6583,36 +6583,46 @@ UNITTEST("type erasure")
       }
       return __thrown;
     };
-    EXPECT(rejected([] {
+    const bool __r1 = rejected([] {
       static_cast<void>(dynamic(subst(1)) | subst(2)); // never passes through
-    }));
-    EXPECT(rejected([] {
+    });
+    EXPECT(__r1);
+    const bool __r2 = rejected([] {
       static_cast<void>(dynamic(subst(1)) | fwd);
-    }));
-    EXPECT(rejected([] {
+    });
+    EXPECT(__r2);
+    const bool __r3 = rejected([] {
       static_cast<void>(dynamic(unwind) | subst(2)); // always diverges
-    }));
-    EXPECT(rejected([] {
+    });
+    EXPECT(__r3);
+    const bool __r4 = rejected([] {
       static_cast<void>(dynamic(subst(1)) & noop); // chooses a value
-    }));
-    EXPECT(rejected([] {
+    });
+    EXPECT(__r4);
+    const bool __r5 = rejected([] {
       static_cast<void>(dynamic(retry) & subst(2));
-    }));
-    EXPECT(rejected([] {
+    });
+    EXPECT(__r5);
+    const bool __r6 = rejected([] {
       static_cast<void>(dynamic(unwind) & subst(2)); // never returns
-    }));
-    EXPECT(rejected([] {
+    });
+    EXPECT(__r6);
+    const bool __r7 = rejected([] {
       static_cast<void>(dynamic(subst(1)) * 2);
-    }));
-    EXPECT(!rejected([] {
+    });
+    EXPECT(__r7);
+    const bool __r8 = rejected([] {
       static_cast<void>(dynamic(if_isa<::std::logic_error>(subst(1))) | subst(2)); // may decline
-    }));
-    EXPECT(!rejected([] {
+    });
+    EXPECT(!__r8);
+    const bool __r9 = rejected([] {
       static_cast<void>(dynamic(noop) & subst(2)); // effect only
-    }));
-    EXPECT(!rejected([] {
+    });
+    EXPECT(!__r9);
+    const bool __r10 = rejected([] {
       static_cast<void>(dynamic(retry) * 2);
-    }));
+    });
+    EXPECT(!__r10);
   }
   {
     const int x = errsink(dynamic(noop) & subst(2))->*[]() -> int {
