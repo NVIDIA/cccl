@@ -43,6 +43,20 @@ inline CUB_RUNTIME_FUNCTION stream_registry_factory_state_t* get_stream_registry
   return ptr;
 }
 
+template <class Kernel>
+CUB_RUNTIME_FUNCTION void require_allowed_kernel(Kernel kernel)
+{
+  NV_IF_TARGET(NV_IS_HOST, ({
+                 auto& kernels = get_stream_registry_factory_state()->m_kernels;
+                 if (!kernels.empty()
+                     && cuda::std::find(kernels.begin(), kernels.end(), reinterpret_cast<void*>(kernel))
+                          == kernels.end())
+                 {
+                   FAIL("Kernel is not allowed: " << c2h::type_name<Kernel>());
+                 }
+               }));
+}
+
 struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
 {
   CUB_RUNTIME_FUNCTION kernel_launcher_t(
@@ -53,23 +67,15 @@ struct kernel_launcher_t : thrust::cuda_cub::detail::triple_chevron
   template <class K, class... Args>
   CUB_RUNTIME_FUNCTION cudaError_t doit(K kernel, Args const&... args) const
   {
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   auto& kernels = get_stream_registry_factory_state()->m_kernels;
-                   if (!kernels.empty())
-                   {
-                     if (cuda::std::find(kernels.begin(), kernels.end(), reinterpret_cast<void*>(kernel))
-                         == kernels.end())
-                     {
-                       FAIL("Kernel is not allowed: " << c2h::type_name<K>());
-                     }
-                   }
-                 }));
+    require_allowed_kernel(kernel);
     return thrust::cuda_cub::detail::triple_chevron::doit(kernel, args...);
   }
 };
 
 struct stream_registry_factory_t
 {
+  static constexpr bool force_device_kernel_emission = true;
+
   CUB_RUNTIME_FUNCTION kernel_launcher_t
   operator()(dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, bool dependent_launch = false) const
   {
@@ -109,8 +115,50 @@ struct stream_registry_factory_t
     return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 
+  CUB_RUNTIME_FUNCTION cudaError_t CooperativeLaunchSupported(bool& supported) const
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({
+        int device_ordinal = 0;
+        if (const auto error = cudaGetDevice(&device_ordinal))
+        {
+          return error;
+        }
+
+        int attribute = 0;
+        if (const auto error = cudaDeviceGetAttribute(&attribute, cudaDevAttrCooperativeLaunch, device_ordinal))
+        {
+          return error;
+        }
+
+        supported = attribute != 0;
+        return cudaSuccess;
+      }),
+      ({
+        supported = false;
+        return cudaSuccess;
+      }))
+  }
+
+  template <typename Kernel, typename... Args>
+  CUB_RUNTIME_FUNCTION cudaError_t LaunchCooperative(
+    dim3 grid, dim3 block, size_t shared_mem, cudaStream_t stream, Kernel kernel, Args const&... args) const {
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        if (get_stream_registry_factory_state()->m_stream)
+                        {
+                          REQUIRE(stream == get_stream_registry_factory_state()->m_stream);
+                        }
+                        require_allowed_kernel(kernel);
+                        void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+                        return cudaLaunchCooperativeKernel(
+                          reinterpret_cast<void const*>(kernel), grid, block, kernel_args, shared_mem, stream);
+                      }),
+                      ({ return cudaErrorNotSupported; }))}
+
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
-  MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
+    MemcpyAsync(void* dst, const void* src, size_t num_bytes, ::cudaMemcpyKind kind, ::cudaStream_t stream) const
   {
     NV_IF_TARGET(NV_IS_HOST, ({
                    if (get_stream_registry_factory_state()->m_stream)
