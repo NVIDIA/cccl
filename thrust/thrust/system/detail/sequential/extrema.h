@@ -19,6 +19,8 @@
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
+#include <cuda/std/__algorithm/max_element.h>
+#include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/__utility/pair.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -29,20 +31,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ForwardIterator min_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imin = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*first, *imin))
-    {
-      imin = first;
-    }
-  }
-
-  return imin;
+  return ::cuda::std::min_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -50,20 +39,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ForwardIterator max_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
-
-  ForwardIterator imax = first;
-
-  for (; first != last; ++first)
-  {
-    if (wrapped_comp(*imax, *first))
-    {
-      imax = first;
-    }
-  }
-
-  return imax;
+  return ::cuda::std::max_element(first, last, thrust::detail::wrapped_function<BinaryPredicate>{comp});
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -71,8 +47,11 @@ template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredi
 _CCCL_HOST_DEVICE ::cuda::std::pair<ForwardIterator, ForwardIterator> minmax_element(
   sequential::execution_policy<DerivedPolicy>&, ForwardIterator first, ForwardIterator last, BinaryPredicate comp)
 {
-  // wrap comp
-  const thrust::detail::wrapped_function<BinaryPredicate, bool> wrapped_comp{comp};
+  // Cannot delegate to cuda::std::minmax_element because the standard returns
+  // the *last* equivalent maximum, while Thrust's parallel backends (and existing
+  // tests) expect the *first* equivalent maximum. Changing this is a breaking change.
+  // TODO(cccl 4.0): align with the standard and delegate to cuda::std::minmax_element.
+  thrust::detail::wrapped_function<BinaryPredicate> wrapped_comp{comp};
 
   ForwardIterator imin = first;
   ForwardIterator imax = first;
