@@ -1,0 +1,11 @@
+sm120-model-torch-order-b1-screen
+Traceback (most recent call last):
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py", line 43, in <module>
+    runpy.run_path(str(script), run_name="__main__")
+  File "<frozen runpy>", line 286, in run_path
+  File "<frozen runpy>", line 98, in _run_module_code
+  File "<frozen runpy>", line 88, in _run_code
+  File "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/gpu_plan_gpu0.py", line 152, in <module>
+    assert code == 0, (job["label"], code)
+           ^^^^^^^^^
+AssertionError: ('sm120-model-torch-order-b1-screen', 1)

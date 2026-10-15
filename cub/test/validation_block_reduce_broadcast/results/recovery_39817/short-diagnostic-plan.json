@@ -1,0 +1,79 @@
+[
+  {
+    "label": "diagnose-legacy-b16-recovery",
+    "cwd": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817",
+    "command": [
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/runtime/bin/python",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/model_baseline_diagnose.py",
+      "--consumer-mode",
+      "legacy",
+      "--batch-size",
+      "16",
+      "--output",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/diagnose-legacy-b16-recovery.json"
+    ],
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/diagnose-legacy-b16-recovery.log"
+  },
+  {
+    "label": "accuracy-original-warp-recovery",
+    "cwd": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817",
+    "command": [
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/runtime/bin/python",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/baseline",
+      "--build",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/build/probe-original-warp-A",
+      "--output",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/accuracy-original-warp-recovery.json"
+    ],
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/accuracy-original-warp-recovery.log"
+  },
+  {
+    "label": "accuracy-torch-order-recovery",
+    "cwd": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817",
+    "command": [
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/runtime/bin/python",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/baseline",
+      "--build",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/build/probe-torch-order-A",
+      "--output",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/accuracy-torch-order-recovery.json"
+    ],
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/accuracy-torch-order-recovery.log"
+  },
+  {
+    "label": "accuracy-torch-fast-recovery",
+    "cwd": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817",
+    "command": [
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/runtime/bin/python",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/baseline",
+      "--build",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/build/probe-torch-fast-A",
+      "--output",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/accuracy-torch-fast-recovery.json"
+    ],
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/accuracy-torch-fast-recovery.log"
+  },
+  {
+    "label": "diagnose-torch-order-b16-recovery",
+    "cwd": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817",
+    "command": [
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/runtime/bin/python",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/model_baseline_diagnose.py",
+      "--consumer-mode",
+      "legacy",
+      "--batch-size",
+      "16",
+      "--build",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/build/probe-torch-order-A",
+      "--output",
+      "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/diagnose-torch-order-b16-recovery.json"
+    ],
+    "log": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/evidence/iteration/diagnose-torch-order-b16-recovery.log"
+  }
+]

@@ -1,0 +1,162 @@
+[
+  {
+    "label": "sm120-build-retained-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/retained-A",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-retained-A.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-retained-A.log"
+  },
+  {
+    "label": "sm120-build-retained-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/retained-P",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-retained-P.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-retained-P.log"
+  },
+  {
+    "label": "sm120-build-integer-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_integer/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/integer-A",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-integer-A.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-integer-A.log"
+  },
+  {
+    "label": "sm120-build-integer-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_integer/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/integer-P",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-integer-P.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-integer-P.log"
+  },
+  {
+    "label": "sm120-build-legacy-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/legacy-A",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-legacy-A.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-legacy-A.log"
+  },
+  {
+    "label": "sm120-build-legacy-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/legacy-P",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-legacy-P.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-legacy-P.log"
+  },
+  {
+    "label": "sm120-build-torch_order-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-torch_order-A.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-torch_order-A.log"
+  },
+  {
+    "label": "sm120-build-torch_order-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/build.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-torch_order-P.json",
+      "--arch",
+      "120"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-build-torch_order-P.log"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "file": "thor-model-torch-order-b1-screen.log",
+    "original_sha256": "7e89decf0f8ba4d46550bd2a9da31856748b673079a1b1dde0c73e0fdf04a00d",
+    "published_sha256": "a87daa5604ff359ca7759a8d8c8ad381125a27fc7468b438734da2a5b239a122"
+  },
+  {
+    "file": "thor-model-torch-order-b16-screen.log",
+    "original_sha256": "26bcd027e8f67c16904038d7e8a62f8dd2aa0a7d98d8de327fa199429aedb995",
+    "published_sha256": "61a30bf32d2c91d46c47a074203a013885eee839233b9844696a66c75cd2f996"
+  }
+]
