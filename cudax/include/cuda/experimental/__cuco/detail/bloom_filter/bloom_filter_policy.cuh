@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cccl_config>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/integral.h>
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_same.h>
