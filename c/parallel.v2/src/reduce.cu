@@ -47,6 +47,11 @@ CUresult cccl_device_reduce_build_ex(
   const cccl_build_config* build_config)
 try
 {
+  if (build == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   if (init_kind == CCCL_FUTURE_VALUE_INIT)
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_build_ex(): future value init is not supported\n");
@@ -77,13 +82,7 @@ try
   }();
 
   build->cc = cc_major * 10 + cc_minor;
-  // Populate payload with the compiled artifact bytes too (not just the
-  // live loaded state) so cccl_device_reduce_serialize works uniformly
-  // whether the build_result came from this fused path or from
-  // _compile()+_load(). Best-effort: a failed read leaves payload null,
-  // which only affects later serialize() calls, not this build itself.
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build->payload, build->payload_size);
+  cccl::detail::copy_compiled_library(result.compiler, build->payload, build->payload_size);
   build->jit_compiler     = result.compiler;
   build->reduce_fn        = reinterpret_cast<void*>(result.fn_ptr);
   build->accumulator_size = init.size;
@@ -115,6 +114,11 @@ CUresult cccl_device_reduce_compile(
   const cccl_build_config* build_config)
 try
 {
+  if (build == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   if (init_kind == CCCL_FUTURE_VALUE_INIT)
   {
     fprintf(stderr, "\nERROR in cccl_device_reduce_compile(): future value init is not supported\n");

@@ -50,6 +50,11 @@ CUresult cccl_device_merge_sort_build_ex(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   if (d_out_keys.type == CCCL_ITERATOR || d_out_items.type == CCCL_ITERATOR)
   {
     fprintf(stderr, "\nERROR in cccl_device_merge_sort_build(): merge sort output cannot be an iterator\n");
@@ -92,13 +97,7 @@ try
   }();
 
   build_ptr->cc = cc_major * 10 + cc_minor;
-  // Populate payload with the compiled artifact bytes too (not just the
-  // live loaded state) so cccl_device_merge_sort_serialize works uniformly
-  // whether the build_result came from this fused path or from
-  // _compile()+_load(). Best-effort: a failed read leaves payload null,
-  // which only affects later serialize() calls, not this build itself.
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler = result.compiler;
   build_ptr->sort_fn      = result.fn_ptr;
   build_ptr->keys_only    = has_items ? 0 : 1;
@@ -129,6 +128,11 @@ CUresult cccl_device_merge_sort_compile(
   const cccl_build_config* config)
 try
 {
+  if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   if (d_out_keys.type == CCCL_ITERATOR || d_out_items.type == CCCL_ITERATOR)
   {
     fprintf(stderr, "\nERROR in cccl_device_merge_sort_compile(): merge sort output cannot be an iterator\n");
@@ -291,7 +295,7 @@ try
   const auto keys_only_u32 = extra.get<uint32_t>();
   const auto key_type      = extra.get_type();
   const auto item_type     = extra.get_type();
-  if (!extra.ok())
+  if (!extra.ok() || keys_only_u32 > 1)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

@@ -53,6 +53,10 @@ try
   {
     return CUDA_ERROR_INVALID_VALUE;
   }
+  if (init_kind != CCCL_NO_INIT && init_kind != CCCL_VALUE_INIT && init_kind != CCCL_FUTURE_VALUE_INIT)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
   std::string cccl_include_str  = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   std::string ctk_root_str      = cccl::detail::parse_ctk_root(ctk_path);
   const char* cccl_include_path = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
@@ -88,9 +92,8 @@ try
     }
   }();
 
-  build_ptr->cc      = cc_major * 10 + cc_minor;
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build_ptr->payload, build_ptr->payload_size);
+  build_ptr->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_compiled_library(result.compiler, build_ptr->payload, build_ptr->payload_size);
   build_ptr->jit_compiler    = result.compiler;
   build_ptr->scan_fn         = result.fn_ptr;
   build_ptr->force_inclusive = force_inclusive;
@@ -122,6 +125,10 @@ CUresult cccl_device_scan_compile(
 try
 {
   if (build_ptr == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+  if (init_kind != CCCL_NO_INIT && init_kind != CCCL_VALUE_INIT && init_kind != CCCL_FUTURE_VALUE_INIT)
   {
     return CUDA_ERROR_INVALID_VALUE;
   }

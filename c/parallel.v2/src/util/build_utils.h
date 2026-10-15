@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -183,6 +184,11 @@ public:
     {
       merged_ = *base;
     }
+    if (merged_.extra_include_dirs == nullptr && merged_.num_extra_include_dirs != 0)
+    {
+      throw std::invalid_argument("cccl_build_config: num_extra_include_dirs is non-zero but extra_include_dirs is "
+                                  "null");
+    }
     // We append at most two paths (cub + thrust). Reserve up front so the
     // owned_strs_/ptrs_ vectors don't reallocate — important because we
     // capture pointers into owned_strs_ for `extra_include_dirs`.
@@ -271,26 +277,33 @@ inline hostjit::CompilerConfig make_load_jit_config(const char* ctk_path)
   return config;
 }
 
-// Read the compiled shared library bytes for a live (already compile()'d)
-// JITCompiler. Used by *_build_ex (the fused compile+load path) to ALSO
-// populate build->payload with the AoT-serializable artifact, so
-// *_serialize() works uniformly regardless of whether a build_result came
-// from _build_ex (fused) or _compile()+_load() (split). Returns an empty
-// vector (not an error) if the artifact can't be read — callers treat a
-// resulting null/empty payload as "not serializable", not a build failure.
-inline std::vector<char> read_compiled_library_bytes(hostjit::JITCompiler* compiler)
+// Reads the compiled artifact (the native shared library) the JITCompiler
+// produced, so *_build_ex can populate build->payload and *_serialize works
+// whether a build_result came from the fused path or from _compile()+_load().
+// Takes ownership of `compiler`: it is deleted if the artifact cannot be read
+// or copied, so a failed build leaks nothing.
+inline void copy_compiled_library(hostjit::JITCompiler* compiler, void*& out_bytes, size_t& out_size)
 {
-#ifdef _WIN32
-  std::string lib_path = compiler->getArtifactsPath() + "\\cuda_code.dll";
-#else
-  std::string lib_path = compiler->getArtifactsPath() + "/libcuda_code.so";
-#endif
-  std::ifstream lib_file(lib_path, std::ios::binary);
-  if (!lib_file)
+  try
   {
-    return {};
+#ifdef _WIN32
+    std::string lib_path = compiler->getArtifactsPath() + "\\cuda_code.dll";
+#else
+    std::string lib_path = compiler->getArtifactsPath() + "/libcuda_code.so";
+#endif
+    std::ifstream lib_file(lib_path, std::ios::binary);
+    if (!lib_file)
+    {
+      throw std::runtime_error("cannot read compiled library: " + lib_path);
+    }
+    std::vector<char> bytes((std::istreambuf_iterator<char>(lib_file)), std::istreambuf_iterator<char>());
+    copy_bytes(bytes, out_bytes, out_size);
   }
-  return std::vector<char>((std::istreambuf_iterator<char>(lib_file)), std::istreambuf_iterator<char>());
+  catch (...)
+  {
+    delete compiler;
+    throw;
+  }
 }
 
 // Free the JIT compiler and cubin buffer common to every build_result_t in

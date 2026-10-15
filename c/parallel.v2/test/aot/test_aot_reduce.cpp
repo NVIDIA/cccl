@@ -310,6 +310,58 @@ bool build_and_serialize(std::vector<char>& out_blob)
     return false;
   }
 
+  // A blob whose payload is empty is rejected (the u64 payload size is the
+  // last field before the payload).
+  {
+    std::vector<char> empty_payload(static_cast<char*>(buf), static_cast<char*>(buf) + size - deser_build.payload_size);
+    const uint64_t zero = 0;
+    std::memcpy(empty_payload.data() + empty_payload.size() - sizeof(zero), &zero, sizeof(zero));
+    cccl_device_reduce_build_result_t empty_build{};
+    if (cccl_device_reduce_deserialize(&empty_build, empty_payload.data(), empty_payload.size()) == CUDA_SUCCESS)
+    {
+      fprintf(stderr, "FAIL: deserialize should have rejected an empty payload\n");
+      return false;
+    }
+  }
+
+  // A null build_result is reported, not dereferenced.
+  if (cccl_device_reduce_build_ex(
+        nullptr,
+        d_in,
+        d_out,
+        op,
+        init.type,
+        CCCL_VALUE_INIT,
+        CCCL_NOT_GUARANTEED,
+        cc_major,
+        cc_minor,
+        cub_path,
+        thrust_path,
+        libcudacxx_path,
+        nullptr,
+        nullptr)
+        != CUDA_ERROR_INVALID_VALUE
+      || cccl_device_reduce_compile(
+           nullptr,
+           d_in,
+           d_out,
+           op,
+           init.type,
+           CCCL_VALUE_INIT,
+           CCCL_NOT_GUARANTEED,
+           cc_major,
+           cc_minor,
+           cub_path,
+           thrust_path,
+           libcudacxx_path,
+           nullptr,
+           nullptr)
+           != CUDA_ERROR_INVALID_VALUE)
+  {
+    fprintf(stderr, "FAIL: build_ex/compile with a null build_result should return CUDA_ERROR_INVALID_VALUE\n");
+    return false;
+  }
+
   out_blob.assign(static_cast<char*>(buf), static_cast<char*>(buf) + size);
   cccl_serialization_v2_buffer_free(buf);
   return true;

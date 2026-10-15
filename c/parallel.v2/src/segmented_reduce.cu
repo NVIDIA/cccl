@@ -42,6 +42,11 @@ CUresult cccl_device_segmented_reduce_build_ex(
   const cccl_build_config* build_config)
 try
 {
+  if (build == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   const std::string cccl_include_str = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   const char* cccl_include_path      = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
 
@@ -65,9 +70,8 @@ try
             stream)
       .compile(cc_major, cc_minor, merged.get(), ctk_root, cccl_include_path);
 
-  build->cc          = cc_major * 10 + cc_minor;
-  auto library_bytes = cccl::detail::read_compiled_library_bytes(result.compiler);
-  cccl::detail::copy_bytes(library_bytes, build->payload, build->payload_size);
+  build->cc = cc_major * 10 + cc_minor;
+  cccl::detail::copy_compiled_library(result.compiler, build->payload, build->payload_size);
   build->jit_compiler        = result.compiler;
   build->segmented_reduce_fn = reinterpret_cast<void*>(result.fn_ptr);
 
@@ -96,6 +100,11 @@ CUresult cccl_device_segmented_reduce_compile(
   const cccl_build_config* build_config)
 try
 {
+  if (build == nullptr)
+  {
+    return CUDA_ERROR_INVALID_VALUE;
+  }
+
   const std::string cccl_include_str = cccl::detail::parse_cccl_include_path(libcudacxx_path);
   const char* cccl_include_path      = cccl_include_str.empty() ? nullptr : cccl_include_str.c_str();
 
