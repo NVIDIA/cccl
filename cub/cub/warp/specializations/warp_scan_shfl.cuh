@@ -26,6 +26,7 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__functional/operator_properties.h>
@@ -58,9 +59,6 @@ struct WarpScanShfl
   // Constants and type definitions
   //---------------------------------------------------------------------
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LogicalWarpThreads == warp_threads);
-
   /// The number of warp scan steps
   static constexpr int STEPS = Log2<LogicalWarpThreads>::VALUE;
 
@@ -84,29 +82,20 @@ struct WarpScanShfl
   //---------------------------------------------------------------------
 
   /// Lane index in logical warp
-  unsigned int lane_id;
+  unsigned int lane_id = CUB_NS_QUALIFIER::detail::logical_lane_id<LogicalWarpThreads>();
 
   /// Logical warp index in 32-thread physical warp
-  unsigned int warp_id;
+  unsigned int warp_id = CUB_NS_QUALIFIER::detail::logical_warp_id<LogicalWarpThreads>();
 
   /// 32-thread physical warp member mask of logical warp
-  unsigned int member_mask;
+  unsigned int member_mask = CUB_NS_QUALIFIER::WarpMask<LogicalWarpThreads>(warp_id);
 
   //---------------------------------------------------------------------
   // Construction
   //---------------------------------------------------------------------
 
   /// Constructor
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/)
-      : lane_id(::cuda::ptx::get_sreg_laneid())
-      , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LogicalWarpThreads))
-      , member_mask(WarpMask<LogicalWarpThreads>(warp_id))
-  {
-    if (!IS_ARCH_WARP)
-    {
-      lane_id = lane_id % LogicalWarpThreads;
-    }
-  }
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpScanShfl(TempStorage& /*temp_storage*/) {}
 
   //---------------------------------------------------------------------
   // Inclusive scan steps
