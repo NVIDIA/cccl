@@ -74,6 +74,29 @@ function(cccl_tidy_init)
 
   message(STATUS "Found clang-tidy: ${CCCL_CLANG_TIDY} (${version})")
 
+  if (NOT TARGET cccl_clang_tidy)
+    # clang-tidy registers custom checks (or any check for that matter) in a "registry". This
+    # registry is executable-local so we need to make sure that when clang-tidy loads our
+    # plugin that we are registering our checks to the right plugin.
+    #
+    # This is why we explicitly do NOT link against libClangTidy! If we do, then we get our
+    # own (private) copy of the registry while the clang-tidy executable has it's own. The
+    # whole module loading process will succeed, but our check is silently dropped.
+    #
+    # The following is exactly what the Clang config module will create, but we do it
+    # ourselves because our clang-tidy executable may be different than the one bundled with
+    # clang itself.
+    add_executable(cccl_clang_tidy IMPORTED GLOBAL)
+    set_target_properties(
+      cccl_clang_tidy
+      PROPERTIES
+        IMPORTED_LOCATION "${CCCL_CLANG_TIDY}"
+        # This option is what allows us to "link" against the executable
+        ENABLE_EXPORTS TRUE
+    )
+    add_executable(cccl::clang-tidy ALIAS cccl_clang_tidy)
+  endif()
+
   add_custom_target(cccl.tidy COMMENT "clang-tidy CCCL")
 
   set(
