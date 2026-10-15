@@ -52,7 +52,8 @@
 namespace cuda::experimental::coop
 {
 template <class _Unit, class _ParentGroup>
-[[nodiscard]] _CCCL_DEVICE_API auto __make_init_group_mapping_result(const _ParentGroup& __parent_group) noexcept
+[[nodiscard]] _CCCL_DEVICE_API constexpr auto
+__make_init_group_mapping_result(const _ParentGroup& __parent_group) noexcept
 {
   using _ParentMappingResult = typename _ParentGroup::__mapping_result_type;
   using _InitMappingResult =
