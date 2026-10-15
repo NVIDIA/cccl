@@ -1,12 +1,18 @@
 =============== annotated_ptr.streaming begin ===============
-(const streaming_annotated_int &) <address> cuda::annotated_ptr<int, cuda::access_property::streaming> -> <address>
+(const cuda::annotated_ptr<int, cuda::access_property::streaming> &) <address> -> <address>
 =============== annotated_ptr.streaming end ===============
 =============== annotated_ptr.persisting begin ===============
-(const persisting_annotated_int &) <address> cuda::annotated_ptr<int, cuda::access_property::persisting> -> <address>
+(const cuda::annotated_ptr<int, cuda::access_property::persisting> &) <address> -> <address>
 =============== annotated_ptr.persisting end ===============
 =============== annotated_ptr.global begin ===============
-(const global_annotated_float &) <address> cuda::annotated_ptr<float, cuda::access_property::global> -> <address>
+(const cuda::annotated_ptr<float, cuda::access_property::global> &) <address> -> <address>
 =============== annotated_ptr.global end ===============
 =============== annotated_ptr.null begin ===============
-(const streaming_annotated_int &) <address> cuda::annotated_ptr<int, cuda::access_property::streaming> -> nullptr
+(const cuda::annotated_ptr<int, cuda::access_property::streaming> &) <address> -> nullptr
 =============== annotated_ptr.null end ===============
+=============== annotated_ptr.update.before begin ===============
+(const cuda::annotated_ptr<int, cuda::access_property::streaming> &) <address> -> <address>
+=============== annotated_ptr.update.before end ===============
+=============== annotated_ptr.update.after begin ===============
+(const cuda::annotated_ptr<int, cuda::access_property::streaming> &) <address> -> nullptr
+=============== annotated_ptr.update.after end ===============

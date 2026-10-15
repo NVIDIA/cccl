@@ -4,39 +4,39 @@
 
 #include <cuda/annotated_ptr>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
+
+[[gnu::noinline]] void inspect_streaming(const cuda::annotated_ptr<int, cuda::access_property::streaming>& ptr)
 {
-  asm volatile("" : : "g"(&value) : "memory");
+  KEEP_FOR_DEBUGGER(ptr);
 }
 
-// Type aliases for annotated_ptr instances
-using streaming_annotated_int  = cuda::annotated_ptr<int, cuda::access_property::streaming>;
-using persisting_annotated_int = cuda::annotated_ptr<int, cuda::access_property::persisting>;
-using global_annotated_float   = cuda::annotated_ptr<float, cuda::access_property::global>;
-
-// Test a streaming annotated_ptr
-[[gnu::noinline]] void inspect_streaming(const streaming_annotated_int& ptr)
+[[gnu::noinline]] void inspect_persisting(const cuda::annotated_ptr<int, cuda::access_property::persisting>& ptr)
 {
-  keep_for_debugger(ptr);
+  KEEP_FOR_DEBUGGER(ptr);
 }
 
-// Test a persisting annotated_ptr
-[[gnu::noinline]] void inspect_persisting(const persisting_annotated_int& ptr)
+[[gnu::noinline]] void inspect_global(const cuda::annotated_ptr<float, cuda::access_property::global>& ptr)
 {
-  keep_for_debugger(ptr);
+  KEEP_FOR_DEBUGGER(ptr);
 }
 
-// Test a global annotated_ptr
-[[gnu::noinline]] void inspect_global(const global_annotated_float& ptr)
+[[gnu::noinline]] void inspect_null(const cuda::annotated_ptr<int, cuda::access_property::streaming>& ptr)
 {
-  keep_for_debugger(ptr);
+  KEEP_FOR_DEBUGGER(ptr);
 }
 
-// Test a null streaming_annotated_ptr
-[[gnu::noinline]] void inspect_null(const streaming_annotated_int& ptr)
+[[gnu::noinline]] void inspect_before_update(const cuda::annotated_ptr<int, cuda::access_property::streaming>& ptr)
 {
-  keep_for_debugger(ptr);
+  KEEP_FOR_DEBUGGER(ptr);
+}
+
+[[gnu::noinline]] void inspect_after_update(const cuda::annotated_ptr<int, cuda::access_property::streaming>& ptr)
+{
+  KEEP_FOR_DEBUGGER(ptr);
 }
 
 int main()
@@ -45,22 +45,26 @@ int main()
   int streaming_data  = 42;
   int persisting_data = 100;
   float global_data   = 3.14f;
+  int updated_data    = 7;
 
-  // Test case 1: streaming annotated_ptr
-  const streaming_annotated_int streaming_ptr(&streaming_data);
+  const cuda::annotated_ptr<int, cuda::access_property::streaming> streaming_ptr(&streaming_data);
   inspect_streaming(streaming_ptr);
 
-  // Test case 2: persisting annotated_ptr
-  const persisting_annotated_int persisting_ptr(&persisting_data);
+  const cuda::annotated_ptr<int, cuda::access_property::persisting> persisting_ptr(&persisting_data);
   inspect_persisting(persisting_ptr);
 
-  // Test case 3: global annotated_ptr
-  const global_annotated_float global_ptr(&global_data);
+  const cuda::annotated_ptr<float, cuda::access_property::global> global_ptr(&global_data);
   inspect_global(global_ptr);
 
-  // Test case 4: null streaming_annotated_ptr (use default constructor)
-  const streaming_annotated_int null_ptr{};
+  const cuda::annotated_ptr<int, cuda::access_property::streaming> null_ptr{};
   inspect_null(null_ptr);
+
+  // The pointer is non-null before the update and null after it, so the two stops print
+  // different values even though the runner masks non-zero addresses.
+  cuda::annotated_ptr<int, cuda::access_property::streaming> updated_ptr(&updated_data);
+  inspect_before_update(updated_ptr);
+  updated_ptr = cuda::annotated_ptr<int, cuda::access_property::streaming>{};
+  inspect_after_update(updated_ptr);
 
   return 0;
 }

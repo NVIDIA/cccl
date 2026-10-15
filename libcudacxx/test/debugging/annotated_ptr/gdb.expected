@@ -10,3 +10,9 @@ cuda::annotated_ptr<float, cuda::access_property::global> -> <address>
 =============== annotated_ptr.null begin ===============
 cuda::annotated_ptr<int, cuda::access_property::streaming> -> nullptr
 =============== annotated_ptr.null end ===============
+=============== annotated_ptr.update.before begin ===============
+cuda::annotated_ptr<int, cuda::access_property::streaming> -> <address>
+=============== annotated_ptr.update.before end ===============
+=============== annotated_ptr.update.after begin ===============
+cuda::annotated_ptr<int, cuda::access_property::streaming> -> nullptr
+=============== annotated_ptr.update.after end ===============

@@ -38,42 +38,25 @@ class AnnotatedPtrPrinter:
             cccl_common.public_type_name(self.canonical_type_obj)
         )
 
-    def _template_arguments(self) -> tuple[str, str] | None:
-        """Extract template argument type names, or None if unavailable."""
-        try:
-            # Read template arguments from canonical type to handle typedef aliases
-            pointee_type = self.canonical_type_obj.template_argument(0)
-            pointee_type_name = cccl_common.public_type_name(pointee_type)
+    def _template_arguments(self) -> tuple[str, str]:
+        """Return the pointee and property type names."""
+        pointee_type = self.canonical_type_obj.template_argument(0)
+        property_type = self.canonical_type_obj.template_argument(1)
+        return (
+            cccl_common.public_type_name(pointee_type),
+            cccl_common.public_type_name(property_type),
+        )
 
-            property_type = self.canonical_type_obj.template_argument(1)
-            property_type_name = cccl_common.public_type_name(property_type)
-            return pointee_type_name, property_type_name
-        except (gdb.error, IndexError):
-            return None
-
-    def _pointer_display(self) -> str | None:
-        """Extract pointer display value, or None if unavailable."""
-        try:
-            repr_ptr = self.value["__repr"]
-            ptr_value = int(repr_ptr)
-            return "nullptr" if ptr_value == 0 else f"{ptr_value:#x}"
-        except (gdb.error, ValueError):
-            return None
+    def _pointer_display(self) -> str:
+        """Return the stored pointer, spelling a null pointer as nullptr."""
+        ptr_value = int(self.value["__repr"])
+        return "nullptr" if ptr_value == 0 else f"{ptr_value:#x}"
 
     def to_string(self) -> str:
         """Combine type info and pointer value into annotated_ptr display."""
-        template_args = self._template_arguments()
-        if template_args is None:
-            return self.type_name
-
-        pointee_type_name, property_type_name = template_args
+        pointee_type_name, property_type_name = self._template_arguments()
         full_type = f"{self.type_name}<{pointee_type_name}, {property_type_name}>"
-
-        ptr_display = self._pointer_display()
-        if ptr_display is None:
-            return full_type
-
-        return f"{full_type} -> {ptr_display}"
+        return f"{full_type} -> {self._pointer_display()}"
 
 
 class AnnotatedPtrPrinterLookup(gdb.printing.PrettyPrinter):
