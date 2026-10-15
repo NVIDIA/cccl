@@ -6,6 +6,14 @@ name: Verify devcontainers
 on:
   workflow_call:
     inputs:
+      source_repo:
+        description: Source repository; defaults to the caller repository.
+        type: string
+        default: ${{ github.repository }}
+      source_ref:
+        description: Source branch, tag, or SHA; defaults to the calling ref.
+        type: string
+        default: ${{ github.ref }}
       base_sha:
         type: string
         description: 'For PRs, set the base SHA to conditionally run this workflow only when relevant files are modified.'
@@ -29,6 +37,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v6
       with:
+        repository: ${{ inputs.source_repo }}
+        ref: ${{ inputs.source_ref }}
+        fetch-depth: 0
         persist-credentials: false
     - name: Setup jq and yq
       run: |
@@ -55,18 +66,17 @@ jobs:
       env:
         BASE_SHA: ${{ inputs.base_sha }}
       run: |
-        echo "Fetch history and determine merge base..."
-        git fetch origin --unshallow -q
-        git fetch origin "$BASE_SHA" -q
-        merge_base_sha=$(git merge-base "$GITHUB_SHA" "$BASE_SHA")
+        echo "Determine merge base..."
+        source_sha=$(git rev-parse HEAD)
+        merge_base_sha=$(git merge-base "$source_sha" "$BASE_SHA")
 
-        echo "Head SHA: $GITHUB_SHA"
+        echo "Head SHA: $source_sha"
         echo "PR Base SHA: $BASE_SHA"
         echo "Merge Base SHA: $merge_base_sha"
 
         echo "Checking for changes to devcontainer/matrix files..."
 
-        all_dirty_files=$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}")
+        all_dirty_files=$(git diff --name-only "${merge_base_sha}" "${source_sha}")
         echo "::group::All dirty files"
         echo "${all_dirty_files}"
         echo "::endgroup::"
@@ -116,6 +126,8 @@ jobs:
     - name: Check out the code
       uses: actions/checkout@v6
       with:
+        repository: ${{ inputs.source_repo }}
+        ref: ${{ inputs.source_ref }}
         persist-credentials: false
 
     - name: Install dependencies

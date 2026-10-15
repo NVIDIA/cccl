@@ -25,6 +25,26 @@ defaults:
 on:
   workflow_call:
     inputs:
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ${{ github.repository }}
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ${{ github.ref }}
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ${{ github.repository }}
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ${{ github.ref }}
+      matrix_path:
+        description: "Path to the matrix file within matrix_repo."
+        type: string
+        default: "ci/matrix.yaml"
       workflows:
         description: "Space separated list of workflows in the matrix file to run (e.g. 'nightly' or 'weekly')."
         type: string
@@ -33,10 +53,6 @@ on:
         description: "When true, also post failure notifications to the alert Slack channel (secrets.SLACK_CHANNEL_CI_ALERT) in addition to the log channel."
         type: boolean
         default: false
-      matrix_branch:
-        description: "Branch (in this repo) to checkout into '.private' so its matrix file can be sideloaded. When empty, no extra checkout is performed and 'matrix_file' is read from the current checkout."
-        type: string
-        default: ''
     outputs:
       failure_message:
         description: "Prepared workflow failure notification text, populated when verify-workflow detects failures."
@@ -57,32 +73,26 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private' }}
     permissions:
       contents: read
     outputs:
       workflow: ${{ steps.build-workflow.outputs.workflow }}
+      source_sha: ${{ steps.checkout.outputs.source_sha }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: Checkout source and matrix
+        id: checkout
+        uses: $/.github/actions/workflow-checkout
         with:
-          persist-credentials: false
-      - name: Checkout matrix branch into .private
-        if: ${{ inputs.matrix_branch != '' }}
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          ref: ${{ inputs.matrix_branch }}
-          path: .private
+          source_repo: ${{ inputs.source_repo }}
+          source_ref: ${{ inputs.source_ref }}
+          matrix_repo: ${{ inputs.matrix_repo }}
+          matrix_ref: ${{ inputs.matrix_ref }}
+          matrix_path: ${{ inputs.matrix_path }}
       - name: Build workflow
         id: build-workflow
-        uses: ./.github/actions/workflow-build
+        uses: $/.github/actions/workflow-build
         with:
           workflows: ${{ inputs.workflows }}
-          # When sideloading from another branch, the matrix checkout is prefixed with
-          # '.private'. Otherwise use the path as-is from the current checkout
-          # (e.g. 'ci/matrix.yaml' for the default callers).
-          matrix_file: ${{ inputs.matrix_branch != '' && '.private/ci/matrix.yaml' || 'ci/matrix.yaml' }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
           slack_alert: ${{ inputs.enable_slack_alert == true && secrets.SLACK_CHANNEL_CI_ALERT || '' }}
@@ -101,6 +111,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+      repo: ${{ inputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-windows-two-stage:
     name: ${{ matrix.name }}
@@ -116,6 +128,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-two-stage-group-windows.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+      repo: ${{ inputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-linux-standalone:
     name: ${{ matrix.name }}
@@ -131,6 +145,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-standalone-group-linux.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+      repo: ${{ inputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-windows-standalone:
     name: ${{ matrix.name }}
@@ -146,6 +162,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-standalone-group-windows.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+      repo: ${{ inputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   verify-workflow:
     name: Verify and summarize workflow results
@@ -163,14 +181,9 @@ jobs:
     outputs:
       failure_message: ${{ steps.check-workflow.outputs.failure_message }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
       - name: Check workflow success
         id: check-workflow
-        uses: ./.github/actions/workflow-results
+        uses: $/.github/actions/workflow-results
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}

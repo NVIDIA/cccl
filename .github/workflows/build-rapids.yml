@@ -6,6 +6,26 @@ name: Build all RAPIDS repositories
 on:
   workflow_dispatch:
     inputs: &input_args
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ""
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_path:
+        description: "Path to the matrix file within matrix_repo."
+        type: string
+        default: "ci/matrix.yaml"
       override_cccl_tag:
         description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
         required: false
@@ -34,11 +54,7 @@ on:
 jobs:
   build-rapids:
     name: "${{ matrix.libs }}"
-    if: >-
-      (github.repository == 'NVIDIA/cccl' &&
-       contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)) ||
-      (github.repository != 'NVIDIA/cccl' && github.event_name == 'pull_request')
-    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu16"') }}
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && 'linux-amd64-cpu16' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -52,15 +68,18 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: Checkout source and matrix
+        id: checkout
+        uses: $/.github/actions/workflow-checkout
         with:
-          fetch-depth: 0
-          persist-credentials: false
+          source_repo: ${{ inputs.source_repo || github.repository }}
+          source_ref: ${{ inputs.source_ref || github.ref }}
+          matrix_repo: ${{ inputs.matrix_repo || github.repository }}
+          matrix_ref: ${{ inputs.matrix_ref || github.ref }}
+          matrix_path: ${{ inputs.matrix_path }}
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -107,8 +126,13 @@ jobs:
               echo "::error:: Failures: ${failures[*]}"
               echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
               echo "::error:: To replicate this failure locally, follow the steps below:"
+              local source_url source_sha source_directory
+              source_url=$(git -C ~/cccl remote get-url origin)
+              source_sha=$(git -C ~/cccl rev-parse HEAD)
+              source_directory="${source_url##*/}"
+              source_directory="${source_directory%.git}"
               echo "1. Clone the repository, and navigate to the correct branch and commit:"
-              echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+              echo "   git clone ${source_url} && cd ${source_directory} && git fetch origin ${source_sha} && git checkout ${source_sha}"
               echo ""
               echo "2. Run the failed command inside the same Docker container used by this CI job:"
               cat <<____EOF

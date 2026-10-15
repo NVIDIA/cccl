@@ -16,8 +16,7 @@
 # On-demand workflow that sideloads a CI matrix file from a different branch of
 # this repo and runs the selected workflows defined there. Unlike the
 # scheduled workflows, this always builds a full matrix (no inspect-changes) and
-# fetches the specified branch into '.private' inside ci-matrix-build so
-# the sideloaded matrix file is available to the workflow-build step.
+# passes the specified matrix branch to ci-matrix-build.
 name: custom
 
 defaults:
@@ -53,4 +52,4 @@ jobs:
     secrets: inherit
     with:
       workflows: ${{ inputs.workflows }}
-      matrix_branch: ${{ inputs.matrix_branch }}
+      matrix_ref: ${{ inputs.matrix_branch }}

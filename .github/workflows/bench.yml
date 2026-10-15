@@ -10,6 +10,14 @@ defaults:
 on:
   workflow_dispatch:
     inputs: &input_args
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
       gpu:
         description: "GPU selector. Ex: 'rtxa6000'. See ci/bench.yaml for all options."
         required: false
@@ -76,9 +84,12 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Checkout repo
+      - name: Checkout source
+        id: checkout
         uses: actions/checkout@v6
         with:
+          repository: ${{ inputs.source_repo || github.repository }}
+          ref: ${{ inputs.source_ref || github.ref }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -126,7 +137,7 @@ jobs:
         env:
           INPUT_ARCH: ${{ inputs.arch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
-          INPUT_TEST_REF: ${{ inputs.test_ref }}
+          INPUT_TEST_REF: ${{ inputs.test_ref || steps.checkout.outputs.commit }}
           INPUT_CUB_FILTERS: ${{ inputs.cub_filters }}
           INPUT_PYTHON_FILTERS: ${{ inputs.python_filters }}
           INPUT_RAW_ARGS: ${{ inputs.raw_args }}

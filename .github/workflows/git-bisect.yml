@@ -10,6 +10,26 @@ defaults:
 on:
   workflow_dispatch:
     inputs: &input_args
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ""
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_path:
+        description: "Path to the matrix file within matrix_repo."
+        type: string
+        default: "ci/matrix.yaml"
       runner:
         description: "Runner label. Ex: 'linux-amd64-cpu16', 'linux-amd64-gpu-rtxa6000-latest-1'"
         required: false
@@ -160,20 +180,22 @@ jobs:
   bisect:
     needs: [generate-job-name]
     name: ${{ needs.generate-job-name.outputs.job-name }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && inputs.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && inputs.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - name: Checkout source and matrix
+        id: checkout
+        uses: $/.github/actions/workflow-checkout
         with:
-          persist-credentials: false
-          fetch-depth: 0          # FULL history
-          fetch-tags: true        # Ensure tags are present
+          source_repo: ${{ inputs.source_repo || github.repository }}
+          source_ref: ${{ inputs.source_ref || github.ref }}
+          matrix_repo: ${{ inputs.matrix_repo || github.repository }}
+          matrix_ref: ${{ inputs.matrix_ref || github.ref }}
+          matrix_path: ${{ inputs.matrix_path }}
 
       - name: Get AWS credentials for sccache bucket
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA

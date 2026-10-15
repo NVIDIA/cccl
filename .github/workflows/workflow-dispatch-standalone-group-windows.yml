@@ -37,15 +37,11 @@ jobs:
       contents: read
     runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'windows-latest' }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          repository: ${{ inputs.repo }}
-          ref: ${{ inputs.commit }}
       - name: Run job
-        uses: ./.github/actions/workflow-run-job-windows
+        uses: $/.github/actions/workflow-run-job-windows
         with:
+          source_repo: ${{ inputs.repo }}
+          source_ref: ${{ inputs.commit }}
           id:          ${{ matrix.id }}
           environment: ${{ matrix.environment }}
           command:     ${{ matrix.command }}

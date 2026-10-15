@@ -25,6 +25,27 @@ on:
     branches:
       - "pull-request/[0-9]+"
   workflow_call:
+    inputs:
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ${{ github.repository }}
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ${{ github.ref }}
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ${{ github.repository }}
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ${{ github.ref }}
+      matrix_path:
+        description: "Path to the matrix file within matrix_repo."
+        type: string
+        default: "ci/matrix.yaml"
     secrets:
       NVINFERENCE_API_KEY:
         description: NVIDIA Inference Hub API key for CI failure analysis and SASS triage.
@@ -40,22 +61,33 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}-pull-request-${{ inputs.source_repo }}@${{ inputs.source_ref }}-${{ inputs.matrix_repo }}@${{ inputs.matrix_ref }}-${{ inputs.matrix_path }}
   cancel-in-progress: true
 
 jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
+    if: ${{ github.repository == 'NVIDIA/cccl' || inputs.source_repo != '' }}
     permissions:
       contents: read
       pull-requests: write
+    env:
+      SOURCE_REPO: ${{ inputs.source_repo || github.repository }}
+      SOURCE_REF: ${{ inputs.source_ref || github.ref }}
+      MATRIX_REPO: ${{ inputs.matrix_repo || github.repository }}
+      MATRIX_REF: ${{ inputs.matrix_ref || github.ref }}
+      MATRIX_PATH: ${{ inputs.matrix_path || 'ci/matrix.yaml' }}
     outputs:
+      source_repo: ${{ env.SOURCE_REPO }}
+      matrix_repo: ${{ env.MATRIX_REPO }}
+      matrix_ref: ${{ env.MATRIX_REF }}
+      matrix_path: ${{ env.MATRIX_PATH }}
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
       merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
+      source_sha: ${{ steps.checkout.outputs.source_sha }}
       matrix_enabled: ${{ steps.export-flags.outputs.matrix_enabled }}
       bench_enabled: ${{ steps.build-bench-matrix.outputs.bench_enabled }}
       bench_matrix: ${{ steps.build-bench-matrix.outputs.bench_matrix }}
@@ -83,24 +115,39 @@ jobs:
           output rapids_enabled  "${{ !contains(github.event.head_commit.message, '[skip-rapids]')  && !fromJSON(env.skip_tpt) }}"
           output matx_enabled    "${{ !contains(github.event.head_commit.message, '[skip-matx]')    && !fromJSON(env.skip_tpt) }}"
           output pytorch_enabled "${{ !contains(github.event.head_commit.message, '[skip-pytorch]') && !fromJSON(env.skip_tpt) }}"
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: Checkout source and matrix
+        id: checkout
+        uses: $/.github/actions/workflow-checkout
         with:
-          # `git merge-base` below needs the history of both sides.
-          fetch-depth: 0
-          persist-credentials: false
+          source_repo: ${{ env.SOURCE_REPO }}
+          source_ref: ${{ env.SOURCE_REF }}
+          matrix_repo: ${{ env.MATRIX_REPO }}
+          matrix_ref: ${{ env.MATRIX_REF }}
+          matrix_path: ${{ env.MATRIX_PATH }}
       - name: Lookup PR info
+        if: ${{ startsWith(github.ref_name, 'pull-request/') }}
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@main
       - name: Export PR info
         id: export-pr-info
         env:
-          BASE_SHA: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
+          PR_INFO: ${{ steps.get-pr-info.outputs.pr-info || toJSON(github.event.pull_request) }}
+          SOURCE_SHA: ${{ steps.checkout.outputs.source_sha }}
         run: |
-          echo "base_sha=${BASE_SHA}" | tee -a "${GITHUB_OUTPUT}"
-          echo "pr_number=${{ fromJSON(steps.get-pr-info.outputs.pr-info).number }}" | tee -a "${GITHUB_OUTPUT}"
-          git fetch origin "${BASE_SHA}" -q
-          echo "merge_base_sha=$(git merge-base "${BASE_SHA}" "${GITHUB_SHA}")" | tee -a "${GITHUB_OUTPUT}"
+          pr_number=$(jq -r '.number // empty' <<< "${PR_INFO}")
+          base_sha=$(jq -r '.base.sha // empty' <<< "${PR_INFO}")
+          merge_base_sha=""
+          if [[ "${SOURCE_REPO}" == "${GITHUB_REPOSITORY}" &&
+                "${SOURCE_REF}" == "${GITHUB_REF}" && -n "${base_sha}" ]]; then
+            merge_base_sha=$(git merge-base "${base_sha}" "${SOURCE_SHA}")
+          else
+            base_sha=""
+          fi
+          {
+            echo "pr_number=${pr_number}"
+            echo "base_sha=${base_sha}"
+            echo "merge_base_sha=${merge_base_sha}"
+          } | tee -a "${GITHUB_OUTPUT}"
       - name: Build benchmark dispatch matrix
         id: build-bench-matrix
         run: |
@@ -108,6 +155,10 @@ jobs:
             echo "bench_enabled=false"
             echo 'bench_matrix={"include":[]}'
           } >> "${GITHUB_OUTPUT}"
+
+          if [[ ! -f ci/bench.yaml || ! -f ci/bench.template.yaml ]]; then
+            exit 0
+          fi
 
           # Compare ci/bench.yaml against its template. If they match, no benchmarks requested.
           if diff -q "ci/bench.template.yaml" "ci/bench.yaml" > /dev/null 2>&1; then
@@ -123,6 +174,8 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
       - name: Build compile-time benchmark dispatch matrix
         id: build-compile-time-matrix
+        env:
+          MATRIX_FILE: ${{ runner.temp }}/matrix.yaml
         run: |
           if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
             echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
@@ -133,7 +186,7 @@ jobs:
             exit 0
           fi
 
-          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          compile_time_matrix_json="$(./ci/compile_time/parse_matrix.py "${MATRIX_FILE}" --workflow pull_request)"
           compile_time_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
               <<< "${compile_time_matrix_json}"
@@ -146,12 +199,22 @@ jobs:
       - name: Build SASS diff dispatch matrix
         id: build-sass-matrix
         env:
+          MATRIX_FILE: ${{ runner.temp }}/matrix.yaml
+          SOURCE_SHA: ${{ steps.checkout.outputs.source_sha }}
           BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
         run: |
           set -u
 
           if [[ "${{ contains(github.event.head_commit.message, '[skip-sass-diff]') }}" == "true" ]]; then
             echo "Commit message contains [skip-sass-diff]; skipping SASS diff dispatch."
+            {
+              echo "sass_enabled=false"
+              echo 'sass_matrix={"include":[]}'
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [[ -z "${BASE_SHA}" ]]; then
             {
               echo "sass_enabled=false"
               echo 'sass_matrix={"include":[]}'
@@ -169,7 +232,7 @@ jobs:
           dirty_report="${RUNNER_TEMP}/sass-inspect-changes.txt"
 
           GITHUB_OUTPUT="${dirty_report}" ./ci/inspect_changes.py \
-            --refs "${BASE_SHA}" "${GITHUB_SHA}"
+            --refs "${BASE_SHA}" "${SOURCE_SHA}"
 
           echo "::endgroup::"
 
@@ -185,7 +248,7 @@ jobs:
             exit 0
           fi
 
-          sass_matrix_json="$(./ci/sass/parse_matrix.py "ci/matrix.yaml" --workflow pull_request)"
+          sass_matrix_json="$(./ci/sass/parse_matrix.py "${MATRIX_FILE}" --workflow pull_request)"
           sass_enabled="$(
             jq -r 'if (.include // []) == [] then "false" else "true" end' \
               <<< "${sass_matrix_json}"
@@ -199,6 +262,7 @@ jobs:
       - name: Detect .branch_notes changes
         id: branch-notes-dirt
         env:
+          SOURCE_SHA: ${{ steps.checkout.outputs.source_sha }}
           BASE_SHA: ${{ steps.export-pr-info.outputs.base_sha }}
           merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
         run: |
@@ -207,13 +271,13 @@ jobs:
             exit 0
           fi
 
-          echo "Head SHA: ${GITHUB_SHA}"
+          echo "Head SHA: ${SOURCE_SHA}"
           echo "PR Base SHA: ${BASE_SHA}"
           echo "Merge Base SHA: ${merge_base_sha}"
 
           # Only diff .branch_notes if it already exists at the merge base.
           if git cat-file -e "${merge_base_sha}:.branch_notes" 2>/dev/null; then
-            branch_notes_dirt=$(git diff --name-only "${merge_base_sha}" "${GITHUB_SHA}" -- ".branch_notes")
+            branch_notes_dirt=$(git diff --name-only "${merge_base_sha}" "${SOURCE_SHA}" -- ".branch_notes")
           else
             branch_notes_dirt=""
           fi
@@ -227,14 +291,15 @@ jobs:
         # Skip building the matrix when disabled, but still gather PR info for downstream jobs
         if: steps.export-flags.outputs.matrix_enabled == 'true'
         id: build-workflow
-        uses: ./.github/actions/workflow-build
+        uses: $/.github/actions/workflow-build
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
           allow_override: "true"
-          inspect_changes_script: 'ci/inspect_changes.py'
+          inspect_changes_script: ${{ steps.export-pr-info.outputs.base_sha != '' && 'ci/inspect_changes.py' || '' }}
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
-          workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
+          inspect_changes_head_sha: ${{ steps.checkout.outputs.source_sha }}
+          workflows: pull_request
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -254,6 +319,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-windows-two-stage:
     name: ${{ matrix.name }}
@@ -273,6 +340,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-two-stage-group-windows.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-linux-standalone:
     name: ${{ matrix.name }}
@@ -292,6 +361,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-standalone-group-linux.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-windows-standalone:
     name: ${{ matrix.name }}
@@ -311,6 +382,8 @@ jobs:
     uses: $/.github/workflows/workflow-dispatch-standalone-group-windows.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   verify-workflow:
     name: Verify and summarize workflow results
@@ -332,14 +405,9 @@ jobs:
       pull-requests: write # Posts a comment back to the PR.
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
       - name: Check workflow success
         id: check-workflow
-        uses: ./.github/actions/workflow-results
+        uses: $/.github/actions/workflow-results
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pr_number: ${{ needs.build-workflow.outputs.pr_number }}
@@ -357,6 +425,8 @@ jobs:
       contents: read
     uses: $/.github/workflows/verify-devcontainers.yml
     with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
       base_sha: ${{ needs.build-workflow.outputs.base_sha }}
 
   docs-build:
@@ -368,17 +438,19 @@ jobs:
         needs.build-workflow.outputs.docs_enabled == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
         with:
+          repository: ${{ needs.build-workflow.outputs.source_repo }}
+          ref: ${{ needs.build-workflow.outputs.source_sha }}
           persist-credentials: false
 
       - name: Build docs
-        uses: ./.github/actions/docs-build
+        uses: $/.github/actions/docs-build
         with:
           upload_workflow_artifact: "false"
 
@@ -392,12 +464,15 @@ jobs:
       }}
     secrets: inherit
     permissions:
-      actions: read
-      packages: read
       id-token: write
       contents: read
-      pull-requests: read
     uses: $/.github/workflows/build-rapids.yml
+    with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
+      matrix_repo: ${{ needs.build-workflow.outputs.matrix_repo }}
+      matrix_ref: ${{ needs.build-workflow.outputs.matrix_ref }}
+      matrix_path: ${{ needs.build-workflow.outputs.matrix_path }}
 
   build-matx:
     name: Build MatX (optional)
@@ -412,6 +487,12 @@ jobs:
       id-token: write
       contents: read
     uses: $/.github/workflows/build-matx.yml
+    with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
+      matrix_repo: ${{ needs.build-workflow.outputs.matrix_repo }}
+      matrix_ref: ${{ needs.build-workflow.outputs.matrix_ref }}
+      matrix_path: ${{ needs.build-workflow.outputs.matrix_path }}
 
   build-pytorch:
     name: Build PyTorch (optional)
@@ -426,6 +507,12 @@ jobs:
       id-token: write
       contents: read
     uses: $/.github/workflows/build-pytorch.yml
+    with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
+      matrix_repo: ${{ needs.build-workflow.outputs.matrix_repo }}
+      matrix_ref: ${{ needs.build-workflow.outputs.matrix_ref }}
+      matrix_path: ${{ needs.build-workflow.outputs.matrix_path }}
 
   # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
   test-cpu-import:
@@ -509,6 +596,8 @@ jobs:
       matrix: ${{ fromJSON(needs.build-workflow.outputs.bench_matrix) }}
     uses: $/.github/workflows/bench.yml
     with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
       gpu: ${{ matrix.gpu }}
       launch_args: ${{ matrix.launch_args }}
       arch: ${{ matrix.arch }}
@@ -542,6 +631,8 @@ jobs:
       matrix: ${{ fromJSON(needs.build-workflow.outputs.compile_time_matrix) }}
     uses: $/.github/workflows/compile-time-bench.yml
     with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
       id: ${{ matrix.id }}
       name: ${{ matrix.name }}
       gpu: ${{ matrix.gpu }}
@@ -575,6 +666,8 @@ jobs:
       matrix: ${{ fromJSON(needs.build-workflow.outputs.sass_matrix) }}
     uses: $/.github/workflows/sass-diff.yml
     with:
+      source_repo: ${{ needs.build-workflow.outputs.source_repo }}
+      source_ref: ${{ needs.build-workflow.outputs.source_sha }}
       id: ${{ matrix.id }}
       launch_args: ${{ matrix.launch_args }}
       preset: ${{ matrix.preset }}
@@ -748,9 +841,17 @@ jobs:
           }
 
           check_result "verify-workflow"      "success" "${{needs.verify-workflow.result}}"
-          check_result "verify-devcontainers" "success" "${{needs.verify-devcontainers.result}}"
-          check_result "docs-build"           "success" "${{needs.docs-build.result}}"
-          check_result "test-cpu-import"      "success" "${{needs.test-cpu-import.result}}"
+          expected_public_result="skipped"
+          if [[ "${{ github.repository }}" == "NVIDIA/cccl" ]]; then
+            expected_public_result="success"
+          fi
+          check_result "verify-devcontainers" "$expected_public_result" "${{needs.verify-devcontainers.result}}"
+          expected_docs_result="$expected_public_result"
+          if [[ "${{ needs.build-workflow.outputs.pr_number }}" == "" ]]; then
+            expected_docs_result="skipped"
+          fi
+          check_result "docs-build"           "$expected_docs_result" "${{needs.docs-build.result}}"
+          check_result "test-cpu-import"      "$expected_public_result" "${{needs.test-cpu-import.result}}"
 
           expected_bench_result="skipped"
           if [[ "${{ needs.build-workflow.outputs.bench_enabled }}" == "true" ]] \
@@ -851,7 +952,7 @@ jobs:
 
       - name: Analyze failures
         id: analyze
-        uses: ./.github/actions/ci-failure-analysis
+        uses: $/.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
@@ -860,7 +961,7 @@ jobs:
       - name: Render GitHub failure analysis comment
         if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
         id: render-github-comment
-        uses: ./.github/actions/ci-failure-analysis-render
+        uses: $/.github/actions/ci-failure-analysis-render
         with:
           analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: github-comment
@@ -868,7 +969,7 @@ jobs:
       - name: Render GitHub verbose failure analysis summary
         if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
         id: render-github-verbose-summary
-        uses: ./.github/actions/ci-failure-analysis-render
+        uses: $/.github/actions/ci-failure-analysis-render
         with:
           analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: github-verbose-summary

@@ -10,6 +10,14 @@ defaults:
 on:
   workflow_call:
     inputs:
+      source_repo:
+        description: Source repository; defaults to the caller repository.
+        type: string
+        default: ${{ github.repository }}
+      source_ref:
+        description: Source branch, tag, or SHA; defaults to the calling ref.
+        type: string
+        default: ${{ github.ref }}
       id:
         description: "Stable SASS comparison config id."
         required: true
@@ -61,6 +69,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
+          repository: ${{ inputs.source_repo }}
+          ref: ${{ inputs.source_ref }}
           # The comparison adds a worktree for the base ref, so the full
           # history is necessary.
           fetch-depth: 0

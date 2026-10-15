@@ -51,6 +51,62 @@ The PR workflow includes a ``CI`` job used by branch protection. It checks the
 required jobs and runs even after failure or cancellation. Advisory job failures
 remain outside this gate.
 
+Source and matrix selection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Callable CI profiles, wheel builds, bisect, and third-party builds accept the
+following inputs. Repository and ref inputs default to the caller repository
+and calling ref.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Input
+     - Purpose
+   * - ``source_repo``
+     - Repository containing the code to build or test.
+   * - ``source_ref``
+     - Source branch, tag, or commit SHA.
+   * - ``matrix_repo``
+     - Repository containing the CI matrix file.
+   * - ``matrix_ref``
+     - Matrix branch, tag, or commit SHA.
+   * - ``matrix_path``
+     - Matrix file path relative to ``matrix_repo``. Defaults to
+       ``ci/matrix.yaml``.
+
+Matrix-driven CI and wheel builds generate jobs from the selected matrix file
+and run them against the selected source commit. Bisect and third-party builds
+use the selected source and keep their existing execution inputs. Benchmark
+comparisons accept ``source_repo`` and ``source_ref`` alongside their benchmark
+inputs. Nested workflows and composite actions use the defining workflow's
+repository and revision through ``$/`` references.
+
+For example, a caller can select source and matrix repositories independently:
+
+.. code-block:: yaml
+
+    jobs:
+      ci:
+        uses: NVIDIA/cccl/.github/workflows/ci-workflow-nightly.yml@main
+        permissions:
+          contents: read
+          actions: read
+          id-token: write
+        with:
+          source_repo: example-org/source
+          source_ref: main
+          matrix_repo: example-org/test-matrix
+          matrix_ref: main
+          matrix_path: ci/matrix.yaml
+        secrets: inherit
+
+Source and matrix access, run artifacts, and pull request comments use the
+caller's ``GITHUB_TOKEN``. Matrix jobs fall back to GitHub-hosted runners for
+forks. Repositories enabled for self-hosted CI use the matrix's runner labels.
+The PR profile also requires ``pull-requests: write`` to post comments.
+
 Workflow reference
 ------------------
 
@@ -157,7 +213,7 @@ The build-workflow action
 
 The "build workflow from matrix" job runs the ``build-workflow`` action at
 ``.github/actions/workflow-build/``. Its script ``build-workflow.py`` reads
-``ci/matrix.yaml`` together with the change-detection output from
+the selected matrix file together with any change-detection output from
 ``ci/inspect_changes.py`` and produces ``workflow/workflow.json``. That file holds
 named groups — "CUB GCC", for example — each carrying a ``standalone`` array and a
 ``two_stage`` array of fully expanded job specs.

@@ -46,7 +46,7 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.commit }}
       - name: Run job
-        uses: ./.github/actions/workflow-run-job-linux
+        uses: $/.github/actions/workflow-run-job-linux
         with:
           id:          ${{ fromJSON(inputs.producers)[0].id }}
           environment: ${{ fromJSON(inputs.producers)[0].environment }}
@@ -76,7 +76,7 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.commit }}
       - name: Run job
-        uses: ./.github/actions/workflow-run-job-linux
+        uses: $/.github/actions/workflow-run-job-linux
         with:
           id:          ${{ matrix.id }}
           environment: ${{ matrix.environment }}

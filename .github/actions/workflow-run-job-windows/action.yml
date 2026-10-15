@@ -2,6 +2,12 @@ name: "Run Windows Job"
 description: "Run a job on a Windows runner."
 
 inputs:
+  source_repo:
+    description: "Source repository; defaults to the caller repository."
+    default: ${{ github.repository }}
+  source_ref:
+    description: "Source branch, tag, or SHA; defaults to the calling ref."
+    default: ${{ github.ref }}
   id:
     description: "A unique identifier."
     required: true
@@ -35,6 +41,8 @@ runs:
     - name: Checkout repo
       uses: actions/checkout@v6
       with:
+        repository: ${{ inputs.source_repo }}
+        ref: ${{ inputs.source_ref }}
         path: ${{github.event.repository.name}}
         persist-credentials: false
         fetch-depth: 0
@@ -84,14 +92,14 @@ runs:
       shell: powershell
       env:
         RUNNER: ${{ runner.name }}
+        RUNNER_ACTION_PATH: ${{ github.action_path }}
       run: |
         echo "::group::Installing GPU driver"
-        ./.github/actions/workflow-run-job-windows/install_gpu_driver.ps1
+        & (Join-Path $env:RUNNER_ACTION_PATH 'install_gpu_driver.ps1')
         nvidia-smi
         echo "::endgroup::"
 
     - name: Get AWS credentials for sccache bucket
-      if: ${{ github.repository == 'NVIDIA/cccl' }}
       uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -176,6 +184,7 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
         ENABLE_GPU: ${{ inputs.gpu_count != '0' && '--device class/5B45201D-F2F2-4F3B-85BB-30FF1F953599' || '' }}
       run: |
         cat <<'EOF' > "${{steps.paths.outputs.HOST_REPO}}/ci.ps1"
@@ -234,6 +243,7 @@ runs:
           --env "DOCKER_HOST=npipe:////./pipe/docker_engine" \
           --env "HOST_WORKSPACE=${{steps.paths.outputs.HOST_REPO}}" \
           --env "GH_TOKEN=$GH_TOKEN" \
+          --env "GH_REPO=$GH_REPO" \
           --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
           --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
@@ -266,6 +276,6 @@ runs:
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
-      uses: ./.github/actions/upload-artifacts
+      uses: $/.github/actions/upload-artifacts
       with:
         artifacts: ${{ steps.run.outputs.ARTIFACTS }}

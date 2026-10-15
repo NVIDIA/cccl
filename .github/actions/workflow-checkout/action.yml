@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+name: Checkout workflow inputs
+description: Check out source and download an independently selected CI matrix.
+
+inputs:
+  source_repo:
+    description: Source repository; defaults to the caller repository.
+    default: ${{ github.repository }}
+  source_ref:
+    description: Source branch, tag, or SHA; defaults to the calling ref.
+    default: ${{ github.ref }}
+  matrix_repo:
+    description: Matrix repository; defaults to the caller repository.
+    default: ${{ github.repository }}
+  matrix_ref:
+    description: Matrix branch, tag, or SHA; defaults to the calling ref.
+    default: ${{ github.ref }}
+  matrix_path:
+    description: Matrix file path relative to the matrix repository.
+    default: ci/matrix.yaml
+
+outputs:
+  source_sha:
+    description: Resolved source commit SHA.
+    value: ${{ steps.source.outputs.commit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download matrix
+      shell: bash --noprofile --norc -euo pipefail {0}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUT_MATRIX_REPO: ${{ inputs.matrix_repo }}
+        INPUT_MATRIX_REF: ${{ inputs.matrix_ref }}
+        INPUT_MATRIX_PATH: ${{ inputs.matrix_path }}
+      run: |
+        gh api \
+          --method GET \
+          --header 'Accept: application/vnd.github.raw+json' \
+          --raw-field "ref=${INPUT_MATRIX_REF}" \
+          "repos/${INPUT_MATRIX_REPO}/contents/${INPUT_MATRIX_PATH}" \
+          > "${RUNNER_TEMP}/matrix.yaml"
+
+    - name: Checkout source
+      id: source
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ inputs.source_repo }}
+        ref: ${{ inputs.source_ref }}
+        fetch-depth: 0
+        fetch-tags: true
+        persist-credentials: false
