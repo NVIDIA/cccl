@@ -21,19 +21,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__stream/stream_ref.h>
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/span>
+#if _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
-#include <cuda/experimental/__cuco/detail/bloom_filter/bloom_filter_impl.cuh>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__atomic/scopes.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__type_traits/is_convertible.h>
+#  include <cuda/std/span>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/experimental/__cuco/bloom_filter_policy.cuh>
+#  include <cuda/experimental/__cuco/detail/bloom_filter/bloom_filter_impl.cuh>
 
-#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental::cuco
 {
@@ -49,7 +49,7 @@ namespace cuda::experimental::cuco
 //! @tparam _NumBlocks Number of sub-filter blocks, or `cuda::std::dynamic_extent` for runtime sizing
 //! @tparam _Scope The scope in which operations will be performed by individual threads
 //! @tparam _Policy Type that defines how to generate and store key fingerprints (see
-//! `cuda/experimental/__cuco/bloom_filter_policy.cuh`)
+//! `bloom_filter_policy`)
 template <class _Key,
           ::cuda::std::size_t _NumBlocks = ::cuda::std::dynamic_extent,
           ::cuda::thread_scope _Scope    = ::cuda::thread_scope_device,
@@ -120,8 +120,8 @@ public:
   //!
   //! @param __storage Storage span of the filter
   //! @param __policy Fingerprint generation policy
-  _CCCL_HOST_DEVICE_API explicit constexpr bloom_filter_ref(
-    ::cuda::std::span<filter_block_type> __storage, const _Policy& __policy = {})
+  _CCCL_HOST_DEVICE_API explicit bloom_filter_ref(::cuda::std::span<filter_block_type> __storage,
+                                                  const _Policy& __policy = {})
       : __impl{::cuda::std::span<word_type>{reinterpret_cast<word_type*>(__storage.data()),
                                             __storage.size() * static_cast<size_type>(words_per_block)},
                __policy}
@@ -168,7 +168,7 @@ public:
   //!
   //! @param __key The key to be added
   template <class _ProbeKey>
-  _CCCL_DEVICE_API void add(const _ProbeKey& __key)
+  _CCCL_DEVICE_API void add(const _ProbeKey& __key) noexcept
   {
     __impl.__add(__key);
   }
@@ -184,7 +184,7 @@ public:
   //! @param __group The Cooperative Group this operation is executed with
   //! @param __key The key to be added
   template <class _CG, class _ProbeKey>
-  _CCCL_DEVICE_API void add(_CG __group, const _ProbeKey& __key)
+  _CCCL_DEVICE_API void add(_CG __group, const _ProbeKey& __key) noexcept
   {
     __impl.__add(__group, __key);
   }
@@ -202,7 +202,7 @@ public:
   //! @param __last End of the sequence of keys
   _CCCL_TEMPLATE(class _CG, class _InputIt)
   _CCCL_REQUIRES((!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>) )
-  _CCCL_DEVICE_API void add(_CG __group, _InputIt __first, _InputIt __last)
+  _CCCL_DEVICE_API void add(_CG __group, _InputIt __first, _InputIt __last) noexcept
   {
     __impl.__add_range(__group, __first, __last);
   }
@@ -243,7 +243,7 @@ public:
   //!
   //! @return `true` iff the key's fingerprint was present in the filter
   template <class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE_API bool contains(const _ProbeKey& __key) const
+  [[nodiscard]] _CCCL_DEVICE_API bool contains(const _ProbeKey& __key) const noexcept
   {
     return __impl.__contains(__key);
   }
@@ -261,7 +261,7 @@ public:
   //!
   //! @return `true` iff the key's fingerprint was present in the filter
   template <class _CG, class _ProbeKey>
-  [[nodiscard]] _CCCL_DEVICE_API bool contains(_CG __group, const _ProbeKey& __key) const
+  [[nodiscard]] _CCCL_DEVICE_API bool contains(_CG __group, const _ProbeKey& __key) const noexcept
   {
     return __impl.__contains(__group, __key);
   }
@@ -278,7 +278,7 @@ public:
   //! @param __output_begin Beginning of the sequence of booleans for the presence of each key
   _CCCL_TEMPLATE(class _CG, class _InputIt, class _OutputIt)
   _CCCL_REQUIRES((!::cuda::std::is_convertible_v<_CG, ::cuda::stream_ref>) )
-  _CCCL_DEVICE_API void contains(_CG __group, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const
+  _CCCL_DEVICE_API void contains(_CG __group, _InputIt __first, _InputIt __last, _OutputIt __output_begin) const noexcept
   {
     __impl.__contains_range(__group, __first, __last, __output_begin);
   }
@@ -360,8 +360,8 @@ public:
 };
 } // namespace cuda::experimental::cuco
 
-#endif // !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDAX___CUCO_BLOOM_FILTER_REF_CUH

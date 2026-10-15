@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cccl/assert.h>
@@ -32,32 +32,9 @@
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
 
+#include <cuda/experimental/__cuco/bloom_filter_modes.cuh>
+
 #include <cuda/std/__cccl/prologue.h>
-
-namespace cuda::experimental::cuco
-{
-//! @brief Selects whether `bloom_filter::add` reads a word before issuing the atomic OR.
-//!
-//! @note `on` trades a load for fewer atomic writes and is beneficial when the filter is highly
-//! contended (e.g. close to full) or the input contains many duplicate keys, where most writes
-//! would be redundant. It never changes the resulting bitset.
-enum class conditional_add_mode : bool
-{
-  off = false, ///< Always issue the atomic OR
-  on  = true ///< Skip the atomic OR when the required bits are already set
-};
-
-//! @brief Selects whether `bloom_filter::contains` short-circuits on the first missing fingerprint
-//! slice.
-//!
-//! @note `on` is beneficial when queried keys have a low match rate (most lookups miss) and filter
-//! contention is low, so the common negative path exits early. It never changes the result.
-enum class early_exit_contains_mode : bool
-{
-  off = false, ///< Always evaluate every fingerprint slice
-  on  = true ///< Return as soon as a slice misses
-};
-} // namespace cuda::experimental::cuco
 
 namespace cuda::experimental::cuco::__bloom_filter_ns
 {
@@ -84,7 +61,8 @@ namespace cuda::experimental::cuco::__bloom_filter_ns
 //! `cuda::experimental::cuco::bloom_filter_policy` instead.
 //!
 //! @tparam _Hash 64-bit hash functor whose call operator returns `cuda::std::uint64_t`
-//! @tparam _Word Underlying word type of a filter block. Must be an atomically updatable integral
+//! @tparam _Word Underlying word type of a filter block. Must be `unsigned int` or
+//! `unsigned long long` for native atomic operations
 //! @tparam _WordsPerBlock Words per filter block. Must be a power of two and <= 32
 //! @tparam _PatternBits Number of fingerprint bits (k in the paper)
 //! @tparam _AddHorizontalLayout Cooperative-group size used for `add` (the paper's Theta)
@@ -125,14 +103,14 @@ public:
 private:
   static constexpr int __max_salts                                                = 64;
   static constexpr ::cuda::std::array<::cuda::std::uint32_t, __max_salts> __salts = {
-    0x47b6137bU, 0x44974d91U, 0x8824ad5bU, 0xa2b7289dU, 0x705495c7U, 0x2df1424bU, 0x9efc4947U, 0x5c6bfb31U,
-    0xb24bcdffU, 0xb6843d6dU, 0x6db04543U, 0x3a12efddU, 0xb0ddd463U, 0x8d22f6e7U, 0xb82f1e53U, 0x7db9f86bU,
-    0xc7afe639U, 0xfb135cd7U, 0x693256e1U, 0x9466d871U, 0x23d3d02fU, 0x6461d049U, 0x66a91621U, 0xbaa3006fU,
-    0x52fb8d99U, 0x3ea88b4fU, 0x0f470cfdU, 0xb1db79a5U, 0x9809fcd1U, 0xbced4445U, 0x2eb7c737U, 0x2cea6803U,
-    0x156f1955U, 0x8813c027U, 0xa26819f9U, 0x4c3b57bdU, 0x7df94487U, 0xb975e769U, 0xb8f20cb5U, 0x5c9e2e77U,
-    0x5fb1735fU, 0x3a6f759bU, 0x3c090923U, 0xfced424dU, 0xa187a6a9U, 0x6f070a41U, 0x2c85233bU, 0x7e62258bU,
-    0x2771ef17U, 0x13bbf093U, 0x4ff059e5U, 0xe3ce3d0fU, 0xf1b4789fU, 0x9fbb6173U, 0x6a320cf5U, 0x1be2c481U,
-    0x7ba8222bU, 0x6fd619b3U, 0x7b1bbf0dU, 0x8b8993adU, 0x448eca95U, 0x82ab09d9U, 0x2ce53909U, 0x4f548685U};
+    0x47B6137BU, 0x44974D91U, 0x8824AD5BU, 0xA2B7289DU, 0x705495C7U, 0x2DF1424BU, 0x9EFC4947U, 0x5C6BFB31U,
+    0xB24BCDFFU, 0xB6843D6DU, 0x6DB04543U, 0x3A12EFDDU, 0xB0DDD463U, 0x8D22F6E7U, 0xB82F1E53U, 0x7DB9F86BU,
+    0xC7AFE639U, 0xFB135CD7U, 0x693256E1U, 0x9466D871U, 0x23D3D02FU, 0x6461D049U, 0x66A91621U, 0xBAA3006FU,
+    0x52FB8D99U, 0x3EA88B4FU, 0x0F470CFDU, 0xB1DB79A5U, 0x9809FCD1U, 0xBCED4445U, 0x2EB7C737U, 0x2CEA6803U,
+    0x156F1955U, 0x8813C027U, 0xA26819F9U, 0x4C3B57BDU, 0x7DF94487U, 0xB975E769U, 0xB8F20CB5U, 0x5C9E2E77U,
+    0x5FB1735FU, 0x3A6F759BU, 0x3C090923U, 0xFCED424DU, 0xA187A6A9U, 0x6F070A41U, 0x2C85233BU, 0x7E62258BU,
+    0x2771EF17U, 0x13BBF093U, 0x4FF059E5U, 0xE3CE3D0FU, 0xF1B4789FU, 0x9FBB6173U, 0x6A320CF5U, 0x1BE2C481U,
+    0x7BA8222BU, 0x6FD619B3U, 0x7B1BBF0DU, 0x8B8993ADU, 0x448ECA95U, 0x82AB09D9U, 0x2CE53909U, 0x4F548685U};
 
   static constexpr int __word_bits = ::cuda::std::numeric_limits<word_type>::digits;
 
@@ -149,18 +127,19 @@ private:
   static constexpr int __bit_index_width =
     static_cast<int>(::cuda::std::bit_width(static_cast<::cuda::std::uint32_t>(__word_bits - 1)));
 
-  // TODO: for non-multiple `(pattern_bits, words_per_block)` configs (e.g. _PatternBits=12,
-  // _WordsPerBlock=8), the salt walk in `__set_bits` advances `_PatternArrayIndex` every
-  // `__max_bits_per_word` salts, packing all bits into the first
-  // `ceil(pattern_bits / words_per_block)` words and leaving the rest at zero. This wastes block
-  // capacity and inflates the false-positive rate. Distribute floor bits to every word plus one
-  // extra bit to the first `pattern_bits % words_per_block` words, and update the salt-to-word
-  // mapping in `__set_bits` accordingly.
-  static constexpr int __max_bits_per_word = ::cuda::ceil_div(pattern_bits, words_per_block);
+  // Every word gets floor(pattern_bits / words_per_block) salts; the first remainder
+  // words get one more. Salt ranges depend only on the word index, so all layouts
+  // generate exactly the same fingerprint.
+  static constexpr int __bits_per_word = pattern_bits / words_per_block;
+  static constexpr int __extra_words   = pattern_bits % words_per_block;
 
   hasher __hash_;
 
-  static_assert(words_per_block > 0, "words_per_block must be greater than zero");
+  static_assert(::cuda::is_power_of_two(words_per_block) && words_per_block <= 32,
+                "words_per_block must be a power of two and at most 32");
+  static_assert(::cuda::std::is_same_v<word_type, unsigned int>
+                  || ::cuda::std::is_same_v<word_type, unsigned long long>,
+                "word_type must be unsigned int or unsigned long long");
   static_assert(pattern_bits >= min_pattern_bits, "pattern_bits must be at least words_per_block");
   static_assert(pattern_bits <= max_pattern_bits,
                 "pattern_bits must not exceed the total number of bits in a filter block");
@@ -282,11 +261,7 @@ private:
     static_assert(_LoopIndex < __num_iterations, "the loop index cannot exceed the number of loop iterations");
 
     __pattern_array_t __pattern_array{};
-    constexpr int __salt_start_index = __max_bits_per_word * _VerticalLayout * _LoopIndex;
-    constexpr int __salt_end_index =
-      ::cuda::std::min(__salt_start_index + __max_bits_per_word * _VerticalLayout, pattern_bits);
-    constexpr int __pattern_array_start_index = 0;
-    __set_bits<__salt_start_index, __salt_end_index, __pattern_array_start_index>(__hash, __pattern_array);
+    __set_words<_VerticalLayout * _LoopIndex, 0>(__hash, __pattern_array);
     return __pattern_array;
   }
 
@@ -305,22 +280,16 @@ private:
     constexpr int __lower_bound = _LoopIndex * _HorizontalLayout;
     constexpr int __upper_bound = __lower_bound + _HorizontalLayout;
 
-    // A virtual thread flips `__max_bits_per_virtual_thread` bits in the pattern array, excepting
-    // potentially some of the last virtual threads (if pattern_bits % words_per_block != 0).
-    constexpr int __max_bits_per_virtual_thread = __max_bits_per_word * _VerticalLayout;
-
     __pattern_array_t __pattern_array{};
     if constexpr (__num_iterations == 1)
     {
-      __thread_dispatch<__max_bits_per_virtual_thread, __lower_bound, __upper_bound>(
-        __hash, __thread_index, __pattern_array);
+      __thread_dispatch<_VerticalLayout, __lower_bound, __upper_bound>(__hash, __thread_index, __pattern_array);
     }
     else
     {
       const ::cuda::std::uint32_t __virtual_thread_index =
         static_cast<::cuda::std::uint32_t>(_LoopIndex * _HorizontalLayout) + __thread_index;
-      __thread_dispatch<__max_bits_per_virtual_thread, __lower_bound, __upper_bound>(
-        __hash, __virtual_thread_index, __pattern_array);
+      __thread_dispatch<_VerticalLayout, __lower_bound, __upper_bound>(__hash, __virtual_thread_index, __pattern_array);
     }
     return __pattern_array;
   }
@@ -328,7 +297,7 @@ private:
   // Dispatches a dynamic virtual thread index to a static virtual thread index by building a
   // compile-time decision tree over the range [_LowerBound, _UpperBound) for the virtual thread
   // index. This method is only used when <add/contains>_horizontal_layout > 1.
-  template <int _MaxBitsPerVirtualThread, int _LowerBound, int _UpperBound, class _PatternArrayT>
+  template <int _VerticalLayout, int _LowerBound, int _UpperBound, class _PatternArrayT>
   _CCCL_HOST_DEVICE_API constexpr void __thread_dispatch(
     ::cuda::std::uint32_t __hash, ::cuda::std::uint32_t __thread_index, _PatternArrayT& __pattern_array) const noexcept
   {
@@ -337,10 +306,7 @@ private:
     if constexpr (_LowerBound + 1 == _UpperBound)
     {
       // Base case: __thread_index == _LowerBound
-      constexpr int __salt_start_index = _MaxBitsPerVirtualThread * _LowerBound;
-      constexpr int __salt_end_index   = ::cuda::std::min(__salt_start_index + _MaxBitsPerVirtualThread, pattern_bits);
-      constexpr int __pattern_array_start_index = 0;
-      __set_bits<__salt_start_index, __salt_end_index, __pattern_array_start_index>(__hash, __pattern_array);
+      __set_words<_LowerBound * _VerticalLayout, 0>(__hash, __pattern_array);
     }
     else
     {
@@ -348,12 +314,25 @@ private:
       constexpr int __mid = (_LowerBound + _UpperBound) / 2;
       if (__thread_index < static_cast<::cuda::std::uint32_t>(__mid))
       {
-        __thread_dispatch<_MaxBitsPerVirtualThread, _LowerBound, __mid>(__hash, __thread_index, __pattern_array);
+        __thread_dispatch<_VerticalLayout, _LowerBound, __mid>(__hash, __thread_index, __pattern_array);
       }
       else
       {
-        __thread_dispatch<_MaxBitsPerVirtualThread, __mid, _UpperBound>(__hash, __thread_index, __pattern_array);
+        __thread_dispatch<_VerticalLayout, __mid, _UpperBound>(__hash, __thread_index, __pattern_array);
       }
+    }
+  }
+
+  template <int _WordIndex, int _ArrayIndex, ::cuda::std::size_t _Size>
+  _CCCL_HOST_DEVICE_API constexpr void
+  __set_words(::cuda::std::uint32_t __hash, ::cuda::std::array<word_type, _Size>& __pattern_array) const noexcept
+  {
+    if constexpr (_ArrayIndex < static_cast<int>(_Size))
+    {
+      constexpr int __salt_start = _WordIndex * __bits_per_word + ::cuda::std::min(_WordIndex, __extra_words);
+      constexpr int __salt_end   = (_WordIndex + 1) * __bits_per_word + ::cuda::std::min(_WordIndex + 1, __extra_words);
+      __set_bits<__salt_start, __salt_end, _ArrayIndex>(__hash, __pattern_array);
+      __set_words<_WordIndex + 1, _ArrayIndex + 1>(__hash, __pattern_array);
     }
   }
 
@@ -373,10 +352,7 @@ private:
         static_cast<word_type>(word_type{1} << __bit_index);
 
       // Recurse.
-      constexpr int __next_salt_index = _SaltIndex + 1;
-      constexpr int __next_pattern_array_index =
-        _PatternArrayIndex + ((__next_salt_index % __max_bits_per_word == 0) ? 1 : 0);
-      __set_bits<__next_salt_index, _SaltEndIndex, __next_pattern_array_index>(__hash, __pattern_array);
+      __set_bits<_SaltIndex + 1, _SaltEndIndex, _PatternArrayIndex>(__hash, __pattern_array);
     }
   }
 };
