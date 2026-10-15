@@ -243,7 +243,7 @@ def radix_rank_keys(
     keys: CommonThreadDataLike[_RankKeyT],
     /,
     *,
-    begin_bit: int = 0,
+    begin_bit: IntegerValue = 0,
     end_bit: int | None = None,
     radix_bits: int | None = None,
     descending: bool = False,
@@ -254,18 +254,24 @@ def radix_rank_keys(
     ----------
     group : ThreadGroup
         A complete physical block. All threads participate with identical
-        compile-time controls and per-thread payload extents.
+        controls and per-thread payload extents.
     keys : ThreadDataLike
         Fixed-size int32, uint32, int64, or uint64 per-thread keys in blocked
         arrangement.
-    begin_bit, end_bit : int, optional
-        Compile-time half-open interval in CUB's ordered representation.
-        Begin defaults to zero; omitted end is begin plus ``radix_bits`` or
-        four when that option is omitted. The interval must remain within
-        the key width and contain one through eight bits.
+    begin_bit : int or compiler integer, optional
+        Block-uniform starting bit in CUB's ordered representation. May be
+        runtime-valued with Numba-CUDA-MLIR when ``radix_bits`` is explicitly
+        supplied. Otherwise it must be known during compilation. Defaults to
+        zero.
+    end_bit : int, optional
+        Compile-time exclusive end. Omitted end is begin plus ``radix_bits``,
+        or begin plus four when the width is omitted. The selected interval
+        must remain within the key width and contain one through eight bits.
     radix_bits : int, optional
-        Compile-time digit width. When end is also supplied, it must equal
-        ``end_bit - begin_bit``.
+        Compile-time digit width. When end is supplied, it must equal
+        ``end_bit - begin_bit``. Invalid known bounds fail during compilation;
+        invalid runtime starts or disagreement with an explicit end trap on
+        the device before narrowing the starting bit.
     descending : bool
         Compile-time selector that places greater digits before smaller ones.
 

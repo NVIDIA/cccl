@@ -218,21 +218,60 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
         _compile(kernel, types.void(types.int32[::1], types.int32[::1]))
 
 
-def test_unsigned_64_bit_runtime_controls_are_rejected():
+@pytest.mark.parametrize("rank", [False, True])
+@pytest.mark.parametrize(
+    "control_dtype", [types.uint64, types.boolean, types.float64]
+)
+def test_invalid_runtime_control_types_are_rejected(rank, control_dtype):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination, begin, end):
         keys = coop.ThreadData(items_per_thread=2, dtype=types.int32)
         keys[0] = source[0]
         keys[1] = source[1]
-        result = coop.radix_sort_keys(
-            coop.this_block(), keys, begin_bit=begin, end_bit=end
-        )
+        if rank:
+            result = coop.radix_rank_keys(
+                coop.this_block(), keys, begin_bit=begin, radix_bits=4
+            )
+        else:
+            result = coop.radix_sort_keys(
+                coop.this_block(), keys, begin_bit=begin, end_bit=end
+            )
         destination[0] = result[0]
 
-    with pytest.raises(TypeError, match="unsigned integer up to 32 bits"):
+    with pytest.raises(TypeError, match="integer"):
         _compile(
             kernel,
             types.void(
-                types.int32[::1], types.int32[::1], types.uint64, types.uint64
+                types.int32[::1], types.int32[::1], control_dtype, control_dtype
             ),
         )
+
+
+@pytest.mark.parametrize("control", ["width", "end", "implicit_width"])
+def test_rank_template_controls_still_require_constants(control):
+    from cuda.coop.numba_mlir._compiler._group_planner import (
+        NonConstantGroupArgumentError,
+    )
+
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        keys = coop.ThreadData(items_per_thread=1)
+        keys[0] = source[cuda.threadIdx.x]
+        if control == "width":
+            result = coop.radix_rank_keys(
+                coop.this_block(), keys, radix_bits=source[0]
+            )
+        elif control == "end":
+            result = coop.radix_rank_keys(
+                coop.this_block(), keys, end_bit=source[0], radix_bits=4
+            )
+        else:
+            result = coop.radix_rank_keys(
+                coop.this_block(), keys, begin_bit=source[0]
+            )
+        destination[cuda.threadIdx.x] = result[0]
+
+    with pytest.raises(
+        NonConstantGroupArgumentError, match="compile-time constants"
+    ):
+        _compile(kernel, types.void(types.int32[::1], types.int32[::1]))

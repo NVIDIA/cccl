@@ -7,7 +7,7 @@
 
 These contracts describe CUB specialization inputs without running a
 compiler. They also cover runtime-bound semantic records; the Numba public
-rank API separately requires a static digit interval.
+rank API separately requires a static digit width.
 """
 
 import numpy as np

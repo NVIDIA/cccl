@@ -60,7 +60,7 @@ def infer_radix_payload(context, inference):
             inference.infer_kwarg(parameter, dtype)
         context.record_thread_data_dtype(value, dtype)
     inference.infer_kwarg("items_per_thread", extent)
-    if rank and len(inference.runtime_args) == 3:
+    if rank and inference.factory_value("with_exclusive_digit_prefix"):
         value, specification = inference.array_candidate(2)
         dtype = inference.inferred_array_dtype(value, specification)
         if specification is None or dtype not in {None, numba_types.int32}:

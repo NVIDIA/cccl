@@ -51,6 +51,7 @@ def radix_rank_keys(
     end_bit,
     descending=False,
     with_exclusive_digit_prefix=False,
+    radix_bits=None,
 ):
     """Specialize integer digit ranking with an ordered unsigned key view.
 
@@ -58,7 +59,8 @@ def radix_rank_keys(
     an input transform that flips the sign bit in a temporary array. This
     uses the signed ordering transform before digit selection without changing
     the caller's keys. Unsigned keys need no transform. The native key width
-    still bounds the static digit interval.
+    still bounds the digit interval. An explicit static width permits a
+    runtime begin bit, checked before conversion to CUB's integer type.
 
     Build the block specialization with the chosen interval, direction, and
     optional digit-prefix output, then materialize its provider callable.
@@ -100,6 +102,7 @@ def radix_rank_keys(
         items_per_thread=items_per_thread,
         begin_bit=begin_bit,
         end_bit=end_bit,
+        radix_bits=radix_bits,
         key_bit_width=dtype.bitwidth,
         descending=descending,
         with_exclusive_digit_prefix=with_exclusive_digit_prefix,
