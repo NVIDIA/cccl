@@ -27,8 +27,12 @@
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/climits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -42,11 +46,13 @@ inline constexpr size_t __max_vector_access = 32ull;
 inline constexpr size_t __max_vector_access = 16ull;
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
 
-//! `_Count` unsigned integer words that are accessed together, aligned for a single vector access of their size
+//! `_Count` words that are accessed together, aligned for a single vector access of their size
 template <class _Word, size_t _Count>
 struct alignas(sizeof(_Word) * _Count) __vector_word
 {
   static_assert(sizeof(_Word) * _Count <= __max_vector_access, "A vector word must fit into a single vector access");
+
+  using value_type = _Word;
 
   _Word __storage_[_Count];
 };
@@ -82,7 +88,14 @@ struct __bytes_vectorized_t
   {
     static_assert(sizeof(_Tp) <= sizeof(__storage_), "T does not fit in vectorized storage");
     static_assert(alignof(_Tp) <= __alignment, "T is more aligned than vectorized storage");
-    return ::cuda::std::launder(reinterpret_cast<_Tp*>(__storage_));
+    if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, typename _VectorWord::value_type>)
+    {
+      return __storage_[0].__storage_;
+    }
+    else
+    {
+      return ::cuda::std::launder(reinterpret_cast<_Tp*>(__storage_));
+    }
   }
 
   template <class _Tp>
@@ -90,7 +103,14 @@ struct __bytes_vectorized_t
   {
     static_assert(sizeof(_Tp) <= sizeof(__storage_), "T does not fit in vectorized storage");
     static_assert(alignof(_Tp) <= __alignment, "T is more aligned than vectorized storage");
-    return ::cuda::std::launder(reinterpret_cast<const _Tp*>(__storage_));
+    if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, typename _VectorWord::value_type>)
+    {
+      return __storage_[0].__storage_;
+    }
+    else
+    {
+      return ::cuda::std::launder(reinterpret_cast<const _Tp*>(__storage_));
+    }
   }
 };
 
@@ -99,7 +119,10 @@ template <class _Tp, size_t _VecSize>
 {
   if constexpr (alignof(_Tp) <= __max_vector_access)
   {
-    using _Word = ::cuda::std::__make_nbit_uint_t<::cuda::std::min(alignof(_Tp), size_t{8}) * CHAR_BIT>;
+    using _Word =
+      ::cuda::std::conditional_t<::cuda::std::is_arithmetic_v<_Tp>,
+                                 _Tp,
+                                 ::cuda::std::__make_nbit_uint_t<::cuda::std::min(alignof(_Tp), size_t{8}) * CHAR_BIT>>;
     constexpr size_t __num_words = sizeof(_Tp) / sizeof(_Word) * _VecSize;
     constexpr size_t __words_per_vector =
       ::cuda::std::min(size_t{1} << ::cuda::std::countr_zero(__num_words), __max_vector_access / sizeof(_Word));
@@ -109,13 +132,16 @@ template <class _Tp, size_t _VecSize>
   }
   else
   { // Default case: use 32 bit words as the vectorized storage
-    return __bytes_vectorized_t<::cuda::std::uint32_t, alignof(_Tp), ::cuda::ceil_div(sizeof(_Tp), 4) * _VecSize>{};
+    return __bytes_vectorized_t<__vector_word<::cuda::std::uint32_t, 1>,
+                                alignof(_Tp),
+                                ::cuda::ceil_div(sizeof(_Tp), 4) * _VecSize>{};
   }
 }
 
-//! Storage for `_VecSize` objects of type `_Tp`, made of unsigned integer words of the alignment of `_Tp`, at most 8
-//! bytes, grouped into the widest vector words that evenly divide the storage. It is aligned for the widest vector
-//! access of its size, at most to `__max_vector_access` but at least to `alignof(_Tp)`
+//! Storage for `_VecSize` objects of type `_Tp`. Arithmetic types use themselves as the word. Other types use unsigned
+//! integer words of the alignment of `_Tp`, at most 8 bytes. Words are grouped into the widest vector words that evenly
+//! divide the storage. The storage is aligned for the widest vector access of its size, at most to
+//! `__max_vector_access` but at least to `alignof(_Tp)`
 template <class _Tp, size_t _VecSize>
 using __as_bytes_vectorized_t = decltype(::cuda::__as_bytes_vectorized_impl<_Tp, _VecSize>());
 
