@@ -714,7 +714,7 @@ class GroupPlanningContext:
         index: int | None,
         seen: set[str],
     ) -> Any | None:
-        """Infer a registered result's fixed or argument-derived dtype.
+        """Infer a registered result's explicit or argument-derived dtype.
 
         The context's dtype traversal calls this before provider rewriting.
         It follows the public operation's result policy so a chain of group
@@ -722,9 +722,11 @@ class GroupPlanningContext:
         yet.
 
         ``index`` selects a tuple result or is ``None`` for a direct result.
-        A fixed dtype takes precedence, so rank results do not inherit the key
-        type. Otherwise follow the policy's named argument using the caller's
-        recursion path. Return ``None`` if no policy or dtype source applies.
+        Use a non-None dtype keyword first, then a fixed dtype, then the
+        policy's source argument. Fixed int32 policies keep flag and rank
+        results independent of the input payload's dtype. Traverse arguments
+        with the caller's recursion path. Return ``None`` if no policy or
+        dtype source applies.
 
         Parameters
         ----------
@@ -744,6 +746,10 @@ class GroupPlanningContext:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.dtype_keyword is not None:
+            dtype = self.constant(bound.arguments[result.dtype_keyword])
+            if dtype is not None:
+                return normalize_dtype_param(dtype)
         if result.fixed_dtype is not None:
             return result.fixed_dtype
         if result.dtype_parameter is None:
@@ -898,9 +904,10 @@ class GroupPlanningContext:
         and out-of-range indices contribute no dtype; known conflicts at a phi
         join raise ``GroupRewriteError``.
 
-        Registered calls with multiple results follow the selected result's
-        dtype-source argument. This makes tuple-returned payloads available to
-        later group planning before provider rewriting.
+        Registered calls with multiple results use the selected result's
+        dtype policy: a non-None dtype keyword, then a fixed dtype such as
+        int32 flags, then the source argument. This makes tuple-returned
+        payloads available to later group planning before provider rewriting.
 
         Parameters
         ----------

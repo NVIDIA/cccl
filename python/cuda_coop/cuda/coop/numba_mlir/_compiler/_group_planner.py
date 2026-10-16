@@ -917,11 +917,13 @@ class _GroupCallPlanner:
         values))`` needs the Exchange result's element type and per-thread
         item count before either public call has been replaced.
 
-        Return the selected ``GroupResultSource`` and bound public arguments,
-        or ``None`` for an unrelated call or invalid result selection. Without
-        ``index``, only a single-result operation qualifies. With ``index``,
-        only a multiple-result operation qualifies: indexing a single array
-        result selects an element, not a tuple result.
+        Bind public arguments before resolving results so a static selector
+        can choose the result layout. Return the selected
+        ``GroupResultSource`` and bound arguments, or ``None`` for an
+        unrelated call or invalid result selection. Without ``index``, only
+        a single-result operation qualifies. With ``index``, only a
+        multiple-result operation qualifies: indexing a single array result
+        selects an element, not a tuple result.
 
         Dtype, array-origin, and extent queries share this policy. It lets
         later group calls consume the result before provider rewriting and
@@ -945,7 +947,12 @@ class _GroupCallPlanner:
         registration = None if operation is None else group_primitive(operation)
         if registration is None:
             return None
-        results = registration.results
+        bound = self._bind(self._callable(definition.func), definition)
+        results = (
+            registration.results
+            if registration.result_resolver is None
+            else registration.result_resolver(self.context, bound)
+        )
         if index is None:
             if len(results) != 1:
                 return None
@@ -959,7 +966,7 @@ class _GroupCallPlanner:
             if not -len(results) <= index < len(results):
                 return None
             result = results[index]
-        return result, self._bind(self._callable(definition.func), definition)
+        return result, bound
 
     def _is_array_tuple_item(
         self,
@@ -1037,9 +1044,10 @@ class _GroupCallPlanner:
         its inputs must all be checked. When a ``build_tuple`` expression is
         reached, classify the selected element with ``_is_array_value``.
 
-        For a registered operation with multiple results, follow the selected
-        result's array-source argument. A single-result array call is not a
-        tuple producer; indexing it selects a scalar element.
+        For a registered operation with multiple results, an extent resolver
+        establishes an array result without an array-shaped input. Otherwise,
+        follow the selected result's array-source argument. A single-result
+        array call is not a tuple producer; indexing it selects a scalar.
 
         Parameters
         ----------
@@ -1051,8 +1059,9 @@ class _GroupCallPlanner:
             Variable names and tuple-position keys visited on this recursion
             path. Independent branches receive copies to avoid skipping work.
         thread_data_only : bool
-            Whether the selected payload must originate from ``ThreadData``.
-            False also permits a recognized CUDA local-array constructor.
+            Require ``ThreadData`` when following an input array source.
+            False also permits CUDA local arrays. A registered extent resolver
+            establishes an array result without either input constructor.
 
         Returns
         -------
@@ -1102,6 +1111,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return False
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return True
         if result.array_parameter is None:
             return False
         return self._is_array_value(
@@ -1187,9 +1198,10 @@ class _GroupCallPlanner:
         that tuple element. Branch and loop merges inspect all alternatives;
         an unsupported source cannot be hidden by another valid source.
 
-        A generated result marker follows its prototype's origin. A registered
-        single-result operation follows the array-source argument declared by
-        its result policy, preserving the ThreadData-only restriction.
+        A generated result marker follows its prototype's origin. For a
+        registered single-result operation, an extent resolver establishes an
+        array result without an array-shaped input. Otherwise, follow the
+        declared array-source argument and retain the ThreadData restriction.
 
         Parameters
         ----------
@@ -1200,8 +1212,9 @@ class _GroupCallPlanner:
             Variable names and tuple-position keys already visited on the
             current recursion path. Each branch receives its own copy.
         thread_data_only : bool
-            Accept common and qualified ``ThreadData`` constructors only when
-            true; false also accepts the recognized CUDA local-array call.
+            Require common or qualified ``ThreadData`` when tracing an input
+            array. False also accepts CUDA local arrays. An extent resolver
+            establishes an array result without an input array.
 
         Returns
         -------
@@ -1264,6 +1277,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return False
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return True
         if result.array_parameter is None:
             return False
         return self._is_array_value(
@@ -1549,11 +1564,11 @@ class _GroupCallPlanner:
 
         Follow the assignments that can supply ``value`` through copies, casts,
         branch or loop merges, and constant tuple indices. Read the count from
-        ``ThreadData`` or a CUDA local-array constructor with an integer shape.
+        constructors, generated payload markers, or registered result policies.
         All known counts must agree: one provider cannot use different array
         sizes on different paths through the kernel. Paths with no known count
         are ignored here; the separate array-kind check must establish that the
-        operand comes from supported constructors.
+        operand has a supported array source.
 
         Parameters
         ----------
@@ -1569,7 +1584,8 @@ class _GroupCallPlanner:
         -------
         int or None
             The single known number of elements per thread, or ``None`` if no
-            count is found. Counts are integral and exclude booleans; the
+            count is found. Constructor counts are integral and exclude
+            booleans; result-policy callbacks supply their own counts. The
             operation's later shape validation checks positivity.
 
         Raises
@@ -1675,9 +1691,9 @@ class _GroupCallPlanner:
         so known counts on its inputs must agree. At a tuple construction,
         ``_array_extent`` examines the selected payload itself.
 
-        Registered multiple-result calls follow the selected result policy's
-        array-source argument. A policy with no array source describes one
-        scalar item.
+        Registered multiple-result calls use the selected result's extent
+        resolver when present. Otherwise, follow its array-source argument
+        or use one scalar item when the policy has no array source.
 
         Parameters
         ----------
@@ -1737,6 +1753,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return result.extent_resolver(self.context, bound)
         if result.array_parameter is None:
             return 1
         return self._array_extent(
@@ -1758,8 +1776,9 @@ class _GroupCallPlanner:
 
         Generated result markers use an explicit extent when present,
         otherwise inherit array extent or use one scalar item. Registered
-        direct results follow their declared array-source argument, or use one
-        item when the policy declares a scalar.
+        direct results use their extent resolver when present. Otherwise,
+        follow their array-source argument or use one scalar item when the
+        policy has no array source.
 
         Parameters
         ----------
@@ -1873,6 +1892,8 @@ class _GroupCallPlanner:
         if resolved is None:
             return None
         result, bound = resolved
+        if result.extent_resolver is not None:
+            return result.extent_resolver(self.context, bound)
         if result.array_parameter is None:
             return 1
         return self._array_extent(
@@ -1894,10 +1915,10 @@ class _GroupCallPlanner:
 
         Use ``known_items_per_thread`` when supplied; otherwise infer the
         source extent. Emit one item read and write per index into
-        ``statements``. Define ``destination`` in earlier pending statements.
-        It usually names a result marker that the provider rewrite allocates
-        later. The copy keeps caller-owned input intact when a native provider
-        may modify it.
+        ``statements``. The caller must already have defined ``destination``
+        in earlier pending statements. It usually names a result marker that
+        the provider rewrite allocates later. The copy keeps caller-owned
+        input intact when a native provider may modify it.
 
         Raise ``UnknownResultExtentError`` if no static extent is available.
         The statements remain pending until the owning planner installs them.

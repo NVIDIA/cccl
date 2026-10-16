@@ -234,25 +234,40 @@ class GroupResultSource:
     Attributes
     ----------
     dtype_parameter : str or None
-        Argument whose dtype the result inherits when no fixed dtype is set.
-        ``None`` supplies no argument-based dtype inference.
+        Argument whose dtype the result inherits when neither an explicit
+        dtype keyword nor a fixed dtype supplies it. ``None`` supplies no
+        argument-based dtype inference.
     array_parameter : str or None
-        Argument whose scalar/array form and array extent the result inherits.
-        ``None`` describes a scalar result with one item.
+        Argument whose scalar/array form and array extent the result inherits
+        when no extent resolver is present. ``None`` then describes one
+        scalar item.
     fixed_dtype : object, optional
-        Compiler dtype that overrides ``dtype_parameter``. ``None`` leaves
-        dtype inference to the named argument, if one exists.
+        Compiler dtype used when the dtype keyword supplies no value.
+        ``None`` leaves inference to the named argument, if one exists.
+    dtype_keyword : str or None
+        Argument whose compile-time dtype, when non-None, takes precedence
+        over the fixed dtype and source argument.
+    extent_resolver : callable or None
+        Hook that receives the planning context and bound call and returns a
+        known per-thread extent or ``None``. Its presence declares an array
+        result independently of input shape.
     """
 
     dtype_parameter: str | None
     array_parameter: str | None
     fixed_dtype: Any = None
+    dtype_keyword: str | None = None
+    extent_resolver: Callable[[Any, Any], int | None] | None = None
 
     def __post_init__(self) -> None:
-        for name in ("dtype_parameter", "array_parameter"):
+        for name in ("dtype_parameter", "array_parameter", "dtype_keyword"):
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value):
                 raise ValueError(f"{name} must be a non-empty string or None")
+        if self.extent_resolver is not None and not callable(
+            self.extent_resolver
+        ):
+            raise TypeError("extent_resolver must be callable or None")
 
 
 @dataclass(frozen=True)
@@ -265,15 +280,20 @@ class GroupPrimitiveRegistration:
     ``None`` omits that check. Both hooks receive the active planning context.
 
     ``results`` describes return values in order so dtype and extent analysis
-    can follow a call before rewriting. One result is returned directly;
-    multiple result policies describe a tuple. An empty tuple supplies no
-    result provenance. These policies aid inference; they do not allocate or
-    validate returned values.
+    can follow a call before rewriting. An optional ``result_resolver`` uses
+    the planning context and bound arguments to replace that fixed tuple.
+    This lets a static selector choose the result layout. One result is
+    returned directly; multiple result policies describe a tuple. An empty
+    tuple supplies no result provenance. These policies aid inference; they
+    do not allocate or validate returned values.
     """
 
     lower: Callable[..., list[Any]]
     results: tuple[GroupResultSource, ...] = ()
     validate_common_arguments: Callable[..., None] | None = None
+    result_resolver: (
+        Callable[[Any, Any], tuple[GroupResultSource, ...]] | None
+    ) = None
 
     def __post_init__(self) -> None:
         if not callable(self.lower):
@@ -283,6 +303,10 @@ class GroupPrimitiveRegistration:
             not isinstance(result, GroupResultSource) for result in self.results
         ):
             raise TypeError("results must contain GroupResultSource records")
+        if self.result_resolver is not None and not callable(
+            self.result_resolver
+        ):
+            raise TypeError("result_resolver must be callable or None")
         if self.validate_common_arguments is not None and not callable(
             self.validate_common_arguments
         ):
@@ -631,6 +655,8 @@ def register_group_primitive(
     lower: Callable[..., list[Any]],
     results: tuple[GroupResultSource, ...] = (),
     validate_common_arguments: Callable[..., None] | None = None,
+    result_resolver: Callable[[Any, Any], tuple[GroupResultSource, ...]]
+    | None = None,
 ) -> None:
     """Register group-call lowering for one public operation.
 
@@ -656,6 +682,10 @@ def register_group_primitive(
         Optional check for calls through the common ``cuda.coop`` API. It runs
         before ``lower`` with the planning context and bound arguments;
         backend-qualified calls skip it.
+    result_resolver : callable or None
+        Optional hook receiving the planning context and bound arguments and
+        returning a replacement tuple of result policies. This lets a static
+        selector choose the result layout; ``None`` uses ``results``.
 
     Raises
     ------
@@ -670,6 +700,7 @@ def register_group_primitive(
         lower=lower,
         results=results,
         validate_common_arguments=validate_common_arguments,
+        result_resolver=result_resolver,
     )
     existing = _GROUP_PRIMITIVES.get(operation)
     if existing is not None and existing != registration:
