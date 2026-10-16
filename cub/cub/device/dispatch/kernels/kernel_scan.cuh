@@ -33,7 +33,7 @@
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__limits/numeric_limits.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -245,6 +245,7 @@ template <typename PolicySelector,
           typename AccumT,
           bool ForceInclusive,
           bool StableReductionOrder = false,
+          bool IsDeferred           = false,
           typename RealInitValueT   = typename InitValueT::value_type>
 __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATTRIBUTES void DeviceScanKernel(
   const InputIteratorT d_in,
@@ -313,8 +314,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     const OffsetT num_items        = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
     RealInitValueT real_init_value = init_value;
 
-    static constexpr bool is_deferred_invocation = !::cuda::std::is_same_v<KernelNumItemsT, OffsetT>;
-    if constexpr (is_deferred_invocation)
+    if constexpr (IsDeferred)
     {
       constexpr auto tile_items = static_cast<OffsetT>(policy.threads_per_block) * policy.items_per_thread;
       if (static_cast<OffsetT>(start_tile) + blockIdx.x >= ::cuda::ceil_div(num_items, tile_items))

@@ -10,9 +10,12 @@
 #endif
 
 #include <cub/detail/deferred_parameter.cuh>
+#include <cub/device/device_scan.cuh>
 
 #include <cuda/argument>
+#include <cuda/execution>
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -90,4 +93,43 @@ CUB_TEST("Deferred problem sizes accept the effective bound endpoints on device"
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   const c2h::host_vector<offset_t> result = device_result;
   REQUIRE(result[0] == static_cast<offset_t>(count));
+}
+
+struct fixed_lookback_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
+  {
+    using value_t    = cuda::std::int32_t;
+    using selector_t = cub::detail::scan::
+      policy_selector_from_types<const value_t*, value_t*, value_t, cuda::std::uint32_t, cuda::std::plus<>>;
+    auto policy                       = selector_t{}(cc);
+    policy.algorithm                  = cub::ScanAlgorithm::lookback;
+    policy.lookback.threads_per_block = 128;
+    policy.lookback.items_per_thread  = 1;
+    return policy;
+  }
+};
+
+CUB_TEST("Bounded scans skip tiles beyond the actual deferred count", "[device][scan][deferred]", CUB_SMALL)
+{
+  using value_t              = cuda::std::int32_t;
+  constexpr value_t capacity = 4096;
+  const value_t count =
+    GENERATE_COPY(value_t{0}, value_t{1}, value_t{127}, value_t{128}, value_t{129}, value_t{1024}, capacity);
+  const c2h::device_vector<value_t> input(capacity, value_t{1});
+  c2h::device_vector<value_t> device_count(1, count);
+  c2h::device_vector<value_t> deferred_result(capacity, value_t{-1});
+  c2h::device_vector<value_t> immediate_result(capacity, value_t{-1});
+  c2h::host_vector<value_t> expected(capacity, value_t{-1});
+  for (value_t i = 0; i < count; ++i)
+  {
+    expected[i] = i;
+  }
+
+  const auto arg = cuda::args::deferred{device_count.data().get(), cuda::args::bounds<value_t{0}, capacity>()};
+  const auto env = cuda::execution::tune(fixed_lookback_policy_selector{});
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), deferred_result.begin(), arg, env));
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), immediate_result.begin(), count, env));
+  REQUIRE(expected == deferred_result);
+  REQUIRE(expected == immediate_result);
 }
