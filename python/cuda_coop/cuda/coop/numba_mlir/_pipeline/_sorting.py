@@ -31,7 +31,7 @@ def operations(kinds):
 
 
 def payloads(
-    kind, args, qualified, extents=None
+    kind, args, qualified, extents=None, *, scalar=False
 ) -> tuple[tuple[Any, ...], int | None, bool] | None:
     from .._compiler._parameters import _validate_common_numeric_dtype
 
@@ -48,7 +48,7 @@ def payloads(
             raise TypedPipelineError(
                 f"cuda.coop.{kind} requires {name} to be ThreadData"
             )
-        if not array:
+        if not array and not scalar:
             raise TypedPipelineError(f"coop.{kind}: {name} must be an array")
         if array and (value.ndim != 1 or value.layout != "C"):
             raise TypedPipelineError(
