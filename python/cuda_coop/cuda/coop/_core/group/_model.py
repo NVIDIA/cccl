@@ -449,8 +449,8 @@ class LogicalResultContract:
     The backend uses this record to choose a scalar or array representation
     and to preserve who owns the result and where it is meaningful. It is
     metadata about a result, not the result value or an allocation request.
-    For Reduce, for example, the result is a scalar with the input element
-    dtype, meaningful either at the group root or for every member.
+    For Exchange, for example, each member owns a new array with the input
+    dtype and per-member item count.
 
     Attributes
     ----------
