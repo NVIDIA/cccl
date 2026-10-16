@@ -8,7 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/hierarchy>
@@ -122,7 +121,7 @@ using cluster_size_list = c2h::enum_type_list<int, 1, 2, 4, 8>;
 template <class T>
 void verify_results(const T& expected_data, const T& test_results)
 {
-  if constexpr (::cuda::is_floating_point_v<T>)
+  if constexpr (cuda::std::is_floating_point_v<T>)
   {
     REQUIRE_THAT(expected_data, Catch::Matchers::WithinRel(test_results, T{0.05}));
   }

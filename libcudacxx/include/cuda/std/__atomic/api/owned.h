@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__atomic/api/common.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
@@ -130,7 +129,7 @@ template <typename _Tp, thread_scope _Sco = thread_scope_system>
 using __atomic_impl = _If<
   is_pointer_v<_Tp>,
   __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
-  _If<::cuda::is_floating_point_v<_Tp>,
+  _If<is_floating_point_v<_Tp>,
       __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
       _If<is_integral_v<_Tp>, __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>, __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
 

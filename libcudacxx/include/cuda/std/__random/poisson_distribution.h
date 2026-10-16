@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/exponential_functions.h>
