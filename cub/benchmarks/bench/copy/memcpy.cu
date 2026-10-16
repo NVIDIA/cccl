@@ -21,12 +21,15 @@
 // %RANGE% TUNE_BUFF_DELAY_CONSTRUCTOR_ID budcid 0:7:1
 // %RANGE% TUNE_BUFF_L2_WRITE_LATENCY_NS bul2w 0:1200:5
 
+#include <thrust/gather.h>
 #include <thrust/random.h>
 #include <thrust/scan.h>
 #include <thrust/scatter.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/tabulate.h>
+
+#include <cuda/cmath>
 
 #include <nvbench_helper.cuh>
 
@@ -43,19 +46,6 @@ struct offset_to_ptr_t
 };
 
 template <class T, class OffsetT>
-struct reordered_offset_to_ptr_t
-{
-  T* d_ptr;
-  OffsetT* d_map;
-  OffsetT* d_offsets;
-
-  __device__ T* operator()(OffsetT i) const
-  {
-    return d_ptr + d_offsets[d_map[i]];
-  }
-};
-
-template <class T, class OffsetT>
 struct offset_to_bytes_t
 {
   OffsetT* d_offsets;
@@ -66,14 +56,15 @@ struct offset_to_bytes_t
   }
 };
 
-template <class T, class OffsetT>
-struct offset_to_size_t
+template <class OffsetT>
+struct offset_to_padded_size_t
 {
   OffsetT* d_offsets;
+  OffsetT alignment;
 
   __device__ OffsetT operator()(OffsetT i) const
   {
-    return d_offsets[i + 1] - d_offsets[i];
+    return cuda::round_up(d_offsets[i + 1] - d_offsets[i], alignment);
   }
 };
 
@@ -112,32 +103,40 @@ struct policy_selector_t
 };
 #endif
 
-template <class T, class OffsetT>
-void gen_it(T* d_buffer,
-            thrust::device_vector<T*>& output,
-            thrust::device_vector<OffsetT> offsets,
-            bool randomize,
-            thrust::default_random_engine& rne)
+// Lays out the buffers back to back (in shuffled order if `randomize` is set), starting each buffer at a multiple of
+// `alignment` elements. Returns the start of every buffer, followed by the total number of elements of the layout.
+template <class OffsetT>
+thrust::device_vector<std::size_t> gen_layout(
+  thrust::device_vector<OffsetT>& offsets, bool randomize, std::size_t alignment, thrust::default_random_engine& rne)
 {
-  OffsetT* d_offsets = thrust::raw_pointer_cast(offsets.data());
+  const auto buffers = offsets.size() - 1;
 
+  // A single padded size fits in OffsetT, but their sum may not, so the sizes are scanned as std::size_t. The trailing
+  // zero size makes the exclusive scans also produce the total number of elements.
+  thrust::device_vector<std::size_t> sizes(buffers + 1);
+  thrust::tabulate(
+    sizes.begin(),
+    sizes.end() - 1,
+    offset_to_padded_size_t<OffsetT>{thrust::raw_pointer_cast(offsets.data()), static_cast<OffsetT>(alignment)});
+
+  thrust::device_vector<std::size_t> starts(buffers + 1);
   if (randomize)
   {
-    const auto buffers = output.size();
+    // Buffer i is placed at slot map[i]
     thrust::device_vector<OffsetT> map(buffers);
     thrust::sequence(map.begin(), map.end());
     thrust::shuffle(map.begin(), map.end(), rne);
-    thrust::device_vector<OffsetT> sizes(buffers);
-    thrust::tabulate(sizes.begin(), sizes.end(), offset_to_size_t<T, OffsetT>{d_offsets});
-    thrust::scatter(sizes.begin(), sizes.end(), map.begin(), offsets.begin());
-    thrust::exclusive_scan(offsets.begin(), offsets.end(), offsets.begin());
-    OffsetT* d_map = thrust::raw_pointer_cast(map.data());
-    thrust::tabulate(output.begin(), output.end(), reordered_offset_to_ptr_t<T, OffsetT>{d_buffer, d_map, d_offsets});
+    thrust::device_vector<std::size_t> slots(buffers + 1);
+    thrust::scatter(sizes.begin(), sizes.end() - 1, map.begin(), slots.begin());
+    thrust::exclusive_scan(slots.begin(), slots.end(), slots.begin());
+    thrust::gather(map.begin(), map.end(), slots.begin(), starts.begin());
+    starts.back() = slots.back();
   }
   else
   {
-    thrust::tabulate(output.begin(), output.end(), offset_to_ptr_t<T, OffsetT>{d_buffer, d_offsets});
+    thrust::exclusive_scan(sizes.begin(), sizes.end(), starts.begin());
   }
+  return starts;
 }
 
 template <class T, class OffsetT>
@@ -147,7 +146,8 @@ void copy(nvbench::state& state,
           std::size_t min_buffer_size,
           std::size_t max_buffer_size,
           bool randomize_input,
-          bool randomize_output)
+          bool randomize_output,
+          bool align_input)
 {
   using offset_t           = OffsetT;
   using it_t               = T*;
@@ -155,30 +155,42 @@ void copy(nvbench::state& state,
   using output_buffer_it_t = it_t*;
   using buffer_size_it_t   = offset_t*;
 
-  thrust::device_vector<T> input_buffer = generate(elements);
-  thrust::device_vector<T> output_buffer(elements);
   thrust::device_vector<offset_t> offsets =
     generate.uniform.segment_offsets(elements, min_buffer_size, max_buffer_size);
 
-  T* d_input_buffer   = thrust::raw_pointer_cast(input_buffer.data());
-  T* d_output_buffer  = thrust::raw_pointer_cast(output_buffer.data());
   offset_t* d_offsets = thrust::raw_pointer_cast(offsets.data());
 
   const auto buffers = offsets.size() - 1;
 
-  thrust::device_vector<it_t> input_buffers(buffers);
-  thrust::device_vector<it_t> output_buffers(buffers);
   thrust::device_vector<offset_t> buffer_sizes(buffers);
   thrust::tabulate(buffer_sizes.begin(), buffer_sizes.end(), offset_to_bytes_t<T, offset_t>{d_offsets});
 
+  // Aligned input buffers start at a multiple of 16 bytes, the widest vector access of the kernel
+  const std::size_t input_alignment = align_input ? 16 / sizeof(T) : 1;
+
   thrust::default_random_engine rne;
-  gen_it(d_input_buffer, input_buffers, offsets, randomize_input, rne);
-  gen_it(d_output_buffer, output_buffers, offsets, randomize_output, rne);
+  thrust::device_vector<std::size_t> input_starts  = gen_layout(offsets, randomize_input, input_alignment, rne);
+  thrust::device_vector<std::size_t> output_starts = gen_layout(offsets, randomize_output, 1, rne);
 
   // Clear the offsets vector to free memory
   offsets.clear();
   offsets.shrink_to_fit();
   d_offsets = nullptr;
+
+  thrust::device_vector<T> input_buffer = generate(static_cast<std::size_t>(input_starts.back()));
+  thrust::device_vector<T> output_buffer(static_cast<std::size_t>(output_starts.back()));
+
+  T* d_input_buffer  = thrust::raw_pointer_cast(input_buffer.data());
+  T* d_output_buffer = thrust::raw_pointer_cast(output_buffer.data());
+
+  thrust::device_vector<it_t> input_buffers(buffers);
+  thrust::device_vector<it_t> output_buffers(buffers);
+  thrust::tabulate(input_buffers.begin(),
+                   input_buffers.end(),
+                   offset_to_ptr_t<T, std::size_t>{d_input_buffer, thrust::raw_pointer_cast(input_starts.data())});
+  thrust::tabulate(output_buffers.begin(),
+                   output_buffers.end(),
+                   offset_to_ptr_t<T, std::size_t>{d_output_buffer, thrust::raw_pointer_cast(output_starts.data())});
 
   input_buffer_it_t d_input_buffers   = thrust::raw_pointer_cast(input_buffers.data());
   output_buffer_it_t d_output_buffers = thrust::raw_pointer_cast(output_buffers.data());
@@ -221,8 +233,14 @@ void uniform(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
   const auto min_buffer_size_ratio = static_cast<std::size_t>(state.get_int64("MinBufferSizeRatio"));
   const auto min_buffer_size       = max_buffer_size * min_buffer_size_ratio / 100;
 
-  copy(
-    state, tl, elements, min_buffer_size, max_buffer_size, state.get_int64("Randomize"), state.get_int64("Randomize"));
+  copy(state,
+       tl,
+       elements,
+       min_buffer_size,
+       max_buffer_size,
+       state.get_int64("Randomize"),
+       state.get_int64("Randomize"),
+       state.get_int64("InputAligned"));
 }
 
 template <class T, class OffsetT>
@@ -237,8 +255,9 @@ void large(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
   // No need to randomize large buffers
   constexpr bool randomize_input  = false;
   constexpr bool randomize_output = false;
+  constexpr bool align_input      = false;
 
-  copy(state, tl, elements, min_buffer_size, max_buffer_size, randomize_input, randomize_output);
+  copy(state, tl, elements, min_buffer_size, max_buffer_size, randomize_input, randomize_output, align_input);
 }
 
 using types = nvbench::type_list<nvbench::uint8_t, nvbench::uint32_t>;
@@ -247,9 +266,10 @@ NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("uniform")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(25, 29, 2))
-  .add_int64_axis("MinBufferSizeRatio", {1, 99})
-  .add_int64_axis("MaxBufferSize", {8, 64, 256, 1024, 64 * 1024})
-  .add_int64_axis("Randomize", {0, 1});
+  .add_int64_axis("MinBufferSizeRatio", {1, 99, 100})
+  .add_int64_axis("MaxBufferSize", {8, 64, 255, 256, 1024, 64 * 1024})
+  .add_int64_axis("Randomize", {0, 1})
+  .add_int64_axis("InputAligned", {0, 1});
 
 NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("large")
