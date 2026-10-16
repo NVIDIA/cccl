@@ -37,6 +37,7 @@ from .load_store import (
     GroupLoadStoreSemantics,
 )
 from .reduce import GroupReduceSemantics
+from .scan import GroupScanMode, GroupScanSemantics
 
 __all__ = [
     "ArgumentPrecondition",
@@ -50,6 +51,8 @@ __all__ = [
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
     "GroupReduceSemantics",
+    "GroupScanMode",
+    "GroupScanSemantics",
     "GroupTopologyRequirements",
     "ImplementationProvenance",
     "LogicalResultContract",
