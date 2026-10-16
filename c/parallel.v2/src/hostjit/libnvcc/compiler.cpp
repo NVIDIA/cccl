@@ -7,7 +7,9 @@
 #include <clang/Frontend/FrontendOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Lex/PreprocessorOptions.h>
+#include <libnvcc/host_target.h>
 #include <libnvcc/libnvcc.h>
+#include <libnvcc/ptx_isa.h>
 #include <lld/Common/Driver.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -28,9 +30,6 @@
 #include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
-
-#include <libnvcc/host_target.h>
-#include <libnvcc/ptx_isa.h>
 
 // Selective target initialization (the host's own target for host code,
 // NVPTX for device code)

@@ -38,10 +38,12 @@ constexpr bool starts_with(const char* s, const char* prefix)
 
 #if defined(__aarch64__)
 static_assert(starts_with(HOSTJIT_HOST_TRIPLE, "aarch64"), "aarch64 host must use an aarch64 host triple");
-static_assert(starts_with(HOSTJIT_LLD_EMULATION, "aarch64linux"), "aarch64 host must link with the aarch64 lld emulation");
+static_assert(starts_with(HOSTJIT_LLD_EMULATION, "aarch64linux"),
+              "aarch64 host must link with the aarch64 lld emulation");
 #elif defined(__x86_64__) && !defined(_WIN32)
 static_assert(starts_with(HOSTJIT_HOST_TRIPLE, "x86_64"), "x86-64 host must use an x86-64 host triple");
-static_assert(starts_with(HOSTJIT_LLD_EMULATION, "elf_x86_64"), "x86-64 host must link with the elf_x86_64 lld emulation");
+static_assert(starts_with(HOSTJIT_LLD_EMULATION, "elf_x86_64"),
+              "x86-64 host must link with the elf_x86_64 lld emulation");
 #endif
 
 // ---- PTX ISA table (compile time) ----
@@ -94,8 +96,14 @@ int main()
   }
   const int sm  = prop.major * 10 + prop.minor;
   const int isa = libnvcc_ptx_isa_for_sm(sm);
-  std::printf("host triple %s, cpu %s, lld -m %s; device sm_%d -> PTX ISA %d (min %d)\n",
-              HOSTJIT_HOST_TRIPLE, HOSTJIT_HOST_CPU, HOSTJIT_LLD_EMULATION, sm, isa, min_ptx_isa_for_sm(sm));
+  std::printf(
+    "host triple %s, cpu %s, lld -m %s; device sm_%d -> PTX ISA %d (min %d)\n",
+    HOSTJIT_HOST_TRIPLE,
+    HOSTJIT_HOST_CPU,
+    HOSTJIT_LLD_EMULATION,
+    sm,
+    isa,
+    min_ptx_isa_for_sm(sm));
   assert(isa >= min_ptx_isa_for_sm(sm) && "libnvcc PTX ISA table is too old for this GPU");
   assert(isa >= 78 && "PTX ISA floor");
   return 0;
