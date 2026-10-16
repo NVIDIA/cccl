@@ -130,9 +130,12 @@ class _ReservationRewrite:
                 } & method_owners.keys()
                 if not used:
                     continue
-                if inst in rewrite._temp_storage_reservations and used == {
-                    inst.value.func.name
-                }:
+                if (
+                    isinstance(inst, ir.Assign)
+                    and isinstance(inst.value, ir.Expr)
+                    and inst in rewrite._temp_storage_reservations
+                    and used == {inst.value.func.name}
+                ):
                     continue
                 raise CoopSinglePhaseRewriteError(
                     "TempStorage.reserve method aliases may only be called "
@@ -156,7 +159,7 @@ class _ReservationRewrite:
                 "TempStorage.reserve accepts num_elems and dtype positionally; "
                 "alignment is keyword-only."
             )
-        values = dict(zip(("num_elems", "dtype"), call.args))
+        values: dict[str, ir.Var] = dict(zip(("num_elems", "dtype"), call.args))
         for name, value in call.kws:
             if name not in {"num_elems", "dtype", "alignment"}:
                 raise CoopSinglePhaseRewriteError(
