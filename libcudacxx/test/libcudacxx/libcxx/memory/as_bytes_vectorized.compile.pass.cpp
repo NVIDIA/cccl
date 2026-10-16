@@ -1,0 +1,248 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#include <cuda/__memory/as_bytes_vectorized.h>
+#include <cuda/std/complex>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
+
+#include "test_macros.h"
+
+struct three_chars_t
+{
+  char data[3];
+};
+
+struct short_and_char_t
+{
+  short s;
+  char c;
+};
+
+struct alignas(32) aligned_32_t
+{
+  long long data[4];
+};
+
+struct alignas(64) aligned_64_t
+{
+  char data[64];
+};
+
+template <class Word, cuda::std::size_t Count>
+TEST_FUNC constexpr void test_vector_word()
+{
+  static_assert(sizeof(cuda::__vector_word<Word, Count>) == sizeof(Word) * Count);
+  static_assert(alignof(cuda::__vector_word<Word, Count>) == sizeof(Word) * Count);
+}
+
+template <class T, cuda::std::size_t VecSize, class Word, cuda::std::size_t WordsPerVector, cuda::std::size_t NumVectors>
+TEST_FUNC constexpr void test_vec_size()
+{
+  static_assert(
+    cuda::std::is_same_v<cuda::__as_bytes_vectorized_t<T, VecSize>,
+                         cuda::__bytes_vectorized_t<cuda::__vector_word<Word, WordsPerVector>, alignof(T), NumVectors>>);
+}
+
+template <class T, class Word, cuda::std::size_t WordsPerItem>
+TEST_FUNC constexpr void test_scalar_words()
+{
+  static_assert(cuda::std::is_same_v<cuda::__as_bytes_vectorized_t<T, 1>,
+                                     cuda::__bytes_vectorized_t<Word, alignof(T), WordsPerItem>>);
+  static_assert(cuda::std::is_same_v<cuda::__as_bytes_vectorized_t<T, 3>,
+                                     cuda::__bytes_vectorized_t<Word, alignof(T), 3 * WordsPerItem>>);
+  static_assert(cuda::std::is_same_v<cuda::__as_bytes_vectorized_t<T, 16>,
+                                     cuda::__bytes_vectorized_t<Word, alignof(T), 16 * WordsPerItem>>);
+}
+
+template <class T>
+TEST_FUNC constexpr void test_1_byte_word()
+{
+  test_vec_size<T, 1, cuda::std::uint8_t, 1, 1>();
+  test_vec_size<T, 2, cuda::std::uint8_t, 2, 1>();
+  test_vec_size<T, 3, cuda::std::uint8_t, 1, 3>();
+  test_vec_size<T, 4, cuda::std::uint8_t, 4, 1>();
+  test_vec_size<T, 8, cuda::std::uint8_t, 8, 1>();
+  test_vec_size<T, 16, cuda::std::uint8_t, 16, 1>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<T, 32, cuda::std::uint8_t, 32, 1>();
+  test_vec_size<T, 64, cuda::std::uint8_t, 32, 2>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<T, 32, cuda::std::uint8_t, 16, 2>();
+  test_vec_size<T, 64, cuda::std::uint8_t, 16, 4>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+}
+
+template <class T>
+TEST_FUNC constexpr void test_2_byte_word()
+{
+  test_vec_size<T, 1, cuda::std::uint16_t, 1, 1>();
+  test_vec_size<T, 2, cuda::std::uint16_t, 2, 1>();
+  test_vec_size<T, 3, cuda::std::uint16_t, 1, 3>();
+  test_vec_size<T, 4, cuda::std::uint16_t, 4, 1>();
+  test_vec_size<T, 8, cuda::std::uint16_t, 8, 1>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<T, 16, cuda::std::uint16_t, 16, 1>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<T, 16, cuda::std::uint16_t, 8, 2>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+}
+
+template <class T>
+TEST_FUNC constexpr void test_4_byte_word()
+{
+  test_vec_size<T, 1, cuda::std::uint32_t, 1, 1>();
+  test_vec_size<T, 2, cuda::std::uint32_t, 2, 1>();
+  test_vec_size<T, 3, cuda::std::uint32_t, 1, 3>();
+  test_vec_size<T, 4, cuda::std::uint32_t, 4, 1>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<T, 8, cuda::std::uint32_t, 8, 1>();
+  test_vec_size<T, 16, cuda::std::uint32_t, 8, 2>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<T, 8, cuda::std::uint32_t, 4, 2>();
+  test_vec_size<T, 16, cuda::std::uint32_t, 4, 4>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+}
+
+template <class T>
+TEST_FUNC constexpr void test_8_byte_word()
+{
+  test_vec_size<T, 1, cuda::std::uint64_t, 1, 1>();
+  test_vec_size<T, 2, cuda::std::uint64_t, 2, 1>();
+  test_vec_size<T, 3, cuda::std::uint64_t, 1, 3>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<T, 4, cuda::std::uint64_t, 4, 1>();
+  test_vec_size<T, 8, cuda::std::uint64_t, 4, 2>();
+  test_vec_size<T, 16, cuda::std::uint64_t, 4, 4>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<T, 4, cuda::std::uint64_t, 2, 2>();
+  test_vec_size<T, 8, cuda::std::uint64_t, 2, 4>();
+  test_vec_size<T, 16, cuda::std::uint64_t, 2, 8>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+}
+
+template <class T>
+TEST_FUNC constexpr void test_16_byte_word()
+{
+  test_vec_size<T, 1, cuda::std::uint64_t, 2, 1>();
+  test_vec_size<T, 3, cuda::std::uint64_t, 2, 3>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<T, 2, cuda::std::uint64_t, 4, 1>();
+  test_vec_size<T, 4, cuda::std::uint64_t, 4, 2>();
+  test_vec_size<T, 8, cuda::std::uint64_t, 4, 4>();
+  test_vec_size<T, 16, cuda::std::uint64_t, 4, 8>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<T, 2, cuda::std::uint64_t, 2, 2>();
+  test_vec_size<T, 4, cuda::std::uint64_t, 2, 4>();
+  test_vec_size<T, 8, cuda::std::uint64_t, 2, 8>();
+  test_vec_size<T, 16, cuda::std::uint64_t, 2, 16>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+}
+
+TEST_FUNC void test()
+{
+  test_vector_word<cuda::std::uint8_t, 1>();
+  test_vector_word<cuda::std::uint8_t, 16>();
+  test_vector_word<cuda::std::uint16_t, 2>();
+  test_vector_word<cuda::std::uint32_t, 4>();
+  test_vector_word<cuda::std::uint64_t, 2>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vector_word<cuda::std::uint8_t, 32>();
+  test_vector_word<cuda::std::uint64_t, 4>();
+#endif // _CCCL_CTK_AT_LEAST(13, 0)
+
+  test_1_byte_word<char>();
+  test_1_byte_word<signed char>();
+  test_1_byte_word<unsigned char>();
+  test_1_byte_word<bool>();
+  test_vec_size<three_chars_t, 1, cuda::std::uint8_t, 1, 3>();
+  test_vec_size<three_chars_t, 2, cuda::std::uint8_t, 2, 3>();
+  test_vec_size<three_chars_t, 3, cuda::std::uint8_t, 1, 9>();
+  test_vec_size<three_chars_t, 4, cuda::std::uint8_t, 4, 3>();
+  test_vec_size<three_chars_t, 8, cuda::std::uint8_t, 8, 3>();
+  test_vec_size<three_chars_t, 16, cuda::std::uint8_t, 16, 3>();
+
+  test_2_byte_word<short>();
+  test_2_byte_word<unsigned short>();
+  test_vec_size<short_and_char_t, 1, cuda::std::uint16_t, 2, 1>();
+  test_vec_size<short_and_char_t, 2, cuda::std::uint16_t, 4, 1>();
+  test_vec_size<short_and_char_t, 3, cuda::std::uint16_t, 2, 3>();
+  test_vec_size<short_and_char_t, 4, cuda::std::uint16_t, 8, 1>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<short_and_char_t, 8, cuda::std::uint16_t, 16, 1>();
+  test_vec_size<short_and_char_t, 16, cuda::std::uint16_t, 16, 2>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<short_and_char_t, 8, cuda::std::uint16_t, 8, 2>();
+  test_vec_size<short_and_char_t, 16, cuda::std::uint16_t, 8, 4>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+  test_4_byte_word<int>();
+  test_4_byte_word<unsigned int>();
+  test_4_byte_word<float>();
+  test_4_byte_word<uchar4>();
+  test_vec_size<float3, 1, cuda::std::uint32_t, 1, 3>();
+  test_vec_size<float3, 2, cuda::std::uint32_t, 2, 3>();
+  test_vec_size<float3, 3, cuda::std::uint32_t, 1, 9>();
+  test_vec_size<float3, 4, cuda::std::uint32_t, 4, 3>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<float3, 8, cuda::std::uint32_t, 8, 3>();
+  test_vec_size<float3, 16, cuda::std::uint32_t, 8, 6>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<float3, 8, cuda::std::uint32_t, 4, 6>();
+  test_vec_size<float3, 16, cuda::std::uint32_t, 4, 12>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+  test_8_byte_word<long long>();
+  test_8_byte_word<unsigned long long>();
+  test_8_byte_word<double>();
+  test_8_byte_word<short4>();
+  test_8_byte_word<float2>();
+  test_8_byte_word<cuda::std::complex<float>>();
+  test_vec_size<double3, 1, cuda::std::uint64_t, 1, 3>();
+  test_vec_size<double3, 2, cuda::std::uint64_t, 2, 3>();
+  test_vec_size<double3, 3, cuda::std::uint64_t, 1, 9>();
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<double3, 4, cuda::std::uint64_t, 4, 3>();
+  test_vec_size<double3, 8, cuda::std::uint64_t, 4, 6>();
+  test_vec_size<double3, 16, cuda::std::uint64_t, 4, 12>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_vec_size<double3, 4, cuda::std::uint64_t, 2, 6>();
+  test_vec_size<double3, 8, cuda::std::uint64_t, 2, 12>();
+  test_vec_size<double3, 16, cuda::std::uint64_t, 2, 24>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+#if _CCCL_HAS_INT128()
+  test_16_byte_word<__int128_t>();
+  test_16_byte_word<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+  test_16_byte_word<float4>();
+  test_16_byte_word<double2>();
+  test_16_byte_word<cuda::std::complex<double>>();
+
+#if _CCCL_CTK_AT_LEAST(13, 0)
+  test_vec_size<aligned_32_t, 1, cuda::std::uint64_t, 4, 1>();
+  test_vec_size<aligned_32_t, 3, cuda::std::uint64_t, 4, 3>();
+  test_vec_size<aligned_32_t, 16, cuda::std::uint64_t, 4, 16>();
+  test_vec_size<double4_32a, 1, cuda::std::uint64_t, 4, 1>();
+  test_vec_size<double4_32a, 3, cuda::std::uint64_t, 4, 3>();
+  test_vec_size<double4_32a, 16, cuda::std::uint64_t, 4, 16>();
+#else // ^^^ _CCCL_CTK_AT_LEAST(13, 0) ^^^ / vvv _CCCL_CTK_BELOW(13, 0) vvv
+  test_scalar_words<aligned_32_t, cuda::std::uint32_t, 8>();
+#endif // ^^^ _CCCL_CTK_BELOW(13, 0) ^^^
+
+  test_scalar_words<aligned_64_t, cuda::std::uint32_t, 16>();
+}
+
+int main(int, char**)
+{
+  test();
+  return 0;
+}
