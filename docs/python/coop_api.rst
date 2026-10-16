@@ -95,15 +95,6 @@ See :ref:`reduction and result ownership <coop-reductions>`.
 .. autofunction:: sum
 
 
-Data rearrangement
-^^^^^^^^^^^^^^^^^^
-
-See :ref:`blocked and striped layouts <coop-data-layouts>`.
-
-.. autofunction:: exchange
-.. autofunction:: shuffle
-
-
 .. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
@@ -145,10 +136,3 @@ Reduction
 
 .. autofunction:: reduce
 .. autofunction:: sum
-
-
-Data rearrangement
-^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: exchange
-.. autofunction:: shuffle
