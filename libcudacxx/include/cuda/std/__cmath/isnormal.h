@@ -24,6 +24,7 @@
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/cuda_fp_types.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -49,8 +50,19 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #endif // !_CCCL_BUILTIN_ISNORMAL
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isnormal_storage(double __x) noexcept
+{
+  const auto __exp = ::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>;
+  return __exp != 0 && __exp != __fp_exp_mask_of_v<double>;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isnormal(double __x) noexcept
 {
+  // See isnan(double): use integer comparisons on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isnormal_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_ISNORMAL)
   return _CCCL_BUILTIN_ISNORMAL(__x);
 #else // ^^^ _CCCL_BUILTIN_ISNORMAL ^^^ / vvv !_CCCL_BUILTIN_ISNORMAL vvv

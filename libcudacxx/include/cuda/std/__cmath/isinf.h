@@ -89,8 +89,23 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
+[[nodiscard]] _CCCL_API constexpr bool __isinf_storage(double __x) noexcept
+{
+  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  // Same as __isnan_storage: on SM100+ (new NVVM), the mask with 0x7FF...F is recognized as fabs() and reintroduces
+  // double instructions, so shift both operands by 1 instead.
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                    (return (__storage << 1) == (__fp_exp_mask_of_v<double> << 1);),
+                    (return (__storage & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;))
+}
+
 [[nodiscard]] _CCCL_API constexpr bool isinf(double __x) noexcept
 {
+  // See isnan(double): use an integer comparison on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__isinf_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_ISINF) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
   return _CCCL_BUILTIN_ISINF(__x);
 #elif defined(_CCCL_BUILTIN_ISINF)

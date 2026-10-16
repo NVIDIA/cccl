@@ -105,10 +105,21 @@ TEST_FUNC constexpr void test_type()
   test_fpclassify(cuda::std::numeric_limits<T>::max(), FP_NORMAL);
 }
 
+// FP64 subnormals are not flushed to zero, so they can be checked for double
+TEST_FUNC constexpr void test_double_subnormal()
+{
+  constexpr double min_normal = cuda::std::numeric_limits<double>::min();
+  constexpr double denorm_min = cuda::std::numeric_limits<double>::denorm_min();
+  test_fpclassify(denorm_min, FP_SUBNORMAL);
+  test_fpclassify(min_normal - denorm_min, FP_SUBNORMAL);
+  test_fpclassify(min_normal, FP_NORMAL);
+}
+
 TEST_FUNC constexpr bool test()
 {
   test_type<float>();
   test_type<double>();
+  test_double_subnormal();
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
