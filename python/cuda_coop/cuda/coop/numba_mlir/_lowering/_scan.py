@@ -27,6 +27,7 @@ from cuda.coop._core import (
     Dependency,
     PythonOperator,
     Reference,
+    StatefulOperator,
     SynchronizationScope,
     make_block_scan_specialization,
     make_warp_scan_specialization,
@@ -212,6 +213,54 @@ def _scan_operator(scan_op: Any, *, force_sum_operator: bool) -> Any:
     return CxxOperator(cpp=cpp, dtype=Dependency("T"), name="scan_op")
 
 
+def _prefix_operator(
+    prefix_op: Any,
+) -> PythonOperator | StatefulOperator | None:
+    """Describe a prefix callback without binding its runtime state.
+
+    A ``StatefulFunction`` contributes its callable and numeric state dtype;
+    the callback argument and result still depend on the scan payload type.
+    A plain callable becomes a stateless unary operator. Return ``None``
+    when no prefix callback is requested, and reject non-callable inputs.
+
+    The core adapter resolves these descriptors and compiles their callbacks
+    during specialization. State contents never enter this description.
+    """
+
+    if prefix_op is None:
+        return None
+
+    from .._stateful_function import StatefulFunction
+
+    if isinstance(prefix_op, StatefulFunction):
+        state_dtype = _validate_common_numeric_dtype(
+            normalize_dtype_param(prefix_op.dtype),
+            operation="scan",
+            parameter="prefix_state",
+        )
+        return StatefulOperator(
+            op_tokenizer=_numba_semantic_token,
+            op=prefix_op.op,
+            state_dtype=NumbaMlirCoreAdapter().core_dtype(state_dtype),
+            ret_dtype=Dependency("T"),
+            arg_dtypes=(Dependency("T"),),
+            name="prefix_op",
+        )
+
+    normalized = _normalize_numba_callable(prefix_op)
+    if not callable(normalized):
+        raise TypeError(
+            "prefix_op must be a stateless device callable or StatefulFunction"
+        )
+    return PythonOperator(
+        op_tokenizer=_numba_semantic_token,
+        ret_dtype=Dependency("T"),
+        arg_dtypes=(Dependency("T"),),
+        op=normalized,
+        name="prefix_op",
+    )
+
+
 def _initial_value(binding: Any, dtype: Any) -> Any:
     """Represent a seed as no argument, a runtime reference, or typed C++.
 
@@ -246,15 +295,23 @@ def _block_scan(
     mode: str = "exclusive",
     scan_op: Any = None,
     initial_value: Any = None,
+    prefix_op: Any = None,
+    prefix_state: Any = None,
     block_aggregate: Any = None,
     algorithm: Any = "raking",
 ) -> Any:
     """Build the scalar or array BlockScan provider selected by the factory.
 
-    Validate the common shape, mode, operator, and seed rules, then adapt the
-    shared specialization to Numba. The factory identity selects the payload
-    calling convention and registry metadata; an aggregate request adds a
-    separate output reference without changing the main result.
+    Validate shape, mode, operator, seed, and prefix-callback rules before
+    adapting the shared specialization to Numba. A stateful callback requires
+    ``prefix_state`` to indicate that the device call has a state operand;
+    the factory does not receive that array's contents. A prefix callback
+    excludes an explicit seed and a separate aggregate output.
+
+    The factory identity selects the payload calling convention and registry
+    metadata. Materialization resolves operator types and compiles callback
+    LTO. Invocable construction supplies the provider wrapper and storage
+    metadata; a requested aggregate remains a separate output reference.
     """
 
     if threads_per_block is None:
@@ -278,10 +335,39 @@ def _block_scan(
     if mode == "inclusive" and initial_binding.kind is not BindingKind.OMITTED:
         raise ValueError("inclusive scan does not accept initial_value")
     operation = normalize_scan_operation(scan_op)
+    prefix_operator = _prefix_operator(prefix_op)
+    from .._stateful_function import StatefulFunction
+
+    stateful_prefix = isinstance(prefix_op, StatefulFunction)
+    has_prefix_state = prefix_state is not None and prefix_state is not False
+    if stateful_prefix and not has_prefix_state:
+        raise ValueError(
+            "StatefulFunction prefix callbacks require prefix_state"
+        )
+    if not stateful_prefix and has_prefix_state:
+        raise ValueError(
+            "stateless prefix callbacks do not accept prefix_state"
+        )
+    if (
+        prefix_operator is not None
+        and initial_binding.kind is not BindingKind.OMITTED
+    ):
+        raise ValueError(
+            "initial_value and prefix callbacks are mutually exclusive"
+        )
+    if (
+        prefix_operator is not None
+        and block_aggregate is not None
+        and block_aggregate is not False
+    ):
+        raise ValueError(
+            "block_aggregate and prefix callbacks are mutually exclusive"
+        )
     if (
         mode == "exclusive"
         and operation != "sum"
         and initial_binding.kind is BindingKind.OMITTED
+        and prefix_operator is None
     ):
         raise ValueError("non-sum exclusive scan requires initial_value")
     scan_operator = _scan_operator(
@@ -297,6 +383,7 @@ def _block_scan(
         value_kind=value_kind,
         scan_operator=scan_operator,
         initial_value=_initial_value(initial_binding, dtype),
+        prefix_operator=prefix_operator,
         block_aggregate=(
             block_aggregate is not None and block_aggregate is not False
         ),

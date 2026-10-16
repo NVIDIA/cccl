@@ -51,6 +51,7 @@ from cuda.coop._core import (
     PointerOffset,
     PythonOperator,
     Reference,
+    StatefulOperator,
     SynchronizationScope,
     TempStorageParameter,
     Value,
@@ -470,16 +471,23 @@ class NumbaMlirCoreAdapter(CoreBackendAdapter):
         *,
         specialization: Algorithm,
     ) -> Any:
-        """Reject callback descriptors that need a runtime state object.
+        """Translate a shared stateful operator into deferred Numba inputs.
 
-        This backend supports stateless operator descriptors only; it has no
-        lowering for a stateful operator's extra device-call state.
+        Adapt dtype dependencies and normalize the callback. Return a
+        ``DependentStatefulOperator`` for later specialization, which compiles
+        callback LTO with a leading typed state pointer. The state array
+        remains a runtime provider operand.
         """
 
-        del operator, specialization
-        raise NotImplementedError(
-            "stateful callbacks are not supported by the cuda.coop "
-            "Numba-CUDA-MLIR backend"
+        del specialization
+        if not isinstance(operator, StatefulOperator):
+            raise TypeError(f"expected StatefulOperator, got {operator!r}")
+        return backend.DependentStatefulOperator(
+            self._resolvable(operator.state_dtype),
+            self._resolvable(operator.ret_dtype),
+            tuple(self._resolvable(dtype) for dtype in operator.arg_dtypes),
+            backend.Constant(_normalize_numba_callable(operator.op)),
+            name=operator.name,
         )
 
     def lower_temp_storage(

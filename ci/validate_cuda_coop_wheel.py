@@ -95,6 +95,8 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_lowering/_scan.py",
     "cuda/coop/numba_mlir/_lowering/_shuffle.py",
     "cuda/coop/numba_mlir/_lowering/_thread_group.py",
+    "cuda/coop/numba_mlir/_stateful_function.py",
+    "cuda/coop/numba_mlir/_stateful_function.pyi",
     "cuda/coop/numba_mlir/_temp_storage.py",
     "cuda/coop/numba_mlir/_temp_storage.pyi",
     "cuda/coop/numba_mlir/_thread_data.py",
@@ -144,7 +146,6 @@ _FORBIDDEN_PACKAGE_FILES = {
     "cuda/coop/numba_mlir/_enums.py",
     "cuda/coop/numba_mlir/_enums.pyi",
     "cuda/coop/numba_mlir/_scan_op.py",
-    "cuda/coop/numba_mlir/_stateful_function.py",
 }
 
 
@@ -236,8 +237,8 @@ def validate(wheel: str | Path) -> None:
 
     Require the shared API and its header bundle, reject native binaries and
     excluded implementations, and preserve the shared ``cuda`` namespace.
-    A failed check raises ``SystemExit`` with a packaging diagnostic.
-    File and ZIP errors propagate to the caller.
+    Explicit contract checks raise ``SystemExit`` with a packaging diagnostic.
+    Unexpected file, archive, or record-shape errors propagate to the caller.
     """
     wheel_path = Path(wheel)
     if not wheel_path.name.endswith("-py3-none-any.whl"):
