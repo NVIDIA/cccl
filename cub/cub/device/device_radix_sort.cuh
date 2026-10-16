@@ -377,6 +377,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -407,10 +412,10 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename ValueT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename ValueT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -419,9 +424,9 @@ public:
     const ValueT* d_values_in,
     ValueT* d_values_out,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // Unsigned integer type for global offsets.
@@ -440,16 +445,21 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return select_tuning_and_dispatch<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -630,6 +640,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -666,13 +681,14 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
@@ -685,22 +701,25 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      num_items,
-      decomposer,
-      stream,
-      {},
-      begin_bit,
-      end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          num_items,
+          decomposer,
+          stream,
+          tuning_env,
+          begin_bit,
+          end_bit);
+      });
   }
 
   //! @rst
@@ -872,6 +891,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -900,13 +924,14 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
@@ -917,19 +942,14 @@ public:
     ValueT* d_values_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      num_items,
-      decomposer,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -1099,6 +1119,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1126,19 +1151,19 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename ValueT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename ValueT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -1147,16 +1172,21 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return select_tuning_and_dispatch<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -1329,6 +1359,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1354,13 +1389,14 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
@@ -1369,11 +1405,14 @@ public:
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -1527,6 +1566,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1560,13 +1604,14 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
     void* d_temp_storage,
@@ -1577,11 +1622,14 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+      });
   }
 
   //! @rst
@@ -1745,6 +1793,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -1775,10 +1828,10 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename ValueT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename ValueT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1787,9 +1840,9 @@ public:
     const ValueT* d_values_in,
     ValueT* d_values_out,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -1806,16 +1859,21 @@ public:
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return select_tuning_and_dispatch<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -1996,6 +2054,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2032,13 +2095,14 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
@@ -2051,22 +2115,25 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      num_items,
-      decomposer,
-      stream,
-      {},
-      begin_bit,
-      end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          d_values_in,
+          d_values_out,
+          num_items,
+          decomposer,
+          stream,
+          tuning_env,
+          begin_bit,
+          end_bit);
+      });
   }
 
   //! @rst
@@ -2131,6 +2198,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2159,13 +2231,14 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
@@ -2176,19 +2249,14 @@ public:
     ValueT* d_values_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      num_items,
-      decomposer,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage, bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, decomposer, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -2271,6 +2339,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2298,19 +2371,19 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename ValueT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename ValueT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -2319,16 +2392,21 @@ public:
 
     constexpr bool is_overwrite_okay = true;
 
-    return select_tuning_and_dispatch<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -2501,6 +2579,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2526,13 +2609,14 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
@@ -2541,11 +2625,14 @@ public:
     DoubleBuffer<ValueT>& d_values,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -2619,6 +2706,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2652,13 +2744,14 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename ValueT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
     void* d_temp_storage,
@@ -2669,11 +2762,14 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+      });
   }
 
   //! @rst
@@ -3014,6 +3110,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3037,19 +3138,19 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -3066,16 +3167,21 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return select_tuning_and_dispatch<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -3238,6 +3344,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3267,12 +3378,13 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
@@ -3283,22 +3395,25 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      static_cast<NullType*>(nullptr),
-      static_cast<NullType*>(nullptr),
-      num_items,
-      decomposer,
-      stream,
-      {},
-      begin_bit,
-      end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          decomposer,
+          stream,
+          tuning_env,
+          begin_bit,
+          end_bit);
+      });
   }
 
   //! @rst
@@ -3440,6 +3555,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3461,12 +3581,13 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
@@ -3475,19 +3596,23 @@ public:
     KeyT* d_keys_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      static_cast<NullType*>(nullptr),
-      static_cast<NullType*>(nullptr),
-      num_items,
-      decomposer,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          decomposer,
+          stream,
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -3627,6 +3752,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3649,18 +3779,18 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -3672,16 +3802,21 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return select_tuning_and_dispatch<SortOrder::Ascending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Ascending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -3846,6 +3981,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3866,12 +4006,13 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
@@ -3879,12 +4020,15 @@ public:
     DoubleBuffer<KeyT>& d_keys,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -4010,6 +4154,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4038,12 +4187,13 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
     void* d_temp_storage,
@@ -4053,12 +4203,15 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return radix_sort_with_decomposer<SortOrder::Ascending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Ascending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+      });
   }
 
   //! @rst
@@ -4193,6 +4346,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4216,19 +4374,19 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -4244,16 +4402,21 @@ public:
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return select_tuning_and_dispatch<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -4416,6 +4579,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4445,12 +4613,13 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
@@ -4461,22 +4630,25 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      static_cast<NullType*>(nullptr),
-      static_cast<NullType*>(nullptr),
-      num_items,
-      decomposer,
-      stream,
-      {},
-      begin_bit,
-      end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          decomposer,
+          stream,
+          tuning_env,
+          begin_bit,
+          end_bit);
+      });
   }
 
   //! @rst
@@ -4536,6 +4708,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4557,12 +4734,13 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
@@ -4571,19 +4749,23 @@ public:
     KeyT* d_keys_out,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      static_cast<NullType*>(nullptr),
-      static_cast<NullType*>(nullptr),
-      num_items,
-      decomposer,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys_in,
+          d_keys_out,
+          static_cast<NullType*>(nullptr),
+          static_cast<NullType*>(nullptr),
+          num_items,
+          decomposer,
+          stream,
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -4654,6 +4836,11 @@ public:
   //! @tparam NumItemsT
   //!   **[inferred]** Type of num_items
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4676,18 +4863,18 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``sizeof(unsigned int) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
-  template <typename KeyT, typename NumItemsT>
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
+  template <typename KeyT, typename NumItemsT, typename EnvT = ::cuda::std::execution::env<>>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     NumItemsT num_items,
-    int begin_bit       = 0,
-    int end_bit         = sizeof(KeyT) * 8,
-    cudaStream_t stream = nullptr)
+    int begin_bit   = 0,
+    int end_bit     = sizeof(KeyT) * 8,
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
@@ -4699,16 +4886,21 @@ public:
     // Null value type
     DoubleBuffer<NullType> d_values;
 
-    return select_tuning_and_dispatch<SortOrder::Descending>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      static_cast<OffsetT>(num_items),
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return select_tuning_and_dispatch<SortOrder::Descending>(
+          storage,
+          bytes,
+          d_keys,
+          d_values,
+          static_cast<OffsetT>(num_items),
+          begin_bit,
+          end_bit,
+          is_overwrite_okay,
+          stream,
+          {},
+          tuning_env);
+      });
   }
 
   //! @rst
@@ -4873,6 +5065,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -4893,12 +5090,13 @@ public:
   //!   the tuple is considered the most significant. The call operator must not
   //!   modify members of the key.
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
@@ -4906,12 +5104,15 @@ public:
     DoubleBuffer<KeyT>& d_keys,
     NumItemsT num_items,
     DecomposerT decomposer,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env);
+      });
   }
 
   //! @rst
@@ -4978,6 +5179,11 @@ public:
   //!   The leftmost element of the tuple is considered the most significant.
   //!   The call operator must not modify members of the key.
   //!
+  //! @tparam EnvT
+  //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
+  //!   Supports customization of the stream via ``cuda::get_stream`` and of the tuning via
+  //!   ``cuda::execution::tune``.
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -5006,12 +5212,13 @@ public:
   //!   **[optional]** The most-significant bit index (exclusive) needed for key
   //!   comparison (e.g., ``(sizeof(float) + sizeof(long long int)) * 8``)
   //!
-  //! @param[in] stream
-  //!   **[optional]** CUDA stream to launch kernels within.
-  //!   Default is stream<sub>0</sub>.
+  //! @param[in] env
+  //!   **[optional]** Execution environment. Default is `cuda::std::execution::env{}`.
+  //!   Supports stream and tuning customization. The caller manages temporary storage.
   template <typename KeyT,
             typename NumItemsT,
             typename DecomposerT,
+            typename EnvT = ::cuda::std::execution::env<>,
             ::cuda::std::enable_if_t<!::cuda::std::is_convertible_v<DecomposerT, int>, int> = 0>
   CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
     void* d_temp_storage,
@@ -5021,12 +5228,15 @@ public:
     DecomposerT decomposer,
     int begin_bit,
     int end_bit,
-    cudaStream_t stream = nullptr)
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     DoubleBuffer<NullType> d_values;
-    return radix_sort_with_decomposer<SortOrder::Descending>(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, decomposer, stream, {}, begin_bit, end_bit);
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, auto stream) {
+        return radix_sort_with_decomposer<SortOrder::Descending>(
+          storage, bytes, d_keys, d_values, num_items, decomposer, stream, tuning_env, begin_bit, end_bit);
+      });
   }
 
   //! @rst
