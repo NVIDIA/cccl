@@ -105,6 +105,15 @@ See :ref:`scan operators and prefixes <coop-scans>`.
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
 
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+See :ref:`sorting keys and associated values <coop-merge-sort>`.
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs
+
+
 .. _coop-numba-extensions:
 
 Numba-CUDA-MLIR-qualified API
@@ -155,3 +164,8 @@ Scan
 .. autofunction:: inclusive_sum
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
+Comparison sorting
+^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: merge_sort_keys
+.. autofunction:: merge_sort_pairs
