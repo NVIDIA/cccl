@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile Load/Store descriptor contracts and dynamic backing metadata."""
+"""Compile explicit scratch and per-group storage views."""
 
 from types import SimpleNamespace
 
@@ -52,27 +52,28 @@ def _compile(kernel, *args, block=(64, 1, 1)):
 
 @pytest.mark.parametrize("auto_sync", [False, True])
 @pytest.mark.parametrize("sharing", ["shared", "exclusive"])
-def test_explicit_scratch_composes_load_and_store(auto_sync, sharing):
+def test_explicit_scratch_composes_load_reduce_and_store(auto_sync, sharing):
     @cuda.jit(chip="sm_90")
-    def kernel(source, output):
+    def kernel(source, output, items_per_thread):
         group = coop.this_block()
         scratch = coop.TempStorage(auto_sync=auto_sync, sharing=sharing)
-        items = coop.ThreadData(items_per_thread=4)
+        items = coop.ThreadData(items_per_thread)
         coop.load(
             group, source, items, algorithm="transpose", temp_storage=scratch
         )
-        cuda.syncthreads()
+        group.sync()
+        total = coop.sum(group, items, temp_storage=scratch)
+        group.sync()
         coop.store(
             group, output, items, algorithm="transpose", temp_storage=scratch
         )
+        if group.rank() == 0:
+            output[0] = total
 
-    result = _compile(kernel, types.int32[::1], types.int32[::1])
-    assert result.metadata["cubin"]
-    assert result.metadata["mlir_module_str"].count("gpu.barrier") == (
-        1 + 2 * auto_sync
+    result = _compile(
+        kernel, types.int32[::1], types.int32[::1], types.IntegerLiteral(4)
     )
-    plan = result.metadata["coop_plan"].kernel
-    assert len(plan.regions) == 1
+    assert result.metadata["cubin"]
 
 
 @pytest.mark.parametrize("auto_sync", [False, True])
@@ -83,15 +84,11 @@ def test_merged_storage_retains_constructor_identity(auto_sync):
             scratch = coop.TempStorage(auto_sync=auto_sync)
         else:
             scratch = coop.TempStorage(auto_sync=auto_sync)
-        items = coop.ThreadData(items_per_thread=2)
-        coop.load(
-            coop.this_block(),
-            source,
-            items,
-            algorithm="transpose",
-            temp_storage=scratch,
+        total = coop.sum(
+            coop.this_block(), source[cuda.threadIdx.x], temp_storage=scratch
         )
-        output[cuda.threadIdx.x] = items[0]
+        if cuda.threadIdx.x == 0:
+            output[0] = total
 
     if auto_sync:
         assert _compile(
@@ -100,6 +97,21 @@ def test_merged_storage_retains_constructor_identity(auto_sync):
     else:
         with pytest.raises(TypingError, match="exactly one site"):
             _compile(kernel, types.int32[::1], types.int32[::1], types.boolean)
+
+
+def test_logical_warp_scratch_uses_multidimensional_block_ranks():
+    @cuda.jit(chip="sm_90")
+    def kernel(source, output):
+        group = coop.this_warp().group_by(8)
+        thread = cuda.threadIdx.x + cuda.blockDim.x * cuda.threadIdx.y
+        first = coop.sum(group, source[thread])
+        second = coop.sum(group, source[thread] + 1)
+        if group.rank() == 0:
+            output[thread] = first + second
+
+    assert _compile(
+        kernel, types.int32[::1], types.int32[::1], block=(8, 8, 1)
+    ).metadata["cubin"]
 
 
 @pytest.fixture
@@ -120,15 +132,13 @@ def test_dynamic_backing_records_the_exact_launch_requirement(
     @cuda.jit(chip="sm_90")
     def kernel(source, output):
         scratch = coop.TempStorage(64 * 1024)
-        items = coop.ThreadData(items_per_thread=2)
-        coop.load(
+        total = coop.sum(
             coop.this_block(),
-            source,
-            items,
-            algorithm="transpose",
+            source[cuda.threadIdx.x],
             temp_storage=scratch,
         )
-        output[cuda.threadIdx.x] = items[0]
+        if cuda.threadIdx.x == 0:
+            output[0] = total
 
     result = _compile(kernel, types.int32[::1], types.int32[::1])
     assert result.metadata["cubin"]

@@ -36,8 +36,10 @@ _COMMON_EXPORTS = [
     "this_warp",
     "exchange",
     "load",
+    "reduce",
     "shuffle",
     "store",
+    "sum",
 ]
 _QUALIFIED_EXPORTS = [
     *(
@@ -51,16 +53,11 @@ _QUALIFIED_EXPORTS = [
 _EXCLUDED_BACKEND_MODULES = (
     "cuda.coop.numba_mlir._dataclass",
     "cuda.coop.numba_mlir._enums",
-    "cuda.coop.numba_mlir._group._reduce",
     "cuda.coop.numba_mlir._group._scan",
     "cuda.coop.numba_mlir._stateful_function",
-    "cuda.coop.numba_mlir._compiler._group_reduce",
     "cuda.coop.numba_mlir._compiler._group_scan",
-    "cuda.coop.numba_mlir._compiler._rewrite_reduce",
     "cuda.coop.numba_mlir._compiler._rewrite_scan",
-    "cuda.coop.numba_mlir._lowering._reduce",
     "cuda.coop.numba_mlir._lowering._scan",
-    "cuda.coop.numba_mlir._lowering._thread_group",
     "cuda.coop.numba_mlir._lowering._warp",
 )
 
@@ -80,9 +77,7 @@ def test_public_exports_are_only_the_supported_group_families():
         "exclusive_scan",
         "gpu_dataclass",
         "inclusive_scan",
-        "reduce",
         "scan",
-        "sum",
         "WarpLoadAlgorithm",
         "WarpStoreAlgorithm",
     }
@@ -116,7 +111,7 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             ).parameters.items()
         )
 
-    for operation in ("load", "shuffle", "store"):
+    for operation in ("load", "reduce", "shuffle", "store", "sum"):
         assert call_shape(getattr(coop, operation)) == call_shape(
             getattr(common_coop, operation)
         )
@@ -165,6 +160,18 @@ def test_qualified_surface_is_common_plus_backend_extensions():
         ("auto_sync", inspect.Parameter.KEYWORD_ONLY, False),
         ("sharing", inspect.Parameter.KEYWORD_ONLY, "shared"),
     )
+    for method in (
+        "rank",
+        "count",
+        "rank_as",
+        "count_as",
+        "sync",
+        "sync_aligned",
+        "is_member",
+    ):
+        assert inspect.signature(
+            getattr(coop.ThreadGroup, method)
+        ) == inspect.signature(getattr(common_coop.ThreadGroup, method))
     assert call_shape(coop.ThreadGroup.group_by) == call_shape(
         common_coop.ThreadGroup.group_by
     )
@@ -220,10 +227,10 @@ def test_stub_only_group_aliases_exist_at_runtime_without_becoming_exports():
     from cuda.coop._core.api import thread_group as common_groups
     from cuda.coop.numba_mlir import _thread_group as qualified_groups
 
-    for name in ("MemoryGroup", "ReductionGroup", "BlockGroup", "WarpGroup"):
+    for name in ("MemoryGroup", "BlockGroup", "WarpGroup"):
         assert getattr(common_groups, name) is common_groups.ThreadGroup
         assert name not in common_groups.__all__
-    for name in ("ReductionGroup", "BlockGroup", "WarpGroup"):
+    for name in ("BlockGroup", "WarpGroup"):
         assert getattr(qualified_groups, name) is qualified_groups.ThreadGroup
         assert name not in qualified_groups.__all__
 
@@ -239,16 +246,21 @@ def test_excluded_backend_implementation_modules_remain_absent(module_name):
     assert not module_path.is_dir()
 
 
-def test_python_operator_compilation_remains_absent():
+def test_python_operator_compilation_is_stateless_only():
     from cuda.coop.numba_mlir import _types
 
-    assert not hasattr(_types, "_compile_device_ltoir")
+    assert hasattr(_types, "_compile_device_ltoir")
+    assert hasattr(_types, "DependentPythonOperator")
+    assert hasattr(_types, "StatelessOperator")
+    assert not hasattr(_types, "StatefulOperator")
     assert tuple(
         inspect.signature(_types.numba_type_to_wrapper).parameters
     ) == ("numba_type",)
 
 
-@pytest.mark.parametrize("operation", ("exchange", "load", "shuffle", "store"))
+@pytest.mark.parametrize(
+    "operation", ("exchange", "load", "reduce", "shuffle", "store", "sum")
+)
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 

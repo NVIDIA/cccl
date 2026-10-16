@@ -4,9 +4,11 @@
 
 """Check activation and compilation from the installed wheel in isolation.
 
-Each probe uses a fresh isolated interpreter with ``PYTHONPATH`` deliberately
-set to the checkout. It checks module and header origins before compiling,
-so checkout files cannot hide missing wheel contents.
+Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
+checkout. Isolated mode must ignore that path. The probe checks module and
+header origins before compiling, so checkout files cannot hide missing
+wheel contents. Reduce markers remain lazy in planner mode and register
+eagerly in typed mode; planner hooks load only when explicitly requested.
 """
 
 from __future__ import annotations
@@ -51,7 +53,6 @@ _COMPILE_PROBE = textwrap.dedent(
         == "typed"
     )
 
-
     if import_order == "numba-first-common":
         import numba_cuda_mlir
         from numba_cuda_mlir import cuda, types
@@ -88,9 +89,30 @@ _COMPILE_PROBE = textwrap.dedent(
         raise AssertionError(f"unexpected import order: {import_order!r}")
 
     qualified_coop = sys.modules["cuda.coop.numba_mlir"]
-    assert {"exchange", "shuffle"} <= set(qualified_coop.__all__)
+    public_reduce_module = "cuda.coop.numba_mlir._group._reduce"
+    compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
+    assert (public_reduce_module in sys.modules) == typed_pipeline
+    assert compiler_reduce_module not in sys.modules
+
+    assert {"exchange", "reduce", "shuffle", "sum"} <= set(qualified_coop.__all__)
     assert callable(qualified_coop.exchange)
     assert callable(qualified_coop.shuffle)
+    assert callable(qualified_coop.reduce)
+    assert callable(qualified_coop.sum)
+    assert public_reduce_module in sys.modules
+    assert compiler_reduce_module not in sys.modules
+
+    if typed_pipeline:
+        from cuda.coop.numba_mlir import _pipeline
+
+        assert _pipeline._activated
+        assert compiler_reduce_module not in sys.modules
+    else:
+        from cuda.coop.numba_mlir._compiler._operations import group_primitive
+
+        assert group_primitive("reduce") is not None
+        assert group_primitive("sum") is not None
+        assert compiler_reduce_module in sys.modules
 
     distribution = importlib.metadata.distribution("cuda-coop")
     distribution_root = Path(distribution.locate_file("")).resolve()

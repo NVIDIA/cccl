@@ -73,29 +73,39 @@ All 128 threads execute both calls. There is one kernel launch. Neither
 Positional operands and keyword-only options
 --------------------------------------------
 
-
 Primitive calls take the participating group first, followed by their data
 operands. These arguments are positional-only. Options such as
-``algorithm``, ``valid_items``, and ``offset`` are keyword-only:
+``algorithm``, ``valid_items``, and ``temp_storage`` are keyword-only:
 
 .. code-block:: python
 
+   total = coop.sum(block, value)
+   total = coop.sum(block, value, temp_storage=scratch)
    coop.load(block, source, items, algorithm="direct", valid_items=n)
-   coop.store(block, destination, items, algorithm="direct", valid_items=n)
+
+Reduction usually needs just a group and a value. Load and Store add a
+source or destination. This short operand list keeps primitive calls
+compact inside a kernel, while named options make choices such as
+partial-tile handling and temporary storage ownership explicit. New optional
+keyword parameters can be added without changing existing calls.
 
 In the API reference, ``/`` marks the end of the positional-only arguments
-and ``*`` introduces keyword-only parameters. Pass the group and data
-operands in their documented order, and use names for optional controls.
-This keeps the primitive call compact while making algorithm and partial-tile
-choices visible. New optional controls can be added without changing the
-operand order.
+and ``*`` introduces keyword-only parameters. For example, pass the group
+and value as ``coop.sum(block, value)``. Only group rank zero has a defined
+result; every member must still participate in the call.
 
-``cuda.compute`` uses keyword-only arguments for device-wide algorithms,
-as described in its :doc:`API conventions <../compute/index>`. Those calls
-can contain several input/output arrays, item counts, offsets, and a stream.
-For ``cuda.coop``, the group already names the participants and the smaller
-operand list describes the data handled within the kernel.
+``cuda.compute`` uses keyword-only parameters for all its algorithms, as
+described in its :doc:`API conventions <../compute/index>`. Device-wide
+algorithms can take several input and output arrays, item counts, offsets,
+and a stream. Naming those arguments helps distinguish their roles and
+allows callers to omit optional arguments, such as unused value buffers in
+a key-only sort.
 
+For ``cuda.coop``, the group already describes the participating threads,
+and Reduce returns its result directly. The positional operands and named
+controls fit that smaller call shape.
+When extending an API, keep the operand order consistent and use
+keyword-only parameters for additional options.
 
 Calling CUB from the kernel
 ---------------------------
@@ -393,6 +403,10 @@ For Warp Load/Store, the enclosing block must contain complete physical
 warps, and every member of a participating logical group must reach the
 call.
 
+Group methods such as ``rank()`` and ``count()`` produce integer values
+that the kernel can use. The group descriptor itself remains compile-time
+information. Adding a descriptor or query for a scope does not supply an
+implementation of a primitive with a runtime group size.
 
 There is also a distinction between a static group size and a runtime
 quantity measured within that group. A tail Load may use:
@@ -860,6 +874,15 @@ parameters without compiler types. Parameter descriptors such as ``Value``,
 the payload passed to that parameter. ``NumbaMlirCoreAdapter`` maps the
 core types and parameter descriptors to the Numba backend's representation.
 
+Reduce uses CUB BlockReduce for blocks and CUB WarpReduce for physical or
+logical warps. Supported logical widths are powers of two from 1 through 32
+or widths from 17 through 31: CUB permits only one non-power-of-two group per
+physical warp. The family planner checks the operand form and records scratch
+requirements. Both accept scalar or array
+inputs and return a result defined only at group rank zero. Block reductions
+accept an optional ``TempStorage`` descriptor; warp reductions use
+compiler-managed scratch. Non-exhaustive logical groups restart their scratch
+indices within each physical warp, and only complete groups participate.
 
 Construct ``Algorithm(..., template_arguments={...})`` with the template
 arguments and auxiliary dependency values. Construction validates and
@@ -912,6 +935,8 @@ The result contracts preserve the following public behavior:
   in place. Invalid Load slots are unspecified unless a default is supplied.
 * Exchange and array Shuffle return fresh payloads. Their inputs remain
   available to subsequent kernel code.
+* Reduce returns a scalar defined only at group rank zero. Every required
+  thread must still participate.
 
 Output ownership is part of lowering. A CUB method that overwrites an
 array does not, by itself, implement a Python operation that promises to
@@ -1058,15 +1083,19 @@ the rewrite rejects user dynamic or runtime-sized shared allocations alongside
 cooperative backing, and user static shared allocations when cooperative
 backing becomes dynamic. It inspects user allocations after helper inlining,
 including aliases and implicit oversized cooperative scratch. Static/static
-combinations remain valid, and storage-free operations introduce no conflict.
+combinations remain valid. Reduce scratch participates in the same planner
+as other CUB operations, including when ``temp_storage`` is omitted.
 Diagnostics identify both allocations and suggest keeping them static within
 the device limit, moving the user buffer to global memory, or using separate
 kernels. Passing coexistence tests against a development compiler alone does
 not remove the compatibility guard.
 
-These controls are operation-specific. Warp Load/Store uses
-compiler-owned storage and rejects an explicit ``TempStorage``. Exchange
-and Shuffle also manage their own scratch in the current API.
+These controls are operation-specific. Warp Load/Store and Warp Reduce use
+compiler-owned storage and reject an explicit ``TempStorage``. Exchange
+and Shuffle also manage their own scratch in the current API. Block Reduce
+accepts ``temp_storage`` with the same layout and synchronization policy as
+Block Load/Store. Omitting it selects compiler-owned storage with automatic
+synchronization; an explicit descriptor defaults to caller synchronization.
 
 
 .. _coop-numba-compilation-reuse:
@@ -1660,10 +1689,9 @@ The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
 Python versions and platform combinations need separate backend runtime
 qualification. Dependency bounds allow releases in the supported series;
 they do not mean that every patch release in that series has been tested.
-These checks cover Block and Warp Load/Store and Exchange, plus Block
-Shuffle. Thread, cluster, and grid groups are not operation targets in this
-release. Synchronization race checking requires Compute Sanitizer; a job
-that skips those checks does not qualify scratch reuse under the sanitizer.
+Thread-block clusters require a CC 9.0+ GPU, and synchronization race
+checking requires Compute Sanitizer. A runtime job that skips those tests
+does not qualify those features.
 
 Source map
 ----------

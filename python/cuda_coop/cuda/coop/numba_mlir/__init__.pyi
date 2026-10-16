@@ -5,6 +5,7 @@
 from .._core.api import TempStorageLike, ThreadDataLike
 from ._group._exchange import exchange
 from ._group._load_store import load, store
+from ._group._reduce import reduce, sum
 from ._group._shuffle import shuffle
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, local, shared
@@ -30,9 +31,11 @@ __all__ = [
     "exchange",
     "load",
     "local",
+    "reduce",
     "shared",
     "shuffle",
     "store",
+    "sum",
     "this_block",
     "this_cluster",
     "this_grid",

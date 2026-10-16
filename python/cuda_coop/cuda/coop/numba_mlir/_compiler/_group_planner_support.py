@@ -67,6 +67,18 @@ _COMMON_GROUP_CONSTRUCTORS = frozenset(
         _common_api.this_grid,
     }
 )
+_GROUP_METHODS = frozenset(
+    {
+        "rank",
+        "count",
+        "rank_as",
+        "count_as",
+        "sync",
+        "sync_aligned",
+        "group_by",
+        "is_member",
+    }
+)
 
 
 class GroupRewriteError(Exception):
@@ -153,6 +165,7 @@ def _typed_group_payload_like(
 __all__ = [
     "_COMMON_GROUP_CONSTRUCTORS",
     "_GROUP_CONSTRUCTORS",
+    "_GROUP_METHODS",
     "_NAME_COUNTER",
     "_PAYLOAD_DTYPE_LIKE",
     "GroupRewriteError",

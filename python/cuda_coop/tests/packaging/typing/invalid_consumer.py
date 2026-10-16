@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 
 import cuda.coop as common
@@ -16,21 +18,21 @@ common.TempStorage(64, 16)  # expected-error: [call-arg]
 values = coop.ThreadData(items_per_thread=2, dtype=np.int32)
 common_values = common.ThreadData(items_per_thread=2, dtype=np.int32)
 common_block = common.this_block()
-common_block.rank()  # expected-error: [attr-defined]
-common_block.count()  # expected-error: [attr-defined]
-common_block.rank_as(np.uint32)  # expected-error: [attr-defined]
-common_block.count_as(np.uint32)  # expected-error: [attr-defined]
-common_block.sync()  # expected-error: [attr-defined]
-common_block.sync_aligned()  # expected-error: [attr-defined]
-common_block.is_member()  # expected-error: [attr-defined]
+common_block.rank_as(np.float32)  # expected-error: [arg-type]
+common_block.count_as(np.bool_)  # expected-error: [arg-type]
+common_block.rank_as(bool)  # expected-error: [arg-type]
+common.this_grid().sync()  # expected-error: [misc]
+common_block.group_by(2).sync()  # expected-error: [misc]
+common_block.group_by(2).rank("grid")  # expected-error: [call-overload]
+common.this_warp().group_by(8).count("block")  # expected-error: [call-overload]
 qualified_block = coop.this_block()
-qualified_block.rank()  # expected-error: [attr-defined]
-qualified_block.count()  # expected-error: [attr-defined]
-qualified_block.rank_as(np.uint32)  # expected-error: [attr-defined]
-qualified_block.count_as(np.uint32)  # expected-error: [attr-defined]
-qualified_block.sync()  # expected-error: [attr-defined]
-qualified_block.sync_aligned()  # expected-error: [attr-defined]
-qualified_block.is_member()  # expected-error: [attr-defined]
+qualified_block.rank_as(np.float32)  # expected-error: [arg-type]
+qualified_block.count_as(np.bool_)  # expected-error: [arg-type]
+qualified_block.count_as(bool)  # expected-error: [arg-type]
+coop.this_grid().sync_aligned()  # expected-error: [misc]
+qualified_block.group_by(2).sync_aligned()  # expected-error: [misc]
+qualified_block.group_by(2).count("grid")  # expected-error: [call-overload]
+coop.this_warp().group_by(8).rank("cluster")  # expected-error: [call-overload]
 common.load(  # expected-error: [call-overload]
     common.this_block(),
     object(),
@@ -182,4 +184,106 @@ coop.exchange(  # expected-error: [call-overload]
     mode="scatter_to_striped_flagged",
     ranks=values,
     valid_flags=floating_flags,
+)
+
+
+def select_left(left: np.int32, right: np.int32) -> np.int32:
+    """Provide a callback for unsupported namespace and overload checks."""
+
+    del right
+    return left
+
+
+common.reduce(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    binary_op=select_left,
+)
+common.reduce(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    binary_op=0,
+)
+common.sum(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    algorithm=0,
+)
+common.sum(  # expected-error: [call-overload]
+    common_block,
+    np.complex64(1),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.bool_(True),
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.complex64(1),
+    binary_op="sum",
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=0,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    algorithm=0,
+)
+complex_values = cast(common.ThreadDataLike[np.complex64], object())
+coop.sum(  # expected-error: [type-var]
+    qualified_block,
+    complex_values,
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    values,
+    valid_items=2,
+)
+coop.sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    algorithm="raking",
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,
+    broadcast=True,
+)
+coop.reduce(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    binary_op=select_left,
+    algorithm="raking_commutative_only",
+)
+
+common.sum(
+    common.this_cluster(),  # expected-error: [arg-type]
+    np.int32(1),
+)
+coop.sum(
+    qualified_block.group_by(2),  # expected-error: [arg-type]
+    np.int32(1),
+)
+common.sum(
+    common.this_thread(),  # expected-error: [arg-type]
+    np.int32(1),
+)
+coop.sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    values,
+    valid_items=7,
+)
+common.sum(
+    common.this_warp(),  # expected-error: [arg-type]
+    np.int32(1),
+    temp_storage=common.TempStorage(),
+)
+coop.sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    temp_storage=0,
 )

@@ -84,7 +84,13 @@ class CoopPlan:
 def _ignored_parameter(parameter: Any) -> bool:
     from .. import _types as coop_types
 
-    if isinstance(parameter, coop_types.CxxFunction):
+    if isinstance(
+        parameter,
+        (
+            coop_types.CxxFunction,
+            coop_types.StatelessOperator,
+        ),
+    ):
         return True
     return (
         isinstance(parameter, coop_types.PointerOffset)

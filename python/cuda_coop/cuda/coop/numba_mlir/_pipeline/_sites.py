@@ -214,6 +214,24 @@ class _Analysis:
                     f"coop.{kind}: payload dtype is unresolved"
                 )
             return Site(stmt, kind, line, request)
+        if kind in {"reduce", "sum"}:
+            from . import _reductions
+
+            value_type = self.typemap[expr.args[1].name]
+            dtype = getattr(value_type, "dtype", nb.unliteral(value_type))
+            request = _reductions.request_for(
+                kind,
+                [self.typemap[a.name] for a in expr.args],
+                {k: self.typemap[v.name] for k, v in expr.kws},
+                qualified=qualified,
+                extent=self._array_extent(stmt, kind, index=1),
+                controls=self._controls(stmt, kind, dtype),
+            )
+            if request is None:
+                raise TypedPipelineError(
+                    f"coop.{kind}: payload extent is not static"
+                )
+            return Site(stmt, kind, line, request)
         request = request_for(
             kind,
             [self.typemap[a.name] for a in expr.args],

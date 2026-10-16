@@ -37,6 +37,7 @@ from .load_store import (
     GroupLoadStoreKind,
     GroupLoadStoreSemantics,
 )
+from .reduce import GroupReduceSemantics
 from .shuffle import GroupShuffleSemantics
 
 __all__ = [
@@ -52,6 +53,7 @@ __all__ = [
     "GroupOperandKind",
     "GroupOperationSemantics",
     "GroupPrimitiveCall",
+    "GroupReduceSemantics",
     "GroupShuffleSemantics",
     "GroupTopologyRequirements",
     "ImplementationProvenance",

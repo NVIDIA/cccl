@@ -265,8 +265,9 @@ class GroupPlanningContext:
         ``algorithm="transpose"`` uses one scratch region for the block; a
         warp ``load()`` operation with that algorithm needs a separate region
         for each participating physical or logical warp. For such plans,
-        require exact block dimensions, groups that cover the block, and one
-        shared-memory slice per group instance. Direct algorithms for
+        require exact block dimensions and one shared-memory slice per
+        complete group instance. Non-exhaustive logical warps leave trailing
+        lanes outside their groups. Direct algorithms for
         ``load()`` and ``store()`` need no scratch and skip those checks. An
         explicit ``temp_storage`` argument is supported only for a single
         block-scoped instance.
@@ -277,6 +278,12 @@ class GroupPlanningContext:
         bypasses its allocating wrapper and controls synchronization itself.
         This exception does not apply to implementation-owned storage. No IR
         is mutated here.
+
+        A provider with GROUP execution scope is accepted only when the plan
+        and factory require no TempStorage operand and no emitted reuse
+        barrier. The helper can manage native synchronization and internal
+        memory itself; this check does not establish that its implementation
+        uses no memory.
 
         Parameters
         ----------
@@ -332,12 +339,20 @@ class GroupPlanningContext:
                 "group topology, participation, synchronization, and storage "
                 "contracts"
             )
-        if topology.execution_scope is SynchronizationScope.GROUP:
-            raise GroupRewriteError(
-                "cuda.coop.numba_mlir provider execution scope 'group' "
-                "has no storage or synchronization emitter"
-            )
         storage_bearing = storage.ownership is not StorageOwnership.NONE
+        if topology.execution_scope is SynchronizationScope.GROUP and (
+            storage_bearing
+            or synchronization.storage_reuse_barrier
+            is not SynchronizationScope.NONE
+            or metadata.storage_abi is not StorageABI.NONE
+            or metadata.execution_scope is not SynchronizationScope.GROUP
+            or metadata.synchronization_scope is not SynchronizationScope.NONE
+        ):
+            raise GroupRewriteError(
+                "cuda.coop.numba_mlir provider execution scope 'group' is "
+                "supported only for storage-free providers with no emitted "
+                "synchronization"
+            )
         if storage_bearing:
             if storage.address_space != "shared":
                 raise GroupRewriteError(
@@ -361,7 +376,21 @@ class GroupPlanningContext:
             block_threads = (
                 exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
             )
-            if topology.logical_width * topology.instances != block_threads:
+            participating_threads = block_threads
+            if (
+                participation.group_kind == "threads_within_warp"
+                and not participation.complete_parent_partition
+                and 1 <= topology.logical_width <= 32
+            ):
+                participating_threads = (
+                    (block_threads // 32)
+                    * (32 // topology.logical_width)
+                    * topology.logical_width
+                )
+            if (
+                topology.logical_width * topology.instances
+                != participating_threads
+            ):
                 raise GroupRewriteError(
                     "cuda.coop.numba_mlir group topology does not cover the "
                     "exact block dimensions"

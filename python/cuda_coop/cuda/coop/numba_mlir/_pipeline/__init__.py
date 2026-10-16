@@ -48,6 +48,7 @@ def _activate() -> None:
         _groups,
         _lower,
         _ncm_patches,
+        _reductions,
         _resolve,
         _temp_storage,
         _templates,
@@ -60,6 +61,7 @@ def _activate() -> None:
     _temp_storage.register()
     _templates.register()
     _exchange.register()
+    _reductions.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()
