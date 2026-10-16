@@ -57,6 +57,13 @@ relative to ``ci/bench.template.yaml``.
 Usage
 -----
 
+Third-party compile-time trace builds are weekly by default. Opt a PR in with
+``[run-third-party-compile-time-bench]``, or temporarily select configurations in
+``compile_time.third_party_override``. These explicitly selected benchmark jobs
+also run with ``[bench-only]``. Literal project skip tags, ``[skip-tpt]``, and
+``[skip-compile-time-bench]`` suppress the corresponding trace builds. See
+:doc:`/maintainers/how_tos/compile_time` for collection and report details.
+
 Place one or more tags in the last commit message before pushing::
 
     git commit -m "Run PR benchmarks [bench-only]"

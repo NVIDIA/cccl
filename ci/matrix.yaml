@@ -41,6 +41,95 @@ compile_time:
           top: 15
           threshold: 0.2
 
+
+  # Build a single CCCL revision weekly and retain the original traces for 90 days.
+  # PRs opt in with [run-third-party-compile-time-bench] or third_party_override.
+  third_party:
+    - &third_party_matx
+      id: matx-gcc14
+      name: MatX compile-time traces
+      project: matx
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.4 --host gcc14 --cuda-ext"
+      slices: &third_party_trace_slices
+        - id: total-compilation
+          title: TU total compilation
+          filter: total-compilation
+          timing: inclusive
+          sort: total
+          top: 50
+          threshold: 0
+        - id: file-processing
+          title: Direct file processing
+          filter: file-processing
+          timing: exclusive
+          sort: total
+          top: 50
+          threshold: 0
+        - id: function-bodies
+          title: Function-body parsing
+          filter: scanning-function-body
+          timing: inclusive
+          sort: total
+          top: 50
+          threshold: 0
+          scope_filter: "^(?:cuda|thrust|cub|cccl|nv)::"
+        - id: template-instantiation
+          title: Template instantiation
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 50
+          threshold: 0
+          scope_filter: "^(?:cuda|thrust|cub|cccl|nv)::"
+        - id: primary-template-instantiation
+          title: Template instantiation by primary template
+          filter: template-instantiation
+          timing: inclusive
+          sort: total
+          top: 50
+          threshold: 0
+          group_by: primary-template
+          scope_filter: "^(?:cuda|thrust|cub|cccl|nv)::"
+    - id: pytorch-gcc14
+      name: PyTorch compile-time traces
+      project: pytorch
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.4 --host gcc14 --cuda-ext"
+      summary_jobs: 1 # Large PyTorch traces need bounded report memory.
+      slices: *third_party_trace_slices
+    - id: rapids-cudf
+      name: RAPIDS cuDF compile-time traces
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.4 --host rapids-conda"
+      targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
+      slices: *third_party_trace_slices
+    - id: rapids-cuvs
+      name: RAPIDS cuVS compile-time traces
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.4 --host rapids-conda"
+      targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
+      slices: *third_party_trace_slices
+    - id: rapids-cugraph
+      name: RAPIDS cuGraph compile-time traces
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.4 --host rapids-conda"
+      targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
+      slices: *third_party_trace_slices
+    - id: rapids-cuopt
+      name: RAPIDS cuOpt compile-time traces
+      project: rapids
+      runner: linux-amd64-cpu32
+      launch_args: "--cuda 13.4 --host rapids-conda"
+      targets: [cuopt]
+      slices: *third_party_trace_slices
+
+  # Temporary PR selection, e.g. [{<<: *third_party_matx}]. Empty before merging.
+  third_party_override: []
+
 # Compares the SASS of the CUB benchmarks before and after the change in a PR, and tells
 # the author to run the benchmarks when the generated code changed.
 #
