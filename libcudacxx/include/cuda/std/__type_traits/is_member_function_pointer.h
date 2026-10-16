@@ -22,8 +22,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

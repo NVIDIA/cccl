@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__type_traits/is_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_reference.h> // IWYU pragma: keep
 
 #if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 12) \
   || (_CCCL_COMPILER(NVRTC) && defined(__NV_BUILTIN_MOVE_FORWARD))
@@ -54,7 +53,7 @@
 // include minimal std:: headers, nvcc in device mode doesn't need the std:: header
 #if _CCCL_HAS_BUILTIN_STD_FORWARD() && !(_CCCL_CUDA_COMPILER(NVCC) && _CCCL_DEVICE_COMPILATION())
 #  if _CCCL_HOST_STD_LIB(LIBSTDCXX) && __has_include(<bits/move.h>)
-#    include <bits/move.h>
+#    include <bits/move.h> // IWYU pragma: keep
 #  elif _CCCL_HOST_STD_LIB(LIBCXX) && __has_include(<__utility/forward.h>)
 #    include <__utility/forward.h>
 #  elif _CCCL_HOSTED()

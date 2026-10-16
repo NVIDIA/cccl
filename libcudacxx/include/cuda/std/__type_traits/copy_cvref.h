@@ -20,17 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/add_rvalue_reference.h>
-
-#if _CCCL_COMPILER(GCC, <, 7)
-#  define _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp) add_lvalue_reference_t<_Tp>
-#  define _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp) add_rvalue_reference_t<_Tp>
-#else
-#  define _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp) _Tp&
-#  define _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp) _Tp&&
-#endif
-
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
@@ -62,49 +51,49 @@ struct __apply_cvref_cv
 struct __apply_cvref_lr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp);
+  using __call _CCCL_NODEBUG = _Tp&;
 };
 
 struct __apply_cvref_clr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_LVALUE_REFERENCE_WAR(const _Tp);
+  using __call _CCCL_NODEBUG = const _Tp&;
 };
 
 struct __apply_cvref_vlr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_LVALUE_REFERENCE_WAR(volatile _Tp);
+  using __call _CCCL_NODEBUG = volatile _Tp&;
 };
 
 struct __apply_cvref_cvlr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_LVALUE_REFERENCE_WAR(const volatile _Tp);
+  using __call _CCCL_NODEBUG = const volatile _Tp&;
 };
 
 struct __apply_cvref_rr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp);
+  using __call _CCCL_NODEBUG = _Tp&&;
 };
 
 struct __apply_cvref_crr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_RVALUE_REFERENCE_WAR(const _Tp);
+  using __call _CCCL_NODEBUG = const _Tp&&;
 };
 
 struct __apply_cvref_vrr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_RVALUE_REFERENCE_WAR(volatile _Tp);
+  using __call _CCCL_NODEBUG = volatile _Tp&&;
 };
 
 struct __apply_cvref_cvrr
 {
   template <class _Tp>
-  using __call _CCCL_NODEBUG = _CCCL_ADD_RVALUE_REFERENCE_WAR(const volatile _Tp);
+  using __call _CCCL_NODEBUG = const volatile _Tp&&;
 };
 
 template <class>
@@ -141,8 +130,5 @@ using __copy_cvref_t = typename __apply_cvref_fn<_From>::template __call<_To>;
 _CCCL_END_NAMESPACE_CUDA_STD
 
 #include <cuda/std/__cccl/epilogue.h>
-
-#undef _CCCL_ADD_RVALUE_REFERENCE_WAR
-#undef _CCCL_ADD_LVALUE_REFERENCE_WAR
 
 #endif // _CUDA_STD___TYPE_TRAITS_COPY_CVREF_H
