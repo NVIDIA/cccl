@@ -1,0 +1,422 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Exercise neighbor ordering, boundaries, and fresh results on the GPU.
+
+Compare complete difference outputs, including the unchanged invalid tail,
+and check int32 flags through downstream scans. Separate subprocesses keep
+expected device traps from corrupting the main test process's CUDA context.
+"""
+
+import numpy as np
+import pytest
+
+cuda = pytest.importorskip("numba_cuda_mlir.cuda")
+if not cuda.is_available():
+    pytest.skip("requires a CUDA-capable runtime", allow_module_level=True)
+from numba_cuda_mlir import types
+
+import cuda.coop.numba_mlir as numba_coop
+from cuda import coop
+
+pytestmark = [
+    pytest.mark.backend_numba_mlir,
+    pytest.mark.runtime,
+    pytest.mark.gpu,
+    pytest.mark.filterwarnings(
+        "ignore::numba_cuda_mlir.numba_cuda.core.errors.NumbaPerformanceWarning"
+    ),
+]
+
+_DTYPES = [
+    np.int8,
+    np.uint8,
+    np.int16,
+    np.uint16,
+    np.int32,
+    np.uint32,
+    np.int64,
+    np.uint64,
+    np.float32,
+    np.float64,
+]
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("dtype", _DTYPES)
+@pytest.mark.parametrize("direction", ["left", "right"])
+def test_adjacent_partial_boundaries_and_input_preservation(
+    dtype, direction, items_per_thread
+):
+    """Check partial tiles in a 30-thread block, including zero valid items.
+
+    Fractional, signed, and wide integer values expose unwanted conversions.
+    The copied tail and the original input must survive every boundary case.
+    """
+
+    source = ((np.arange(30 * items_per_thread) * 7) % 17).astype(dtype)
+    if np.issubdtype(dtype, np.floating):
+        source = source / dtype(4) + dtype(0.125)
+    elif np.issubdtype(dtype, np.signedinteger):
+        source -= dtype(8)
+    else:
+        source += dtype(1 << (np.dtype(dtype).itemsize * 8 - 1))
+    if dtype == np.float64:
+        source += dtype(2**-30)
+    elif dtype == np.int64:
+        source *= dtype(1 << 33)
+    compiler_dtype = getattr(types, source.dtype.name)
+
+    @cuda.jit
+    def kernel(source, output, original, count, items_per_thread):
+        block = coop.this_block()
+        values = coop.ThreadData(items_per_thread)
+        thread = cuda.threadIdx.x + 5 * (
+            cuda.threadIdx.y + cuda.blockDim.y * cuda.threadIdx.z
+        )
+        for i in range(items_per_thread):
+            values[i] = source[thread * items_per_thread + i]
+        if direction == "left":
+            result = coop.adjacent_difference(
+                block,
+                values,
+                valid_items=count,
+                tile_predecessor_item=compiler_dtype(2),
+                temp_storage=coop.TempStorage(),
+            )
+        else:
+            result = coop.adjacent_difference(
+                block, values, valid_items=count, direction="right"
+            )
+        for i in range(items_per_thread):
+            output[thread * items_per_thread + i] = result[i]
+            original[thread * items_per_thread + i] = values[i]
+
+    for count in (0, 1, 2, 3, 4, 29, source.size - 1, source.size):
+        expected = source.copy()
+        if direction == "left":
+            if count:
+                expected[0] = np.subtract(source[0], dtype(2), dtype=dtype)
+                expected[1:count] = source[1:count] - source[: count - 1]
+        elif count:
+            expected[: count - 1] = source[: count - 1] - source[1:count]
+        output = np.empty_like(source)
+        original = np.empty_like(source)
+        kernel[1, (5, 3, 2)](
+            source, output, original, np.int64(count), items_per_thread
+        )
+        np.testing.assert_array_equal(output, expected)
+        np.testing.assert_array_equal(original, source)
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize(
+    "dtype,mode,boundary",
+    [
+        (dtype, mode, boundary)
+        for dtype in _DTYPES
+        for mode in ("heads", "tails", "heads_and_tails")
+        for boundary in (False, True)
+        if dtype in (np.int16, np.uint64, np.float32, np.float64)
+        or (mode == "heads_and_tails" and boundary)
+    ],
+)
+def test_flags_boundaries_pair_results_and_chained_scan(
+    dtype, mode, boundary, items_per_thread
+):
+    """Check flag boundaries and scan one returned int32 flag payload.
+
+    Pair results scan the tails; single results scan the returned flags.
+    """
+
+    source = (np.arange(32 * items_per_thread) // 5 % 7).astype(dtype)
+    source[31:35] = 9
+    if np.issubdtype(dtype, np.floating):
+        source /= dtype(4)
+    if dtype == np.float64:
+        source += dtype(2**-30)
+    elif dtype in (np.int64, np.uint64):
+        source *= dtype(1 << 33)
+    # Both modes treat comparison operands in increasing input-index order.
+    compiler_dtype = getattr(types, source.dtype.name)
+
+    @cuda.jit
+    def kernel(
+        source, head_out, tail_out, prefix_out, original, items_per_thread
+    ):
+        block = coop.this_block()
+        values = coop.ThreadData(items_per_thread)
+        coop.load(block, source, values)
+        if mode == "heads_and_tails":
+            if boundary:
+                heads, tails = coop.discontinuity(
+                    block,
+                    values,
+                    mode=mode,
+                    tile_predecessor_item=compiler_dtype(0),
+                    tile_successor_item=compiler_dtype(5),
+                )
+            else:
+                heads, tails = coop.discontinuity(block, values, mode=mode)
+            coop.store(block, head_out, heads)
+            coop.store(block, tail_out, tails)
+            scanned = coop.inclusive_sum(block, tails)
+        elif mode == "heads":
+            if boundary:
+                result = coop.discontinuity(
+                    block,
+                    values,
+                    mode=mode,
+                    tile_predecessor_item=compiler_dtype(0),
+                )
+            else:
+                result = coop.discontinuity(block, values, mode=mode)
+            coop.store(block, head_out, result)
+            scanned = coop.inclusive_sum(block, result)
+        else:
+            if boundary:
+                result = coop.discontinuity(
+                    block,
+                    values,
+                    mode=mode,
+                    tile_successor_item=compiler_dtype(5),
+                )
+            else:
+                result = coop.discontinuity(block, values, mode=mode)
+            coop.store(block, tail_out, result)
+            scanned = coop.inclusive_sum(block, result)
+        coop.store(block, prefix_out, scanned)
+        coop.store(block, original, values)
+
+    heads = np.r_[
+        int(source[0] != 0) if boundary else 1, source[1:] != source[:-1]
+    ].astype(np.int32)
+    tails = np.r_[
+        source[:-1] != source[1:], int(source[-1] != 5) if boundary else 1
+    ].astype(np.int32)
+    head_out, tail_out, prefix_out = [
+        np.empty(32 * items_per_thread, dtype=np.int32) for _ in range(3)
+    ]
+    original = np.empty_like(source)
+    kernel[1, 32](
+        source, head_out, tail_out, prefix_out, original, items_per_thread
+    )
+    if mode != "tails":
+        np.testing.assert_array_equal(head_out, heads)
+    if mode != "heads":
+        np.testing.assert_array_equal(tail_out, tails)
+    np.testing.assert_array_equal(
+        prefix_out, np.cumsum(heads if mode == "heads" else tails)
+    )
+    np.testing.assert_array_equal(original, source)
+
+
+def test_qualified_custom_operators_and_shared_storage_reuse():
+    """Check callback operand order while reusing shared scratch.
+
+    Asymmetric callbacks expose order: difference_op receives (current,
+    neighbor), and flag_op receives (earlier, later) for heads and tails.
+    Adjacent Difference must keep the local array, and Discontinuity must
+    keep the differences it reads. Automatic synchronization permits these
+    consecutive uses of the shared TempStorage.
+    """
+
+    def difference(current, neighbor):
+        return current * 2 - neighbor
+
+    def flag(previous, current):
+        return previous < current
+
+    @cuda.jit
+    def kernel(source, output, head_out, tail_out, original):
+        block = numba_coop.this_block()
+        scratch = numba_coop.TempStorage(auto_sync=True)
+        values = cuda.local.array(3, dtype=types.int32)
+        for i in range(3):
+            values[i] = source[cuda.threadIdx.x * 3 + i]
+        differences = numba_coop.adjacent_difference(
+            block,
+            values,
+            direction="right",
+            tile_successor_item=7,
+            difference_op=difference,
+            temp_storage=scratch,
+        )
+        heads, tails = numba_coop.discontinuity(
+            block,
+            differences,
+            mode="heads_and_tails",
+            flag_op=flag,
+            tile_predecessor_item=4,
+            tile_successor_item=8,
+            temp_storage=scratch,
+        )
+        numba_coop.store(block, output, differences)
+        numba_coop.store(block, head_out, heads)
+        numba_coop.store(block, tail_out, tails)
+        for i in range(3):
+            original[cuda.threadIdx.x * 3 + i] = values[i]
+
+    source = ((np.arange(96) * 7) % 19).astype(np.int32)
+    expected = source * 2 - np.r_[source[1:], np.int32(7)]
+    outputs = [np.empty(96, dtype=np.int32) for _ in range(4)]
+    kernel[1, 32](source, *outputs)
+    np.testing.assert_array_equal(outputs[0], expected)
+    np.testing.assert_array_equal(
+        outputs[1], np.r_[4 < expected[0], expected[:-1] < expected[1:]]
+    )
+    np.testing.assert_array_equal(
+        outputs[2], np.r_[expected[:-1] < expected[1:], expected[-1] < 8]
+    )
+    np.testing.assert_array_equal(outputs[3], source)
+
+
+def test_multiblock_delta_example():
+    # adjacent-difference-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    from cuda import coop
+
+    @cuda.jit
+    def delta_encode(source, output, items_per_thread):
+        # Use distinct source/output arrays: another block needs the preceding
+        # source tile's last value, so an in-place launch would race.
+        block = coop.this_block()
+        base = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+        values = coop.ThreadData(items_per_thread)
+        coop.load(block, source, values, offset=base)
+        previous = np.int32(0)
+        if base > 0:
+            previous = source[base - 1]
+        differences = coop.adjacent_difference(
+            block, values, direction="left", tile_predecessor_item=previous
+        )
+        coop.store(block, output, differences, offset=base)
+
+    for items_per_thread in (1, 4):
+        source = ((np.arange(3 * 128 * items_per_thread) * 13) % 101).astype(
+            np.int32
+        )
+        output = np.empty_like(source)
+        delta_encode[3, 128](source, output, items_per_thread)
+        cuda.synchronize()
+        np.testing.assert_array_equal(
+            output, np.diff(source, prepend=np.int32(0))
+        )
+    # adjacent-difference-example-end
+
+
+def test_tile_run_labels_example():
+    # discontinuity-example-begin
+    import numpy as np
+    from numba_cuda_mlir import cuda
+
+    from cuda import coop
+
+    @cuda.jit
+    def label_runs_per_tile(keys, output, items_per_thread):
+        # Full block tiles; IDs restart at zero in each block.
+        block = coop.this_block()
+        base = cuda.blockIdx.x * cuda.blockDim.x * items_per_thread
+        values = coop.ThreadData(items_per_thread)
+        coop.load(block, keys, values, offset=base)
+        heads = coop.discontinuity(block, values, mode="heads")
+        labels = coop.inclusive_sum(block, heads)
+        for i in range(items_per_thread):
+            labels[i] -= 1
+        coop.store(block, output, labels, offset=base)
+
+    for items_per_thread in (1, 4):
+        source = (np.arange(2 * 128 * items_per_thread) // 13).astype(np.int32)
+        output = np.empty_like(source)
+        label_runs_per_tile[2, 128](source, output, items_per_thread)
+        cuda.synchronize()
+        for base in (0, 128 * items_per_thread):
+            tile = source[base : base + 128 * items_per_thread]
+            expected = np.cumsum(np.r_[1, tile[1:] != tile[:-1]]) - 1
+            np.testing.assert_array_equal(
+                output[base : base + 128 * items_per_thread], expected
+            )
+    # discontinuity-example-end
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("direction", ["left", "right"])
+def test_full_tile_default_boundary_and_chained_result(
+    direction, items_per_thread
+):
+    @cuda.jit
+    def kernel(source, output, items_per_thread):
+        block = coop.this_block()
+        values = coop.ThreadData(items_per_thread)
+        for item in range(items_per_thread):
+            values[item] = source[cuda.threadIdx.x * items_per_thread + item]
+        first = coop.adjacent_difference(block, values, direction=direction)
+        second = numba_coop.adjacent_difference(
+            block, first, direction=direction
+        )
+        coop.store(block, output, second)
+
+    source = ((np.arange(65 * items_per_thread) * 13) % 29).astype(np.int32)
+    expected = source.copy()
+    for _ in range(2):
+        original = expected.copy()
+        if direction == "left":
+            expected[1:] = original[1:] - original[:-1]
+        else:
+            expected[:-1] = original[:-1] - original[1:]
+    output = np.empty_like(source)
+    kernel[1, 65](source, output, items_per_thread)
+    np.testing.assert_array_equal(output, expected)
+
+
+@pytest.mark.parametrize("count", [-1, 193, 1 << 32])
+def test_invalid_runtime_count_traps_before_narrowing(count):
+    """Isolate device traps and include a count that could wrap to zero."""
+
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = f"""
+import numpy as np
+from numba_cuda_mlir import cuda
+from cuda import coop
+from pathlib import Path
+assert Path(coop.__file__).resolve() == Path({str(Path(coop.__file__).resolve())!r})
+@cuda.jit
+def kernel(source, output, count):
+    values = coop.ThreadData(items_per_thread=3)
+    coop.load(coop.this_block(), source, values)
+    result = coop.adjacent_difference(coop.this_block(), values, valid_items=count)
+    coop.store(coop.this_block(), output, result)
+source = np.arange(192, dtype=np.int32)
+output = np.empty_like(source)
+kernel[1, 64](source, output, np.int64({count}))
+cuda.synchronize()
+raise AssertionError('invalid count did not trap')
+"""  # noqa: E501 - Preserve embedded source bytes.
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-P" if sys.version_info >= (3, 11) else "-I",
+            "-B",
+            "-c",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=180,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0, output
+    assert any(
+        error in output
+        for error in (
+            "CUDA_ERROR_ILLEGAL_INSTRUCTION",
+            "CUDA_ERROR_LAUNCH_FAILED",
+        )
+    ), output
