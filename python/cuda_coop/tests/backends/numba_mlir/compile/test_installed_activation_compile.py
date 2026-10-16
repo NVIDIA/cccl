@@ -7,7 +7,8 @@
 Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
 checkout. Isolated mode must ignore that path. The probe checks module and
 header origins before compiling, so checkout files cannot hide missing
-wheel contents.
+wheel contents. Reduce markers remain lazy in planner mode and register
+eagerly in typed mode; planner hooks load only when explicitly requested.
 """
 
 from __future__ import annotations
@@ -52,7 +53,6 @@ _COMPILE_PROBE = textwrap.dedent(
         == "typed"
     )
 
-
     if import_order == "numba-first-common":
         import numba_cuda_mlir
         from numba_cuda_mlir import cuda, types
@@ -91,7 +91,7 @@ _COMPILE_PROBE = textwrap.dedent(
     qualified_coop = sys.modules["cuda.coop.numba_mlir"]
     public_reduce_module = "cuda.coop.numba_mlir._group._reduce"
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
-    assert public_reduce_module not in sys.modules
+    assert (public_reduce_module in sys.modules) == typed_pipeline
     assert compiler_reduce_module not in sys.modules
 
     assert {"exchange", "reduce", "shuffle", "sum"} <= set(qualified_coop.__all__)
@@ -102,11 +102,17 @@ _COMPILE_PROBE = textwrap.dedent(
     assert public_reduce_module in sys.modules
     assert compiler_reduce_module not in sys.modules
 
-    from cuda.coop.numba_mlir._compiler._operations import group_primitive
+    if typed_pipeline:
+        from cuda.coop.numba_mlir import _pipeline
 
-    assert group_primitive("reduce") is not None
-    assert group_primitive("sum") is not None
-    assert compiler_reduce_module in sys.modules
+        assert _pipeline._activated
+        assert compiler_reduce_module not in sys.modules
+    else:
+        from cuda.coop.numba_mlir._compiler._operations import group_primitive
+
+        assert group_primitive("reduce") is not None
+        assert group_primitive("sum") is not None
+        assert compiler_reduce_module in sys.modules
 
     distribution = importlib.metadata.distribution("cuda-coop")
     distribution_root = Path(distribution.locate_file("")).resolve()

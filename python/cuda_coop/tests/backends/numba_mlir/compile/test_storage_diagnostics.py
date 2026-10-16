@@ -506,7 +506,7 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
 
 @pytest.mark.parametrize("kind", ["block", "warp", "logical_warp"])
 @pytest.mark.parametrize("shape", [0, 128], ids=["dynamic", "static"])
-def test_reduce_shared_memory_coexistence(kind, shape):
+def test_reduce_shared_memory_coexistence(kind, shape, typed_pipeline):
     """CUB scratch follows the common backing allocation's alias checks."""
 
     @cuda.jit(device=True)
@@ -535,7 +535,7 @@ def test_reduce_shared_memory_coexistence(kind, shape):
         ).metadata["ltoir"]
     else:
         with pytest.raises(
-            CoopSinglePhaseRewriteError,
+            TypingError if typed_pipeline else CoopSinglePhaseRewriteError,
             match="shared-memory backing.*dynamic/runtime-sized.*would alias",
         ):
             _compile(
@@ -543,8 +543,11 @@ def test_reduce_shared_memory_coexistence(kind, shape):
             )
 
 
-def test_reduce_uses_dynamic_cooperative_backing(monkeypatch):
-    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+def test_reduce_uses_dynamic_cooperative_backing(monkeypatch, typed_pipeline):
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline import _storage as _rewrite_storage
+    else:
+        from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
     monkeypatch.setattr(
         _rewrite_storage,
