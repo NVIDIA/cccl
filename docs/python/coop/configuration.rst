@@ -42,10 +42,13 @@ CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
 select another source checkout or ``cuda-coop`` header bundle.
 
 
-With Numba-CUDA-MLIR 0.5.x, activating the ``cuda.coop`` backend disables
-the compiler's ``cache=True`` disk cache for all kernels in that process.
-Compiled kernels still have an in-memory cache. The provider cache controlled
-by ``CUDA_COOP_ENABLE_CACHE`` below is separate.
+With the default planner pipeline on Numba-CUDA-MLIR 0.5.x, activating the
+``cuda.coop`` backend disables the compiler's ``cache=True`` disk cache for
+all kernels in that process. The experimental typed pipeline preserves disk
+caching for ordinary kernels. Numba-CUDA-MLIR disables disk caching for
+compilations specialized on launch configuration. Compiled kernels still have
+an in-memory cache. The provider cache controlled by ``CUDA_COOP_ENABLE_CACHE``
+below is separate.
 
 Runtime environment variables
 -----------------------------
@@ -54,6 +57,15 @@ For the Boolean switches below, *truthy* means any value other than the
 empty string, ``0``, ``false``, ``no``, or ``off``. For example, ``1``,
 ``true``, ``yes``, and ``on`` are all truthy. Values are case-insensitive,
 and leading and trailing whitespace is ignored. An unset variable is false.
+
+``CUDA_COOP_NUMBA_MLIR_PIPELINE``
+   Selects ``planner`` (the default) or the experimental ``typed`` pipeline.
+   Set it before activating the Numba-CUDA-MLIR backend. The typed pipeline
+   requires ``numba-cuda-mlir==0.5.4`` and checks the compiler interfaces it
+   patches before activation. An incompatible compiler produces an activation
+   error. The installation extras above retain the default pipeline's broader
+   compiler version range; explicitly install version 0.5.4 when selecting
+   typed mode.
 
 ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION``
    A truthy value disables automatic backend activation during

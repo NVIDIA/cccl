@@ -165,10 +165,14 @@ def test_lineinfo_reaches_load_store_providers(
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("lineinfo", [False, True])
 def test_debug_kernel_links_generated_code_without_debug_information(
-    monkeypatch: pytest.MonkeyPatch, items_per_thread, lineinfo
+    monkeypatch: pytest.MonkeyPatch, items_per_thread, lineinfo, typed_pipeline
 ) -> None:
     # A debug kernel is linked with -g, and nvJitLink then rejects more than
     # one LTO input that carries debug or line information.
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline import _link
+
+        _link.clear()
     cuda, recorded = _record_compilations(monkeypatch)
 
     result = _compile_kernel(

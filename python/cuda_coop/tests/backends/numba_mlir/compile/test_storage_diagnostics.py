@@ -48,7 +48,7 @@ def _fixed_current_device(monkeypatch):
     )
 
 
-def _compile(kernel, *arg_types, block=(32, 1, 1)):
+def _compile(kernel, *arg_types, block=(32, 1, 1), cluster=None):
     """Compile with exact launch dimensions; do not execute the kernel."""
     return kernel._compile_launch_config_signature(
         types.void(*arg_types),
@@ -56,7 +56,7 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
             ("grid", (1, 1, 1)),
             ("block", block),
             ("sharedmem", 0),
-            ("cluster", None),
+            ("cluster", cluster),
         ),
     )
 
@@ -69,7 +69,7 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
     "inlined_helper", (False, True), ids=("kernel", "helper")
 )
 def test_load_store_unexpected_keyword_raises_type_error(
-    qualified, operation, inlined_helper
+    qualified, operation, inlined_helper, typed_pipeline
 ):
     from cuda import coop as portable_coop
 
@@ -92,7 +92,8 @@ def test_load_store_unexpected_keyword_raises_type_error(
         kernel = cuda.jit(chip="sm_90")(copy)
 
     with pytest.raises(
-        TypeError, match="unexpected keyword argument 'make_fast'"
+        TypingError if typed_pipeline else TypeError,
+        match="unexpected keyword argument 'make_fast'",
     ) as exc_info:
         _compile(kernel, types.int32[::1], types.IntegerLiteral(2))
 
@@ -101,12 +102,17 @@ def test_load_store_unexpected_keyword_raises_type_error(
         index for index, line in enumerate(lines) if "make_fast=True" in line
     )
     message = str(exc_info.value)
-    assert (
-        f"{operation}() got an unexpected keyword argument 'make_fast'"
-        in message
-    )
-    assert f'File "{os.path.relpath(__file__)}", line {call_line}:' in message
-    assert "primitive(block, data, items, make_fast=True)" in message
+    if typed_pipeline:
+        assert f"{os.path.basename(__file__)}:{call_line}" in message
+    else:
+        assert (
+            f"{operation}() got an unexpected keyword argument 'make_fast'"
+            in message
+        )
+        assert (
+            f'File "{os.path.relpath(__file__)}", line {call_line}:' in message
+        )
+        assert "primitive(block, data, items, make_fast=True)" in message
 
 
 @pytest.mark.parametrize(
@@ -130,7 +136,9 @@ def test_load_return_cannot_be_used_as_a_store_payload(qualified, dtype):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
-def test_rebound_explicit_dtype_is_not_replaced_by_write_inference():
+def test_rebound_explicit_dtype_is_not_replaced_by_write_inference(
+    typed_pipeline,
+):
     @cuda.jit(chip="sm_90")
     def kernel(destination):
         if destination[0] > 0:
@@ -143,6 +151,21 @@ def test_rebound_explicit_dtype_is_not_replaced_by_write_inference():
             second[0] = 1.5
             destination[1] = second[0]
 
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline._types import (
+            EXPLICIT,
+            ThreadDataType,
+        )
+
+        compiled = _compile(kernel, types.int32[::1])
+        assert compiled.metadata["cubin"]
+        typemap = compiled.type_annotation.typemap
+        for name, dtype in (("first", types.int32), ("second", types.float32)):
+            payload = typemap[name]
+            assert isinstance(payload, ThreadDataType)
+            assert payload.dtype == dtype
+            assert payload.strength == EXPLICIT
+        return
     with pytest.raises(
         (CoopSinglePhaseRewriteError, TypingError),
         match="dtype must resolve",
@@ -215,7 +238,7 @@ def test_none_alias_reports_descriptor_error_before_type_inference():
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
-def test_standalone_primitive_helper_reports_inline_requirement():
+def test_standalone_primitive_helper_reports_inline_requirement(typed_pipeline):
     @cuda.jit(device=True, inline="never")
     def standalone(destination, value):
         coop.store(coop.this_block(), destination, value)
@@ -225,7 +248,12 @@ def test_standalone_primitive_helper_reports_inline_requirement():
         standalone(destination, source[cuda.threadIdx.x])
 
     with pytest.raises(
-        (GroupRewriteError, TypingError), match="standalone.*must be inlined"
+        (GroupRewriteError, TypingError),
+        match=(
+            "standalone.*separately compiled device function.*no launch.*inline"
+        )
+        if typed_pipeline
+        else "standalone.*must be inlined",
     ):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
@@ -233,8 +261,9 @@ def test_standalone_primitive_helper_reports_inline_requirement():
 @pytest.mark.parametrize(
     "payload_kind", ["thread_data", "local_array", "local_array_keyword"]
 )
-def test_literal_unroll_cannot_determine_cooperative_payload_shape(
+def test_literal_unroll_payload_shape_contract(
     payload_kind,
+    typed_pipeline,
 ):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
@@ -250,6 +279,17 @@ def test_literal_unroll_cannot_determine_cooperative_payload_shape(
             coop.load(coop.this_block(), source, payload)
             destination[cuda.threadIdx.x] = payload[0]
 
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline._debug import capture
+
+        with capture() as recorded:
+            compiled = _compile(kernel, types.int32[::1], types.int32[::1])
+        assert compiled.metadata["cubin"]
+        sites = recorded.only().plan.sites
+        assert sorted(
+            dict(site.request)["items_per_thread"] for site in sites
+        ) == [1, 2]
+        return
     with pytest.raises(
         (GroupRewriteError, TypingError),
         match="does not support literal_unroll values",
@@ -278,7 +318,7 @@ def test_storage_free_operation_can_coexist_with_user_dynamic_shared_memory():
     assert _compile(kernel, types.int32[::1]).metadata["ltoir"]
 
 
-def test_literal_unroll_cannot_determine_cooperative_selector():
+def test_literal_unroll_selector_contract(typed_pipeline):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         for algorithm in literal_unroll(("direct", "striped")):
@@ -289,6 +329,18 @@ def test_literal_unroll_cannot_determine_cooperative_selector():
                 algorithm=algorithm,
             )
 
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline._debug import capture
+
+        with capture() as recorded:
+            compiled = _compile(kernel, types.int32[::1], types.int32[::1])
+        assert compiled.metadata["cubin"]
+        sites = recorded.only().plan.sites
+        assert sorted(dict(site.request)["algorithm"] for site in sites) == [
+            "direct",
+            "striped",
+        ]
+        return
     with pytest.raises(
         (GroupRewriteError, TypingError),
         match="does not support literal_unroll values",
@@ -301,9 +353,12 @@ def test_literal_unroll_cannot_determine_cooperative_selector():
 )
 @pytest.mark.parametrize("user_shape", ["static", "zero", "runtime"])
 def test_inlined_user_shared_allocation_is_checked_after_inlining(
-    monkeypatch, dynamic_backing, user_shape
+    monkeypatch, dynamic_backing, user_shape, typed_pipeline
 ):
-    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline import _storage as _rewrite_storage
+    else:
+        from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
     monkeypatch.setattr(
         _rewrite_storage,
@@ -354,18 +409,26 @@ def test_inlined_user_shared_allocation_is_checked_after_inlining(
         ]
     else:
         with pytest.raises(
-            CoopSinglePhaseRewriteError,
+            TypingError if typed_pipeline else CoopSinglePhaseRewriteError,
             match=(
-                r"shared-memory backing.*test_storage_diagnostics.py.*"
-                r"would alias"
+                (
+                    r"dynamic shared-memory backing.*static cuda.shared.array.*"
+                    r"would alias"
+                )
+                if typed_pipeline and user_shape == "static"
+                else (
+                    r"shared-memory backing.*test_storage_diagnostics.py.*"
+                    r"would alias"
+                )
             ),
         ):
             _compile(kernel, types.int32[::1], types.int32[::1])
 
 
 @pytest.mark.parametrize("argument", ["storage", "group_by"])
-def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(
+def test_literal_unroll_rejects_invalid_storage_or_partition(
     argument,
+    typed_pipeline,
 ):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
@@ -386,17 +449,29 @@ def test_literal_unroll_cannot_determine_cooperative_storage_or_partition(
                 group = block.group_by(count)
                 coop.store(group, destination, source[cuda.threadIdx.x])
 
-    with pytest.raises(
-        (GroupRewriteError, TypingError),
-        match="does not support literal_unroll values",
-    ):
+    expected_error = (GroupRewriteError, TypingError)
+    reason = "does not support literal_unroll values"
+    if typed_pipeline:
+        expected_error = (
+            TypingError if argument == "storage" else NotImplementedError
+        )
+        reason = (
+            r"TempStorage size_in_bytes.*32 < 144"
+            if argument == "storage"
+            else "mapped group count exceeds the resolved parent unit count"
+        )
+    with pytest.raises(expected_error, match=reason):
         _compile(kernel, types.int32[::1], types.int32[::1])
 
 
 def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
     monkeypatch,
+    typed_pipeline,
 ):
-    from cuda.coop.numba_mlir._compiler import _rewrite_storage
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline import _storage as _rewrite_storage
+    else:
+        from cuda.coop.numba_mlir._compiler import _rewrite_storage
 
     monkeypatch.setattr(
         _rewrite_storage,
@@ -420,7 +495,7 @@ def test_implicit_oversized_storage_rejects_user_static_shared_allocation(
         )
 
     with pytest.raises(
-        CoopSinglePhaseRewriteError,
+        TypingError if typed_pipeline else CoopSinglePhaseRewriteError,
         match=(
             "dynamic shared-memory backing.*static cuda.shared.array.*"
             "would alias"

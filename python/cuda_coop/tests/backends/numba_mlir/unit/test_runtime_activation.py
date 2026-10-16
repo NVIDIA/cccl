@@ -23,10 +23,16 @@ pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.unit]
 PACKAGE_ROOT = Path(__file__).parents[4]
 
 
-def _run_import_probe(script: str) -> None:
-    """Run a fresh import against this package with default registration."""
+def _run_import_probe(script: str, *, pipeline: str | None = None) -> None:
+    """Run fresh activation with an optional explicit pipeline."""
     env = os.environ.copy()
     env.pop("CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION", None)
+    if pipeline is not None:
+        env["CUDA_COOP_NUMBA_MLIR_PIPELINE"] = pipeline
+    typed = (
+        env.get("CUDA_COOP_NUMBA_MLIR_PIPELINE", "").strip().lower() == "typed"
+    )
+    script = f"TYPED_PIPELINE = {typed!r}\n" + textwrap.dedent(script)
     env["PYTHONPATH"] = os.pathsep.join(
         filter(None, (str(PACKAGE_ROOT), env.get("PYTHONPATH")))
     )
@@ -51,7 +57,10 @@ def test_numba_first_root_import_automatically_activates_backend():
 
         expected = {
             "cuda.coop.numba_mlir",
-            "cuda.coop.numba_mlir._compiler._planner",
+            (
+                "cuda.coop.numba_mlir._pipeline" if TYPED_PIPELINE
+                else "cuda.coop.numba_mlir._compiler._planner"
+            ),
         }
         assert expected <= set(sys.modules), expected - set(sys.modules)
         """
@@ -71,7 +80,8 @@ def test_numba_first_root_import_does_not_require_refresh_registries():
 
         assert "cuda.coop.numba_mlir" in sys.modules
         assert numba_cuda_mlir.__version__.startswith("0.5.")
-        """
+        """,
+        pipeline="planner",
     )
 
 
@@ -98,7 +108,10 @@ def test_root_first_qualified_import_explicitly_activates_backend():
 
         expected = {
             "cuda.coop.numba_mlir",
-            "cuda.coop.numba_mlir._compiler._planner",
+            (
+                "cuda.coop.numba_mlir._pipeline" if TYPED_PIPELINE
+                else "cuda.coop.numba_mlir._compiler._planner"
+            ),
         }
         assert expected <= set(sys.modules), expected - set(sys.modules)
         """
@@ -127,15 +140,23 @@ def test_root_first_register_explicitly_activates_backend_once(
 
         expected = {{
             "cuda.coop.numba_mlir",
-            "cuda.coop.numba_mlir._compiler._planner",
+            (
+                "cuda.coop.numba_mlir._pipeline" if TYPED_PIPELINE
+                else "cuda.coop.numba_mlir._compiler._planner"
+            ),
         }}
         assert expected <= set(sys.modules), expected - set(sys.modules)
 
         from numba_cuda_mlir._whole_function_planners import _planner_registry
         from numba_cuda_mlir.numba_cuda.core.rewrites import rewrite_registry
-        from cuda.coop.numba_mlir._compiler._planner import (
-            CoopWholeFunctionPlanner,
-        )
+        if TYPED_PIPELINE:
+            from cuda.coop.numba_mlir._pipeline._resolve import (
+                CoopCallResolution,
+            )
+        else:
+            from cuda.coop.numba_mlir._compiler._planner import (
+                CoopWholeFunctionPlanner,
+            )
 
         from cuda.coop.numba_mlir._compiler._activation import (
             _initialize_runtime_hooks,
@@ -145,15 +166,22 @@ def test_root_first_register_explicitly_activates_backend_once(
         assert coop.register("numba_cuda_mlir") is None
         _initialize_runtime_hooks()
         _initialize_runtime_hooks()
-        assert [
+        planners = [
             planner for planner in _planner_registry._planners
             if planner.__module__.startswith("cuda.coop.")
-        ] == [CoopWholeFunctionPlanner]
-        assert not any(
-            rewrite.__module__.startswith("cuda.coop.")
-            for rewrites in rewrite_registry.rewrites.values()
-            for rewrite in rewrites
-        )
+        ]
+        rewrites = [
+            rewrite
+            for values in rewrite_registry.rewrites.values()
+            for rewrite in values
+            if rewrite.__module__.startswith("cuda.coop.")
+        ]
+        if TYPED_PIPELINE:
+            assert not planners
+            assert rewrites == [CoopCallResolution]
+        else:
+            assert planners == [CoopWholeFunctionPlanner]
+            assert not rewrites
         """
     )
 
@@ -237,7 +265,8 @@ def test_failed_planner_import_can_retry_without_partial_registration(
             if planner.__module__.startswith("cuda.coop.")
         ] == [CoopWholeFunctionPlanner]
         assert dict(typeof_impl.registry) == baseline
-        """.replace("ERROR_TYPE", error_type)
+        """.replace("ERROR_TYPE", error_type),
+        pipeline="planner",
     )
 
 
@@ -320,7 +349,8 @@ def test_backend_registration_accepts_supported_runtime_version(version):
 
         coop.register("numba-cuda-mlir")
         assert "cuda.coop.numba_mlir._compiler._planner" in sys.modules
-        """
+        """,
+        pipeline="planner",
     )
 
 

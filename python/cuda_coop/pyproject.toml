@@ -49,6 +49,7 @@ numba-cuda-mlir-cu13 = [
 ]
 test = [
   "cuda-pathfinder>=1.2.3",
+  "FileCheck==1.0.6",
   "mypy",
   "numpy",
   "packaging",

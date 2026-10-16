@@ -18,6 +18,7 @@ import pytest
 pytest.importorskip("numba_cuda_mlir")
 
 from numba_cuda_mlir import types
+from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
 from cuda.coop._core import ArgumentBinding, SynchronizationScope
 from cuda.coop._core.warp import (
@@ -600,6 +601,7 @@ def test_warp_scalar_literal_store_compiles_with_destination_dtype(
 def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
     monkeypatch: pytest.MonkeyPatch,
     qualified: bool,
+    typed_pipeline,
 ) -> None:
     import cuda.coop.numba_mlir as qualified_coop
     from cuda import coop as root_coop
@@ -630,7 +632,12 @@ def test_warp_scalar_runtime_expression_rejects_implicit_narrowing(
             )
 
     signature = types.void(types.int32[::1], types.int32[::1])
-    with pytest.raises(TypeError, match="does not match payload dtype"):
+    with pytest.raises(
+        TypingError if typed_pipeline else TypeError,
+        match="value dtype int64.*destination dtype int32"
+        if typed_pipeline
+        else "does not match payload dtype",
+    ):
         kernel._compile_launch_config_signature(
             signature,
             _production_launch_config_key(),

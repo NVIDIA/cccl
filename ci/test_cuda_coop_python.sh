@@ -12,7 +12,7 @@ set -euo pipefail
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$ci_dir/.." && pwd)"
 
-usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime]"
+usage="Usage: $0 -py-version <python_version> [-stage contracts|numba-mlir-compile|numba-mlir-runtime] [-pipeline planner|typed]"
 
 # shellcheck source=ci/util/python/common_arg_parser.sh
 source "$ci_dir/util/python/common_arg_parser.sh"
@@ -20,6 +20,7 @@ parse_python_args "$@"
 require_py_version "$usage" || exit 1
 
 stage="contracts"
+pipeline="${CUDA_COOP_NUMBA_MLIR_PIPELINE:-planner}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -stage | --stage)
@@ -33,6 +34,22 @@ while [[ $# -gt 0 ]]; do
     -stage=* | --stage=*)
       stage="${1#*=}"
       if [[ -z "$stage" ]]; then
+        echo "Error: $1 requires a value" >&2
+        exit 1
+      fi
+      shift
+      ;;
+    -pipeline | --pipeline)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "Error: $1 requires a value" >&2
+        exit 1
+      fi
+      pipeline="$2"
+      shift 2
+      ;;
+    -pipeline=* | --pipeline=*)
+      pipeline="${1#*=}"
+      if [[ -z "$pipeline" ]]; then
         echo "Error: $1 requires a value" >&2
         exit 1
       fi
@@ -55,6 +72,16 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+case "$pipeline" in
+  planner | typed)
+    export CUDA_COOP_NUMBA_MLIR_PIPELINE="$pipeline"
+    ;;
+  *)
+    echo "Error: unknown cuda.coop pipeline '$pipeline' (expected planner|typed)" >&2
+    exit 1
+    ;;
+esac
 
 needs_cuda_toolkit=false
 case "$stage" in
@@ -112,8 +139,13 @@ case "$stage" in
     python -m pip install "${wheels[0]}[test]"
     ;;
   numba-mlir-compile | numba-mlir-runtime)
+    compiler_requirements=()
+    if [[ "$pipeline" == "typed" ]]; then
+      compiler_requirements+=("numba-cuda-mlir==0.5.4")
+    fi
     python -m pip install \
-      "${wheels[0]}[test,numba-cuda-mlir-cu${cuda_major_version}]"
+      "${wheels[0]}[test,numba-cuda-mlir-cu${cuda_major_version}]" \
+      "${compiler_requirements[@]}"
     ;;
   *)
     echo "Error: unhandled cuda.coop test stage '$stage'" >&2
@@ -181,6 +213,12 @@ PY
     python -m pytest -v \
       backends/numba_mlir/unit/ \
       backends/numba_mlir/compile/
+    if [[ "$pipeline" == "typed" ]]; then
+      python -m pytest -v \
+        backends/numba_mlir/typed_pipeline/ \
+        --ignore=backends/numba_mlir/typed_pipeline/runtime/ \
+        -m 'not runtime'
+    fi
     ;;
   numba-mlir-runtime)
     python -I - <<'PY'
@@ -197,6 +235,11 @@ PY
       --format=csv,noheader
     cd "$tests_root"
     python -m pytest -v backends/numba_mlir/runtime/
+    if [[ "$pipeline" == "typed" ]]; then
+      python -m pytest -v backends/numba_mlir/typed_pipeline/runtime/
+      python -m pytest -v \
+        backends/numba_mlir/typed_pipeline/test_ncm_patches.py -m runtime
+    fi
 
     mapfile -t examples < <(
       find "$repo_root/python/cuda_coop/examples/numba_mlir" \

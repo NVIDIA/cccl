@@ -86,7 +86,9 @@ def test_store_compiles_a_runtime_payload_index(coop, items_per_thread):
 )
 @pytest.mark.parametrize("expression", ("abs", "min", "loop"))
 @pytest.mark.parametrize("matching", (False, True), ids=("mismatch", "exact"))
-def test_store_checks_actual_expression_dtype(coop, expression, matching):
+def test_store_checks_actual_expression_dtype(
+    coop, expression, matching, typed_pipeline
+):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         value = source[cuda.threadIdx.x]
@@ -106,8 +108,12 @@ def test_store_checks_actual_expression_dtype(coop, expression, matching):
     if matching:
         _compile(kernel, *arg_types)
     elif expression == "loop":
-        # Loop types are available during group planning, before typing.
-        with pytest.raises(MemoryDtypeMismatchError, match="payload dtype"):
+        with pytest.raises(
+            TypingError if typed_pipeline else MemoryDtypeMismatchError,
+            match="value dtype float32.*destination dtype int32"
+            if typed_pipeline
+            else "payload dtype",
+        ):
             _compile(kernel, *arg_types)
     else:
         with pytest.raises(

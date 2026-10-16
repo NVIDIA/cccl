@@ -46,6 +46,11 @@ _COMPILE_PROBE = textwrap.dedent(
 
     assert os.environ["CUDA_VISIBLE_DEVICES"] == ""
     import_order = os.environ["CUDA_COOP_IMPORT_ORDER"]
+    typed_pipeline = (
+        os.environ.get("CUDA_COOP_NUMBA_MLIR_PIPELINE", "").strip().lower()
+        == "typed"
+    )
+
 
     if import_order == "numba-first-common":
         import numba_cuda_mlir
@@ -158,11 +163,16 @@ _COMPILE_PROBE = textwrap.dedent(
     assert isinstance(result.metadata["cubin"], bytes)
     assert result.metadata["cubin"]
 
-    linked_ltoir = tuple(
-        Path(path) for path in result.metadata["linked_external_link_items"]
-    )
+    linked_ltoir = result.metadata["linked_external_link_items"]
     assert linked_ltoir
-    assert all(path.suffix == ".ltoir" and path.stat().st_size for path in linked_ltoir)
+    if typed_pipeline:
+        from numba_cuda_mlir.numba_cuda.cudadrv.linkable_code import LTOIR
+
+        assert all(isinstance(item, LTOIR) for item in linked_ltoir)
+        assert all(item.name.endswith(".ltoir") and item.data for item in linked_ltoir)
+    else:
+        paths = tuple(Path(path) for path in linked_ltoir)
+        assert all(path.suffix == ".ltoir" and path.stat().st_size for path in paths)
 
     ptx_by_specialization = block_load.inspect_lto_ptx()
     assert len(ptx_by_specialization) == 1

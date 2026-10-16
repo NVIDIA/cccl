@@ -41,6 +41,11 @@ selected CUDA major version.
 Python 3.10 through 3.14 is supported. The current backend integration
 requires `numba-cuda-mlir>=0.5.0,<0.6`.
 
+The experimental typed pipeline requires `numba-cuda-mlir==0.5.4`. Install
+that exact compiler version and set `CUDA_COOP_NUMBA_MLIR_PIPELINE=typed`
+before backend activation to select it. Activation checks the compiler
+interfaces used by this pipeline and rejects an incompatible installation.
+
 Backend compiler and runtime CI is configured for Linux x86-64 with Python
 3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
 contracts cover Python 3.10 and 3.14. Windows checks build and import the
@@ -118,6 +123,7 @@ explains terms and concepts, including blocked and striped layouts.
 
 | Family | Entry points |
 | --- | --- |
+| `CUDA_COOP_NUMBA_MLIR_PIPELINE` | Selects `planner` (the default) or the experimental `typed` pipeline. Set before backend activation; typed mode requires Numba-CUDA-MLIR 0.5.4. |
 | Memory operations | `load`, `store` |
 
 Each operation documents its supported groups and result ownership in the
