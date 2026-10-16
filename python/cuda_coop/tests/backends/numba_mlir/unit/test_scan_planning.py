@@ -469,7 +469,7 @@ def test_all_qualified_scan_spellings_plan_explicit_state(spelling: str):
         ("aggregate", "aggregate_output and prefix callbacks"),
         ("state_extent", "exactly one item"),
         ("state_dtype", "does not match StatefulFunction dtype"),
-        ("state_keyword", "positional-only arguments passed as keyword"),
+        ("state_keyword", r"positional.only.*(?:passed as|as a) keyword"),
         ("invalid_state_dtype", "supports prefix_state dtypes"),
         ("invalid_callback", "must be a stateless device callable"),
     ),

@@ -715,7 +715,9 @@ def test_production_kernel_compile_accepts_descriptors_through_inlined_helpers(
     )
 
 
-def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
+def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic(
+    typed_pipeline,
+):
     """Preserve the planning error from a callback that calls a primitive.
 
     Prefix callbacks compile as standalone device functions. Their nested
@@ -750,7 +752,12 @@ def test_primitive_inside_standalone_scan_callback_has_clear_diagnostic():
     )
     with pytest.raises(
         (GroupRewriteError, TypingError),
-        match="primitive_prefix.*must be inlined.*standalone callbacks",
+        match=(
+            "primitive_prefix.*separately compiled device function.*"
+            "no launch.*inline"
+            if typed_pipeline
+            else "primitive_prefix.*must be inlined.*standalone callbacks"
+        ),
     ):
         kernel._compile_launch_config_signature(
             types.void(types.int32[::1], types.int32[::1]), key

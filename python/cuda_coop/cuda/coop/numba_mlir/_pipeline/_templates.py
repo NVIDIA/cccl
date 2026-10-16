@@ -48,6 +48,7 @@ from ._types import (
 _NOT_KERNEL_CALLABLE = frozenset(
     {
         "Hierarchy",
+        "StatefulFunction",
         "TempStorageLike",
         "ThreadDataLike",
         "ThreadGroup",

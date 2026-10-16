@@ -14,6 +14,7 @@ from . import _callbacks, _templates
 from ._callbacks import constant
 from ._errors import TypedPipelineError
 from ._inference import (
+    DtypeSource,
     OperationInference,
     operation_inference_contracts,
     operation_static_arguments,
@@ -34,7 +35,7 @@ KINDS = frozenset(
 
 
 def _operation(kind, qualified):
-    def operation(group, value, **kwargs):
+    def operation(group, value, prefix_state=None, **kwargs):
         raise NotImplementedError("cuda.coop: kernel only")
 
     operation.__name__ = f"_coop_{'qualified_' if qualified else ''}{kind}"
@@ -90,6 +91,8 @@ class ScanRequest:
     is_array: bool
     mode: str
     scan_op: Any
+    prefix_op: Any
+    has_state: bool
     aggregate: bool
     storage_options: tuple
 
@@ -120,6 +123,8 @@ class ScanRequest:
         initial = controls.get("initial_value")
         if initial is not None and initial.kind is BindingKind.RUNTIME:
             result.append(("value", "initial_value"))
+        if self.has_state:
+            result.append(("pointer", 2))
         valid = controls.get("valid_items")
         if valid is not None and valid.kind is BindingKind.RUNTIME:
             result.append(("value", "valid_items"))
@@ -151,6 +156,10 @@ class ScanRequest:
                 value_kind="array" if self.is_array else "scalar",
                 algorithm=plan.call.operation.cub_algorithm.name.lower(),
             )
+            if self.prefix_op is not None:
+                kwargs["prefix_op"] = self.prefix_op
+            if self.has_state:
+                kwargs["prefix_state"] = True
             if self.aggregate:
                 kwargs["block_aggregate"] = True
         else:
@@ -179,8 +188,9 @@ def request_for(kind, args, kws, *, qualified, extents=None, controls=()):
     )
     from .._lowering import _scan as providers
     from .._lowering._core import NumbaMlirCoreAdapter
+    from .._stateful_function import StatefulFunction
 
-    if len(args) != 2:
+    if len(args) not in (2, 3):
         raise TypedPipelineError(f"coop.{kind}: expected group and value")
     group, value = args[:2]
     if not isinstance(group, CoopGroupType):
@@ -213,6 +223,30 @@ def request_for(kind, args, kws, *, qualified, extents=None, controls=()):
         raise TypedPipelineError(f"cuda.coop.{kind} scan_op must be a string")
     operator_kind = providers.normalize_scan_operation(scan_op)
     providers.validate_scan_operator_dtype(scan_op, dtype)
+    prefix = constant(kws.get("prefix_op"))
+    state = args[2] if len(args) == 3 else None
+    has_state = not _templates._omitted(state)
+    stateful = isinstance(prefix, StatefulFunction)
+    if prefix is not None and group.group.kind != "block":
+        raise TypedPipelineError(
+            "coop.scan prefix callbacks apply only to block groups"
+        )
+    if stateful and not has_state:
+        raise TypedPipelineError(
+            "coop.scan StatefulFunction prefix callbacks require a third "
+            "positional prefix_state argument"
+        )
+    if has_state and not stateful:
+        raise TypedPipelineError(
+            "coop.scan stateless prefix callbacks do not accept prefix_state"
+        )
+    if has_state:
+        _auxiliary(
+            state,
+            "prefix_state",
+            _callbacks.StatefulFunctionType(prefix).dtype,
+            extents,
+        )
     aggregate = _auxiliary(
         kws.get("aggregate_output"), "aggregate_output", dtype, extents
     )
@@ -222,10 +256,21 @@ def request_for(kind, args, kws, *, qualified, extents=None, controls=()):
         raise TypedPipelineError(
             "coop.scan inclusive scan does not accept initial_value"
         )
+    if prefix is not None and initial.kind is not BindingKind.OMITTED:
+        raise TypedPipelineError(
+            "coop.scan initial_value and prefix callbacks "
+            "are mutually exclusive"
+        )
+    if prefix is not None and aggregate:
+        raise TypedPipelineError(
+            "coop.scan aggregate_output and prefix callbacks "
+            "are mutually exclusive"
+        )
     if (
         mode == "exclusive"
         and operator_kind != "sum"
         and initial.kind is BindingKind.OMITTED
+        and prefix is None
     ):
         raise TypedPipelineError(
             "coop.scan non-sum exclusive scans require initial_value"
@@ -244,6 +289,7 @@ def request_for(kind, args, kws, *, qualified, extents=None, controls=()):
         ),
         initial_value=providers._initial_value(initial, dtype),
         aggregate=aggregate,
+        prefix_callback=providers._prefix_operator(prefix),
     )
     call = make_group_primitive_call(
         group.group,
@@ -268,6 +314,8 @@ def request_for(kind, args, kws, *, qualified, extents=None, controls=()):
             is_array,
             mode,
             scan_op,
+            prefix,
+            has_state,
             aggregate,
             storage,
         )
@@ -320,7 +368,7 @@ def bind_controls(analysis, stmt, dtype):
 
 def _typing(kind, qualified):
     def generic(self, args, kws):
-        if len(args) != 2:
+        if len(args) not in (2, 3):
             raise TypedPipelineError(f"coop.{kind}: expected group and value")
         dtype = _payload(kind, args[1], qualified)
         if dtype is None:
@@ -338,10 +386,14 @@ def register():
         if qualified:
             _templates.QUALIFIED_OPERATIONS.add(operation)
         operation_inference_contracts[operation] = OperationInference(
-            checked_producers=(("aggregate_output", 1),)
+            checked_producers=(
+                ("aggregate_output", 1),
+                (2, DtypeSource("prefix_op", _callbacks.state_dtype)),
+            )
         )
         operation_static_arguments[operation] = {
             "scan_op": _callbacks.StaticCallableType,
+            "prefix_op": _callbacks.StaticCallableType,
         }
         _templates.register_template(
             operation,
