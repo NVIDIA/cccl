@@ -5,6 +5,19 @@
 
 #include <nvbench_helper.cuh>
 
+// %RANGE% TUNE_ITEMS_PER_THREAD ipt 1:16:1
+// %RANGE% TUNE_THREADS_PER_BLOCK tpb 64:1024:64
+
+#if !TUNE_BASE
+struct policy_selector_t
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::ForPolicy
+  {
+    return {TUNE_THREADS_PER_BLOCK, TUNE_ITEMS_PER_THREAD};
+  }
+};
+#endif // !TUNE_BASE
+
 template <class T>
 struct op_t
 {
@@ -40,7 +53,14 @@ void for_each(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   caching_allocator_t alloc;
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    auto env = cub_bench_env(alloc, launch);
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_selector_t{})
+#endif // !TUNE_BASE
+    );
     _CCCL_TRY_RUNTIME_API(cub::DeviceFor::ForEachCopyN, "ForEachCopyN failed", d_in, elements, op, env);
   });
 }
