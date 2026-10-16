@@ -65,6 +65,34 @@ CCCL_C_API CUresult cccl_device_segmented_reduce_build_ex(
   const char* ctk_path,
   const cccl_build_config* config);
 
+CCCL_C_API CUresult cccl_device_segmented_reduce_compile(
+  cccl_device_segmented_reduce_build_result_t* build,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  cccl_iterator_t begin_offset_in,
+  cccl_iterator_t end_offset_in,
+  cccl_op_t op,
+  cccl_value_t init,
+  int cc_major,
+  int cc_minor,
+  const char* cub_path,
+  const char* thrust_path,
+  const char* libcudacxx_path,
+  const char* ctk_path,
+  const cccl_build_config* config);
+
+CCCL_C_API CUresult
+cccl_device_segmented_reduce_load(cccl_device_segmented_reduce_build_result_t* build, const char* ctk_path);
+
+// Serializes a populated build_result into a byte buffer. On success *out_buf
+// points to a heap allocation the caller must free with
+// cccl_serialization_v2_buffer_free, and *out_size holds its length.
+CCCL_C_API CUresult cccl_device_segmented_reduce_serialize(
+  const cccl_device_segmented_reduce_build_result_t* build, void** out_buf, size_t* out_size);
+
+CCCL_C_API CUresult cccl_device_segmented_reduce_deserialize(
+  cccl_device_segmented_reduce_build_result_t* build, const void* buf, size_t size);
+
 CCCL_C_API CUresult cccl_device_segmented_reduce(
   cccl_device_segmented_reduce_build_result_t build,
   void* d_temp_storage,
