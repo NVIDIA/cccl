@@ -1298,14 +1298,19 @@ def test_warp_exchange_reuse_racecheck(width):
         pytest.skip("compute-sanitizer is not available")
     for disable_barrier in (False, True):
         script = f"""
+import os
 import runpy
 from pathlib import Path
 import cuda.coop.numba_mlir as coop
 assert Path(coop.__file__).resolve() == Path({_QUALIFIED_COOP_ORIGIN.as_posix()!r})
 namespace = runpy.run_path({str(Path(__file__).resolve())!r})
 if {disable_barrier!r}:
-    from cuda.coop.numba_mlir._compiler._rewrite_storage import _StorageRewrite
-    _StorageRewrite._emit_temp_storage_auto_sync = lambda *args, **kwargs: None
+    if os.environ.get('CUDA_COOP_NUMBA_MLIR_PIPELINE', '').strip().lower() == 'typed':
+        from cuda.coop.numba_mlir._pipeline._materialize import _StorageIR
+        _StorageIR.warp_barrier = lambda *args, **kwargs: None
+    else:
+        from cuda.coop.numba_mlir._compiler._rewrite_storage import _StorageRewrite
+        _StorageRewrite._emit_temp_storage_auto_sync = lambda *args, **kwargs: None
 namespace['_run_same_direction_warp_reuse']({width}, check_output={not disable_barrier!r})
 """  # noqa: E501 - Preserve embedded source bytes.
         result = subprocess.run(
