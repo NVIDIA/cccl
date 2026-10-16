@@ -53,6 +53,7 @@ from ._parameters import (
     make_typed_cpp_literal,
 )
 from ._rewrite_scan import infer_scan_payload, validate_scan_runtime_controls
+from ._storage_layout import apply_caller_storage
 
 _COMMON_ALGORITHMS = frozenset({"raking", "raking_memoize", "warp_scans"})
 _COMMON_MODES = frozenset({"exclusive", "inclusive"})
@@ -296,13 +297,7 @@ class _ScanPlanning:
         return True
 
     @staticmethod
-    def _caller_storage_plan(
-        plan: GroupLoweringPlan,
-        descriptor: tuple[int | None, int | None, bool, str],
-    ) -> GroupLoweringPlan:
-        """Apply the same caller-owned storage contract in both pipelines."""
-        from ._storage_layout import apply_caller_storage
-
+    def _caller_storage_plan(plan, descriptor):
         return apply_caller_storage(plan, descriptor, operation="scan")
 
     def _plan(

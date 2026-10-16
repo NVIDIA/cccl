@@ -8,9 +8,9 @@ Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
 checkout. Isolated mode must ignore that path. The probe checks module and
 header origins before compiling, so checkout files cannot hide missing
 wheel contents. Four import orders must each activate the backend. The public
-Reduce and Scan modules must load only when first accessed. Their compiler
-modules must load only when the compiler first looks up their planning hooks.
-Removed prefix-callback parameters and modules must stay absent.
+Reduce and Scan modules remain lazy in planner mode; typed mode registers
+their public markers eagerly. Planner hooks load only when requested in
+planner mode. Prefix-callback parameters and modules remain absent.
 """
 
 from __future__ import annotations
@@ -57,7 +57,6 @@ _COMPILE_PROBE = textwrap.dedent(
         == "typed"
     )
 
-
     if import_order == "numba-first-common":
         import numba_cuda_mlir
         from numba_cuda_mlir import cuda, types
@@ -98,9 +97,9 @@ _COMPILE_PROBE = textwrap.dedent(
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
     public_scan_module = "cuda.coop.numba_mlir._group._scan"
     compiler_scan_module = "cuda.coop.numba_mlir._compiler._group_scan"
-    assert public_reduce_module not in sys.modules
+    assert (public_reduce_module in sys.modules) == typed_pipeline
     assert compiler_reduce_module not in sys.modules
-    assert public_scan_module not in sys.modules
+    assert (public_scan_module in sys.modules) == typed_pipeline
     assert compiler_scan_module not in sys.modules
 
     scan_names = {
@@ -131,14 +130,21 @@ _COMPILE_PROBE = textwrap.dedent(
     assert importlib.util.find_spec("cuda.coop.numba_mlir._scan_op") is None
     assert importlib.util.find_spec("cuda.coop.numba_mlir._stateful_function") is None
 
-    from cuda.coop.numba_mlir._compiler._operations import group_primitive
+    if typed_pipeline:
+        from cuda.coop.numba_mlir import _pipeline
 
-    assert group_primitive("reduce") is not None
-    assert group_primitive("sum") is not None
-    for name in scan_names:
-        assert group_primitive(name) is not None
-    assert compiler_reduce_module in sys.modules
-    assert compiler_scan_module in sys.modules
+        assert _pipeline._activated
+        assert compiler_reduce_module not in sys.modules
+        assert compiler_scan_module not in sys.modules
+    else:
+        from cuda.coop.numba_mlir._compiler._operations import group_primitive
+
+        assert group_primitive("reduce") is not None
+        assert group_primitive("sum") is not None
+        for name in scan_names:
+            assert group_primitive(name) is not None
+        assert compiler_reduce_module in sys.modules
+        assert compiler_scan_module in sys.modules
 
     distribution = importlib.metadata.distribution("cuda-coop")
     distribution_root = Path(distribution.locate_file("")).resolve()

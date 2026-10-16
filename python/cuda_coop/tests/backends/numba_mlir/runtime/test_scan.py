@@ -319,6 +319,24 @@ def test_qualified_scan_accepts_a_callback_with_a_nested_device_helper():
     np.testing.assert_array_equal(observed, np.maximum.accumulate(source))
 
 
+def test_scan_callback_preserves_ordinary_device_dispatch():
+    @cuda.jit
+    def kernel(source, prefixes, ordinary):
+        thread = cuda.threadIdx.x
+        value = source[thread]
+        prefixes[thread] = qualified_coop.inclusive_scan(
+            qualified_coop.this_block(), value, scan_op=_device_maximum
+        )
+        ordinary[thread] = _device_maximum(value, np.int32(0))
+
+    source = ((np.arange(_BLOCK_THREADS, dtype=np.int32) * 7) % 41) - 20
+    prefixes = np.empty_like(source)
+    ordinary = np.empty_like(source)
+    kernel[1, _BLOCK_THREADS](source, prefixes, ordinary)
+    np.testing.assert_array_equal(prefixes, np.maximum.accumulate(source))
+    np.testing.assert_array_equal(ordinary, np.maximum(source, 0))
+
+
 @cuda.jit
 def _warp_scans(
     source, operator_output, callback_output, partial, aggregates, valid
