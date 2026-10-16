@@ -8,11 +8,11 @@ Import this qualified API on the host before compiling kernels. Importing it
 loads the supported compiler runtime and registers the whole-function
 planner. Primitive calls and ThreadData are kernel constructs. Group
 descriptors can also be created on the host and used as kernel globals.
-constants. Construct TempStorage inside each kernel. During compilation, the
-compiler rebuilds the descriptor from its compile-time constant arguments
-and validates them. The compiler rejects a descriptor that comes from a
-module global. The ``local`` and ``shared`` namespaces,
-Merge Sort markers load on first access.
+Construct TempStorage inside each kernel. During compilation, the compiler
+rebuilds the descriptor from its compile-time constant arguments and
+validates them. The compiler rejects a descriptor that comes from a module
+global. The ``local`` and ``shared`` namespaces and the Reduce, Sum, Scan,
+and Merge Sort markers load on first access.
 """
 
 import importlib
@@ -76,7 +76,7 @@ __all__ = [
 
 
 def __getattr__(name):
-    """Load operation markers, allocation namespaces, and state descriptors.
+    """Load operation markers and allocation namespaces.
 
     Resolve these exports on first use and cache each object in this module.
     This keeps their imports out of basic namespace initialization.
@@ -113,10 +113,6 @@ def __getattr__(name):
     if name in {"local", "shared"}:
         value = getattr(
             importlib.import_module(f"{__name__}._thread_data"), name
-        )
-        globals()[name] = value
-        return value
-        value = getattr(
         )
         globals()[name] = value
         return value
