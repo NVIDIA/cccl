@@ -175,7 +175,9 @@ template <class _Tp>
 #  if _CCCL_HAS_INT128()
     else if constexpr (sizeof(_Tp) == sizeof(__int128_t))
     {
-      using _Up = ::cuda::std::make_unsigned_t<_Tp>;
+      using ::cuda::std::__make_nbit_uint_t;
+      using ::cuda::std::__num_bits_v;
+      using _Up = __make_nbit_uint_t<__num_bits_v<_Tp>>;
 
       const bool __lhs_neg         = __lhs < 0;
       const bool __rhs_neg         = __rhs < 0;
