@@ -51,6 +51,8 @@ class CallEntry:
         a positional or keyword scalar argument, converted to the ABI type.
     ``("allocation", index)``
         the pointer to a fresh local array described by ``allocations``.
+    ``("length", source)``
+        the first dimension of an array, converted to the ABI scalar type.
     ``("constant", value)``
         a checked scalar constant represented in the provider ABI dtype.
 

@@ -753,6 +753,8 @@ def register() -> None:
             "adjacent_difference",
             "discontinuity",
             "histogram",
+            "run_length_decode",
+            "run_length_decode_into",
         }:
             continue  # Result families register their templates separately.
         else:

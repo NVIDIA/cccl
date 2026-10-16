@@ -198,6 +198,17 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {"run_length_decode", "run_length_decode_into"}:
+            from . import _run_length
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _run_length.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind == "histogram":
             from . import _histogram
 
