@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -101,6 +102,24 @@ class ThirdPartyTracesTest(unittest.TestCase):
             [c["project"] for c in parse_matrix(path, "pull_request")["include"]],
             ["matx"],
         )
+
+    def test_configurations_reference_existing_devcontainers(self):
+        for config in parse_matrix(ROOT / "ci/matrix.yaml", "weekly")["include"]:
+            with self.subTest(config=config["id"]):
+                args = shlex.split(config["launch_args"])
+                cuda = args[args.index("--cuda") + 1]
+                host = args[args.index("--host") + 1]
+                suffix = "ext" if "--cuda-ext" in args else ""
+                path = (
+                    ROOT
+                    / ".devcontainer"
+                    / f"cuda{cuda}{suffix}-{host}"
+                    / "devcontainer.json"
+                )
+                self.assertTrue(
+                    path.is_file(), f"Missing launcher configuration: {path}"
+                )
+                self.assertIn("image", json.loads(path.read_text()))
 
     def test_metadata_records_build_flags_without_unrelated_cache_values(self):
         build = self.work / "build"

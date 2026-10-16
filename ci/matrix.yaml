@@ -102,28 +102,28 @@ compile_time:
       name: RAPIDS cuDF compile-time traces
       project: rapids
       runner: linux-amd64-cpu32
-      launch_args: "--cuda 13.4 --host rapids-conda"
+      launch_args: "--cuda 13.3 --host rapids-conda"
       targets: [rmm, ucxx, kvikio, cudf, cudf_kafka]
       slices: *third_party_trace_slices
     - id: rapids-cuvs
       name: RAPIDS cuVS compile-time traces
       project: rapids
       runner: linux-amd64-cpu32
-      launch_args: "--cuda 13.4 --host rapids-conda"
+      launch_args: "--cuda 13.3 --host rapids-conda"
       targets: [rmm, ucxx, raft, cuvs, nvforest, cuml]
       slices: *third_party_trace_slices
     - id: rapids-cugraph
       name: RAPIDS cuGraph compile-time traces
       project: rapids
       runner: linux-amd64-cpu32
-      launch_args: "--cuda 13.4 --host rapids-conda"
+      launch_args: "--cuda 13.3 --host rapids-conda"
       targets: [rmm, ucxx, raft, cuvs, cugraph, wholegraph]
       slices: *third_party_trace_slices
     - id: rapids-cuopt
       name: RAPIDS cuOpt compile-time traces
       project: rapids
       runner: linux-amd64-cpu32
-      launch_args: "--cuda 13.4 --host rapids-conda"
+      launch_args: "--cuda 13.3 --host rapids-conda"
       targets: [cuopt]
       slices: *third_party_trace_slices
 
