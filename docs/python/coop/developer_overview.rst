@@ -959,8 +959,8 @@ establishes the dtype:
    coop.store(block, destination, items)
 
 The planner propagates the dtype from ``source`` to ``items``. A later Store
-or Exchange can then use ``items`` even though its constructor did not
-specify a dtype. Load fills ``items`` in place and returns ``None``.
+can then use ``items`` even though its constructor did not specify a dtype.
+Load fills ``items`` in place and returns ``None``.
 
 Layout describes which logical tile elements each thread owns. A striped
 Load gives thread ``t`` elements ``t + i * block_size``. A blocked
@@ -968,15 +968,15 @@ Load gives it ``items_per_thread * t + i`` for each local index ``i``.
 The ``transpose`` algorithm uses striped memory transactions internally
 and fills the payload in blocked order;
 ``striped`` exposes the striped payload to the caller. The caller must
-choose operations that agree on that arrangement or insert an Exchange.
+choose Load and Store algorithms that agree on that arrangement.
 
 The result contracts preserve the following public behavior:
 
 * Load and Store return ``None``. Load fills the supplied output in place.
   Store follows CUB: transpose algorithms may rearrange the input payload
   in place. Invalid Load slots are unspecified unless a default is supplied.
-* Exchange, array Shuffle, and array Scan return a fresh payload. Their
-  inputs remain available to subsequent kernel code.
+* Array Scan returns a fresh payload. Its input remains available to
+  subsequent kernel code.
 * Reduce returns a scalar defined only at group rank zero. Every required
   thread must still participate.
 
@@ -1134,9 +1134,8 @@ not remove the compatibility guard.
 
 These controls are operation-specific. Warp Load/Store, Warp Reduce, and Warp
 Scan use compiler-owned storage and reject an explicit ``TempStorage``.
-Exchange and Shuffle also manage their own scratch in the current API. Block
-Reduce accepts ``temp_storage`` with the same layout and synchronization policy
-as Block Load/Store. Omitting it selects compiler-owned storage with automatic
+Block Reduce accepts ``temp_storage`` with the same layout and synchronization
+policy as Block Load/Store. Omitting it selects compiler-owned storage with automatic
 synchronization; an explicit descriptor defaults to caller synchronization.
 
 Adding a Scan
@@ -1799,8 +1798,7 @@ parts of that range:
      - Automated checks
    * - Linux x86-64, Python 3.14, CUDA 13
      - Installed-wheel compilation with GPUs hidden and L4 runtime tests
-       in pull requests; H100 runtime tests with serial synchronization
-       race checking in the nightly matrix
+       in pull requests
    * - Linux x86-64, Python 3.14, CUDA 12
      - Installed-wheel compilation and GPU runtime tests in the nightly matrix
    * - Linux x86-64, Python 3.10 and 3.14
@@ -1812,9 +1810,8 @@ The Windows checks do not compile or launch Numba-CUDA-MLIR kernels. Other
 Python versions and platform combinations need separate backend runtime
 qualification. Dependency bounds allow releases in the supported series;
 they do not mean that every patch release in that series has been tested.
-Thread-block clusters require a CC 9.0+ GPU, and synchronization race
-checking requires Compute Sanitizer. A runtime job that skips those tests
-does not qualify those features.
+Thread-block cluster queries require a CC 9.0+ GPU. A runtime job that
+skips those tests does not qualify those features.
 
 Source map
 ----------

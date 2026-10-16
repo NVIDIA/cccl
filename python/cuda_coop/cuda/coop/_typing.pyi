@@ -226,20 +226,15 @@ class TempStorageLike(Protocol):
     sharing: TempStorageSharing
 
 __all__ = [
-    "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
-    "CommonShuffleMode",
     "ContextualInitialValue",
-    "ExchangeMode",
     "LoadStoreAlgorithm",
     "NonSumScanOperator",
     "ReduceAlgorithm",
     "ReduceOperator",
-    "ScalarShuffleMode",
     "ScanAlgorithm",
     "ScanMode",
     "ScanOperator",
-    "ShuffleMode",
     "SumScanOperator",
     "SynchronizableGroupKind",
     "TempStorageLike",
@@ -247,7 +242,6 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
-    "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "_CommonNumericT",
 ]
