@@ -2063,7 +2063,7 @@ class _GroupCallPlanner:
 
         Return an existing array unchanged. For a scalar, append a payload
         allocation marker and a write to element zero. Return the payload and
-        a flag describing the original operand's array form; the family uses
+        a flag describing the original operand's array form. A family can use
         that flag to restore a scalar result after the provider call.
 
         Parameters
