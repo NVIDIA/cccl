@@ -153,12 +153,13 @@ struct TransformKernelSource<PolicySelector,
   }
 
 private:
-  template <typename T>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto is_pointer_aligned(T it, [[maybe_unused]] int alignment)
+  template <typename It>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static auto is_pointer_aligned(It it, [[maybe_unused]] int alignment)
   {
-    if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<decltype(it)>)
+    if constexpr (::cuda::__is_contiguous_iterator_or_adaptor_v<It>
+                  || THRUST_NS_QUALIFIER::is_contiguous_iterator_v<It>)
     {
-      return ::cuda::is_aligned(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(it), alignment);
+      return ::cuda::is_aligned(::cuda::__unwrap_iterator_adaptor(it), alignment);
     }
     else
     {
