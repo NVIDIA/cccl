@@ -65,6 +65,8 @@ CONTROLS = {
     "store": ("valid_items", "offset"),
     "exchange": (),
     "shuffle": ("distance",),
+    "reduce": ("valid_items",),
+    "sum": ("valid_items",),
 }
 
 # Static extent provenance for qualified array-valued operation results.
@@ -725,8 +727,8 @@ def register() -> None:
                 obj, make_wrapper(obj, qualified_name, operation)
             )
             register_template(obj, _not_inlined(qualified_name), name)
-        elif operation in {"exchange", "shuffle"}:
-            continue  # Movement registers its result templates separately.
+        elif operation in {"exchange", "shuffle", "reduce", "sum"}:
+            continue  # Result families register their templates separately.
         else:
             register_template(obj, _rejecting(qualified_name), name)
 

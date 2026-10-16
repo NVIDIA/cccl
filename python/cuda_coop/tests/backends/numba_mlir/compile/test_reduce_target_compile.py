@@ -85,13 +85,20 @@ def _compile_kernel(callback, marker=0, **jit_options):
     )
 
 
-def test_reduce_callback_cache_preserves_requested_targets(recorded):
+def test_reduce_callback_cache_preserves_requested_targets(
+    recorded, typed_pipeline
+):
     from cuda.core import Linker, LinkerOptions
 
     @cuda.jit(device=True)
     def maximum(left, right):
         return left if left > right else right  # noqa: FURB136
 
+    if typed_pipeline:
+        from cuda.coop.numba_mlir._pipeline import _link
+
+        _link.clear()
+        hits_before = _link.STATISTICS.hits
     for marker, cc in enumerate(((8, 0), (8, 6), (8, 0))):
         start = len(recorded.nvrtc)
         links_before = len(recorded.links)
@@ -113,7 +120,14 @@ def test_reduce_callback_cache_preserves_requested_targets(recorded):
             "cuda_coop_numba_mlir_group_" in request["cpp"]
             for request in requests
         )
-        assert any("cub::BlockReduce" in request["cpp"] for request in requests)
+        provider_compiled = any(
+            "cub::BlockReduce" in request["cpp"] for request in requests
+        )
+        assert provider_compiled == (not typed_pipeline or marker < 2)
+        if typed_pipeline:
+            assert _link.STATISTICS.hits - hits_before == (
+                1 if marker == 2 else 0
+            )
         expected = [(8, 0)] if marker == 0 else [(8, 0), (8, 6)]
         assert [request["cc"] for request in recorded.callbacks] == expected
 

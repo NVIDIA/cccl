@@ -11,8 +11,9 @@ and compiler options, the header identity and the NVRTC version. A second
 kernel, or a recompile of the same one, with the same providers reuses the
 bundle without compiling.
 
-Each bundle links its provider image through an in-memory ``LTOIR`` item.
-The memo is a least-recently-used cache bounded by entry count and image size.
+Each bundle links its provider image and any supporting callback/type images
+through in-memory ``LTOIR`` items. The memo is a least-recently-used cache
+bounded both by entry count and by the total size of those images.
 """
 
 from __future__ import annotations
@@ -43,14 +44,16 @@ class Bundle:
     layouts: dict[str, tuple[int, int] | None]
     specializations: int
     link_item: Any = field(default=None, repr=False)
+    support_images: tuple[bytes, ...] = field(default=(), repr=False)
+    support_link_items: tuple = field(default=(), repr=False)
 
     @property
     def link_items(self) -> tuple:
-        return (self.link_item,)
+        return (self.link_item, *self.support_link_items)
 
     @property
     def byte_size(self) -> int:
-        return len(self.image)
+        return len(self.image) + sum(map(len, self.support_images))
 
 
 @dataclass
@@ -69,7 +72,7 @@ def bundle_key(algorithms: Sequence[Any], identity: Any, context: Any) -> tuple:
     """Return what determines the bytes of the bundle of ``algorithms``."""
 
     # Validate mutable providers even on a cache hit. The existing provider
-    # key includes the target, signature and operation semantics.
+    # key includes callback code, target, signature and captured semantics.
     for algorithm in algorithms:
         algorithm._bind_private_symbol_namespace(compile_identity=identity)
     return (
@@ -87,7 +90,7 @@ def _compile(algorithms: Sequence[Any], identity: Any, context: Any):
     """Compile one translation unit for every distinct provider."""
 
     from .._compiler import _nvrtc
-    from .._types import _strip_source_preamble
+    from .._types import _dedupe_ltoirs, _strip_source_preamble
 
     representatives: OrderedDict[Any, Any] = OrderedDict()
     for algorithm in algorithms:
@@ -96,12 +99,12 @@ def _compile(algorithms: Sequence[Any], identity: Any, context: Any):
     includes: OrderedDict[str, None] = OrderedDict()
     type_definitions: OrderedDict[str, None] = OrderedDict()
     udf_declarations: OrderedDict[str, str] = OrderedDict()
+    support_images = []
     for rep in representatives.values():
         source, support, rep_storage_types, udf = rep._source_code(
             compile_identity=identity
         )
-        if support:
-            raise NotImplementedError("auxiliary provider LTO is not supported")
+        support_images.extend(support)
         sources[id(rep)] = source
         storage_types[id(rep)] = rep_storage_types
         udfs[id(rep)] = udf
@@ -149,7 +152,11 @@ def _compile(algorithms: Sequence[Any], identity: Any, context: Any):
         by_digest[algorithm._private_symbol_digest] = (
             tuple(by_type[types_[0]]) if types_ else None
         )
-    return bytes(image), by_digest, len(representatives)
+    support = tuple(
+        blob.encode() if isinstance(blob, str) else bytes(blob)
+        for blob in _dedupe_ltoirs(support_images)
+    )
+    return bytes(image), by_digest, len(representatives), support
 
 
 def _evict() -> None:
@@ -172,11 +179,22 @@ def compile_bundle(
         _MEMO.move_to_end(key)
         STATISTICS.hits += 1
         return bundle
-    image, layouts, specializations = _compile(algorithms, identity, context)
-    bundle = Bundle(key, image, layouts, specializations)
+    image, layouts, specializations, support = _compile(
+        algorithms, identity, context
+    )
+    bundle = Bundle(
+        key, image, layouts, specializations, support_images=support
+    )
     digest = hashlib.sha1(repr(key).encode()).hexdigest()[:16]
     bundle.link_item = nb.LTOIR(
         lambda: bundle.image, name=f"cuda_coop_bundle_{digest}.ltoir"
+    )
+    bundle.support_link_items = tuple(
+        nb.LTOIR(
+            lambda image=image: image,
+            name=f"cuda_coop_support_{hashlib.sha256(image).hexdigest()}.ltoir",
+        )
+        for image in support
     )
     STATISTICS.compiles += 1
     _MEMO[key] = bundle
