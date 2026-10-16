@@ -198,7 +198,8 @@ def select_left(left: np.int32, right: np.int32) -> np.int32:
 
 
 # These callback signatures distinguish aggregate, result, and state dtypes.
-# Invalid uses below check the descriptor and Scan overloads independently.
+# Invalid uses below check the StatefulFunction constructor and the Scan
+# overloads independently.
 def prefix_from_aggregate(block_aggregate: np.int32) -> np.int32:
     return block_aggregate
 
@@ -583,6 +584,31 @@ coop.exclusive_sum(  # expected-error: [misc]
     np.int32(1),
     prefix_state,
     prefix_op=stateful_float32_value,
+)
+
+common.merge_sort_keys(  # expected-error: [call-overload]
+    common_block, common_values, compare_op=lambda a, b: a < b
+)
+common.merge_sort_keys(
+    common.this_warp(),  # expected-error: [arg-type]
+    common_values,
+    temp_storage=common.TempStorage(),
+)
+common.merge_sort_keys(  # expected-error: [call-overload]
+    common_block, common_values, valid_items=4
+)
+common.merge_sort_keys(
+    common.this_grid(),  # expected-error: [arg-type]
+    common_values,
+)
+coop.merge_sort_keys(  # expected-error: [call-overload]
+    qualified_block, values, descending=True, compare_op=lambda a, b: a < b
+)
+coop.merge_sort_keys(  # expected-error: [call-overload]
+    qualified_block, values, compare_op="less"
+)
+coop.merge_sort_pairs(  # expected-error: [call-overload]
+    qualified_block, values, values, oob_default=99
 )
 
 common.sum(

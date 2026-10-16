@@ -71,7 +71,7 @@ CONTROLS = {
 }
 
 # Static extent provenance for qualified array-valued operation results.
-RESULT_EXTENT_SOURCES: dict[object, int] = {}
+RESULT_EXTENT_SOURCES: dict[object, int | tuple[int, ...]] = {}
 
 _PAYLOAD = {"load": "output", "store": "value"}
 _MEMORY = {"load": "source", "store": "destination"}
@@ -738,6 +738,8 @@ def register() -> None:
             "exclusive_scan",
             "inclusive_sum",
             "exclusive_sum",
+            "merge_sort_keys",
+            "merge_sort_pairs",
         }:
             continue  # Result families register their templates separately.
         else:

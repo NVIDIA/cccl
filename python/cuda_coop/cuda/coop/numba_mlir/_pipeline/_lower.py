@@ -115,6 +115,11 @@ def _operand(builder, operand, abi_type, args, keywords, allocations):
         )
     if tag == "allocation":
         return nb.memref_data_pointer(allocations[operand[1]])
+    if tag == "constant":
+        value = operand[1]
+        if hasattr(value, "item"):
+            value = value.item()
+        return nb.arith.constant(builder.get_mlir_type(abi_type), value)
     var = _results.argument(operand[1], args, keywords)
     if tag == "pointer":
         return nb.memref_data_pointer(builder.load_var(var))

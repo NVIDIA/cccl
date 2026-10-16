@@ -43,7 +43,7 @@ class CallEntry:
         the scratch region's pointer;
     ``("pointer", source)``
         the data pointer of a positional argument (integer ``source``) or
-        keyword argument (string ``source``);
+        keyword argument (string ``source``), including callback state;
     ``("box", source, dtype, value)``
         a one-item array of ``dtype`` holding the scalar argument ``source``,
         or the static ``value`` when it is not ``None``;
@@ -51,6 +51,8 @@ class CallEntry:
         a positional or keyword scalar argument, converted to the ABI type.
     ``("allocation", index)``
         the pointer to a fresh local array described by ``allocations``.
+    ``("constant", value)``
+        a checked scalar constant represented in the provider ABI dtype.
 
     ``return_type`` is the provider's scalar ABI result, or ``void``.
     ``allocations`` and ``result`` separately describe fresh local arrays

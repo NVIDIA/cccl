@@ -613,3 +613,29 @@ def check_numba_surface(
         coop.reduce(block, np.int32(4), binary_op="max", temp_storage=storage),
         np.int32,
     )
+
+
+def check_merge_sort_surface() -> None:
+    """Check custom comparison typing and distinct key and value dtypes."""
+
+    keys = coop.ThreadData(items_per_thread=3, dtype=np.int32)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+
+    def compare(left: np.int32, right: np.int32) -> np.bool_:
+        return left > right
+
+    assert_type(
+        coop.merge_sort_keys(coop.this_block(), keys, compare_op=compare),
+        coop.ThreadDataLike[np.int32],
+    )
+    assert_type(
+        coop.merge_sort_pairs(
+            coop.this_warp().group_by(8),
+            keys,
+            values,
+            valid_items=23,
+            oob_default=-1000,
+            compare_op=compare,
+        ),
+        tuple[coop.ThreadDataLike[np.int32], coop.ThreadDataLike[np.float64]],
+    )

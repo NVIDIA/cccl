@@ -4,6 +4,8 @@
 
 from .exchange import exchange
 from .load_store import load, store
+from .merge_sort import merge_sort_keys as merge_sort_keys
+from .merge_sort import merge_sort_pairs as merge_sort_pairs
 from .reduce import reduce, sum
 from .scan import (
     exclusive_scan,
@@ -40,6 +42,8 @@ __all__ = [
     "inclusive_scan",
     "inclusive_sum",
     "load",
+    "merge_sort_keys",
+    "merge_sort_pairs",
     "reduce",
     "scan",
     "shuffle",
