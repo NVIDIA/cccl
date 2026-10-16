@@ -198,6 +198,17 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {"radix_sort_keys", "radix_sort_pairs", "radix_rank_keys"}:
+            from . import _radix
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _radix.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind in {"merge_sort_keys", "merge_sort_pairs"}:
             from . import _merge_sort
 

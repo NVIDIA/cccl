@@ -740,6 +740,9 @@ def register() -> None:
             "exclusive_sum",
             "merge_sort_keys",
             "merge_sort_pairs",
+            "radix_sort_keys",
+            "radix_sort_pairs",
+            "radix_rank_keys",
         }:
             continue  # Result families register their templates separately.
         else:

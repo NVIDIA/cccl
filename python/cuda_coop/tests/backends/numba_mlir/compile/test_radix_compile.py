@@ -17,6 +17,7 @@ import pytest
 
 pytest.importorskip("numba_cuda_mlir")
 from numba_cuda_mlir import cuda, tools, types
+from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
 import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
@@ -180,7 +181,9 @@ def test_qualified_prefix_and_float_striped_sort_compile(items_per_thread):
 @pytest.mark.parametrize(
     "failure", ["warp", "float", "width", "bool", "extent", "prefix"]
 )
-def test_invalid_radix_contracts_fail_before_device_code(failure):
+def test_invalid_radix_contracts_fail_before_device_code(
+    failure, typed_pipeline
+):
     @cuda.jit(chip="sm_90")
     def kernel(source, destination):
         keys = coop.ThreadData(
@@ -211,9 +214,21 @@ def test_invalid_radix_contracts_fail_before_device_code(failure):
             result = coop.radix_sort_keys(coop.this_block(), keys)
         destination[0] = result[0]
 
+    typed_reason = {
+        "warp": "complete physical block",
+        "float": "keys require int32, uint32, int64, or uint64",
+        "width": "radix_rank_keys bit width must be <= 8",
+        "bool": "descending.*bool",
+        "extent": "matching shape and extent",
+        "prefix": "exclusive_digit_prefix must contain 1 items per thread",
+    }[failure]
     with pytest.raises(
-        (TypeError, ValueError, NotImplementedError),
-        match="block|dtype|int32|width|bool|items_per_thread|items per thread",
+        (ValueError if failure == "width" else TypingError)
+        if typed_pipeline
+        else (TypeError, ValueError, NotImplementedError),
+        match=typed_reason
+        if typed_pipeline
+        else "block|dtype|int32|width|bool|items_per_thread|items per thread",
     ):
         _compile(kernel, types.void(types.int32[::1], types.int32[::1]))
 
@@ -248,7 +263,9 @@ def test_invalid_runtime_control_types_are_rejected(rank, control_dtype):
 
 
 @pytest.mark.parametrize("control", ["width", "end", "implicit_width"])
-def test_rank_template_controls_still_require_constants(control):
+def test_rank_template_controls_still_require_constants(
+    control, typed_pipeline
+):
     from cuda.coop.numba_mlir._compiler._group_planner import (
         NonConstantGroupArgumentError,
     )
@@ -272,6 +289,17 @@ def test_rank_template_controls_still_require_constants(control):
         destination[cuda.threadIdx.x] = result[0]
 
     with pytest.raises(
-        NonConstantGroupArgumentError, match="compile-time constants"
+        TypingError if typed_pipeline else NonConstantGroupArgumentError,
+        match=(
+            {
+                "width": "selector must be static",
+                "end": "end_bit must be a compile-time integer",
+                "implicit_width": (
+                    "begin_bit must be compile-time when radix_bits is omitted"
+                ),
+            }[control]
+            if typed_pipeline
+            else "compile-time constants"
+        ),
     ):
         _compile(kernel, types.void(types.int32[::1], types.int32[::1]))

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile MergeSort ownership, callbacks and sentinel precision."""
+"""Compile result ownership, shape propagation, and Radix control boundaries."""
 
 from types import SimpleNamespace
 
@@ -45,6 +45,60 @@ def _compile(kernel, signature):
     )
     assert result.metadata["cubin"]
     return result
+
+
+def test_qualified_scalar_radix_results_and_inferred_prefix():
+    def kernel(keys, values, output, payload, ranks, prefixes, begin):
+        group = coop.this_block()
+        t = cuda.threadIdx.x
+        pair = numba_coop.radix_sort_pairs(group, keys[t], values[t])
+        output[t] = pair[0]
+        payload[t] = pair[1]
+        prefix = coop.ThreadData(2)
+        ranked = numba_coop.radix_rank_keys(
+            group,
+            keys[t],
+            begin_bit=begin,
+            radix_bits=7,
+            exclusive_digit_prefix=prefix,
+        )
+        ranks[t] = ranked
+        prefixes[t] = prefix[0]
+
+    _compile(
+        kernel,
+        types.void(
+            types.uint64[::1],
+            types.int8[::1],
+            types.uint64[::1],
+            types.int8[::1],
+            types.int32[::1],
+            types.int32[::1],
+            types.int64,
+        ),
+    )
+
+
+def test_static_radix_intervals_share_provider_and_keep_call_operands():
+    def kernel(keys, output):
+        group = coop.this_block()
+        value = coop.ThreadData(1)
+        coop.load(group, keys, value)
+        first = coop.radix_sort_keys(group, value, begin_bit=0, end_bit=4)
+        second = coop.radix_sort_keys(group, value, begin_bit=4, end_bit=8)
+        output[cuda.threadIdx.x] = first[0] + second[0]
+
+    result = _compile(kernel, types.void(types.uint32[::1], types.uint32[::1]))
+    calls = [
+        call
+        for call in result.metadata["coop_plan"].calls.values()
+        if "radix_sort" in call.symbol
+    ]
+    assert len(calls) == 2 and calls[0].symbol == calls[1].symbol
+    assert [call.operands[-2:] for call in calls] == [
+        (("constant", 0), ("constant", 4)),
+        (("constant", 4), ("constant", 8)),
+    ]
 
 
 def test_merge_comparator_links_with_infinite_partial_sentinel():
