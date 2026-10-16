@@ -54,6 +54,7 @@ on:
 jobs:
   build-pytorch:
     name: Build PyTorch
+    if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
     runs-on: linux-amd64-cpu16m
     permissions:
       id-token: write

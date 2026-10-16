@@ -34,7 +34,7 @@ jobs:
   # The build-workflow.py script will emit an error if more than one producer is specified.
   producer:
     name: ${{ fromJSON(inputs.producers)[0].name }}
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -60,7 +60,7 @@ jobs:
   consumers:
     name: "${{ matrix.name }}"
     needs: producer
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && matrix.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read

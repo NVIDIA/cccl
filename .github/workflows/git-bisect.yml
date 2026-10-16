@@ -180,7 +180,7 @@ jobs:
   bisect:
     needs: [generate-job-name]
     name: ${{ needs.generate-job-name.outputs.job-name }}
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && inputs.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && inputs.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -196,6 +196,7 @@ jobs:
           matrix_path: ${{ inputs.matrix_path }}
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA

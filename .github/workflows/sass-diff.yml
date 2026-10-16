@@ -77,6 +77,7 @@ jobs:
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA

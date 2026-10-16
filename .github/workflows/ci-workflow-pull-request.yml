@@ -438,7 +438,7 @@ jobs:
         needs.build-workflow.outputs.docs_enabled == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:

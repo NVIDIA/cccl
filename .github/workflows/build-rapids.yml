@@ -54,7 +54,8 @@ on:
 jobs:
   build-rapids:
     name: "${{ matrix.libs }}"
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && 'linux-amd64-cpu16' || 'ubuntu-latest' }}
+    if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
+    runs-on: linux-amd64-cpu16
     strategy:
       fail-fast: false
       matrix:
