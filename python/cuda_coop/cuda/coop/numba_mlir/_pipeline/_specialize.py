@@ -10,6 +10,7 @@ the checked sites and the launch's block it:
 * completes each distinct request with coop's ``plan_group_primitive``,
   memoized per request and block, and specializes its provider at the
   kernel's target, with one compile context for all of them;
+* decides ``launch_bounds`` from the block's thread count;
 * decides which sites take scratch, from each provider's storage ABI, and
   places a barrier after every one of them, as coop's planner does.
 
@@ -32,9 +33,10 @@ from ._templates import LoadStoreRequest, OperationRequest
 
 @dataclass(frozen=True)
 class LaunchBounds:
-    """The explicit ``launch_bounds`` option, if the caller supplied one."""
+    """The kernel's ``launch_bounds``; ``rebind`` when the stage chose it."""
 
     value: int | None
+    rebind: bool = False
 
 
 @dataclass(frozen=True)
@@ -167,9 +169,19 @@ def uses_scratch(algorithm: Any) -> bool:
 
 
 def plan_launch_bounds(block: tuple, targetoptions: dict) -> LaunchBounds:
-    """Report explicit compiler options without inferring launch policy."""
+    threads = block[0] * block[1] * block[2]
     bounds = targetoptions.get("launch_bounds")
-    return LaunchBounds(bounds[0] if isinstance(bounds, tuple) else bounds)
+    if bounds is not None:
+        maximum = bounds[0] if isinstance(bounds, tuple) else bounds
+        if threads > maximum:
+            raise TypedPipelineError(
+                f"the launch's block {block} has {threads} threads, "
+                f"more than launch_bounds={bounds!r}"
+            )
+        return LaunchBounds(maximum)
+    if targetoptions.get("max_registers") is None:
+        return LaunchBounds(threads, rebind=True)
+    return LaunchBounds(None)
 
 
 def plan(
@@ -180,7 +192,7 @@ def plan(
     *,
     lowering_plans: Sequence[Any] = (),
 ) -> Specialization:
-    """Decide scratch and barriers while retaining explicit launch options.
+    """Decide scratch, barriers and ``launch_bounds`` for specialized sites.
 
     A barrier follows every call that uses scratch.
     """

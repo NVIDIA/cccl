@@ -18,6 +18,7 @@ from cuda.coop.numba_mlir._compiler._operations import StorageABI
 from cuda.coop.numba_mlir._pipeline import _link, _specialize, _storage
 from cuda.coop.numba_mlir._pipeline._errors import TypedPipelineError
 from cuda.coop.numba_mlir._pipeline._plan import Backing, Region
+from cuda.coop.numba_mlir._pipeline._specialize import LaunchBounds
 
 BLOCK = (128, 1, 1)
 LIMIT = _storage.STATIC_SHARED_LIMIT
@@ -39,6 +40,24 @@ def test_barriers_follow_scratch_use():
     )
     assert plan.scratch == (False, True, False, True)
     assert plan.barrier_after == plan.scratch
+
+
+def test_launch_bounds_default_to_the_block_thread_count():
+    assert _specialize.plan_launch_bounds((32, 4, 1), {}) == LaunchBounds(
+        128, rebind=True
+    )
+
+
+def test_explicit_launch_bounds_are_kept_and_checked_against_the_block():
+    bounds = {"launch_bounds": (256, 2)}
+    assert _specialize.plan_launch_bounds(BLOCK, bounds) == LaunchBounds(256)
+    with pytest.raises(TypedPipelineError, match="more than launch_bounds"):
+        _specialize.plan_launch_bounds((512, 1, 1), bounds)
+
+
+def test_max_registers_leaves_launch_bounds_unset():
+    options = {"max_registers": 32}
+    assert _specialize.plan_launch_bounds(BLOCK, options) == LaunchBounds(None)
 
 
 def test_one_region_as_large_as_the_largest_need_not_their_sum():

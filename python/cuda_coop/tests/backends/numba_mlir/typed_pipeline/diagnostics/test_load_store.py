@@ -263,6 +263,19 @@ def test_scratch_counts_the_kernels_own_shared_memory():
         _compile(kernel)
 
 
+def test_launch_bounds_below_the_launch_block():
+    def kernel(source, output):
+        block = coop.this_block()
+        items = coop.ThreadData(4)
+        coop.load(block, source, items)
+        coop.store(block, output, items)
+
+    with pytest.raises(TypedPipelineError, match=r"more than launch_bounds=64"):
+        testing.compile_kernel(
+            kernel, f32_in_out(), block=BLOCK, chip=CHIP, launch_bounds=64
+        )
+
+
 @pytest.mark.parametrize("runtime_shape", [False, True])
 def test_scratch_rejects_user_dynamic_shared_memory(runtime_shape):
     def kernel(source, output):

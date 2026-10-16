@@ -20,9 +20,9 @@ previous stages' results:
 4. storage materialization (``_materialize``) rewrites the IR.
 
 Only the last stage changes the IR, so a failure in any other leaves the
-function as typing left it. The driver stores what lowering needs in
-``state.metadata["coop_plan"]`` and reports the ``KernelPlan`` to
-``_debug.record``.
+function as typing left it. The driver applies the ``launch_bounds`` that
+stage 2 chose, stores what lowering needs in ``state.metadata["coop_plan"]``
+and reports the ``KernelPlan`` to ``_debug.record``.
 
 The rewrite registry is process-wide, so the resolution runs for every
 function Numba-CUDA-MLIR compiles once the typed pipeline is active.
@@ -140,6 +140,8 @@ def _resolve_sites(
             state, storage.required_dynamic_bytes
         )
     bounds = specialization.launch_bounds
+    if bounds.rebind:
+        nb.rebind_targetoptions(state, launch_bounds=bounds.value)
     calls = _materialize.materialize(
         func_ir,
         typemap,
@@ -221,6 +223,11 @@ def resolve(state: Any, func_ir: Any, typemap: dict, calltypes: Any) -> None:
             )
         block = tuple(launch["block"]) + (1,) * (3 - len(launch["block"]))
         plan.block, plan.block_source = block, "launch"
+        if not sites.sites and not storage_calls:
+            bounds = _specialize.plan_launch_bounds(block, targetoptions)
+            plan.launch_bounds = bounds.value
+            if bounds.rebind:
+                nb.rebind_targetoptions(state, launch_bounds=bounds.value)
         if sites.sites or storage_calls:
             coop_plan.calls = _resolve_sites(
                 state,

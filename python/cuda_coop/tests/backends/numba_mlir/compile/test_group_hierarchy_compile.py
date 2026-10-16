@@ -14,6 +14,7 @@ from types import SimpleNamespace
 
 import pytest
 from numba_cuda_mlir import types
+from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
 pytestmark = [pytest.mark.backend_numba_mlir, pytest.mark.compile]
 
@@ -308,7 +309,9 @@ def test_launch_bounds_follow_each_exact_specialization(monkeypatch):
     assert kernel.targetoptions.get("launch_bounds") is None
 
 
-def test_exact_launch_exceeding_explicit_bounds_is_attributable(monkeypatch):
+def test_exact_launch_exceeding_explicit_bounds_is_attributable(
+    monkeypatch, typed_pipeline
+):
     """Report the block size when an explicit thread limit is too small."""
     cuda = _production_compile_environment(monkeypatch)
     import cuda.coop.numba_mlir as coop
@@ -325,8 +328,12 @@ def test_exact_launch_exceeding_explicit_bounds_is_attributable(monkeypatch):
         ("cluster", None),
     )
     with pytest.raises(
-        GroupRewriteError,
-        match="64 threads, exceeding explicit launch_bounds=32",
+        TypingError if typed_pipeline else GroupRewriteError,
+        match=(
+            r"block \(8, 8, 1\) has 64 threads, more than launch_bounds=32"
+            if typed_pipeline
+            else "64 threads, exceeding explicit launch_bounds=32"
+        ),
     ):
         kernel._compile_launch_config_signature(
             types.void(types.int32[::1]), key
