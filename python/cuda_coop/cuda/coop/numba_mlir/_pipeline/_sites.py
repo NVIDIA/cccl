@@ -203,6 +203,8 @@ class _Analysis:
             value_type = self.typemap[expr.args[1].name]
             dtype = getattr(value_type, "dtype", nb.unliteral(value_type))
             operands = {"value": expr.args[1], **dict(expr.kws)}
+            if len(expr.args) > 2:
+                operands["prefix_state"] = expr.args[2]
             request = _scan.request_for(
                 kind,
                 [self.typemap[a.name] for a in expr.args],
@@ -210,7 +212,7 @@ class _Analysis:
                 qualified=qualified,
                 extents={
                     name: self._value_extent(operands[name], kind)
-                    for name in ("value", "aggregate_output")
+                    for name in ("value", "prefix_state", "aggregate_output")
                     if name in operands
                 },
                 controls=_scan.bind_controls(self, stmt, dtype),

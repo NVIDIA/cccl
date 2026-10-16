@@ -186,6 +186,37 @@ def test_root_first_register_explicitly_activates_backend_once(
     )
 
 
+def test_scan_annotations_preserve_lazy_stateful_function_loading():
+    _run_import_probe(
+        """
+        import sys
+        from typing import get_args, get_origin, get_type_hints
+
+        import cuda.coop.numba_mlir as coop
+
+        stateful_module = "cuda.coop.numba_mlir._stateful_function"
+        assert stateful_module not in sys.modules
+        scans = (
+            coop.scan,
+            coop.exclusive_scan,
+            coop.inclusive_scan,
+            coop.exclusive_sum,
+            coop.inclusive_sum,
+        )
+        assert stateful_module not in sys.modules
+
+        for scan in scans:
+            prefix_op = get_type_hints(scan)["prefix_op"]
+            assert any(
+                get_origin(option) is coop.StatefulFunction
+                for option in get_args(prefix_op)
+            )
+        assert stateful_module in sys.modules
+        """,
+        pipeline="planner",
+    )
+
+
 def test_reduce_providers_load_only_during_reduce_planning():
     _run_import_probe(
         """

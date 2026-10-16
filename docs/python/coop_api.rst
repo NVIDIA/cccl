@@ -165,6 +165,9 @@ Scan
 .. autofunction:: exclusive_scan
 .. autofunction:: inclusive_scan
 
+.. autoclass:: StatefulFunction
+   :no-members:
+   :no-special-members:
 
 Data rearrangement
 ^^^^^^^^^^^^^^^^^^

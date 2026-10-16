@@ -28,6 +28,7 @@ from .._types import (
     ParameterRole,
     PythonOperator,
     Reference,
+    StatefulOperator,
 )
 from ..block.scan import (
     BlockScanAlgorithm,
@@ -166,6 +167,10 @@ class GroupScanSemantics:
         return self.primitive.aggregate
 
     @property
+    def prefix_callback(self) -> PythonOperator | StatefulOperator | None:
+        return self.primitive.prefix_callback
+
+    @property
     def result_visibility(self) -> ResultVisibility:
         return ResultVisibility.PER_MEMBER
 
@@ -199,10 +204,11 @@ def _call_classifications(
     """Describe logical call arguments for planning and diagnostics.
 
     Record whether the operator, seed, and prefix count are static or runtime.
-    An aggregate buffer is an output. Mode and algorithm are static choices.
-    These records describe the group call. The block or warp specialization
-    factory builds CUB's parameter order, including its scratch and
-    output-reference arguments.
+    The prefix callback also supplies its binding kind and role, which retain
+    any runtime state operand. An aggregate buffer is an output. Mode and
+    algorithm are static choices. These records describe the group call.
+    The block or warp specialization factory builds CUB's parameter order,
+    including its scratch and output-reference arguments.
     """
 
     classifications = [
@@ -224,6 +230,14 @@ def _call_classifications(
                 "initial_value",
                 operation.initial_value.argument_kind,
                 operation.initial_value.role,
+            )
+        )
+    if operation.prefix_callback is not None:
+        classifications.append(
+            ParameterClassification(
+                "prefix_op",
+                operation.prefix_callback.argument_kind,
+                operation.prefix_callback.role,
             )
         )
     if operation.valid_items.kind is not BindingKind.OMITTED:
@@ -341,8 +355,8 @@ def _plan_scan(
     Group dispatch has already resolved the group against exact launch
     dimensions. Canonicalize seeded sums and default algorithms before
     building the call so equivalent requests share plan identity. Reject
-    custom exclusive scans without a seed: the public group result must be
-    defined at rank zero.
+    custom exclusive scans without a seed or prefix callback: the public
+    group result must be defined at rank zero.
 
     Parameters
     ----------
@@ -378,11 +392,20 @@ def _plan_scan(
     -----
     Block scans support scalar and blocked-array inputs. Warp scans accept one
     scalar per lane. ``valid_items`` applies to warps, and algorithm selection
-    applies to blocks. Initial values and runtime counts must be uniform.
+    applies to blocks. Prefix callbacks require a physical block group and
+    supply an alternative to the explicit seed. Initial values and runtime
+    counts must be uniform.
     Planning checks static counts. Runtime bounds remain caller preconditions;
     runtime checking belongs to the backend.
     """
 
+    if operation.prefix_callback is not None and resolved.kind != "block":
+        return _unsupported(
+            call,
+            resolved,
+            UnsupportedReasonCode.OPERATION_VARIANT,
+            "scan prefix callbacks apply only to physical block groups",
+        )
     if (
         operation.valid_items.kind is not BindingKind.OMITTED
         and resolved.kind == "block"
@@ -400,6 +423,7 @@ def _plan_scan(
         operation.mode is GroupScanMode.EXCLUSIVE
         and operation.initial_value is None
         and operation.scan_operator is not None
+        and operation.prefix_callback is None
     ):
         return _unsupported(
             call,
@@ -438,6 +462,7 @@ def _plan_scan(
             value_kind=ScanValueKind(operation.operand_kind.value),
             scan_operator=operation.scan_operator,
             initial_value=operation.initial_value,
+            prefix_operator=operation.prefix_callback,
             block_aggregate=operation.aggregate,
         ).specialization
         target = GroupLoweringTarget.CUB_BLOCK

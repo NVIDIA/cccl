@@ -105,7 +105,9 @@ def _inputs(method: Any) -> list:
 def _pointer_parameter(parameter: Any) -> bool:
     from .. import _types as coop_types
 
-    return isinstance(parameter, coop_types.Pointer)
+    return isinstance(
+        parameter, (coop_types.Pointer, coop_types.StatefulOperator)
+    )
 
 
 def _select_method(algorithm: Any, operands: tuple) -> Any:

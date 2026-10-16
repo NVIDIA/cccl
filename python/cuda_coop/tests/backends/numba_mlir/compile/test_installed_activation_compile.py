@@ -2,15 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Check activation and compilation from the installed wheel in isolation.
+"""Check installed activation and callback exports in isolated Python.
 
 Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
 checkout. Isolated mode must ignore that path. The probe checks module and
 header origins before compiling, so checkout files cannot hide missing
 wheel contents. Four import orders must each activate the backend. The public
-Reduce and Scan modules remain lazy in planner mode; typed mode registers
-their public markers eagerly. Planner hooks load only when requested in
-planner mode. Prefix-callback parameters and modules remain absent.
+Reduce, Scan and StatefulFunction modules retain lazy loading in planner
+mode; typed mode registers their public markers and descriptors eagerly.
+Planner hooks load only when explicitly requested in planner mode.
+
+The probe checks StatefulFunction exports, then compiles a real kernel.
+Only device-target queries are replaced; provider compilation and
+device linking use the installed toolchain.
 """
 
 from __future__ import annotations
@@ -92,15 +96,47 @@ _COMPILE_PROBE = textwrap.dedent(
     else:
         raise AssertionError(f"unexpected import order: {import_order!r}")
 
+    distribution = importlib.metadata.distribution("cuda-coop")
+    distribution_root = Path(distribution.locate_file("")).resolve()
+    expected_module = Path(
+        distribution.locate_file("cuda/coop/__init__.py")
+    ).resolve()
+    source_root = Path(os.environ["CUDA_COOP_SOURCE_ROOT"]).resolve()
+    module_file = Path(coop.__file__).resolve()
+    qualified_file = Path(sys.modules["cuda.coop.numba_mlir"].__file__).resolve()
+
+    assert module_file == expected_module
+    assert module_file.is_relative_to(distribution_root)
+    assert qualified_file.is_relative_to(distribution_root)
+    assert not module_file.is_relative_to(source_root)
+    assert not qualified_file.is_relative_to(source_root)
+
+    from cuda.coop._headers import resolve_include_paths
+
+    include_paths = resolve_include_paths(
+        start=Path.cwd(),
+        required_headers=(
+            "cub/block/block_load.cuh",
+            "cuda/std/cstdint",
+        ),
+    )
+    assert include_paths.origin == "cuda-coop wheel header bundle"
+    assert all(
+        path.resolve().is_relative_to(distribution_root)
+        for path in include_paths.cccl
+    )
+
     qualified_coop = sys.modules["cuda.coop.numba_mlir"]
     public_reduce_module = "cuda.coop.numba_mlir._group._reduce"
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
     public_scan_module = "cuda.coop.numba_mlir._group._scan"
     compiler_scan_module = "cuda.coop.numba_mlir._compiler._group_scan"
+    stateful_function_module = "cuda.coop.numba_mlir._stateful_function"
     assert (public_reduce_module in sys.modules) == typed_pipeline
     assert compiler_reduce_module not in sys.modules
     assert (public_scan_module in sys.modules) == typed_pipeline
     assert compiler_scan_module not in sys.modules
+    assert (stateful_function_module in sys.modules) == typed_pipeline
 
     scan_names = {
         "exclusive_scan",
@@ -109,9 +145,14 @@ _COMPILE_PROBE = textwrap.dedent(
         "inclusive_sum",
         "scan",
     }
-    assert {"exchange", "reduce", "shuffle", "sum", *scan_names} <= set(
-        qualified_coop.__all__
-    )
+    assert {
+        "StatefulFunction",
+        "exchange",
+        "reduce",
+        "shuffle",
+        "sum",
+        *scan_names,
+    } <= set(qualified_coop.__all__)
     assert "BlockScanAlgorithm" not in qualified_coop.__all__
     assert not hasattr(qualified_coop, "BlockScanAlgorithm")
     assert callable(qualified_coop.exchange)
@@ -123,12 +164,101 @@ _COMPILE_PROBE = textwrap.dedent(
     assert compiler_reduce_module not in sys.modules
     assert public_scan_module in sys.modules
     assert compiler_scan_module not in sys.modules
-    for name in scan_names:
-        parameters = inspect.signature(getattr(qualified_coop, name)).parameters
-        assert "prefix_op" not in parameters
-        assert "block_prefix_callback_op" not in parameters
+    assert (stateful_function_module in sys.modules) == typed_pipeline
+
+    public_scan_module_file = Path(
+        sys.modules[public_scan_module].__file__
+    ).resolve()
+    assert public_scan_module_file.is_relative_to(distribution_root)
+    assert not public_scan_module_file.is_relative_to(source_root)
+
+    common_scan_parameters = {
+        "scan": (
+            "group",
+            "value",
+            "mode",
+            "scan_op",
+            "initial_value",
+            "algorithm",
+            "temp_storage",
+        ),
+        "exclusive_scan": (
+            "group",
+            "value",
+            "scan_op",
+            "initial_value",
+            "algorithm",
+            "temp_storage",
+        ),
+        "inclusive_scan": (
+            "group",
+            "value",
+            "scan_op",
+            "algorithm",
+            "temp_storage",
+        ),
+        "exclusive_sum": ("group", "value", "algorithm", "temp_storage"),
+        "inclusive_sum": ("group", "value", "algorithm", "temp_storage"),
+    }
+    for name, common_parameters in common_scan_parameters.items():
+        qualified_scan = getattr(qualified_coop, name)
+        assert qualified_scan.__module__ == public_scan_module
+        qualified_parameters = inspect.signature(
+            qualified_scan
+        ).parameters
+        assert tuple(qualified_parameters) == (
+            *common_parameters[:2],
+            "prefix_state",
+            *common_parameters[2:],
+            "valid_items",
+            "aggregate_output",
+            "prefix_op",
+        )
+        assert (
+            qualified_parameters["prefix_state"].kind
+            is inspect.Parameter.POSITIONAL_ONLY
+        )
+        assert (
+            qualified_parameters["prefix_op"].kind
+            is inspect.Parameter.KEYWORD_ONLY
+        )
+        assert qualified_parameters["prefix_op"].default is None
+        assert qualified_parameters["prefix_state"].default is None
+
     assert importlib.util.find_spec("cuda.coop.numba_mlir._scan_op") is None
-    assert importlib.util.find_spec("cuda.coop.numba_mlir._stateful_function") is None
+    stateful_spec = importlib.util.find_spec(stateful_function_module)
+    assert stateful_spec is not None
+    assert stateful_spec.origin is not None
+    stateful_spec_file = Path(stateful_spec.origin).resolve()
+    assert stateful_spec_file.is_relative_to(distribution_root)
+    assert not stateful_spec_file.is_relative_to(source_root)
+
+    StatefulFunction = qualified_coop.StatefulFunction
+    assert stateful_function_module in sys.modules
+    stateful_module = sys.modules[stateful_function_module]
+    stateful_module_file = Path(stateful_module.__file__).resolve()
+    assert stateful_module_file == stateful_spec_file
+    assert StatefulFunction is stateful_module.StatefulFunction
+    assert StatefulFunction.__module__ == stateful_function_module
+    assert tuple(inspect.signature(StatefulFunction).parameters) == (
+        "op",
+        "dtype",
+        "name",
+    )
+
+    def running_prefix(state, block_aggregate):
+        del state
+        return block_aggregate
+
+    state_dtype = object()
+    descriptor = StatefulFunction(
+        running_prefix,
+        state_dtype,
+        name="installed_running_prefix",
+    )
+    assert descriptor.op is running_prefix
+    assert descriptor.dtype is state_dtype
+    assert descriptor.name == "installed_running_prefix"
 
     if typed_pipeline:
         from cuda.coop.numba_mlir import _pipeline
@@ -145,35 +275,6 @@ _COMPILE_PROBE = textwrap.dedent(
             assert group_primitive(name) is not None
         assert compiler_reduce_module in sys.modules
         assert compiler_scan_module in sys.modules
-
-    distribution = importlib.metadata.distribution("cuda-coop")
-    distribution_root = Path(distribution.locate_file("")).resolve()
-    expected_module = Path(
-        distribution.locate_file("cuda/coop/__init__.py")
-    ).resolve()
-    source_root = Path(os.environ["CUDA_COOP_SOURCE_ROOT"]).resolve()
-    module_file = Path(coop.__file__).resolve()
-    qualified_file = Path(sys.modules["cuda.coop.numba_mlir"].__file__).resolve()
-
-    assert module_file == expected_module
-    assert module_file.is_relative_to(distribution_root)
-    assert qualified_file.is_relative_to(distribution_root)
-    assert not module_file.is_relative_to(source_root)
-
-    from cuda.coop._headers import resolve_include_paths
-
-    include_paths = resolve_include_paths(
-        start=Path.cwd(),
-        required_headers=(
-            "cub/block/block_load.cuh",
-            "cuda/std/cstdint",
-        ),
-    )
-    assert include_paths.origin == "cuda-coop wheel header bundle"
-    assert all(
-        path.resolve().is_relative_to(distribution_root)
-        for path in include_paths.cccl
-    )
 
     # Numba-CUDA-MLIR 0.5 has no public GPU-free entry point that carries
     # configured launch metadata. Fix only its current-device queries; the
