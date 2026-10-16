@@ -198,6 +198,17 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {"adjacent_difference", "discontinuity"}:
+            from . import _neighbors
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _neighbors.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind in {
             "topk_min_keys",
             "topk_min_pairs",
@@ -481,7 +492,8 @@ class _Analysis:
     def _value_extent(self, var, kind: str) -> int | None:
         """Recover static shape through array results and tuple projections.
 
-        Registry entries identify an input or each tuple result slot.
+        Registry entries are a source argument index, a tuple describing
+        result slots, or a resolver of ``(analysis, call)`` to an extent.
         Element dtypes remain owned by native typing.
         """
 
@@ -524,6 +536,17 @@ class _Analysis:
                         source = RESULT_EXTENT_SOURCES.get(
                             _callee(self.typemap, definition)
                         )
+                        if callable(source):
+                            extent = source(self, definition)
+                            rest = projection
+                            while isinstance(extent, tuple) and rest:
+                                extent, rest = extent[rest[0]], rest[1:]
+                            extents.add(
+                                extent
+                                if isinstance(extent, int) and not rest
+                                else None
+                            )
+                            continue
                         rest = projection
                         while isinstance(source, tuple) and rest:
                             source, rest = source[rest[0]], rest[1:]

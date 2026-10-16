@@ -71,7 +71,10 @@ CONTROLS = {
 }
 
 # Static extent provenance for qualified array-valued operation results.
-RESULT_EXTENT_SOURCES: dict[object, int | tuple[int, ...]] = {}
+RESULT_EXTENT_SOURCES: dict[
+    object,
+    int | tuple[int, ...] | Callable[[Any, Any], int | tuple[int, ...] | None],
+] = {}
 
 _PAYLOAD = {"load": "output", "store": "value"}
 _MEMORY = {"load": "source", "store": "destination"}
@@ -747,6 +750,8 @@ def register() -> None:
             "topk_min_pairs",
             "topk_max_keys",
             "topk_max_pairs",
+            "adjacent_difference",
+            "discontinuity",
         }:
             continue  # Result families register their templates separately.
         else:

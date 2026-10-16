@@ -49,6 +49,7 @@ def _activate() -> None:
         _lower,
         _merge_sort,
         _ncm_patches,
+        _neighbors,
         _radix,
         _reductions,
         _resolve,
@@ -70,6 +71,7 @@ def _activate() -> None:
     _merge_sort.register()
     _radix.register()
     _topk.register()
+    _neighbors.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()
