@@ -117,11 +117,14 @@ def validate_slice(
         "top": top,
         "threshold": threshold,
     }
-    for optional in ("scope_filter", "exclusive_scope"):
+    for optional in ("scope_filter", "exclusive_scope", "group_by"):
         if optional in data:
             result[optional] = require_string(
                 data[optional], f"{where}.{optional}", nonempty=False
             )
+
+    if "group_by" in result and result["group_by"] not in ("event", "primary-template"):
+        die(f"{where}.group_by must be event or primary-template")
 
     children = data.get("children", [])
     if not isinstance(children, list):
@@ -206,7 +209,7 @@ def matrix_entry(config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def parse_matrix(path: Path, workflow: str) -> dict[str, Any]:
+def load_matrix(path: Path) -> dict[str, Any]:
     try:
         if yaml is not None:
             with path.open(encoding="utf-8") as f:
@@ -229,6 +232,11 @@ def parse_matrix(path: Path, workflow: str) -> dict[str, Any]:
     except YAML_ERROR_TYPES as e:
         die(f"failed to parse {path}: {e}")
 
+    return require_mapping(matrix, "matrix")
+
+
+def parse_matrix(path: Path, workflow: str) -> dict[str, Any]:
+    matrix = load_matrix(path)
     compile_time = matrix.get("compile_time")
     if compile_time is None:
         return {"include": []}

@@ -9,6 +9,43 @@ include-check TUs.
 For the full option, CSV, filter, and CI contract reference, see
 :doc:`../references/compile_time`.
 
+Collect third-party trace history
+--------------------------------
+
+Weekly CI collects original NVCC traces for MatX, PyTorch, and RAPIDS using the
+current CCCL revision. These builds do not resolve or rebuild a baseline. You can
+also dispatch the **Third-party compile-time trace collection** workflow for one
+configuration, or opt a PR in with ``[run-third-party-compile-time-bench]``.
+``compile_time.third_party_override`` in ``ci/matrix.yaml`` temporarily selects
+specific PR configurations and must be empty before merging.
+
+The workflow saves the original traces and revision/toolchain metadata before
+analysis, requesting 90 days of retention (the public-repository maximum, subject
+to repository/organization policy). It then publishes the top 50 entries for
+each of the five standard slices in job summaries and PR comments. Header and
+symbol slices retain CCCL-owned work; TU totals cover the consumer compilation.
+
+For collection-only local use inside the matching devcontainer:
+
+.. code-block:: bash
+
+  CCCL_BUILD_INFIX=trace-history ci/build_third_party_compile_time.sh -project matx
+
+The ``compile-time-<config-id>-traces`` artifact contains ``raw_traces/``,
+``dataset.json``, ``config.json``, and ``slices.json``. Download it before its
+expiry to preserve data longer or analyze it independently of CI:
+
+.. code-block:: bash
+
+  gh run download RUN_ID --repo NVIDIA/cccl \
+    --name compile-time-matx-gcc14-traces --dir dataset
+  python3 ci/compile_time/summarize_events.py dataset/raw_traces \
+    --repo-root "$(jq -r .repo_root dataset/dataset.json)" \
+    --cccl-only --slices dataset/slices.json --jobs 8 -o dataset/event_reports
+
+Use ``--jobs 1`` for PyTorch's large traces. See ``ci/compile_time/README.md`` for
+the dataset schema, failure handling, and report rendering command.
+
 Run the common comparison
 -------------------------
 

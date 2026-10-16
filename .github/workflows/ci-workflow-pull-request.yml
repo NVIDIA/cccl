@@ -47,6 +47,7 @@ jobs:
       bench_matrix: ${{ steps.build-bench-matrix.outputs.bench_matrix }}
       compile_time_enabled: ${{ steps.build-compile-time-matrix.outputs.compile_time_enabled }}
       compile_time_matrix: ${{ steps.build-compile-time-matrix.outputs.compile_time_matrix }}
+      third_party_trace_matrix: ${{ steps.build-third-party-trace-matrix.outputs.matrix }}
       sass_enabled: ${{ steps.build-sass-matrix.outputs.sass_enabled }}
       sass_matrix: ${{ steps.build-sass-matrix.outputs.sass_matrix }}
       vdc_enabled: ${{ steps.export-flags.outputs.vdc_enabled }}
@@ -129,6 +130,23 @@ jobs:
             echo "compile_time_enabled=${compile_time_enabled}"
             echo "compile_time_matrix=${compile_time_matrix_json}"
           } >> "${GITHUB_OUTPUT}"
+      - name: Select third-party trace builds
+        id: build-third-party-trace-matrix
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          OPT_IN: ${{ contains(github.event.head_commit.message, '[run-third-party-compile-time-bench]') }}
+          SKIP_ALL: ${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') || contains(github.event.head_commit.message, '[skip-third-party-testing]') || contains(github.event.head_commit.message, '[skip-tpt]') }}
+          SKIP_MATX: ${{ contains(github.event.head_commit.message, '[skip-matx]') }}
+          SKIP_PYTORCH: ${{ contains(github.event.head_commit.message, '[skip-pytorch]') }}
+          SKIP_RAPIDS: ${{ contains(github.event.head_commit.message, '[skip-rapids]') }}
+        run: |
+          declare -a args=(--workflow pull_request)
+          [[ "${OPT_IN}" == true ]] && args+=(--opt-in)
+          [[ "${SKIP_ALL}" == true ]] && args+=(--skip all)
+          [[ "${SKIP_MATX}" == true ]] && args+=(--skip matx)
+          [[ "${SKIP_PYTORCH}" == true ]] && args+=(--skip pytorch)
+          [[ "${SKIP_RAPIDS}" == true ]] && args+=(--skip rapids)
+          echo "matrix=$(python3 -m ci.compile_time.third_party_matrix ci/matrix.yaml "${args[@]}")" >> "${GITHUB_OUTPUT}"
       - name: Build SASS diff dispatch matrix
         id: build-sass-matrix
         env:
@@ -540,6 +558,24 @@ jobs:
       comment: ${{ matrix.comment }}
       comment_header: ${{ matrix.comment_header }}
       artifact_retention_days: ${{ matrix.artifact_retention_days }}
+      pr_number: ${{ needs.build-workflow.outputs.pr_number }}
+
+  dispatch-third-party-traces:
+    name: Third-party traces (${{ matrix.id }})
+    # Informational telemetry, like the existing CCCL compile-time jobs.
+    if: ${{ toJSON(fromJSON(needs.build-workflow.outputs.third_party_trace_matrix).include) != '[]' }}
+    needs: build-workflow
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.build-workflow.outputs.third_party_trace_matrix) }}
+    uses: ./.github/workflows/third-party-compile-time.yml
+    with:
+      config_json: ${{ toJSON(matrix) }}
       pr_number: ${{ needs.build-workflow.outputs.pr_number }}
 
   dispatch-sass-diff:

@@ -1,0 +1,57 @@
+name: Third-party compile-time trace collection
+
+on:
+  workflow_dispatch:
+    inputs:
+      config:
+        description: "Third-party build to collect"
+        type: choice
+        default: all
+        options: [all, matx-gcc14, pytorch-gcc14, rapids-cudf, rapids-cuvs, rapids-cugraph, rapids-cuopt]
+  workflow_call:
+    inputs:
+      config:
+        description: "Configuration id, or all"
+        type: string
+        default: all
+
+jobs:
+  matrix:
+    name: Select trace builds
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Select configurations
+        id: select
+        env:
+          CONFIG: ${{ inputs.config }}
+          PYTHONPATH: ${{ github.workspace }}
+        shell: bash --noprofile --norc -euo pipefail {0}
+        run: |
+          matrix="$(python3 -m ci.compile_time.third_party_matrix ci/matrix.yaml --workflow weekly)"
+          if [[ "${CONFIG}" != all ]]; then
+            matrix="$(jq -c --arg id "${CONFIG}" '.include |= map(select(.id == $id))' <<< "${matrix}")"
+          fi
+          jq -e '.include | length > 0' <<< "${matrix}" > /dev/null
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+
+  collect:
+    name: Collect traces (${{ matrix.id }})
+    needs: matrix
+    permissions:
+      actions: read
+      id-token: write
+      contents: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
+    uses: ./.github/workflows/third-party-compile-time.yml
+    with:
+      config_json: ${{ toJSON(matrix) }}

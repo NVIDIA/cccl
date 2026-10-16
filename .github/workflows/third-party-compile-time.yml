@@ -1,0 +1,239 @@
+name: Third-party compile-time traces
+
+env:
+  PYTHONPATH: ${{ github.workspace }}
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      config_json:
+        description: "Validated third-party configuration from third_party_matrix.py."
+        required: true
+        type: string
+      pr_number:
+        description: "Optional PR receiving the single-dataset reports."
+        default: ""
+        type: string
+
+jobs:
+  run:
+    name: "Trace build: ${{ fromJSON(inputs.config_json).name }}"
+    runs-on: ${{ fromJSON(inputs.config_json).runner }}
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      comment_matrix: ${{ steps.render.outputs.comment_matrix }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # Consumer drivers use git describe for CCCL's version.
+
+      - name: Get AWS credentials for devcontainer
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200
+
+      - name: Prepare trace dataset
+        id: inputs
+        env:
+          CONFIG_JSON: ${{ inputs.config_json }}
+          CONFIG_ID: ${{ fromJSON(inputs.config_json).id }}
+          PROJECT: ${{ fromJSON(inputs.config_json).project }}
+        run: |
+          infix="compile-time-${CONFIG_ID}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          report_root="build/${infix}/${PROJECT}/compile_time"
+          mkdir -p "${report_root}" .aws
+          jq '. + {targets: (.targets_json | fromjson), slices: (.slices_json | fromjson)} | del(.targets_json, .slices_json)' \
+            <<< "${CONFIG_JSON}" > "${report_root}/config.json"
+          jq '.slices' "${report_root}/config.json" > "${report_root}/slices.json"
+          jq '.targets' "${report_root}/config.json" > "${report_root}/targets.json"
+          cat > .aws/credentials <<EOF
+          [default]
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
+          EOF
+          chmod 0600 .aws/credentials
+          printf '[default]\nregion=us-east-2\n' > .aws/config
+          {
+            echo "report_root=${report_root}"
+            echo "infix=${infix}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build and collect original traces
+        id: build
+        continue-on-error: true
+        env:
+          PROJECT: ${{ fromJSON(inputs.config_json).project }}
+          LAUNCH_ARGS: ${{ fromJSON(inputs.config_json).launch_args }}
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+          BUILD_INFIX: ${{ steps.inputs.outputs.infix }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          script="${RUNNER_TEMP}/third-party-traces.sh"
+          cat > "${script}" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          declare -a args=(-project "${PROJECT}")
+          while IFS= read -r target; do
+            args+=(-target "${target}")
+          done < <(jq -r '.[]' /compile-time-targets.json)
+          exec ci/build_third_party_compile_time.sh "${args[@]}"
+          EOF
+          chmod +x "${script}"
+          declare -a command=(/third-party-traces.sh)
+          if [[ "${PROJECT}" == rapids ]]; then
+            command=(./ci/rapids/rapids-entrypoint.sh /third-party-traces.sh)
+          fi
+          rapids_libs="$(jq -r 'join(" ")' "${REPORT_ROOT}/targets.json")"
+          read -r -a launch_args <<< "${LAUNCH_ARGS}"
+          .devcontainer/launch.sh -d "${launch_args[@]}" \
+            --env "CCCL_BUILD_INFIX=${BUILD_INFIX}" \
+            --env "CCCL_COMPILE_TIME_BENCH=1" \
+            --env "CI=true" \
+            --env "SCCACHE_DISABLE=1" \
+            --env "AWS_ROLE_ARN=" \
+            --env "AWS_REGION=${AWS_REGION:-}" \
+            --env "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}" \
+            --env "AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}" \
+            --env "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" \
+            --env "GH_TOKEN=${GH_TOKEN}" \
+            --env "PROJECT=${PROJECT}" \
+            --env "RAPIDS_LIBS=${rapids_libs}" \
+            --env "GITHUB_REPOSITORY=${GITHUB_REPOSITORY}" \
+            --env "GITHUB_SHA=${GITHUB_SHA}" \
+            --env "GITHUB_RUN_ID=${GITHUB_RUN_ID}" \
+            --env "GITHUB_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT}" \
+            --volume "${script}:/third-party-traces.sh" \
+            --volume "${GITHUB_WORKSPACE}/${REPORT_ROOT}/targets.json:/compile-time-targets.json" \
+            -- "${command[@]}"
+
+      # Archive before analysis, including traces from an unsuccessful build.
+      - name: Save original trace dataset
+        id: traces
+        if: ${{ always() && steps.inputs.outputs.report_root != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ fromJSON(inputs.config_json).id }}-traces
+          path: |
+            ${{ steps.inputs.outputs.report_root }}/raw_traces
+            ${{ steps.inputs.outputs.report_root }}/dataset.json
+            ${{ steps.inputs.outputs.report_root }}/config.json
+            ${{ steps.inputs.outputs.report_root }}/slices.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90 # Public-repository maximum; GitHub enforces any lower policy cap.
+
+      - name: Analyze single dataset
+        if: ${{ always() && steps.traces.outcome == 'success' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+          SUMMARY_JOBS: ${{ fromJSON(inputs.config_json).summary_jobs }}
+        run: |
+          python3 ci/compile_time/summarize_events.py "${REPORT_ROOT}/raw_traces" \
+            --repo-root "$(jq -r .repo_root "${REPORT_ROOT}/dataset.json")" \
+            --cccl-only --slices "${REPORT_ROOT}/slices.json" \
+            --jobs "${SUMMARY_JOBS}" -o "${REPORT_ROOT}/event_reports"
+
+      - name: Render single-dataset reports
+        id: render
+        if: ${{ always() && steps.inputs.outputs.report_root != '' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+          TRACE_URL: ${{ steps.traces.outputs.artifact-url }}
+          CONFIG_ID: ${{ fromJSON(inputs.config_json).id }}
+        run: |
+          python3 -m ci.compile_time.render_trace_report \
+            --dataset "${REPORT_ROOT}" --traces-url "${TRACE_URL}" \
+            --artifacts-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}#artifacts" \
+            --output "${REPORT_ROOT}/comments"
+          echo "comment_matrix=$(cat "${REPORT_ROOT}/comments/index.json")" >> "${GITHUB_OUTPUT}"
+          cat "${REPORT_ROOT}/comments/overview.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: TU total compilation report
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+        run: cat "${REPORT_ROOT}/comments/summary-total-compilation.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Direct file processing report
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+        run: cat "${REPORT_ROOT}/comments/summary-file-processing.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Function-body parsing report
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+        run: cat "${REPORT_ROOT}/comments/summary-function-bodies.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Template instantiation report
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+        run: cat "${REPORT_ROOT}/comments/summary-template-instantiation.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Primary-template instantiation report
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        env:
+          REPORT_ROOT: ${{ steps.inputs.outputs.report_root }}
+        run: cat "${REPORT_ROOT}/comments/summary-primary-template-instantiation.md" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save single-dataset reports
+        if: ${{ always() && steps.inputs.outputs.report_root != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ fromJSON(inputs.config_json).id }}-reports
+          path: ${{ steps.inputs.outputs.report_root }}/event_reports
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Save report comments
+        if: ${{ always() && steps.render.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-time-${{ fromJSON(inputs.config_json).id }}-comments
+          path: ${{ steps.inputs.outputs.report_root }}/comments
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Propagate build failure
+        if: ${{ always() && steps.build.outcome != 'success' }}
+        run: exit 1
+
+  post-results:
+    name: "Post trace report (${{ matrix.header }})"
+    if: ${{ always() && inputs.pr_number != '' && needs.run.outputs.comment_matrix != '' }}
+    needs: run
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.run.outputs.comment_matrix) }}
+    steps:
+      - name: Download report comments
+        uses: actions/download-artifact@v4
+        with:
+          name: compile-time-${{ fromJSON(inputs.config_json).id }}-comments
+          path: trace-comments
+      - name: Comment on PR
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        with:
+          github_token: ${{ github.token }}
+          number: ${{ inputs.pr_number }}
+          header: ${{ matrix.header }}
+          path: trace-comments/${{ matrix.file }}
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
