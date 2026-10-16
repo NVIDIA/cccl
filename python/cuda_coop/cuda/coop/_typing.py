@@ -85,7 +85,10 @@ else:
         | CompilerScalarLike
     )
 
-    IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+    if TYPE_CHECKING:
+        IntegerValue: TypeAlias = int | numpy.integer[Any] | CompilerIntegerLike
+    else:
+        IntegerValue: TypeAlias = int | numpy.integer | CompilerIntegerLike
 
 ValidItems: TypeAlias = IntegerValue
 
