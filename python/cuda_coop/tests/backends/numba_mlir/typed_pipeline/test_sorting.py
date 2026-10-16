@@ -47,6 +47,31 @@ def _compile(kernel, signature):
     return result
 
 
+def test_qualified_pair_results_keep_extents_across_sorting_families():
+    def kernel(keys, values, output, payload):
+        group = coop.this_block()
+        local_keys = cuda.local.array(2, types.int32)
+        local_values = cuda.local.array(2, types.int8)
+        for i in range(2):
+            local_keys[i] = keys[cuda.threadIdx.x * 2 + i]
+            local_values[i] = values[cuda.threadIdx.x * 2 + i]
+        pair = numba_coop.merge_sort_pairs(group, local_keys, local_values)
+        first = numba_coop.topk_min_pairs(group, pair[0], pair[1], k=32)
+        second = numba_coop.radix_sort_pairs(group, first[0], first[1])
+        numba_coop.store(group, output, second[0])
+        numba_coop.store(group, payload, second[1])
+
+    _compile(
+        kernel,
+        types.void(
+            types.int32[::1],
+            types.int8[::1],
+            types.int32[::1],
+            types.int8[::1],
+        ),
+    )
+
+
 def test_qualified_scalar_radix_results_and_inferred_prefix():
     def kernel(keys, values, output, payload, ranks, prefixes, begin):
         group = coop.this_block()
