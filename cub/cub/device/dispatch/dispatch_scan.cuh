@@ -1007,16 +1007,11 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
 
   // Initialize the tile descriptors and batch state
   constexpr int init_threads = 128;
-  constexpr int init_grid    = static_cast<int>(detail::scan::tiles_per_batch) / init_threads;
+  static_assert(static_cast<int>(detail::scan::tiles_per_batch) % init_threads == 0);
+  constexpr int init_grid = static_cast<int>(detail::scan::tiles_per_batch) / init_threads;
   _CUB_LOG_KERNEL_LAUNCH("DeviceScanBatchInitKernel", init_grid, 1, 1, init_threads, 0, stream, "");
   if (const auto error = CubDebug(launcher_factory(init_grid, init_threads, 0, stream, dependent_launch)
                                     .doit(kernel_source.BatchInitKernel(), tile_state, batch_state)))
-  {
-    return error;
-  }
-
-  // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
   {
     return error;
   }
@@ -1042,12 +1037,6 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
                 ::cuda::std::move(scan_op),
                 init_value,
                 detail::make_num_items_kernel_arg(num_items))))
-  {
-    return error;
-  }
-
-  // Check for failure to launch
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
   {
     return error;
   }

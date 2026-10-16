@@ -106,6 +106,8 @@ inline constexpr bool is_integral_or_deferred_v<::cuda::args::immediate<ArgT, St
 //! @cdp_class{DeviceScan}
 //! @determinism{not_guaranteed}
 //!
+//! The problem size must be nonnegative, whether provided directly or through a deferred argument.
+//!
 //! Deferred problem sizes
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -120,24 +122,24 @@ inline constexpr bool is_integral_or_deferred_v<::cuda::args::immediate<ArgT, St
 //! ``[d_in, d_in + num_items)`` must be accessible. A temporary-storage query does not dereference the deferred
 //! source.
 //!
-//! Deferred scans are CUDA Graph capturable. The pointed-to count may change between graph replays without updating
-//! or recapturing the graph.
+//! Scans with deferred problem sizes are CUDA Graph capturable. The pointed-to count may change between graph
+//! replays without updating or recapturing the graph.
 //!
-//! A deferred problem size always runs the decoupled look-back algorithm. Default tuning selects look-back
+//! A deferred problem size currently needs to run the decoupled look-back algorithm. Default tuning selects look-back
 //! automatically. A custom tuning policy must select look-back and provide valid look-back tuning parameters;
 //! selecting lookahead with a deferred problem size is rejected.
 //!
 //! The :ref:`determinism guarantees <cccl-determinism>` below apply unchanged to a deferred problem size. Note that
 //! reproducibility is promised across launches of the *same* configuration: for a non-associative operator such as
-//! floating-point addition, a deferred scan need not produce the same result as an immediate scan over the same
-//! values, because the two group the reduction differently.
+//! floating-point addition, a scan with a deferred problem size need not produce the same result as a scan with an
+//! immediate problem size over the same values, because the two group the reduction differently.
 //!
 //! Since the problem size is not available to the host, temporary storage and grid dimensions are derived from the
 //! upper bound of the deferred argument. Compile-time and runtime bounds are accepted as caller preconditions; a
 //! bound tight enough to keep the worst case within a single batch of tiles lets CUB size the launch exactly, which
-//! makes a deferred scan as cheap as an immediate one. Without such a bound, CUB falls back to a reusable-batch
-//! look-back that claims tiles from a persistent grid, which keeps temporary storage at a fixed size and costs a
-//! small constant overhead over an immediate launch.
+//! makes a scan with a deferred problem size as cheap as one with an immediate problem size. Without such a bound,
+//! CUB falls back to a reusable-batch look-back that claims tiles from a persistent grid, which keeps temporary storage
+//! at a fixed size and costs a small constant overhead over a launch with an immediate problem size.
 //!
 //! Determinism
 //! +++++++++++++++++++++++++++++++++++++++++++++

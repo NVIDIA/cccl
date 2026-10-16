@@ -33,15 +33,7 @@ template <typename NumItemsT>
 [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto num_items_upper_bound(NumItemsT num_items) noexcept
 {
   using offset_t = num_items_offset_t<NumItemsT>;
-
-  if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
-  {
-    return static_cast<offset_t>(::cuda::args::__highest_(num_items));
-  }
-  else
-  {
-    return static_cast<offset_t>(::cuda::args::__unwrap(num_items));
-  }
+  return static_cast<offset_t>(::cuda::args::__highest_(num_items));
 }
 
 // Preserve deferred problem sizes for dispatch and canonicalize immediate values to CUB's offset type.
