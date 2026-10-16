@@ -37,6 +37,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size;
 
+template <class _Tp>
+inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
+
 template <class _Tp, class...>
 using __enable_if_tuple_size_imp = _Tp;
 
@@ -45,7 +48,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT
 tuple_size<__enable_if_tuple_size_imp<const _Tp,
                                       enable_if_t<!is_volatile_v<_Tp>>,
                                       integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
-    : integral_constant<size_t, tuple_size<_Tp>::value>
+    : integral_constant<size_t, tuple_size_v<_Tp>>
 {};
 
 template <class _Tp>
@@ -53,17 +56,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT
 tuple_size<__enable_if_tuple_size_imp<volatile _Tp,
                                       enable_if_t<!is_const_v<_Tp>>,
                                       integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
-    : integral_constant<size_t, tuple_size<_Tp>::value>
+    : integral_constant<size_t, tuple_size_v<_Tp>>
 {};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 tuple_size<__enable_if_tuple_size_imp<const volatile _Tp, integral_constant<size_t, sizeof(tuple_size<_Tp>)>>>
-    : integral_constant<size_t, tuple_size<_Tp>::value>
+    : integral_constant<size_t, tuple_size_v<_Tp>>
 {};
-
-template <class _Tp>
-inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
 
 // specialize cuda::std::tuple_size for tuple-like ::std:: types
 #if _CCCL_HAS_HOST_STD_LIB()
@@ -99,7 +99,7 @@ struct tuple_size<
   ::cuda::std::__enable_if_tuple_size_imp<const _Tp,
                                           ::cuda::std::enable_if_t<!::cuda::std::is_volatile_v<_Tp>>,
                                           ::cuda::std::integral_constant<::cuda::std::size_t, sizeof(tuple_size<_Tp>)>>>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size<_Tp>::value>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size_v<_Tp>>
 {};
 
 template <class _Tp>
@@ -107,14 +107,14 @@ struct tuple_size<
   ::cuda::std::__enable_if_tuple_size_imp<volatile _Tp,
                                           ::cuda::std::enable_if_t<!::cuda::std::is_const_v<_Tp>>,
                                           ::cuda::std::integral_constant<::cuda::std::size_t, sizeof(tuple_size<_Tp>)>>>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size<_Tp>::value>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size_v<_Tp>>
 {};
 
 template <class _Tp>
 struct tuple_size<
   ::cuda::std::__enable_if_tuple_size_imp<const volatile _Tp,
                                           ::cuda::std::integral_constant<::cuda::std::size_t, sizeof(tuple_size<_Tp>)>>>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size<_Tp>::value>
+    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size_v<_Tp>>
 {};
 #endif // _CCCL_FREESTANDING()
 

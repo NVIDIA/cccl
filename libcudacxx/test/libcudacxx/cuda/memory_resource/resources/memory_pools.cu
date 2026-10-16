@@ -34,14 +34,14 @@
 template <typename PoolType>
 void pool_static_asserts()
 {
-  static_assert(!cuda::std::is_trivial<PoolType>::value);
-  static_assert(!cuda::std::is_trivially_default_constructible<PoolType>::value);
-  static_assert(!cuda::std::is_copy_constructible<PoolType>::value);
-  static_assert(!cuda::std::is_move_constructible<PoolType>::value);
-  static_assert(!cuda::std::is_copy_assignable<PoolType>::value);
-  static_assert(!cuda::std::is_move_assignable<PoolType>::value);
-  static_assert(!cuda::std::is_trivially_destructible<PoolType>::value);
-  static_assert(!cuda::std::is_empty<PoolType>::value);
+  static_assert(!cuda::std::is_trivial_v<PoolType>);
+  static_assert(!cuda::std::is_trivially_default_constructible_v<PoolType>);
+  static_assert(!cuda::std::is_copy_constructible_v<PoolType>);
+  static_assert(!cuda::std::is_move_constructible_v<PoolType>);
+  static_assert(!cuda::std::is_copy_assignable_v<PoolType>);
+  static_assert(!cuda::std::is_move_assignable_v<PoolType>);
+  static_assert(!cuda::std::is_trivially_destructible_v<PoolType>);
+  static_assert(!cuda::std::is_empty_v<PoolType>);
 }
 
 #if _CCCL_CTK_AT_LEAST(13, 0)
@@ -56,7 +56,7 @@ template void pool_static_asserts<cuda::device_memory_pool>();
 static_assert(cuda::std::is_default_constructible<cuda::managed_memory_pool>::value);
 static_assert(cuda::std::is_default_constructible<cuda::pinned_memory_pool>::value);
 #endif // _CCCL_CTK_AT_LEAST(13, 0)
-static_assert(!cuda::std::is_default_constructible<cuda::device_memory_pool>::value);
+static_assert(!cuda::std::is_default_constructible_v<cuda::device_memory_pool>);
 
 #if _CCCL_CTK_AT_LEAST(13, 3)
 static_assert(cuda::std::is_same_v<cuda::memory_pool_attributes::allocation_type_t::type, cudaMemAllocationType>);
