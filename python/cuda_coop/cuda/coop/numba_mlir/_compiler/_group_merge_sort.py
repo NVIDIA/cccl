@@ -268,9 +268,11 @@ def _lower_merge_sort(
             ),
             synchronization=replace(
                 plan.synchronization,
-                storage_reuse_barrier=SynchronizationScope.BLOCK
-                if auto_sync
-                else SynchronizationScope.NONE,
+                storage_reuse_barrier=(
+                    SynchronizationScope.BLOCK
+                    if auto_sync
+                    else SynchronizationScope.NONE
+                ),
             ),
         )
     namespace = (

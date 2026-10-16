@@ -454,7 +454,7 @@ class _Analysis:
     def _value_extent(self, var, kind: str) -> int | None:
         """Recover static shape through array results and tuple projections.
 
-        Registry entries identify the input whose extent a result retains.
+        Registry entries identify an input or each tuple result slot.
         Element dtypes remain owned by native typing.
         """
 
@@ -497,7 +497,10 @@ class _Analysis:
                         source = RESULT_EXTENT_SOURCES.get(
                             _callee(self.typemap, definition)
                         )
-                        if isinstance(source, int) and not projection:
+                        rest = projection
+                        while isinstance(source, tuple) and rest:
+                            source, rest = source[rest[0]], rest[1:]
+                        if isinstance(source, int) and not rest:
                             pending.append((definition.args[source], ()))
                             continue
                 extents.add(
