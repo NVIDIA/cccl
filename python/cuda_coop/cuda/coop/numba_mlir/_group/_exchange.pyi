@@ -1,0 +1,86 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+from typing import Literal, TypeAlias, overload
+
+from typing_extensions import TypeVar
+
+from ..._typing import (
+    CommonNumericScalar,
+    CommonThreadDataLike,
+    ExchangeMode,
+    IntegralScalar,
+    SignedIntegerScalar,
+    ThreadDataLike,
+)
+from .._thread_group import BlockGroup, WarpGroup
+
+_ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_RankT = TypeVar("_RankT", bound=SignedIntegerScalar)
+_FlagT = TypeVar("_FlagT", bound=IntegralScalar)
+_BlockLayoutExtension: TypeAlias = Literal[
+    "warp_striped_to_blocked",
+    "blocked_to_warp_striped",
+]
+_BlockLayoutMode: TypeAlias = ExchangeMode | _BlockLayoutExtension
+_BlockScatterMode: TypeAlias = Literal[
+    "scatter_to_blocked",
+    "scatter_to_striped",
+]
+
+@overload
+def exchange(
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: _BlockLayoutMode = "striped_to_blocked",
+    ranks: None = None,
+    valid_flags: None = None,
+    warp_time_slicing: bool = False,
+) -> ThreadDataLike[_ItemT]: ...
+@overload
+def exchange(
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: _BlockScatterMode,
+    ranks: CommonThreadDataLike[_RankT],
+    valid_flags: None = None,
+    warp_time_slicing: bool = False,
+) -> ThreadDataLike[_ItemT]: ...
+@overload
+def exchange(
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["scatter_to_striped_guarded"],
+    ranks: CommonThreadDataLike[_RankT],
+    valid_flags: None = None,
+    warp_time_slicing: Literal[False] = False,
+) -> ThreadDataLike[_ItemT]: ...
+@overload
+def exchange(
+    group: BlockGroup,
+    value: CommonThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: Literal["scatter_to_striped_flagged"],
+    ranks: CommonThreadDataLike[_RankT],
+    valid_flags: CommonThreadDataLike[_FlagT],
+    warp_time_slicing: Literal[False] = False,
+) -> ThreadDataLike[_ItemT]: ...
+@overload
+def exchange(
+    group: WarpGroup,
+    value: CommonThreadDataLike[_ItemT],
+    /,
+    *,
+    mode: ExchangeMode = "striped_to_blocked",
+    ranks: None = None,
+    valid_flags: None = None,
+    warp_time_slicing: Literal[False] = False,
+) -> ThreadDataLike[_ItemT]: ...

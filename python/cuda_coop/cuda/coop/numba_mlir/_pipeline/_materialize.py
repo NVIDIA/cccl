@@ -35,17 +35,36 @@ from ._storage import StorageLayout
 
 @dataclass(frozen=True)
 class CallEntry:
-    """Provider symbol, arguments, scratch barrier and link inputs for a site.
+    """What lowering emits for one call site.
 
-    Each operand binds a scratch pointer, an array pointer, a boxed scalar,
-    or a runtime scalar argument. Sources are positional indexes or keywords.
+    ``operands`` follows ``abi_arguments``, one entry per provider operand:
+
+    ``("scratch",)``
+        the scratch region's pointer;
+    ``("pointer", source)``
+        the data pointer of a positional argument (integer ``source``) or
+        keyword argument (string ``source``);
+    ``("box", source, dtype, value)``
+        a one-item array of ``dtype`` holding the scalar argument ``source``,
+        or the static ``value`` when it is not ``None``;
+    ``("value", source)``
+        a positional or keyword scalar argument, converted to the ABI type.
+    ``("allocation", index)``
+        the pointer to a fresh local array described by ``allocations``.
+
+    ``return_type`` is the provider's scalar ABI result, or ``void``.
+    ``allocations`` and ``result`` separately describe fresh local arrays
+    and the public result assembly; see ``_results``.
     """
 
     symbol: str
     abi_arguments: tuple
     operands: tuple
+    return_type: Any
     barrier_after: bool
     link_items: tuple
+    allocations: tuple = ()
+    result: tuple | None = None
 
 
 @dataclass
@@ -88,7 +107,7 @@ def _select_method(algorithm: Any, operands: tuple) -> Any:
         inputs = _inputs(method)
         if len(inputs) == len(operands) and all(
             _pointer_parameter(parameter)
-            == (operand[0] in {"scratch", "pointer", "box"})
+            == (operand[0] in {"scratch", "pointer", "box", "allocation"})
             for parameter, operand in zip(inputs, operands, strict=True)
         ):
             return method
@@ -98,9 +117,16 @@ def _select_method(algorithm: Any, operands: tuple) -> Any:
 
 
 def _request_operands(site: Site, scratch: bool) -> tuple:
-    """Bind memory, payload and runtime controls in provider order."""
+    """Bind call operands without assuming every operation is Load/Store.
+
+    New requests provide their runtime inputs in provider order, excluding
+    scratch and static functors. Load/Store retains its existing binding.
+    """
 
     leading = (("scratch",),) if scratch else ()
+    explicit = getattr(site.request, "provider_operands", None)
+    if explicit is not None:
+        return leading + tuple(explicit)
     from ._load_store import EFFECTIVE_OFFSET_KEYWORD
 
     warp = not site.request.group.is_block
@@ -117,6 +143,21 @@ def _request_operands(site: Site, scratch: bool) -> tuple:
     if warp:
         runtime += (("value", EFFECTIVE_OFFSET_KEYWORD),)
     return leading + (("pointer", 1), payload) + runtime
+
+
+def _return_type(method: Any) -> Any:
+    outputs = [
+        p.dtype() for p in method if p.is_output and not _ignored_parameter(p)
+    ]
+    if len(outputs) > 1:
+        raise ValueError("Multiple output parameters not supported")
+    result = outputs[0] if outputs else nb.types.void
+    if isinstance(result, (nb.types.Array, nb.types.BaseTuple)):
+        raise NotImplementedError(
+            "cooperative array and pair results require "
+            "a result allocation plan"
+        )
+    return result
 
 
 def _call_entry(
@@ -136,8 +177,11 @@ def _call_entry(
         symbol=algorithm.mangled_name(method) + "__abi",
         abi_arguments=abi_arguments,
         operands=operands,
+        return_type=_return_type(method),
         barrier_after=barrier,
         link_items=bundle.link_items,
+        allocations=getattr(site.request, "allocations", ()),
+        result=getattr(site.request, "result", None),
     )
 
 

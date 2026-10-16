@@ -26,7 +26,7 @@ operation modules use them without importing each other during initialization.
 from __future__ import annotations
 
 from itertools import count
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import cuda.coop._core.api as _common_api
 import cuda.coop._core.api._dispatch as _common_dispatch
@@ -43,7 +43,9 @@ else:
         ir as ir,  # noqa: PLC0414 - Re-export for typing.
     )
 
+
 _NAME_COUNTER = count()
+_PAYLOAD_DTYPE_LIKE = "like"
 _GROUP_CONSTRUCTORS = {
     _thread_groups.this_thread: _thread_groups.this_thread,
     _thread_groups.this_warp: _thread_groups.this_warp,
@@ -110,12 +112,52 @@ def _is_common_root_operation(function: object, operation: str) -> bool:
     return _common_dispatch._common_group_operation_name(function) == operation
 
 
+def _typed_group_payload_like(
+    _prototype: Any,
+    _is_array: bool,
+    _dtype_policy: str,
+    _items_per_thread: int | None = None,
+) -> Any:
+    """Mark a fresh result payload whose dtype follows an existing value.
+
+    The planner emits this callable into IR while payload facts are still
+    being inferred. ``_is_array`` selects inherited array extent or one scalar
+    item; ``_items_per_thread`` can override that extent. ``_dtype_policy``
+    identifies the supported prototype-dtype rule.
+
+    The provider rewrite replaces the marker with a local-array allocation
+    once dtype and extent are known. Calling it directly is an error; it must
+    not survive into device compilation.
+
+    Parameters
+    ----------
+    _prototype : object
+        Scalar or array operand retained in the generated IR as the
+        source of type and shape evidence.
+    _is_array : bool
+        Whether the default item count comes from the prototype
+        array. False selects one item.
+    _dtype_policy : str
+        Compile-time rule used by the provider rewrite to select the
+        result element dtype.
+    _items_per_thread : int or None, optional
+        Explicit per-thread element count, overriding the prototype-
+        based count when supplied.
+    """
+
+    raise GroupRewriteError(
+        "typed group payload markers must be lowered before device compilation"
+    )
+
+
 __all__ = [
     "_COMMON_GROUP_CONSTRUCTORS",
     "_GROUP_CONSTRUCTORS",
     "_NAME_COUNTER",
+    "_PAYLOAD_DTYPE_LIKE",
     "GroupRewriteError",
     "_group_operation_name",
     "_is_common_root_operation",
+    "_typed_group_payload_like",
     "ir",
 ]

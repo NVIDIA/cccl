@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from .exchange import exchange
 from .load_store import load, store
+from .shuffle import shuffle
 from .temp_storage import TempStorage, TempStorageLike
 from .thread_data import ThreadData, ThreadDataLike
 from .thread_group import (
@@ -24,7 +26,9 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroup",
     "ThreadHierarchy",
+    "exchange",
     "load",
+    "shuffle",
     "store",
     "this_block",
     "this_cluster",

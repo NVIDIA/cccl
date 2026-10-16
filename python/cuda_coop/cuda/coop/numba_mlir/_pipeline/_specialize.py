@@ -27,7 +27,7 @@ from typing import Any
 
 from ._errors import TypedPipelineError
 from ._sites import Sites
-from ._templates import LoadStoreRequest
+from ._templates import LoadStoreRequest, OperationRequest
 
 
 @dataclass(frozen=True)
@@ -78,7 +78,7 @@ def lowering_plan(request: Any, block: tuple) -> Any:
     return _LOWERING_PLANS[key]
 
 
-def _complete(request: LoadStoreRequest, block: tuple) -> tuple[Any, dict]:
+def _complete(request: OperationRequest, block: tuple) -> tuple[Any, dict]:
     """Return the provider factory and its arguments for ``request``.
 
     ``plan_group_primitive`` hashes the request's semantic key, which is
@@ -90,8 +90,15 @@ def _complete(request: LoadStoreRequest, block: tuple) -> tuple[Any, dict]:
     if completed is not None:
         return completed
     resolved = lowering_plan(request, block)
+    complete_request = getattr(request, "complete", None)
+    if complete_request is not None:
+        completed = complete_request(block, resolved)
+        _COMPLETIONS[key] = completed
+        return completed
+
     from ._load_store import complete
 
+    assert isinstance(request, LoadStoreRequest)
     completed = complete(request, block, resolved)
     _COMPLETIONS[key] = completed
     return completed
@@ -118,7 +125,7 @@ def _one_compile_context(context: Any) -> Iterator[None]:
 
 
 def _instantiate(
-    requests: Sequence[LoadStoreRequest], block: tuple, target, context
+    requests: Sequence[OperationRequest], block: tuple, target, context
 ) -> list:
     from .._types import collect_specializations, kernel_compile_target
 

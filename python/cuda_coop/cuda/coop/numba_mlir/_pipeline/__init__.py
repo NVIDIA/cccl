@@ -44,6 +44,7 @@ def _activate() -> None:
         return
     from . import (
         _bridges,
+        _exchange,
         _groups,
         _lower,
         _ncm_patches,
@@ -58,6 +59,7 @@ def _activate() -> None:
     _groups.register()
     _temp_storage.register()
     _templates.register()
+    _exchange.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()

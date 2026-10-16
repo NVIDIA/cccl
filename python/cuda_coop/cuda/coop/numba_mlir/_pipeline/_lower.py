@@ -16,7 +16,9 @@ was decided by call resolution and stored in
   scratch pointer first when the provider takes one, then the memory and
   payload pointers, then the runtime controls converted to their ABI
   types, followed by a ``gpu.barrier`` when the plan has one. A scalar
-  ``store`` value is boxed into a one-item array first.
+  ``store`` value is boxed into a one-item array first;
+* scalar-returning providers use the same hidden return pointer as Numba's
+  external ABI, with storage matching the provider result dtype.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ import struct
 from typing import Any
 
 from . import _bridges as nb
+from . import _results
 from ._templates import (
     _CONSTRUCTOR_PARAMETERS,
     OPERATIONS,
@@ -104,14 +107,15 @@ def _box(builder, var, dtype, value):
     return array
 
 
-def _operand(builder, operand, abi_type, args, keywords):
+def _operand(builder, operand, abi_type, args, keywords, allocations):
     tag = operand[0]
     if tag == "scratch":
         return nb.memref_data_pointer(
             builder.load_var(keywords[SCRATCH_KEYWORD])
         )
-    source = operand[1]
-    var = args[source] if isinstance(source, int) else keywords[source]
+    if tag == "allocation":
+        return nb.memref_data_pointer(allocations[operand[1]])
+    var = _results.argument(operand[1], args, keywords)
     if tag == "pointer":
         return nb.memref_data_pointer(builder.load_var(var))
     if tag == "box":
@@ -130,20 +134,27 @@ def _operand(builder, operand, abi_type, args, keywords):
 def _lower_operation(builder, target, args, kwargs):
     entry = _call_entry(builder, target)
     keywords = dict(kwargs or [])
+    allocations = _results.allocate(builder, entry.allocations, args, keywords)
     operands = [
-        _operand(builder, operand, abi_type, args, keywords)
+        _operand(builder, operand, abi_type, args, keywords, allocations)
         for operand, abi_type in zip(
             entry.operands, entry.abi_arguments, strict=True
         )
     ]
     function_type = nb.external_abi_function_type(
-        builder, nb.signature(nb.types.void, *entry.abi_arguments)
+        builder, nb.signature(entry.return_type, *entry.abi_arguments)
+    )
+    returns_value = entry.return_type != nb.types.void
+    result_storage_type = (
+        builder.get_storage_type(entry.return_type)
+        if returns_value
+        else nb.mlir_types.i8()
     )
     with builder.alloca_insertion_point():
         result = nb.llvm.alloca(
             res=nb.PointerType.get(),
             array_size=nb.arith.constant(nb.mlir_types.i32(), 1),
-            elem_type=nb.mlir_types.i8(),
+            elem_type=result_storage_type,
         )
     callee = nb.get_or_insert_function(
         entry.symbol, function_type, builder.mlir_gpu_module
@@ -153,6 +164,17 @@ def _lower_operation(builder, target, args, kwargs):
         callee=callee.name.value,
         operands_=[result, *operands],
     )
+    returned = None
+    if returns_value:
+        stored = nb.llvm.load(res=result_storage_type, addr=result)
+        returned = builder.from_storage(entry.return_type, stored)
+    if entry.result is not None:
+        builder.store_var(
+            target,
+            _results.assemble(builder, entry.result, allocations, returned),
+        )
+    elif returns_value:
+        builder.store_var(target, returned)
     if entry.barrier_after:
         nb.gpu.barrier()
     for item in entry.link_items:

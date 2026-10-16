@@ -32,7 +32,7 @@ import inspect
 import linecache
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from . import _bridges as nb
 from ._errors import TypedPipelineError, unsupported_primitive
@@ -63,7 +63,12 @@ _NOT_KERNEL_CALLABLE = frozenset(
 CONTROLS = {
     "load": ("valid_items", "oob_default", "offset"),
     "store": ("valid_items", "offset"),
+    "exchange": (),
+    "shuffle": ("distance",),
 }
+
+# Static extent provenance for qualified array-valued operation results.
+RESULT_EXTENT_SOURCES: dict[object, int] = {}
 
 _PAYLOAD = {"load": "output", "store": "value"}
 _MEMORY = {"load": "source", "store": "destination"}
@@ -269,6 +274,34 @@ OPERATIONS: dict[Callable, str] = {
 QUALIFIED_OPERATIONS = {_coop_qualified_load_op, _coop_qualified_store_op}
 
 _QUALIFIED_PREFIX = "cuda.coop.numba_mlir."
+
+
+class OperationRequest(Protocol):
+    """Resolved family contract consumed by whole-kernel stages."""
+
+    @property
+    def kind(self) -> str: ...
+
+    @property
+    def dtype(self) -> Any: ...
+
+    @property
+    def items_per_thread(self) -> int: ...
+
+    @property
+    def algorithm(self) -> str | None: ...
+
+    @property
+    def group(self) -> Any: ...
+
+    @property
+    def controls(self) -> tuple: ...
+
+    @property
+    def call(self) -> Any: ...
+
+    @property
+    def key(self) -> tuple: ...
 
 
 @dataclass(frozen=True, eq=False)
@@ -618,6 +651,36 @@ def make_wrapper(
     return namespace[name]
 
 
+def result_wrapper(public, qualified_name, operation):
+    """Inline a public signature into a private value-returning operation."""
+
+    params = list(inspect.signature(public).parameters.values())
+    positional = [p for p in params if p.kind is p.POSITIONAL_ONLY]
+    ordinary = [
+        p for p in params if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
+    ]
+    header = [_parameter_text(p) for p in positional]
+    if positional:
+        header.append("/")
+    header.extend(_parameter_text(p) for p in ordinary)
+    arguments = [p.name for p in positional]
+    arguments.extend(f"{p.name}={p.name}" for p in ordinary)
+    source = (
+        f"def wrapper({', '.join(header)}):\n"
+        f"    return operation({', '.join(arguments)})\n"
+    )
+    filename = _WRAPPER_FILENAME.format(qualified_name)
+    linecache.cache[filename] = (
+        len(source),
+        None,
+        source.splitlines(keepends=True),
+        filename,
+    )
+    namespace = {"operation": operation}
+    exec(compile(source, filename, "exec"), namespace)  # noqa: S102
+    return namespace["wrapper"]
+
+
 # Registration ----------------------------------------------------------------
 
 
@@ -662,6 +725,8 @@ def register() -> None:
                 obj, make_wrapper(obj, qualified_name, operation)
             )
             register_template(obj, _not_inlined(qualified_name), name)
+        elif operation in {"exchange", "shuffle"}:
+            continue  # Movement registers its result templates separately.
         else:
             register_template(obj, _rejecting(qualified_name), name)
 
@@ -694,6 +759,7 @@ __all__ = [
     "CONTROLS",
     "OPERATIONS",
     "QUALIFIED_OPERATIONS",
+    "RESULT_EXTENT_SOURCES",
     "WRAPPER_SOURCE",
     "LoadStoreRequest",
     "constructor_alignment",
@@ -705,5 +771,6 @@ __all__ = [
     "register",
     "register_template",
     "request_for",
+    "result_wrapper",
     "with_controls",
 ]

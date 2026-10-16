@@ -151,6 +151,7 @@ Store expects the layout selected by its algorithm. Combining a striped
 Load with a direct Store without conversion changes the output order.
 ``ThreadData`` does not carry a layout tag that corrects this mismatch.
 
-Follow the values in the :doc:`Load <visualizations/load>` and :doc:`Store
-<visualizations/store>` visualizations. The :ref:`programming guide
-<coop-data-layouts>` explains these layouts.
+Follow the values in the :doc:`Load <visualizations/load>` and
+:doc:`Store <visualizations/store>` visualizations. :doc:`Exchange
+<visualizations/exchange>` converts between layouts; the
+:ref:`programming guide <coop-data-layouts>` explains these layouts.
