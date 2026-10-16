@@ -128,12 +128,14 @@ explains terms and concepts, including blocked and striped layouts.
 | Radix sorting and ranking | `radix_sort_keys`, `radix_sort_pairs`, `radix_rank_keys` |
 | Top-k selection | `topk_min_keys`, `topk_max_keys`, `topk_min_pairs`, `topk_max_pairs` |
 | Neighbor comparisons | `adjacent_difference`, `discontinuity` |
+| Counting | `histogram` |
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
 Interactive diagrams and tested kernel examples explain these contracts in
 the [visualizations](https://nvidia.github.io/cccl/unstable/python/coop/visualizations/index.html).
-
+Histogram returns fresh counters that callers can accumulate in ordinary
+payloads.
 
 ## Configuration
 
@@ -307,7 +309,7 @@ group or parent-group participant must still reach the collective.
 ## Temporary storage
 
 Block Load, Store, Reduce, Scan, Merge Sort, Radix Sort, TopK, Adjacent
-Difference, and Discontinuity accept an optional caller descriptor:
+Difference, Discontinuity, and Histogram accept an optional caller descriptor:
 
 ```python
 storage = coop.TempStorage(
