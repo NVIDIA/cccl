@@ -8,11 +8,12 @@ Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
 checkout. Isolated mode must ignore that path. The probe checks module and
 header origins before compiling, so checkout files cannot hide missing
 wheel contents. Four import orders must each activate the backend. The public
-Reduce and Scan modules must load only when first accessed. Their compiler
-modules must load only when the compiler first looks up their planning hooks.
+Reduce, Scan and StatefulFunction modules retain lazy loading in planner
+mode; typed mode registers their public markers and descriptors eagerly.
+Planner hooks load only when explicitly requested in planner mode.
 
-The probe also checks lazy StatefulFunction exports, then compiles a real
-kernel. Only device-target queries are replaced; provider compilation and
+The probe checks StatefulFunction exports, then compiles a real kernel.
+Only device-target queries are replaced; provider compilation and
 device linking use the installed toolchain.
 """
 
@@ -59,7 +60,6 @@ _COMPILE_PROBE = textwrap.dedent(
         os.environ.get("CUDA_COOP_NUMBA_MLIR_PIPELINE", "").strip().lower()
         == "typed"
     )
-
 
     if import_order == "numba-first-common":
         import numba_cuda_mlir
@@ -132,11 +132,11 @@ _COMPILE_PROBE = textwrap.dedent(
     public_scan_module = "cuda.coop.numba_mlir._group._scan"
     compiler_scan_module = "cuda.coop.numba_mlir._compiler._group_scan"
     stateful_function_module = "cuda.coop.numba_mlir._stateful_function"
-    assert public_reduce_module not in sys.modules
+    assert (public_reduce_module in sys.modules) == typed_pipeline
     assert compiler_reduce_module not in sys.modules
-    assert public_scan_module not in sys.modules
+    assert (public_scan_module in sys.modules) == typed_pipeline
     assert compiler_scan_module not in sys.modules
-    assert stateful_function_module not in sys.modules
+    assert (stateful_function_module in sys.modules) == typed_pipeline
 
     scan_names = {
         "exclusive_scan",
@@ -164,7 +164,7 @@ _COMPILE_PROBE = textwrap.dedent(
     assert compiler_reduce_module not in sys.modules
     assert public_scan_module in sys.modules
     assert compiler_scan_module not in sys.modules
-    assert stateful_function_module not in sys.modules
+    assert (stateful_function_module in sys.modules) == typed_pipeline
 
     public_scan_module_file = Path(
         sys.modules[public_scan_module].__file__
@@ -260,14 +260,21 @@ _COMPILE_PROBE = textwrap.dedent(
     assert descriptor.dtype is state_dtype
     assert descriptor.name == "installed_running_prefix"
 
-    from cuda.coop.numba_mlir._compiler._operations import group_primitive
+    if typed_pipeline:
+        from cuda.coop.numba_mlir import _pipeline
 
-    assert group_primitive("reduce") is not None
-    assert group_primitive("sum") is not None
-    for name in scan_names:
-        assert group_primitive(name) is not None
-    assert compiler_reduce_module in sys.modules
-    assert compiler_scan_module in sys.modules
+        assert _pipeline._activated
+        assert compiler_reduce_module not in sys.modules
+        assert compiler_scan_module not in sys.modules
+    else:
+        from cuda.coop.numba_mlir._compiler._operations import group_primitive
+
+        assert group_primitive("reduce") is not None
+        assert group_primitive("sum") is not None
+        for name in scan_names:
+            assert group_primitive(name) is not None
+        assert compiler_reduce_module in sys.modules
+        assert compiler_scan_module in sys.modules
 
     # Numba-CUDA-MLIR 0.5 has no public GPU-free entry point that carries
     # configured launch metadata. Fix only its current-device queries; the

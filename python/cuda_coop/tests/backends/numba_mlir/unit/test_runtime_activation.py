@@ -212,7 +212,8 @@ def test_scan_annotations_preserve_lazy_stateful_function_loading():
                 for option in get_args(prefix_op)
             )
         assert stateful_module in sys.modules
-        """
+        """,
+        pipeline="planner",
     )
 
 
