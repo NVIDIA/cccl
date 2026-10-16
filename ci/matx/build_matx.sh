@@ -112,6 +112,10 @@ if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
   compile_time_cmake_args=(
     "-DCMAKE_CUDA_COMPILER_LAUNCHER=${cccl_repo}/ci/compile_time/nvcc_time_trace.py"
     "-DCMAKE_CXX_COMPILER_LAUNCHER="
+    # CUDA 13.4 Update 1 exports unversioned cuSOLVER symbols, but cuTensorNet
+    # references versioned ones. Use NVIDIA's documented linker workaround for
+    # these compile-only builds until the image has CUDA 13.4 Update 2.
+    "-DCMAKE_EXE_LINKER_FLAGS=${LDFLAGS:+${LDFLAGS} }-Wl,--allow-shlib-undefined"
   )
 fi
 
