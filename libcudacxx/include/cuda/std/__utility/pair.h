@@ -647,6 +647,7 @@ public:
   // NOLINTEND(bugprone-use-after-move)
 
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Constraints = __tuple_swap_constraints<_T1, _T2>, enable_if_t<_Constraints::__all_swappable, int> = 0>
   _CCCL_API constexpr void swap(pair& __p) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
     using ::cuda::std::swap;
@@ -654,8 +655,9 @@ public:
     swap(this->second, __p.second);
   }
 
-#if _CCCL_STD_VER >= 2023
   _CCCL_EXEC_CHECK_DISABLE
+  template <class _Constraints                                    = __tuple_swap_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__all_const_swappable, int> = 0>
   _CCCL_API constexpr void swap(const pair& __p) const
     noexcept(is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>)
   {
@@ -663,7 +665,6 @@ public:
     swap(this->first, __p.first);
     swap(this->second, __p.second);
   }
-#endif // _CCCL_STD_VER >= 2023
 
 #if _CCCL_HOSTED()
   _CCCL_HOST_API constexpr operator ::std::pair<_T1, _T2>() const
@@ -759,7 +760,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 _CCCL_TEMPLATE(class _T1, class _T2)
-_CCCL_REQUIRES(is_swappable_v<_T1> _CCCL_AND is_swappable_v<_T2>)
+_CCCL_REQUIRES(__tuple_swap_constraints<_T1, _T2>::__all_swappable)
 _CCCL_API constexpr void
 swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>) )
 {
@@ -767,7 +768,7 @@ swap(pair<_T1, _T2>& __x, pair<_T1, _T2>& __y) noexcept((is_nothrow_swappable_v<
 }
 
 _CCCL_TEMPLATE(class _T1, class _T2)
-_CCCL_REQUIRES(is_swappable_v<const _T1> _CCCL_AND is_swappable_v<const _T2>)
+_CCCL_REQUIRES(__tuple_swap_constraints<_T1, _T2>::__all_const_swappable)
 _CCCL_API constexpr void swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(
   (is_nothrow_swappable_v<const _T1> && is_nothrow_swappable_v<const _T2>) )
 {

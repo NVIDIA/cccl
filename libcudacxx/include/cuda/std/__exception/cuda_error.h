@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__driver/entry_point.h>
+#include <cuda/__driver/entry_point.h> // IWYU pragma: keep
 #include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__exception/msg_storage.h>
 #include <cuda/std/__host_stdlib/cstdio>

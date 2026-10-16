@@ -13,7 +13,9 @@ if (PROJECT_IS_TOP_LEVEL)
 endif()
 
 # We need compile-commands in all cases so that clang-tidy tests work
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if (NOT CMAKE_EXPORT_COMPILE_COMMANDS)
+  message(FATAL_ERROR "Clang-tidy tests require compile_commands.json")
+endif()
 
 # Some package managers (conda) have separate LLVM and clang development packages.
 # Finding just LLVM or just clang does not guarantee that the other is installed, so need
@@ -70,22 +72,16 @@ function(cccl_create_clang_tidy_plugin TARGET)
   target_compile_definitions("${TARGET}" PRIVATE ${LLVM_DEFINITIONS_LIST})
   target_link_libraries(
     "${TARGET}"
-    PRIVATE ${CCCL_LLVM_LIBS} clangTidy clangToolingRefactoring
+    PRIVATE cccl::clang-tidy ${CCCL_LLVM_LIBS} clangToolingRefactoring
   )
+  cccl_ensure_metatargets("${TARGET}")
 
   set_property(GLOBAL APPEND PROPERTY CCCL_TIDY_PLUGINS "${TARGET}")
 endfunction()
 
 find_program(
   CCCL_FILECHECK
-  NAMES
-    FileCheck
-    FileCheck-23
-    FileCheck-22
-    FileCheck-21
-    FileCheck-20
-    FileCheck-19
-    FileCheck-18
+  NAMES FileCheck FileCheck-${LLVM_VERSION_MAJOR}
   HINTS "${LLVM_TOOLS_BINARY_DIR}"
   REQUIRED
 )
@@ -259,6 +255,3 @@ function(cccl_create_clang_tidy_test plugin source)
   )
   _cccl_ensure_plugin_is_built_for_test("${target}" "${plugin}")
 endfunction()
-
-# The parent enables testing after configuring this directory.
-enable_testing()

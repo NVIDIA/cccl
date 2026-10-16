@@ -20,13 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/referenceable.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_complete.h>
 #include <cuda/std/__type_traits/is_move_assignable.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
@@ -59,11 +60,11 @@ struct __hidden_friend_swap_found
 template <class _Tp>
 _CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
 _CCCL_API inline auto __swap(...) -> __hidden_friend_swap_found;
+
+// Note: Cannot be a concept, or the constraints of swap are cyclic
 template <class _Tp>
-struct __has_hidden_friend_swap
-    : is_same<decltype(__detect_hidden_friend_swap::__swap(::cuda::std::declval<_Tp&>(), ::cuda::std::declval<_Tp&>())),
-              void>
-{};
+inline constexpr bool __has_hidden_friend_swap =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __val)(_Same_as(void) __detect_hidden_friend_swap::__swap(__val, __val));
 } // namespace __detect_hidden_friend_swap
 
 namespace __detect_adl_swap
@@ -73,25 +74,15 @@ void swap(_Tp&, _Tp&) = delete;
 
 struct __no_adl_swap_found
 {};
+
 template <class _Tp>
 _CCCL_API inline auto __swap(_Tp& __lhs, _Tp& __rhs) -> decltype(swap(__lhs, __rhs));
 _CCCL_API inline auto __swap(...) -> __no_adl_swap_found;
-template <class _Tp>
-struct __has_no_adl_swap
-    : is_same<decltype(__detect_adl_swap::__swap(::cuda::std::declval<_Tp&>(), ::cuda::std::declval<_Tp&>())),
-              __no_adl_swap_found>
-{};
-template <class _Tp, size_t _Np>
-struct __has_no_adl_swap_array
-    : is_same<
-        decltype(__detect_adl_swap::__swap(::cuda::std::declval<_Tp (&)[_Np]>(), ::cuda::std::declval<_Tp (&)[_Np]>())),
-        __no_adl_swap_found>
-{};
 
-// We should only define swap if there is no ADL found function or it is a hidden friend
+// Note: Cannot be a concept, or the constraints of swap are cyclic
 template <class _Tp>
-struct __can_define_swap : _Or<__has_no_adl_swap<_Tp>, __detect_hidden_friend_swap::__has_hidden_friend_swap<_Tp>>
-{};
+inline constexpr bool __has_no_adl_swap =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __val)(_Same_as(__no_adl_swap_found) __detect_adl_swap::__swap(__val, __val));
 } // namespace __detect_adl_swap
 
 template <class _Tp>
@@ -101,7 +92,7 @@ struct __is_nothrow_swappable;
 
 template <class _Tp>
 using __swap_result_t _CCCL_NODEBUG =
-  enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value
+  enable_if_t<(__detect_adl_swap::__has_no_adl_swap<_Tp> || __detect_hidden_friend_swap::__has_hidden_friend_swap<_Tp>)
               && is_move_constructible_v<_Tp> && is_move_assignable_v<_Tp>>;
 
 // we use type_identity_t<_Tp> as second parameter, to avoid ambiguity with std::swap, which will thus be preferred by
@@ -112,54 +103,38 @@ _CCCL_API constexpr __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __
   is_nothrow_move_constructible_v<_Tp> && is_nothrow_move_assignable_v<_Tp>);
 
 template <class _Tp, size_t _Np>
-_CCCL_API constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
+_CCCL_API constexpr enable_if_t<__detect_adl_swap::__has_no_adl_swap<_Tp (&)[_Np]> && __is_swappable<_Tp>::value>
   swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
 namespace __detail
 {
 // ALL generic swap overloads MUST already have a declaration available at this point.
 
-template <class _Tp, class _Up = _Tp, bool _NotVoid = !is_void_v<_Tp> && !is_void_v<_Up>>
-struct __swappable_with
-{
-  template <class _LHS, class _RHS>
-  _CCCL_API inline static decltype(swap(::cuda::std::declval<_LHS>(), ::cuda::std::declval<_RHS>())) __test_swap(int);
-  template <class, class>
-  _CCCL_API inline static __nat __test_swap(long);
+template <class _Tp, class _Up = _Tp>
+_CCCL_CONCEPT __swappable_with = _CCCL_REQUIRES_EXPR((_Tp, _Up), _Tp __x, _Up __y)(
+  swap(static_cast<_Tp&&>(__x), static_cast<_Up&&>(__y)), //
+  swap(static_cast<_Up&&>(__y), static_cast<_Tp&&>(__x)));
 
-  // Extra parens are needed for the C++03 definition of decltype.
-  using __swap1 = decltype((__test_swap<_Tp, _Up>(0)));
-  using __swap2 = decltype((__test_swap<_Up, _Tp>(0)));
-
-  static constexpr bool value = !is_same_v<__swap1, __nat> && !is_same_v<__swap2, __nat>;
-};
+// Not replaced with a concept because GCC cannot mangle the noexcept function declaration
+template <class _Tp, class _Up = _Tp, bool _Swappable = __swappable_with<_Tp, _Up>>
+inline constexpr bool __nothrow_swappable_with =
+  noexcept(swap(::cuda::std::declval<_Tp>(), ::cuda::std::declval<_Up>()))
+  && noexcept(swap(::cuda::std::declval<_Up>(), ::cuda::std::declval<_Tp>()));
 
 template <class _Tp, class _Up>
-struct __swappable_with<_Tp, _Up, false> : false_type
-{};
-
-template <class _Tp, class _Up = _Tp, bool _Swappable = __swappable_with<_Tp, _Up>::value>
-struct __nothrow_swappable_with
-{
-  static const bool value = noexcept(swap(::cuda::std::declval<_Tp>(), ::cuda::std::declval<_Up>()))
-                         && noexcept(swap(::cuda::std::declval<_Up>(), ::cuda::std::declval<_Tp>()));
-};
-
-template <class _Tp, class _Up>
-struct __nothrow_swappable_with<_Tp, _Up, false> : false_type
-{};
+inline constexpr bool __nothrow_swappable_with<_Tp, _Up, false> = false;
 } // namespace __detail
 
 template <class _Tp>
-struct __is_swappable : public integral_constant<bool, __detail::__swappable_with<_Tp&>::value>
+struct __is_swappable : public integral_constant<bool, __detail::__swappable_with<_Tp&>>
 {};
 
 template <class _Tp>
-struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>::value>
+struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>>
 {};
 
 template <class _Tp, class _Up>
-inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>::value;
+inline constexpr bool is_swappable_with_v = __detail::__swappable_with<_Tp, _Up>;
 
 template <class _Tp, bool = __referenceable<_Tp>>
 inline constexpr bool is_swappable_v = false;
@@ -169,7 +144,7 @@ inline constexpr bool is_swappable_v<_Tp, true> =
   is_swappable_with_v<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>;
 
 template <class _Tp, class _Up>
-inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>::value;
+inline constexpr bool is_nothrow_swappable_with_v = __detail::__nothrow_swappable_with<_Tp, _Up>;
 
 template <class _Tp, bool = __referenceable<_Tp>>
 inline constexpr bool is_nothrow_swappable_v = false;
@@ -194,15 +169,6 @@ is_nothrow_swappable_with : public bool_constant<is_nothrow_swappable_with_v<_Tp
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable : public bool_constant<is_nothrow_swappable_v<_Tp>>
 {};
-
-// Do not use this trait over is_nothrow_swappable unless necessary. It is only useful in rare
-// cases where a type may need to work with incomplete types and has friend functions that
-// greedily instantiate the nothrow_swappable functions.
-template <class _Tp, bool = __is_complete_v<_Tp>>
-inline constexpr bool __is_complete_and_nothrow_swappable_v = false;
-
-template <class _Tp>
-inline constexpr bool __is_complete_and_nothrow_swappable_v<_Tp, true> = is_nothrow_swappable_v<_Tp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 
