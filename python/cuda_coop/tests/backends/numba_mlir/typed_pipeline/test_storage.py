@@ -99,6 +99,28 @@ def test_merged_storage_retains_constructor_identity(auto_sync):
             _compile(kernel, types.int32[::1], types.int32[::1], types.boolean)
 
 
+@pytest.mark.parametrize("auto_sync", [False, True])
+@pytest.mark.parametrize("sharing", ["shared", "exclusive"])
+def test_scan_respects_the_explicit_storage_contract(auto_sync, sharing):
+    @cuda.jit(chip="sm_90")
+    def kernel(source, output):
+        scratch = coop.TempStorage(auto_sync=auto_sync, sharing=sharing)
+        group = coop.this_block()
+        first = coop.inclusive_sum(
+            group, source[cuda.threadIdx.x], temp_storage=scratch
+        )
+        cuda.syncthreads()
+        output[cuda.threadIdx.x] = coop.exclusive_sum(
+            group, first, temp_storage=scratch
+        )
+
+    result = _compile(kernel, types.int32[::1], types.int32[::1])
+    assert result.metadata["cubin"]
+    assert result.metadata["mlir_module_str"].count("gpu.barrier") == (
+        1 + 2 * auto_sync
+    )
+
+
 def test_logical_warp_scratch_uses_multidimensional_block_ranks():
     @cuda.jit(chip="sm_90")
     def kernel(source, output):
