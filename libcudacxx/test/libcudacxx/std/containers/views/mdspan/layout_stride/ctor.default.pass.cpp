@@ -85,6 +85,14 @@ TEST_FUNC constexpr bool test()
   test_construction<cuda::std::extents<unsigned, 0>>();
   test_construction<cuda::std::extents<unsigned, 7, 8>>();
   test_construction<cuda::std::extents<int64_t, D, 8, D, D>>();
+
+  using empty_overflow_t = cuda::std::extents<signed char, 0, 20, 20>;
+  using mapping_t        = cuda::std::layout_stride::mapping<empty_overflow_t>;
+  mapping_t m{};
+  assert(m.required_span_size() == 0);
+  assert(m.stride(0) == 0);
+  assert(m.stride(1) == 20);
+  assert(m.stride(2) == 1);
   return true;
 }
 
