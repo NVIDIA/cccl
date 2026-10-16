@@ -63,9 +63,8 @@ TEST_HOST_DEVICE_FUNC constexpr void test_mask_mask_select()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask m(is_even{});
-  Mask all_true(true);
-  Mask all_false(false);
-  unused(all_true, all_false);
+  [[maybe_unused]] Mask all_true(true);
+  [[maybe_unused]] Mask all_false(false);
 
   static_assert(cuda::std::is_same_v<decltype(simd::select(m, all_true, all_false)), Mask>);
   static_assert(noexcept(simd::select(m, all_true, all_false)));

@@ -27,7 +27,7 @@
 #include "test_macros.h"
 
 template <class T>
-_CCCL_CONCEPT HasMinElement = _CCCL_REQUIRES_EXPR((T), T t)((unused(cuda::std::ranges::min_element(t))));
+_CCCL_CONCEPT HasMinElement = _CCCL_REQUIRES_EXPR((T), T t)((cuda::std::ranges::min_element(t)));
 
 struct NoLessThanOp
 {};
@@ -217,11 +217,11 @@ TEST_FUNC constexpr void test_dangling()
     ++projections;
     return a;
   };
-  decltype(auto) ret = cuda::std::ranges::min_element(cuda::std::array<int, 3>{1, 2, 3}, comparator, projection);
+  [[maybe_unused]] decltype(auto) ret =
+    cuda::std::ranges::min_element(cuda::std::array<int, 3>{1, 2, 3}, comparator, projection);
   static_assert(cuda::std::same_as<decltype(ret), cuda::std::ranges::dangling>);
   assert(compares == 2);
   assert(projections == 4);
-  unused(ret);
 }
 
 _CCCL_EXEC_CHECK_DISABLE

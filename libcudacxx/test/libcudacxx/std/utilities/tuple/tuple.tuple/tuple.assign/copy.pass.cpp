@@ -40,9 +40,8 @@ int main(int, char**)
   {
     using T = cuda::std::tuple<>;
     T t0;
-    T t;
+    [[maybe_unused]] T t;
     t = t0;
-    unused(t);
   }
   {
     using T = cuda::std::tuple<int>;

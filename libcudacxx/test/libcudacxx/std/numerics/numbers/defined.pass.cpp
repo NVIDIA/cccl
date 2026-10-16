@@ -24,8 +24,7 @@ TEST_FUNC constexpr bool test_defined(const T& value)
 {
   static_assert(cuda::std::is_same_v<ExpectedT, T>);
 
-  const ExpectedT* addr = &value;
-  unused(addr);
+  [[maybe_unused]] const ExpectedT* addr = &value;
 
   return true;
 }

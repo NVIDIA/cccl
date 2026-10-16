@@ -24,26 +24,25 @@ TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr()
 {
   using namespace cuda;
   access_property a{}; // default constructor
-  access_property b{a}; // copy constructor
-  access_property c{cuda::std::move(a)}; // move constructor
+  [[maybe_unused]] access_property b{a}; // copy constructor
+  [[maybe_unused]] access_property c{cuda::std::move(a)}; // move constructor
   // user-declared ctor
-  access_property d1{access_property::global{}};
-  access_property d2{access_property::normal{}};
-  access_property d3{access_property::streaming{}};
-  access_property d4{access_property::persisting{}};
-  auto p1 = static_cast<cudaAccessProperty>(access_property::normal{});
-  auto p2 = static_cast<cudaAccessProperty>(access_property::streaming{});
-  auto p3 = static_cast<cudaAccessProperty>(access_property::persisting{});
+  [[maybe_unused]] access_property d1{access_property::global{}};
+  [[maybe_unused]] access_property d2{access_property::normal{}};
+  [[maybe_unused]] access_property d3{access_property::streaming{}};
+  [[maybe_unused]] access_property d4{access_property::persisting{}};
+  [[maybe_unused]] auto p1 = static_cast<cudaAccessProperty>(access_property::normal{});
+  [[maybe_unused]] auto p2 = static_cast<cudaAccessProperty>(access_property::streaming{});
+  [[maybe_unused]] auto p3 = static_cast<cudaAccessProperty>(access_property::persisting{});
   // fraction ctor
-  access_property e1{access_property::normal{}, 1.0f};
-  access_property e2{access_property::streaming{}, 1.0f};
-  access_property e3{access_property::persisting{}, 1.0f};
-  access_property e4{access_property::normal{}, 1.0f, access_property::streaming{}};
-  access_property e5{access_property::persisting{}, 1.0f, access_property::streaming{}};
-  b          = a; // copy assignment
-  b          = cuda::std::move(a); // move assignment
-  auto value = static_cast<uint64_t>(a);
-  unused(p1, p2, p3, b, c, d1, d2, d3, d4, e1, e2, e3, e4, e5, value);
+  [[maybe_unused]] access_property e1{access_property::normal{}, 1.0f};
+  [[maybe_unused]] access_property e2{access_property::streaming{}, 1.0f};
+  [[maybe_unused]] access_property e3{access_property::persisting{}, 1.0f};
+  [[maybe_unused]] access_property e4{access_property::normal{}, 1.0f, access_property::streaming{}};
+  [[maybe_unused]] access_property e5{access_property::persisting{}, 1.0f, access_property::streaming{}};
+  b                           = a; // copy assignment
+  b                           = cuda::std::move(a); // move assignment
+  [[maybe_unused]] auto value = static_cast<uint64_t>(a);
   return true;
 }
 

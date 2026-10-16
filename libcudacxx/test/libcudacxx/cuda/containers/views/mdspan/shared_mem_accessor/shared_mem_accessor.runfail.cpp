@@ -21,7 +21,9 @@ TEST_DEVICE_FUNC void access_test()
 {
   using ext_t = cuda::std::extents<int, 4>;
   [[maybe_unused]] cuda::shared_memory_mdspan<int, ext_t> md{device_array, ext_t{}};
-  unused(md[0]);
+  {
+    [[maybe_unused]] auto&& discarded = md[0];
+  }
 }
 
 int main(int, char**)

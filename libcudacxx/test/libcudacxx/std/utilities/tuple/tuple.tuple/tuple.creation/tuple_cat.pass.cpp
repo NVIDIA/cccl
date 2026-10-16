@@ -208,8 +208,8 @@ TEST_FUNC constexpr bool test()
   {
     cuda::std::tuple<> t1{};
     cuda::std::tuple<> t2{};
-    cuda::std::tuple<> t3 = cuda::std::tuple_cat(t1, t2);
-    unused(t3); // Prevent unused warning
+    [[maybe_unused]] cuda::std::tuple<> t3 = cuda::std::tuple_cat(t1, t2);
+    // Prevent unused warning
   }
   {
     cuda::std::tuple<> t1{};
@@ -355,7 +355,7 @@ TEST_FUNC constexpr bool test()
     cuda::std::tuple<int, const int, int&, const int&> t2(42, 101, x, x);
     const auto& ct2 = t2;
 
-    auto r = cuda::std::tuple_cat(cuda::std::move(t), cuda::std::move(ct), t2, ct2);
+    [[maybe_unused]] auto r = cuda::std::tuple_cat(cuda::std::move(t), cuda::std::move(ct), t2, ct2);
 
     static_assert(
       cuda::std::is_same_v<
@@ -378,7 +378,6 @@ TEST_FUNC constexpr bool test()
                          const int,
                          int&,
                          const int&>>);
-    unused(r);
   }
   {
     // Element-namespace get overloads for the staged reference tuple are not used.

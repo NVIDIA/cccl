@@ -199,10 +199,9 @@ TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
   using Mask    = simd::basic_mask<4, simd::fixed_size<4>>;
   using Indices = simd::basic_vec<int, simd::fixed_size<4>>;
 
-  Vec v{};
-  Mask m{};
-  Indices idx{};
-  unused(v, m, idx);
+  [[maybe_unused]] Vec v{};
+  [[maybe_unused]] Mask m{};
+  [[maybe_unused]] Indices idx{};
 
   static_assert(!noexcept(simd::permute(v, idx)));
   static_assert(!noexcept(simd::permute(m, idx)));
@@ -219,12 +218,11 @@ TEST_HOST_DEVICE_FUNC constexpr void test_return_type()
   using Ind4  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Ind8  = simd::basic_vec<int, simd::fixed_size<8>>;
 
-  Vec4 v{};
-  Mask4 m{};
-  Ind2 i2{};
-  Ind4 i4{};
-  Ind8 i8{};
-  unused(v, m, i2, i4, i8);
+  [[maybe_unused]] Vec4 v{};
+  [[maybe_unused]] Mask4 m{};
+  [[maybe_unused]] Ind2 i2{};
+  [[maybe_unused]] Ind4 i4{};
+  [[maybe_unused]] Ind8 i8{};
 
   static_assert(cuda::std::is_same_v<decltype(simd::permute(v, i4)), Vec4>);
   static_assert(cuda::std::is_same_v<decltype(simd::permute(v, i2)), simd::resize_t<2, Vec4>>);

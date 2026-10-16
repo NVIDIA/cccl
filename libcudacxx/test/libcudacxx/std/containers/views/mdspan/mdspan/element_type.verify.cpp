@@ -30,24 +30,22 @@ TEST_FUNC void not_abstract_class()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // may not be an abstract class}}
-  cuda::std::mdspan<AbstractClass, cuda::std::extents<int>> m;
-  unused(m);
+  [[maybe_unused]] cuda::std::mdspan<AbstractClass, cuda::std::extents<int>> m;
 }
 
 TEST_FUNC void not_array_type()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // may not be an array type}}
-  cuda::std::mdspan<int[5], cuda::std::extents<int>> m;
-  unused(m);
+  [[maybe_unused]] cuda::std::mdspan<int[5], cuda::std::extents<int>> m;
 }
 
 TEST_FUNC void element_type_mismatch()
 {
   // expected-error-re@*:* {{{{(static_assert|static assertion)}} failed {{.*}}mdspan: ElementType template parameter
   // must match AccessorPolicy::element_type}}
-  cuda::std::mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, cuda::std::default_accessor<const int>> m;
-  unused(m);
+  [[maybe_unused]] cuda::std::
+    mdspan<int, cuda::std::extents<int>, cuda::std::layout_right, cuda::std::default_accessor<const int>> m;
 }
 
 int main(int, char**)

@@ -63,12 +63,10 @@ struct alignas(128) OverAlignedStruct
 
 TEST_HOST_DEVICE_FUNC bool should_expect_success()
 {
-  bool host_expect_success = true;
+  [[maybe_unused]] bool host_expect_success = true;
 #if TEST_COMPILER(MSVC)
   host_expect_success = false;
 #endif // TEST_COMPILER(MSVC)
-
-  unused(host_expect_success);
 
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return host_expect_success;), (return true;))
 }

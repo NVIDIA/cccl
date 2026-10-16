@@ -58,10 +58,10 @@ struct DecayChecker
 };
 
 template <class T>
-_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.begin()));
+_CCCL_CONCEPT HasBegin = _CCCL_REQUIRES_EXPR((T), T t)(t.begin());
 
 template <class T>
-_CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((T), T t)(unused(t.end()));
+_CCCL_CONCEPT HasEnd = _CCCL_REQUIRES_EXPR((T), T t)(t.end());
 
 TEST_FUNC constexpr bool test()
 {
@@ -108,8 +108,7 @@ TEST_FUNC constexpr bool test()
   {
     // DecayChecker's begin() and end() return references; make sure the owning_view decays them.
     using OwningView = cuda::std::ranges::owning_view<DecayChecker>;
-    OwningView ov;
-    unused(ov);
+    [[maybe_unused]] OwningView ov;
     static_assert(cuda::std::is_same_v<decltype(ov.begin()), int*>);
     static_assert(cuda::std::is_same_v<decltype(ov.end()), int*>);
   }

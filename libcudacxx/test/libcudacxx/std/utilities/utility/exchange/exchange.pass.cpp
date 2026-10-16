@@ -64,20 +64,17 @@ TEST_FUNC constexpr bool test_noexcept()
   }
 #if !TEST_COMPILER(NVHPC)
   {
-    TestNoexcept<true, true> x{};
+    [[maybe_unused]] TestNoexcept<true, true> x{};
     static_assert(noexcept(cuda::std::exchange(x, cuda::std::move(x))));
     static_assert(!noexcept(cuda::std::exchange(x, x))); // copy-assignment is not noexcept
-    unused(x);
   }
   {
-    TestNoexcept<true, false> x{};
+    [[maybe_unused]] TestNoexcept<true, false> x{};
     static_assert(!noexcept(cuda::std::exchange(x, cuda::std::move(x))));
-    unused(x);
   }
   {
-    TestNoexcept<false, true> x{};
+    [[maybe_unused]] TestNoexcept<false, true> x{};
     static_assert(!noexcept(cuda::std::exchange(x, cuda::std::move(x))));
-    unused(x);
   }
 #endif // !TEST_COMPILER(NVHPC)
 

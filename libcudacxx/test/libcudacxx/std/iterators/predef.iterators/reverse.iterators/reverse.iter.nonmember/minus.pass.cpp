@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class R1, class R2>
-_CCCL_CONCEPT HasMinus = _CCCL_REQUIRES_EXPR((R1, R2), R1 r1, R2 r2)(unused(R1() - R2()));
+_CCCL_CONCEPT HasMinus = _CCCL_REQUIRES_EXPR((R1, R2), R1 r1, R2 r2)(R1() - R2());
 
 template <class It1, class It2>
 TEST_FUNC constexpr void test(It1 l, It2 r, cuda::std::ptrdiff_t x)
