@@ -96,10 +96,6 @@ NonSumScanOperator: TypeAlias = Literal[
 ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
 
 
-
-
-
-
 class CompilerScalarLike(Protocol):
     """Describe a compiler scalar without importing its concrete type."""
 
