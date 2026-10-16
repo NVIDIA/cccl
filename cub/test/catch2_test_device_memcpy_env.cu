@@ -146,7 +146,7 @@ struct batch_memcpy_tuning
     return {
       cub::BatchedCopyAlgorithm::lookback,
       {
-        {BlockThreads, 4, 8, false, 256 * 32, 128, 8 * 1024, {}, {}},
+        {BlockThreads, 4, 8, false, 256 * 32, 32, 64, 96, 128, 8 * 1024, {}, {}},
         {256, 32},
       },
     };
@@ -347,6 +347,9 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
     8,
     false,
     256 * 32,
+    32,
+    64,
+    96,
     128,
     8 * 1024,
     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 350, 450},
@@ -358,13 +361,16 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2_small = cub::BatchedCopySmallBufferPolicy{
-    .threads_per_block     = 128,
-    .buffers_per_thread    = 4,
-    .bytes_per_thread      = 8,
-    .prefer_pow2_bits      = false,
-    .block_level_tile_size = 256 * 32,
-    .warp_level_threshold  = 128,
-    .block_level_threshold = 8 * 1024,
+    .threads_per_block       = 128,
+    .buffers_per_thread      = 4,
+    .bytes_per_thread        = 8,
+    .prefer_pow2_bits        = false,
+    .block_level_tile_size   = 256 * 32,
+    .group4_level_threshold  = 32,
+    .group8_level_threshold  = 64,
+    .group16_level_threshold = 96,
+    .warp_level_threshold    = 128,
+    .block_level_threshold   = 8 * 1024,
     .buffer_lookback_delay =
       cub::LookbackDelayPolicy{.kind = cub::LookbackDelayAlgorithm::fixed_delay, .delay = 350, .l2_write_latency = 450},
     .block_lookback_delay = cub::LookbackDelayPolicy{
@@ -398,6 +404,7 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
     to_string(p1_small)
     == "BatchedCopySmallBufferPolicy { .threads_per_block = 128, .buffers_per_thread = 4"
        ", .bytes_per_thread = 8, .prefer_pow2_bits = 0, .block_level_tile_size = 8192"
+       ", .group4_level_threshold = 32, .group8_level_threshold = 64, .group16_level_threshold = 96"
        ", .warp_level_threshold = 128, .block_level_threshold = 8192"
        ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
        ", .delay = 350, .l2_write_latency = 450 }"
@@ -410,7 +417,8 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
        ", .lookback = BatchedCopyLookbackPolicy { .small_buffer = BatchedCopySmallBufferPolicy { .threads_per_block = "
        "128"
        ", .buffers_per_thread = 4, .bytes_per_thread = 8, .prefer_pow2_bits = 0"
-       ", .block_level_tile_size = 8192, .warp_level_threshold = 128, .block_level_threshold = 8192"
+       ", .block_level_tile_size = 8192, .group4_level_threshold = 32, .group8_level_threshold = 64"
+       ", .group16_level_threshold = 96, .warp_level_threshold = 128, .block_level_threshold = 8192"
        ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
        ", .delay = 350, .l2_write_latency = 450 }"
        ", .block_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
