@@ -109,7 +109,7 @@ public:
                             const ::cuda::std::source_location& __loc = ::cuda::std::source_location::current())
       : cuda_error{__status,
 #  if _CCCL_HAS_CTK()
-                   ::cuda::__driver::__getErrorString(static_cast<::cudaError_t>(__status)),
+                   ::cuda::__driver::__getErrorStringNoThrow(static_cast<::cudaError_t>(__status)),
 #  else // ^^^ _CCCL_HAS_CTK() ^^^ / vvv !_CCCL_HAS_CTK() vvv
                    "cudaError",
 #  endif // ^^^ !_CCCL_HAS_CTK() ^^^

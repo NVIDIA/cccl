@@ -148,10 +148,8 @@ _CCCL_HOST_API inline void __throw_if_failed(
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __deviceGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
-  int& __result,
-  ::CUdevice_attribute __attr,
-  ::CUdevice __device) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__deviceGetAttributeNoThrow(int& __result, ::CUdevice_attribute __attr, ::CUdevice __device) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceGetAttribute);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__result, __attr, __device);
@@ -254,8 +252,7 @@ __devResourceGenerateDesc(::CUdevResource* __resources, unsigned int __num_resou
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__primaryCtxReleaseNoThrow(::CUdevice __dev) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __primaryCtxReleaseNoThrow(::CUdevice __dev) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRelease);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __dev);
@@ -286,8 +283,7 @@ _CCCL_HOST_API inline ::CUcontext __ctxPop()
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __ctxGetCurrentNoThrow(::CUcontext& __ctx) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuCtxGetCurrent);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__ctx);
@@ -454,9 +450,8 @@ _CCCL_HOST_API void __memsetAsync(void* __dst, _Tp __value, ::cuda::std::size_t 
   }
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __mempoolCreateNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUmemoryPool* __pool,
-  ::CUmemPoolProps* __props) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__mempoolCreateNoThrow(::CUmemoryPool* __pool, ::CUmemPoolProps* __props) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolCreate);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __pool, __props);
@@ -468,10 +463,8 @@ _CCCL_HOST_API inline void __mempoolSetAttribute(::CUmemoryPool __pool, ::CUmemP
   _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to set attribute for a memory pool", __pool, __attr, __value);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __mempoolGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUmemoryPool __pool,
-  ::CUmemPool_attribute __attr,
-  void* __value) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__mempoolGetAttributeNoThrow(::CUmemoryPool __pool, ::CUmemPool_attribute __attr, void* __value) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAttribute);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __pool, __attr, __value);
@@ -491,8 +484,7 @@ _CCCL_HOST_API inline _Tp __mempoolGetAttribute(::CUmemoryPool __pool, ::CUmemPo
   return __value;
 }
 
-_CCCL_HOST_API inline __driver_status
-__mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept // NOLINT(bugprone-exception-escape)
+_CCCL_HOST_API inline __driver_status __mempoolDestroyNoThrow(::CUmemoryPool __pool) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolDestroy);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __pool);
@@ -542,10 +534,8 @@ _CCCL_HOST_API inline ::CUmemAccess_flags __mempoolGetAccess(::CUmemoryPool __po
   return __flags;
 }
 
-_CCCL_HOST_API inline __driver_status __mempoolGetAccessNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUmemAccess_flags& __flags,
-  ::CUmemoryPool __pool,
-  ::CUmemLocation* __location) noexcept
+_CCCL_HOST_API inline __driver_status
+__mempoolGetAccessNoThrow(::CUmemAccess_flags& __flags, ::CUmemoryPool __pool, ::CUmemLocation* __location) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemPoolGetAccess);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__flags, __pool, __location);
@@ -588,13 +578,13 @@ _CCCL_HOST_API inline void* __mallocHost(::cuda::std::size_t __bytes)
   return __result;
 }
 
-_CCCL_HOST_API inline __driver_status __freeNoThrow(::CUdeviceptr __dptr) noexcept // NOLINT(bugprone-exception-escape)
+_CCCL_HOST_API inline __driver_status __freeNoThrow(::CUdeviceptr __dptr) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFree);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __dptr);
 }
 
-_CCCL_HOST_API inline __driver_status __freeHostNoThrow(void* __dptr) noexcept // NOLINT(bugprone-exception-escape)
+_CCCL_HOST_API inline __driver_status __freeHostNoThrow(void* __dptr) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuMemFreeHost);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __dptr);
@@ -644,9 +634,8 @@ template <::CUpointer_attribute _Attr>
 using __pointer_attribute_value_type_t = decltype(::cuda::__driver::__pointer_attribute_value_type_t_impl<_Attr>());
 
 template <::CUpointer_attribute _Attr>
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __pointerGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
-  __pointer_attribute_value_type_t<_Attr>& __result,
-  const void* __ptr) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__pointerGetAttributeNoThrow(__pointer_attribute_value_type_t<_Attr>& __result, const void* __ptr) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttribute);
   __driver_status __status      = ::cuda::__driver::__driver_success("cuPointerGetAttribute");
@@ -677,10 +666,8 @@ template <::CUpointer_attribute _Attr>
 }
 
 template <::cuda::std::size_t _Np>
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __pointerGetAttributesNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUpointer_attribute (&__attrs)[_Np],
-  void* (&__results)[_Np],
-  const void* __ptr) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __pointerGetAttributesNoThrow(
+  ::CUpointer_attribute (&__attrs)[_Np], void* (&__results)[_Np], const void* __ptr) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuPointerGetAttributes);
   return _CCCLRT_CALL_DRIVER_FUNCTION(
@@ -705,8 +692,7 @@ __streamAddCallback(::CUstream __stream, ::CUstreamCallback __cb, void* __data, 
   return __stream;
 }
 
-_CCCL_HOST_API inline __driver_status
-__streamSynchronizeNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exception-escape)
+_CCCL_HOST_API inline __driver_status __streamSynchronizeNoThrow(::CUstream __stream) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamSynchronize);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __stream);
@@ -784,8 +770,7 @@ _CCCL_HOST_API inline void __streamWaitEvent(::CUstream __stream, ::CUevent __ev
     __driver_fn, __stream, "Failed to make a stream wait for an event", __stream, __evnt, ::CU_EVENT_WAIT_DEFAULT);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__streamQueryNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __streamQueryNoThrow(::CUstream __stream) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamQuery);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __stream);
@@ -822,15 +807,14 @@ __streamQueryNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exception-
   return __id;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__streamDestroyNoThrow(::CUstream __stream) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __streamDestroyNoThrow(::CUstream __stream) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuStreamDestroy);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __stream);
 }
 
 [[nodiscard]] _CCCL_HOST_API inline __driver_status
-__threadExchangeStreamCaptureModeNoThrow(::CUstreamCaptureMode& __mode) noexcept // NOLINT(bugprone-exception-escape)
+__threadExchangeStreamCaptureModeNoThrow(::CUstreamCaptureMode& __mode) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuThreadExchangeStreamCaptureMode);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__mode);
@@ -862,8 +846,7 @@ _CCCL_HOST_API inline void __threadExchangeStreamCaptureMode(::CUstreamCaptureMo
   return __evnt;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__eventDestroyNoThrow(::CUevent __evnt) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __eventDestroyNoThrow(::CUevent __evnt) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventDestroy);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __evnt);
@@ -877,8 +860,7 @@ __eventDestroyNoThrow(::CUevent __evnt) noexcept // NOLINT(bugprone-exception-es
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__eventQueryNoThrow(::CUevent __evnt) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __eventQueryNoThrow(::CUevent __evnt) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuEventQuery);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __evnt);
@@ -958,8 +940,7 @@ __kernelGetAttribute(::CUfunction_attribute __attr, ::CUkernel __kernel, ::CUdev
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__libraryUnloadNoThrow(::CUlibrary __library) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __libraryUnloadNoThrow(::CUlibrary __library) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryUnload);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __library);
@@ -975,30 +956,22 @@ __libraryUnloadNoThrow(::CUlibrary __library) noexcept // NOLINT(bugprone-except
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 5)
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __libraryGetKernelNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUkernel& __kernel,
-  ::CUlibrary __lib,
-  const char* __name) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__libraryGetKernelNoThrow(::CUkernel& __kernel, ::CUlibrary __lib, const char* __name) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetKernel);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__kernel, __lib, __name);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __libraryGetGlobalNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUdeviceptr& __dptr,
-  ::cuda::std::size_t& __nbytes,
-  ::CUlibrary __lib,
-  const char* __name) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __libraryGetGlobalNoThrow(
+  ::CUdeviceptr& __dptr, ::cuda::std::size_t& __nbytes, ::CUlibrary __lib, const char* __name) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetGlobal);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__dptr, &__nbytes, __lib, __name);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __libraryGetManagedNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUdeviceptr& __dptr,
-  ::cuda::std::size_t& __nbytes,
-  ::CUlibrary __lib,
-  const char* __name) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __libraryGetManagedNoThrow(
+  ::CUdeviceptr& __dptr, ::cuda::std::size_t& __nbytes, ::CUlibrary __lib, const char* __name) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuLibraryGetManaged);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__dptr, &__nbytes, __lib, __name);
@@ -1006,27 +979,22 @@ __libraryUnloadNoThrow(::CUlibrary __library) noexcept // NOLINT(bugprone-except
 
 // Execution control
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __functionGetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
-  int& __value,
-  ::CUfunction_attribute __attr,
-  ::CUfunction __kernel) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__functionGetAttributeNoThrow(int& __value, ::CUfunction_attribute __attr, ::CUfunction __kernel) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuFuncGetAttribute);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__value, __attr, __kernel);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__functionLoadNoThrow(::CUfunction __kernel) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __functionLoadNoThrow(::CUfunction __kernel) noexcept
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_TYPED(::CUresult(CUDAAPI*)(::CUfunction), "cuFuncLoad", 12, 4);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __kernel);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __functionSetAttributeNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUfunction __kernel,
-  ::CUfunction_attribute __attr,
-  int __value) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__functionSetAttributeNoThrow(::CUfunction __kernel, ::CUfunction_attribute __attr, int __value) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuFuncSetAttribute);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __kernel, __attr, __value);
@@ -1076,10 +1044,8 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
   return static_cast<bool>(__result);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __deviceCanAccessPeerNoThrow( // NOLINT(bugprone-exception-escape)
-  int& __result,
-  ::CUdevice __dev,
-  ::CUdevice __peer_dev) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__deviceCanAccessPeerNoThrow(int& __result, ::CUdevice __dev, ::CUdevice __peer_dev) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION(cuDeviceCanAccessPeer);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__result, __dev, __peer_dev);
@@ -1089,9 +1055,8 @@ __graphKernelNodeSetAttribute(::CUgraphNode __node, ::CUkernelNodeAttrID __id, c
 
 #  if _CCCL_CTK_AT_LEAST(13, 3)
 [[nodiscard]]
-_CCCL_HOST_API inline __driver_status __logicalEndpointIdReserveNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUlogicalEndpointId* __base_le_id,
-  ::cuda::std::uint32_t __count) noexcept
+_CCCL_HOST_API inline __driver_status
+__logicalEndpointIdReserveNoThrow(::CUlogicalEndpointId* __base_le_id, ::cuda::std::uint32_t __count) noexcept
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointIdReserve, cuLogicalEndpointIdReserve, 13, 3);
@@ -1110,9 +1075,7 @@ _CCCL_HOST_API inline __driver_status __logicalEndpointIdReserveNoThrow( // NOLI
 }
 
 [[nodiscard]] _CCCL_HOST_API inline __driver_status
-__logicalEndpointIdReleaseNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUlogicalEndpointId __base_le_id,
-  ::cuda::std::uint32_t __count) noexcept
+__logicalEndpointIdReleaseNoThrow(::CUlogicalEndpointId __base_le_id, ::cuda::std::uint32_t __count) noexcept
 {
   if (__count == 0)
   {
@@ -1124,17 +1087,16 @@ __logicalEndpointIdReleaseNoThrow( // NOLINT(bugprone-exception-escape)
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __base_le_id, static_cast<::cuuint32_t>(__count));
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointCreateNoThrow( // NOLINT(bugprone-exception-escape)
-  ::CUlogicalEndpointId __le_id,
-  const ::CUlogicalEndpointProp* __prop) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__logicalEndpointCreateNoThrow(::CUlogicalEndpointId __le_id, const ::CUlogicalEndpointProp* __prop) noexcept
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointCreate, cuLogicalEndpointCreate, 13, 3);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __le_id, __prop);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointAddDeviceNoThrow(
-  ::CUlogicalEndpointId __le_id, ::CUdevice __device) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__logicalEndpointAddDeviceNoThrow(::CUlogicalEndpointId __le_id, ::CUdevice __device) noexcept
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointAddDevice, cuLogicalEndpointAddDevice, 13, 3);
@@ -1151,7 +1113,7 @@ _CCCL_HOST_API inline void __logicalEndpointAddDevice(::CUlogicalEndpointId __le
 }
 
 [[nodiscard]] _CCCL_HOST_API inline __driver_status
-__logicalEndpointDestroyNoThrow(::CUlogicalEndpointId __le_id) noexcept // NOLINT(bugprone-exception-escape)
+__logicalEndpointDestroyNoThrow(::CUlogicalEndpointId __le_id) noexcept
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointDestroy, cuLogicalEndpointDestroy, 13, 3);
@@ -1186,8 +1148,7 @@ _CCCL_HOST_API inline void __logicalEndpointImport(
     __driver_fn, "Failed to import a logical endpoint handle", __le_id, __handle, __handle_type);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__logicalEndpointBindAddrNoThrow( // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointBindAddrNoThrow(
   ::CUlogicalEndpointId __le_id,
   ::CUdevice __device,
   ::cuda::std::uint64_t __offset,
@@ -1226,7 +1187,7 @@ _CCCL_HOST_API inline void __logicalEndpointBindAddr(
     __flags);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointBindMemNoThrow( // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointBindMemNoThrow(
   ::CUlogicalEndpointId __le_id,
   ::CUdevice __device,
   ::cuda::std::uint64_t __offset,
@@ -1269,7 +1230,7 @@ _CCCL_HOST_API inline void __logicalEndpointBindMem(
     __flags);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointUnbindNoThrow( // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointUnbindNoThrow(
   ::CUlogicalEndpointId __le_id,
   ::CUdevice __device,
   ::cuda::std::uint64_t __offset,
@@ -1293,8 +1254,7 @@ _CCCL_HOST_API inline void __logicalEndpointUnbind(
     __bytes);
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__logicalEndpointGetLimitsNoThrow( // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointGetLimitsNoThrow(
   ::cuda::std::uint64_t& __bind_alignment,
   ::cuda::std::uint64_t& __max_size,
   const ::CUlogicalEndpointProp* __prop) noexcept
@@ -1312,10 +1272,8 @@ __logicalEndpointGetLimitsNoThrow( // NOLINT(bugprone-exception-escape)
   return __status;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status __logicalEndpointQueryNoThrow( // NOLINT(bugprone-exception-escape)
-  bool& __result,
-  ::CUlogicalEndpointId __le_id,
-  ::cuda::std::uint32_t __count) noexcept
+[[nodiscard]] _CCCL_HOST_API inline __driver_status
+__logicalEndpointQueryNoThrow(bool& __result, ::CUlogicalEndpointId __le_id, ::cuda::std::uint32_t __count) noexcept
 {
   static const auto __driver_fn =
     _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuLogicalEndpointQuery, cuLogicalEndpointQuery, 13, 3);
@@ -1357,8 +1315,7 @@ __greenCtxCreate(::CUdevice __dev, ::CUdevResourceDesc __descriptor = nullptr)
   return __result;
 }
 
-[[nodiscard]] _CCCL_HOST_API inline __driver_status
-__greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept // NOLINT(bugprone-exception-escape)
+[[nodiscard]] _CCCL_HOST_API inline __driver_status __greenCtxDestroyNoThrow(::CUgreenCtx __green_ctx) noexcept
 {
   static const auto __driver_fn = _CCCLRT_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxDestroy, cuGreenCtxDestroy, 12, 5);
   return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __green_ctx);

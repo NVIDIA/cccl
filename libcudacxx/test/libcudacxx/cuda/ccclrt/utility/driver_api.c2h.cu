@@ -97,7 +97,7 @@ C2H_TEST("Driver status stores CUresult and preserves runtime conversion", "[uti
   static_assert(noexcept(driver::__init()));
   static_assert(noexcept(driver::__get_driver_entry_point("cuStreamQuery")));
   static_assert(noexcept(_CCCLRT_GET_DRIVER_FUNCTION_TYPED(decltype(&test_driver_call), "test_driver_call")));
-  static_assert(noexcept(driver::__getErrorString(cudaErrorInvalidValue)));
+  static_assert(noexcept(driver::__getErrorStringNoThrow(cudaErrorInvalidValue)));
 
   constexpr auto success = driver::__driver_success("cuStreamQuery");
   static_assert(cuda::std::is_same_v<decltype(success.__status_), CUresult>);
