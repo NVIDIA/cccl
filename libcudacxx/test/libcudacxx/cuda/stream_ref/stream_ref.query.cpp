@@ -11,11 +11,14 @@
 // UNSUPPORTED: nvrtc
 
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 #include <cuda/stream>
 
 TEST_FUNC void test()
 {
   static_assert(cuda::std::execution::__queryable_with<cuda::stream_ref, cuda::get_stream_t>);
+  static_assert(cuda::std::is_same_v<typename cuda::stream_ref::property_keys,
+                                     cuda::execution::property_key_list<cuda::get_stream_t>>);
 
   cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
   cuda::stream_ref ref{stream};
