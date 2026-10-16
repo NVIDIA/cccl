@@ -42,6 +42,73 @@
 
 namespace cuda::experimental::__driver
 {
+// ── Virtual memory management ───────────────────────────────────────────────
+
+[[nodiscard]]
+_CCCL_HOST_API inline ::CUdeviceptr __memAddressReserve(::cuda::std::size_t __size, ::cuda::std::size_t __alignment)
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemAddressReserve, 10, 2);
+  ::CUdeviceptr __ptr{};
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to reserve a virtual address range", &__ptr, __size, __alignment, ::CUdeviceptr{}, 0ULL);
+  return __ptr;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__memAddressFreeNoThrow(::CUdeviceptr __ptr, ::cuda::std::size_t __size) noexcept
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemAddressFree, 10, 2);
+  return static_cast<::cudaError_t>(__driver_fn(__ptr, __size));
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::CUmemGenericAllocationHandle
+__memCreate(::cuda::std::size_t __size, const ::CUmemAllocationProp* __prop)
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemCreate, 10, 2);
+  ::CUmemGenericAllocationHandle __handle{};
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to create a memory allocation", &__handle, __size, __prop, 0ULL);
+  return __handle;
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __memReleaseNoThrow(::CUmemGenericAllocationHandle __handle) noexcept
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemRelease, 10, 2);
+  return static_cast<::cudaError_t>(__driver_fn(__handle));
+}
+
+_CCCL_HOST_API inline void
+__memMap(::CUdeviceptr __ptr, ::cuda::std::size_t __size, ::CUmemGenericAllocationHandle __handle)
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemMap, 10, 2);
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to map a memory allocation", __ptr, __size, ::cuda::std::size_t{}, __handle, 0ULL);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t
+__memUnmapNoThrow(::CUdeviceptr __ptr, ::cuda::std::size_t __size) noexcept
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemUnmap, 10, 2);
+  return static_cast<::cudaError_t>(__driver_fn(__ptr, __size));
+}
+
+_CCCL_HOST_API inline void __memSetAccess(
+  ::CUdeviceptr __ptr, ::cuda::std::size_t __size, const ::CUmemAccessDesc* __desc, ::cuda::std::size_t __count)
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemSetAccess, 10, 2);
+  ::cuda::__driver::__call_driver_fn(__driver_fn, "Failed to set memory access", __ptr, __size, __desc, __count);
+}
+
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t
+__memGetAllocationGranularity(const ::CUmemAllocationProp* __prop, ::CUmemAllocationGranularity_flags __option)
+{
+  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuMemGetAllocationGranularity, 10, 2);
+  ::cuda::std::size_t __granularity{};
+  ::cuda::__driver::__call_driver_fn(
+    __driver_fn, "Failed to get memory allocation granularity", &__granularity, __prop, __option);
+  return __granularity;
+}
+
 // ── Graph: polymorphic add node ─────────────────────────────────────────────
 
 #  if _CCCL_CTK_AT_LEAST(12, 2)
