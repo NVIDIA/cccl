@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <nv/target>
@@ -92,11 +93,13 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr bool __isinf_storage(double __x) noexcept
 {
   const auto __storage = ::cuda::std::__fp_get_storage(__x);
-  // Same as __isnan_storage: on SM100+ (new NVVM), the mask with 0x7FF...F is recognized as fabs() and reintroduces
-  // double instructions, so shift both operands by 1 instead.
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
-                    (return (__storage << 1) == (__fp_exp_mask_of_v<double> << 1);),
-                    (return (__storage & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;))
+  // On SM100+ (new NVVM), a 64-bit equality with the infinity pattern is recognized as fabs(x) == inf and reintroduces
+  // double instructions, even after shifting both operands by 1. Compare the two 32-bit halves instead.
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_100,
+    (const auto __hi = static_cast<uint32_t>(__storage >> 32) << 1; const auto __lo = static_cast<uint32_t>(__storage);
+     return ((__hi ^ static_cast<uint32_t>((__fp_exp_mask_of_v<double> >> 32) << 1)) | __lo) == 0;),
+    (return (__storage & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;))
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isinf(double __x) noexcept

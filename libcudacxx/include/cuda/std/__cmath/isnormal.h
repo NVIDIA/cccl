@@ -52,8 +52,9 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr bool __isnormal_storage(double __x) noexcept
 {
-  const auto __exp = ::cuda::std::__fp_get_storage(__x) & __fp_exp_mask_of_v<double>;
-  return __exp != 0 && __exp != __fp_exp_mask_of_v<double>;
+  // Ordered comparisons keep NVVM on SM100+ from turning this back into double comparisons
+  const auto __storage = ::cuda::std::__fp_get_storage(__x) << 1;
+  return __storage >= ((__fp_mant_mask_of_v<double> + 1) << 1) && __storage < (__fp_exp_mask_of_v<double> << 1);
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isnormal(double __x) noexcept
