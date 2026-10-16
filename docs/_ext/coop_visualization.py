@@ -14,6 +14,8 @@ from sphinx.util.docutils import SphinxDirective
 _EXPLORERS = {
     "load": "coop-load.js",
     "store": "coop-movement.js",
+    "exchange": "coop-movement.js",
+    "shuffle": "coop-shuffle.js",
     "reduce": "coop-collectives.js",
     "scan": "coop-collectives.js",
     "merge-sort": "coop-merge-sort.js",
@@ -35,6 +37,8 @@ _API_VISUALIZATIONS = {
     "inclusive_sum": "scan",
     "load": "load",
     "store": "store",
+    "exchange": "exchange",
+    "shuffle": "shuffle",
     "reduce": "reduce",
     "merge-sort": "merge-sort",
     "radix": "radix",

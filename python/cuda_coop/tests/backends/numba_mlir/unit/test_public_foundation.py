@@ -34,6 +34,7 @@ _COMMON_EXPORTS = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "exchange",
     "exclusive_scan",
     "exclusive_sum",
     "inclusive_scan",
@@ -46,6 +47,7 @@ _COMMON_EXPORTS = [
     "radix_sort_pairs",
     "reduce",
     "scan",
+    "shuffle",
     "store",
     "sum",
     "topk_max_keys",
@@ -118,9 +120,48 @@ def test_qualified_surface_is_common_plus_backend_extensions():
             ).parameters.items()
         )
 
-    for operation in ("load", "reduce", "store", "sum"):
+    for operation in ("load", "reduce", "shuffle", "store", "sum"):
         assert call_shape(getattr(coop, operation)) == call_shape(
             getattr(common_coop, operation)
+        )
+
+    common_exchange = inspect.signature(common_coop.exchange)
+    qualified_exchange = inspect.signature(coop.exchange)
+    for name, parameter in common_exchange.parameters.items():
+        qualified_parameter = qualified_exchange.parameters[name]
+        assert qualified_parameter.kind == parameter.kind
+        assert qualified_parameter.default == parameter.default
+    assert (
+        qualified_exchange.return_annotation
+        == common_exchange.return_annotation
+    )
+    assert tuple(qualified_exchange.parameters)[
+        len(common_exchange.parameters) :
+    ] == (
+        "ranks",
+        "valid_flags",
+        "warp_time_slicing",
+    )
+
+    for operation in (
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "scan",
+    ):
+        common_scan = inspect.signature(getattr(common_coop, operation))
+        qualified_scan = inspect.signature(getattr(coop, operation))
+        for name, parameter in common_scan.parameters.items():
+            qualified_parameter = qualified_scan.parameters[name]
+            assert qualified_parameter.kind == parameter.kind
+            assert qualified_parameter.default == parameter.default
+        assert qualified_scan.return_annotation == common_scan.return_annotation
+        assert tuple(qualified_scan.parameters)[
+            len(common_scan.parameters) :
+        ] == (
+            "valid_items",
+            "aggregate_output",
         )
 
     assert call_shape(coop.TempStorage) == call_shape(common_coop.TempStorage)
@@ -250,6 +291,7 @@ def test_python_operator_compilation_is_stateless_only():
 @pytest.mark.parametrize(
     "operation",
     (
+        "exchange",
         "exclusive_scan",
         "exclusive_sum",
         "inclusive_scan",
@@ -262,6 +304,7 @@ def test_python_operator_compilation_is_stateless_only():
         "radix_sort_pairs",
         "reduce",
         "scan",
+        "shuffle",
         "store",
         "sum",
         "topk_max_keys",

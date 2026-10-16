@@ -99,6 +99,25 @@ NonSumScanOperator: TypeAlias = Literal[
 ]
 ScanOperator: TypeAlias = SumScanOperator | NonSumScanOperator
 ScanMode: TypeAlias = Literal["exclusive", "inclusive"]
+ExchangeMode: TypeAlias = Literal[
+    "striped_to_blocked",
+    "blocked_to_striped",
+]
+BlockExchangeMode: TypeAlias = (
+    ExchangeMode
+    | Literal[
+        "warp_striped_to_blocked",
+        "blocked_to_warp_striped",
+        "scatter_to_blocked",
+        "scatter_to_striped",
+        "scatter_to_striped_guarded",
+        "scatter_to_striped_flagged",
+    ]
+)
+WarpExchangeMode: TypeAlias = ExchangeMode
+CommonShuffleMode: TypeAlias = Literal["down", "up"]
+ScalarShuffleMode: TypeAlias = Literal["offset", "rotate"]
+ShuffleMode: TypeAlias = CommonShuffleMode | ScalarShuffleMode
 TempStorageSharing: TypeAlias = Literal["shared", "exclusive"]
 
 class CompilerScalarLike(Protocol):
@@ -230,15 +249,20 @@ class TempStorageLike(Protocol):
     sharing: TempStorageSharing
 
 __all__ = [
+    "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
+    "CommonShuffleMode",
     "ContextualInitialValue",
+    "ExchangeMode",
     "LoadStoreAlgorithm",
     "NonSumScanOperator",
     "ReduceAlgorithm",
     "ReduceOperator",
+    "ScalarShuffleMode",
     "ScanAlgorithm",
     "ScanMode",
     "ScanOperator",
+    "ShuffleMode",
     "SumScanOperator",
     "SynchronizableGroupKind",
     "TempStorageLike",
@@ -246,6 +270,7 @@ __all__ = [
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
+    "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "_CommonNumericT",
 ]
