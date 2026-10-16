@@ -120,7 +120,6 @@ To work on the integration, follow a kernel through the
    <span id="coop-numba-validation"></span>
    <span id="cuda-devices-and-context-lifetime"></span>
    <span id="data-layouts-and-algorithms"></span>
-   <span id="exchange-semantics"></span>
    <span id="groups-and-thread-data"></span>
    <span id="installation"></span>
    <span id="kernel-api"></span>
@@ -131,5 +130,4 @@ To work on the integration, follow a kernel through the
    <span id="registering-a-backend"></span>
    <span id="runtime-environment-variables"></span>
    <span id="scan-semantics"></span>
-   <span id="shuffle-semantics"></span>
    <span id="temporary-storage"></span>
