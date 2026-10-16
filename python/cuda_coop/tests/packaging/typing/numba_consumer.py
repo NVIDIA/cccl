@@ -110,8 +110,8 @@ class _Int32PrefixFunctor:
         return block_aggregate
 
 
-# The descriptor tracks state and Scan value types separately. Each call
-# below must retain its payload type even when the state has a wider dtype.
+# StatefulFunction tracks its state and Scan value types separately. Each
+# Scan call below must keep its payload type, even with a wider state dtype.
 _INT32_RUNNING_PREFIX = coop.StatefulFunction(
     _carry_int32_prefix,
     np.int32,
