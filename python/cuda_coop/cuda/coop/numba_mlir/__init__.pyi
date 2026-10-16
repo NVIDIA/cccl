@@ -17,6 +17,12 @@ from ._group._scan import (
     inclusive_sum,
     scan,
 )
+from ._group._topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, local, shared
 from ._thread_group import (
@@ -59,4 +65,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]
