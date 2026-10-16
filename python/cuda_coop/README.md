@@ -123,7 +123,6 @@ explains terms and concepts, including blocked and striped layouts.
 
 | Family | Entry points |
 | --- | --- |
-| `CUDA_COOP_NUMBA_MLIR_PIPELINE` | Selects `planner` (the default) or the experimental `typed` pipeline. Set before backend activation; typed mode requires Numba-CUDA-MLIR 0.5.4. |
 | Memory operations | `load`, `store` |
 
 Each operation documents its supported groups and result ownership in the
@@ -139,6 +138,7 @@ Runtime configuration is controlled by these environment variables:
 
 | Variable | Effect |
 | --- | --- |
+| `CUDA_COOP_NUMBA_MLIR_PIPELINE` | Selects `planner` (the default) or the experimental `typed` pipeline. Set before backend activation; typed mode requires Numba-CUDA-MLIR 0.5.4. |
 | `CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION` | A truthy value disables automatic backend activation during `cuda.coop` import. Explicit qualified-backend import still works. |
 | `CUDA_COOP_CCCL_ROOT` | Selects a CCCL source checkout or a `cuda-coop` header bundle. An invalid configured root is an error; resolution does not fall back to another CCCL source. |
 | `CUDA_COOP_ENABLE_CACHE` | A truthy value enables the persistent compiler cache. The value is read when the backend cache module is imported. |
