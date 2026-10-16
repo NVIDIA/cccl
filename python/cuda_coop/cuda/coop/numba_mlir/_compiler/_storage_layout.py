@@ -1,0 +1,341 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Shared scratch domains and placement for both Numba compiler pipelines.
+
+The caller supplies validated requirements and core lowering contracts.
+Layout never inspects or changes IR and performs no lifetime inference.
+"""
+
+from __future__ import annotations
+
+from cuda.coop._core import (
+    GroupLoweringPlan,
+    GroupTopologyRequirements,
+    StorageOwnership,
+    SynchronizationScope,
+)
+
+from ._rewrite_support import (
+    _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
+    _MIN_TEMP_STORAGE_ALIGNMENT,
+    CoopSinglePhaseRewriteError,
+    _align_up,
+    _TempStorageSlice,
+    _TempStorageUseRequirement,
+)
+
+
+def get_device_shared_memory_limits(
+    required_bytes: int, query
+) -> tuple[int, int]:
+    """Get the default and opt-in byte limits needed for this allocation.
+
+    Requests up to the conservative static limit need no device query.
+    Larger ``required_bytes`` values require valid limits from the active
+    CUDA device; a failed query becomes a rewrite error.
+    """
+
+    conservative_default = _DEFAULT_STATIC_SHARED_MEMORY_BYTES
+    if required_bytes <= conservative_default:
+        return (conservative_default, conservative_default)
+    try:
+        limits = query()
+        max_default = int(limits["max_default_shared_memory_per_block"])
+        max_optin = int(limits["max_optin_shared_memory_per_block"])
+    except (
+        AttributeError,
+        KeyError,
+        OSError,
+        RuntimeError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise CoopSinglePhaseRewriteError(
+            "TempStorage requirements above the conservative 49152-byte "
+            "static shared-memory limit require an exact current-device "
+            "shared-memory query"
+        ) from exc
+    if max_default <= 0 or max_optin <= 0 or max_optin < max_default:
+        raise CoopSinglePhaseRewriteError(
+            "The current device reported invalid shared-memory limits: "
+            f"default={max_default}, opt-in={max_optin}."
+        )
+    return (max_default, max_optin)
+
+
+def temp_storage_domain_key(
+    entry: _TempStorageUseRequirement,
+) -> tuple[object, ...]:
+    """Identify storage uses that may reuse one region.
+
+    Legacy block providers share one domain. Caller-owned storage also
+    uses one domain, preserving its explicit reuse contract; its
+    block-only restriction is checked by storage-plan validation.
+    Implementation-owned storage instead partitions uses by group topology
+    and reuse-barrier scope so incompatible group instances cannot alias.
+
+    When a group has an execution scope but no reuse barrier, append the
+    call order to its key. Such calls receive distinct domains even if
+    their topologies match: completion before scratch reuse is uncertain.
+
+    Parameters
+    ----------
+    entry : _TempStorageUseRequirement
+        Primitive use with its lowering plan and scan-order position.
+
+    Returns
+    -------
+    tuple of object
+        Placement key for ``_layout_temp_storage_uses``.
+
+    Raises
+    ------
+    CoopSinglePhaseRewriteError
+        The lowering plan is unsupported, lacks storage contracts, or
+        its storage instances disagree with its topology.
+    """
+
+    lowering_plan = entry.lowering_plan
+    if lowering_plan is None:
+        return ("legacy-provider",)
+    if lowering_plan.unsupported is not None:
+        raise CoopSinglePhaseRewriteError(
+            "cooperative provider storage received an unsupported group "
+            "lowering plan."
+        )
+    topology = lowering_plan.topology
+    synchronization = lowering_plan.synchronization
+    storage = lowering_plan.temp_storage
+    if topology is None or synchronization is None or storage is None:
+        raise CoopSinglePhaseRewriteError(
+            "cooperative provider storage requires complete group "
+            "topology, synchronization, and storage contracts."
+        )
+    if storage.ownership is StorageOwnership.NONE:
+        raise CoopSinglePhaseRewriteError(
+            "a storage-bearing cooperative provider received a "
+            "storage-free lowering plan."
+        )
+    if storage.instances != topology.instances or (
+        storage.instance_index != topology.instance_index
+    ):
+        raise CoopSinglePhaseRewriteError(
+            "cooperative provider storage layout disagrees with its "
+            "group topology."
+        )
+    if storage.ownership is StorageOwnership.CALLER:
+        # Explicit single-block storage keeps the caller's reuse layout.
+        # The backend separates topology domains only when it owns the
+        # storage and controls every slice.
+        return ("caller-storage",)
+    domain = (
+        topology.group_kind,
+        topology.execution_scope.value,
+        topology.logical_width,
+        topology.instances,
+        topology.instance_index,
+        topology.thread_rank,
+        synchronization.storage_reuse_barrier.value,
+    )
+    if (
+        synchronization.storage_reuse_barrier is SynchronizationScope.NONE
+        and topology.execution_scope is not SynchronizationScope.NONE
+    ):
+        return (*domain, "non-reusable", entry.order)
+    return domain
+
+
+def layout_temp_storage_uses(
+    uses: list[_TempStorageUseRequirement],
+    *,
+    sharing: str,
+) -> tuple[int, int, dict[int, _TempStorageSlice]]:
+    """Lay out scratch for each call and group instance.
+
+    Exclusive sharing gives each use a distinct domain. Shared placement
+    reuses a domain only when ``_temp_storage_domain_key`` permits it.
+    Within a domain, reserve the largest per-instance requirement and
+    align its stride for every consumer. Multiple group instances receive
+    separate strides; compatible calls reuse those same instance slots.
+
+    Offsets are relative to the region, before the function-wide backing's
+    base offset is assigned. Views retain each call's actual byte count
+    even when another call determines the larger shared stride. No
+    lifetime or control-flow overlap analysis is performed here.
+
+    Parameters
+    ----------
+    uses : list of _TempStorageUseRequirement
+        Nonempty list of validated requirements and lowering plans.
+    sharing : str
+        Validated sharing policy: ``"exclusive"`` separates every
+        call; ``"shared"`` permits reuse within compatible domains.
+
+    Returns
+    -------
+    required_size : int
+        Region size in bytes, including alignment gaps and all instances.
+    required_alignment : int
+        Maximum required alignment, at least that of the storage pointer.
+    slices_by_call_id : dict of int to _TempStorageSlice
+        Region-relative offset, byte count, instance stride, and lowering
+        plan keyed by the object identity of each call assignment.
+    """
+
+    ordered_uses = sorted(uses, key=lambda entry: entry.order)
+    required_alignment = max(
+        _MIN_TEMP_STORAGE_ALIGNMENT,
+        *(max(1, int(entry.alignment)) for entry in ordered_uses),
+    )
+    domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
+    for entry in ordered_uses:
+        domain_key = (
+            ("exclusive", entry.order)
+            if sharing == "exclusive"
+            else temp_storage_domain_key(entry)
+        )
+        domains.setdefault(domain_key, []).append(entry)
+
+    required_size = 0
+    slices_by_call_id: dict[int, _TempStorageSlice] = {}
+    for domain_uses in domains.values():
+        domain_alignment = max(
+            _MIN_TEMP_STORAGE_ALIGNMENT,
+            *(max(1, int(entry.alignment)) for entry in domain_uses),
+        )
+        per_instance_size = max(
+            int(entry.size_in_bytes) for entry in domain_uses
+        )
+        instance_stride = _align_up(per_instance_size, domain_alignment)
+        # Topology tells us how many independent groups need scratch: four
+        # 32-thread warps in a 128-thread block need four separate slots.
+        # Calls in a reuse domain agree on that count, so the first plan
+        # is sufficient; an exclusive domain contains only one call.
+        # Legacy block providers have no topology and need one slot. The
+        # aligned instance_stride spaces groups' slots apart, while
+        # compatible calls reuse the same set of slots.
+        first_plan = domain_uses[0].lowering_plan
+        instances = (
+            1
+            if first_plan is None or first_plan.topology is None
+            else first_plan.topology.instances
+        )
+        required_size = _align_up(required_size, domain_alignment)
+        domain_offset = required_size
+        for entry in domain_uses:
+            slices_by_call_id[id(entry.call_assign)] = _TempStorageSlice(
+                offset=domain_offset,
+                size_in_bytes=int(entry.size_in_bytes),
+                stride=instance_stride,
+                instances=instances,
+                lowering_plan=entry.lowering_plan,
+            )
+        required_size += (
+            per_instance_size if instances == 1 else instance_stride * instances
+        )
+    return required_size, required_alignment, slices_by_call_id
+
+
+def validate_emittable_topology(
+    lowering_plan: GroupLoweringPlan | None,
+) -> GroupTopologyRequirements | None:
+    """Require group rank formulas that the storage emitters support.
+
+    A plan must cover the exact block dimensions with its logical width
+    and instance count. Accept a single block, contiguous power-of-two
+    logical warps dividing 32, or individual threads. Check the symbolic
+    instance and rank expressions against those forms; emitters implement
+    these specific formulas rather than evaluating arbitrary topology
+    expression strings.
+
+    Parameters
+    ----------
+    lowering_plan : GroupLoweringPlan or None
+        Plan whose topology and participation requirements govern
+        storage. None preserves the legacy block-provider path.
+
+    Returns
+    -------
+    GroupTopologyRequirements or None
+        Validated topology, or None when no plan was supplied.
+
+    Raises
+    ------
+    CoopSinglePhaseRewriteError
+        Dimensions or execution requirements are missing, coverage is
+        inconsistent, or no emitter supports the scope and rank formulas.
+    """
+
+    if lowering_plan is None:
+        return None
+    topology = lowering_plan.topology
+    participation = lowering_plan.participation
+    if topology is None or participation is None:
+        raise CoopSinglePhaseRewriteError(
+            "cooperative provider storage requires group topology and "
+            "participation contracts."
+        )
+    exact_block_dim = participation.exact_block_dim
+    if exact_block_dim is None:
+        raise CoopSinglePhaseRewriteError(
+            "cooperative provider storage requires exact block dimensions."
+        )
+    block_threads = exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
+    if topology.logical_width * topology.instances != block_threads:
+        raise CoopSinglePhaseRewriteError(
+            "cooperative provider topology does not cover the exact "
+            "block dimensions."
+        )
+    scope = topology.execution_scope
+    if scope is SynchronizationScope.BLOCK:
+        if (
+            topology.instances != 1
+            or topology.logical_width != block_threads
+            or topology.instance_index != "cta"
+            or topology.thread_rank != "linear_thread_rank"
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "block-scoped cooperative storage requires canonical "
+                "single-CTA ranks."
+            )
+    elif scope is SynchronizationScope.WARP:
+        width = topology.logical_width
+        if (
+            width < 1
+            or width > 32
+            or width & (width - 1)
+            or 32 % width != 0
+            or topology.instance_index != f"linear_thread_rank / {width}"
+            or topology.thread_rank != f"linear_thread_rank % {width}"
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "warp-scoped cooperative storage requires a power-of-two "
+                "logical width dividing 32 "
+                "and canonical contiguous ranks."
+            )
+    elif scope is SynchronizationScope.NONE:
+        if (
+            topology.logical_width != 1
+            or topology.instance_index != "linear_thread_rank"
+            or topology.thread_rank != "0"
+        ):
+            raise CoopSinglePhaseRewriteError(
+                "thread-scoped cooperative storage requires canonical "
+                "per-thread ranks."
+            )
+    else:
+        raise CoopSinglePhaseRewriteError(
+            f"cuda.coop.numba_mlir provider execution scope "
+            f"{scope.value!r} has no storage emitter"
+        )
+    return topology
+
+
+__all__ = [
+    "get_device_shared_memory_limits",
+    "layout_temp_storage_uses",
+    "temp_storage_domain_key",
+    "validate_emittable_topology",
+]

@@ -34,7 +34,6 @@ from ._operations import (
     provider_synchronization_matches,
 )
 from ._rewrite_support import (
-    _DEFAULT_STATIC_SHARED_MEMORY_BYTES,
     _DYNAMIC_SHARED_MEMORY_ALIGNMENT,
     _GLOBAL_NAME_COUNTER,
     _INFERENCE_EXCEPTIONS,
@@ -54,8 +53,6 @@ from ._rewrite_support import (
 )
 
 if TYPE_CHECKING:
-    from cuda.coop._core import GroupTopologyRequirements
-
     from ._rewrite import CoopSinglePhaseRewrite
 
 
@@ -389,101 +386,11 @@ class _StorageRewrite:
         )
 
     @staticmethod
-    def _validate_emittable_topology(
-        lowering_plan: GroupLoweringPlan | None,
-    ) -> GroupTopologyRequirements | None:
-        """Require group rank formulas that the storage emitters support.
+    def _validate_emittable_topology(lowering_plan: GroupLoweringPlan | None):
+        """Delegate shared storage layout policy to both compiler pipelines."""
+        from ._storage_layout import validate_emittable_topology
 
-        A plan must cover the exact block dimensions with its logical width
-        and instance count. Accept a single block, contiguous power-of-two
-        logical warps dividing 32, or individual threads. Check the symbolic
-        instance and rank expressions against those forms; emitters implement
-        these specific formulas rather than evaluating arbitrary topology
-        expression strings.
-
-        Parameters
-        ----------
-        lowering_plan : GroupLoweringPlan or None
-            Plan whose topology and participation requirements govern
-            storage. None preserves the legacy block-provider path.
-
-        Returns
-        -------
-        GroupTopologyRequirements or None
-            Validated topology, or None when no plan was supplied.
-
-        Raises
-        ------
-        CoopSinglePhaseRewriteError
-            Dimensions or execution requirements are missing, coverage is
-            inconsistent, or no emitter supports the scope and rank formulas.
-        """
-
-        if lowering_plan is None:
-            return None
-        topology = lowering_plan.topology
-        participation = lowering_plan.participation
-        if topology is None or participation is None:
-            raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage requires group topology and "
-                "participation contracts."
-            )
-        exact_block_dim = participation.exact_block_dim
-        if exact_block_dim is None:
-            raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage requires exact block dimensions."
-            )
-        block_threads = (
-            exact_block_dim[0] * exact_block_dim[1] * exact_block_dim[2]
-        )
-        if topology.logical_width * topology.instances != block_threads:
-            raise CoopSinglePhaseRewriteError(
-                "cooperative provider topology does not cover the exact "
-                "block dimensions."
-            )
-        scope = topology.execution_scope
-        if scope is SynchronizationScope.BLOCK:
-            if (
-                topology.instances != 1
-                or topology.logical_width != block_threads
-                or topology.instance_index != "cta"
-                or topology.thread_rank != "linear_thread_rank"
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "block-scoped cooperative storage requires canonical "
-                    "single-CTA ranks."
-                )
-        elif scope is SynchronizationScope.WARP:
-            width = topology.logical_width
-            if (
-                width < 1
-                or width > 32
-                or width & (width - 1)
-                or 32 % width != 0
-                or topology.instance_index != f"linear_thread_rank / {width}"
-                or topology.thread_rank != f"linear_thread_rank % {width}"
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "warp-scoped cooperative storage requires a power-of-two "
-                    "logical width dividing 32 "
-                    "and canonical contiguous ranks."
-                )
-        elif scope is SynchronizationScope.NONE:
-            if (
-                topology.logical_width != 1
-                or topology.instance_index != "linear_thread_rank"
-                or topology.thread_rank != "0"
-            ):
-                raise CoopSinglePhaseRewriteError(
-                    "thread-scoped cooperative storage requires canonical "
-                    "per-thread ranks."
-                )
-        else:
-            raise CoopSinglePhaseRewriteError(
-                f"cuda.coop.numba_mlir provider execution scope "
-                f"{scope.value!r} has no storage emitter"
-            )
-        return topology
+        return validate_emittable_topology(lowering_plan)
 
     def _emit_storage_instance_index(
         self,
@@ -560,42 +467,13 @@ class _StorageRewrite:
             implicit is not None and implicit.uses
         )
 
-    def _get_device_shared_memory_limits(
-        self, required_bytes: int
-    ) -> tuple[int, int]:
-        """Get the default and opt-in byte limits needed for this allocation.
+    def _get_device_shared_memory_limits(self, required_bytes: int):
+        """Delegate shared storage layout policy to both compiler pipelines."""
+        from ._storage_layout import get_device_shared_memory_limits
 
-        Requests up to the conservative static limit need no device query.
-        Larger ``required_bytes`` values require valid limits from the active
-        CUDA device; a failed query becomes a rewrite error.
-        """
-
-        conservative_default = _DEFAULT_STATIC_SHARED_MEMORY_BYTES
-        if required_bytes <= conservative_default:
-            return (conservative_default, conservative_default)
-        try:
-            limits = _query_device_shared_memory_limits()
-            max_default = int(limits["max_default_shared_memory_per_block"])
-            max_optin = int(limits["max_optin_shared_memory_per_block"])
-        except (
-            AttributeError,
-            KeyError,
-            OSError,
-            RuntimeError,
-            TypeError,
-            ValueError,
-        ) as exc:
-            raise CoopSinglePhaseRewriteError(
-                "TempStorage requirements above the conservative 49152-byte "
-                "static shared-memory limit require an exact current-device "
-                "shared-memory query"
-            ) from exc
-        if max_default <= 0 or max_optin <= 0 or max_optin < max_default:
-            raise CoopSinglePhaseRewriteError(
-                f"The current device reported invalid shared-memory limits: "
-                f"default={max_default}, opt-in={max_optin}."
-            )
-        return (max_default, max_optin)
+        return get_device_shared_memory_limits(
+            required_bytes, _query_device_shared_memory_limits
+        )
 
     def _ensure_temp_storage_global_plan(self) -> _TempStorageGlobalPlan:
         """Plan one shared backing for explicit and implicit scratch.

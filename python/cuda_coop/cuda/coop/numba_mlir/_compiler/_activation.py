@@ -19,6 +19,7 @@ backend discovery reports them as warnings.
 from __future__ import annotations
 
 import importlib
+import os
 from threading import RLock
 from types import ModuleType
 from typing import cast
@@ -185,6 +186,33 @@ def _require_runtime() -> ModuleType:
     return _cuda_module
 
 
+_PIPELINE_VARIABLE = "CUDA_COOP_NUMBA_MLIR_PIPELINE"
+_PIPELINES = ("planner", "typed")
+
+
+def _selected_pipeline() -> str:
+    """Return the pipeline named by ``CUDA_COOP_NUMBA_MLIR_PIPELINE``.
+
+    Unset or empty selects ``planner``, today's pipeline. ``typed`` selects
+    the typed pipeline in ``_pipeline``, which registers no planner.
+
+    Raises
+    ------
+    ValueError
+        The variable names neither pipeline.
+    """
+
+    value = os.environ.get(_PIPELINE_VARIABLE, "").strip().lower()
+    if not value:
+        return "planner"
+    if value not in _PIPELINES:
+        raise ValueError(
+            f"{_PIPELINE_VARIABLE}={value!r} is not a cuda.coop pipeline; "
+            f"use one of {', '.join(_PIPELINES)}"
+        )
+    return value
+
+
 def _initialize_runtime_hooks() -> None:
     """Register the planner after all compiler support has loaded.
 
@@ -195,6 +223,9 @@ def _initialize_runtime_hooks() -> None:
     cooperative hooks; a later attempt can reuse successfully loaded modules.
     The runtime deduplicates repeated registration of the same planner class.
 
+    With ``CUDA_COOP_NUMBA_MLIR_PIPELINE=typed``, activate the typed pipeline
+    instead and never import the planner.
+
     Raises
     ------
     NumbaMlirBackendImportError
@@ -203,10 +234,15 @@ def _initialize_runtime_hooks() -> None:
         A compiler integration dependency cannot be imported. The original
         import error propagates; automatic registration converts it to a
         warning, while explicit activation leaves it visible to the caller.
+    ValueError
+        ``CUDA_COOP_NUMBA_MLIR_PIPELINE`` names no pipeline.
     """
 
     with _activation_lock:
         _require_runtime()
+        if _selected_pipeline() == "typed":
+            importlib.import_module(f"{_BACKEND_PACKAGE}._pipeline")._activate()
+            return
         planner_module = importlib.import_module(
             f"{_BACKEND_PACKAGE}._compiler._planner"
         )

@@ -27,7 +27,6 @@ from numba_cuda_mlir.cuda.local import array as _cuda_local_array
 from numba_cuda_mlir.cuda.shared import array as _cuda_shared_array
 from numba_cuda_mlir.numba_cuda.core.errors import ForceLiteralArg
 
-from cuda.coop._core import StorageOwnership, SynchronizationScope
 from cuda.coop._core import api as _common_api
 
 from .._temp_storage import TempStorage
@@ -45,7 +44,6 @@ from ._rewrite_support import (
     _UNRESOLVED,
     CoopSinglePhaseRewriteError,
     Rewrite,
-    _align_up,
     _default_temp_storage_alignment,
     _dtype_values_match,
     _normalize_temp_storage_alignment,
@@ -56,7 +54,6 @@ from ._rewrite_support import (
     _TempStorageGlobalPlan,
     _TempStoragePlan,
     _TempStorageRequirementSummary,
-    _TempStorageSlice,
     _TempStorageUseRequirement,
     _ThreadDataSpecification,
     _validate_temp_storage_alignment,
@@ -1122,179 +1119,19 @@ class _ProvenanceRewrite(Rewrite):
         return self._finalize_temp_storage_plan_for_var(key)
 
     @staticmethod
-    def _temp_storage_domain_key(
-        entry: _TempStorageUseRequirement,
-    ) -> tuple[object, ...]:
-        """Identify storage uses that may reuse one region.
+    def _temp_storage_domain_key(entry: _TempStorageUseRequirement):
+        """Delegate shared storage layout policy to both compiler pipelines."""
+        from ._storage_layout import temp_storage_domain_key
 
-        Legacy block providers share one domain. Caller-owned storage also
-        uses one domain, preserving its explicit reuse contract; its
-        block-only restriction is checked by storage-plan validation.
-        Implementation-owned storage instead partitions uses by group topology
-        and reuse-barrier scope so incompatible group instances cannot alias.
-
-        When a group has an execution scope but no reuse barrier, append the
-        call order to its key. Such calls receive distinct domains even if
-        their topologies match: completion before scratch reuse is uncertain.
-
-        Parameters
-        ----------
-        entry : _TempStorageUseRequirement
-            Primitive use with its lowering plan and scan-order position.
-
-        Returns
-        -------
-        tuple of object
-            Placement key for ``_layout_temp_storage_uses``.
-
-        Raises
-        ------
-        CoopSinglePhaseRewriteError
-            The lowering plan is unsupported, lacks storage contracts, or
-            its storage instances disagree with its topology.
-        """
-
-        lowering_plan = entry.lowering_plan
-        if lowering_plan is None:
-            return ("legacy-provider",)
-        if lowering_plan.unsupported is not None:
-            raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage received an unsupported group "
-                "lowering plan."
-            )
-        topology = lowering_plan.topology
-        synchronization = lowering_plan.synchronization
-        storage = lowering_plan.temp_storage
-        if topology is None or synchronization is None or storage is None:
-            raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage requires complete group "
-                "topology, synchronization, and storage contracts."
-            )
-        if storage.ownership is StorageOwnership.NONE:
-            raise CoopSinglePhaseRewriteError(
-                "a storage-bearing cooperative provider received a "
-                "storage-free lowering plan."
-            )
-        if storage.instances != topology.instances or (
-            storage.instance_index != topology.instance_index
-        ):
-            raise CoopSinglePhaseRewriteError(
-                "cooperative provider storage layout disagrees with its "
-                "group topology."
-            )
-        if storage.ownership is StorageOwnership.CALLER:
-            # Explicit single-block storage keeps the caller's reuse layout.
-            # The backend separates topology domains only when it owns the
-            # storage and controls every slice.
-            return ("caller-storage",)
-        domain = (
-            topology.group_kind,
-            topology.execution_scope.value,
-            topology.logical_width,
-            topology.instances,
-            topology.instance_index,
-            topology.thread_rank,
-            synchronization.storage_reuse_barrier.value,
-        )
-        if (
-            synchronization.storage_reuse_barrier is SynchronizationScope.NONE
-            and topology.execution_scope is not SynchronizationScope.NONE
-        ):
-            return (*domain, "non-reusable", entry.order)
-        return domain
+        return temp_storage_domain_key(entry)
 
     def _layout_temp_storage_uses(
-        self,
-        uses: list[_TempStorageUseRequirement],
-        *,
-        sharing: str,
-    ) -> tuple[int, int, dict[int, _TempStorageSlice]]:
-        """Lay out scratch for each call and group instance.
+        self, uses: list[_TempStorageUseRequirement], *, sharing: str
+    ):
+        """Delegate shared storage layout policy to both compiler pipelines."""
+        from ._storage_layout import layout_temp_storage_uses
 
-        Exclusive sharing gives each use a distinct domain. Shared placement
-        reuses a domain only when ``_temp_storage_domain_key`` permits it.
-        Within a domain, reserve the largest per-instance requirement and
-        align its stride for every consumer. Multiple group instances receive
-        separate strides; compatible calls reuse those same instance slots.
-
-        Offsets are relative to the region, before the function-wide backing's
-        base offset is assigned. Views retain each call's actual byte count
-        even when another call determines the larger shared stride. No
-        lifetime or control-flow overlap analysis is performed here.
-
-        Parameters
-        ----------
-        uses : list of _TempStorageUseRequirement
-            Nonempty list of validated requirements and lowering plans.
-        sharing : str
-            Validated sharing policy: ``"exclusive"`` separates every
-            call; ``"shared"`` permits reuse within compatible domains.
-
-        Returns
-        -------
-        required_size : int
-            Region size in bytes, including alignment gaps and all instances.
-        required_alignment : int
-            Maximum required alignment, at least that of the storage pointer.
-        slices_by_call_id : dict of int to _TempStorageSlice
-            Region-relative offset, byte count, instance stride, and lowering
-            plan keyed by the object identity of each call assignment.
-        """
-
-        ordered_uses = sorted(uses, key=lambda entry: entry.order)
-        required_alignment = max(
-            _MIN_TEMP_STORAGE_ALIGNMENT,
-            *(max(1, int(entry.alignment)) for entry in ordered_uses),
-        )
-        domains: dict[tuple[object, ...], list[_TempStorageUseRequirement]] = {}
-        for entry in ordered_uses:
-            domain_key = (
-                ("exclusive", entry.order)
-                if sharing == "exclusive"
-                else self._temp_storage_domain_key(entry)
-            )
-            domains.setdefault(domain_key, []).append(entry)
-
-        required_size = 0
-        slices_by_call_id: dict[int, _TempStorageSlice] = {}
-        for domain_uses in domains.values():
-            domain_alignment = max(
-                _MIN_TEMP_STORAGE_ALIGNMENT,
-                *(max(1, int(entry.alignment)) for entry in domain_uses),
-            )
-            per_instance_size = max(
-                int(entry.size_in_bytes) for entry in domain_uses
-            )
-            instance_stride = _align_up(per_instance_size, domain_alignment)
-            # Topology tells us how many independent groups need scratch: four
-            # 32-thread warps in a 128-thread block need four separate slots.
-            # Calls in a reuse domain agree on that count, so the first plan
-            # is sufficient; an exclusive domain contains only one call.
-            # Legacy block providers have no topology and need one slot. The
-            # aligned instance_stride spaces groups' slots apart, while
-            # compatible calls reuse the same set of slots.
-            first_plan = domain_uses[0].lowering_plan
-            instances = (
-                1
-                if first_plan is None or first_plan.topology is None
-                else first_plan.topology.instances
-            )
-            required_size = _align_up(required_size, domain_alignment)
-            domain_offset = required_size
-            for entry in domain_uses:
-                slices_by_call_id[id(entry.call_assign)] = _TempStorageSlice(
-                    offset=domain_offset,
-                    size_in_bytes=int(entry.size_in_bytes),
-                    stride=instance_stride,
-                    instances=instances,
-                    lowering_plan=entry.lowering_plan,
-                )
-            required_size += (
-                per_instance_size
-                if instances == 1
-                else instance_stride * instances
-            )
-        return required_size, required_alignment, slices_by_call_id
+        return layout_temp_storage_uses(uses, sharing=sharing)
 
     def _finalize_temp_storage_plan_for_var(
         self, var_name: str
