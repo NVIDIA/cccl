@@ -10,6 +10,7 @@ import sys
 import sysconfig
 import warnings
 
+from . import types as cccl_types
 from ._bindings import Op, OpKind, TypeEnum
 from ._caching import CachableFunction, cache_with_registered_key_functions
 from ._device_code import DeviceCode
@@ -18,6 +19,121 @@ try:
     from ._build_info import USING_V2  # type: ignore[import-not-found]
 except ImportError:
     USING_V2 = False
+
+
+def _native_layout(td: cccl_types.TypeDescriptor) -> tuple[list[int], int, int]:
+    """Return (field offsets, size, alignment) as native CUDA/C++ would
+    compute them for ``td``. ``offsets`` is ``[]`` for a non-struct."""
+    if not isinstance(td, cccl_types.StructTypeDescriptor):
+        if td.dtype is not None and td.dtype.subdtype is not None:
+            # Fixed-size subarray (e.g. complex64[2]): takes its element
+            # type's native alignment, and its size scales with the shape.
+            base_dtype, shape = td.dtype.subdtype
+            _, size, alignment = _native_layout(cccl_types.from_numpy_dtype(base_dtype))
+            for dim in shape:
+                size *= dim
+            return [], size, alignment
+        if td.dtype is not None and td.dtype.kind == "c":
+            # libcu++ aligns cuda::std::complex<T> to 2 * sizeof(T) (its own
+            # itemsize); NumPy only aligns it to sizeof(T).
+            return [], td.dtype.itemsize, td.dtype.itemsize
+        return [], td.size, td.alignment
+
+    # Standard C struct packing: place each field at its own alignment, then
+    # pad the whole struct up to a multiple of its largest field's alignment.
+    offset = 0
+    offsets = []
+    struct_alignment = 1
+    for field_type in td.fields.values():
+        _, size, alignment = _native_layout(field_type)
+        struct_alignment = max(struct_alignment, alignment)
+        offset = -(-offset // alignment) * alignment
+        offsets.append(offset)
+        offset += size
+    itemsize = -(-offset // struct_alignment) * struct_alignment
+    return offsets, itemsize, struct_alignment
+
+
+_UNAFFECTED = "Python-callable operators are unaffected."
+
+
+def _check_raw_op_layout(
+    td: cccl_types.TypeDescriptor, *, path: str = "<value>"
+) -> None:
+    """Raise if ``td``'s cuda.compute layout disagrees with the layout
+    native CUDA/C++ would give it (issue #11347). A RawOp casts a raw
+    pointer to a native struct; if cuda.compute built the value with a
+    different layout, the RawOp reads or writes the wrong bytes.
+    """
+    if isinstance(td, cccl_types.PointerTypeDescriptor):
+        # The pointee is a separate allocation: check it as its own root.
+        _check_raw_op_layout(td.pointee, path=f"*{path}")
+        return
+
+    if not isinstance(td, cccl_types.StructTypeDescriptor):
+        # Bare argument/result: no offsets, but alignment can still be wrong.
+        _, _, native_alignment = _native_layout(td)
+        if td.alignment != native_alignment:
+            raise TypeError(
+                f"{path} ({td.dtype}) is only {td.alignment}-byte aligned, "
+                f"but native CUDA/C++ code needs {native_alignment}-byte "
+                f"alignment. {_UNAFFECTED}"
+            )
+        return
+
+    assert td.dtype is not None
+
+    # Check every field's absolute offset first.
+    _check_inline_fields(td, path, actual_base=0, native_base=0)
+
+    # Then check the struct's own overall size and alignment: nothing
+    # follows the root struct to absorb a mismatch there.
+    _, expected_itemsize, expected_alignment = _native_layout(td)
+    if td.dtype.itemsize != expected_itemsize or td.alignment != expected_alignment:
+        raise TypeError(
+            f"{path} has itemsize {td.dtype.itemsize} and alignment "
+            f"{td.alignment}, but native CUDA/C++ code would give it "
+            f"itemsize {expected_itemsize} and alignment "
+            f"{expected_alignment}. {_UNAFFECTED}"
+        )
+
+
+def _check_inline_fields(
+    td: cccl_types.StructTypeDescriptor,
+    path: str,
+    *,
+    actual_base: int,
+    native_base: int,
+) -> None:
+    """Check every field's absolute offset against native CUDA/C++,
+    recursing into nested structs and pointer pointees."""
+    assert td.dtype is not None
+    expected_offsets, _, _ = _native_layout(td)
+    for (field_name, field_type), native_offset in zip(
+        td.fields.items(), expected_offsets
+    ):
+        actual_offset = int(td.dtype.fields[field_name][1])
+        actual_abs = actual_base + actual_offset
+        native_abs = native_base + native_offset
+        field_path = f"{path}.{field_name}"
+
+        if actual_abs != native_abs:
+            raise TypeError(
+                f"'{field_path}' sits at absolute offset {actual_abs} in "
+                f"cuda.compute's layout, but native CUDA/C++ code would "
+                f"place it at {native_abs}. {_UNAFFECTED}"
+            )
+
+        if isinstance(field_type, cccl_types.PointerTypeDescriptor):
+            # The pointee is a separate allocation: check it as its own root.
+            _check_raw_op_layout(field_type, path=field_path)
+        elif isinstance(field_type, cccl_types.StructTypeDescriptor):
+            # A nested struct's own size/alignment isn't checked here: a
+            # following field in the enclosing struct can legitimately
+            # absorb a difference there. Only its fields' offsets matter.
+            _check_inline_fields(
+                field_type, field_path, actual_base=actual_abs, native_base=native_abs
+            )
 
 
 def _is_well_known_op(op: OpKind) -> bool:
@@ -178,6 +294,14 @@ class RawOp(_OpAdapter):
         self._extra_ltoirs = extra_ltoirs or []
 
     def compile(self, input_types, output_type=None) -> Op:
+        # RawOp bodies are precompiled and may cast their raw pointer
+        # arguments to a native CUDA/C++ struct, so their layout must match
+        # exactly. Python-callable operators don't need this: numba-cuda-mlir
+        # builds and reads its own values consistently either way.
+        for t in (*input_types, output_type):
+            if t is not None:
+                _check_raw_op_layout(t)
+
         # Determine if stateful based on whether state is provided
         op_kind = OpKind.STATEFUL if self._state else OpKind.STATELESS
 
