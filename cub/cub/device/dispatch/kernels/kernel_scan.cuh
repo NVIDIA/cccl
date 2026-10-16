@@ -256,11 +256,10 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const KernelNumItemsT kernel_num_items,
   const int num_stages)
 {
-  const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
-
   static constexpr ScanPolicy active_policy = current_policy<PolicySelector>();
   if constexpr (active_policy.algorithm == ScanAlgorithm::lookahead)
   {
+    const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
     NV_IF_TARGET(
       NV_PROVIDES_SM_90, ({
@@ -311,6 +310,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     // state). So the BlockLoad in this kernel could even overlap with the previous tile init kernel. To be save, we
     // retain it here before the first read.
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    const OffsetT num_items        = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
     RealInitValueT real_init_value = init_value;
 
     static constexpr bool is_deferred_invocation = !::cuda::std::is_same_v<KernelNumItemsT, OffsetT>;
@@ -426,7 +426,6 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const InitValueT init_value,
   const KernelNumItemsT kernel_num_items)
 {
-  const OffsetT num_items             = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
   constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
   using scan_policy_t                 = agent_scan_policy<
     0,
@@ -460,6 +459,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   ::cuda::std::uint64_t current_batch_idx = 0;
 
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+  const OffsetT num_items = CUB_NS_QUALIFIER::detail::parameter_from_device<OffsetT>(kernel_num_items);
   const auto num_tiles =
     static_cast<::cuda::std::uint64_t>(::cuda::ceil_div(num_items, static_cast<OffsetT>(agent_t::TILE_ITEMS)));
   RealInitValueT real_init_value = init_value;
