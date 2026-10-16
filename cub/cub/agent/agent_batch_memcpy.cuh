@@ -283,24 +283,80 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
   // If byte range for which we can use vectorized copies is empty -> use byte-wise copies
   if (aligned_range.out_end <= aligned_range.out_begin)
   {
-    for (ByteOffsetT ichar = thread_rank; ichar < num_bytes; ichar += LogicalWarpSize)
+    // Due to how `GetAlignedPtrs` calculates the aligned range, it will be empty only for buffers smaller than
+    // `max_small_buffer_size`.
+    constexpr ByteOffsetT max_small_buffer_size = 2 * sizeof(VectorT) + 5;
+    _CCCL_ASSERT(num_bytes < max_small_buffer_size,
+                 "vectorized_copy: an empty vector range implies fewer than 2 * sizeof(VectorT) + 5 bytes");
+    constexpr int small_rounds = ::cuda::ceil_div(max_small_buffer_size, LogicalWarpSize);
+    char bytes[small_rounds];
+    for (int k = 0; k < small_rounds; ++k)
     {
-      out_ptr[ichar] = in_ptr[ichar];
+      const ByteOffsetT i = static_cast<ByteOffsetT>(thread_rank + k * LogicalWarpSize);
+      if (i < num_bytes)
+      {
+        bytes[k] = in_ptr[i];
+      }
+    }
+    for (int k = 0; k < small_rounds; ++k)
+    {
+      const ByteOffsetT i = static_cast<ByteOffsetT>(thread_rank + k * LogicalWarpSize);
+      if (i < num_bytes)
+      {
+        out_ptr[i] = bytes[k];
+      }
     }
   }
   else
   {
-    // Copy bytes in range `[dest, aligned_range.out_begin)`
-    out_ptr += thread_rank;
-    in_ptr += thread_rank;
-    while (out_ptr < reinterpret_cast<char*>(aligned_range.out_begin))
-    {
-      *out_ptr = *in_ptr;
-      out_ptr += LogicalWarpSize;
-      in_ptr += LogicalWarpSize;
-    }
+    constexpr int max_head_tail_size = sizeof(VectorT) + 2;
+    constexpr int edge_rounds        = ::cuda::ceil_div(max_head_tail_size, LogicalWarpSize);
+    const auto head_size              = static_cast<int>(reinterpret_cast<char*>(aligned_range.out_begin) - out_ptr);
+    char* const tail_out             = reinterpret_cast<char*>(aligned_range.out_end);
+    const auto tail_size              = static_cast<int>((out_ptr + num_bytes) - tail_out);
+    _CCCL_ASSERT(head_size >= 0 && tail_size >= 0, "vectorized_copy: negative head or tail size");
+    _CCCL_ASSERT(head_size <= max_head_tail_size && tail_size <= max_head_tail_size,
+                 "vectorized_copy: head or tail larger than assumed maximum size");
+    const auto num_vectors = aligned_range.out_end - aligned_range.out_begin;
 
-    // Copy bytes in range `[aligned_range.out_begin, aligned_range.out_end)`
+    char head_bytes[edge_rounds];
+    char tail_bytes[edge_rounds];
+    for (int k = 0; k < edge_rounds; ++k)
+    {
+      const int i = thread_rank + k * LogicalWarpSize;
+      if (i < head_size)
+      {
+        head_bytes[k] = in_ptr[i];
+      }
+      if (i < tail_size)
+      {
+        tail_bytes[k] = aligned_range.in_end[i];
+      }
+    }
+    // TODO: see the perf difference of loading the first vec here.
+    // VectorT data_in;
+    // if (thread_rank < num_vectors)
+    //{
+    //   LoadVector(aligned_range.in_begin + thread_rank * sizeof(VectorT), data_in);
+    // }
+    for (int k = 0; k < edge_rounds; ++k)
+    {
+      const int i = thread_rank + k * LogicalWarpSize;
+      if (i < head_size)
+      {
+        out_ptr[i] = head_bytes[k];
+      }
+      if (i < tail_size)
+      {
+        tail_out[i] = tail_bytes[k];
+      }
+    }
+    // if (thread_rank < num_vectors)
+    //{
+    //   aligned_range.out_begin[thread_rank] = data_in;
+    // }
+
+    // Remaining rounds of vectors, `[aligned_range.out_begin, aligned_range.out_end)`
     VectorT* aligned_range_begin = aligned_range.out_begin + thread_rank;
     const char* in_aligned_begin = aligned_range.in_begin + thread_rank * sizeof(VectorT);
     while (aligned_range_begin < aligned_range.out_end)
@@ -312,16 +368,6 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
       *aligned_range_begin = data_in;
       in_aligned_begin += sizeof(VectorT) * LogicalWarpSize;
       aligned_range_begin += LogicalWarpSize;
-    }
-
-    // Copy bytes in range `[aligned_range.out_end, dest + num_bytes)`.
-    out_ptr = reinterpret_cast<char*>(aligned_range.out_end) + thread_rank;
-    in_ptr  = aligned_range.in_end + thread_rank;
-    while (out_ptr < static_cast<char*>(dest) + num_bytes)
-    {
-      *out_ptr = *in_ptr;
-      out_ptr += LogicalWarpSize;
-      in_ptr += LogicalWarpSize;
     }
   }
 }
@@ -648,7 +694,7 @@ private:
       // Stage 1: histogram over the size classes in preparation for partitioning buffers by size
       typename BlockSizeClassScanT::TempStorage size_scan_storage;
 
-      // Stage 2: Communicate the number ofer buffers requiring block-level collaboration
+      // Stage 2: Communicate the number of buffers requiring block-level collaboration
       typename BLevBuffScanPrefixCallbackOpT::TempStorage buffer_scan_callback;
 
       // Stage 3; batch memcpy buffers that require only thread-level collaboration

@@ -9,7 +9,7 @@
 // %RANGE% TUNE_LARGE_THREADS ltpb 128:1024:32
 // %RANGE% TUNE_LARGE_BUFFER_BYTES_PER_THREAD lbbpt 4:128:4
 // %RANGE% TUNE_PREFER_POW2_BITS ppb 0:1:1
-// %RANGE% TUNE_WARP_LEVEL_THRESHOLD wlt 32:512:32
+// %RANGE% TUNE_WARP_LEVEL_THRESHOLD wlt 0:512:32
 // %RANGE% TUNE_BLOCK_LEVEL_THRESHOLD blt 1024:16384:512
 // %RANGE% TUNE_BLOCK_MAGIC_NS blns 0:2048:4
 // %RANGE% TUNE_BLOCK_DELAY_CONSTRUCTOR_ID bldcid 0:7:1
@@ -213,8 +213,7 @@ void uniform(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
   const auto elements              = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto max_buffer_size       = static_cast<std::size_t>(state.get_int64("MaxBufferSize"));
   const auto min_buffer_size_ratio = static_cast<std::size_t>(state.get_int64("MinBufferSizeRatio"));
-  const auto min_buffer_size =
-    static_cast<std::size_t>(static_cast<double>(max_buffer_size) / 100.0) * min_buffer_size_ratio;
+  const auto min_buffer_size       = max_buffer_size * min_buffer_size_ratio / 100;
 
   copy(
     state, tl, elements, min_buffer_size, max_buffer_size, state.get_int64("Randomize"), state.get_int64("Randomize"));
