@@ -1,0 +1,537 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+"""Check decoded windows and complete streams against host run expansion.
+
+Use trailing zero runs for unused input slots. Window references add zero
+values beyond the stream; bulk references keep sentinels outside the written
+interval. Other cases cover auxiliary output types, wide stream positions,
+scratch reuse, and malformed inputs isolated in child processes.
+"""
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+cuda = pytest.importorskip("numba_cuda_mlir.cuda")
+if not cuda.is_available():
+    pytest.skip("requires a CUDA-capable runtime", allow_module_level=True)
+
+import cuda.coop.numba_mlir as numba_coop
+from cuda import coop
+
+pytestmark = [
+    pytest.mark.backend_numba_mlir,
+    pytest.mark.runtime,
+    pytest.mark.gpu,
+    pytest.mark.filterwarnings(
+        "ignore::numba_cuda_mlir.numba_cuda.core.errors.NumbaPerformanceWarning"
+    ),
+]
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("qualified", [False, True])
+@pytest.mark.parametrize(
+    "value_dtype,length_dtype",
+    [
+        (np.int8, np.uint16),
+        (np.uint8, np.uint8),
+        (np.int16, np.int8),
+        (np.uint16, np.int16),
+        (np.int32, np.int32),
+        (np.uint32, np.uint32),
+        (np.int64, np.int64),
+        (np.uint64, np.uint64),
+        (np.float32, np.int64),
+        (np.float64, np.uint64),
+    ],
+)
+def test_windows_preserve_inputs_and_zero_invalid_slots(
+    qualified, value_dtype, length_dtype, items_per_thread
+):
+    """Compare shifted windows and check that both run inputs stay unchanged.
+
+    Exercise empty streams, long runs, full tiles, and offsets past the end.
+    An offset above 2**32 must stay out of range without wrapping into valid
+    items. Wide integer values and fine float64 increments expose value loss.
+    The output extent is fixed at three per thread while input extents vary.
+    """
+
+    api = numba_coop if qualified else coop
+
+    @cuda.jit
+    def kernel(
+        values,
+        lengths,
+        output,
+        kept_values,
+        kept_lengths,
+        offset,
+        items_per_thread,
+    ):
+        block = api.this_block()
+        run_values = api.ThreadData(items_per_thread)
+        run_lengths = api.ThreadData(items_per_thread)
+        api.load(block, values, run_values)
+        api.load(block, lengths, run_lengths)
+        decoded = api.run_length_decode(
+            block,
+            run_values,
+            run_lengths,
+            decoded_items_per_thread=3,
+            decoded_window_offset=offset,
+        )
+        api.store(block, output, decoded)
+        api.store(block, kept_values, run_values)
+        api.store(block, kept_lengths, run_lengths)
+
+    values = np.arange(32 * items_per_thread, dtype=value_dtype)
+    if np.issubdtype(value_dtype, np.floating):
+        values = values / value_dtype(4) - value_dtype(7.125)
+    elif np.issubdtype(value_dtype, np.signedinteger):
+        values -= value_dtype(31)
+    else:
+        values += value_dtype(1 << (np.dtype(value_dtype).itemsize * 8 - 1))
+    if value_dtype == np.float64:
+        values += value_dtype(2**-30)
+    elif value_dtype == np.int64:
+        values *= value_dtype(1 << 33)
+    lengths = np.zeros(32 * items_per_thread, dtype=length_dtype)
+    output = np.full(96, 99, dtype=value_dtype)
+    kept_values = np.zeros_like(values)
+    kept_lengths = np.zeros_like(lengths)
+    long_run = min(200, np.iinfo(length_dtype).max)
+    for prefix in ([], [3, 2], [1] * values.size, [10, long_run, 4]):
+        lengths[:] = 0
+        lengths[: len(prefix)] = prefix
+        decoded = np.repeat(values, lengths.astype(np.int64))
+        for offset in (0, 2, len(decoded), len(decoded) + 1, 2**32 + 2):
+            kernel[1, 32](
+                values,
+                lengths,
+                output,
+                kept_values,
+                kept_lengths,
+                np.uint64(offset),
+                items_per_thread,
+            )
+            cuda.synchronize()
+            expected = np.zeros_like(output)
+            window = decoded[offset : offset + 96]
+            expected[: len(window)] = window
+            np.testing.assert_array_equal(output, expected)
+            np.testing.assert_array_equal(kept_values, values)
+            np.testing.assert_array_equal(kept_lengths, lengths)
+
+
+@pytest.mark.parametrize("auto_sync", [True, False])
+@pytest.mark.parametrize("offset_dtype", [np.uint32, np.uint64])
+def test_auxiliary_outputs_and_explicit_storage_reuse(auto_sync, offset_dtype):
+    """Decode two windows through shared scratch and auxiliary buffers.
+
+    Fixed local arrays supply the runs to the qualified API. Store each window
+    separately, then check the second window's relative positions and the full
+    stream total. The total stays five although only three values remain in
+    that window. Exercise both offset dtypes and explicit block sync when
+    ``auto_sync`` is off.
+    """
+
+    @cuda.jit
+    def kernel(values, lengths, output, relative_output, totals):
+        block = numba_coop.this_block()
+        scratch = numba_coop.TempStorage(auto_sync=auto_sync)
+        runs = cuda.local.array(2, dtype=np.int32)
+        sizes = cuda.local.array(2, dtype=np.uint32)
+        for i in range(2):
+            runs[i] = values[cuda.threadIdx.x * 2 + i]
+            sizes[i] = lengths[cuda.threadIdx.x * 2 + i]
+        relative = numba_coop.ThreadData(items_per_thread=4, dtype=offset_dtype)
+        total = numba_coop.ThreadData(items_per_thread=1, dtype=offset_dtype)
+        first = numba_coop.run_length_decode(
+            block,
+            runs,
+            sizes,
+            decoded_items_per_thread=4,
+            decoded_window_offset=0,
+            total_decoded_size=total,
+            relative_offsets=relative,
+            decoded_offset_dtype=offset_dtype,
+            temp_storage=scratch,
+        )
+        numba_coop.store(block, output, first)
+        if not auto_sync:
+            block.sync()
+        second = numba_coop.run_length_decode(
+            block,
+            runs,
+            sizes,
+            decoded_items_per_thread=4,
+            decoded_window_offset=2,
+            total_decoded_size=total,
+            relative_offsets=relative,
+            decoded_offset_dtype=offset_dtype,
+            temp_storage=scratch,
+        )
+        numba_coop.store(block, output, second, offset=128)
+        numba_coop.store(block, relative_output, relative)
+        totals[cuda.threadIdx.x] = total[0]
+
+    values = np.zeros(64, dtype=np.int32)
+    values[:2] = [7, 9]
+    lengths = np.zeros(64, dtype=np.uint32)
+    lengths[:2] = [3, 2]
+    output = np.empty(256, dtype=np.int32)
+    relative = np.empty(128, dtype=offset_dtype)
+    totals = np.empty(32, dtype=offset_dtype)
+    kernel[1, 32](values, lengths, output, relative, totals)
+    cuda.synchronize()
+    np.testing.assert_array_equal(output[:5], [7, 7, 7, 9, 9])
+    np.testing.assert_array_equal(output[128:131], [7, 9, 9])
+    assert not output[5:128].any() and not output[131:].any()
+    np.testing.assert_array_equal(relative[:3], [2, 0, 1])
+    assert np.all(relative[3:] == np.iinfo(offset_dtype).max)
+    assert np.all(totals == 5)
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("total_size", [2**32 + 5, 2**64 - 65])
+def test_uint64_decode_above_uint32_range_without_large_allocation(
+    total_size, items_per_thread
+):
+    """Read a small tail window from a stream described by huge run lengths.
+
+    Two compressed runs describe totals above uint32 and at the largest uint64
+    limit permitted for a 64-item window. Decode only the last three valid
+    items. Small allocations test wide prefix sums, relative offsets, totals,
+    and the zero values and maximum-offset sentinels in the tail.
+    """
+
+    @cuda.jit
+    def kernel(
+        values,
+        lengths,
+        output,
+        relative_output,
+        totals,
+        offset,
+        items_per_thread,
+    ):
+        block = numba_coop.this_block()
+        runs = numba_coop.ThreadData(items_per_thread)
+        sizes = numba_coop.ThreadData(items_per_thread)
+        numba_coop.load(block, values, runs)
+        numba_coop.load(block, lengths, sizes)
+        relative = numba_coop.ThreadData(items_per_thread=2, dtype=np.uint64)
+        total = numba_coop.ThreadData(items_per_thread=1, dtype=np.uint64)
+        decoded = numba_coop.run_length_decode(
+            block,
+            runs,
+            sizes,
+            decoded_items_per_thread=2,
+            decoded_window_offset=offset,
+            decoded_offset_dtype=np.uint64,
+            relative_offsets=relative,
+            total_decoded_size=total,
+        )
+        numba_coop.store(block, output, decoded)
+        numba_coop.store(block, relative_output, relative)
+        totals[cuda.threadIdx.x] = total[0]
+
+    values = np.zeros(32 * items_per_thread, dtype=np.int32)
+    values[:2] = [7, 9]
+    lengths = np.zeros(32 * items_per_thread, dtype=np.uint64)
+    lengths[:2] = [total_size - 2, 2]
+    output = np.empty(64, dtype=np.int32)
+    relative = np.empty(64, dtype=np.uint64)
+    total = np.empty(32, dtype=np.uint64)
+    kernel[1, 32](
+        values,
+        lengths,
+        output,
+        relative,
+        total,
+        np.uint64(total_size - 3),
+        items_per_thread,
+    )
+    cuda.synchronize()
+    np.testing.assert_array_equal(output[:3], [7, 9, 9])
+    np.testing.assert_array_equal(
+        relative[:3], np.array([total_size - 3, 0, 1], dtype=np.uint64)
+    )
+    assert not output[3:].any()
+    assert np.all(relative[3:] == np.iinfo(np.uint64).max)
+    assert np.all(total == total_size)
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize(
+    "qualified,threads,value_dtype",
+    [
+        (qualified, threads, np.int16)
+        for qualified in (False, True)
+        for threads in (32, 37)
+    ]
+    + [
+        (False, 32, dtype)
+        for dtype in (
+            np.int8,
+            np.uint8,
+            np.uint16,
+            np.int32,
+            np.uint32,
+            np.int64,
+            np.uint64,
+            np.float32,
+            np.float64,
+        )
+    ],
+)
+def test_bulk_multiple_windows_partial_final_window_and_empty(
+    qualified, threads, value_dtype, items_per_thread
+):
+    """Check a full stream across internal windows and then reuse its scratch.
+
+    Decode at a nonzero destination offset. Sentinels on both sides of the
+    written interval expose stores before that offset or past the partial
+    final window. Long runs cross window boundaries; empty input must write
+    nothing. Qualified cases also check global relative offsets and their
+    untouched surrounding slots.
+
+    A later window call reuses the descriptor after the bulk call finishes.
+    Its first value must still match. This checks that the ``auto_sync``
+    barrier after the bulk call makes the scratch safe to reuse.
+    """
+
+    api = numba_coop if qualified else coop
+
+    @cuda.jit
+    def kernel(
+        values, lengths, output, relative, totals, start, items_per_thread
+    ):
+        block = api.this_block()
+        scratch = api.TempStorage(auto_sync=True)
+        runs = api.ThreadData(items_per_thread)
+        sizes = api.ThreadData(items_per_thread)
+        api.load(block, values, runs)
+        api.load(block, lengths, sizes)
+        if qualified:
+            total = api.run_length_decode_into(
+                block,
+                runs,
+                sizes,
+                output,
+                decoded_items_per_thread=3,
+                destination_offset=start,
+                decoded_offset_dtype=np.uint64,
+                relative_offsets=relative,
+                temp_storage=scratch,
+            )
+        else:
+            total = api.run_length_decode_into(
+                block,
+                runs,
+                sizes,
+                output,
+                decoded_items_per_thread=3,
+                destination_offset=start,
+                temp_storage=scratch,
+            )
+        totals[cuda.threadIdx.x] = total
+        # The bulk call has finished using its prepared table. auto_sync
+        # makes the descriptor ready for this next collective.
+        again = api.run_length_decode(
+            block, runs, sizes, decoded_items_per_thread=1, temp_storage=scratch
+        )
+        if cuda.threadIdx.x == 0 and total != 0:
+            output[start] = again[0]
+
+    values = np.arange(threads * items_per_thread, dtype=value_dtype)
+    if np.issubdtype(value_dtype, np.floating):
+        values = values / value_dtype(4) - value_dtype(7.125)
+    elif np.issubdtype(value_dtype, np.signedinteger):
+        values -= value_dtype(31)
+    else:
+        values += value_dtype(1 << (np.dtype(value_dtype).itemsize * 8 - 1))
+    if value_dtype == np.float64:
+        values += value_dtype(2**-30)
+    elif value_dtype == np.int64:
+        values *= value_dtype(1 << 33)
+    sentinel = (
+        np.iinfo(value_dtype).max
+        if np.issubdtype(value_dtype, np.unsignedinteger)
+        else -1
+    )
+    lengths = np.zeros(threads * items_per_thread, dtype=np.uint32)
+    for prefix in ([], [3, 2], [4] * (threads * items_per_thread), [1, 401, 3]):
+        lengths[:] = 0
+        lengths[: len(prefix)] = prefix
+        expected = np.repeat(values, lengths)
+        output = np.full(len(expected) + 10, sentinel, dtype=value_dtype)
+        relative = np.full(len(output), 9999, dtype=np.uint64)
+        totals = np.empty(threads, dtype=np.uint64)
+        kernel[1, threads](
+            values,
+            lengths,
+            output,
+            relative,
+            totals,
+            np.int64(3),
+            items_per_thread,
+        )
+        cuda.synchronize()
+        np.testing.assert_array_equal(output[3 : 3 + len(expected)], expected)
+        assert np.all(output[:3] == sentinel) and np.all(
+            output[3 + len(expected) :] == sentinel
+        )
+        assert np.all(totals == len(expected))
+        if qualified:
+            offsets = (
+                np.concatenate(
+                    [np.arange(size, dtype=np.uint64) for size in prefix]
+                )
+                if prefix
+                else []
+            )
+            np.testing.assert_array_equal(
+                relative[3 : 3 + len(expected)], offsets
+            )
+            assert np.all(relative[:3] == 9999) and np.all(
+                relative[3 + len(expected) :] == 9999
+            )
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "negative_length",
+        "interior_zero",
+        "sum_overflow32",
+        "value_overflow32",
+        "sum_overflow64",
+        "negative_offset",
+        "capacity",
+        "relative_capacity",
+    ],
+)
+def test_invalid_inputs_trap_before_decode_or_bulk_writes(case):
+    """Require device failure for malformed runs, offsets, or capacities.
+
+    Exercise negative lengths, a positive run after zero padding, individual
+    and accumulated overflow, negative offsets, and either undersized output.
+    Each child verifies the parent's package source and prints success only
+    after a CUDA trap or launch failure. Isolation contains poisoned contexts
+    and keeps compilation errors from counting as expected failures.
+    """
+
+    script = f"""
+import numpy as np
+from pathlib import Path
+from numba_cuda_mlir import cuda
+import cuda.coop.numba_mlir as numba_coop
+assert Path(numba_coop.__file__).resolve() == Path({str(Path(numba_coop.__file__).resolve())!r})
+case = {case!r}
+offset_dtype = np.uint64 if case == 'sum_overflow64' else np.uint32
+length_dtype = np.int64 if case == 'negative_length' else np.uint64
+@cuda.jit
+def kernel(values, lengths, output, relative, offset):
+    block = numba_coop.this_block()
+    runs = numba_coop.ThreadData(items_per_thread=1)
+    sizes = numba_coop.ThreadData(items_per_thread=1)
+    numba_coop.load(block, values, runs)
+    numba_coop.load(block, lengths, sizes)
+    if case == 'capacity' or case == 'relative_capacity':
+        numba_coop.run_length_decode_into(block, runs, sizes, output,
+            decoded_items_per_thread=2, relative_offsets=relative,
+            decoded_offset_dtype=offset_dtype, destination_offset=offset)
+    else:
+        decoded = numba_coop.run_length_decode(block, runs, sizes,
+            decoded_items_per_thread=2, decoded_window_offset=offset,
+            decoded_offset_dtype=offset_dtype)
+        numba_coop.store(block, output, decoded)
+values = np.arange(32, dtype=np.int32)
+lengths = np.zeros(32, dtype=length_dtype)
+lengths[:2] = [3,2]
+if case == 'negative_length': lengths[0] = -1
+if case == 'interior_zero': lengths[:3] = [3,0,2]
+if case == 'sum_overflow32': lengths[:2] = [2**32-1,1]
+if case == 'value_overflow32': lengths[:2] = [2**32,1]
+if case == 'sum_overflow64': lengths[:2] = [2**63,2**63]
+output = cuda.to_device(np.full(4 if case == 'capacity' else 64,-1,dtype=np.int32))
+relative = cuda.device_array(4 if case == 'relative_capacity' else 64,dtype=offset_dtype)
+try:
+    kernel[1,32](cuda.to_device(values),cuda.to_device(lengths),output,relative,np.int64(-1 if case == 'negative_offset' else 0))
+    cuda.synchronize()
+except Exception as error:
+    message = str(error)
+    assert any(token in message for token in ('CUDA_ERROR_ILLEGAL_INSTRUCTION','CUDA_ERROR_LAUNCH_FAILED','illegal instruction','unspecified launch failure')), message
+    print('EXPECTED_RLD_TRAP')
+else:
+    raise AssertionError('invalid run length decode input did not trap')
+"""  # noqa: E501 - Preserve embedded source bytes.
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        env=os.environ.copy(),
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "EXPECTED_RLD_TRAP" in result.stdout
+
+
+@pytest.mark.parametrize("items_per_thread", [1, 4])
+@pytest.mark.parametrize("offset_dtype", [np.uint32, np.uint64])
+def test_untyped_auxiliary_outputs_adopt_selected_dtype(
+    offset_dtype, items_per_thread
+):
+    """Index auxiliary outputs before a later Store can supply dtype evidence.
+
+    Leave total and relative-offset ThreadData untyped, then index them
+    directly. The decode rewrite must record the selected uint32 or uint64
+    type itself. Check valid offsets, maximum-value tail sentinels, and the
+    same full total on every block member.
+    """
+
+    @cuda.jit
+    def kernel(output, relative_output, total_output, items_per_thread):
+        block = numba_coop.this_block()
+        values = numba_coop.ThreadData(items_per_thread, dtype=np.int32)
+        lengths = numba_coop.ThreadData(items_per_thread, dtype=np.uint32)
+        for item in range(items_per_thread):
+            values[item] = 7
+            lengths[item] = 3 if cuda.threadIdx.x == 0 and item == 0 else 0
+        total = numba_coop.ThreadData(items_per_thread=1)
+        relative = numba_coop.ThreadData(items_per_thread=2)
+        decoded = numba_coop.run_length_decode(
+            block,
+            values,
+            lengths,
+            decoded_items_per_thread=2,
+            decoded_offset_dtype=offset_dtype,
+            total_decoded_size=total,
+            relative_offsets=relative,
+        )
+        # Scalar indexing must work without a later Store inferring aux dtypes.
+        for item in range(2):
+            index = cuda.threadIdx.x * 2 + item
+            output[index] = decoded[item]
+            relative_output[index] = relative[item]
+        total_output[cuda.threadIdx.x] = total[0]
+
+    output = np.empty(64, dtype=np.int32)
+    relative = np.empty(64, dtype=offset_dtype)
+    total = np.empty(32, dtype=offset_dtype)
+    kernel[1, 32](output, relative, total, items_per_thread)
+    cuda.synchronize()
+    np.testing.assert_array_equal(output[:3], [7, 7, 7])
+    np.testing.assert_array_equal(relative[:3], [0, 1, 2])
+    assert not output[3:].any()
+    assert np.all(relative[3:] == np.iinfo(offset_dtype).max)
+    assert np.all(total == 3)

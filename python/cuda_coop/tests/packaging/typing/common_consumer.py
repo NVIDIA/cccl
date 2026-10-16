@@ -10,6 +10,7 @@ import numpy as np
 from typing_extensions import assert_type
 
 from cuda import coop
+from cuda.coop._typing import CompilerIntegerLike
 
 _ItemT = TypeVar("_ItemT")
 
@@ -346,4 +347,34 @@ def check_histogram_surface() -> None:
     assert_type(
         coop.histogram(block, samples, bins=33, counter_dtype=int),
         coop.ThreadDataLike[np.int32],
+    )
+
+
+def check_run_length_surface(destination: object) -> None:
+    """Check read-only run inputs and the two common-API result forms.
+
+    A window returns a payload with the run-value dtype. Bulk decoding writes
+    the destination and returns a uint32 total, even with uint64 run lengths.
+    """
+
+    block = coop.this_block()
+    values = _ReadOnlyThreadData(np.float32(7))
+    lengths = _ReadOnlyThreadData(np.uint64(3))
+    assert_type(
+        coop.run_length_decode(
+            block, values, lengths, decoded_items_per_thread=4
+        ),
+        coop.ThreadDataLike[np.float32],
+    )
+    assert_type(
+        coop.run_length_decode_into(
+            block,
+            values,
+            lengths,
+            destination,
+            decoded_items_per_thread=4,
+            destination_offset=np.int64(3),
+            temp_storage=coop.TempStorage(),
+        ),
+        np.uint32 | CompilerIntegerLike,
     )

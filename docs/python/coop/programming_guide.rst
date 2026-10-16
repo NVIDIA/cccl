@@ -153,6 +153,10 @@ several operations:
    * - Histograms
      - Fresh striped counters from fixed integer sample payloads
      - Also accepts one scalar sample per thread
+   * - Run Length Decode
+     - A decoded window, or bulk decoding into an array
+     - Also supports relative run offsets, window total output, and a
+       selected unsigned decoded-offset dtype
    * - Load/Store algorithms and explicit scratch
      - String algorithm selectors and ``TempStorage`` on supported block calls
      - Same shared controls; qualifying the import is unnecessary for these
@@ -271,7 +275,8 @@ parts of the API.
    * - ``coop.this_block()``
      - All threads in the block
      - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
-       Radix Rank, TopK, Adjacent Difference, Discontinuity, and Histogram
+       Radix Rank, TopK, Adjacent Difference, Discontinuity, Histogram,
+       and Run Length Decode
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -491,9 +496,11 @@ Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
 Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
-Rank, TopK, Adjacent Difference, Discontinuity, and Histogram return fresh
-payloads, so their input values remain available afterwards. Reduction returns
-a scalar, including when each thread contributes several items.
+Rank, TopK, Adjacent Difference, Discontinuity, Histogram, and windowed Run
+Length Decode return fresh payloads, so their input values remain available
+afterwards. Reduction returns a scalar, including when each thread contributes
+several items. Bulk Run Length Decode writes the caller's destination and
+returns the total decoded size.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
 destination dtype, so cast computed values when necessary, as in the
@@ -726,7 +733,8 @@ allocation. Its contents are opaque; keep application values in
    * - Direct, striped, or vectorize Load/Store
      - No shared scratch or reuse barrier
    * - Block transpose-family Load/Store; Block Reduce; Block Scan; Block Merge Sort;
-       Block Radix Sort; TopK; Adjacent Difference; Discontinuity; Histogram
+       Block Radix Sort; TopK; Adjacent Difference; Discontinuity; Histogram;
+       Run Length Decode (windowed or bulk)
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
@@ -1187,6 +1195,34 @@ several tiles by adding their returned counters.
 Histogram has no partial-input count. Padding a short tile with zeros
 adds samples to bin zero; see :ref:`the padding FAQ
 <coop-faq-histogram-padding>`.
+
+.. _coop-run-length-decode:
+
+Expanding runs into values
+--------------------------
+
+:func:`cuda.coop.run_length_decode` expands matching per-thread run-value
+and run-length payloads into a fresh blocked output window. Run lengths
+must form a positive prefix followed by optional zeros. The window starts
+at ``decoded_window_offset`` in the expanded sequence and contains
+``block_threads * decoded_items_per_thread`` positions. Positions past the
+end contain zero, including when all run lengths are zero.
+
+:func:`cuda.coop.run_length_decode_into` expands the entire sequence into
+a destination array. It prepares the run table once and loops over output
+windows inside one call. It checks capacity before writing and returns the
+total decoded size to every block member. Keep source and destination
+storage separate; a nonzero ``destination_offset`` reserves an output
+prefix for other data.
+
+Use the qualified API when a windowed call needs total-size or relative
+run-offset outputs, or when decoded positions require ``uint64``.
+:term:`Relative run offsets <relative run offset>` count positions within
+each run, while ``decoded_window_offset`` counts positions in the complete
+expanded sequence. All threads must use the same window or destination
+offset. The :doc:`RLD visualization <visualizations/run-length-decode>`
+shows both interfaces with tested kernels and a window crossing a run
+boundary.
 
 
 Checking and tuning a kernel
