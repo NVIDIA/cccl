@@ -29,6 +29,7 @@ from __future__ import annotations
 
 _activated = False
 
+
 __all__ = ["_activate"]
 
 
@@ -52,6 +53,7 @@ def _activate() -> None:
         _ncm_patches,
         _neighbors,
         _radix,
+        _reduce_batched,
         _reductions,
         _resolve,
         _run_length,
@@ -67,15 +69,16 @@ def _activate() -> None:
     _groups.register()
     _temp_storage.register()
     _templates.register()
-    _exchange.register()
     _reductions.register()
+    _exchange.register()
     _scan.register()
+    _histogram.register()
+    _reduce_batched.register()
+    _run_length.register()
+    _neighbors.register()
     _merge_sort.register()
     _radix.register()
     _topk.register()
-    _neighbors.register()
-    _histogram.register()
-    _run_length.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()

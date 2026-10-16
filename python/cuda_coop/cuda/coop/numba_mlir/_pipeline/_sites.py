@@ -198,6 +198,55 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {"merge_sort_keys", "merge_sort_pairs"}:
+            from . import _merge_sort
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _merge_sort.site_request(self, stmt, kind, qualified)
+                ),
+            )
+        if kind in {"radix_sort_keys", "radix_sort_pairs", "radix_rank_keys"}:
+            from . import _radix
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _radix.site_request(self, stmt, kind, qualified)
+                ),
+            )
+        if kind in {
+            "topk_min_keys",
+            "topk_min_pairs",
+            "topk_max_keys",
+            "topk_max_pairs",
+        }:
+            from . import _topk
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _topk.site_request(self, stmt, kind, qualified)
+                ),
+            )
+        if kind in {"adjacent_difference", "discontinuity"}:
+            from . import _neighbors
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _neighbors.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind in {"run_length_decode", "run_length_decode_into"}:
             from . import _run_length
 
@@ -220,55 +269,20 @@ class _Analysis:
                     _histogram.site_request(self, stmt, kind, qualified)
                 ),
             )
-        if kind in {"adjacent_difference", "discontinuity"}:
-            from . import _neighbors
+        if kind == "reduce_batched":
+            from . import _reduce_batched
 
-            return Site(
-                stmt,
-                kind,
-                line,
-                _resolved_request(
-                    _neighbors.site_request(self, stmt, kind, qualified)
-                ),
+            request = _reduce_batched.request_for(
+                [self.typemap[a.name] for a in expr.args],
+                {k: self.typemap[v.name] for k, v in expr.kws},
+                qualified=qualified,
+                extent=self._array_extent(stmt, kind, index=1),
             )
-        if kind in {
-            "topk_min_keys",
-            "topk_min_pairs",
-            "topk_max_keys",
-            "topk_max_pairs",
-        }:
-            from . import _topk
-
-            return Site(
-                stmt,
-                kind,
-                line,
-                _resolved_request(
-                    _topk.site_request(self, stmt, kind, qualified)
-                ),
-            )
-        if kind in {"radix_sort_keys", "radix_sort_pairs", "radix_rank_keys"}:
-            from . import _radix
-
-            return Site(
-                stmt,
-                kind,
-                line,
-                _resolved_request(
-                    _radix.site_request(self, stmt, kind, qualified)
-                ),
-            )
-        if kind in {"merge_sort_keys", "merge_sort_pairs"}:
-            from . import _merge_sort
-
-            return Site(
-                stmt,
-                kind,
-                line,
-                _resolved_request(
-                    _merge_sort.site_request(self, stmt, kind, qualified)
-                ),
-            )
+            if request is None:
+                raise TypedPipelineError(
+                    f"coop.{kind}: payload dtype is unresolved"
+                )
+            return Site(stmt, kind, line, request)
         if kind in {
             "scan",
             "inclusive_scan",

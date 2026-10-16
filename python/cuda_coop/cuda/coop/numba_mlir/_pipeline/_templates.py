@@ -64,13 +64,14 @@ _NOT_KERNEL_CALLABLE = frozenset(
 CONTROLS = {
     "load": ("valid_items", "oob_default", "offset"),
     "store": ("valid_items", "offset"),
-    "exchange": (),
-    "shuffle": ("distance",),
     "reduce": ("valid_items",),
     "sum": ("valid_items",),
+    "exchange": (),
+    "shuffle": ("distance",),
 }
 
-# Static extent provenance for qualified array-valued operation results.
+# Array-valued operations whose output has the same extent as one operand.
+# Qualified local arrays do not carry their extent in Numba's array type.
 RESULT_EXTENT_SOURCES: dict[
     object,
     int | tuple[int, ...] | Callable[[Any, Any], int | tuple[int, ...] | None],
@@ -694,10 +695,9 @@ _registered = False
 
 
 def register() -> None:
-    """Register a template for every kernel-callable public object.
+    """Register payload and Load/Store templates and rejection diagnostics.
 
-    Group and storage descriptors register separately. ``ThreadData``,
-    ``load`` and ``store`` of both APIs are typed here.
+    Other operation families register their own templates during activation.
     """
 
     global _registered
@@ -732,15 +732,21 @@ def register() -> None:
             )
             register_template(obj, _not_inlined(qualified_name), name)
         elif operation in {
-            "exchange",
-            "shuffle",
             "reduce",
             "sum",
+            "exchange",
+            "shuffle",
             "scan",
             "inclusive_scan",
             "exclusive_scan",
             "inclusive_sum",
             "exclusive_sum",
+            "histogram",
+            "reduce_batched",
+            "run_length_decode",
+            "run_length_decode_into",
+            "adjacent_difference",
+            "discontinuity",
             "merge_sort_keys",
             "merge_sort_pairs",
             "radix_sort_keys",
@@ -750,13 +756,8 @@ def register() -> None:
             "topk_min_pairs",
             "topk_max_keys",
             "topk_max_pairs",
-            "adjacent_difference",
-            "discontinuity",
-            "histogram",
-            "run_length_decode",
-            "run_length_decode_into",
         }:
-            continue  # Result families register their templates separately.
+            continue  # Each operation family registers its result typing.
         else:
             register_template(obj, _rejecting(qualified_name), name)
 
