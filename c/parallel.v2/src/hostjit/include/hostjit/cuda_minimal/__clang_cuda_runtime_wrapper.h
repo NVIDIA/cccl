@@ -99,7 +99,8 @@ __FWD_DEVICE __SIZE_TYPE__ __cvta_generic_to_global(const void*);
 __FWD_DEVICE void* __cvta_shared_to_generic(__SIZE_TYPE__);
 __FWD_DEVICE void* __cvta_global_to_generic(__SIZE_TYPE__);
 #  undef __FWD_DEVICE
-#  ifndef _MSC_VER
+#  if !defined(_MSC_VER) && defined(__SIZEOF_FLOAT128__)
+// __float128 is an x86-64 extension; AArch64 hosts have no such type.
 __device__ bool __nv_fp128_isnan(__float128);
 __device__ __float128 __nv_fp128_fmax(__float128, __float128);
 __device__ __float128 __nv_fp128_fmin(__float128, __float128);

@@ -7,7 +7,9 @@
 #include <clang/Frontend/FrontendOptions.h>
 #include <clang/Frontend/TextDiagnosticPrinter.h>
 #include <clang/Lex/PreprocessorOptions.h>
+#include <libnvcc/host_target.h>
 #include <libnvcc/libnvcc.h>
+#include <libnvcc/ptx_isa.h>
 #include <lld/Common/Driver.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -29,13 +31,22 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
 
-// Selective target initialization (X86 for host, NVPTX for device)
+// Selective target initialization (the host's own target for host code,
+// NVPTX for device code)
 extern "C" {
+#if defined(__aarch64__)
+void LLVMInitializeAArch64TargetInfo();
+void LLVMInitializeAArch64Target();
+void LLVMInitializeAArch64TargetMC();
+void LLVMInitializeAArch64AsmPrinter();
+void LLVMInitializeAArch64AsmParser();
+#else
 void LLVMInitializeX86TargetInfo();
 void LLVMInitializeX86Target();
 void LLVMInitializeX86TargetMC();
 void LLVMInitializeX86AsmPrinter();
 void LLVMInitializeX86AsmParser();
+#endif
 void LLVMInitializeNVPTXTargetInfo();
 void LLVMInitializeNVPTXTarget();
 void LLVMInitializeNVPTXTargetMC();
@@ -77,11 +88,19 @@ static std::once_flag llvm_init_flag;
 static void initialize_llvm()
 {
   std::call_once(llvm_init_flag, [] {
+#if defined(__aarch64__)
+    LLVMInitializeAArch64TargetInfo();
+    LLVMInitializeAArch64Target();
+    LLVMInitializeAArch64TargetMC();
+    LLVMInitializeAArch64AsmPrinter();
+    LLVMInitializeAArch64AsmParser();
+#else
     LLVMInitializeX86TargetInfo();
     LLVMInitializeX86Target();
     LLVMInitializeX86TargetMC();
     LLVMInitializeX86AsmPrinter();
     LLVMInitializeX86AsmParser();
+#endif
     LLVMInitializeNVPTXTargetInfo();
     LLVMInitializeNVPTXTarget();
     LLVMInitializeNVPTXTargetMC();
@@ -706,6 +725,17 @@ static void appendSystemIncludePaths(std::vector<std::string>& args, const Compi
     args.push_back("-internal-isystem");
     args.push_back(include_path);
   }
+#if defined(__linux__)
+  // Debian/Ubuntu multiarch layouts keep the libc headers that <limits.h>
+  // and friends include under /usr/include/<multiarch>. The clang driver adds
+  // that directory; the cc1 invocations here must do it themselves.
+  const std::string multiarch = std::string("/usr/include/") + HOSTJIT_MULTIARCH;
+  if (std::filesystem::exists(multiarch))
+  {
+    args.push_back("-internal-isystem");
+    args.push_back(multiarch);
+  }
+#endif
 }
 
 static void appendIncludePaths(std::vector<std::string>& args, const CompilerOptions& options)
@@ -950,22 +980,7 @@ public:
 
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    const int ptx_version = libnvcc_ptx_isa_for_sm(config.sm_version); // see libnvcc/ptx_isa.h
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
@@ -975,11 +990,11 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("x86_64-pc-windows-msvc");
 #else
-    arg_strings.push_back("x86_64-pc-linux-gnu");
+    arg_strings.push_back(HOSTJIT_HOST_TRIPLE);
 #endif
     arg_strings.push_back("-S");
     arg_strings.push_back("-aux-target-cpu");
-    arg_strings.push_back("x86-64");
+    arg_strings.push_back(HOSTJIT_HOST_CPU);
     arg_strings.push_back("-fcuda-is-device");
     arg_strings.push_back("-fcuda-allow-variadic-functions");
 #ifdef _WIN32
@@ -1352,22 +1367,7 @@ public:
     std::string source_file  = temp_dir + "/" + input_file;
     std::string resource_dir = CLANG_RESOURCE_DIR;
 
-    // PTX version floor is 7.8. Some generated device code uses features
-    // added in PTX 7.6 (e.g. `bmsk`), so older versions can fail to assemble
-    // even on sm_75/sm_80.
-    int ptx_version = 78;
-    if (config.sm_version >= 120)
-    {
-      ptx_version = 87;
-    }
-    else if (config.sm_version >= 100)
-    {
-      ptx_version = 85;
-    }
-    else if (config.sm_version >= 90)
-    {
-      ptx_version = 80;
-    }
+    const int ptx_version = libnvcc_ptx_isa_for_sm(config.sm_version); // see libnvcc/ptx_isa.h
 
     std::vector<std::string> arg_strings;
     arg_strings.push_back(source_file);
@@ -1377,11 +1377,11 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("x86_64-pc-windows-msvc");
 #else
-    arg_strings.push_back("x86_64-pc-linux-gnu");
+    arg_strings.push_back(HOSTJIT_HOST_TRIPLE);
 #endif
     arg_strings.push_back("-S");
     arg_strings.push_back("-aux-target-cpu");
-    arg_strings.push_back("x86-64");
+    arg_strings.push_back(HOSTJIT_HOST_CPU);
     arg_strings.push_back("-fcuda-is-device");
     arg_strings.push_back("-fcuda-allow-variadic-functions");
 #ifdef _WIN32
@@ -1527,14 +1527,14 @@ public:
 #ifdef _WIN32
     arg_strings.push_back("x86_64-pc-windows-msvc");
 #else
-    arg_strings.push_back("x86_64-pc-linux-gnu");
+    arg_strings.push_back(HOSTJIT_HOST_TRIPLE);
 #endif
     arg_strings.push_back("-aux-triple");
     arg_strings.push_back("nvptx64-nvidia-cuda");
     arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
     arg_strings.push_back("-emit-obj");
     arg_strings.push_back("-target-cpu");
-    arg_strings.push_back("x86-64");
+    arg_strings.push_back(HOSTJIT_HOST_CPU);
     arg_strings.push_back("-fcuda-allow-variadic-functions");
 #ifdef _WIN32
     arg_strings.push_back("-fms-compatibility");
@@ -1961,19 +1961,7 @@ public:
 
     if (kind == LIBNVCC_PCH_DEVICE)
     {
-      int ptx_version = 78;
-      if (config.sm_version >= 120)
-      {
-        ptx_version = 87;
-      }
-      else if (config.sm_version >= 100)
-      {
-        ptx_version = 85;
-      }
-      else if (config.sm_version >= 90)
-      {
-        ptx_version = 80;
-      }
+      const int ptx_version = libnvcc_ptx_isa_for_sm(config.sm_version); // see libnvcc/ptx_isa.h
 
       arg_strings.push_back("-triple");
       arg_strings.push_back("nvptx64-nvidia-cuda");
@@ -1981,11 +1969,11 @@ public:
 #ifdef _WIN32
       arg_strings.push_back("x86_64-pc-windows-msvc");
 #else
-      arg_strings.push_back("x86_64-pc-linux-gnu");
+      arg_strings.push_back(HOSTJIT_HOST_TRIPLE);
 #endif
       arg_strings.push_back("-S");
       arg_strings.push_back("-aux-target-cpu");
-      arg_strings.push_back("x86-64");
+      arg_strings.push_back(HOSTJIT_HOST_CPU);
       arg_strings.push_back("-fcuda-is-device");
       arg_strings.push_back("-fcuda-allow-variadic-functions");
 #ifdef _WIN32
@@ -2008,14 +1996,14 @@ public:
 #ifdef _WIN32
       arg_strings.push_back("x86_64-pc-windows-msvc");
 #else
-      arg_strings.push_back("x86_64-pc-linux-gnu");
+      arg_strings.push_back(HOSTJIT_HOST_TRIPLE);
 #endif
       arg_strings.push_back("-aux-triple");
       arg_strings.push_back("nvptx64-nvidia-cuda");
       arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
       arg_strings.push_back("-emit-obj");
       arg_strings.push_back("-target-cpu");
-      arg_strings.push_back("x86-64");
+      arg_strings.push_back(HOSTJIT_HOST_CPU);
       arg_strings.push_back("-fcuda-allow-variadic-functions");
 #ifdef _WIN32
       arg_strings.push_back("-fms-compatibility");
@@ -2237,7 +2225,7 @@ public:
     arg_strings.push_back("--build-id");
     arg_strings.push_back("--eh-frame-hdr");
     arg_strings.push_back("-m");
-    arg_strings.push_back("elf_x86_64");
+    arg_strings.push_back(HOSTJIT_LLD_EMULATION);
     // Allow unresolved symbols — they will be satisfied at dlopen() time
     // by libraries already loaded in the host process (libc, libstdc++,
     // cudart, etc.).  This removes the need for system CRT objects and
