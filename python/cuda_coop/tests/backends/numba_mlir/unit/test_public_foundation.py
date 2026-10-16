@@ -238,9 +238,7 @@ def test_python_operator_compilation_is_stateless_only():
     ) == ("numba_type",)
 
 
-@pytest.mark.parametrize(
-    "operation", ("load", "reduce", "store", "sum")
-)
+@pytest.mark.parametrize("operation", ("load", "reduce", "store", "sum"))
 def test_group_markers_use_exact_callable_identity(operation):
     from cuda.coop.numba_mlir._compiler._operations import group_operation_name
 
