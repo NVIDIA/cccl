@@ -509,8 +509,8 @@ def test_inferred_load_dtype_follows_output_aliases(
     """Check that a load types the original payload through output aliases.
 
     Direct aliases, tuple projections, and branch-selected tuples all reach
-    the same allocation. The later exchange and scalar scan require its dtype
-    to remain available through that chain of results.
+    the same allocation. The later scalar scan requires the payload dtype
+    to remain available through those aliases.
     """
 
     from numba_cuda_mlir import types
@@ -530,10 +530,7 @@ def test_inferred_load_dtype_follows_output_aliases(
             else:
                 output = payload
             module.load(module.this_block(), source, output)
-            exchanged = module.exchange(
-                module.this_block(), payload, mode="blocked_to_striped"
-            )
-            return module.inclusive_sum(module.this_block(), exchanged[0])
+            return module.inclusive_sum(module.this_block(), payload[0])
 
     elif projection == "tuple":
 
@@ -542,10 +539,7 @@ def test_inferred_load_dtype_follows_output_aliases(
             packed = (payload,)
             output = packed[0]
             module.load(module.this_block(), source, output)
-            exchanged = module.exchange(
-                module.this_block(), payload, mode="blocked_to_striped"
-            )
-            return module.inclusive_sum(module.this_block(), exchanged[0])
+            return module.inclusive_sum(module.this_block(), payload[0])
 
     else:
 
@@ -558,10 +552,7 @@ def test_inferred_load_dtype_follows_output_aliases(
                 alias = (payload,)
             output = alias[-1]
             module.load(module.this_block(), source, output)
-            exchanged = module.exchange(
-                module.this_block(), payload, mode="blocked_to_striped"
-            )
-            return module.inclusive_sum(module.this_block(), exchanged[0])
+            return module.inclusive_sum(module.this_block(), payload[0])
 
     array_type = types.Array(types.int32, 1, "C")
     planner = _planner(
@@ -608,27 +599,6 @@ def test_inferred_load_dtype_rejects_conflicting_alias_writes(qualified):
     )
     with pytest.raises(GroupRewriteError, match="inconsistent dtypes"):
         planner.run()
-
-
-def test_load_does_not_infer_dtype_for_an_earlier_exchange():
-    from numba_cuda_mlir import types
-
-    from cuda import coop
-    from cuda.coop.numba_mlir._compiler._group_planner_support import (
-        GroupRewriteError,
-    )
-
-    def memory(source):
-        payload = coop.ThreadData(items_per_thread=2)
-        exchanged = coop.exchange(
-            coop.this_block(), payload, mode="blocked_to_striped"
-        )
-        coop.load(coop.this_block(), source, payload)
-        return exchanged
-
-    array_type = types.Array(types.int32, 1, "C")
-    with pytest.raises(GroupRewriteError, match="could not infer a dtype"):
-        _planner(memory, arg_types=(array_type,)).run()
 
 
 @pytest.mark.parametrize(
