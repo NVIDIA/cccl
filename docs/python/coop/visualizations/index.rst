@@ -16,8 +16,6 @@ do not predict GPU performance.
 
    load
    store
-   exchange
-   shuffle
    reduce
    scan
    merge-sort
