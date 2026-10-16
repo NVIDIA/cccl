@@ -25,11 +25,6 @@ struct stream_registry_factory_t;
 //
 // %PARAM% TEST_LAUNCH lid 0:2
 
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortKeys, device_radix_sort_keys);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortKeysDescending, device_radix_sort_keys_descending);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortPairs, device_radix_sort_pairs);
-DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceRadixSort::SortPairsDescending, device_radix_sort_pairs_descending);
-
 CUB_TEST("Device radix sort keys with runs_on sorts correctly", "[radix_sort][device][runs_on]", CUB_SMALL)
 {
   const auto num_items = GENERATE(0, 1, 42, 100'000);
@@ -55,14 +50,22 @@ CUB_TEST("Device radix sort keys with runs_on sorts correctly", "[radix_sort][de
   SECTION("Ascending")
   {
     const auto expected = radix_sort_reference(keys_in, false);
-    device_radix_sort_keys(keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortKeys(
+        storage, bytes, keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, launch_env);
+    });
     REQUIRE(keys_out == expected);
   }
 
   SECTION("Descending")
   {
     const auto expected = radix_sort_reference(keys_in, true);
-    device_radix_sort_keys_descending(keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortKeysDescending(
+        storage, bytes, keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, launch_env);
+    });
     REQUIRE(keys_out == expected);
   }
 }
@@ -82,14 +85,22 @@ CUB_TEST("Device radix sort keys with runs_on handles an SM limit", "[radix_sort
   SECTION("Ascending")
   {
     const auto expected = radix_sort_reference(keys_in, false);
-    device_radix_sort_keys(keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortKeys(
+        storage, bytes, keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, launch_env);
+    });
     REQUIRE(keys_out == expected);
   }
 
   SECTION("Descending")
   {
     const auto expected = radix_sort_reference(keys_in, true);
-    device_radix_sort_keys_descending(keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortKeysDescending(
+        storage, bytes, keys_in.data().get(), keys_out.data().get(), num_items, 0, 32, launch_env);
+    });
     REQUIRE(keys_out == expected);
   }
 }
@@ -122,15 +133,20 @@ CUB_TEST("Device radix sort pairs with runs_on sorts correctly", "[radix_sort][d
   SECTION("Ascending")
   {
     const auto expected = radix_sort_reference(keys_in, values_in, false);
-    device_radix_sort_pairs(
-      keys_in.data().get(),
-      keys_out.data().get(),
-      values_in.data().get(),
-      values_out.data().get(),
-      num_items,
-      0,
-      32,
-      env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortPairs(
+        storage,
+        bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        0,
+        32,
+        launch_env);
+    });
     REQUIRE(keys_out == expected.first);
     REQUIRE(values_out == expected.second);
   }
@@ -138,15 +154,20 @@ CUB_TEST("Device radix sort pairs with runs_on sorts correctly", "[radix_sort][d
   SECTION("Descending")
   {
     const auto expected = radix_sort_reference(keys_in, values_in, true);
-    device_radix_sort_pairs_descending(
-      keys_in.data().get(),
-      keys_out.data().get(),
-      values_in.data().get(),
-      values_out.data().get(),
-      num_items,
-      0,
-      32,
-      env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortPairsDescending(
+        storage,
+        bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        0,
+        32,
+        launch_env);
+    });
     REQUIRE(keys_out == expected.first);
     REQUIRE(values_out == expected.second);
   }
@@ -170,15 +191,20 @@ CUB_TEST("Device radix sort pairs with runs_on handles an SM limit", "[radix_sor
   SECTION("Ascending")
   {
     const auto expected = radix_sort_reference(keys_in, values_in, false);
-    device_radix_sort_pairs(
-      keys_in.data().get(),
-      keys_out.data().get(),
-      values_in.data().get(),
-      values_out.data().get(),
-      num_items,
-      0,
-      32,
-      env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortPairs(
+        storage,
+        bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        0,
+        32,
+        launch_env);
+    });
     REQUIRE(keys_out == expected.first);
     REQUIRE(values_out == expected.second);
   }
@@ -186,15 +212,20 @@ CUB_TEST("Device radix sort pairs with runs_on handles an SM limit", "[radix_sor
   SECTION("Descending")
   {
     const auto expected = radix_sort_reference(keys_in, values_in, true);
-    device_radix_sort_pairs_descending(
-      keys_in.data().get(),
-      keys_out.data().get(),
-      values_in.data().get(),
-      values_out.data().get(),
-      num_items,
-      0,
-      32,
-      env);
+    launch([&](std::uint8_t* storage, size_t& bytes, cudaStream_t stream = nullptr) {
+      const auto launch_env = cuda::std::execution::env{cuda::stream_ref{stream}, env};
+      return cub::DeviceRadixSort::SortPairsDescending(
+        storage,
+        bytes,
+        keys_in.data().get(),
+        keys_out.data().get(),
+        values_in.data().get(),
+        values_out.data().get(),
+        num_items,
+        0,
+        32,
+        launch_env);
+    });
     REQUIRE(keys_out == expected.first);
     REQUIRE(values_out == expected.second);
   }
@@ -212,9 +243,16 @@ CUB_TEST("Device radix sort rejects a mismatched runs_on capability", "[radix_so
   c2h::device_vector<std::int32_t> keys_in{3, 1, 2};
   c2h::device_vector<std::int32_t> keys_out(3);
 
-  // A device mismatch reports a CUDA error without requiring exception support.
+  size_t bytes = 0;
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceRadixSort::SortKeys(nullptr, bytes, keys_in.data().get(), keys_out.data().get(), 3, 0, 32, env));
+  c2h::device_vector<std::uint8_t> storage(bytes, thrust::no_init);
+
+  // The guarantee permits storage queries for another device but rejects execution there.
   REQUIRE(cudaErrorInvalidValue
-          == cub::DeviceRadixSort::SortKeys(keys_in.data().get(), keys_out.data().get(), 3, 0, 32, env));
+          == cub::DeviceRadixSort::SortKeys(
+            storage.data().get(), bytes, keys_in.data().get(), keys_out.data().get(), 3, 0, 32, env));
 }
 #endif // TEST_LAUNCH == 0 && defined(CCCL_ENABLE_ASSERTIONS)
 
@@ -241,163 +279,17 @@ CUB_TEST("Device radix sort queries storage with runs_on and no device allocatio
   CAPTURE(num_items);
   const auto env = cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, 128}});
   // Null data pointers let this query run without allocating memory or accessing a device.
-  std::int32_t* keys         = nullptr;
-  std::int32_t* values       = nullptr;
-  runs_on_key_t* custom_keys = nullptr;
-  cub::DoubleBuffer<std::int32_t> d_keys;
+  std::int32_t* keys = nullptr;
   cub::DoubleBuffer<std::int32_t> d_values;
   cub::DoubleBuffer<runs_on_key_t> d_custom_keys;
   size_t bytes = 0;
 
-  SECTION("SortKeys plain")
+  SECTION("keys")
   {
     REQUIRE(cudaSuccess == cub::DeviceRadixSort::SortKeys(nullptr, bytes, keys, keys, num_items, 0, 32, env));
   }
 
-  SECTION("SortKeys decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeys(
-              nullptr, bytes, custom_keys, custom_keys, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortKeys decomposer+bits")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeys(
-              nullptr, bytes, custom_keys, custom_keys, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortKeys DoubleBuffer plain")
-  {
-    REQUIRE(cudaSuccess == cub::DeviceRadixSort::SortKeys(nullptr, bytes, d_keys, num_items, 0, 32, env));
-  }
-
-  SECTION("SortKeys DoubleBuffer decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeys(nullptr, bytes, d_custom_keys, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortKeys DoubleBuffer decomposer+bits")
-  {
-    REQUIRE(
-      cudaSuccess
-      == cub::DeviceRadixSort::SortKeys(nullptr, bytes, d_custom_keys, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortKeysDescending plain")
-  {
-    REQUIRE(cudaSuccess == cub::DeviceRadixSort::SortKeysDescending(nullptr, bytes, keys, keys, num_items, 0, 32, env));
-  }
-
-  SECTION("SortKeysDescending decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeysDescending(
-              nullptr, bytes, custom_keys, custom_keys, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortKeysDescending decomposer+bits")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeysDescending(
-              nullptr, bytes, custom_keys, custom_keys, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortKeysDescending DoubleBuffer plain")
-  {
-    REQUIRE(cudaSuccess == cub::DeviceRadixSort::SortKeysDescending(nullptr, bytes, d_keys, num_items, 0, 32, env));
-  }
-
-  SECTION("SortKeysDescending DoubleBuffer decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeysDescending(
-              nullptr, bytes, d_custom_keys, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortKeysDescending DoubleBuffer decomposer+bits")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortKeysDescending(
-              nullptr, bytes, d_custom_keys, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortPairs plain")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairs(nullptr, bytes, keys, keys, values, values, num_items, 0, 32, env));
-  }
-
-  SECTION("SortPairs decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairs(
-              nullptr, bytes, custom_keys, custom_keys, values, values, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortPairs decomposer+bits")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairs(
-              nullptr, bytes, custom_keys, custom_keys, values, values, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortPairs DoubleBuffer plain")
-  {
-    REQUIRE(cudaSuccess == cub::DeviceRadixSort::SortPairs(nullptr, bytes, d_keys, d_values, num_items, 0, 32, env));
-  }
-
-  SECTION("SortPairs DoubleBuffer decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairs(
-              nullptr, bytes, d_custom_keys, d_values, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortPairs DoubleBuffer decomposer+bits")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairs(
-              nullptr, bytes, d_custom_keys, d_values, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortPairsDescending plain")
-  {
-    REQUIRE(
-      cudaSuccess
-      == cub::DeviceRadixSort::SortPairsDescending(nullptr, bytes, keys, keys, values, values, num_items, 0, 32, env));
-  }
-
-  SECTION("SortPairsDescending decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairsDescending(
-              nullptr, bytes, custom_keys, custom_keys, values, values, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortPairsDescending decomposer+bits")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairsDescending(
-              nullptr, bytes, custom_keys, custom_keys, values, values, num_items, runs_on_decomposer_t{}, 0, 32, env));
-  }
-
-  SECTION("SortPairsDescending DoubleBuffer plain")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairsDescending(nullptr, bytes, d_keys, d_values, num_items, 0, 32, env));
-  }
-
-  SECTION("SortPairsDescending DoubleBuffer decomposer")
-  {
-    REQUIRE(cudaSuccess
-            == cub::DeviceRadixSort::SortPairsDescending(
-              nullptr, bytes, d_custom_keys, d_values, num_items, runs_on_decomposer_t{}, env));
-  }
-
-  SECTION("SortPairsDescending DoubleBuffer decomposer+bits")
+  SECTION("pairs with decomposer and bit range")
   {
     REQUIRE(cudaSuccess
             == cub::DeviceRadixSort::SortPairsDescending(
