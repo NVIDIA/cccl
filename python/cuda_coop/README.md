@@ -42,12 +42,10 @@ Python 3.10 through 3.14 is supported. The current backend integration
 requires `numba-cuda-mlir>=0.5.0,<0.6`.
 
 Backend compiler and runtime CI is configured for Linux x86-64 with Python
-3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. The nightly
-matrix also configures H100 runtime tests with serial synchronization race
-checking under CUDA 13. Linux host contracts cover Python 3.10 and 3.14.
-Windows checks build and import the universal wheel and verify its headers;
-they do not execute the compiler backend. Other combinations need separate
-runtime qualification. See the
+3.14: CUDA 13 in pull requests and CUDA 12 in the nightly matrix. Linux host
+contracts cover Python 3.10 and 3.14. Windows checks build and import the
+universal wheel and verify its headers; they do not execute the compiler
+backend. Other combinations need separate runtime qualification. See the
 [validation scope](https://nvidia.github.io/cccl/unstable/python/coop/developer_overview.html#coop-numba-validation)
 for tested platforms, coverage, and hardware requirements.
 
@@ -123,7 +121,6 @@ explains terms and concepts, including blocked and striped layouts.
 | Memory operations | `load`, `store` |
 | Reduction | `reduce`, `sum` |
 | Scan | `scan`, `inclusive_scan`, `exclusive_scan`, `inclusive_sum`, `exclusive_sum` |
-| Data rearrangement | `exchange`, `shuffle` |
 | Comparison sorting | `merge_sort_keys`, `merge_sort_pairs` |
 
 Each operation documents its supported groups and result ownership in the
@@ -483,11 +480,10 @@ no algorithm selector.
 Sum is the default operation. `scan`, `exclusive_scan`, and `inclusive_scan`
 accept the same built-in string aliases as Reduce. The qualified API also
 recognizes the corresponding Python `operator` functions and NumPy ufuncs, and
-accepts stateless binary device callbacks. Binary callbacks must be
-associative and return the input dtype. A non-sum exclusive scan requires an
-`initial_value` with the payload dtype. Ordinary Python literals are checked
-and converted in that context. A block-prefix callback can supply that prefix
-instead. Inclusive scans reject an initial value.
+accepts stateless device callbacks. Callbacks must be associative and return
+the input dtype. A non-sum exclusive scan requires an `initial_value` with
+the payload dtype. Ordinary Python literals are checked and converted in
+that context. Inclusive scans reject an initial value.
 
 The qualified API also accepts `aggregate_output`, an exact-dtype one-item
 `ThreadData` or local array populated with the group aggregate on every
@@ -499,77 +495,14 @@ uniform within the group. At runtime, an invalid `valid_items` count triggers
 a deterministic device trap before CUB's 32-bit parameter is formed. The trap
 invalidates the current CUDA context.
 
-All five qualified Block Scan spellings accept a block-prefix callback through
-the `prefix_op` keyword. A stateless callback receives the block aggregate and
-returns the prefix:
-
-```python
-from numba_cuda_mlir import cuda, types
-
-import cuda.coop.numba_mlir as coop
-
-
-@cuda.jit(device=True)
-def prefix_after_aggregate(block_aggregate):
-    return block_aggregate + 7
-
-
-# Inside a kernel:
-scanned = coop.exclusive_sum(
-    coop.this_block(),
-    value,
-    prefix_op=prefix_after_aggregate,
-)
-```
-
-For a running prefix, wrap a two-argument device callback in
-`StatefulFunction`. Its first argument is a one-item state payload and its
-second is the block aggregate. Pass the state as the third positional
-argument:
-
-```python
-@cuda.jit(device=True)
-def carry_prefix(state, block_aggregate):
-    previous = state[0]
-    state[0] = previous + block_aggregate
-    return previous
-
-
-running_prefix = coop.StatefulFunction(carry_prefix, types.int64)
-
-# Inside a kernel, before a loop over tiles:
-state = coop.ThreadData(1)
-state[0] = types.int64(0)
-scanned = coop.exclusive_sum(
-    coop.this_block(),
-    value,
-    state,
-    prefix_op=running_prefix,
-)
-```
-
-The state may be a numeric one-item `ThreadData` or local array. Its dtype must
-exactly match the `StatefulFunction` descriptor, but may differ from the scan
-payload dtype. Keep the same state object alive across repeated calls and give
-every participating thread the same initial contents. CUB may invoke the
-callback in every lane of the block's first warp, but only lane 0's returned
-prefix is applied; only thread 0's state is authoritative after the calls.
-
-Prefix callbacks are available only through qualified Block Scan. They are
-mutually exclusive with `initial_value` and `aggregate_output`, are not
-stateful binary `scan_op` values, and do not support Warp Scan, `valid_items`,
-or structured state.
-
 All Scan providers use CUB temporary storage. Block calls use compiler-owned
 scratch or an explicit `TempStorage` descriptor. Backing may use static or
 dynamic shared memory. Compiler-owned scratch and explicit descriptors with
 `auto_sync=True` append a block reuse barrier. Explicit descriptors default to
 `auto_sync=False`, so the caller must synchronize before reuse. Physical and
 logical Warp calls use compiler-owned per-Warp storage and append `syncwarp`
-for the exact participating mask. Prefix callbacks keep these storage rules.
-When repeated calls reuse an explicit descriptor, set `auto_sync=True` or
-issue `cuda.syncthreads()` before reuse. The prefix state is a per-thread
-payload that persists across calls; it is not CUB temporary storage.
+for the exact participating mask. Prefix callbacks and running-prefix state
+are unsupported.
 
 This common example loads a block tile, computes its exclusive sum, and
 stores the out-of-place result:
@@ -591,45 +524,6 @@ def block_scan_kernel(values, prefixes, items_per_thread):
 ```
 
 The complete runnable form is in `examples/numba_mlir/block_scan.py`.
-
-## Exchange and Shuffle
-
-`exchange(group, value, mode=...)` returns a fresh payload and leaves `value`
-unchanged. The common API accepts `striped_to_blocked` and
-`blocked_to_striped` for block, physical Warp, and logical Warp groups. A
-blocked tile gives each thread consecutive items. A striped tile gives item
-`i` to thread `i % group_size` at per-thread position `i // group_size`.
-
-The qualified `cuda.coop.numba_mlir.exchange` API additionally exposes the
-block-only `warp_striped_to_blocked` and `blocked_to_warp_striped` layouts and
-the CUB scatter modes. Scatter ranks are local to the selected group tile and
-must use a signed integer `ThreadData` or local-array payload with the same
-extent as `value`. Unguarded ranks must be in
-`[0, group_size * items_per_thread)`. Guarded scatter skips negative ranks;
-every nonnegative rank must still be in range. Flagged scatter uses only ranks
-whose corresponding non-boolean integer flag is nonzero; each active rank must
-be in range. Active destinations must be unique for a deterministic result;
-holes and duplicate destinations are otherwise unspecified.
-`warp_time_slicing=True` is available only for block Exchange and is not valid
-for guarded or flagged scatter.
-
-`shuffle(block, value, mode=...)` is block-only. The common API accepts a
-`ThreadData` payload, `up` or `down`, and the fixed distance `1`; the vacated
-edge item is unspecified. The qualified API also accepts scalar `offset` and
-`rotate` modes. Offset distance is signed, may vary by thread, and must fit a
-signed 32-bit integer. Static overflows are rejected during compilation;
-runtime overflows trap before narrowing to CUB. Within that range, a source
-rank outside the block leaves that thread's result unspecified. Rotate
-distance may be static or runtime and must satisfy
-`0 < distance < block_threads`. An invalid runtime Rotate distance also
-executes a device trap. A trap invalidates that CUDA context, so validate
-untrusted distances before launch.
-
-Exchange and Shuffle require converged participation by every member of the
-selected group. They use compiler-owned CUB temporary storage and append a
-reuse barrier after every call. Block operations use one block-wide storage
-instance and `syncthreads`; physical and logical Warp Exchange use one
-disjoint slice per group and `syncwarp` with the exact group mask.
 
 These APIs are compile-time kernel constructs. Calling them outside a
 compatible compiler context reports a structured context error.
