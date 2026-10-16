@@ -18,10 +18,6 @@ MODE_HINT = (
     "default pipeline."
 )
 
-SUPPORTED_SURFACE = (
-    "this_block(), ThreadData, and load and store on a block group"
-)
-
 
 class TypedPipelineError(nb.errors.TypingError):
     """A cooperative construct the typed pipeline rejects."""
@@ -32,14 +28,12 @@ def unsupported_primitive(qualified_name: str) -> TypedPipelineError:
 
     return TypedPipelineError(
         f"{qualified_name} is not supported on the typed pipeline "
-        "(CUDA_COOP_NUMBA_MLIR_PIPELINE=typed). The typed pipeline "
-        f"supports {SUPPORTED_SURFACE}. {MODE_HINT}"
+        f"(CUDA_COOP_NUMBA_MLIR_PIPELINE=typed). {MODE_HINT}"
     )
 
 
 __all__ = [
     "MODE_HINT",
-    "SUPPORTED_SURFACE",
     "TypedPipelineError",
     "unsupported_primitive",
 ]
