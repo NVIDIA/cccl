@@ -8,14 +8,12 @@ Import this qualified API on the host before compiling kernels. Importing it
 loads the supported compiler runtime and registers the compiler pass that
 plans and replaces cooperative calls across each kernel before typing.
 Primitive calls and ThreadData are kernel constructs. Group descriptors can
-also be created on the host and used as kernel globals. StatefulFunction
-descriptors are created on the host and used as kernel constants. Construct
+also be created on the host and used as kernel globals. Construct
 TempStorage inside each kernel. During compilation, the compiler rebuilds
 the descriptor from its compile-time constant arguments and validates them.
 The compiler rejects a descriptor that comes from a module global. The
 module loads Load and Store during initialization. Other operation markers,
-the ``local`` and ``shared`` namespaces, and ``StatefulFunction`` load on
-first access.
+and the ``local`` and ``shared`` namespaces load on first access.
 """
 
 import importlib
@@ -97,7 +95,7 @@ __all__ = [
 
 
 def __getattr__(name):
-    """Load operation markers, allocation namespaces, and state descriptors.
+    """Load operation markers and allocation namespaces.
 
     Resolve these exports on first use and cache each object in this module.
     This keeps their imports out of basic namespace initialization.

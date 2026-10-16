@@ -67,8 +67,7 @@ Load fills the unused slots with zero, and Store writes only the valid
 prefix. Zero contributes nothing to the sum.
 
 Each block starts its sum at zero. For one prefix sum spanning the entire
-array, you also need to carry the totals between tiles. A later example
-does that while one block processes successive tiles. A scan distributed
+array, you also need to carry the totals between tiles. A scan distributed
 across independently scheduled blocks needs a device-wide algorithm.
 
 The host code copies input to the GPU once and copies the result back for
@@ -131,15 +130,7 @@ several operations:
        callback restrictions depend on the operation and group
    * - Extra Scan results or prefixes
      - Inclusive and exclusive results, including an exclusive initial value
-     - Also supports ``aggregate_output``, partial Warp Scan, and Block
-       Scan prefix callbacks
-   * - Layout exchange
-     - Blocked-to-striped and striped-to-blocked conversion
-     - Also supports block scatter and warp-striped layouts, with optional
-       warp time slicing where supported
-   * - Shifting values
-     - Unit ``up`` and ``down`` shifts of a block's ``ThreadData`` tile
-     - Also supports scalar block ``offset`` and ``rotate`` modes
+     - Also supports ``aggregate_output`` and partial Warp Scan
    * - Comparison sorting
      - Ascending or descending Merge Sort of keys or key-value pairs
      - Also accepts a custom ``compare_op`` and fixed local arrays
@@ -258,14 +249,14 @@ parts of the API.
      - Hierarchy queries
    * - ``coop.this_warp()``
      - One physical warp
-     - Load, Store, Exchange, Reduce, scalar Scan, Merge Sort
+     - Load, Store, Reduce, scalar Scan, Merge Sort
    * - ``coop.this_warp().group_by(8)``
      - Eight consecutive lanes within a physical warp
      - Logical-warp forms of those operations
    * - ``coop.this_block()``
      - All threads in the block
-     - Load, Store, Exchange, Shuffle, Reduce, Scan, Merge Sort, Radix Sort,
-       Radix Rank, and TopK
+     - Load, Store, Reduce, Scan, Merge Sort, Radix Sort, Radix Rank,
+       and TopK
    * - ``coop.this_block().group_by(2)``
      - Two consecutive physical warps
      - Hierarchy queries
@@ -393,7 +384,7 @@ Constructing a group or a ``ThreadData`` object does not synchronize threads.
 ``coop.ThreadData(items_per_thread)`` gives each thread that many slots.
 With 128 threads, the group owns ``128 * items_per_thread`` values. Each
 thread indexes only its own slots with ``items[i]``. To move values between
-threads, use an operation such as Exchange, Shuffle, or Scan.
+threads, use a cooperative operation such as Scan.
 
 :class:`~cuda.coop.ThreadDataLike` names the common payload interface used
 in API signatures. It describes the item count, dtype, and indexed reads and
@@ -484,9 +475,9 @@ Conflicting type requirements are errors. See :ref:`element-type inference
 Load writes into the payload supplied by the caller. Transpose Store
 algorithms may rearrange their input payload in place, as in CUB. Copy values
 before Store if they are needed later. Both operations return ``None``.
-Array Scan, Exchange, array Shuffle, Merge Sort, array Radix Sort, array Radix
-Rank, and TopK return fresh payloads, so their input values remain available
-afterwards. Reduction returns a scalar, including when each thread contributes
+Array Scan, Merge Sort, array Radix Sort, array Radix Rank, and TopK
+return fresh payloads, so their input values remain available afterwards.
+Reduction returns a scalar, including when each thread contributes
 several items.
 
 Numba can promote integer arithmetic. Store requires an exact match to the
@@ -570,41 +561,6 @@ measure alternatives with the actual dtype, item count, and surrounding
 work. Coalesced accesses can justify rearrangement costs, but the best
 choice depends on the kernel.
 
-An explicit layout conversion
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Exchange converts per-thread values between blocked and striped layouts.
-For example, ``striped_to_blocked`` lets a striped Load feed an operation
-that expects consecutive values in each thread. The logical tile order
-stays the same. Use ``blocked_to_striped`` for the reverse conversion.
-
-This kernel loads striped data, exchanges it into blocked order, and then
-computes the inclusive sum in the original array order:
-
-.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
-   :language: python
-   :name: coop-pg-exchange
-   :start-after: # coop-pg-exchange-begin
-   :end-before: # coop-pg-exchange-end
-   :dedent: 4
-
-Qualified block scatter modes let you supply destination ranks for finer
-control. Valid ranks and unique active destinations are caller requirements;
-duplicate destinations and holes leave unspecified slots.
-
-The :doc:`Exchange visualization <visualizations/exchange>` shows both
-layout conversions and ranked scatters, including the holes left by
-suppressed writes.
-
-Shuffle operates on a block's flattened blocked tile. The common ``up``
-and ``down`` modes shift it by one element and return a fresh payload.
-The first ``up`` slot or last ``down`` slot is unspecified. Set that
-boundary yourself before consuming it. Qualified scalar ``offset`` and
-``rotate`` modes have different distance rules; see :doc:`../coop_api`
-before substituting them for an array shift.
-
-Use the :doc:`Shuffle visualization <visualizations/shuffle>` to compare
-the array shifts with scalar offsets and rotation.
 
 Warp tile addresses
 ^^^^^^^^^^^^^^^^^^^
@@ -724,8 +680,6 @@ such use, ``release()`` hands the region to application code as a shared array.
      - Automatic scratch, or an explicit ``TempStorage``
    * - Warp transpose Load/Store; Warp Reduce; Warp Scan; Warp Merge Sort
      - Automatic scratch per group; explicit descriptors are rejected
-   * - Exchange and Shuffle
-     - Compiler-owned scratch and reuse synchronization
    * - Radix Rank
      - Compiler-owned block scratch and reuse synchronization
 
@@ -792,8 +746,8 @@ restriction reflects what the planner can establish; it does not mean that
 every rejected program necessarily races.
 
 Scratch lasts for the kernel's execution on that block. It cannot carry
-state between blocks or kernel launches. For running scan state within a
-block, use a separate payload as in the prefix-callback example below.
+state between blocks or kernel launches. Keep persistent application state
+in a separate payload.
 
 Handing scratch to application code
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -903,8 +857,8 @@ compiler-managed scratch.
 
 .. _coop-scans:
 
-Scan operators and carrying a prefix
-------------------------------------
+Scan operators and initial values
+---------------------------------
 
 An inclusive scan includes the current element; an exclusive scan starts
 with an initial value and excludes the current element. For sum, the
@@ -913,14 +867,12 @@ default exclusive initial value is zero. ``inclusive_sum`` and
 ``exclusive_scan`` accept ``scan_op``.
 
 For a non-sum exclusive scan, supply ``initial_value`` with the correct
-dtype and meaning for the operator, or use the qualified Block Scan prefix
-callback described below. Inclusive Scan rejects an explicit initial value.
-Block array scans flatten their inputs in blocked order and return one
-result for every input element.
+dtype and meaning for the operator. Inclusive Scan rejects an initial
+value. Block array scans flatten their inputs in blocked order and return
+one result for every input element.
 
 The :doc:`Scan visualization <visualizations/scan>` compares inclusive and
-exclusive results and shows how an initial value or prefix callback changes
-the sequence.
+exclusive results and shows how an initial value changes the sequence.
 
 Built-in operators use the same string vocabulary as Reduce. Scan relies
 on an associative operation: regrouping the inputs must preserve the
@@ -945,48 +897,6 @@ device function shows where to put an application's own associative
 operator. It executes on the GPU and must return the payload dtype.
 Binary Scan callbacks are stateless in the current API. Each callback
 combines two numeric scalars, even when a thread owns several items.
-
-.. _coop-prefix-callbacks:
-
-Several tiles in one block
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-A Block Scan prefix callback supplies the prefix preceding a tile. A
-stateful callback can also update a running total for the next tile. The
-following kernel scans 384 values using one block and three successive
-128-element tiles:
-
-.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_programming_guide_examples.py
-   :language: python
-   :name: coop-pg-prefix-callback
-   :start-after: # coop-pg-prefix-callback-begin
-   :end-before: # coop-pg-prefix-callback-end
-   :dedent: 4
-
-The callback receives the state first and the tile aggregate second. It
-returns the old total as the tile's prefix and saves the new total for the
-next call. The state payload is created before the loop, and every thread
-initializes its copy identically. Automatic scratch barriers remain enabled.
-
-CUB can invoke the callback in every lane of the block's first warp; only
-lane zero's returned prefix is applied. After the calls, read the final
-state from thread zero, as above. Other threads' state copies are not
-authoritative.
-
-State must be a numeric one-item payload with exactly the dtype declared
-by ``StatefulFunction``. Its dtype may differ from the scanned value dtype,
-as it does here, but the output still has the scanned dtype. A wider state
-does not widen the scan results.
-
-Prefix callbacks are available only on qualified Block Scan calls. They
-cannot be combined with ``initial_value`` or ``aggregate_output``. A
-stateless prefix callback accepts just the tile aggregate and returns the
-prefix. Warp Scan has no prefix callback support.
-
-Each block has its own state. Launching this kernel with several blocks
-would require separate input/output ranges and would create independent
-running sums. For a whole-array scan across many blocks, use an appropriate
-device-wide scan or design the additional inter-block algorithm explicitly.
 
 .. _coop-merge-sort:
 
@@ -1084,8 +994,7 @@ Initialize every input slot. If an application pads a partial tile, it
 must choose padding that sorts outside the desired output prefix.
 
 Qualified ``blocked_to_striped=True`` changes the result layout. Use
-``store(..., algorithm="striped")`` to write that result in sorted order,
-or Exchange to convert it before an operation expecting blocked data.
+``store(..., algorithm="striped")`` to write that result in sorted order.
 
 Radix Rank assigns a destination rank without moving keys. With
 ``begin_bit=0, end_bit=4``, it ranks keys by their lowest four bits and
@@ -1185,3 +1094,18 @@ static parameters, and import order first. The :doc:`API reference
 collects operation restrictions and configuration. For generated-source
 diagnostics and the compiler integration, see the
 :doc:`Developer Overview <developer_overview>`.
+
+Launch resource bounds
+----------------------
+
+A kernel specialized for an exact cooperative launch block receives an
+inferred ``launch_bounds`` equal to that block's thread count, unless the
+kernel supplies ``launch_bounds`` with a value other than ``None`` or sets
+``max_registers``. This lets the compiler account for the launch size when
+allocating registers. It can prevent a large block from failing to launch
+because the generated code uses too many registers per thread.
+
+Explicit bounds retain their meaning and must admit the exact launch. The
+inferred bound does not change the block dimensions or the kernel's launch
+specialization. Lower register use can require spilling, so this behavior does
+not imply a performance improvement.
