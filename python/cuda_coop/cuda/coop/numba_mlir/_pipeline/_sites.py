@@ -36,7 +36,8 @@ from ._templates import (
     CONTROLS,
     OPERATIONS,
     QUALIFIED_OPERATIONS,
-    LoadStoreRequest,
+    RESULT_EXTENT_SOURCES,
+    OperationRequest,
     is_scalar_value,
     is_wrapper_location,
     request_for,
@@ -62,7 +63,7 @@ class Site:
     stmt: Any
     kind: str
     line: int | None
-    request: LoadStoreRequest
+    request: OperationRequest
     scalar: Scalar | None = None
 
 
@@ -190,6 +191,29 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {"exchange", "shuffle"}:
+            from . import _exchange
+
+            value_type = self.typemap[expr.args[1].name]
+            dtype = getattr(value_type, "dtype", nb.unliteral(value_type))
+            operands = {"value": expr.args[1], **dict(expr.kws)}
+            request = _exchange.request_for(
+                kind,
+                [self.typemap[a.name] for a in expr.args],
+                {k: self.typemap[v.name] for k, v in expr.kws},
+                qualified=qualified,
+                extents={
+                    name: self._value_extent(operands[name], kind)
+                    for name in ("value", "ranks", "valid_flags")
+                    if name in operands
+                },
+                controls=self._controls(stmt, kind, dtype),
+            )
+            if request is None:
+                raise TypedPipelineError(
+                    f"coop.{kind}: payload dtype is unresolved"
+                )
+            return Site(stmt, kind, line, request)
         request = request_for(
             kind,
             [self.typemap[a.name] for a in expr.args],
@@ -361,28 +385,57 @@ class _Analysis:
         return self._value_extent(stmt.value.args[index], kind)
 
     def _value_extent(self, var, kind: str) -> int | None:
-        """Recover static local-array shape through aliases, casts and phis."""
+        """Recover static shape through array results and tuple projections.
+
+        Registry entries identify the input whose extent a result retains.
+        Element dtypes remain owned by native typing.
+        """
+
         ty = self.typemap[var.name]
         if not isinstance(ty, nb.types.Array) or isinstance(ty, ThreadDataType):
             return None
-        extents, pending, seen = set(), [var], set()
+        extents, seen = set(), set()
+        pending: list[tuple[Any, tuple[int, ...]]] = [(var, ())]
         while pending:
-            var = pending.pop()
-            if var.name in seen:
+            var, projection = pending.pop()
+            key = (var.name, projection)
+            if key in seen:
                 continue
-            seen.add(var.name)
+            seen.add(key)
             for definition in self.func_ir._definitions.get(var.name, ()):
                 if isinstance(definition, nb.ir.Var):
-                    pending.append(definition)
+                    pending.append((definition, projection))
                     continue
                 if isinstance(definition, nb.ir.Expr):
-                    if definition.op == "cast":
-                        pending.append(definition.value)
+                    if definition.op in {"cast", "exhaust_iter"}:
+                        pending.append((definition.value, projection))
                         continue
                     if definition.op == "phi":
-                        pending.extend(definition.incoming_values)
+                        pending.extend(
+                            (value, projection)
+                            for value in definition.incoming_values
+                        )
                         continue
-                extents.add(self._local_array_extent(definition))
+                    if definition.op == "static_getitem":
+                        pending.append(
+                            (definition.value, (definition.index, *projection))
+                        )
+                        continue
+                    if definition.op == "build_tuple" and projection:
+                        pending.append(
+                            (definition.items[projection[0]], projection[1:])
+                        )
+                        continue
+                    if definition.op == "call":
+                        source = RESULT_EXTENT_SOURCES.get(
+                            _callee(self.typemap, definition)
+                        )
+                        if isinstance(source, int) and not projection:
+                            pending.append((definition.args[source], ()))
+                            continue
+                extents.add(
+                    None if projection else self._local_array_extent(definition)
+                )
         if None in extents or not extents:
             raise TypedPipelineError(
                 f"cuda.coop.numba_mlir.{kind} requires a static "

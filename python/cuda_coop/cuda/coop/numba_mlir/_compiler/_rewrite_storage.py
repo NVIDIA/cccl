@@ -621,7 +621,6 @@ class _StorageRewrite:
             or the emission state claims a backing exists without
             recording its variable.
         """
-
         rewrite = cast("CoopSinglePhaseRewrite", self)
 
         if self._temp_storage_backing_emitted:
@@ -1397,7 +1396,7 @@ class _StorageRewrite:
         ):
             return None
         keys = [
-            self._resolve_temp_storage_ctor_key(cast(ir.Var, source))
+            rewrite._resolve_temp_storage_ctor_key(cast(ir.Var, source))
             for source in sources
         ]
         if any(key is None for key in keys):
