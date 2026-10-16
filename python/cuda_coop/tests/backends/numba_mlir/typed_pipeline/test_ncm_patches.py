@@ -11,6 +11,8 @@ kernels need typed mode.
 
 from __future__ import annotations
 
+import importlib
+
 import numpy as np
 import pytest
 
@@ -60,6 +62,12 @@ PATCHED = [
     "_ArgMarshaller._launch",
     "typeinfer.TypeInferer",
 ]
+
+
+@pytest.fixture(autouse=True)
+def activate_typed_pipeline():
+    if TYPED:
+        importlib.import_module("cuda.coop.numba_mlir")
 
 
 @pytest.mark.parametrize("pipeline", [None, "planner"])
