@@ -375,7 +375,6 @@ struct batch_completion_op
     if (has_next_batch && local_tile_idx + 1 == batch_tiles)
     {
       batch_state->batched_sum.Alias() = tile_inclusive;
-      __threadfence();
     }
 
     auto lookbacks_completed =
