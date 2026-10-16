@@ -24,6 +24,11 @@ from .reduce import (
     WarpReduceSpecialization,
     make_warp_reduce_specialization,
 )
+from .scan import (
+    WarpScanMode,
+    WarpScanSpecialization,
+    make_warp_scan_specialization,
+)
 
 __all__ = [
     "WarpExchangeMode",
@@ -35,11 +40,14 @@ __all__ = [
     "WarpLoadStoreSemantics",
     "WarpReduceOperation",
     "WarpReduceSpecialization",
+    "WarpScanMode",
+    "WarpScanSpecialization",
     "WarpStoreAlgorithm",
     "make_warp_exchange_specialization",
     "make_warp_load_specialization",
     "make_warp_load_store_semantics",
     "make_warp_load_store_specialization",
     "make_warp_reduce_specialization",
+    "make_warp_scan_specialization",
     "make_warp_store_specialization",
 ]

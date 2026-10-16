@@ -167,3 +167,64 @@ def check_common_surface(
         coop.reduce(block, np.int32(4), binary_op="max", temp_storage=storage),
         np.int32,
     )
+    assert_type(
+        coop.scan(
+            block,
+            np.int32(4),
+            mode="inclusive",
+            scan_op="max",
+            algorithm="raking_memoize",
+            temp_storage=storage,
+        ),
+        np.int32,
+    )
+    assert_type(
+        coop.exclusive_scan(
+            logical_warp,
+            np.float32(4),
+            scan_op="multiplies",
+            initial_value=1.0,
+        ),
+        np.float32,
+    )
+    assert_type(
+        coop.inclusive_scan(warp, np.int16(4), scan_op="min"),
+        np.int16,
+    )
+    assert_type(
+        coop.exclusive_sum(block, values, algorithm="warp_scans"),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(coop.inclusive_sum(warp, np.uint32(4)), np.uint32)
+
+
+def check_common_scan_seeds(integer_seed: int, floating_seed: float) -> None:
+    """Preserve item dtype with typed or Python-scalar Scan initial values."""
+
+    block = coop.this_block()
+    warp = coop.this_warp()
+    values = coop.ThreadData(items_per_thread=2, dtype=np.int16)
+    assert_type(
+        coop.exclusive_scan(block, np.int32(4), initial_value=np.int32(0)),
+        np.int32,
+    )
+    assert_type(
+        coop.scan(block, values, mode="exclusive", initial_value=np.int16(0)),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.float64(4), initial_value=np.float64(0)),
+        np.float64,
+    )
+    assert_type(
+        coop.scan(warp, np.float32(4), mode="exclusive", initial_value=0.0),
+        np.float32,
+    )
+    assert_type(
+        coop.exclusive_scan(block, values, initial_value=integer_seed),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.exclusive_scan(warp, np.float32(4), initial_value=floating_seed),
+        np.float32,
+    )

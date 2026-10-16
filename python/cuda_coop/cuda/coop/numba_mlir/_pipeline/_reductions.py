@@ -266,10 +266,8 @@ def _typing(kind, qualified):
 
 def register():
     from ._callbacks import StaticCallableType
-    from ._callbacks import register as register_callbacks
     from ._inference import operation_static_arguments
 
-    register_callbacks()
     for operation, (kind, qualified) in OPERATIONS.items():
         _templates.OPERATIONS[operation] = kind
         if qualified:

@@ -191,6 +191,35 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {
+            "scan",
+            "inclusive_scan",
+            "exclusive_scan",
+            "inclusive_sum",
+            "exclusive_sum",
+        }:
+            from . import _scan
+
+            value_type = self.typemap[expr.args[1].name]
+            dtype = getattr(value_type, "dtype", nb.unliteral(value_type))
+            operands = {"value": expr.args[1], **dict(expr.kws)}
+            request = _scan.request_for(
+                kind,
+                [self.typemap[a.name] for a in expr.args],
+                {k: self.typemap[v.name] for k, v in expr.kws},
+                qualified=qualified,
+                extents={
+                    name: self._value_extent(operands[name], kind)
+                    for name in ("value", "aggregate_output")
+                    if name in operands
+                },
+                controls=_scan.bind_controls(self, stmt, dtype),
+            )
+            if request is None:
+                raise TypedPipelineError(
+                    f"coop.{kind}: payload dtype is unresolved"
+                )
+            return Site(stmt, kind, line, request)
         if kind in {"exchange", "shuffle"}:
             from . import _exchange
 

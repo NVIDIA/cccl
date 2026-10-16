@@ -7,8 +7,10 @@
 Each probe runs ``python -I`` with ``PYTHONPATH`` deliberately set to the
 checkout. Isolated mode must ignore that path. The probe checks module and
 header origins before compiling, so checkout files cannot hide missing
-wheel contents. Reduce markers remain lazy in planner mode and register
-eagerly in typed mode; planner hooks load only when explicitly requested.
+wheel contents. Four import orders must each activate the backend. The public
+Reduce and Scan modules remain lazy in planner mode; typed mode registers
+their public markers eagerly. Planner hooks load only when requested in
+planner mode. Prefix-callback parameters and modules remain absent.
 """
 
 from __future__ import annotations
@@ -41,6 +43,8 @@ _IMPORT_ORDERS = (
 _COMPILE_PROBE = textwrap.dedent(
     """
     import importlib.metadata
+    import importlib.util
+    import inspect
     import os
     import sys
     from pathlib import Path
@@ -91,28 +95,56 @@ _COMPILE_PROBE = textwrap.dedent(
     qualified_coop = sys.modules["cuda.coop.numba_mlir"]
     public_reduce_module = "cuda.coop.numba_mlir._group._reduce"
     compiler_reduce_module = "cuda.coop.numba_mlir._compiler._group_reduce"
+    public_scan_module = "cuda.coop.numba_mlir._group._scan"
+    compiler_scan_module = "cuda.coop.numba_mlir._compiler._group_scan"
     assert (public_reduce_module in sys.modules) == typed_pipeline
     assert compiler_reduce_module not in sys.modules
+    assert (public_scan_module in sys.modules) == typed_pipeline
+    assert compiler_scan_module not in sys.modules
 
-    assert {"exchange", "reduce", "shuffle", "sum"} <= set(qualified_coop.__all__)
+    scan_names = {
+        "exclusive_scan",
+        "exclusive_sum",
+        "inclusive_scan",
+        "inclusive_sum",
+        "scan",
+    }
+    assert {"exchange", "reduce", "shuffle", "sum", *scan_names} <= set(
+        qualified_coop.__all__
+    )
+    assert "BlockScanAlgorithm" not in qualified_coop.__all__
+    assert not hasattr(qualified_coop, "BlockScanAlgorithm")
     assert callable(qualified_coop.exchange)
     assert callable(qualified_coop.shuffle)
     assert callable(qualified_coop.reduce)
     assert callable(qualified_coop.sum)
+    assert all(callable(getattr(qualified_coop, name)) for name in scan_names)
     assert public_reduce_module in sys.modules
     assert compiler_reduce_module not in sys.modules
+    assert public_scan_module in sys.modules
+    assert compiler_scan_module not in sys.modules
+    for name in scan_names:
+        parameters = inspect.signature(getattr(qualified_coop, name)).parameters
+        assert "prefix_op" not in parameters
+        assert "block_prefix_callback_op" not in parameters
+    assert importlib.util.find_spec("cuda.coop.numba_mlir._scan_op") is None
+    assert importlib.util.find_spec("cuda.coop.numba_mlir._stateful_function") is None
 
     if typed_pipeline:
         from cuda.coop.numba_mlir import _pipeline
 
         assert _pipeline._activated
         assert compiler_reduce_module not in sys.modules
+        assert compiler_scan_module not in sys.modules
     else:
         from cuda.coop.numba_mlir._compiler._operations import group_primitive
 
         assert group_primitive("reduce") is not None
         assert group_primitive("sum") is not None
+        for name in scan_names:
+            assert group_primitive(name) is not None
         assert compiler_reduce_module in sys.modules
+        assert compiler_scan_module in sys.modules
 
     distribution = importlib.metadata.distribution("cuda-coop")
     distribution_root = Path(distribution.locate_file("")).resolve()

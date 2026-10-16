@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import operator
 from typing import cast
 
 import numpy as np
@@ -258,6 +259,156 @@ coop.reduce(  # expected-error: [call-overload]
     np.int32(1),
     binary_op=select_left,
     algorithm="raking_commutative_only",
+)
+# Test rejected attributes.
+coop.BlockScanAlgorithm  # expected-error: [attr-defined]  # noqa: B018
+common.scan(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    mode=object(),
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    algorithm=object(),
+)
+coop.inclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    scan_op=object(),
+)
+# Discard results so an assignment cannot constrain seed inference.
+common.exclusive_scan(  # expected-error: [misc]
+    common_block,
+    np.int32(1),
+    initial_value=np.float32(0),
+)
+common.scan(  # expected-error: [call-overload]
+    common_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
+)
+common.exclusive_scan(  # expected-error: [misc]
+    common_block, common_values, initial_value=np.uint32(0)
+)
+common.scan(  # expected-error: [call-overload]
+    common_block, common_values, mode="exclusive", initial_value=np.int16(0)
+)
+common.exclusive_scan(  # expected-error: [misc]
+    common_block,
+    np.float32(1),
+    initial_value=np.float64(0),
+)
+common.scan(  # expected-error: [call-overload]
+    common.this_warp(),
+    np.int32(1),
+    mode="exclusive",
+    initial_value=np.float64(0),
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block,
+    np.int32(1),
+    initial_value=np.float32(0),
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block, np.int32(1), mode="exclusive", initial_value=np.int64(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block, values, initial_value=np.uint32(0)
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block, values, mode="exclusive", initial_value=np.int16(0)
+)
+coop.exclusive_scan(  # expected-error: [misc]
+    qualified_block,
+    np.float32(1),
+    initial_value=np.float64(0),
+)
+coop.scan(  # expected-error: [call-overload]
+    coop.this_warp(), np.int32(1), mode="exclusive", initial_value=np.float64(0)
+)
+common.scan(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    valid_items=1,
+)
+common.inclusive_sum(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    aggregate_output=common.ThreadData(items_per_thread=1, dtype=np.int32),
+)
+common.inclusive_scan(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    scan_op=select_left,
+)
+common.exclusive_scan(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    scan_op="max",
+)
+common.scan(  # expected-error: [call-overload]
+    common_block,
+    np.int32(1),
+    mode="inclusive",
+    initial_value=np.int32(0),
+)
+coop.exclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    scan_op="max",
+)
+coop.scan(
+    qualified_block,
+    values,
+    scan_op=np.multiply,  # expected-error: [arg-type]
+)
+coop.exclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    scan_op=operator.mul,
+)
+coop.exclusive_scan(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    scan_op=select_left,
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    mode="inclusive",
+    initial_value=np.int32(0),
+)
+coop.inclusive_sum(
+    coop.this_warp(),  # expected-error: [arg-type]
+    values,
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    coop.this_warp(),
+    np.int32(1),
+    algorithm="raking",
+)
+coop.inclusive_sum(
+    qualified_block,  # expected-error: [arg-type]
+    np.int32(1),
+    valid_items=1,
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    aggregate_output=np.int32(0),
+)
+coop.inclusive_sum(  # expected-error: [call-overload]
+    qualified_block,
+    np.bool_(True),
+)
+coop.inclusive_scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.complex64(1),
+    scan_op="max",
+)
+coop.scan(  # expected-error: [call-overload]
+    qualified_block,
+    np.int32(1),
+    prefix_op=select_left,
 )
 
 common.sum(

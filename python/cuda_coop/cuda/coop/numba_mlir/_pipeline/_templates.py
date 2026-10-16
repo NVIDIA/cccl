@@ -727,7 +727,17 @@ def register() -> None:
                 obj, make_wrapper(obj, qualified_name, operation)
             )
             register_template(obj, _not_inlined(qualified_name), name)
-        elif operation in {"exchange", "shuffle", "reduce", "sum"}:
+        elif operation in {
+            "exchange",
+            "shuffle",
+            "reduce",
+            "sum",
+            "scan",
+            "inclusive_scan",
+            "exclusive_scan",
+            "inclusive_sum",
+            "exclusive_sum",
+        }:
             continue  # Result families register their templates separately.
         else:
             register_template(obj, _rejecting(qualified_name), name)
