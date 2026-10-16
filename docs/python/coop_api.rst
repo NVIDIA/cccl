@@ -93,6 +93,7 @@ See :ref:`reduction and result ownership <coop-reductions>`.
 
 .. autofunction:: reduce
 .. autofunction:: sum
+.. autofunction:: reduce_batched
 
 Scan
 ^^^^
@@ -206,6 +207,7 @@ Reduction
 
 .. autofunction:: reduce
 .. autofunction:: sum
+.. autofunction:: reduce_batched
 
 Scan
 ^^^^
