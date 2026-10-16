@@ -48,6 +48,7 @@ numba-cuda-mlir-cu13 = [
   "typing_extensions>=4.12.0",
 ]
 test = [
+  "cffi",
   "cuda-pathfinder>=1.2.3",
   "FileCheck==1.0.6",
   "mypy",

@@ -10,6 +10,12 @@ backend installed. Each script checks its results against a host reference.
 | [nvmath_fft_shared.py](nvmath_fft_shared.py) | The FFT and reduction with ordinary static `cuda.shared.array` allocations. |
 | [nvmath_nvshmem_shared.py](nvmath_nvshmem_shared.py) | The complete FFT, reduction, and NVSHMEM kernel with ordinary static shared arrays. |
 
+The standard runtime CI jobs run the backend tests and examples that use the
+`cuda-coop` test and compiler dependencies. They log and skip the four
+composition examples above, which require additional device libraries. Run
+these examples separately with the dependencies and commands below to check
+nvmath and NVSHMEM composition.
+
 ## Shared storage for device libraries
 
 Calls to `scratch.reserve(count, dtype, alignment=...)` return ordinary shared

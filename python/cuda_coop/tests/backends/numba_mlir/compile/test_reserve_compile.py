@@ -94,7 +94,7 @@ def test_reserve_rejects_invalid_alignment(alignment):
         _compile(kernel, types.int32[::1])
 
 
-def test_reserve_capacity_includes_alignment_padding():
+def test_reserve_capacity_includes_alignment_padding(typed_pipeline):
     @cuda.jit(chip="sm_90")
     def kernel(output):
         storage = coop.TempStorage(71, sharing="exclusive")
@@ -103,8 +103,8 @@ def test_reserve_capacity_includes_alignment_padding():
         output[0] = prefix[0] + values[0]
 
     with pytest.raises(
-        CoopSinglePhaseRewriteError,
-        match="TempStorage size_in_bytes is smaller than required",
+        TypingError if typed_pipeline else CoopSinglePhaseRewriteError,
+        match=r"TempStorage size_in_bytes is smaller than required.*71.*72",
     ):
         _compile(kernel, types.float64[::1])
 
@@ -121,7 +121,7 @@ def test_shared_reserve_capacity_uses_largest_requirement():
 
 
 @pytest.mark.parametrize("access", ["direct", "helper", "bound_method"])
-def test_reserve_rejects_auto_sync_for_its_descriptor(access):
+def test_reserve_rejects_auto_sync_for_its_descriptor(access, typed_pipeline):
     @cuda.jit(device=True, inline="always")
     def allocate(storage):
         alias = storage
@@ -140,7 +140,7 @@ def test_reserve_rejects_auto_sync_for_its_descriptor(access):
         output[cuda.threadIdx.x] = values[cuda.threadIdx.x]
 
     with pytest.raises(
-        CoopSinglePhaseRewriteError,
+        TypingError if typed_pipeline else CoopSinglePhaseRewriteError,
         match="TempStorage.reserve requires auto_sync=False",
     ):
         _compile(kernel, types.int32[::1])

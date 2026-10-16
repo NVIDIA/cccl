@@ -51,6 +51,10 @@ from ._rewrite_support import (
     _TempStorageUseRequirement,
     ir,
 )
+from ._storage_layout import (
+    get_device_shared_memory_limits,
+    validate_emittable_topology,
+)
 
 if TYPE_CHECKING:
     from ._rewrite import CoopSinglePhaseRewrite
@@ -385,12 +389,7 @@ class _StorageRewrite:
             rhs=x_stride,
         )
 
-    @staticmethod
-    def _validate_emittable_topology(lowering_plan: GroupLoweringPlan | None):
-        """Delegate shared storage layout policy to both compiler pipelines."""
-        from ._storage_layout import validate_emittable_topology
-
-        return validate_emittable_topology(lowering_plan)
+    _validate_emittable_topology = staticmethod(validate_emittable_topology)
 
     def _emit_storage_instance_index(
         self,
@@ -528,10 +527,9 @@ class _StorageRewrite:
             implicit is not None and implicit.uses
         )
 
-    def _get_device_shared_memory_limits(self, required_bytes: int):
-        """Delegate shared storage layout policy to both compiler pipelines."""
-        from ._storage_layout import get_device_shared_memory_limits
-
+    def _get_device_shared_memory_limits(
+        self, required_bytes: int
+    ) -> tuple[int, int]:
         return get_device_shared_memory_limits(
             required_bytes, _query_device_shared_memory_limits
         )
@@ -1486,8 +1484,8 @@ class _StorageRewrite:
         ``reserve()`` methods are validated separately; the arrays they
         return may be used at runtime. Subscripted-provider syntax and other
         call arguments are not accepted descriptor uses. Every canonical
-        constructor must have a primitive or reservation consumer, so an otherwise
-        unused ``storage = coop.TempStorage()`` is also rejected.
+        constructor must have a primitive or reservation consumer, so an
+        otherwise unused ``storage = coop.TempStorage()`` is also rejected.
 
         Validation runs after device-helper inlining. Passing a descriptor
         to a helper is supported when inlining exposes its uses in the
