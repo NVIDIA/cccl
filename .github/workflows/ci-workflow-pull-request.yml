@@ -111,8 +111,8 @@ jobs:
       - name: Build compile-time benchmark dispatch matrix
         id: build-compile-time-matrix
         run: |
-          if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') }}" == "true" ]]; then
-            echo "Commit message contains [skip-compile-time-bench]; skipping compile-time benchmark dispatch."
+          if [[ "${{ contains(github.event.head_commit.message, '[skip-compile-time-bench]') || contains(github.event.head_commit.message, '[skip-cccl-compile-time-bench]') }}" == "true" ]]; then
+            echo "Commit message requests skipping the CCCL compile-time comparison dispatch."
             {
               echo "compile_time_enabled=false"
               echo 'compile_time_matrix={"include":[]}'

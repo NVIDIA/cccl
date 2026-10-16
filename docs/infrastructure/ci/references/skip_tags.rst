@@ -64,6 +64,11 @@ also run with ``[bench-only]``. Literal project skip tags, ``[skip-tpt]``, and
 ``[skip-compile-time-bench]`` suppress the corresponding trace builds. See
 :doc:`/maintainers/how_tos/compile_time` for collection and report details.
 
+Use ``[skip-cccl-compile-time-bench]`` to skip only the existing CCCL public-header
+comparison while running the explicitly selected third-party trace builds.
+Combine it with ``[bench-only]`` and ``[skip-sass-diff]`` for collection/reporting-only
+PR coverage.
+
 Place one or more tags in the last commit message before pushing::
 
     git commit -m "Run PR benchmarks [bench-only]"

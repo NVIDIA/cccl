@@ -16,6 +16,11 @@ and must be emptied before merging. Existing project skip tags and
 `[skip-compile-time-bench]` suppress the corresponding trace builds. These jobs
 are informational and do not change the existing CI merge gate.
 
+For a PR run limited to third-party trace collection and reporting, use
+`[run-third-party-compile-time-bench] [bench-only] [skip-sass-diff] [skip-cccl-compile-time-bench]`
+in the commit message. The last tag skips only the existing CCCL public-header
+comparison; `[skip-compile-time-bench]` suppresses all compile-time jobs.
+
 ### Original datasets
 
 The `compile-time-<config-id>-traces` artifact contains:
