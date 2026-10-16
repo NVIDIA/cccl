@@ -17,6 +17,7 @@ import pytest
 pytest.importorskip("numba_cuda_mlir")
 import numba_cuda_mlir.tools as compiler_tools
 from numba_cuda_mlir import cuda, types
+from numba_cuda_mlir.numba_cuda.core.errors import TypingError
 
 import cuda.coop.numba_mlir as numba_coop
 from cuda.coop.numba_mlir import _types
@@ -139,7 +140,7 @@ def test_rld_production_compile_and_link(
     ],
 )
 def test_bulk_destination_requires_matching_writable_contiguous_array(
-    monkeypatch, destination_type
+    monkeypatch, destination_type, typed_pipeline
 ):
     monkeypatch.setattr(
         _types.cuda,
@@ -172,7 +173,12 @@ def test_bulk_destination_requires_matching_writable_contiguous_array(
         ("sharedmem", 0),
         ("cluster", None),
     )
-    with pytest.raises(TypeError, match="writable contiguous"):
+    with pytest.raises(
+        TypingError if typed_pipeline else TypeError,
+        match="writable contiguous.*one-dimensional.*int32"
+        if typed_pipeline
+        else "writable contiguous",
+    ):
         kernel._compile_launch_config_signature(
             types.void(destination_type), launch
         )

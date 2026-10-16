@@ -54,6 +54,7 @@ def _activate() -> None:
         _radix,
         _reductions,
         _resolve,
+        _run_length,
         _scan,
         _temp_storage,
         _templates,
@@ -74,6 +75,7 @@ def _activate() -> None:
     _topk.register()
     _neighbors.register()
     _histogram.register()
+    _run_length.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()

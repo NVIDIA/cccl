@@ -121,6 +121,12 @@ def _operand(builder, operand, abi_type, args, keywords, allocations):
             value = value.item()
         return nb.arith.constant(builder.get_mlir_type(abi_type), value)
     var = _results.argument(operand[1], args, keywords)
+    if tag == "length":
+        zero = nb.arith.constant(nb.IndexType.get(), 0)
+        length = nb.memref.dim(builder.load_var(var), zero)
+        return nb.arith.index_cast(
+            out=builder.get_mlir_type(abi_type), in_=length
+        )
     if tag == "pointer":
         return nb.memref_data_pointer(builder.load_var(var))
     if tag == "box":
