@@ -34,6 +34,7 @@ def test_each_site_calls_its_provider():
         f32_in_out(),
         r"""
         CHECK:       gpu.func @{{.*}}k1{{.*}} kernel attributes
+        CHECK-SAME:    nvvm.maxntid = array<i32: 128, 1, 1>
         CHECK-NOT:   gpu.address_space<workgroup>
         CHECK:       func.call @[[LOAD:\w+_block_load\w+__abi]](
         CHECK-NOT:   gpu.barrier
@@ -95,5 +96,25 @@ def test_barriers_follow_their_transposing_call():
         """,
         dump="mlir",
         block=BLOCK,
+        chip=CHIP,
+    )
+
+
+def test_launch_maxntid():
+    @cuda.jit
+    def k(source, output):
+        block = coop.this_block()
+        items = coop.ThreadData(2)
+        coop.load(block, source, items)
+        coop.store(block, output, items)
+
+    testing.check(
+        k,
+        f32_in_out(),
+        """
+        CHECK: nvvm.maxntid = array<i32: 128, 1, 1>
+        """,
+        dump="mlir",
+        block=(32, 4),
         chip=CHIP,
     )

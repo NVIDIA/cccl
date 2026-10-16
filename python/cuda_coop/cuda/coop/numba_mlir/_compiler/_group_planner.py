@@ -158,7 +158,7 @@ class _GroupCallPlanner:
         """Resolve and reuse one provider compile context for this planner.
 
         All generated group-method helpers in the attempt share the same
-        header and option context. Cache it lazily so plans with no such
+        header and toolkit context. Cache it lazily so plans with no such
         helper do not need to resolve compiler inputs here.
         """
 
@@ -2084,7 +2084,7 @@ class _GroupCallPlanner:
 
         Return an existing array unchanged. For a scalar, append a payload
         allocation marker and a write to element zero. Return the payload and
-        a flag describing the original operand's array form; the family uses
+        a flag describing the original operand's array form. A family can use
         that flag to restore a scalar result after the provider call.
 
         Parameters
@@ -2304,9 +2304,9 @@ class _GroupCallPlanner:
 
         Validate argument shape and resolve dtype/level controls as constants.
         Resolve the group through the requested hierarchy level and reject
-        unsupported mapped-parent queries, mapped-warp synchronization, and
-        grid synchronization. Grid sync needs a cooperative launch, which this
-        launch descriptor cannot request.
+        mapped-group queries above the immediate parent, mapped-warp
+        synchronization, and grid synchronization. Grid sync needs a
+        cooperative launch, which this launch descriptor cannot request.
 
         Reuse an invocable keyed by group semantics, operation, dtype, and
         level within this planner attempt. Its C++ helper embeds the
@@ -2788,6 +2788,11 @@ class _GroupPlanning:
     whose configured launch supplies those dimensions. The returned boolean
     tells the owner whether to rebuild IR analysis before rewriting provider
     calls.
+
+    Group resolution also checks explicit launch bounds against the exact
+    block size. When neither launch bounds nor a register limit is supplied,
+    it records that thread count as a launch bound for this compilation only;
+    the dispatcher's user options remain unchanged.
     """
 
     def _resolve_groups(self) -> bool:
@@ -2826,6 +2831,14 @@ class _GroupPlanning:
 
         Pass the returned configuration to ``_GroupCallPlanner`` to resolve
         the group topology and replace public operations with provider calls.
+        Check explicit ``launch_bounds`` against the exact block size. When
+        neither ``launch_bounds`` nor ``max_registers`` is set, set
+        ``launch_bounds`` to the exact thread count, ``x * y * z``. Without a
+        bound, code generation can give each thread more registers than a
+        large block can supply, and the launch fails. An explicit register
+        limit already chooses that tradeoff, so it turns inference off.
+        Inferred bounds affect this compiled result only. The dispatcher keeps
+        the user options and can infer a bound for each later specialization.
 
         Returns
         -------
@@ -2838,7 +2851,8 @@ class _GroupPlanning:
         ------
         GroupRewriteError
             Cooperative calls remain in a standalone device function, or group
-            planning finds invalid calls or escaping descriptors.
+            planning finds invalid calls or escaping descriptors, or the exact
+            block exceeds explicit launch bounds.
         ForceLiteralArg
             A group or operation needs a compile-time argument value. The
             dispatcher consumes this compiler signal and retries with the
@@ -2864,7 +2878,26 @@ class _GroupPlanning:
                 "into the kernel."
             )
         launch_config = require_launch_config(planner.state)
-        return _GroupCallPlanner(planner.state, launch_config).run()
+        group_planner = _GroupCallPlanner(planner.state, launch_config)
+        changed = group_planner.run()
+        assert isinstance(group_planner.launch.exact_block_dim, tuple)
+        x, y, z = group_planner.launch.exact_block_dim
+        threads = x * y * z
+        # Configured compiles own these options; never write inferred bounds
+        # into the dispatcher's persistent user options. An explicit register
+        # limit keeps its original compiler/resource tradeoff.
+        options = planner.state.metadata["targetoptions"]
+        bounds = options.get("launch_bounds")
+        if bounds is not None:
+            maximum = bounds[0] if isinstance(bounds, tuple) else bounds
+            if threads > maximum:
+                raise GroupRewriteError(
+                    f"cuda.coop exact launch block {(x, y, z)!r} has {threads} "
+                    f"threads, exceeding explicit launch_bounds={bounds!r}."
+                )
+        elif options.get("max_registers") is None:
+            options["launch_bounds"] = threads
+        return changed
 
 
 __all__ = [

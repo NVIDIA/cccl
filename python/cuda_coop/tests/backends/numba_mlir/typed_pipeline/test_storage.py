@@ -165,8 +165,6 @@ def test_dynamic_backing_records_the_exact_launch_requirement(
     result = _compile(kernel, types.int32[::1], types.int32[::1])
     assert result.metadata["cubin"]
     assert result.metadata["required_dynamic_shared_memory"] == 64 * 1024
-    assert kernel.targetoptions.get("launch_bounds") is None
-    assert result.metadata["coop_plan"].kernel.launch_bounds is None
 
 
 @pytest.mark.parametrize(

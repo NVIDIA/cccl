@@ -37,6 +37,17 @@ def _fixed_current_device(monkeypatch):
     )
 
 
+def test_constructor_only_kernel_retains_exact_launch_bounds():
+    def kernel(output):
+        coop.this_block()
+        output[0] = 1
+
+    compiled = testing.compile_kernel(
+        kernel, types.void(types.int32[::1]), block=BLOCK, chip=CHIP
+    )
+    assert "launch_bounds 128" in compiled.plan
+
+
 def test_different_partitions_cannot_merge_into_one_group():
     def kernel(output, condition):
         if condition:

@@ -6,7 +6,8 @@
 
 Each test compiles one kernel for a stand-in launch of ``BLOCK`` threads and
 checks the plan with FileCheck: the sites in program order and the request
-each completed to, the scratch region and its backing, and the barriers.
+each completed to, the scratch region and its backing, the barriers, and
+``launch_bounds``.
 """
 
 from __future__ import annotations
@@ -43,6 +44,7 @@ def test_inferred_payload_takes_the_load_source_dtype():
         """
         CHECK-LABEL: coop-plan k1
         CHECK-NEXT:    block (128, 1, 1) from launch
+        CHECK-NEXT:    launch_bounds 128
         CHECK-NEXT:    bundle sites=2 specializations=2
         CHECK-NEXT:    site #0 load @L{{[0-9]+}} algorithm=direct dtype=float32
         CHECK-SAME:      items_per_thread=4 block=128x1x1{{$}}
@@ -108,6 +110,28 @@ def test_transposing_algorithms_share_one_region_with_barriers(algorithm):
         CHECK-NEXT:    barrier after #1
         """,
         block=BLOCK,
+        chip=CHIP,
+    )
+
+
+def test_launch_bounds_come_from_the_launch_block():
+    @cuda.jit
+    def k(source, output):
+        block = coop.this_block()
+        items = coop.ThreadData(2)
+        coop.load(block, source, items)
+        coop.store(block, output, items)
+
+    testing.check(
+        k,
+        f32_in_out(),
+        """
+        CHECK-LABEL: coop-plan k
+        CHECK-NEXT:    block (32, 4, 1) from launch
+        CHECK-NEXT:    launch_bounds 128
+        CHECK:         site #0 load {{.*}} block=32x4x1
+        """,
+        block=(32, 4),
         chip=CHIP,
     )
 
