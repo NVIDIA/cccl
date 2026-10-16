@@ -193,22 +193,16 @@ class TempStorageLike(Protocol):
         """Consume the descriptor and return its complete shared array."""
 
 __all__ = [
-    "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",
-    "CommonShuffleMode",
-    "ExchangeMode",
     "LoadStoreAlgorithm",
     "ReduceAlgorithm",
     "ReduceOperator",
-    "ScalarShuffleMode",
-    "ShuffleMode",
     "SynchronizableGroupKind",
     "TempStorageLike",
     "TempStorageSharing",
     "ThreadDataLike",
     "ThreadGroupKind",
     "ThreadLevel",
-    "WarpExchangeMode",
     "WarpLoadStoreAlgorithm",
     "_CommonNumericT",
 ]
