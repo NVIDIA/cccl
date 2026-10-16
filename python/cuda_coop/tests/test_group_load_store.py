@@ -161,19 +161,10 @@ def test_valid_items_bounds_use_the_group_tile(group, tile_size):
     assert condition.enforcement is PreconditionEnforcement.CALLER
 
 
-@pytest.mark.parametrize(
-    ("group", "scope"),
-    [
-        (this_block(), SynchronizationScope.BLOCK),
-        (this_warp(), SynchronizationScope.WARP),
-    ],
-)
-def test_caller_scratch_auto_sync_changes_the_reuse_barrier_and_artifact(
-    group, scope
-):
+def test_block_caller_scratch_auto_sync_changes_the_barrier_and_artifact():
     def plan(auto_sync):
         return _plan(
-            group,
+            this_block(),
             _load_store(
                 algorithm="transpose",
                 storage_ownership=StorageOwnership.CALLER,
@@ -186,12 +177,34 @@ def test_caller_scratch_auto_sync_changes_the_reuse_barrier_and_artifact(
     unsynchronized = plan(False)
 
     assert synchronized.temp_storage.exact_layout_required
-    assert synchronized.synchronization.storage_reuse_barrier is scope
+    assert (
+        synchronized.synchronization.storage_reuse_barrier
+        is SynchronizationScope.BLOCK
+    )
     assert (
         unsynchronized.synchronization.storage_reuse_barrier
         is SynchronizationScope.NONE
     )
     assert synchronized.artifact_key != unsynchronized.artifact_key
+
+
+@pytest.mark.parametrize("kind", ["load", "store"])
+@pytest.mark.parametrize("group", [this_warp(), this_warp().group_by(8)])
+@pytest.mark.parametrize("algorithm", ["direct", "transpose"])
+def test_warp_groups_reject_caller_owned_scratch(kind, group, algorithm):
+    plan = _plan(
+        group,
+        _load_store(
+            kind,
+            algorithm=algorithm,
+            storage_ownership=StorageOwnership.CALLER,
+            storage_sharing="shared",
+        ),
+    )
+
+    assert plan.target is GroupLoweringTarget.UNSUPPORTED
+    assert plan.unsupported.code is UnsupportedReasonCode.OPERATION_VARIANT
+    assert "does not accept explicit temp_storage" in plan.unsupported.message
 
 
 def test_unused_scratch_does_not_change_the_artifact():

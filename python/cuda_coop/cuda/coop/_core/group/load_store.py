@@ -458,6 +458,14 @@ def _plan_load_store(
         if width_error is not None:
             return width_error
         assert warp_width is not None
+        if operation.storage_ownership is StorageOwnership.CALLER:
+            return _unsupported(
+                call,
+                resolved,
+                UnsupportedReasonCode.OPERATION_VARIANT,
+                f"cub::Warp{operation.kind.value.title()} does not accept "
+                "explicit temp_storage",
+            )
         try:
             algorithm = WarpLoadStoreAlgorithm(operation.algorithm.value)
         except ValueError:
