@@ -43,8 +43,7 @@ template <class _Tp>
 inline constexpr bool is_floating_point_v = __cccl_is_floating_point_v<remove_cv_t<_Tp>>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT
-is_floating_point : bool_constant<is_floating_point_v<_Tp>> // NOLINT(cccl-prefer-cuda-traits)
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : bool_constant<is_floating_point_v<_Tp>>
 {};
 
 _CCCL_END_NAMESPACE_CUDA_STD

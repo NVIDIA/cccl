@@ -49,12 +49,6 @@ struct half_t
     *this = half_t(static_cast<float>(a));
   }
 
-  /// Constructor from integer
-  __host__ __device__ __forceinline__ explicit half_t(unsigned int a)
-  {
-    *this = half_t(static_cast<float>(a));
-  }
-
   /// Constructor from std::size_t
   __host__ __device__ __forceinline__ explicit half_t(std::size_t a)
   {
@@ -247,11 +241,6 @@ struct half_t
     return half_t(static_cast<float>(*this) - static_cast<float>(other));
   }
 
-  __host__ __device__ __forceinline__ half_t operator-() const
-  {
-    return half_t(-static_cast<float>(*this));
-  }
-
   /// Less-than
   __host__ __device__ __forceinline__ bool operator<(const half_t& other) const
   {
@@ -337,11 +326,6 @@ public:
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t lowest()
   {
     return half_t(numeric_limits<__half>::lowest());
-  }
-
-  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE half_t epsilon() noexcept
-  {
-    return half_t(numeric_limits<__half>::epsilon());
   }
 };
 

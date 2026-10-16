@@ -64,9 +64,7 @@ AST_MATCHER(UnresolvedLookupExpr, hasDependentTypeArgument) // NOLINT
 class PreferCUDATraitsCheck final : public ClangTidyCheck
 {
   static constexpr StringRef TRAITS_OPTION{"Traits"};
-  static constexpr StringRef TRAITS_OPTION_DEFAULT{
-    "::cuda::std::is_trivially_copyable,::cuda::is_trivially_copyable;"
-    "::cuda::std::is_floating_point,::cuda::is_floating_point;"};
+  static constexpr StringRef TRAITS_OPTION_DEFAULT{"::cuda::std::is_trivially_copyable,::cuda::is_trivially_copyable;"};
   static constexpr auto NUM_DEFAULT_OPTONS = constexpr_str_count_(TRAITS_OPTION_DEFAULT, /*tgt=*/';') + 1;
 
   static constexpr StringRef DECLARATION_BIND{"d"};
@@ -217,7 +215,7 @@ public:
 
     // Include the qualifier in the replacement range when present:
     //
-    // cuda::std::is_floating_point<T>
+    // cuda::std::is_trivially_copyable<T>
     // ^          ^
     // |          name_loc
     // qualifier_loc.getBeginLoc()
@@ -232,25 +230,25 @@ public:
     //
     // begin_loc  name_loc
     // v          v
-    // cuda::std::is_floating_point<T>::value
-    // ^--------------------------^
-    //                            CharSourceRange::getTokenRange()
+    // cuda::std::is_trivially_copyable<T>::value
+    // ^------------------------------^
+    //                                CharSourceRange::getTokenRange()
     //
     // Which we then convert into the actual file range (the same text but this time as offsets
     // into the file buffer):
     //
-    // cuda::std::is_floating_point<T>::value
-    // ^--------------------------^
+    // cuda::std::is_trivially_copyable<T>::value
+    // ^------------------------------^
     // range
     const auto range = Lexer::makeFileCharRange(
       CharSourceRange::getTokenRange(begin_loc, name_loc), *result.SourceManager, ctx.getLangOpts());
 
     // If the trait is used as part of a macro expansion:
     //
-    // #define IS_FP(T) cuda::std::is_floating_point_v<T>
+    // #define IS_COPYABLE(T) cuda::std::is_trivially_copyable_v<T>
     //
-    //     v----v begin_loc, name_loc etc. refer to tokens as if the macro is expanded
-    // if (IS_FP(T)) {
+    //     v----------v begin_loc, name_loc etc. refer to tokens as if the macro is expanded
+    // if (IS_COPYABLE(T)) {
     //
     // }
     //
@@ -260,7 +258,7 @@ public:
     //
     //     begin_loc  name_loc
     //     v          v
-    // if (cuda::std::is_floating_point_v<T>) {
+    // if (cuda::std::is_trivially_copyable_v<T>) {
     //
     // }
     //
@@ -268,7 +266,7 @@ public:
     // map these tokens back to any text in the source. We can't provide a fixit because we
     // don't want to potentially mess up concrete instantiations:
     //
-    // static_assert(IS_FP(float));
+    // static_assert(IS_COPYABLE(float));
     if (range.isValid())
     {
       diagnostic << FixItHint::CreateReplacement(range, target);
@@ -339,8 +337,8 @@ private:
       // An empty scope makes replaceNestedName() assume that another fix updates the original
       // using declaration:
       //
-      // using cuda::std::is_floating_point;
-      // is_floating_point<T> v; // Keeping this name still selects the original trait.
+      // using cuda::std::is_trivially_copyable;
+      // is_trivially_copyable<T> v; // Keeping this name still selects the original trait.
       //
       // This check leaves using declarations unchanged. A nonempty specifier bypasses that
       // assumption and makes the helper compute qualification from the use context instead.
@@ -370,16 +368,16 @@ private:
     }
 
     // replaceNestedName() can shorten through ordinary enclosing namespaces. For example,
-    // inside cuda::experimental it can omit cuda:: and return is_floating_point. Our rule
+    // inside cuda::experimental it can omit cuda:: and return is_trivially_copyable. Our rule
     // permits this only directly inside namespace cuda.
     //
     // Compare namespace names first; elsewhere, return the configured target, which already
     // starts with ::.
     //
-    // Inside cuda:                std::is_floating_point<T> -> is_floating_point<T>
-    // Inside cuda::std:           is_floating_point<T>      -> ::cuda::is_floating_point<T>
-    // Inside cuda::experimental:  std::is_floating_point<T> -> ::cuda::is_floating_point<T>
-    // Inside cub or global scope: cuda::std::is_floating_point<T> -> ::cuda::is_floating_point<T>
+    // Inside cuda:                std::is_trivially_copyable<T> -> is_trivially_copyable<T>
+    // Inside cuda::std:           is_trivially_copyable<T>      -> ::cuda::is_trivially_copyable<T>
+    // Inside cuda::experimental:  std::is_trivially_copyable<T> -> ::cuda::is_trivially_copyable<T>
+    // Inside cub or global scope: cuda::std::is_trivially_copyable<T> -> ::cuda::is_trivially_copyable<T>
     if (const auto* ns = dyn_cast<NamespaceDecl>(context);
         !ns || ns->getQualifiedNameAsString() != target.rsplit("::").first.drop_front(2))
     {
@@ -390,15 +388,15 @@ private:
     // declaration:
     //
     // namespace cuda {
-    //   using std::is_floating_point; // The bare name refers to cuda::std's trait.
+    //   using std::is_trivially_copyable; // The bare name refers to cuda::std's trait.
     // }
     //
     // Let replaceNestedName() check for conflicting declarations before accepting the bare
     // name. If it adds qualification, we should spell out the complete target, including the
     // leading ::.
     //
-    // For example, we should turn "cuda::is_floating_point" into "::cuda::is_floating_point",
-    // but keep "is_floating_point" unchanged.
+    // For example, we should turn "cuda::is_trivially_copyable" into "::cuda::is_trivially_copyable",
+    // but keep "is_trivially_copyable" unchanged.
     auto spelling = tooling::replaceNestedName(original_spec, name_loc, context, declaration, target);
 
     return StringRef{spelling}.contains("::") ? target.str() : spelling;
