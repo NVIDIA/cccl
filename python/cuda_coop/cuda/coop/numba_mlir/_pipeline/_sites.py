@@ -198,6 +198,17 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind == "histogram":
+            from . import _histogram
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _histogram.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind in {"adjacent_difference", "discontinuity"}:
             from . import _neighbors
 
