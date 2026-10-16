@@ -125,20 +125,24 @@ enum BlockReduceAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //! ++++++++++++++++++++++++++
   //!
   //! A quick "tiled warp-reductions" reduction algorithm that supports commutative (e.g., addition)
-  //! and non-commutative (e.g., string concatenation) reduction operators. This variant uses atomic
-  //! operations to reduce the warp-wide reduction results, making it non-deterministic, i.e. the
-  //! order of reduction operations is not guaranteed to be the same across different invocations of
-  //! the same kernel.
+  //! and non-commutative (e.g., string concatenation) reduction operators. For arithmetic types other
+  //! than ``bool`` with addition (``Sum`` or ``Reduce`` with ``cuda::std::plus<>`` or a matching
+  //! ``cuda::std::plus<T>``), this variant uses atomic operations to reduce the warp-wide reduction
+  //! results, making it non-deterministic, i.e. the order of reduction operations is not guaranteed
+  //! to be the same across different invocations of the same kernel. For other types or reduction
+  //! operators, warp aggregates are combined in order as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
   //!
-  //! Execution is comprised of three phases:
+  //! Execution is comprised of the following phases:
   //!   #. Upsweep sequential reduction in registers (if threads contribute more than one input each).
   //!      Each thread then places the partial reduction of its item(s) into shared memory.
   //!   #. Compute a shallow, but non work-efficient warp-synchronous Kogge-Stone style reduction
   //!      within each warp.
-  //!   #. Lane 0 of warp 0 stores its warp aggregate, while lane 0 of other warps use atomic
-  //!      operations to accumulate their warp aggregates into a shared location, making the final
-  //!      order non-deterministic.
-  //!   #. The final block-wide result is available to all threads.
+  //!   #. For arithmetic addition except ``bool``, lane 0 of warp 0 stores its warp aggregate, while
+  //!      lane 0 of other warps use atomic operations to accumulate their warp aggregates into a shared location,
+  //!      making the final order non-deterministic. Otherwise, thread 0 combines the warp aggregates
+  //!      in order.
+  //!   #. The final block-wide result is available to all threads for arithmetic addition except
+  //!      ``bool``, and is only valid in thread 0 for other types or reduction operators.
   //!
   //! Atomic accumulation is only used with ``cuda::std::plus``. Other reduction operators combine the
   //! warp aggregates in order, as with ``BLOCK_REDUCE_WARP_REDUCTIONS``.
@@ -219,10 +223,10 @@ CUB_NAMESPACE_BEGIN
 //!      non-commutative reduction operators.
 //!   #. :cpp:enumerator:`cub::BLOCK_REDUCE_WARP_REDUCTIONS_NONDETERMINISTIC`:
 //!      A quick "tiled warp-reductions" reduction algorithm that supports commutative and
-//!      non-commutative reduction operators. This variant uses atomic operations to reduce the
-//!      warp-wide reduction results, making it non-deterministic, i.e. the order of reduction
-//!      operations is not guaranteed to be the same across different invocations of the same
-//!      kernel.
+//!      non-commutative reduction operators. For arithmetic addition except ``bool``, this variant
+//!      uses atomic operations to reduce the warp-wide reduction results, making it non-deterministic,
+//!      i.e. the order of reduction operations is not guaranteed to be the same across different
+//!      invocations of the same kernel. Other types or reduction operators use deterministic warp aggregation.
 //!
 //! Performance Considerations
 //! +++++++++++++++++++++++++++++++++++++++++++++
