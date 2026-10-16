@@ -10,8 +10,11 @@ Layout never inspects or changes IR and performs no lifetime inference.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from cuda.coop._core import (
     GroupLoweringPlan,
+    GroupLoweringTarget,
     GroupTopologyRequirements,
     StorageOwnership,
     SynchronizationScope,
@@ -25,6 +28,49 @@ from ._rewrite_support import (
     _TempStorageSlice,
     _TempStorageUseRequirement,
 )
+
+
+def apply_caller_storage(
+    plan: GroupLoweringPlan,
+    descriptor: tuple[int | None, int | None, bool, str],
+    *,
+    operation: str,
+) -> GroupLoweringPlan:
+    """Apply an explicit descriptor to a supported single-block plan.
+
+    Preserve the provider's storage requirement while recording caller-owned
+    capacity, alignment, sharing, and synchronization. Allocation is separate.
+    """
+
+    if plan.target is not GroupLoweringTarget.CUB_BLOCK:
+        raise ValueError(
+            f"cuda.coop.numba_mlir {operation} temp_storage applies only to "
+            "block groups"
+        )
+    storage = plan.temp_storage
+    synchronization = plan.synchronization
+    assert storage is not None and synchronization is not None
+    size_in_bytes, alignment, auto_sync, sharing = descriptor
+    return replace(
+        plan,
+        temp_storage=replace(
+            storage,
+            ownership=StorageOwnership.CALLER,
+            exact_layout_required=True,
+            sharing=sharing,
+            requested_size_in_bytes=size_in_bytes,
+            requested_alignment=alignment,
+            auto_sync=auto_sync,
+        ),
+        synchronization=replace(
+            synchronization,
+            storage_reuse_barrier=(
+                SynchronizationScope.BLOCK
+                if auto_sync
+                else SynchronizationScope.NONE
+            ),
+        ),
+    )
 
 
 def get_device_shared_memory_limits(
@@ -360,6 +406,7 @@ def validate_emittable_topology(
 
 
 __all__ = [
+    "apply_caller_storage",
     "get_device_shared_memory_limits",
     "layout_temp_storage_uses",
     "temp_storage_domain_key",

@@ -50,6 +50,7 @@ def _activate() -> None:
         _ncm_patches,
         _reductions,
         _resolve,
+        _scan,
         _temp_storage,
         _templates,
         _types,
@@ -62,6 +63,7 @@ def _activate() -> None:
     _templates.register()
     _exchange.register()
     _reductions.register()
+    _scan.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()

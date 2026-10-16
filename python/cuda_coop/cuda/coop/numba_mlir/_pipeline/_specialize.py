@@ -65,6 +65,7 @@ def lowering_plan(request: Any, block: tuple) -> Any:
 
     from ..._core import plan_group_primitive
     from ..._core.launch import LaunchFacts
+    from .._compiler._storage_layout import apply_caller_storage
 
     key = (request.key, block)
     if key not in _LOWERING_PLANS:
@@ -72,6 +73,18 @@ def lowering_plan(request: Any, block: tuple) -> Any:
             plan = plan_group_primitive(
                 request.call, LaunchFacts(exact_block_dim=block)
             ).require_supported()
+            options = dict(getattr(request, "storage_options", ()))
+            if options:
+                plan = apply_caller_storage(
+                    plan,
+                    (
+                        options.get("storage_size_in_bytes"),
+                        options.get("storage_alignment"),
+                        options.get("storage_auto_sync", False),
+                        options.get("storage_sharing", "shared"),
+                    ),
+                    operation=request.kind,
+                )
             _LOWERING_PLANS[key] = plan
         except (NotImplementedError, TypeError, ValueError) as exc:
             raise TypedPipelineError(f"coop.{request.kind}: {exc}") from None

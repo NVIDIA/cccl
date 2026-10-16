@@ -14,7 +14,6 @@ connects these calls to Scan's payload and runtime-control checks.
 from __future__ import annotations
 
 import inspect
-from dataclasses import replace
 from enum import Enum
 from typing import Any
 
@@ -32,8 +31,6 @@ from cuda.coop._core import (
     GroupScanSemantics,
     PythonOperator,
     Reference,
-    StorageOwnership,
-    SynchronizationScope,
     ThreadGroup,
     make_group_primitive_call,
     make_scan_semantics,
@@ -303,58 +300,10 @@ class _ScanPlanning:
         plan: GroupLoweringPlan,
         descriptor: tuple[int | None, int | None, bool, str],
     ) -> GroupLoweringPlan:
-        """Apply an explicit block storage descriptor to a supported plan.
+        """Apply the same caller-owned storage contract in both pipelines."""
+        from ._storage_layout import apply_caller_storage
 
-        ``_plan`` calls this after selecting the primitive when the public
-        call supplies TempStorage. This records who owns the scratch and
-        whether later rewriting must insert a reuse barrier; it does not
-        allocate shared memory.
-
-        Preserve the primitive's storage requirement, but record the caller's
-        capacity, alignment, sharing, and reuse-barrier policy. Warp Scan
-        uses compiler-owned storage and rejects this descriptor.
-
-        Parameters
-        ----------
-        plan : GroupLoweringPlan
-            Supported Scan plan from shared planning; returned as a
-            modified copy, leaving the original plan unchanged.
-        descriptor : tuple
-            Resolved ``(size_in_bytes, alignment, auto_sync, sharing)``
-            from the caller's TempStorage descriptor. Missing size or
-            alignment leaves that requirement to compiled layout
-            information.
-        """
-
-        if plan.target is not GroupLoweringTarget.CUB_BLOCK:
-            raise ValueError(
-                "cuda.coop.numba_mlir scan temp_storage applies only to "
-                "block groups"
-            )
-        storage = plan.temp_storage
-        synchronization = plan.synchronization
-        assert storage is not None and synchronization is not None
-        size_in_bytes, alignment, auto_sync, sharing = descriptor
-        return replace(
-            plan,
-            temp_storage=replace(
-                storage,
-                ownership=StorageOwnership.CALLER,
-                exact_layout_required=True,
-                sharing=sharing,
-                requested_size_in_bytes=size_in_bytes,
-                requested_alignment=alignment,
-                auto_sync=auto_sync,
-            ),
-            synchronization=replace(
-                synchronization,
-                storage_reuse_barrier=(
-                    SynchronizationScope.BLOCK
-                    if auto_sync
-                    else SynchronizationScope.NONE
-                ),
-            ),
-        )
+        return apply_caller_storage(plan, descriptor, operation="scan")
 
     def _plan(
         self,
