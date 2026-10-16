@@ -6,7 +6,7 @@
 Visualizations
 ==============
 
-Explore how ``cuda.coop`` primitives move, combine, and order values.
+Explore how ``cuda.coop`` primitives move, combine, order, and select values.
 Change the settings, step through the stages, and select a value to follow
 its ownership. These diagrams show data movement; their timing and geometry
 do not predict GPU performance.
@@ -22,3 +22,4 @@ do not predict GPU performance.
    scan
    merge-sort
    radix
+   topk

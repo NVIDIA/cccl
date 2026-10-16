@@ -198,6 +198,22 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {
+            "topk_min_keys",
+            "topk_min_pairs",
+            "topk_max_keys",
+            "topk_max_pairs",
+        }:
+            from . import _topk
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _topk.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind in {"radix_sort_keys", "radix_sort_pairs", "radix_rank_keys"}:
             from . import _radix
 

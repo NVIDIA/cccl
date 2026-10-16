@@ -19,6 +19,12 @@ from ._group._scan import (
     scan,
 )
 from ._group._shuffle import shuffle
+from ._group._topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 from ._stateful_function import StatefulFunction
 from ._temp_storage import TempStorage
 from ._thread_data import ThreadData, local, shared
@@ -65,4 +71,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

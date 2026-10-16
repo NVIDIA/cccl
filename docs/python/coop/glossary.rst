@@ -114,6 +114,11 @@ Terms
       values. ``valid_items`` in Load and Store selects a prefix of that
       sequence. It counts tile elements, not elements per thread.
 
+   top-k
+      Selection of up to ``k`` smallest or largest keys, optionally with
+      associated values. ``cuda.coop`` TopK returns an unordered selection;
+      only its selected prefix is defined. See :ref:`TopK <coop-topk>`.
+
 .. _coop-glossary-layouts:
 
 Blocked versus striped

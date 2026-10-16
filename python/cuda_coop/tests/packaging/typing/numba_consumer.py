@@ -110,8 +110,8 @@ class _Int32PrefixFunctor:
         return block_aggregate
 
 
-# The descriptor tracks state and Scan value types separately. Each call
-# below must retain its payload type even when the state has a wider dtype.
+# StatefulFunction tracks its state and Scan value types separately. Each
+# Scan call below must keep its payload type, even with a wider state dtype.
 _INT32_RUNNING_PREFIX = coop.StatefulFunction(
     _carry_int32_prefix,
     np.int32,
@@ -666,4 +666,29 @@ def check_radix_surface() -> None:
     assert_type(
         coop.radix_sort_keys(block, np.float64(1.5), blocked_to_striped=True),
         np.float64,
+    )
+
+
+def check_topk_surface() -> None:
+    """Check count inputs and separate key/value result dtypes for TopK."""
+
+    block = coop.this_block()
+    keys = coop.ThreadData(items_per_thread=3, dtype=np.int16)
+    values = coop.ThreadData(items_per_thread=3, dtype=np.float64)
+    assert_type(
+        coop.topk_min_keys(block, keys, k=7), coop.ThreadDataLike[np.int16]
+    )
+    assert_type(
+        coop.topk_max_keys(block, keys, k=np.int64(7), valid_items=31),
+        coop.ThreadDataLike[np.int16],
+    )
+    assert_type(
+        coop.topk_min_pairs(block, keys, values, k=7),
+        tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
+    )
+    assert_type(
+        coop.topk_max_pairs(
+            block, keys, values, k=7, temp_storage=coop.TempStorage()
+        ),
+        tuple[coop.ThreadDataLike[np.int16], coop.ThreadDataLike[np.float64]],
     )

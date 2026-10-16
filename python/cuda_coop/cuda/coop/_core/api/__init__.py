@@ -34,6 +34,12 @@ from .thread_group import (
     this_thread,
     this_warp,
 )
+from .topk import (
+    topk_max_keys,
+    topk_max_pairs,
+    topk_min_keys,
+    topk_min_pairs,
+)
 
 # Constructors and group factories bypass the operation registration decorator.
 # The Numba rewrite requires this tag and the exported function identity, so
@@ -79,4 +85,8 @@ __all__ = [
     "this_grid",
     "this_thread",
     "this_warp",
+    "topk_max_keys",
+    "topk_max_pairs",
+    "topk_min_keys",
+    "topk_min_pairs",
 ]

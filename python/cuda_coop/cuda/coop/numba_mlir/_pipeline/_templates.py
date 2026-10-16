@@ -743,6 +743,10 @@ def register() -> None:
             "radix_sort_keys",
             "radix_sort_pairs",
             "radix_rank_keys",
+            "topk_min_keys",
+            "topk_min_pairs",
+            "topk_max_keys",
+            "topk_max_pairs",
         }:
             continue  # Result families register their templates separately.
         else:

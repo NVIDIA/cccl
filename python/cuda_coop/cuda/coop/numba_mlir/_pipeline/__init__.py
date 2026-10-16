@@ -55,6 +55,7 @@ def _activate() -> None:
         _scan,
         _temp_storage,
         _templates,
+        _topk,
         _types,
     )
 
@@ -68,6 +69,7 @@ def _activate() -> None:
     _scan.register()
     _merge_sort.register()
     _radix.register()
+    _topk.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()
