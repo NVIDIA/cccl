@@ -16,9 +16,13 @@ namespace clang::tidy::cccl
 [[nodiscard]] inline const llvm::StringSet<>& TYPE_TRAITS()
 {
   static const auto values = llvm::StringSet<>{
+    "cuda::__archetype",
     "cuda::__fp_custom_pick",
     "cuda::__fpemu_pick",
+    "cuda::__next_hierarchy_level",
+    "cuda::__overrides_for",
     "cuda::args::__element_type_of",
+    "cuda::scalar_type",
     "cuda::std::__allocator_traits_rebind",
     "cuda::std::__atomic_ptr_skip",
     "cuda::std::__atomic_storage",
@@ -70,6 +74,7 @@ namespace clang::tidy::cccl
     "cuda::std::unwrap_ref_decay",
     "cuda::std::unwrap_reference",
     "cuda::std::variant_alternative",
+    "cuda::vector_type",
   };
 
   return values;
@@ -78,10 +83,16 @@ namespace clang::tidy::cccl
 [[nodiscard]] inline const llvm::StringSet<>& VALUE_TRAITS()
 {
   static const auto values = llvm::StringSet<>{
+    "cuda::__virtual_fn_for",
+    "cuda::__vtable_for",
+    "cuda::has_vector_type",
     "cuda::is_arithmetic",
     "cuda::is_bitwise_comparable",
+    "cuda::is_extended_fp_vector_type",
     "cuda::is_floating_point",
     "cuda::is_trivially_copyable",
+    "cuda::is_vector_type",
+    "cuda::mr::__memory_accessibility_from_properties",
     "cuda::proclaims_copyable_arguments",
     "cuda::std::__fold_and",
     "cuda::std::__fold_or",
@@ -196,6 +207,7 @@ namespace clang::tidy::cccl
     "cuda::std::tuple_size",
     "cuda::std::uses_allocator",
     "cuda::std::variant_size",
+    "cuda::vector_size",
   };
 
   return values;

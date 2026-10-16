@@ -1,10 +1,5 @@
 list(APPEND CMAKE_MESSAGE_CONTEXT "modernize_type_traits")
 
-cccl_create_clang_tidy_plugin(
-  cccl.tidy.modernize_type_traits
-  SOURCES modernize_type_traits.cpp
-)
-
 function(_cccl_create_catalog_generator)
   # Create a mega file which just includes all of the umbrella headers we care about
   # searching so we can run the catalog generator over it. It should flag any missing
@@ -35,7 +30,10 @@ function(_cccl_create_catalog_generator)
     set(dummy_target cccl.tidy.dummy_target.no_compile)
     add_library("${dummy_target}" OBJECT EXCLUDE_FROM_ALL "${dummy_file}")
     target_compile_definitions("${dummy_target}" PRIVATE CCCL_ENABLE_FPTOOL)
-    target_link_libraries("${dummy_target}" PRIVATE libcudacxx::libcudacxx)
+    target_link_libraries(
+      "${dummy_target}"
+      PRIVATE libcudacxx::libcudacxx $<COMPILE_ONLY:CUDA::cuda_driver>
+    )
   endblock()
 
   block(PROPAGATE generate_target)
@@ -69,7 +67,23 @@ function(_cccl_create_catalog_generator)
     "${generate_target}"
     "${generate_target}"
   )
+
+  add_custom_target(
+    cccl.tidy.modernize_type_traits.regenerate_catalog
+    COMMAND
+      "${generate_target}" -p "${CMAKE_BINARY_DIR}"
+      "--namespaces=cuda,cuda::std" "${dummy_file}" --mode=output
+      --output="${CMAKE_CURRENT_LIST_DIR}/trait_catalog.h"
+    COMMENT "regenerating cccl-modenize-type-traits trait catalog"
+  )
 endfunction()
+
+cccl_create_clang_tidy_plugin(
+  cccl.tidy.modernize_type_traits
+  SOURCES modernize_type_traits.cpp
+)
+
+cccl_get_cudatoolkit()
 
 _cccl_create_catalog_generator()
 
