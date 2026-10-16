@@ -44,8 +44,9 @@ map to it and how rebuilds propagate from it:
   Projects whose changes trigger a reduced rebuild of this project.
 
 ``matrix_project``
-  The name this project uses in ``ci/matrix.yaml``. A project without one is
-  internal to change detection and never appears in the output lists.
+  The name this project uses in the output lists. Matrix jobs in ``ci/matrix.yaml``
+  and separate third-party jobs use these names to select what runs. A project
+  without one is internal to change detection and never appears in the output lists.
 
 The ``core`` project is a catch-all. It declares no ``include_regexes``. Any
 dirty file that no other project claims lands in ``core`` — a new top-level
@@ -92,8 +93,8 @@ from any project in ``FULL_BUILD`` is added to ``LITE_BUILD``.
 Output
 ------
 
-``inspect_changes.py`` emits two GitHub Actions outputs, each a space-separated
-list of ``matrix_project`` values:
+``inspect_changes.py`` emits two GitHub Actions outputs containing space-separated
+lists of ``matrix_project`` values:
 
 ``FULL_BUILD``
   Projects that build and test their full job set.
@@ -106,6 +107,16 @@ of ``ci/matrix.yaml`` (see :ref:`infra-ci-matrix-yaml`) and keeps only entries
 whose project is in ``FULL_BUILD``, then reads the ``pull_request_lite`` section
 and keeps only entries whose project is in ``LITE_BUILD``, then concatenates the
 two. A project absent from both lists contributes no jobs.
+
+The pull-request workflow also uses these lists when exporting its existing
+``matx_enabled``, ``pytorch_enabled``, and ``rapids_enabled`` flags. Each third-party
+project depends on the public libcu++, CUB, and Thrust headers, so changes limited
+to documentation, tests, or library infrastructure skip these builds. Changes to a
+third-party project's own workflow or build scripts run that project; shared CCCL
+infrastructure changes run all three. These projects have no entries in
+``ci/matrix.yaml``, so their presence in the output lists adds no CCCL matrix jobs.
+The existing third-party skip tags continue to apply, and change detection still
+runs when the main matrix is disabled with ``[skip-matrix]``.
 
 To see the exact lists for any change, run ``inspect_changes.py`` locally:
 

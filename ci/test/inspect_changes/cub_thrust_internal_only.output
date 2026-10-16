@@ -1,0 +1,2 @@
+FULL_BUILD=cub thrust tidy
+LITE_BUILD=packaging
