@@ -29,6 +29,7 @@
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
@@ -53,6 +54,8 @@ struct alignas(sizeof(_Word) * _Count) __vector_word
   static_assert(sizeof(_Word) * _Count <= __max_vector_access, "A vector word must fit into a single vector access");
 
   using value_type = _Word;
+
+  static constexpr size_t __count = _Count;
 
   _Word __storage_[_Count];
 };
@@ -83,33 +86,41 @@ struct __bytes_vectorized_t
     return __storage_;
   }
 
-  template <class _Tp>
-  [[nodiscard]] _CCCL_API _Tp* __alias() noexcept
+  //! Returns the `__index`-th object of type `_Tp` in the storage
+  template <class _Tp, class _Index>
+  [[nodiscard]] _CCCL_API _Tp& __alias(const _Index __index) noexcept
   {
+    static_assert(::cuda::std::__cccl_is_integer_v<_Index>, "The index must be an integer");
     static_assert(sizeof(_Tp) <= sizeof(__storage_), "T does not fit in vectorized storage");
     static_assert(alignof(_Tp) <= __alignment, "T is more aligned than vectorized storage");
+    const auto __i = static_cast<size_t>(__index);
     if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, typename _VectorWord::value_type>)
     {
-      return __storage_[0].__storage_;
+      // Each vector word is a separate array, so we must not index across them
+      return __storage_[__i / _VectorWord::__count].__storage_[__i % _VectorWord::__count];
     }
     else
     {
-      return ::cuda::std::launder(reinterpret_cast<_Tp*>(__storage_));
+      return ::cuda::std::launder(reinterpret_cast<_Tp*>(__storage_))[__i];
     }
   }
 
-  template <class _Tp>
-  [[nodiscard]] _CCCL_API const _Tp* __alias() const noexcept
+  //! Returns the `__index`-th object of type `_Tp` in the storage
+  template <class _Tp, class _Index>
+  [[nodiscard]] _CCCL_API const _Tp& __alias(const _Index __index) const noexcept
   {
+    static_assert(::cuda::std::__cccl_is_integer_v<_Index>, "The index must be an integer");
     static_assert(sizeof(_Tp) <= sizeof(__storage_), "T does not fit in vectorized storage");
     static_assert(alignof(_Tp) <= __alignment, "T is more aligned than vectorized storage");
+    const auto __i = static_cast<size_t>(__index);
     if constexpr (::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_Tp>, typename _VectorWord::value_type>)
     {
-      return __storage_[0].__storage_;
+      // Each vector word is a separate array, so we must not index across them
+      return __storage_[__i / _VectorWord::__count].__storage_[__i % _VectorWord::__count];
     }
     else
     {
-      return ::cuda::std::launder(reinterpret_cast<const _Tp*>(__storage_));
+      return ::cuda::std::launder(reinterpret_cast<const _Tp*>(__storage_))[__i];
     }
   }
 };

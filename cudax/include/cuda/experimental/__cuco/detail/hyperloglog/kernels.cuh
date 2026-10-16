@@ -92,7 +92,7 @@ __add_shmem_vectorized(const typename _RefType::__value_type* __first, ::cuda::s
       ::cuda::std::assume_aligned<sizeof(__vector_type)>(__first + __idx * _VectorSize));
     for (int i = 0; i < _VectorSize; ++i)
     {
-      __local_ref.__add(__vec.template __alias<__value_type>()[i]);
+      __local_ref.__add(__vec.template __alias<__value_type>(i));
     }
 
     __idx += __loop_stride;

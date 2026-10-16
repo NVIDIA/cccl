@@ -203,7 +203,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ItemsPerThread; i++)
   {
-    dst_items[i] = vec_items.template __alias<T>()[i];
+    dst_items[i] = vec_items.template __alias<T>(i);
   }
 }
 
@@ -261,7 +261,7 @@ LoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&dst_item
       if (::cuda::std::is_sufficiently_aligned<alignof(vector_t)>(block_src_ptr))
       {
         const vector_t vec_items = ThreadLoad<Modifier>(reinterpret_cast<const vector_t*>(block_src_ptr) + linear_tid);
-        dst_items[0]             = vec_items.template __alias<T>()[0];
+        dst_items[0]             = vec_items.template __alias<T>(0);
       }
       else
       {

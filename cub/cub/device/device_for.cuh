@@ -123,7 +123,7 @@ struct DeviceFor
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < vec_size; j++)
         {
-          (void) op(vec.template __alias<T>()[j]);
+          (void) op(vec.template __alias<T>(j));
         }
       }
     }
