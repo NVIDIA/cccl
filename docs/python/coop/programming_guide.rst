@@ -814,6 +814,53 @@ Scratch lasts for the kernel's execution on that block. It cannot carry
 state between blocks or kernel launches. For running scan state within a
 block, use a separate payload as in the prefix-callback example below.
 
+Numba-CUDA-MLIR also supports typed reservations for application data and
+device libraries:
+
+.. code-block:: python
+
+   scratch = coop.TempStorage()
+   our_smem_chunk = scratch.reserve(128, types.float32, alignment=32)
+
+Here ``types`` is imported from ``numba_cuda_mlir``. The element count and
+integer, floating-point, or complex scalar dtype must be known during
+compilation. The result is an ordinary one-dimensional shared array that
+supports indexing and can be passed to
+device functions accepting arrays. Compilation replaces the reservation with
+an aligned typed view of the planner's shared backing; there is no runtime
+allocator.
+
+Reservations inherit the descriptor's ``sharing`` policy. With the default
+``sharing="shared"``, reservations and primitive scratch from the same
+descriptor alias one region sized and aligned for their largest requirements.
+Place a barrier between phases that reuse that region and complete any
+asynchronous library operations first. When a primitive reads values from an
+aliased reservation, load each thread's input into registers and synchronize
+the block before calling the primitive. With ``sharing="exclusive"``, each
+primitive and reservation call site receives a separate region. Different
+descriptors always have separate storage. Use separate descriptors or
+``sharing="exclusive"`` for buffers whose contents remain live simultaneously.
+Executing a call site again reuses its region. Explicit capacity must cover
+the selected layout, including alignment padding for exclusive slices.
+
+A descriptor used with ``reserve()`` must have ``auto_sync=False`` or
+``auto_sync=None``. The compiler rejects ``auto_sync=True``, including uses
+through aliases and inlined helpers. Synchronize application accesses and
+follow each device library's completion and release requirements. A separate
+descriptor used only for cooperative primitives may still enable automatic
+synchronization.
+
+The runnable :download:`nvmath FFT example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_fft.py>` reserves scratch
+for ``fft.execute()`` and application data alongside a cooperative reduction.
+The :download:`nvmath and NVSHMEM example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_nvshmem.py>` also reserves
+NVSHMEM communication scratch and explicitly registers and releases it.
+See the :download:`example instructions
+<../../../python/cuda_coop/examples/numba_mlir/README.md>` for dependencies and
+launch commands. These libraries receive ordinary arrays or pointers into the
+reserved regions; they do not need to understand ``TempStorage``.
+
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in
 limit. Numba-CUDA-MLIR automatically includes those required bytes in the
@@ -833,6 +880,17 @@ buffer, or separate the work into kernels. Reduce uses the same cooperative
 backing, including when ``temp_storage`` is omitted. The compatibility restrictions remain
 until a released compiler with the shared-memory fix has passed the coexistence
 tests.
+
+Reservations are optional when ordinary static shared arrays and cooperative
+scratch fit together within the device's static shared-memory limit. The
+:download:`ordinary-array nvmath example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_fft_shared.py>` and
+:download:`ordinary-array nvmath/NVSHMEM example
+<../../../python/cuda_coop/examples/numba_mlir/nvmath_nvshmem_shared.py>` use
+``cuda.shared.array`` for library and application buffers, and implicit scratch
+for ``coop.sum``. They require no ``TempStorage`` descriptor or reservation.
+The kernel still supplies barriers for application data and the external
+libraries' completion and release calls.
 
 Extra shared memory can reduce resident blocks per multiprocessor. The
 default inferred allocation and unsized shared descriptor are sufficient

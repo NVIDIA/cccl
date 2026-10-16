@@ -436,6 +436,15 @@ def materialize(
                     ),
                 )
             view = emitter.byte_slice(backing, start, region.size)
+            reservation = storage.reservations.get(name)
+            if reservation is not None:
+                emitter.call(
+                    emitter.attribute(view, "view"),
+                    [emitter.global_value(reservation.dtype, "reserve_dtype")],
+                    target=stmt.target,
+                )
+                rewritten.extend(emitter.body)
+                continue
             call = cast(nb.ir.Expr, stmt.value)
             call.kws = (*call.kws, (SCRATCH_KEYWORD, view))
             rewritten.extend(emitter.body)

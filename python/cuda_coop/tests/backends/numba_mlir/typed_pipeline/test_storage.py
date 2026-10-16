@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile explicit scratch and per-group storage views."""
+"""Compile explicit scratch, reservations, and per-group storage views."""
 
 from types import SimpleNamespace
 
 import numba_cuda_mlir.tools as compiler_tools
+import numpy as np
 import pytest
 from numba_cuda_mlir import cuda, types
 from numba_cuda_mlir.numba_cuda.core.errors import TypingError
@@ -99,6 +100,54 @@ def test_merged_storage_retains_constructor_identity(auto_sync):
             _compile(kernel, types.int32[::1], types.int32[::1], types.boolean)
 
 
+def test_exclusive_reservations_provide_typed_shared_arrays():
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage(sharing="exclusive")
+        first = storage.reserve(3, "uint8")
+        reserve = storage.reserve
+        second = reserve(4, types.float64, alignment=64)
+        first[0] = 3
+        second[0] = 7.0
+        output[0] = first[0] + second[0] + first.size + second.size
+
+    assert _compile(kernel, types.float64[::1]).metadata["cubin"]
+
+
+def test_descriptor_tuple_cannot_escape_to_a_device_helper():
+    @cuda.jit(device=True, inline="never")
+    def take_second(pair):
+        return pair[1]
+
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage()
+        values = storage.reserve(4, types.int32)
+        values[0] = 7
+        output[0] = take_second((storage, values[0]))
+
+    with pytest.raises(TypedPipelineError, match="descriptor would escape"):
+        _compile(kernel, types.int32[::1])
+
+
+def test_numpy_integer_controls_preserve_their_ordinary_value_dtype():
+    count = np.uint8(4)
+    alignment = np.int64(64)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage(alignment=alignment)
+        values = storage.reserve(count, types.int32, alignment=alignment)
+        values[0] = 7
+        item = coop.ThreadData(1)
+        item[0] = count
+        coop.store(coop.this_block(), output, item)
+
+    # The captured scalar remains uint8 when it produces ordinary payload
+    # data, even though its reserve count is resolved as a static integer.
+    assert _compile(kernel, types.uint8[::1]).metadata["cubin"]
+
+
 @pytest.mark.parametrize("auto_sync", [False, True])
 @pytest.mark.parametrize("sharing", ["shared", "exclusive"])
 def test_scan_respects_the_explicit_storage_contract(auto_sync, sharing):
@@ -148,19 +197,26 @@ def _shared_memory_limits(monkeypatch):
     )
 
 
+@pytest.mark.parametrize("reservation_only", [False, True])
 def test_dynamic_backing_records_the_exact_launch_requirement(
-    _shared_memory_limits,
+    _shared_memory_limits, reservation_only
 ):
     @cuda.jit(chip="sm_90")
     def kernel(source, output):
         scratch = coop.TempStorage(64 * 1024)
-        total = coop.sum(
-            coop.this_block(),
-            source[cuda.threadIdx.x],
-            temp_storage=scratch,
-        )
-        if cuda.threadIdx.x == 0:
-            output[0] = total
+        if reservation_only:
+            tile = scratch.reserve(16 * 1024, types.int32)
+            tile[cuda.threadIdx.x] = source[cuda.threadIdx.x]
+            cuda.syncthreads()
+            output[cuda.threadIdx.x] = tile[cuda.threadIdx.x] + tile.size
+        else:
+            total = coop.sum(
+                coop.this_block(),
+                source[cuda.threadIdx.x],
+                temp_storage=scratch,
+            )
+            if cuda.threadIdx.x == 0:
+                output[0] = total
 
     result = _compile(kernel, types.int32[::1], types.int32[::1])
     assert result.metadata["cubin"]
@@ -176,28 +232,18 @@ def test_dynamic_backing_records_the_exact_launch_requirement(
     ],
 )
 def test_dynamic_backing_checks_alignment_capacity_and_user_allocations(
-    _shared_memory_limits,
-    capacity,
-    alignment,
-    own_shared,
-    message,
+    _shared_memory_limits, capacity, alignment, own_shared, message
 ):
     @cuda.jit(chip="sm_90")
-    def kernel(source, output):
+    def kernel(output):
         scratch = coop.TempStorage(capacity, alignment=alignment)
-        items = coop.ThreadData(items_per_thread=2)
-        coop.load(
-            coop.this_block(),
-            source,
-            items,
-            algorithm="transpose",
-            temp_storage=scratch,
-        )
+        tile = scratch.reserve(1, types.int32)
+        tile[0] = 1
         if own_shared:
             mine = cuda.shared.array(1, types.int32)
             mine[0] = 3
-            items[0] += mine[0]
-        output[cuda.threadIdx.x] = items[0]
+            tile[0] += mine[0]
+        output[0] = tile[0]
 
     with pytest.raises(TypedPipelineError, match=message):
-        _compile(kernel, types.int32[::1], types.int32[::1])
+        _compile(kernel, types.int32[::1])

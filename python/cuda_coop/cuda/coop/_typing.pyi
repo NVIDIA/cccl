@@ -248,6 +248,11 @@ class TempStorageLike(Protocol):
     auto_sync: bool
     sharing: TempStorageSharing
 
+    def reserve(
+        self, num_elems: int, dtype: object, *, alignment: int | None = None
+    ) -> Any:
+        """Reserve a compiler shared array with manual synchronization."""
+
 __all__ = [
     "BlockExchangeMode",
     "BlockLoadStoreAlgorithm",

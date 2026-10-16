@@ -18,7 +18,7 @@ and takes plain sizes. This stage does not change the IR.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from ..._core import StorageOwnership, SynchronizationScope
@@ -65,6 +65,7 @@ class StorageLayout:
     slices: dict[str, ScratchSlice]
     scratch: tuple[bool, ...]
     barrier_scopes: tuple[SynchronizationScope, ...]
+    reservations: dict = field(default_factory=dict)
     required_dynamic_bytes: int = 0
 
     @property
@@ -196,6 +197,16 @@ def _whole_kernel_layout(specialization, sites, descriptors, needs, user_bytes):
                 lowering_plan=plan,
             )
         )
+    for order, reservation in enumerate(descriptors.reservations.values()):
+        uses.setdefault(reservation.owner, []).append(
+            _TempStorageUseRequirement(
+                reservation.stmt,
+                order,
+                reservation.size_in_bytes,
+                reservation.alignment,
+                reservation=True,
+            )
+        )
     offset, maximum = 0, _MIN_TEMP_STORAGE_ALIGNMENT
     regions, slices = [], {}
     ordered = [owner for owner in descriptors.constructors if owner in uses]
@@ -212,7 +223,7 @@ def _whole_kernel_layout(specialization, sites, descriptors, needs, user_bytes):
                 if descriptor.size_in_bytes < size:
                     raise TypedPipelineError(
                         "TempStorage size_in_bytes is smaller than required "
-                        "by primitive uses "
+                        "by primitive and reserve uses "
                         f"({descriptor.size_in_bytes} < {size})"
                     )
                 size = descriptor.size_in_bytes
@@ -285,6 +296,7 @@ def _whole_kernel_layout(specialization, sites, descriptors, needs, user_bytes):
         slices,
         specialization.scratch,
         tuple(scopes),
+        descriptors.reservations,
         total if dynamic else 0,
     )
 
@@ -301,7 +313,10 @@ def analyze(
 ) -> tuple[StorageLayout, _link.Bundle]:
     """Compile the specialization's bundle and lay out its scratch."""
 
-    if user_dynamic_shared_at is not None and (any(specialization.scratch)):
+    if user_dynamic_shared_at is not None and (
+        any(specialization.scratch)
+        or (descriptors is not None and descriptors.reservations)
+    ):
         raise TypedPipelineError(
             "cooperative scratch requires its own shared-memory backing, but "
             "this kernel also declares dynamic/runtime-sized cuda.shared.array "

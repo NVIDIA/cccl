@@ -2,12 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Native scratch descriptors and their ownership contracts."""
+"""Native scratch descriptors and typed shared-array reservations."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, cast
+
+import numpy as np
 
 from ..._core import StorageOwnership
 from .._temp_storage import TempStorage
@@ -15,6 +17,7 @@ from . import _bridges as nb
 from ._errors import TypedPipelineError
 
 _PARAMETERS = ("size_in_bytes", "alignment", "auto_sync", "sharing")
+_RESERVE = "coop.temp_storage.reserve"
 
 
 class TempStorageType(nb.types.Type):
@@ -54,7 +57,7 @@ class TempStorageType(nb.types.Type):
     def with_origins(self, origins):
         return TempStorageType(self, origins)
 
-    # Type.unify infers None, but extensions return the merged native type.
+    # Type.unify infers None, but the extension contract returns a merged type.
     def unify(self, typingctx, other) -> TempStorageType:  # pyright: ignore[reportIncompatibleMethodOverride]
         if not isinstance(other, TempStorageType):
             raise TypedPipelineError(
@@ -124,12 +127,101 @@ def _constructor(self, args, kws):
     return nb.signature(TempStorageType(descriptor), *args, *kws.values())
 
 
+def _reservation(owner, args, kws):
+    if len(args) > 2:
+        raise TypedPipelineError(
+            "TempStorage.reserve accepts num_elems and dtype positionally; "
+            "alignment is keyword-only"
+        )
+    names = ("num_elems", "dtype", "alignment")
+    bound = dict(zip(names, args))
+    if set(kws) - set(names) or bound.keys() & kws.keys():
+        raise TypedPipelineError("TempStorage.reserve got invalid arguments")
+    bound.update(kws)
+    if "num_elems" not in bound or "dtype" not in bound:
+        raise TypedPipelineError(
+            "TempStorage.reserve requires num_elems and dtype"
+        )
+    count = bound["num_elems"]
+    if (
+        not isinstance(count, nb.types.IntegerLiteral)
+        or count.literal_value <= 0
+    ):
+        raise TypedPipelineError(
+            "TempStorage.reserve num_elems must be a compile-time "
+            "positive integer"
+        )
+    dtype = bound["dtype"]
+    try:
+        if isinstance(dtype, nb.types.StringLiteral):
+            from .._compiler._parameters import normalize_dtype_param
+
+            dtype = normalize_dtype_param(dtype.literal_value)
+        else:
+            dtype = (
+                dtype.dtype if isinstance(dtype, nb.types.DTypeSpec) else None
+            )
+        numpy_dtype = np.dtype(str(dtype))
+        if dtype is None or numpy_dtype.kind not in "iufc":
+            raise ValueError()
+    except (TypeError, ValueError):
+        raise TypedPipelineError(
+            "TempStorage.reserve dtype must be a compile-time fixed-size "
+            "integer, floating-point, or complex dtype"
+        ) from None
+    alignment = max(numpy_dtype.alignment, numpy_dtype.itemsize)
+    if "alignment" in bound:
+        message = (
+            "TempStorage.reserve alignment must be a compile-time positive "
+            "power of 2, or None"
+        )
+        try:
+            requested = _constant(bound["alignment"], "reserve alignment")
+        except TypedPipelineError:
+            raise TypedPipelineError(message) from None
+        if requested is not None:
+            if (
+                not isinstance(requested, int)
+                or isinstance(requested, bool)
+                or requested <= 0
+                or requested & (requested - 1)
+            ):
+                raise TypedPipelineError(message)
+            alignment = max(alignment, requested)
+    if owner.auto_sync:
+        raise TypedPipelineError(
+            "TempStorage.reserve requires auto_sync=False; callers must "
+            "synchronize accesses to reserved arrays explicitly"
+        )
+    return count.literal_value, dtype, numpy_dtype.itemsize, alignment
+
+
+class _StorageAttributes(nb.AttributeTemplate):
+    key = TempStorageType
+
+    @nb.bound_function(_RESERVE)
+    def resolve_reserve(self, owner, args, kws):
+        _, dtype, _, _ = _reservation(owner, args, kws)
+        return nb.signature(nb.types.Array(dtype, 1, "C"), *args, *kws.values())
+
+
+@dataclass(frozen=True)
+class Reservation:
+    stmt: Any
+    owner: tuple
+    num_elems: int
+    dtype: Any
+    size_in_bytes: int
+    alignment: int
+
+
 @dataclass
 class Descriptors:
     """Canonical local descriptor owners and their validated consumers."""
 
     constructors: dict[tuple, TempStorageType] = field(default_factory=dict)
     owners: dict[str, tuple] = field(default_factory=dict)
+    reservations: dict[str, Reservation] = field(default_factory=dict)
 
 
 def has_calls(typemap):
@@ -189,11 +281,42 @@ def analyze(func_ir, typemap, sites) -> Descriptors:
             if var.name in result.owners
             and (not isinstance(stmt, nb.ir.Assign) or var != stmt.target)
         }
+        if isinstance(value, nb.ir.Expr) and value.op == "call":
+            callee = typemap.get(value.func.name)
+            if (
+                isinstance(callee, nb.types.BoundFunction)
+                and callee.typing_key == _RESERVE
+            ):
+                owner_type = callee.this
+                owner = root(next(iter(owner_type.origins)))
+                from ._inference import static_call_arguments
+
+                args, kws = static_call_arguments(
+                    func_ir,
+                    value,
+                    _RESERVE,
+                    [typemap[arg.name] for arg in value.args],
+                    {name: typemap[arg.name] for name, arg in value.kws},
+                )
+                count, dtype, itemsize, alignment = _reservation(
+                    owner_type, args, kws
+                )
+                result.reservations[stmt.target.name] = Reservation(
+                    stmt, owner, count, dtype, count * itemsize, alignment
+                )
+                consumers.add(owner)
+                continue
         if not used:
             continue
         if isinstance(value, nb.ir.Var) or (
             isinstance(value, nb.ir.Expr)
             and value.op in {"cast", "phi", "static_getitem"}
+        ):
+            continue
+        if (
+            isinstance(value, nb.ir.Expr)
+            and value.op == "getattr"
+            and value.attr == "reserve"
         ):
             continue
         if id(stmt) in primitive_stmts:
@@ -203,13 +326,13 @@ def analyze(func_ir, typemap, sites) -> Descriptors:
                 continue
         raise TypedPipelineError(
             "TempStorage values are opaque compile-time descriptors and "
-            "may only be passed as temp_storage= to a cooperative primitive; "
-            "a descriptor would escape to runtime"
+            "may only be passed as temp_storage= to a cooperative primitive "
+            "or used with reserve(); a descriptor would escape to runtime"
         )
     if result.constructors.keys() - consumers:
         raise TypedPipelineError(
             "TempStorage constructor has no consumer; pass it as "
-            "temp_storage= to a cooperative primitive"
+            "temp_storage= or use reserve()"
         )
     return result
 
@@ -256,11 +379,16 @@ def register():
             _lower_descriptor
         )
     nb.register_model(TempStorageType)(_DescriptorModel)
+    nb.typing_registry.register_attr(_StorageAttributes)
+    operation_literal_arguments[_RESERVE] = {
+        name: numpy_integer_literal for name in (0, "num_elems", "alignment")
+    }
     _registered = True
 
 
 __all__ = [
     "Descriptors",
+    "Reservation",
     "TempStorageType",
     "analyze",
     "has_calls",
