@@ -46,6 +46,7 @@ def _activate() -> None:
         _bridges,
         _exchange,
         _groups,
+        _histogram,
         _lower,
         _merge_sort,
         _ncm_patches,
@@ -72,6 +73,7 @@ def _activate() -> None:
     _radix.register()
     _topk.register()
     _neighbors.register()
+    _histogram.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()

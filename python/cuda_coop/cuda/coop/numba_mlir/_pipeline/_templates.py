@@ -752,6 +752,7 @@ def register() -> None:
             "topk_max_pairs",
             "adjacent_difference",
             "discontinuity",
+            "histogram",
         }:
             continue  # Result families register their templates separately.
         else:
