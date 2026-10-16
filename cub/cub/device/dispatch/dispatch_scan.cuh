@@ -72,7 +72,8 @@ template <typename PolicySelector,
           typename KernelNumItemsT,
           typename AccumT,
           ForceInclusive EnforceInclusive,
-          bool StableReductionOrder = false>
+          bool StableReductionOrder = false,
+          bool IsDeferred           = false>
 struct DeviceScanKernelSource
 {
   using ScanTileStateT = ScanTileState<AccumT>;
@@ -94,7 +95,8 @@ struct DeviceScanKernelSource
                      KernelNumItemsT,
                      AccumT,
                      EnforceInclusive == ForceInclusive::Yes,
-                     StableReductionOrder>)
+                     StableReductionOrder,
+                     IsDeferred>)
 
   CUB_DEFINE_KERNEL_GETTER(BatchInitKernel, DeviceScanBatchInitKernel<ScanTileStateT, AccumT>)
 
@@ -1539,7 +1541,8 @@ template <
     detail::parameter_from_host_t<OffsetT, NumItemsT>,
     AccumT,
     EnforceInclusive,
-    StableReductionOrder>,
+    StableReductionOrder,
+    ::cuda::args::__is_deferred_v<NumItemsT>>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires scan_policy_selector<PolicySelector>
@@ -1619,7 +1622,8 @@ template <
     detail::parameter_from_host_t<OffsetT, NumItemsT>,
     AccumT,
     EnforceInclusive,
-    StableReductionOrder>,
+    StableReductionOrder,
+    ::cuda::args::__is_deferred_v<NumItemsT>>,
   typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch_with_accum(
   void* d_temp_storage,
