@@ -32,6 +32,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -365,6 +366,7 @@ struct batch_completion_op
 
   [[nodiscard]] _CCCL_DEVICE_API bool operator()(const AccumT& tile_inclusive)
   {
+    static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
     const auto batch_idx      = tile_idx / tiles_per_batch;
     const auto local_tile_idx = static_cast<::cuda::std::uint32_t>(tile_idx % tiles_per_batch);
     const bool has_next_batch = (batch_idx + 1) * tiles_per_batch < num_tiles;
