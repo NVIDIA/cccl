@@ -99,7 +99,8 @@ struct tuple_size<
   ::cuda::std::__enable_if_tuple_size_imp<const _Tp,
                                           ::cuda::std::enable_if_t<!::cuda::std::is_volatile_v<_Tp>>,
                                           ::cuda::std::integral_constant<::cuda::std::size_t, sizeof(tuple_size<_Tp>)>>>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size_v<_Tp>>
+    // NOLINTNEXTLINE(cccl-modernize-type-traits): std::tuple_size_v is unavailable in freestanding mode.
+    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size<_Tp>::value>
 {};
 
 template <class _Tp>
@@ -107,14 +108,16 @@ struct tuple_size<
   ::cuda::std::__enable_if_tuple_size_imp<volatile _Tp,
                                           ::cuda::std::enable_if_t<!::cuda::std::is_const_v<_Tp>>,
                                           ::cuda::std::integral_constant<::cuda::std::size_t, sizeof(tuple_size<_Tp>)>>>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size_v<_Tp>>
+    // NOLINTNEXTLINE(cccl-modernize-type-traits): std::tuple_size_v is unavailable in freestanding mode.
+    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size<_Tp>::value>
 {};
 
 template <class _Tp>
 struct tuple_size<
   ::cuda::std::__enable_if_tuple_size_imp<const volatile _Tp,
                                           ::cuda::std::integral_constant<::cuda::std::size_t, sizeof(tuple_size<_Tp>)>>>
-    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size_v<_Tp>>
+    // NOLINTNEXTLINE(cccl-modernize-type-traits): std::tuple_size_v is unavailable in freestanding mode.
+    : ::cuda::std::integral_constant<::cuda::std::size_t, tuple_size<_Tp>::value>
 {};
 #endif // _CCCL_FREESTANDING()
 
