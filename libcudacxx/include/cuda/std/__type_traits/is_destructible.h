@@ -21,10 +21,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/remove_all_extents.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_function.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_all_extents.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
