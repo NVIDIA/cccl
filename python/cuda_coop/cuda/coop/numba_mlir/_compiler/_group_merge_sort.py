@@ -11,11 +11,9 @@ and its storage contract. The rewrite keeps comparison and shape inputs
 separate from runtime partial-tile counts and sentinels.
 """
 
-import math
 from dataclasses import replace
 
 import numba_cuda_mlir.numba_cuda.types as numba_types
-import numpy as np
 
 from cuda.coop._core import (
     BindingKind,
@@ -38,7 +36,9 @@ from ._operations import (
 from ._parameters import (
     _validate_common_numeric_dtype,
     _validate_runtime_integer_dtype,
-    coerce_static_scalar,
+)
+from ._parameters import (
+    coerce_static_sort_sentinel as _coerce_static_sentinel,
 )
 from ._rewrite_merge_sort import infer_merge_sort_payload
 
@@ -141,29 +141,6 @@ def _cast(context, statements, inst, value, dtype, name):
         ir.Assign(ir.Expr.call(cast, [value], (), inst.loc), result, inst.loc)
     )
     return result
-
-
-def _coerce_static_sentinel(value, dtype, *, operation):
-    """Convert a static key sentinel while allowing infinite float bounds.
-
-    The shared scalar coercion rejects nonfinite values, but infinity can be
-    a useful sorting bound. Validate a matching zero first so this special
-    case keeps the usual dtype checks, including exact NumPy scalar dtypes.
-    Then restore the infinity in the validated type. Other values use the
-    ordinary representability checks.
-    """
-
-    if (type(value) is float or isinstance(value, np.floating)) and math.isinf(
-        value
-    ):
-        # Validate the scalar dtype before preserving an infinite sorting bound.
-        zero = coerce_static_scalar(
-            type(value)(0), dtype, operation=operation, parameter="oob_default"
-        )
-        return type(zero)(value)
-    return coerce_static_scalar(
-        value, dtype, operation=operation, parameter="oob_default"
-    )
 
 
 def _lower_merge_sort(

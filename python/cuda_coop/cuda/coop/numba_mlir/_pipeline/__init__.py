@@ -47,6 +47,7 @@ def _activate() -> None:
         _exchange,
         _groups,
         _lower,
+        _merge_sort,
         _ncm_patches,
         _reductions,
         _resolve,
@@ -64,6 +65,7 @@ def _activate() -> None:
     _exchange.register()
     _reductions.register()
     _scan.register()
+    _merge_sort.register()
     _lower.register()
     _resolve.register()
     _bridges.refresh_registries()

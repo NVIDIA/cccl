@@ -163,6 +163,13 @@ def _user_shared_memory(
 # The analysis -----------------------------------------------------------------
 
 
+def _resolved_request(request: OperationRequest | None) -> OperationRequest:
+    assert request is not None, (
+        "native typing left a cooperative request unresolved"
+    )
+    return request
+
+
 class _Analysis:
     """The typed function, and the per-site reads that need its IR."""
 
@@ -191,6 +198,17 @@ class _Analysis:
 
     def site(self, stmt, kind, line, qualified) -> Site:
         expr = stmt.value
+        if kind in {"merge_sort_keys", "merge_sort_pairs"}:
+            from . import _merge_sort
+
+            return Site(
+                stmt,
+                kind,
+                line,
+                _resolved_request(
+                    _merge_sort.site_request(self, stmt, kind, qualified)
+                ),
+            )
         if kind in {
             "scan",
             "inclusive_scan",

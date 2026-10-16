@@ -519,3 +519,26 @@ __all__ = [
     "normalize_dim_param",
     "normalize_dtype_param",
 ]
+
+
+def coerce_static_sort_sentinel(value, dtype, *, operation):
+    """Convert a static key sentinel while allowing infinite float bounds.
+
+    The shared scalar coercion rejects nonfinite values, but infinity can be
+    a useful sorting bound. Validate a matching zero first so this special
+    case keeps the usual dtype checks, including exact NumPy scalar dtypes.
+    Then restore the infinity in the validated type. Other values use the
+    ordinary representability checks.
+    """
+
+    if (type(value) is float or isinstance(value, np.floating)) and math.isinf(
+        value
+    ):
+        # Validate the scalar dtype before preserving an infinite sorting bound.
+        zero = coerce_static_scalar(
+            type(value)(0), dtype, operation=operation, parameter="oob_default"
+        )
+        return type(zero)(value)
+    return coerce_static_scalar(
+        value, dtype, operation=operation, parameter="oob_default"
+    )
