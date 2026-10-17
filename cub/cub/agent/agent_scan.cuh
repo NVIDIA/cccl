@@ -471,7 +471,8 @@ struct AgentScan
   //! @param[in] batch_tile_idx Tile index within the batch, used for look-back.
   //! @param[in] preceding_batched_sum Prefix of preceding batches, or @c nullptr for the first batch.
   //! @param[in,out] tile_state Tile descriptors indexed by @c batch_tile_idx and reused across batches.
-  //! @param[in] completion_op Called by one thread with this tile's inclusive prefix after look-back completes.
+  //! @param[in] completion_op Called by all threads after look-back completes.
+  //!   Only thread 0 provides a valid inclusive prefix.
   template <bool IsLastTile, typename CompletionOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeBatchTile(
     OffsetT num_remaining,
@@ -527,12 +528,7 @@ struct AgentScan
     }
 
     __syncthreads();
-    // Thread 0 reports the tile once. If that retires the batch, the whole block resets the tile state.
-    const bool reset_batch = threadIdx.x == 0 ? completion_op(tile_inclusive) : false;
-    if (__syncthreads_or(reset_batch))
-    {
-      completion_op.reset_tiles_and_publish();
-    }
+    completion_op(tile_inclusive);
 
     if constexpr (UsePDL)
     {
