@@ -278,10 +278,42 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
   }
 
   const HistogramPolicy active_policy = policy_selector(cc);
+  size_t cooperative_temp_storage_bytes{};
 
   detail::log_dispatch("DeviceHistogram", cc, active_policy);
 
 #if _CCCL_HOSTED()
+  if constexpr (!IsDeviceInit && PrivatizationMode == privatization_mode::gmem
+                && KernelLauncherFactory::force_device_kernel_emission)
+  {
+    // Taking a kernel's address is insufficient to make nvcc emit the device entry needed by
+    // cudaLaunchCooperativeKernel. This dead chevron launch is seen by the device compilation pass but never runs.
+    if (false)
+    {
+      using privatized_decode_op_t = typename SecondLevelArrayT::value_type;
+      ::cuda::std::array<int, NumActiveChannels> num_output_bins{};
+      ::cuda::std::array<LocalCounterT*, NumActiveChannels> private_histograms{};
+      DeviceHistogramHistoCacheKernel<
+        PolicySelector,
+        NumChannels,
+        NumActiveChannels,
+        SampleIteratorT,
+        LocalCounterT,
+        CounterT,
+        privatized_decode_op_t,
+        OffsetT><<<1, 1, 0, stream>>>(
+        d_samples,
+        num_output_bins,
+        d_output_histograms,
+        private_histograms,
+        second_level_array,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        0);
+    }
+  }
+
   NV_IF_TARGET(
     NV_IS_HOST, ({
       // Byte-sample dispatch first privatizes by raw byte value, then applies a
@@ -294,6 +326,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
           static_cast<size_t>(max_num_output_bins) * NumActiveChannels * sizeof(LocalCounterT);
         bool use_histocache = active_policy.high_bin_algorithm == HistogramHighBinAlgorithm::histocache
                            && output_histogram_bytes > static_cast<size_t>(histocache_policy.min_histogram_bytes);
+        if (use_histocache && d_temp_storage != nullptr)
+        {
+          cudaStreamCaptureStatus capture_status{};
+          if (const auto error = CubDebug(cudaStreamIsCapturing(stream, &capture_status)))
+          {
+            return error;
+          }
+          // Cooperative execution requires setup that is not permitted while capturing. Size queries still account
+          // for both layouts so the returned allocation remains valid when execution chooses either path.
+          use_histocache = capture_status == cudaStreamCaptureStatusNone;
+        }
         if (use_histocache)
         {
           if (const auto error = CubDebug(launcher_factory.CooperativeLaunchSupported(use_histocache)))
@@ -384,16 +427,17 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
             }
             allocation_sizes[num_allocations - 1] = GridQueue<int>::AllocationSize();
             if (const auto error = CubDebug(
-                  detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+                  detail::alias_temporaries(nullptr, cooperative_temp_storage_bytes, allocations, allocation_sizes)))
             {
               return error;
             }
-            if (d_temp_storage == nullptr)
+            if (d_temp_storage != nullptr && num_thread_blocks > 0)
             {
-              return cudaSuccess;
-            }
-            if (num_thread_blocks > 0)
-            {
+              if (const auto error = CubDebug(
+                    detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+              {
+                return error;
+              }
               ::cuda::std::array<LocalCounterT*, NumActiveChannels> private_histograms{};
               auto* typed_allocations = reinterpret_cast<LocalCounterT**>(allocations);
               ::cuda::std::copy(typed_allocations, typed_allocations + NumActiveChannels, private_histograms.begin());
@@ -604,6 +648,7 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
 
   if (d_temp_storage == nullptr)
   {
+    temp_storage_bytes = (::cuda::std::max) (temp_storage_bytes, cooperative_temp_storage_bytes);
     // Return if the caller is simply requesting the size of the storage allocation
     return cudaSuccess;
   }
@@ -1482,8 +1527,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_even(
                                          NumActiveChannels,
                                          mode_value,
                                          /* IsDeviceInit = */ false,
-                                         /* IsEven = */ false,
-                                         /* IsByteSample = */ false>(
+                                         /* IsEven = */ true,
+                                         /* IsByteSample = */ true>(
         d_temp_storage,
         temp_storage_bytes,
         d_samples,

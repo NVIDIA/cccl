@@ -25,6 +25,8 @@ namespace detail
 {
 struct TripleChevronFactory
 {
+  static constexpr bool force_device_kernel_emission = true;
+
   CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
     if (dependent_launch)
