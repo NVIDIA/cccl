@@ -1508,13 +1508,32 @@ public:
     return result;
   }
 
+  // What the host translation unit is lowered to. Object is the executable
+  // form (linked into a shared library and loaded). The two IR forms stop
+  // before instruction selection: the host dispatch of the CUB call, the
+  // kernel stubs that call cudaLaunchKernel after __cudaPushCallConfiguration,
+  // and the fatbin registration constructor, as LLVM IR a compiler can link
+  // and rewrite (for example into CUDA graph kernel nodes).
+  enum class HostOutputKind
+  {
+    Object,
+    Bitcode,
+    TextualIR
+  };
+
+  static HostOutputKind hostOutputKindForPath(const std::string& output_path)
+  {
+    return output_path.ends_with(".ll") ? HostOutputKind::TextualIR : HostOutputKind::Bitcode;
+  }
+
   bool compileHostCode(
     const std::string& source_code,
     const std::string& input_file,
     const std::string& fatbin_path,
     const std::string& output_obj,
     const CompilerOptions& config,
-    std::string& diagnostics)
+    std::string& diagnostics,
+    HostOutputKind output_kind = HostOutputKind::Object)
   {
     std::string temp_dir    = std::filesystem::path(output_obj).parent_path().string();
     std::string source_file = temp_dir + "/host_" + input_file;
@@ -1532,7 +1551,18 @@ public:
     arg_strings.push_back("-aux-triple");
     arg_strings.push_back("nvptx64-nvidia-cuda");
     arg_strings.push_back("-target-sdk-version=" CUDA_SDK_VERSION);
-    arg_strings.push_back("-emit-obj");
+    switch (output_kind)
+    {
+      case HostOutputKind::Object:
+        arg_strings.push_back("-emit-obj");
+        break;
+      case HostOutputKind::Bitcode:
+        arg_strings.push_back("-emit-llvm-bc");
+        break;
+      case HostOutputKind::TextualIR:
+        arg_strings.push_back("-emit-llvm");
+        break;
+    }
     arg_strings.push_back("-target-cpu");
     arg_strings.push_back(HOSTJIT_HOST_CPU);
     arg_strings.push_back("-fcuda-allow-variadic-functions");
@@ -1658,9 +1688,21 @@ public:
       diagnostics += "=== End Header Search Paths ===\n\n";
     }
 
-    clang::EmitObjAction emit_action;
+    std::unique_ptr<clang::CodeGenAction> emit_action;
+    switch (output_kind)
+    {
+      case HostOutputKind::Object:
+        emit_action = std::make_unique<clang::EmitObjAction>();
+        break;
+      case HostOutputKind::Bitcode:
+        emit_action = std::make_unique<clang::EmitBCAction>();
+        break;
+      case HostOutputKind::TextualIR:
+        emit_action = std::make_unique<clang::EmitLLVMAction>();
+        break;
+    }
     bool success = runWithLargeStack([&] {
-      return compiler.ExecuteAction(emit_action);
+      return compiler.ExecuteAction(*emit_action);
     });
 
     if (config.trace_includes && compiler.hasSourceManager())
@@ -1686,6 +1728,32 @@ public:
     const std::string& output_path,
     const std::string& output_cubin_path,
     const CompilerOptions& config)
+  {
+    return compileToHostArtifact(
+      source_code, input_name, output_path, output_cubin_path, config, HostOutputKind::Object);
+  }
+
+  // Same pipeline as compileToObject (device PTX, nvJitLink, fatbin, host
+  // compile) with the host translation unit emitted as LLVM IR instead of an
+  // object: bitcode, or textual IR when `output_path` ends with ".ll".
+  CompilationResult compileToHostIR(
+    const std::string& source_code,
+    const std::string& input_name,
+    const std::string& output_path,
+    const std::string& output_cubin_path,
+    const CompilerOptions& config)
+  {
+    return compileToHostArtifact(
+      source_code, input_name, output_path, output_cubin_path, config, hostOutputKindForPath(output_path));
+  }
+
+  CompilationResult compileToHostArtifact(
+    const std::string& source_code,
+    const std::string& input_name,
+    const std::string& output_path,
+    const std::string& output_cubin_path,
+    const CompilerOptions& config,
+    HostOutputKind output_kind)
   {
     CompilationResult result;
     result.success          = false;
@@ -1924,7 +1992,7 @@ public:
       result.diagnostics += "\n=== Host compilation ===\n";
     }
 
-    if (!compileHostCode(source_code, input_file, fatbin_file, output_path, config, result.diagnostics))
+    if (!compileHostCode(source_code, input_file, fatbin_file, output_path, config, result.diagnostics, output_kind))
     {
       result.diagnostics += "\nHost compilation failed";
       removeAll(temp_dir);
@@ -2460,6 +2528,31 @@ extern "C" libnvccResult libnvccCompileProgramToObject(
 
   const std::string cubin_path = outputCubinPath ? outputCubinPath : "";
   auto result = prog->compiler.compileToObject(prog->source, prog->name, outputObjectPath, cubin_path, parsed_options);
+  setProgramLog(prog, result.diagnostics);
+  return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
+}
+
+extern "C" libnvccResult libnvccCompileProgramToHostIR(
+  libnvccProgram prog, const char* outputPath, const char* outputCubinPath, int numOptions, const char* const* options)
+{
+  if (!prog)
+  {
+    return LIBNVCC_ERROR_INVALID_PROGRAM;
+  }
+  if (!outputPath || outputPath[0] == '\0')
+  {
+    setProgramLog(prog, "outputPath must be non-empty");
+    return LIBNVCC_ERROR_INVALID_INPUT;
+  }
+
+  libnvcc::CompilerOptions parsed_options;
+  if (!parseProgramOptions(prog, numOptions, options, parsed_options))
+  {
+    return LIBNVCC_ERROR_INVALID_OPTION;
+  }
+
+  const std::string cubin_path = outputCubinPath ? outputCubinPath : "";
+  auto result = prog->compiler.compileToHostIR(prog->source, prog->name, outputPath, cubin_path, parsed_options);
   setProgramLog(prog, result.diagnostics);
   return result.success ? LIBNVCC_SUCCESS : LIBNVCC_ERROR_COMPILATION;
 }
