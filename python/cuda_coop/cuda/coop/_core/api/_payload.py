@@ -11,7 +11,8 @@ This lets the common API describe inputs without importing compiler types.
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar, runtime_checkable
+import operator
+from typing import Protocol, SupportsIndex, TypeVar, runtime_checkable
 
 _ItemT = TypeVar("_ItemT")
 
@@ -58,8 +59,32 @@ class TempStorageLike(Protocol):
     sharing: str
 
 
+def _normalize_alignment(alignment: SupportsIndex | None) -> int | None:
+    """Normalize a payload or scratch alignment request to bytes.
+
+    Preserve ``None`` so the compiler can choose the alignment. Explicit
+    requests must be positive powers of two. Accept integer-like values
+    through ``__index__``, but reject booleans as accidental requests.
+    """
+
+    if alignment is None:
+        return None
+    if isinstance(alignment, bool):
+        raise TypeError("alignment must be an integer or None")
+    try:
+        alignment = operator.index(alignment)
+    except TypeError as exc:
+        raise TypeError("alignment must be an integer or None") from exc
+    if alignment <= 0:
+        raise ValueError("alignment must be a positive integer")
+    if alignment & (alignment - 1):
+        raise ValueError("alignment must be a power of 2")
+    return alignment
+
+
 __all__ = [
     "TempStorageLike",
     "ThreadDataLike",
     "_ReadableThreadDataLike",
+    "_normalize_alignment",
 ]
