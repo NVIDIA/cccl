@@ -87,6 +87,7 @@ struct BatchedMemcpyPolicySelector
       .lookback  = {
         .small_buffer =
           {.threads_per_block       = 128,
+           .min_blocks_per_sm       = 1,
            .buffers_per_thread      = 4,
            .bytes_per_thread        = 8,
            .prefer_pow2_bits        = false,

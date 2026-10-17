@@ -4,6 +4,7 @@
 #include <cub/device/device_memcpy.cuh>
 
 // %RANGE% TUNE_THREADS tpb 128:1024:32
+// %RANGE% TUNE_MIN_BLOCKS_PER_SM mbpsm 1:16:1
 // %RANGE% TUNE_BUFFERS_PER_THREAD bpt 1:18:1
 // %RANGE% TUNE_TLEV_BYTES_PER_THREAD tlevbpt 2:16:2
 // %RANGE% TUNE_LARGE_THREADS ltpb 128:1024:32
@@ -79,6 +80,7 @@ struct policy_selector_t
       {
         {
           TUNE_THREADS,
+          TUNE_MIN_BLOCKS_PER_SM,
           TUNE_BUFFERS_PER_THREAD,
           TUNE_TLEV_BYTES_PER_THREAD,
           bool{TUNE_PREFER_POW2_BITS},

@@ -146,7 +146,7 @@ struct batch_memcpy_tuning
     return {
       cub::BatchedCopyAlgorithm::lookback,
       {
-        {BlockThreads, 4, 8, false, 256 * 32, 32, 64, 96, 128, 8 * 1024, {}, {}},
+        {BlockThreads, 1, 4, 8, false, 256 * 32, 32, 64, 96, 128, 8 * 1024, {}, {}},
         {256, 32},
       },
     };
@@ -343,6 +343,7 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
   // aggregate init
   constexpr auto p1_small = cub::BatchedCopySmallBufferPolicy{
     128,
+    1,
     4,
     8,
     false,
@@ -362,6 +363,7 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
   // designated init
   constexpr auto p2_small = cub::BatchedCopySmallBufferPolicy{
     .threads_per_block       = 128,
+    .min_blocks_per_sm       = 1,
     .buffers_per_thread      = 4,
     .bytes_per_thread        = 8,
     .prefer_pow2_bits        = false,
@@ -402,7 +404,7 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
   };
   REQUIRE(
     to_string(p1_small)
-    == "BatchedCopySmallBufferPolicy { .threads_per_block = 128, .buffers_per_thread = 4"
+    == "BatchedCopySmallBufferPolicy { .threads_per_block = 128, .min_blocks_per_sm = 1, .buffers_per_thread = 4"
        ", .bytes_per_thread = 8, .prefer_pow2_bits = 0, .block_level_tile_size = 8192"
        ", .group4_level_threshold = 32, .group8_level_threshold = 64, .group16_level_threshold = 96"
        ", .warp_level_threshold = 128, .block_level_threshold = 8192"
@@ -416,7 +418,7 @@ CUB_TEST("Test BatchedCopyPolicy properties", "[memcpy][device]", CUB_SMALL)
     == "BatchedCopyPolicy { .algorithm = BatchedCopyAlgorithm::lookback"
        ", .lookback = BatchedCopyLookbackPolicy { .small_buffer = BatchedCopySmallBufferPolicy { .threads_per_block = "
        "128"
-       ", .buffers_per_thread = 4, .bytes_per_thread = 8, .prefer_pow2_bits = 0"
+       ", .min_blocks_per_sm = 1, .buffers_per_thread = 4, .bytes_per_thread = 8, .prefer_pow2_bits = 0"
        ", .block_level_tile_size = 8192, .group4_level_threshold = 32, .group8_level_threshold = 64"
        ", .group16_level_threshold = 96, .warp_level_threshold = 128, .block_level_threshold = 8192"
        ", .buffer_lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"

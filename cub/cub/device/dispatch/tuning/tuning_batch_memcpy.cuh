@@ -26,6 +26,7 @@ CUB_NAMESPACE_BEGIN
 struct BatchedCopySmallBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
+  int min_blocks_per_sm; //!< Minimum resident blocks per SM, forwarded as the kernel launch-bounds occupancy hint
   int buffers_per_thread; //!< Number of buffers processed per thread
   int bytes_per_thread; //!< The number of bytes that each thread will work on with each iteration of reading in
                         //!< bytes from one or more source-buffers and writing them out to the respective
@@ -44,9 +45,9 @@ struct BatchedCopySmallBufferPolicy
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const BatchedCopySmallBufferPolicy& lhs, const BatchedCopySmallBufferPolicy& rhs) noexcept
   {
-    return lhs.threads_per_block == rhs.threads_per_block && lhs.buffers_per_thread == rhs.buffers_per_thread
-        && lhs.bytes_per_thread == rhs.bytes_per_thread && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits
-        && lhs.block_level_tile_size == rhs.block_level_tile_size
+    return lhs.threads_per_block == rhs.threads_per_block && lhs.min_blocks_per_sm == rhs.min_blocks_per_sm
+        && lhs.buffers_per_thread == rhs.buffers_per_thread && lhs.bytes_per_thread == rhs.bytes_per_thread
+        && lhs.prefer_pow2_bits == rhs.prefer_pow2_bits && lhs.block_level_tile_size == rhs.block_level_tile_size
         && lhs.group4_level_threshold == rhs.group4_level_threshold
         && lhs.group8_level_threshold == rhs.group8_level_threshold
         && lhs.group16_level_threshold == rhs.group16_level_threshold
@@ -67,6 +68,7 @@ struct BatchedCopySmallBufferPolicy
   {
     return os
         << "BatchedCopySmallBufferPolicy { .threads_per_block = " << policy.threads_per_block
+        << ", .min_blocks_per_sm = " << policy.min_blocks_per_sm
         << ", .buffers_per_thread = " << policy.buffers_per_thread
         << ", .bytes_per_thread = " << policy.bytes_per_thread << ", .prefer_pow2_bits = " << policy.prefer_pow2_bits
         << ", .block_level_tile_size = " << policy.block_level_tile_size << ", .group4_level_threshold = "
@@ -203,14 +205,16 @@ private:
       256,
       32,
     };
+    const int min_blocks_per_sm = cc == ::cuda::compute_capability{10, 0} ? 10 : 1;
     return BatchedCopyLookbackPolicy{
       BatchedCopySmallBufferPolicy{
         /* .threads_per_block = */ 128,
+        /* .min_blocks_per_sm = */ min_blocks_per_sm,
         /* .buffers_per_thread = */ 4,
         /* .bytes_per_thread = */ 8,
         /* .prefer_pow2_bits = */ cc < ::cuda::compute_capability{7, 0},
         /* .block_level_tile_size = */ large.threads_per_block * large.bytes_per_thread,
-        /* .group4_level_threshold = */ 0,
+        /* .group4_level_threshold = */ 8,
         /* .group8_level_threshold = */ 192,
         /* .group16_level_threshold = */ 384,
         /* .warp_level_threshold = */ 512,
