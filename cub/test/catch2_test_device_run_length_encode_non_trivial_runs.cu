@@ -68,10 +68,15 @@ struct run_index_to_offset_op
   }
 };
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]", CUB_SMALL)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         offset_types)
 {
-  constexpr int num_items = 0;
-  c2h::device_vector<int> out_num_runs(1, 42);
+  using offset_type = typename c2h::get<0, TestType>;
+
+  constexpr offset_type num_items = 0;
+  c2h::device_vector<offset_type> out_num_runs{42};
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(
@@ -362,7 +367,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
 }
 
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for a large number of items",
-         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_SMALL,
          offset_types)
 try
@@ -407,8 +412,66 @@ catch (const std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << '\n';
 }
 
+// generates for [0, 1, 2, ...] the sequence [0, 0, 1, 1, 2, 2, ...]
+struct index_to_pair_op
+{
+  template <typename OffsetT>
+  __host__ __device__ OffsetT operator()(const OffsetT index) const
+  {
+    return index / OffsetT{2};
+  }
+};
+
+struct run_index_to_pair_offset_op
+{
+  template <typename OffsetT>
+  __host__ __device__ OffsetT operator()(OffsetT run_index)
+  {
+    return OffsetT{2} * run_index;
+  }
+};
+
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works when a run starts at a partition boundary",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL,
+         offset_types)
+try
+{
+  using offset_type     = typename c2h::get<0, TestType>;
+  using run_length_type = offset_type;
+
+  const auto num_items = detail::make_large_offset<offset_type>();
+  CAPTURE(c2h::type_name<offset_type>(), c2h::type_name<run_length_type>(), num_items);
+
+  auto counting_it = cuda::make_counting_iterator(offset_type{0});
+
+  // Partition sizes are even, so every partition starts with the head of a run
+  auto input_item_it     = cuda::make_transform_iterator(counting_it, index_to_pair_op{});
+  const auto num_uniques = num_items / 2;
+
+  auto check_offset_out_helper = detail::large_problem_test_helper(num_uniques);
+  auto expected_offsets_it     = cuda::make_transform_iterator(counting_it, run_index_to_pair_offset_op{});
+  auto check_offset_out_it     = check_offset_out_helper.get_flagging_output_iterator(expected_offsets_it);
+
+  auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
+  auto expected_run_lengths_it     = cuda::make_constant_iterator(run_length_type{2});
+  auto check_run_length_out_it     = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
+
+  c2h::device_vector<offset_type> out_num_runs(1, thrust::no_init);
+
+  run_length_encode(input_item_it, check_offset_out_it, check_run_length_out_it, out_num_runs.begin(), num_items);
+
+  CHECK(out_num_runs[0] == num_uniques);
+  check_offset_out_helper.check_all_results_correct();
+  check_run_length_out_helper.check_all_results_correct();
+}
+catch (const std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << '\n';
+}
+
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns works for large runs of equal items",
-         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck][!mayfail]",
+         "[device][run_length_encode][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          CUB_SMALL,
          offset_types)
 try
