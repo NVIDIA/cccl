@@ -75,6 +75,8 @@ struct CudaDriverLauncher
 
 struct CudaDriverLauncherFactory
 {
+  static constexpr bool force_device_kernel_emission = false;
+
   CUB_RUNTIME_FUNCTION void __assert_pdl_allowed(bool dependent_launch) const
   {
     if (dependent_launch)
@@ -123,6 +125,33 @@ struct CudaDriverLauncherFactory
 
     return static_cast<::cudaError_t>(
       ::cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_fn, block_size, dynamic_smem_bytes));
+  }
+
+  _CCCL_HIDE_FROM_ABI ::cudaError_t CooperativeLaunchSupported(bool& supported) const noexcept
+  {
+    int attribute = 0;
+    const auto status =
+      static_cast<::cudaError_t>(::cuDeviceGetAttribute(&attribute, ::CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH, device_));
+    supported = status == ::cudaSuccess && attribute != 0;
+    return status;
+  }
+
+  template <typename... Args>
+  _CCCL_HIDE_FROM_ABI ::cudaError_t LaunchCooperative(
+    dim3 grid, dim3 block, unsigned int shared_mem, ::CUstream stream, ::CUkernel kernel, Args const&... args)
+    const noexcept
+  {
+    void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+
+    ::CUfunction kernel_fn;
+    auto status = static_cast<::cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel));
+    if (status != cudaSuccess)
+    {
+      return status;
+    }
+
+    return static_cast<::cudaError_t>(::cuLaunchCooperativeKernel(
+      kernel_fn, grid.x, grid.y, grid.z, block.x, block.y, block.z, shared_mem, stream, kernel_args));
   }
 
   _CCCL_HIDE_FROM_ABI ::cudaError_t MaxGridDimX(int& max_grid_dim_x) const
