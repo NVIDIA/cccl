@@ -19,7 +19,9 @@ inline void rethrow_unless_allocation_failure()
     throw;
   }
   catch (const std::bad_alloc&)
-  {}
+  {
+    return;
+  }
   catch (const thrust::system_error& e)
   {
     if (e.code() != thrust::system::error_code{cudaErrorMemoryAllocation, thrust::cuda_category()})

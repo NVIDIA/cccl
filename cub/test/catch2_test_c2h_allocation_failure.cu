@@ -15,6 +15,8 @@ void classify_exception(const Exception& exception)
 {
   try
   {
+    // Exercise library exception types even when their copy constructors are not noexcept.
+    // NOLINTNEXTLINE(bugprone-exception-copy-constructor-throws,cert-err60-cpp)
     throw exception;
   }
   catch (...)
