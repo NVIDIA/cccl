@@ -213,7 +213,8 @@ template <typename PolicySelector,
 #if _CCCL_HAS_CONCEPTS()
   requires batch_memcpy_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
-__launch_bounds__(int(current_policy<PolicySelector>().lookback.small_buffer.threads_per_block))
+__launch_bounds__(int(current_policy<PolicySelector>().lookback.small_buffer.threads_per_block),
+                  int(current_policy<PolicySelector>().lookback.small_buffer.min_blocks_per_sm))
   _CCCL_KERNEL_ATTRIBUTES void BatchMemcpyKernel(
     const InputBufferIt input_buffer_it,
     const OutputBufferIt output_buffer_it,
@@ -235,6 +236,9 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.small_buffer.thr
     policy.bytes_per_thread,
     policy.prefer_pow2_bits,
     policy.block_level_tile_size,
+    policy.group4_level_threshold,
+    policy.group8_level_threshold,
+    policy.group16_level_threshold,
     policy.warp_level_threshold,
     policy.block_level_threshold,
     delay_constructor_t<policy.buffer_lookback_delay.kind,
