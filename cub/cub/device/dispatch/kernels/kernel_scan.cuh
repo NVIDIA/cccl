@@ -413,16 +413,20 @@ struct batch_completion_op
   _CCCL_DEVICE_API void operator()(const AccumT& tile_inclusive)
   {
     static_assert(tiles_per_batch <= ::cuda::std::numeric_limits<::cuda::std::uint32_t>::max());
+    // The final batch never reuses the tile state, so it needs no retirement tracking.
+    if ((tile_idx / tiles_per_batch + 1) * tiles_per_batch >= num_tiles)
+    {
+      return;
+    }
+
     bool reset_batch = false;
 
     if (threadIdx.x == 0)
     {
-      const auto batch_idx      = tile_idx / tiles_per_batch;
       const auto local_tile_idx = static_cast<::cuda::std::uint32_t>(tile_idx % tiles_per_batch);
-      const bool has_next_batch = (batch_idx + 1) * tiles_per_batch < num_tiles;
 
       // Save the batch prefix before publishing completion.
-      if (has_next_batch && local_tile_idx + 1 == batch_tiles)
+      if (local_tile_idx + 1 == batch_tiles)
       {
         batch_state->batched_sum.Alias() = tile_inclusive;
       }
@@ -430,7 +434,7 @@ struct batch_completion_op
       auto lookbacks_completed =
         ::cuda::atomic_ref<::cuda::std::uint32_t, ::cuda::thread_scope_device>{batch_state->lookbacks_completed};
       const auto completed = lookbacks_completed.fetch_add(1, ::cuda::std::memory_order_acq_rel) + 1;
-      reset_batch          = has_next_batch && completed == batch_tiles;
+      reset_batch          = completed == batch_tiles;
     }
 
     // The block completing the final look-back resets the tile state and publishes the next batch.
