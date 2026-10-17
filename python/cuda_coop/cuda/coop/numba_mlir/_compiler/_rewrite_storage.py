@@ -864,10 +864,13 @@ class _StorageRewrite:
                     except _INFERENCE_EXCEPTIONS:
                         shape = None
                     dimensions = shape if isinstance(shape, tuple) else (shape,)
-                    is_static = bool(dimensions) and all(
-                        isinstance(extent, int) and extent > 0
-                        for extent in dimensions
-                    )
+                    try:
+                        is_static = bool(dimensions) and all(
+                            extent is not None and operator.index(extent) > 0
+                            for extent in dimensions
+                        )
+                    except TypeError:
+                        is_static = False
                     if plan.uses_dynamic_smem or not is_static:
                         placement = (
                             "static" if is_static else "dynamic/runtime-sized"

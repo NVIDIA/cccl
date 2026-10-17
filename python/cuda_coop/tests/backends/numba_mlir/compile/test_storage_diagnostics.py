@@ -12,6 +12,7 @@ import inspect
 import os
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 pytest.importorskip("numba_cuda_mlir")
@@ -294,6 +295,28 @@ def test_literal_unroll_cannot_determine_cooperative_selector():
         match="does not support literal_unroll values",
     ):
         _compile(kernel, types.int32[::1], types.int32[::1])
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [np.int32(128), np.int64(128), (np.int32(128),)],
+    ids=["int32", "int64", "tuple"],
+)
+def test_numpy_integer_shared_shapes_coexist_with_cooperative_storage(shape):
+    @cuda.jit(chip="sm_90")
+    def kernel(source, destination):
+        mine = cuda.shared.array(shape, types.int32)
+        thread = cuda.threadIdx.x
+        mine[thread] = source[thread]
+        payload = coop.ThreadData(items_per_thread=1, dtype=types.int32)
+        payload[0] = mine[thread]
+        coop.store(
+            coop.this_block(), destination, payload, algorithm="transpose"
+        )
+
+    assert _compile(kernel, types.int32[::1], types.int32[::1]).metadata[
+        "ltoir"
+    ]
 
 
 @pytest.mark.parametrize(
