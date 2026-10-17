@@ -232,7 +232,7 @@ html[data-theme="dark"] .coop-load {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .coop-load-token { transition: none; }
+  .coop-load-token, .coop-explorer-token { transition: none; }
 }
 
 @media print {

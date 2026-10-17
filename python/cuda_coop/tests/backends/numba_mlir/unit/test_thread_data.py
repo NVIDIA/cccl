@@ -36,6 +36,13 @@ def test_temp_storage_accepts_minimum_alignment(alignment):
     assert storage.alignment is None or type(storage.alignment) is int
 
 
+@pytest.mark.parametrize("size_in_bytes", [4096, np.int64(4096)])
+def test_temp_storage_accepts_integer_sizes(size_in_bytes):
+    storage = coop.TempStorage(size_in_bytes)
+    assert storage.size_in_bytes == 4096
+    assert type(storage.size_in_bytes) is int
+
+
 def test_temp_storage_uses_canonical_defaults_and_normalization():
     shared = coop.TempStorage(sharing=" SHARED ")
     exclusive = coop.TempStorage(sharing=" Exclusive ")
@@ -69,6 +76,21 @@ def test_temp_storage_rejects_string_enum_sharing():
         ),
         (
             {"size_in_bytes": 0},
+            ValueError,
+            "TempStorage size_in_bytes must be a positive integer",
+        ),
+        (
+            {"size_in_bytes": 1.5},
+            TypeError,
+            "TempStorage size_in_bytes must be an integer or None",
+        ),
+        (
+            {"size_in_bytes": np.int64(0)},
+            ValueError,
+            "TempStorage size_in_bytes must be a positive integer",
+        ),
+        (
+            {"size_in_bytes": np.int64(-1)},
             ValueError,
             "TempStorage size_in_bytes must be a positive integer",
         ),

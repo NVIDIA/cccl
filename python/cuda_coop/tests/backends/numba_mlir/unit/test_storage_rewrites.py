@@ -1950,6 +1950,24 @@ def test_storage_alignment_satisfies_all_uses(alignment, sharing):
 @pytest.mark.parametrize(
     "module", [common_coop, coop], ids=["root", "qualified"]
 )
+def test_temp_storage_rewrite_normalizes_numpy_size(module):
+    invocable = _FakeInvocable()
+    provider = _register_leading_pointer_provider(invocable)
+    size_in_bytes = np.int64(4096)
+
+    def kernel(value):
+        storage = module.TempStorage(size_in_bytes)
+        return provider(value, temp_storage=storage)
+
+    func_ir, rewrite, _ = _rewrite_registered_provider(kernel)
+
+    assert cuda.shared.array in _call_targets(func_ir)
+    assert rewrite._temp_storage_global_plan.total_size == 4096
+
+
+@pytest.mark.parametrize(
+    "module", [common_coop, coop], ids=["root", "qualified"]
+)
 @pytest.mark.parametrize("alignment", [None, 1, 2, 4, 8, 16, np.int64(32)])
 def test_temp_storage_rewrite_normalizes_minimum_alignment(module, alignment):
     invocable = _FakeInvocable(alignment=16)

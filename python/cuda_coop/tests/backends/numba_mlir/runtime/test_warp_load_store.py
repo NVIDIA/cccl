@@ -410,15 +410,12 @@ def _expected_stored_payload(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-@pytest.mark.parametrize(
-    "valid_items",
-    (0, _WARP_TILE_ITEMS - 9, _WARP_TILE_ITEMS),
-    ids=("zero", "partial", "full"),
-)
+@pytest.mark.parametrize("valid_case", ("zero", "partial", "full"))
 def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
-    qualified: bool, algorithm: str, valid_items: int, *, items_per_thread
+    qualified: bool, algorithm: str, valid_case: str, *, items_per_thread
 ) -> None:
-    valid_items = min(valid_items, _WARP_THREADS * items_per_thread)
+    tile = _WARP_THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9, "full": tile}[valid_case]
     source = _values(
         _LOAD_OFFSET + (_BLOCK_THREADS * items_per_thread) + 3, shift=31
     )
@@ -449,15 +446,12 @@ def test_each_warp_load_algorithm_matches_an_independent_two_warp_oracle(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-@pytest.mark.parametrize(
-    "valid_items",
-    (0, _WARP_TILE_ITEMS - 9, _WARP_TILE_ITEMS),
-    ids=("zero", "partial", "full"),
-)
+@pytest.mark.parametrize("valid_case", ("zero", "partial", "full"))
 def test_each_warp_store_algorithm_masks_each_warp(
-    qualified: bool, algorithm: str, valid_items: int, *, items_per_thread
+    qualified: bool, algorithm: str, valid_case: str, *, items_per_thread
 ) -> None:
-    valid_items = min(valid_items, _WARP_THREADS * items_per_thread)
+    tile = _WARP_THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9, "full": tile}[valid_case]
     source = _values((_BLOCK_THREADS * items_per_thread), shift=43)
     destination = np.full(
         _STORE_OFFSET + (_BLOCK_THREADS * items_per_thread) + 3,

@@ -344,15 +344,12 @@ def _load_valid_prefix(
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "valid_items",
-    (0, _TILE_ITEMS - 9, _TILE_ITEMS),
-    ids=("zero", "partial", "full"),
-)
+@pytest.mark.parametrize("valid_case", ("zero", "partial", "full"))
 def test_load_reads_valid_prefix_at_an_independent_offset(
-    valid_items, *, items_per_thread
+    valid_case, *, items_per_thread
 ):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
+    tile = _THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9, "full": tile}[valid_case]
     source = _values(
         np.dtype(np.int32), _LOAD_OFFSET + (_THREADS * items_per_thread)
     )
@@ -401,11 +398,10 @@ def _load_defaulting_invalid(
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "valid_items", (0, _TILE_ITEMS - 9), ids=("zero", "partial")
-)
-def test_load_defaults_invalid_slots(valid_items, *, items_per_thread):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
+@pytest.mark.parametrize("valid_case", ("zero", "partial"))
+def test_load_defaults_invalid_slots(valid_case, *, items_per_thread):
+    tile = _THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9}[valid_case]
     source = _values(
         np.dtype(np.int32), _LOAD_OFFSET + (_THREADS * items_per_thread)
     )
@@ -447,15 +443,12 @@ def _store_valid_prefix(
 
 
 @pytest.mark.parametrize("items_per_thread", [1, 4])
-@pytest.mark.parametrize(
-    "valid_items",
-    (0, _TILE_ITEMS - 9, _TILE_ITEMS),
-    ids=("zero", "partial", "full"),
-)
+@pytest.mark.parametrize("valid_case", ("zero", "partial", "full"))
 def test_store_writes_only_the_valid_prefix_at_an_independent_offset(
-    valid_items, *, items_per_thread
+    valid_case, *, items_per_thread
 ):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
+    tile = _THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9, "full": tile}[valid_case]
     source = _values(
         np.dtype(np.int32), (_THREADS * items_per_thread), shift=17
     )
@@ -667,15 +660,12 @@ def _expected_stored_tile(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-@pytest.mark.parametrize(
-    "valid_items",
-    (0, _TILE_ITEMS - 9, _TILE_ITEMS),
-    ids=("zero", "partial", "full"),
-)
+@pytest.mark.parametrize("valid_case", ("zero", "partial", "full"))
 def test_each_block_load_algorithm_matches_its_layout_oracle(
-    qualified, algorithm, valid_items, *, items_per_thread
+    qualified, algorithm, valid_case, *, items_per_thread
 ):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
+    tile = _THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9, "full": tile}[valid_case]
     source = _values(
         np.dtype(np.int32),
         _LOAD_OFFSET + (_THREADS * items_per_thread),
@@ -708,15 +698,12 @@ def test_each_block_load_algorithm_matches_its_layout_oracle(
     "qualified", (False, True), ids=("common", "qualified")
 )
 @pytest.mark.parametrize("algorithm", _ALGORITHMS)
-@pytest.mark.parametrize(
-    "valid_items",
-    (0, _TILE_ITEMS - 9, _TILE_ITEMS),
-    ids=("zero", "partial", "full"),
-)
+@pytest.mark.parametrize("valid_case", ("zero", "partial", "full"))
 def test_each_block_store_algorithm_matches_its_layout_oracle(
-    qualified, algorithm, valid_items, *, items_per_thread
+    qualified, algorithm, valid_case, *, items_per_thread
 ):
-    valid_items = min(valid_items, _THREADS * items_per_thread)
+    tile = _THREADS * items_per_thread
+    valid_items = {"zero": 0, "partial": tile - 9, "full": tile}[valid_case]
     source = _values(
         np.dtype(np.int32), (_THREADS * items_per_thread), shift=37
     )

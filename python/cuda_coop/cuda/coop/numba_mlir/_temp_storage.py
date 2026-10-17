@@ -8,6 +8,7 @@ The descriptor validates host-side options and retains them for compilation.
 Constructing it does not allocate shared memory or synchronize threads.
 """
 
+import operator
 from enum import Enum
 
 from .._core.api._payload import _normalize_alignment
@@ -37,12 +38,16 @@ class TempStorage:
         sharing="shared",
     ):
         if size_in_bytes is not None:
-            if not isinstance(size_in_bytes, int) or isinstance(
-                size_in_bytes, bool
-            ):
+            if isinstance(size_in_bytes, bool):
                 raise TypeError(
                     "TempStorage size_in_bytes must be an integer or None."
                 )
+            try:
+                size_in_bytes = operator.index(size_in_bytes)
+            except TypeError as exc:
+                raise TypeError(
+                    "TempStorage size_in_bytes must be an integer or None."
+                ) from exc
             if size_in_bytes <= 0:
                 raise ValueError(
                     "TempStorage size_in_bytes must be a positive integer."
