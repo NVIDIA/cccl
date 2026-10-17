@@ -274,6 +274,13 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
 }
 
 /**
+ * @brief Largest number of bytes for which the range that `GetAlignedPtrs` returns can be empty, in which case
+ * `vectorized_copy` copies the bytes one by one. Larger copies always contain at least one aligned \p VectorT.
+ */
+template <typename VectorT>
+inline constexpr int max_bytewise_size = 2 * int{sizeof(VectorT)} + 4;
+
+/**
  * @brief Cooperatively copies \p num_bytes from \p src to \p dest using vectorized stores of type
  * \p VectorT for addresses within [dest, dest + num_bytes) that are aligned to \p VectorT. A
  * byte-wise copy is used for byte-ranges that are not aligned to \p VectorT.
@@ -301,12 +308,9 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
   // If byte range for which we can use vectorized copies is empty -> use byte-wise copies
   if (aligned_range.out_end <= aligned_range.out_begin)
   {
-    // Due to how `GetAlignedPtrs` calculates the aligned range, it will be empty only for buffers smaller than
-    // `max_small_buffer_size`.
-    constexpr ByteOffsetT max_small_buffer_size = 2 * sizeof(VectorT) + 5;
-    _CCCL_ASSERT(num_bytes < max_small_buffer_size,
-                 "vectorized_copy: an empty vector range implies fewer than 2 * sizeof(VectorT) + 5 bytes");
-    constexpr int small_rounds = ::cuda::ceil_div(max_small_buffer_size, LogicalWarpSize);
+    _CCCL_ASSERT(num_bytes <= static_cast<ByteOffsetT>(max_bytewise_size<VectorT>),
+                 "vectorized_copy: an empty vector range implies at most max_bytewise_size<VectorT> bytes");
+    constexpr int small_rounds = ::cuda::ceil_div(max_bytewise_size<VectorT>, LogicalWarpSize);
     char bytes[small_rounds];
     for (int k = 0; k < small_rounds; ++k)
     {
