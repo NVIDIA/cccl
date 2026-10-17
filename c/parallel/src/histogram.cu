@@ -532,7 +532,7 @@ CUresult cccl_device_histogram_even_impl(
   cccl_value_t num_output_levels,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
@@ -585,7 +585,7 @@ CUresult cccl_device_histogram_even_impl(
         num_output_levels_arr,
         lower_level_arg,
         upper_level_arg,
-        num_row_pixels,
+        num_row_items,
         num_rows,
         row_stride_samples,
         stream,
@@ -622,7 +622,7 @@ CUresult cccl_device_histogram_even(
   cccl_value_t num_output_levels,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
@@ -640,7 +640,7 @@ CUresult cccl_device_histogram_even(
     num_output_levels,
     lower_level,
     upper_level,
-    num_row_pixels,
+    num_row_items,
     num_rows,
     row_stride_samples,
     stream);
