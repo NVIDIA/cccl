@@ -127,8 +127,29 @@ template <class _Tp>
 #endif // !_CCCL_BUILTIN_FPCLASSIFY
 }
 
+[[nodiscard]] _CCCL_API constexpr int __fpclassify_storage(double __x) noexcept
+{
+  const auto __storage = ::cuda::std::__fp64_classify_storage(__x);
+  const auto __exp     = __storage & __fp_exp_mask_of_v<double>;
+  const auto __mant    = __storage & __fp_mant_mask_of_v<double>;
+  if (__exp == __fp_exp_mask_of_v<double>)
+  {
+    return __mant ? FP_NAN : FP_INFINITE;
+  }
+  if (__exp == 0)
+  {
+    return __mant ? FP_SUBNORMAL : FP_ZERO;
+  }
+  return FP_NORMAL;
+}
+
 [[nodiscard]] _CCCL_API constexpr int fpclassify(double __x) noexcept
 {
+  // See isnan(double): use integer comparisons on GPUs with slow FP64
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    _CCCL_DISPATCH_SLOW_FP64_TARGET(return ::cuda::std::__fpclassify_storage(__x);)
+  }
 #if defined(_CCCL_BUILTIN_FPCLASSIFY)
   return _CCCL_BUILTIN_FPCLASSIFY(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, __x);
 #else // ^^^ _CCCL_BUILTIN_FPCLASSIFY ^^^ / vvv !_CCCL_BUILTIN_FPCLASSIFY vvv
