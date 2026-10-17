@@ -22,9 +22,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-//! The small buffer sub-policy for @ref BatchedCopyLookbackPolicy. The buffer size thresholds must satisfy
-//! group4_level_threshold <= group8_level_threshold <= group16_level_threshold <= warp_level_threshold <=
-//! block_level_threshold.
+//! The small buffer sub-policy for @ref BatchedCopyLookbackPolicy.
 struct BatchedCopySmallBufferPolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block
@@ -35,9 +33,9 @@ struct BatchedCopySmallBufferPolicy
   bool prefer_pow2_bits; //!< Whether the bit_packed_counter should prefer allocating a power-of-2 number of bits per
                          //!< counter
   int block_level_tile_size; //!< Tile size granularity for block-level buffers
-  int group4_level_threshold; //!< Buffer size threshold above which groups of 4 threads collaborate on a buffer
-  int group8_level_threshold; //!< Buffer size threshold above which groups of 8 threads collaborate on a buffer
-  int group16_level_threshold; //!< Buffer size threshold above which groups of 16 threads collaborate on a buffer
+  int group4_level_threshold; //!< Buffer size threshold above which 4-thread collaboration is used
+  int group8_level_threshold; //!< Buffer size threshold above which 8-thread collaboration is used
+  int group16_level_threshold; //!< Buffer size threshold above which 16-thread collaboration is used
   int warp_level_threshold; //!< Buffer size threshold above which warp-level collaboration is used
   int block_level_threshold; //!< Buffer size threshold above which block-level collaboration is used
   LookbackDelayPolicy buffer_lookback_delay; //!< The @ref LookbackDelayPolicy for the buffer offset scan
