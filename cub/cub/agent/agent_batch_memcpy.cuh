@@ -341,6 +341,10 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
                  "vectorized_copy: head or tail larger than assumed maximum size");
     const auto num_vectors = aligned_range.out_end - aligned_range.out_begin;
 
+    // The head, the tail and the first round of vectors are all loaded before any of them is stored.
+    // Logical warps larger than a warp (the block-level kernel) load the first
+    // round in the main loop instead, since the extra registers would lower that kernel's occupancy.
+    constexpr bool load_first_round_early = LogicalWarpSize <= warp_threads;
     char head_bytes[edge_rounds];
     char tail_bytes[edge_rounds];
     for (int k = 0; k < edge_rounds; ++k)
@@ -355,12 +359,14 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
         tail_bytes[k] = aligned_range.in_end[i];
       }
     }
-    // TODO: see the perf difference of loading the first vec here.
-    // VectorT data_in;
-    // if (thread_rank < num_vectors)
-    //{
-    //   LoadVector(aligned_range.in_begin + thread_rank * sizeof(VectorT), data_in);
-    // }
+    const bool has_first_vector = load_first_round_early && thread_rank < num_vectors;
+    // LoadVector fills the vector before it is stored.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    VectorT first_vector;
+    if (has_first_vector)
+    {
+      LoadVector(aligned_range.in_begin + thread_rank * sizeof(VectorT), first_vector);
+    }
     for (int k = 0; k < edge_rounds; ++k)
     {
       const int i = thread_rank + k * LogicalWarpSize;
@@ -373,14 +379,15 @@ vectorized_copy(int32_t thread_rank, void* dest, ByteOffsetT num_bytes, const vo
         tail_out[i] = tail_bytes[k];
       }
     }
-    // if (thread_rank < num_vectors)
-    //{
-    //   aligned_range.out_begin[thread_rank] = data_in;
-    // }
+    if (has_first_vector)
+    {
+      aligned_range.out_begin[thread_rank] = first_vector;
+    }
 
-    // Remaining rounds of vectors, `[aligned_range.out_begin, aligned_range.out_end)`
-    VectorT* aligned_range_begin = aligned_range.out_begin + thread_rank;
-    const char* in_aligned_begin = aligned_range.in_begin + thread_rank * sizeof(VectorT);
+    // Remaining rounds of vectors, `[aligned_range.out_begin + first_loop_vector, aligned_range.out_end)`
+    constexpr int first_loop_vector = load_first_round_early ? LogicalWarpSize : 0;
+    VectorT* aligned_range_begin    = aligned_range.out_begin + thread_rank + first_loop_vector;
+    const char* in_aligned_begin    = aligned_range.in_begin + (thread_rank + first_loop_vector) * sizeof(VectorT);
     while (aligned_range_begin < aligned_range.out_end)
     {
       // LoadVector fills the output object before it is copied.
