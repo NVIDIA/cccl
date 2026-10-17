@@ -98,7 +98,7 @@ struct DeviceScanKernelSource
                      StableReductionOrder,
                      IsDeferred>)
 
-  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel, DeviceScanBatchInitKernel<ScanTileStateT, AccumT>)
+  CUB_DEFINE_KERNEL_GETTER(BatchInitKernel, DeviceScanBatchInitKernel<PolicySelector, ScanTileStateT, AccumT>)
 
   CUB_DEFINE_KERNEL_GETTER(
     BatchScanKernel,
@@ -976,12 +976,12 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   KernelLauncherFactory launcher_factory)
 {
   constexpr ScanLookbackPolicy policy = policy_getter().lookback;
+  constexpr int tiles_per_batch       = get_tiles_per_batch(policy);
   auto tile_state                     = kernel_source.TileState();
 
   // Specify temporary storage requirements for the reusable tile states and batch state
   size_t allocation_sizes[2];
-  if (const auto error =
-        CubDebug(tile_state.AllocationSize(static_cast<int>(detail::scan::tiles_per_batch), allocation_sizes[0])))
+  if (const auto error = CubDebug(tile_state.AllocationSize(tiles_per_batch, allocation_sizes[0])))
   {
     return error;
   }
@@ -1002,8 +1002,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   }
 
   // Construct the reusable tile status interface and locate the batch state
-  if (const auto error =
-        CubDebug(tile_state.Init(static_cast<int>(detail::scan::tiles_per_batch), allocations[0], allocation_sizes[0])))
+  if (const auto error = CubDebug(tile_state.Init(tiles_per_batch, allocations[0], allocation_sizes[0])))
   {
     return error;
   }
@@ -1011,8 +1010,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
 
   // Initialize the tile descriptors and batch state
   constexpr int init_threads = 128;
-  static_assert(static_cast<int>(detail::scan::tiles_per_batch) % init_threads == 0);
-  constexpr int init_grid = static_cast<int>(detail::scan::tiles_per_batch) / init_threads;
+  constexpr int init_grid    = ::cuda::ceil_div(tiles_per_batch, init_threads);
   _CUB_LOG_KERNEL_LAUNCH("DeviceScanBatchInitKernel", init_grid, 1, 1, init_threads, 0, stream, "");
   if (const auto error = CubDebug(launcher_factory(init_grid, init_threads, 0, stream, dependent_launch)
                                     .doit(kernel_source.BatchInitKernel(), tile_state, batch_state)))
@@ -1032,8 +1030,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   {
     return error;
   }
-  const int scan_grid_size =
-    (::cuda::std::min) (static_cast<int>(detail::scan::tiles_per_batch), scan_sm_occupancy * sm_count);
+  const int scan_grid_size = (::cuda::std::min) (tiles_per_batch, scan_sm_occupancy * sm_count);
 
   // Invoke the scan kernel; its CTAs dynamically claim tiles until the deferred range is exhausted
   _CUB_LOG_KERNEL_LAUNCH("DeviceScanBatchKernel", scan_grid_size, 1, 1, policy.threads_per_block, 0, stream, "");
@@ -1086,6 +1083,11 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
     active_policy.items_per_thread >= 1, "Lookback scan policy must have at least 1 item per thread");
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                "The memory consistency model does not apply to texture accesses");
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.tiles_per_batch >= 0, "Lookback scan batch size must be nonnegative (0 selects the default)");
+  CUB_DETAIL_STATIC_ISH_ASSERT(
+    active_policy.tiles_per_batch <= ::cuda::std::numeric_limits<int>::max() - detail::warp_threads,
+    "Lookback scan batch size must leave room for tile-state padding");
 
   // Number of input tiles
   const int tile_size  = active_policy.threads_per_block * active_policy.items_per_thread;
@@ -1093,7 +1095,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                                           static_cast<::cuda::std::uint64_t>(tile_size));
   if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
   {
-    if (max_tiles > static_cast<::cuda::std::uint64_t>(detail::scan::tiles_per_batch))
+    if (max_tiles > static_cast<::cuda::std::uint64_t>(get_tiles_per_batch(active_policy)))
     {
       return invoke_batched_lookback(
         policy_getter,

@@ -104,6 +104,7 @@ struct ScanLookbackPolicy
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
+  int tiles_per_batch = 0; //!< Number of tiles in a deferred scan batch; 0 selects the default of 65,536
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs) noexcept
@@ -111,7 +112,7 @@ struct ScanLookbackPolicy
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
         && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.lookback_delay == rhs.lookback_delay;
+        && lhs.lookback_delay == rhs.lookback_delay && lhs.tiles_per_batch == rhs.tiles_per_batch;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -124,10 +125,10 @@ struct ScanLookbackPolicy
   friend ::std::ostream& operator<<(::std::ostream& os, const ScanLookbackPolicy& p)
   {
     return os
-        << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block
-        << ", .items_per_thread = " << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm
-        << ", .load_modifier = " << p.load_modifier << ", .store_algorithm = " << p.store_algorithm
-        << ", .scan_algorithm = " << p.scan_algorithm << ", .lookback_delay = " << p.lookback_delay << " }";
+        << "ScanLookbackPolicy { .threads_per_block = " << p.threads_per_block << ", .items_per_thread = "
+        << p.items_per_thread << ", .load_algorithm = " << p.load_algorithm << ", .load_modifier = " << p.load_modifier
+        << ", .store_algorithm = " << p.store_algorithm << ", .scan_algorithm = " << p.scan_algorithm
+        << ", .lookback_delay = " << p.lookback_delay << ", .tiles_per_batch = " << p.tiles_per_batch << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -725,6 +726,14 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, ScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
+inline constexpr int lookback_default_tiles_per_batch = 65536;
+
+// Policies predating batched scans leave tiles_per_batch at zero.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int get_tiles_per_batch(const ScanLookbackPolicy& policy)
+{
+  return policy.tiles_per_batch == 0 ? lookback_default_tiles_per_batch : policy.tiles_per_batch;
+}
+
 _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
@@ -733,7 +742,8 @@ _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   CacheLoadModifier load_modifier,
   BlockStoreAlgorithm store_algorithm,
   BlockScanAlgorithm scan_algorithm,
-  LookbackDelayPolicy delay_constructor = {LookbackDelayAlgorithm::fixed_delay, 350, 450}) -> ScanPolicy
+  LookbackDelayPolicy delay_constructor = {LookbackDelayAlgorithm::fixed_delay, 350, 450},
+  int tiles_per_batch                   = 0) -> ScanPolicy
 {
   const auto scaled = scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return ScanPolicy{
@@ -745,7 +755,8 @@ _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
       load_modifier,
       store_algorithm,
       scan_algorithm,
-      delay_constructor},
+      delay_constructor,
+      tiles_per_batch},
     ScanLookaheadPolicy{}};
 }
 
@@ -1564,7 +1575,12 @@ struct policy_selector
       }
     }
 
-    return get_lookback_scan_policy(cc);
+    auto policy = get_lookback_scan_policy(cc);
+    if (is_deferred && policy.lookback.tiles_per_batch == 0)
+    {
+      policy.lookback.tiles_per_batch = lookback_default_tiles_per_batch;
+    }
+    return policy;
   }
 };
 

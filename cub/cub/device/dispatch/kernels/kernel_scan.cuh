@@ -40,9 +40,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
-// Deferred scans reuse one fixed-size tile state across batches.
-inline constexpr ::cuda::std::uint32_t tiles_per_batch = 65536;
-
 // Backoff policies already wait independently of grid size.
 template <typename DelayConstructorT>
 struct batch_delay_constructor_t : DelayConstructorT
@@ -160,10 +157,12 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(128) void DeviceScanInitKernel(
 //! @brief Initializes reusable tile status and batch state.
 //! @param[in,out] tile_state Tile descriptors shared by successive batches.
 //! @param[out] batch_state Batched look-back state.
-template <typename ScanTileState, typename AccumT>
+template <typename PolicySelector, typename ScanTileState, typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(128) void DeviceScanBatchInitKernel(ScanTileState tile_state, scan_batch_state<AccumT>* batch_state)
 {
+  constexpr int tiles_per_batch = get_tiles_per_batch(current_policy<PolicySelector>().lookback);
+  static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
@@ -375,7 +374,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
 }
 
 //! Claims the next tile and waits until its batch owns the tile state.
-template <typename AccumT>
+template <int TilesPerBatch, typename AccumT>
 [[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t claim_batch_tile(
   scan_batch_state<AccumT>* batch_state, ::cuda::std::uint64_t num_tiles, ::cuda::std::uint64_t& current_batch_idx)
 {
@@ -387,7 +386,7 @@ template <typename AccumT>
     return tile_idx;
   }
 
-  const auto tile_batch_idx = tile_idx / tiles_per_batch;
+  const auto tile_batch_idx = tile_idx / TilesPerBatch;
   if (tile_batch_idx != current_batch_idx)
   {
     auto batch_idx = ::cuda::atomic_ref<::cuda::std::uint64_t, ::cuda::thread_scope_device>{batch_state->batch_idx};
@@ -400,9 +399,10 @@ template <typename AccumT>
 }
 
 //! Completes one tile and retires the batch when its final look-back finishes.
-template <typename ScanTileState, typename AccumT>
+template <typename ScanTileState, typename AccumT, int TilesPerBatch>
 struct batch_completion_op
 {
+  static constexpr auto tiles_per_batch = static_cast<::cuda::std::uint32_t>(TilesPerBatch);
   ScanTileState tile_state;
   scan_batch_state<AccumT>* batch_state;
   ::cuda::std::uint64_t tile_idx;
@@ -480,6 +480,8 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const KernelNumItemsT kernel_num_items)
 {
   constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
+  constexpr int tiles_per_batch       = get_tiles_per_batch(policy);
+  static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
   // Use batch-specific adapters to retain nanosleeps while leaving other users of the delay constructors unchanged.
   using delay_constructor = batch_delay_constructor_t<
@@ -526,7 +528,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   {
     if (threadIdx.x == 0)
     {
-      tile_idx = claim_batch_tile(batch_state, num_tiles, current_batch_idx);
+      tile_idx = claim_batch_tile<tiles_per_batch>(batch_state, num_tiles, current_batch_idx);
     }
     // Separate consecutive uses of the shared tile index.
     __syncthreads();
@@ -544,7 +546,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
     const auto num_remaining  = num_items - tile_offset;
     // Seed each batch with the preceding batches' prefix.
     const AccumT* const preceding_batched_sum = batch_idx == 0 ? nullptr : &batch_state->batched_sum.Alias();
-    const batch_completion_op<ScanTileState, AccumT> completion{
+    const batch_completion_op<ScanTileState, AccumT, tiles_per_batch> completion{
       tile_state, batch_state, tile_idx, num_tiles, batch_tiles};
 
     if (num_remaining < static_cast<OffsetT>(agent_t::TILE_ITEMS))
