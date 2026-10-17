@@ -36,8 +36,8 @@ void isnormal_bench(nvbench::state& state)
   int max_blocks_per_SM = 0;
   NVBENCH_CUDA_CALL_NOEXCEPT(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_SM, kernel, block_size, 0));
   const int grid_size = max_blocks_per_SM * num_SMs;
-  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch&) {
-    kernel<<<grid_size, block_size>>>(benchmark_op_t{});
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    kernel<<<grid_size, block_size, 0, launch.get_stream()>>>(benchmark_op_t{});
   });
 }
 

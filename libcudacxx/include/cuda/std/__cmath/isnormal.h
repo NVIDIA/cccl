@@ -27,6 +27,7 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -52,9 +53,13 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
 [[nodiscard]] _CCCL_API constexpr bool __isnormal_storage(double __x) noexcept
 {
-  // Ordered comparisons keep NVVM on SM100+ from turning this back into double comparisons
-  const auto __storage = ::cuda::std::__fp_get_storage(__x) << 1;
-  return __storage >= ((__fp_mant_mask_of_v<double> + 1) << 1) && __storage < (__fp_exp_mask_of_v<double> << 1);
+  constexpr auto __fmt     = __fp_format::__binary64;
+  constexpr auto __exp_max = static_cast<uint32_t>(__fp_exp_mask_v<__fmt> >> __fp_mant_nbits_v<__fmt>);
+  const auto __exp =
+    static_cast<uint32_t>(::cuda::std::__fp_get_exp_biased<__fmt>(::cuda::std::__fp64_classify_storage(__x)));
+  // The biased exponent is 0 for zeros and subnormals and __exp_max for infinities and NaNs. The subtraction is
+  // unsigned, so 0 wraps around.
+  return __exp - 1 < __exp_max - 1;
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isnormal(double __x) noexcept

@@ -90,16 +90,32 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
+#if _CCCL_CUDA_COMPILATION()
+[[nodiscard]] _CCCL_DEVICE_API inline uint64_t __fp64_opaque_storage_device(uint64_t __storage) noexcept
+{
+  asm("mov.b64 %0, %0;" : "+l"(__storage));
+  return __storage;
+}
+#endif // _CCCL_CUDA_COMPILATION()
+
+// Storage for the integer classification of double on GPUs with slow FP64. On SM100+ (new NVVM), integer checks on the
+// storage are turned back into double comparisons, e.g. a check for the infinity pattern becomes fabs(x) == inf. Hide
+// the storage from the optimizer there.
+[[nodiscard]] _CCCL_API constexpr uint64_t __fp64_classify_storage(double __x) noexcept
+{
+  auto __storage = ::cuda::std::__fp_get_storage(__x);
+#if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
+  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100, (__storage = ::cuda::std::__fp64_opaque_storage_device(__storage);))
+  }
+#endif // !_CCCL_TILE_COMPILATION()
+  return __storage;
+}
+
 [[nodiscard]] _CCCL_API constexpr bool __isinf_storage(double __x) noexcept
 {
-  const auto __storage = ::cuda::std::__fp_get_storage(__x);
-  // On SM100+ (new NVVM), a 64-bit equality with the infinity pattern is recognized as fabs(x) == inf and reintroduces
-  // double instructions, even after shifting both operands by 1. Compare the two 32-bit halves instead.
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_100,
-    (const auto __hi = static_cast<uint32_t>(__storage >> 32) << 1; const auto __lo = static_cast<uint32_t>(__storage);
-     return ((__hi ^ static_cast<uint32_t>((__fp_exp_mask_of_v<double> >> 32) << 1)) | __lo) == 0;),
-    (return (__storage & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;))
+  return (::cuda::std::__fp64_classify_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isinf(double __x) noexcept

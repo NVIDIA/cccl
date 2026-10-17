@@ -81,8 +81,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr bool __isfinite_storage(double __x) noexcept
 {
-  // An ordered comparison keeps NVVM on SM100+ from turning this back into a double comparison
-  return (::cuda::std::__fp_get_storage(__x) << 1) < (__fp_exp_mask_of_v<double> << 1);
+  return (::cuda::std::__fp64_classify_storage(__x) & __fp_exp_mask_of_v<double>) != __fp_exp_mask_of_v<double>;
 }
 
 [[nodiscard]] _CCCL_API constexpr bool isfinite(double __x) noexcept

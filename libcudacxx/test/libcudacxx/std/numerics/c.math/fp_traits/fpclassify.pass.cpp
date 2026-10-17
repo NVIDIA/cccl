@@ -16,6 +16,7 @@
 #include <disable_nvfp_conversions_and_operators.h>
 // clang-format on
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
@@ -115,6 +116,45 @@ TEST_FUNC constexpr void test_double_subnormal()
   test_fpclassify(min_normal, FP_NORMAL);
 }
 
+// Values read through volatile are not folded at compile time, so the device code path for double runs
+TEST_FUNC void test_double_runtime()
+{
+  using limits                 = cuda::std::numeric_limits<double>;
+  const double nan_low_payload = cuda::std::bit_cast<double>(0x7FF0000000000001ull);
+  volatile double values[]     = {
+    0.0,
+    -0.0,
+    limits::denorm_min(),
+    limits::min() - limits::denorm_min(),
+    limits::min(),
+    1.0,
+    limits::max(),
+    limits::infinity(),
+    -limits::infinity(),
+    limits::quiet_NaN(),
+    nan_low_payload};
+  constexpr int expected[] = {
+    FP_ZERO,
+    FP_ZERO,
+    FP_SUBNORMAL,
+    FP_SUBNORMAL,
+    FP_NORMAL,
+    FP_NORMAL,
+    FP_NORMAL,
+    FP_INFINITE,
+    FP_INFINITE,
+    FP_NAN,
+    FP_NAN};
+  for (int i = 0; i < 11; ++i)
+  {
+    const double x = values[i];
+    assert(cuda::std::fpclassify(x) == expected[i]);
+    assert(cuda::std::isinf(x) == (expected[i] == FP_INFINITE));
+    assert(cuda::std::isfinite(x) == (expected[i] != FP_INFINITE && expected[i] != FP_NAN));
+    assert(cuda::std::isnormal(x) == (expected[i] == FP_NORMAL));
+  }
+}
+
 TEST_FUNC constexpr bool test()
 {
   test_type<float>();
@@ -172,6 +212,7 @@ TEST_FUNC constexpr bool test()
 int main(int, char**)
 {
   test();
+  test_double_runtime();
   static_assert(test());
   return 0;
 }

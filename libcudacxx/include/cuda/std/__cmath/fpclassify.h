@@ -129,7 +129,7 @@ template <class _Tp>
 
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_storage(double __x) noexcept
 {
-  const auto __storage = ::cuda::std::__fp_get_storage(__x);
+  const auto __storage = ::cuda::std::__fp64_classify_storage(__x);
   const auto __exp     = __storage & __fp_exp_mask_of_v<double>;
   const auto __mant    = __storage & __fp_mant_mask_of_v<double>;
   if (__exp == __fp_exp_mask_of_v<double>)
