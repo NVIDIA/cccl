@@ -152,7 +152,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, LocalCounte
                timer.start();
                auto env = cub_bench_env(
                  alloc, launch, cuda::execution::tune(bench_policy_selector<SampleT, LocalCounterT, 1, 1, false>{}));
-               _CCCL_TRY_CUDA_API(
+               _CCCL_TRY_RUNTIME_API(
                  cub::DeviceHistogram::HistogramRange,
                  "HistogramRange failed",
                  d_input,
