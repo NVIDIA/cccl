@@ -43,8 +43,53 @@ namespace detail::scan
 // Deferred scans reuse one fixed-size tile state across batches.
 inline constexpr ::cuda::std::uint32_t tiles_per_batch = 65536;
 
-// CTAs per SM in the persistent grid.
-inline constexpr int batch_ctas_per_sm = 8;
+// Backoff policies already wait independently of grid size.
+template <typename DelayConstructorT>
+struct batch_delay_constructor_t : DelayConstructorT
+{
+  using DelayConstructorT::DelayConstructorT;
+};
+
+// Persistent scans must retain positive waits even when the resident grid has fewer than 500 CTAs.
+template <unsigned int Delay, unsigned int L2WriteLatency>
+struct batch_delay_constructor_t<fixed_delay_constructor_t<Delay, L2WriteLatency>>
+{
+  struct delay_t
+  {
+    _CCCL_DEVICE_API void operator()()
+    {
+      if constexpr (Delay > 0)
+      {
+        always_delay_or_prevent_hoisting<Delay>();
+      }
+      else
+      {
+        default_no_delay_t{}();
+      }
+    }
+  };
+
+  _CCCL_DEVICE_API batch_delay_constructor_t(unsigned int /* seed */)
+  {
+    if constexpr (L2WriteLatency > 0)
+    {
+      always_delay<L2WriteLatency>();
+    }
+  }
+
+  _CCCL_DEVICE_API delay_t operator()()
+  {
+    return {};
+  }
+};
+
+template <unsigned int L2WriteLatency>
+struct batch_delay_constructor_t<no_delay_constructor_t<L2WriteLatency>>
+    : batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>
+{
+  using base_type = batch_delay_constructor_t<fixed_delay_constructor_t<0, L2WriteLatency>>;
+  using base_type::base_type;
+};
 
 template <typename AccumT>
 struct scan_batch_state
@@ -426,16 +471,20 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const KernelNumItemsT kernel_num_items)
 {
   constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
-  using scan_policy_t                 = agent_scan_policy<
-    0,
-    0,
-    void,
-    policy.load_algorithm,
-    policy.load_modifier,
-    policy.store_algorithm,
-    policy.scan_algorithm,
-    NoScaling<policy.threads_per_block, policy.items_per_thread>,
+  // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
+  // Use batch-specific adapters to retain nanosleeps while leaving other users of the delay constructors unchanged.
+  using delay_constructor = batch_delay_constructor_t<
     delay_constructor_t<policy.lookback_delay.kind, policy.lookback_delay.delay, policy.lookback_delay.l2_write_latency>>;
+  using scan_policy_t =
+    agent_scan_policy<0,
+                      0,
+                      void,
+                      policy.load_algorithm,
+                      policy.load_modifier,
+                      policy.store_algorithm,
+                      policy.scan_algorithm,
+                      NoScaling<policy.threads_per_block, policy.items_per_thread>,
+                      delay_constructor>;
   // Disable PDL because each persistent CTA consumes multiple tiles.
   using agent_t =
     AgentScan<scan_policy_t,
