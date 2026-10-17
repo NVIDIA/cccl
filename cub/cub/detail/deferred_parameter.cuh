@@ -58,7 +58,7 @@ template <typename NumItemsT>
   }
   else
   {
-    using offset_t   = choose_offset_t<typename args_traits_t::element_type>;
+    using offset_t   = choose_offset_t<typename args_traits_t::value_type>;
     const auto value = ::cuda::args::__unwrap(num_items);
     assert_num_items_nonnegative(value);
     return static_cast<offset_t>(value);
