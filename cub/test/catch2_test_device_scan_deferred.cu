@@ -44,14 +44,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 using deferred_count_t = decltype(cuda::args::deferred{static_cast<int32_t*>(nullptr)});
 static_assert(cuda::args::__is_deferred_v<deferred_count_t>);
 static_assert(!cuda::args::__is_deferred_v<int32_t>);
-static_assert(cub::detail::is_integral_or_deferred_v<deferred_count_t>);
-static_assert(cub::detail::is_integral_or_deferred_v<int32_t>);
-static_assert(cub::detail::is_integral_or_deferred_v<cuda::args::immediate<int32_t>>);
-static_assert(
-  cub::detail::is_integral_or_deferred_v<cuda::args::immediate<int64_t, cuda::args::static_bounds<0, 1000>>>);
-static_assert(!cub::detail::is_integral_or_deferred_v<cuda::args::immediate<float>>);
-static_assert(!cub::detail::is_integral_or_deferred_v<cuda::args::immediate<int32_t*>>);
-static_assert(!cub::detail::is_integral_or_deferred_v<cuda::std::execution::env<>>);
+static_assert(cub::detail::is_num_items_v<deferred_count_t>);
+static_assert(cub::detail::is_num_items_v<int32_t>);
+static_assert(cub::detail::is_num_items_v<cuda::args::immediate<int32_t>>);
+static_assert(cub::detail::is_num_items_v<cuda::args::immediate<int64_t, cuda::args::static_bounds<0, 1000>>>);
+static_assert(cub::detail::is_num_items_v<cuda::args::immediate<float>>);
+static_assert(cub::detail::is_num_items_v<cuda::args::immediate<int32_t*>>);
+static_assert(cub::detail::is_num_items_v<cuda::args::constant<42>>);
+static_assert(!cub::detail::is_num_items_v<cuda::args::deferred_sequence<int*>>);
+static_assert(!cub::detail::is_num_items_v<cuda::std::execution::env<>>);
 static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<deferred_count_t>, uint32_t>);
 static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<int32_t>, uint32_t>);
 static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<cuda::args::immediate<int32_t>>, uint32_t>);
@@ -392,6 +393,28 @@ CUB_TEST("DeviceScan with a deferred size accepts a custom lookback policy", "[d
 // need explicit streams, graph capture or repeated invocations. Running them once, under the direct-launch
 // variant, avoids rebuilding identical work for every TEST_LAUNCH value.
 #if TEST_LAUNCH == 0
+CUB_TEST("DeviceScan immediate and constant counts select the correct overloads", "[device][scan][arguments]", CUB_SMALL)
+{
+  const c2h::device_vector<scan_value_t> input{1, 2, 3, 4};
+  const c2h::device_vector<scan_value_t> expected{0, 1, 3, 6};
+
+  const auto check = [&](auto count) {
+    c2h::device_vector<scan_value_t> output(input.size());
+    REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), count));
+    REQUIRE(output == expected);
+
+    c2h::device_vector<scan_value_t> data = input;
+    REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(data.begin(), count));
+    REQUIRE(data == expected);
+
+    thrust::fill(output.begin(), output.end(), scan_value_t{-1});
+    device_exclusive_sum(input.begin(), output.begin(), count);
+    REQUIRE(output == expected);
+  };
+  check(cuda::args::immediate{4});
+  check(cuda::args::constant<4>{});
+}
+
 // Smoke-tests the batched kernel under the default tuning, where one batch covers the whole input. Batch
 // transitions are covered separately by the tests using small_batch_policy_selector.
 CUB_TEST("DeviceScan::ExclusiveSum uses batched lookback within a single batch for an unbounded deferred int64 count",
