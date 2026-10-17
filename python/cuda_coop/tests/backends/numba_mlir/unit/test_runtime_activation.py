@@ -36,6 +36,7 @@ def _run_import_probe(script: str) -> None:
         capture_output=True,
         env=env,
         text=True,
+        timeout=180,
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
@@ -477,6 +478,7 @@ def test_backend_registration_reports_a_missing_public_runtime(activate):
         capture_output=True,
         env=env,
         text=True,
+        timeout=180,
     )
 
     assert result.returncode == 0, result.stderr
