@@ -280,7 +280,7 @@ auto setup_bin_levels_for_range(const array<int, ActiveChannels>& num_levels, Le
     const auto [lower, upper] = compute_bin_range(num_bins, max_level, max_level_count);
     for (int l = 0; l < num_levels[c]; ++l)
     {
-      auto level = static_cast<LevelT>(lower_level + l * min_bin_width);
+      auto level = static_cast<LevelT>(lower + l * min_bin_width);
       if (l > 0 && l < num_levels[c] - 1 && perturbation_step > LevelT{0})
       {
         level = static_cast<LevelT>(level + (l % 2 == 0 ? perturbation_step : -perturbation_step));
@@ -845,8 +845,8 @@ CUB_TEST_LIST("DeviceHistogram::HistogramEven bin computation does not overflow"
 // `MayOverflow` precondition and `ScaleTransform`'s `range = max - min`
 // storage truncated `num_bins` and the level difference back to `LevelT`
 // before checking; once those casts are removed, the dispatch succeeds.
-C2H_TEST_LIST(
-  "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", int8_t, int16_t)
+CUB_TEST_LIST(
+  "DeviceHistogram::HistogramEven num_bins exceeds LevelT range", "[histogram_even][device]", CUB_SMALL, int8_t, int16_t)
 {
   using level_t   = TestType;
   using sample_t  = level_t; // Common case: LevelT == SampleT

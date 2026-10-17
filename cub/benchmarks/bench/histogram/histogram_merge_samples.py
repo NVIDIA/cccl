@@ -30,11 +30,15 @@ for path in inputs:
                 if k in mc and mc[k] != v:
                     collisions += 1
                     if collisions <= 5:
-                        sys.stderr.write(f"  COLLISION {binary}/{col}/{k}: {mc[k]} vs {v}\n")
+                        sys.stderr.write(
+                            f"  COLLISION {binary}/{col}/{k}: {mc[k]} vs {v}\n"
+                        )
                 mc[k] = v
 
 if collisions:
-    sys.exit(f"REFUSING: {collisions} key collisions -- inputs are not disjoint samples")
+    sys.exit(
+        f"REFUSING: {collisions} key collisions -- inputs are not disjoint samples"
+    )
 
 json.dump(merged, open(out_path, "w"), indent=0)
 # report sample coverage per binary

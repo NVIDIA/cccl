@@ -12,7 +12,6 @@ import os
 import sys
 import textwrap
 
-import numpy as np
 import matplotlib
 
 matplotlib.use("Agg")
@@ -28,11 +27,15 @@ import histogram_input_characterization as C  # noqa: E402
 DATADIR = os.environ.get("HIST_SWEEP_OUTDIR", ".")
 FIGS = os.path.join(DATADIR, "capacity_figs")
 SM_BYTES = 233472  # B200 SMEM/SM
-OPTIN = 232448     # B200 opt-in SMEM/block
+OPT_IN = 232448  # B200 opt-in SMEM/block
 
 # label -> (transform, channels)
-BINARY_META = {"even": ("even", "single"), "range": ("range", "single"),
-               "multi_even": ("even", "multi"), "multi_range": ("range", "multi")}
+BINARY_META = {
+    "even": ("even", "single"),
+    "range": ("range", "single"),
+    "multi_even": ("even", "multi"),
+    "multi_range": ("range", "multi"),
+}
 
 
 def blk_per_sm(smem_bytes):
@@ -60,10 +63,15 @@ def _grid(series, sample, shape, elements_list, outpath, title, legend_title):
     fig = plt.figure(figsize=(5.6 * ncols, 4.1 * nrows))
     gs = fig.add_gridspec(nrows, ncols)
     head = "\n".join(textwrap.wrap(title, width=125))
-    fig.suptitle(head + f"\ntop: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})"
-                 f"   below: GiB/s vs #bins per input size — one line per {legend_title}", fontsize=12)
+    fig.suptitle(
+        head
+        + f"\ntop: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})"
+        f"   below: GiB/s vs #bins per input size — one line per {legend_title}",
+        fontsize=12,
+    )
     C.draw_distribution(fig.add_subplot(gs[0, 0]), counts_c, char_bins)
     C.draw_sequence(fig.add_subplot(gs[0, 1]), bins_c, char_bins, shape=shape)
+
     # Series tuples are (lbl, color, lw, zorder, cells, sq[, marker]); reference
     # algorithm lines pass a 7th element (their algo marker) so they read like the
     # main sweep, while the swept cache-size lines keep the default "o".
@@ -72,16 +80,29 @@ def _grid(series, sample, shape, elements_list, outpath, title, legend_title):
         marker = s[6] if len(s) > 6 else "o"
         return lbl, c, lw, z, cells, sq, marker
 
-    lax = fig.add_subplot(gs[0, 2]); lax.axis("off")
-    handles = [plt.Line2D([0], [0], color=c, lw=lw, ls=("--" if sq else "-"),
-                          marker=mk, ms=(11 if mk == "*" else 6), label=lbl)
-               for (lbl, c, lw, z, cells, sq, mk) in (_unpack(s) for s in series)]
-    lax.legend(handles=handles, loc="center", fontsize=8, title=legend_title, frameon=True)
+    lax = fig.add_subplot(gs[0, 2])
+    lax.axis("off")
+    handles = [
+        plt.Line2D(
+            [0],
+            [0],
+            color=c,
+            lw=lw,
+            ls=("--" if sq else "-"),
+            marker=mk,
+            ms=(11 if mk == "*" else 6),
+            label=lbl,
+        )
+        for (lbl, c, lw, z, cells, sq, mk) in (_unpack(s) for s in series)
+    ]
+    lax.legend(
+        handles=handles, loc="center", fontsize=8, title=legend_title, frameon=True
+    )
 
     for i, elems in enumerate(elements_list):
         ax = fig.add_subplot(gs[1 + i // ncols, i % ncols])
         any_pts = False
-        for (lbl, color, lw, z, cells, sq, marker) in (_unpack(s) for s in series):
+        for lbl, color, lw, z, cells, sq, marker in (_unpack(s) for s in series):
             pts = []
             for k, g in cells.items():
                 s, e, b, sh = k.split("|")
@@ -90,24 +111,53 @@ def _grid(series, sample, shape, elements_list, outpath, title, legend_title):
             pts.sort()
             if pts:
                 any_pts = True
-                xb = [p[0] for p in pts]; yv = [p[1] for p in pts]
-                ax.plot(xb, yv, color=color, lw=lw, marker=marker, ms=(11 if marker == "*" else 5),
-                        zorder=z, ls=("--" if sq else "-"), alpha=0.9)
+                xb = [p[0] for p in pts]
+                yv = [p[1] for p in pts]
+                ax.plot(
+                    xb,
+                    yv,
+                    color=color,
+                    lw=lw,
+                    marker=marker,
+                    ms=(11 if marker == "*" else 5),
+                    zorder=z,
+                    ls=("--" if sq else "-"),
+                    alpha=0.9,
+                )
         ax.set_title(f"N = {fmt_elements(elems)} elements", fontsize=9)
-        ax.set_xlabel("# bins"); ax.set_ylabel("GiB/s")
+        ax.set_xlabel("# bins")
+        ax.set_ylabel("GiB/s")
         ax.set_xscale("log", base=2)
         ax.grid(True, which="both", ls=":", alpha=0.4)
-        allb = sorted({int(k.split('|')[2]) for s in series for k in s[4]
-                       if k.split('|')[0] == sample and int(k.split('|')[1]) == elems and k.split('|')[3] == shape})
+        allb = sorted(
+            {
+                int(k.split("|")[2])
+                for s in series
+                for k in s[4]
+                if k.split("|")[0] == sample
+                and int(k.split("|")[1]) == elems
+                and k.split("|")[3] == shape
+            }
+        )
         if allb:
             ax.set_xticks(allb)
-            ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: C.fmt_bins(int(round(v)))))
+            ax.get_xaxis().set_major_formatter(
+                plt.FuncFormatter(lambda v, _: C.fmt_bins(int(round(v))))
+            )
         ax.tick_params(axis="x", labelsize=7, rotation=45)
         if any_pts:
             ax.set_ylim(bottom=0)
         else:
-            ax.text(0.5, 0.5, "no data\n(cells skipped:\noverflow / can't launch)", ha="center",
-                    va="center", transform=ax.transAxes, fontsize=9, color="gray")
+            ax.text(
+                0.5,
+                0.5,
+                "no data\n(cells skipped:\noverflow / can't launch)",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=9,
+                color="gray",
+            )
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     fig.savefig(outpath, dpi=110, bbox_inches="tight")
@@ -156,7 +206,8 @@ def plot_lever_a():
                 if s == "auto":
                     auto = rec
                 else:
-                    ls = int(rec["launched_slots"]); req = int(s)
+                    ls = int(rec["launched_slots"])
+                    req = int(s)
                     if ls not in runs or (req == ls):
                         runs[ls] = rec
             if auto is None:
@@ -175,8 +226,11 @@ def plot_lever_a():
                 if s == "ref" and rec["cells"]:
                     ref[a] = rec["cells"]
             for sample in samples:
-                folder = os.path.join(FIGS, f"lever_a_cache_{algo.replace('direct_atomic_', '')}",
-                                      f"{transform}_{channels}_{sample}")
+                folder = os.path.join(
+                    FIGS,
+                    f"lever_a_cache_{algo.replace('direct_atomic_', '')}",
+                    f"{transform}_{channels}_{sample}",
+                )
                 for shape in shapes:
                     series = []
                     asm = auto["launched_smem_bytes"]
@@ -184,15 +238,33 @@ def plot_lever_a():
                     # 1) CACHED family (cool / Blues): one line per cache size, light
                     #    = small cache -> dark = large. "auto" (the status quo) is a
                     #    blue STAR so it stands out WITHIN the family (no black line).
-                    series.append((f"{cname} cache: auto = {auto['launched_slots']} slots · "
-                                   f"{asm//1024}KB · {blk_per_sm(asm)}blk/SM (status quo)",
-                                   blue_for(auto["launched_slots"], distinct), 3.0, 10, auto["cells"], False, "*"))
+                    series.append(
+                        (
+                            f"{cname} cache: auto = {auto['launched_slots']} slots · "
+                            f"{asm // 1024}KB · {blk_per_sm(asm)}blk/SM (status quo)",
+                            blue_for(auto["launched_slots"], distinct),
+                            3.0,
+                            10,
+                            auto["cells"],
+                            False,
+                            "*",
+                        )
+                    )
                     for ls in distinct:
                         if ls == auto["launched_slots"]:
                             continue  # the auto star already covers this size
                         sm = runs[ls]["launched_smem_bytes"]
-                        series.append((f"{cname} cache: {ls} slots · {sm//1024}KB · {blk_per_sm(sm)}blk/SM",
-                                       blue_for(ls, distinct), 1.8, 4, runs[ls]["cells"], False, "o"))
+                        series.append(
+                            (
+                                f"{cname} cache: {ls} slots · {sm // 1024}KB · {blk_per_sm(sm)}blk/SM",
+                                blue_for(ls, distinct),
+                                1.8,
+                                4,
+                                runs[ls]["cells"],
+                                False,
+                                "o",
+                            )
+                        )
                     # 2) REF family (warm): the OTHER algorithms (cache-size
                     #    irrelevant), distinct warm hues + markers.
                     for a in ALGO_ORDER:
@@ -200,12 +272,21 @@ def plot_lever_a():
                             continue
                         color, marker, lbl = REF_WARM[a]
                         series.append((lbl, color, 1.7, 3, ref[a], False, marker))
-                    title = (f"LEVER A (cache size) — {transform.upper()} · {channels}-channel · {sample} · "
-                             f"sweeping {algo.replace('direct_atomic_', '')} cache — InputShape: {shape} "
-                             f"({C.SHAPE_BLURB.get(shape, '')})")
+                    title = (
+                        f"LEVER A (cache size) — {transform.upper()} · {channels}-channel · {sample} · "
+                        f"sweeping {algo.replace('direct_atomic_', '')} cache — InputShape: {shape} "
+                        f"({C.SHAPE_BLURB.get(shape, '')})"
+                    )
                     out = os.path.join(folder, f"{shape.replace(':', '_')}.png")
-                    _grid(series, sample, shape, elements, out, title,
-                          "cache size (this algo) + [ref] other algorithms")
+                    _grid(
+                        series,
+                        sample,
+                        shape,
+                        elements,
+                        out,
+                        title,
+                        "cache size (this algo) + [ref] other algorithms",
+                    )
     print(f"[A] lever_a_cache_* folders written under {FIGS}")
 
 
@@ -262,25 +343,56 @@ def plot_lever_b():
             continue
         samples = sorted({c.split("|")[0] for c in allcells})
         elements = sorted({int(c.split("|")[1]) for c in allcells})
-        shapes = sorted({c.split("|")[3] for c in allcells},
-                        key=lambda s: (C.SHAPES.index(s) if s in C.SHAPES else 99, s))
+        shapes = sorted(
+            {c.split("|")[3] for c in allcells},
+            key=lambda s: (C.SHAPES.index(s) if s in C.SHAPES else 99, s),
+        )
         for sample in samples:
-            folder = os.path.join(FIGS, "lever_b_cap", f"{transform}_{channels}_{sample}")
+            folder = os.path.join(
+                FIGS, "lever_b_cap", f"{transform}_{channels}_{sample}"
+            )
             for shape in shapes:
-                title = (f"LEVER B (privatized SMEM cap) — {transform.upper()} · {channels}-channel · {sample} — "
-                         f"InputShape: {shape} ({C.SHAPE_BLURB.get(shape, '')})")
+                title = (
+                    f"LEVER B (privatized SMEM cap) — {transform.upper()} · {channels}-channel · {sample} — "
+                    f"InputShape: {shape} ({C.SHAPE_BLURB.get(shape, '')})"
+                )
                 out = os.path.join(folder, f"{shape.replace(':', '_')}.png")
-                _render_lever_b(priv, d, algos_present, sample, shape, elements, out, title, channels)
+                _render_lever_b(
+                    priv,
+                    d,
+                    algos_present,
+                    sample,
+                    shape,
+                    elements,
+                    out,
+                    title,
+                    channels,
+                )
     print(f"[B] lever_b_cap folders written under {FIGS}")
 
 
 def _series_for(cells, sample, elems, shape):
-    pts = sorted((int(k.split("|")[2]), g) for k, g in cells.items()
-                 if k.split("|")[0] == sample and int(k.split("|")[1]) == elems and k.split("|")[3] == shape)
+    pts = sorted(
+        (int(k.split("|")[2]), g)
+        for k, g in cells.items()
+        if k.split("|")[0] == sample
+        and int(k.split("|")[1]) == elems
+        and k.split("|")[3] == shape
+    )
     return [p[0] for p in pts], [p[1] for p in pts]
 
 
-def _render_lever_b(priv, algo_data, algos_present, sample, shape, elements_list, outpath, title, channels):
+def _render_lever_b(
+    priv,
+    algo_data,
+    algos_present,
+    sample,
+    shape,
+    elements_list,
+    outpath,
+    title,
+    channels,
+):
     bins_c, counts_c, char_bins = C.char_input(shape)
     ncols = 3
     nperf = len(elements_list)
@@ -288,17 +400,48 @@ def _render_lever_b(priv, algo_data, algos_present, sample, shape, elements_list
     fig = plt.figure(figsize=(5.8 * ncols, 4.2 * nrows))
     gs = fig.add_gridspec(nrows, ncols)
     head = "\n".join(textwrap.wrap(title, width=125))
-    fig.suptitle(head + f"\ntop: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})"
-                 "   below: GiB/s vs #bins — smem_priv_dynamic (on-chip, bins<=cap) vs every high-bin algorithm",
-                 fontsize=12)
+    fig.suptitle(
+        head
+        + f"\ntop: input characterization (N={C.fmt_int(C.CHAR_N)}, bins={C.fmt_bins(char_bins)})"
+        "   below: GiB/s vs #bins — smem_priv_dynamic (on-chip, bins<=cap) vs every high-bin algorithm",
+        fontsize=12,
+    )
     C.draw_distribution(fig.add_subplot(gs[0, 0]), counts_c, char_bins)
     C.draw_sequence(fig.add_subplot(gs[0, 1]), bins_c, char_bins, shape=shape)
-    lax = fig.add_subplot(gs[0, 2]); lax.axis("off")
-    handles = [plt.Line2D([0], [0], color=PRIV_COLOR, lw=3.0, marker="*", ms=10,
-                          label="smem_priv_dynamic (on-chip)")]
-    handles += [plt.Line2D([0], [0], color=ALGO_STYLE[a][0], marker=ALGO_STYLE[a][1], lw=1.8,
-                           label=ALGO_STYLE[a][2]) for a in algos_present]
-    handles.append(plt.Line2D([0], [0], color="gray", lw=1, ls=":", label="cap boundary (priv reaches ≤ here)"))
+    lax = fig.add_subplot(gs[0, 2])
+    lax.axis("off")
+    handles = [
+        plt.Line2D(
+            [0],
+            [0],
+            color=PRIV_COLOR,
+            lw=3.0,
+            marker="*",
+            ms=10,
+            label="smem_priv_dynamic (on-chip)",
+        )
+    ]
+    handles += [
+        plt.Line2D(
+            [0],
+            [0],
+            color=ALGO_STYLE[a][0],
+            marker=ALGO_STYLE[a][1],
+            lw=1.8,
+            label=ALGO_STYLE[a][2],
+        )
+        for a in algos_present
+    ]
+    handles.append(
+        plt.Line2D(
+            [0],
+            [0],
+            color="gray",
+            lw=1,
+            ls=":",
+            label="cap boundary (priv reaches ≤ here)",
+        )
+    )
     lax.legend(handles=handles, loc="center", fontsize=9, title="series", frameon=True)
 
     for i, elems in enumerate(elements_list):
@@ -307,36 +450,80 @@ def _render_lever_b(priv, algo_data, algos_present, sample, shape, elements_list
         # cap-boundary vlines (only those <= max bin shown)
         for c in CAPS:
             ax.axvline(c, color="gray", ls=":", lw=0.9, alpha=0.6, zorder=1)
-            ax.annotate(f"cap {c//1024}K\n{blk_per_sm(c*4)}blk/SM", (c, 0.99), xycoords=("data", "axes fraction"),
-                        fontsize=6, color="gray", ha="center", va="top", rotation=90)
+            ax.annotate(
+                f"cap {c // 1024}K\n{blk_per_sm(c * 4)}blk/SM",
+                (c, 0.99),
+                xycoords=("data", "axes fraction"),
+                fontsize=6,
+                color="gray",
+                ha="center",
+                va="top",
+                rotation=90,
+            )
         # high-bin algorithms across ALL bins
         for a in algos_present:
             xb, yv = _series_for(algo_data[a], sample, elems, shape)
             if xb:
                 any_pts = True
                 color, marker, _ = ALGO_STYLE[a]
-                ax.plot(xb, yv, color=color, marker=marker, ms=5, lw=1.7, alpha=0.85, zorder=3)
+                ax.plot(
+                    xb,
+                    yv,
+                    color=color,
+                    marker=marker,
+                    ms=5,
+                    lw=1.7,
+                    alpha=0.85,
+                    zorder=3,
+                )
         # priv_dynamic — ONLY at bins it serves on-chip (bins <= max cap)
         xb, yv = _series_for(priv, sample, elems, shape)
         if xb:
             any_pts = True
-            ax.plot(xb, yv, color=PRIV_COLOR, marker="*", ms=11, lw=3.0, alpha=0.95, zorder=6)
+            ax.plot(
+                xb,
+                yv,
+                color=PRIV_COLOR,
+                marker="*",
+                ms=11,
+                lw=3.0,
+                alpha=0.95,
+                zorder=6,
+            )
         ax.set_title(f"N = {fmt_elements(elems)} elements", fontsize=9)
-        ax.set_xlabel("# bins"); ax.set_ylabel("GiB/s")
+        ax.set_xlabel("# bins")
+        ax.set_ylabel("GiB/s")
         ax.set_xscale("log", base=2)
         ax.grid(True, which="both", ls=":", alpha=0.35)
-        allb = sorted({int(k.split("|")[2]) for src in [priv] + [algo_data[a] for a in algos_present]
-                       for k in src if k.split("|")[0] == sample and int(k.split("|")[1]) == elems
-                       and k.split("|")[3] == shape})
+        allb = sorted(
+            {
+                int(k.split("|")[2])
+                for src in [priv] + [algo_data[a] for a in algos_present]
+                for k in src
+                if k.split("|")[0] == sample
+                and int(k.split("|")[1]) == elems
+                and k.split("|")[3] == shape
+            }
+        )
         if allb:
             ax.set_xticks(allb)
-            ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda v, _: C.fmt_bins(int(round(v)))))
+            ax.get_xaxis().set_major_formatter(
+                plt.FuncFormatter(lambda v, _: C.fmt_bins(int(round(v))))
+            )
         ax.tick_params(axis="x", labelsize=7, rotation=45)
         if any_pts:
             ax.set_ylim(bottom=0)
         else:
-            ax.text(0.5, 0.5, "no data\n(cells skipped:\noverflow / can't launch)", ha="center",
-                    va="center", transform=ax.transAxes, fontsize=9, color="gray")
+            ax.text(
+                0.5,
+                0.5,
+                "no data\n(cells skipped:\noverflow / can't launch)",
+                ha="center",
+                va="center",
+                transform=ax.transAxes,
+                fontsize=9,
+                color="gray",
+            )
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     os.makedirs(os.path.dirname(outpath), exist_ok=True)
     fig.savefig(outpath, dpi=110, bbox_inches="tight")

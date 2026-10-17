@@ -367,10 +367,10 @@ C2H_TEST("DeviceHistogram::HistogramEven high-bin cooperative path", "[histogram
   const level_t lower = 0;
   const level_t upper = num_bins; // one sample value per bin -> bin width 1.
 
-  const offset_t width      = 4099; // not a multiple of the tile size, exercises the ragged tail.
-  const offset_t height     = 16;
-  const offset_t row_pitch  = width * channels * sizeof(sample_t);
-  const offset_t total      = height * (row_pitch / sizeof(sample_t));
+  const offset_t width     = 4099; // not a multiple of the tile size, exercises the ragged tail.
+  const offset_t height    = 16;
+  const offset_t row_pitch = width * channels * sizeof(sample_t);
+  const offset_t total     = height * (row_pitch / sizeof(sample_t));
 
   // Spread samples across the full level range (plus a few out-of-range values
   // that must be dropped) so many distinct bins receive counts.
@@ -388,9 +388,8 @@ C2H_TEST("DeviceHistogram::HistogramEven high-bin cooperative path", "[histogram
     {
       return num_levels; // out of range
     }
-    return static_cast<int>(
-      static_cast<uint64_t>(promoted - lower) * static_cast<uint64_t>(num_levels - 1)
-      / static_cast<uint64_t>(upper - lower));
+    return static_cast<int>(static_cast<uint64_t>(promoted - lower) * static_cast<uint64_t>(num_levels - 1)
+                            / static_cast<uint64_t>(upper - lower));
   };
   auto h_histogram = compute_reference_result<channels, counter_t, active_channels>(
     h_samples, sample_to_bin_index, num_levels_vec, width, height, row_pitch);

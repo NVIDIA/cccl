@@ -55,10 +55,18 @@ def new_single_channel_pick(is_even: bool, bins: int, pixels: int) -> str:
     """The algorithm enum name the NEW selector returns for a single-channel high-bin
     cell. Only called for cells the sweep treated as high-bin (forced columns exist)."""
     if bins <= HYBRID_CAP_TIER_MAX_BINS:
-        return "gmem_privatized_nocache" if pixels >= CAP_TIER_AMORTIZE_PIXELS else "direct_single_probe"
+        return (
+            "gmem_privatized_nocache"
+            if pixels >= CAP_TIER_AMORTIZE_PIXELS
+            else "direct_single_probe"
+        )
     if bins <= HYBRID_MID_TIER_MAX_BINS:
-        amortize = MID_TIER_AMORTIZE_PIXELS_EVEN if is_even else MID_TIER_AMORTIZE_PIXELS_RANGE
-        return "gmem_privatized_nocache" if pixels >= amortize else "direct_single_probe"
+        amortize = (
+            MID_TIER_AMORTIZE_PIXELS_EVEN if is_even else MID_TIER_AMORTIZE_PIXELS_RANGE
+        )
+        return (
+            "gmem_privatized_nocache" if pixels >= amortize else "direct_single_probe"
+        )
     return "direct_single_probe"
 
 
@@ -73,13 +81,23 @@ def perf_column_for(pick: str) -> str:
 def launch_tag_for(pick: str) -> str:
     """The `_selected` launch-tag string the plotter expects (it maps this to a
     3-letter tag via ALGO_TAG). The hybrid member reports the `:hybrid` suffix."""
-    return "gmem_privatized_nocache:hybrid" if pick == "gmem_privatized_nocache" else pick
+    return (
+        "gmem_privatized_nocache:hybrid" if pick == "gmem_privatized_nocache" else pick
+    )
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--in", dest="inp", required=True, help="source algo_sweep_full.json")
-    ap.add_argument("--out", required=True, help="destination algo_sweep_full.json (default+_selected rewritten)")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--in", dest="inp", required=True, help="source algo_sweep_full.json"
+    )
+    ap.add_argument(
+        "--out",
+        required=True,
+        help="destination algo_sweep_full.json (default+_selected rewritten)",
+    )
     args = ap.parse_args()
 
     data = json.load(open(args.inp))
@@ -113,7 +131,10 @@ def main():
             if newval is None or newval <= 0:
                 # The picked algorithm has no measurement here (shouldn't happen for a
                 # legal pick). Leave the cell as-is and flag it.
-                print(f"  !! {blabel} {key}: picked {pick} ({col}) has no value; left unchanged", flush=True)
+                print(
+                    f"  !! {blabel} {key}: picked {pick} ({col}) has no value; left unchanged",
+                    flush=True,
+                )
                 continue
             # Sanity: record how far the OLD default was from this NEW value (info only).
             oldval = default[key]
@@ -125,12 +146,18 @@ def main():
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     json.dump(data, open(args.out, "w"), indent=1)
-    print(f"rewrote default+_selected for {changed}/{total_high} single-channel high-bin cells "
-          f"(even/range); multi_* untouched", flush=True)
+    print(
+        f"rewrote default+_selected for {changed}/{total_high} single-channel high-bin cells "
+        f"(even/range); multi_* untouched",
+        flush=True,
+    )
     if ratios_checked:
-        print(f"new/old default ratio over rewritten cells: median={statistics.median(ratios_checked):.3f} "
-              f"min={min(ratios_checked):.3f} max={max(ratios_checked):.3f} "
-              f"(geomean={math.exp(statistics.fmean(map(math.log, ratios_checked))):.3f})", flush=True)
+        print(
+            f"new/old default ratio over rewritten cells: median={statistics.median(ratios_checked):.3f} "
+            f"min={min(ratios_checked):.3f} max={max(ratios_checked):.3f} "
+            f"(geomean={math.exp(statistics.fmean(map(math.log, ratios_checked))):.3f})",
+            flush=True,
+        )
     print(f"wrote {args.out}", flush=True)
 
 

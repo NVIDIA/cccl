@@ -1598,12 +1598,15 @@ void test_multi_histogram_even_with_wide_output(Tuning tuning)
   check_single_hot_histogram(d_histogram_b, 0, output_counter_t{num_pixels});
 }
 
-__global__ void test_widening_output_atomic_spill_kernel(unsigned long long* output)
+__global__ void widening_output_atomic_spill_kernel(unsigned long long* output)
 {
-  cub::detail::histogram::output_atomic_spill::spill(output, 0, 2u);
+  cub::detail::histogram::output_atomic_spill::state<unsigned int> state{};
+  cub::detail::histogram::output_atomic_spill::spill(state, output, 0, 2u);
 }
 
-C2H_TEST("DeviceHistogram tuning supports a narrower local counter than its output counter", "[histogram][device]")
+CUB_TEST("DeviceHistogram tuning supports a narrower local counter than its output counter",
+         "[histogram][device]",
+         CUB_SMALL)
 {
   SECTION("HistogramEven")
   {
@@ -1619,19 +1622,19 @@ C2H_TEST("DeviceHistogram tuning supports a narrower local counter than its outp
   }
 }
 
-C2H_TEST("DeviceHistogram tuning defaults its local counter to the output counter", "[histogram][device]")
+CUB_TEST("DeviceHistogram tuning defaults its local counter to the output counter", "[histogram][device]", CUB_SMALL)
 {
   test_histogram_even_with_wide_output(legacy_counter_tuning_t{});
 }
 
-C2H_TEST("DeviceHistogram widens a local contribution before spilling to its output", "[histogram][device]")
+CUB_TEST("DeviceHistogram widens a local contribution before spilling to its output", "[histogram][device]", CUB_SMALL)
 {
   using local_counter_t  = unsigned int;
   using output_counter_t = unsigned long long;
 
   constexpr output_counter_t initial = cuda::std::numeric_limits<local_counter_t>::max();
   c2h::device_vector<output_counter_t> d_output(1, initial);
-  test_widening_output_atomic_spill_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_output.data()));
+  widening_output_atomic_spill_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_output.data()));
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(d_output[0] == initial + 2);
 }
@@ -1788,6 +1791,8 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   REQUIRE(to_string(p1)
           == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+             ", .direct_atomic_threads_per_block = 0, .static_smem_threads_per_block = 0"
+             ", .static_smem_items_per_block = 0, .warp_coalesce = 1 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

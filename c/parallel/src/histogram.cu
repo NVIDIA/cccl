@@ -232,8 +232,8 @@ std::string get_gather_kernel_name(
   std::string_view offset_t,
   bool is_evenly_segmented)
 {
-  const auto names = get_histogram_kernel_type_names(
-    d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
+  const auto names =
+    get_histogram_kernel_type_names(d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
   return std::format(
     "cub::detail::histogram::DeviceHistogramGmemPrivatizedKernel<{0}, 0, {1}, {2}, {3}, {4}, {5}, {6}, {7}, false>",
     names.chained_policy_t,
@@ -259,8 +259,8 @@ std::string get_direct_cuckoo_kernel_name(
   bool is_evenly_segmented,
   bool disable_second_probe)
 {
-  const auto names = get_histogram_kernel_type_names(
-    d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
+  const auto names =
+    get_histogram_kernel_type_names(d_samples, level_t, offset_t, is_evenly_segmented, /*is_byte_sample=*/false);
   return std::format(
     "cub::detail::histogram::DeviceHistogramCacheSpillKernel<{0}, 0, {1}, {2}, {3}, {4}, {5}, {6}, {7}, "
     "cub::detail::histogram::cuckoo_cache_probe<{8}>, cub::detail::histogram::output_atomic_spill>",
@@ -330,8 +330,8 @@ uint64_t get_integral_range(cccl_type_enum type, const void* lower, const void* 
 
 // Build array<ScaleTransform<L,O,S>, N> bytes for the given (already typed) L,S.
 template <typename SampleT, typename LevelT, int NumActiveChannels, typename OffsetT>
-std::vector<char> build_scale_transform_bytes_typed(
-  const std::vector<int>& num_output_levels, const void* lower, const void* upper)
+std::vector<char>
+build_scale_transform_bytes_typed(const std::vector<int>& num_output_levels, const void* lower, const void* upper)
 {
   using TransformsT = cub::detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
   using ScaleT      = typename TransformsT::ScaleTransform;
@@ -361,28 +361,39 @@ std::vector<char> build_scale_transform_bytes_level(
   switch (level_type)
   {
     case CCCL_INT8:
-      return build_scale_transform_bytes_typed<SampleT, int8_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, int8_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_UINT8:
-      return build_scale_transform_bytes_typed<SampleT, uint8_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, uint8_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_INT16:
-      return build_scale_transform_bytes_typed<SampleT, int16_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, int16_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_UINT16:
-      return build_scale_transform_bytes_typed<SampleT, uint16_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, uint16_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_INT32:
-      return build_scale_transform_bytes_typed<SampleT, int32_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, int32_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_UINT32:
-      return build_scale_transform_bytes_typed<SampleT, uint32_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, uint32_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_INT64:
-      return build_scale_transform_bytes_typed<SampleT, int64_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, int64_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_UINT64:
-      return build_scale_transform_bytes_typed<SampleT, uint64_t, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, uint64_t, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_FLOAT32:
-      return build_scale_transform_bytes_typed<SampleT, float, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, float, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
     case CCCL_FLOAT64:
-      return build_scale_transform_bytes_typed<SampleT, double, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, double, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
 #if _CCCL_HAS_NVFP16()
     case CCCL_FLOAT16:
-      return build_scale_transform_bytes_typed<SampleT, __half, NumActiveChannels, OffsetT>(num_output_levels, lower, upper);
+      return build_scale_transform_bytes_typed<SampleT, __half, NumActiveChannels, OffsetT>(
+        num_output_levels, lower, upper);
 #endif
     default:
       throw std::runtime_error("histogram: unsupported level type for host-side decode-op build");
@@ -401,28 +412,39 @@ std::vector<char> build_scale_transform_bytes(
   switch (sample_type)
   {
     case CCCL_INT8:
-      return build_scale_transform_bytes_level<int8_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<int8_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_UINT8:
-      return build_scale_transform_bytes_level<uint8_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<uint8_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_INT16:
-      return build_scale_transform_bytes_level<int16_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<int16_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_UINT16:
-      return build_scale_transform_bytes_level<uint16_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<uint16_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_INT32:
-      return build_scale_transform_bytes_level<int32_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<int32_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_UINT32:
-      return build_scale_transform_bytes_level<uint32_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<uint32_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_INT64:
-      return build_scale_transform_bytes_level<int64_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<int64_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_UINT64:
-      return build_scale_transform_bytes_level<uint64_t, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<uint64_t, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_FLOAT32:
-      return build_scale_transform_bytes_level<float, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<float, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
     case CCCL_FLOAT64:
-      return build_scale_transform_bytes_level<double, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<double, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
 #if _CCCL_HAS_NVFP16()
     case CCCL_FLOAT16:
-      return build_scale_transform_bytes_level<__half, NumActiveChannels, OffsetT>(level_type, num_output_levels, lower, upper);
+      return build_scale_transform_bytes_level<__half, NumActiveChannels, OffsetT>(
+        level_type, num_output_levels, lower, upper);
 #endif
     default:
       throw std::runtime_error("histogram: unsupported sample type for host-side decode-op build");
@@ -622,30 +644,35 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   // and resolve their handles below; the <=256-bin tier never reaches them, so we
   // skip compiling them there. (sweep_kernel stays the cooperative fallback used
   // when a cooperative launch is unsupported.)
-  const bool high_bin                       = (privatized_smem_bins == 0);
-  std::string gather_kernel_name            = high_bin ? histogram::get_gather_kernel_name(
-                                        num_channels, num_active_channels, d_samples, counter_cpp, level_cpp, offset_cpp, is_evenly_segmented)
-                                                        : std::string{};
-  std::string direct_cuckoo_kernel_name     = high_bin ? histogram::get_direct_cuckoo_kernel_name(
-                                            num_channels,
-                                            num_active_channels,
-                                            d_samples,
-                                            counter_cpp,
-                                            level_cpp,
-                                            offset_cpp,
-                                            is_evenly_segmented,
-                                            /*disable_second_probe=*/false)
-                                                            : std::string{};
-  std::string direct_cuckoo_noprobe2_kernel_name = high_bin ? histogram::get_direct_cuckoo_kernel_name(
-                                                     num_channels,
-                                                     num_active_channels,
-                                                     d_samples,
-                                                     counter_cpp,
-                                                     level_cpp,
-                                                     offset_cpp,
-                                                     is_evenly_segmented,
-                                                     /*disable_second_probe=*/true)
-                                                                : std::string{};
+  const bool high_bin = (privatized_smem_bins == 0);
+  std::string gather_kernel_name =
+    high_bin ? histogram::get_gather_kernel_name(
+                 num_channels, num_active_channels, d_samples, counter_cpp, level_cpp, offset_cpp, is_evenly_segmented)
+             : std::string{};
+  std::string direct_cuckoo_kernel_name =
+    high_bin
+      ? histogram::get_direct_cuckoo_kernel_name(
+          num_channels,
+          num_active_channels,
+          d_samples,
+          counter_cpp,
+          level_cpp,
+          offset_cpp,
+          is_evenly_segmented,
+          /*disable_second_probe=*/false)
+      : std::string{};
+  std::string direct_cuckoo_noprobe2_kernel_name =
+    high_bin
+      ? histogram::get_direct_cuckoo_kernel_name(
+          num_channels,
+          num_active_channels,
+          d_samples,
+          counter_cpp,
+          level_cpp,
+          offset_cpp,
+          is_evenly_segmented,
+          /*disable_second_probe=*/true)
+      : std::string{};
 
   std::string init_kernel_lowered_name;
   std::string sweep_kernel_lowered_name;
@@ -713,14 +740,13 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
     return CUDA_ERROR_OUT_OF_MEMORY;
   }
   std::memcpy(policy_ptr.get(), &policy_sel, sizeof(policy_sel));
-  auto init_name  = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
-  auto sweep_name = std::unique_ptr<char[]>(duplicate_c_string(sweep_kernel_lowered_name));
-  auto gather_name = std::unique_ptr<char[]>(
-    high_bin ? duplicate_c_string(gather_kernel_lowered_name) : nullptr);
-  auto direct_cuckoo_name = std::unique_ptr<char[]>(
-    high_bin ? duplicate_c_string(direct_cuckoo_kernel_lowered_name) : nullptr);
-  auto direct_cuckoo_noprobe2_name = std::unique_ptr<char[]>(
-    high_bin ? duplicate_c_string(direct_cuckoo_noprobe2_kernel_lowered_name) : nullptr);
+  auto init_name   = std::unique_ptr<char[]>(duplicate_c_string(init_kernel_lowered_name));
+  auto sweep_name  = std::unique_ptr<char[]>(duplicate_c_string(sweep_kernel_lowered_name));
+  auto gather_name = std::unique_ptr<char[]>(high_bin ? duplicate_c_string(gather_kernel_lowered_name) : nullptr);
+  auto direct_cuckoo_name =
+    std::unique_ptr<char[]>(high_bin ? duplicate_c_string(direct_cuckoo_kernel_lowered_name) : nullptr);
+  auto direct_cuckoo_noprobe2_name =
+    std::unique_ptr<char[]>(high_bin ? duplicate_c_string(direct_cuckoo_noprobe2_kernel_lowered_name) : nullptr);
 
   build_ptr->cc                  = cc.get();
   build_ptr->counter_type        = d_output_histograms.value_type;
@@ -730,23 +756,23 @@ static_assert(device_histogram_policy()(detail::current_tuning_cc()) == {4}, "Ho
   build_ptr->may_overflow = false; // This is set in cccl_device_histogram_even_impl so that kernel source can access
                                    // it later.
   // Zero-init fields set by _load, not _compile.
-  build_ptr->library      = nullptr;
-  build_ptr->init_kernel  = nullptr;
-  build_ptr->sweep_kernel = nullptr;
-  build_ptr->gather_kernel = nullptr;
-  build_ptr->direct_cuckoo_kernel = nullptr;
+  build_ptr->library                       = nullptr;
+  build_ptr->init_kernel                   = nullptr;
+  build_ptr->sweep_kernel                  = nullptr;
+  build_ptr->gather_kernel                 = nullptr;
+  build_ptr->direct_cuckoo_kernel          = nullptr;
   build_ptr->direct_cuckoo_noprobe2_kernel = nullptr;
 
   build_ptr->payload      = (void*) result.data.release();
   build_ptr->payload_size = result.size;
   build_ptr->payload_kind = CCCL_PAYLOAD_CUBIN;
 
-  build_ptr->runtime_policy            = policy_ptr.release();
-  build_ptr->runtime_policy_size       = policy_size;
-  build_ptr->init_kernel_lowered_name  = init_name.release();
-  build_ptr->sweep_kernel_lowered_name = sweep_name.release();
-  build_ptr->gather_kernel_lowered_name = gather_name.release();
-  build_ptr->direct_cuckoo_kernel_lowered_name = direct_cuckoo_name.release();
+  build_ptr->runtime_policy                             = policy_ptr.release();
+  build_ptr->runtime_policy_size                        = policy_size;
+  build_ptr->init_kernel_lowered_name                   = init_name.release();
+  build_ptr->sweep_kernel_lowered_name                  = sweep_name.release();
+  build_ptr->gather_kernel_lowered_name                 = gather_name.release();
+  build_ptr->direct_cuckoo_kernel_lowered_name          = direct_cuckoo_name.release();
   build_ptr->direct_cuckoo_noprobe2_kernel_lowered_name = direct_cuckoo_noprobe2_name.release();
 
   return CUDA_SUCCESS;
@@ -908,9 +934,8 @@ CUresult cccl_device_histogram_even_impl(
     //                  (privatized bins == output bins).
     //   byte sample:   privatized = PassThruTransform (256-entry staging),
     //                  output = ScaleTransform; always the 256-bin tier.
-    histogram::decode_op_arg_t scale_arg{
-      histogram::build_scale_transform_bytes<NUM_ACTIVE_CHANNELS, OffsetT>(
-        build.sample_type.type, build.level_type.type, {num_output_levels_arr[0]}, lower_level.state, upper_level.state)};
+    histogram::decode_op_arg_t scale_arg{histogram::build_scale_transform_bytes<NUM_ACTIVE_CHANNELS, OffsetT>(
+      build.sample_type.type, build.level_type.type, {num_output_levels_arr[0]}, lower_level.state, upper_level.state)};
     histogram::decode_op_arg_t passthru_arg{histogram::build_passthru_transform_bytes<NUM_ACTIVE_CHANNELS>()};
 
     // For byte samples the ScaleTransform is the OUTPUT op and PassThru is
@@ -1199,23 +1224,23 @@ try
   std::unique_ptr<char[]> n_direct_cuckoo_noprobe2{r.read_cstring_dup()};
 
   cccl_device_histogram_build_result_t result{};
-  result.cc                        = static_cast<int>(h.cc);
-  result.payload_kind              = static_cast<cccl_payload_kind_t>(h.payload_kind);
-  result.counter_type              = counter_t;
-  result.level_type                = level_t;
-  result.sample_type               = sample_t;
-  result.num_active_channels       = nac;
-  result.may_overflow              = overflow_b;
-  result.payload                   = payload_owner.release();
-  result.payload_size              = payload_size;
-  result.runtime_policy            = policy.release();
-  result.runtime_policy_size       = sizeof(cub::detail::histogram::policy_selector);
-  result.init_kernel_lowered_name  = n_init.release();
-  result.sweep_kernel_lowered_name = n_sweep.release();
-  result.gather_kernel_lowered_name = n_gather.release();
-  result.direct_cuckoo_kernel_lowered_name = n_direct_cuckoo.release();
+  result.cc                                         = static_cast<int>(h.cc);
+  result.payload_kind                               = static_cast<cccl_payload_kind_t>(h.payload_kind);
+  result.counter_type                               = counter_t;
+  result.level_type                                 = level_t;
+  result.sample_type                                = sample_t;
+  result.num_active_channels                        = nac;
+  result.may_overflow                               = overflow_b;
+  result.payload                                    = payload_owner.release();
+  result.payload_size                               = payload_size;
+  result.runtime_policy                             = policy.release();
+  result.runtime_policy_size                        = sizeof(cub::detail::histogram::policy_selector);
+  result.init_kernel_lowered_name                   = n_init.release();
+  result.sweep_kernel_lowered_name                  = n_sweep.release();
+  result.gather_kernel_lowered_name                 = n_gather.release();
+  result.direct_cuckoo_kernel_lowered_name          = n_direct_cuckoo.release();
   result.direct_cuckoo_noprobe2_kernel_lowered_name = n_direct_cuckoo_noprobe2.release();
-  *build_ptr                       = result;
+  *build_ptr                                        = result;
   return CUDA_SUCCESS;
 }
 catch (const std::exception& exc)
