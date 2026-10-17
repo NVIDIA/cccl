@@ -33,7 +33,7 @@ struct bench_policy_selector
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::MergePolicy
   {
     return cub::MergePolicy{
-      (1 << TUNE_THREADS_PER_BLOCK_POW2),
+      TUNE_THREADS_PER_BLOCK,
       cub::Nominal4BItemsToItems<KeyT>(TUNE_ITEMS_PER_THREAD),
       TUNE_LOAD_MODIFIER,
       TUNE_TRANSPOSE == 0 ? cub::BLOCK_STORE_DIRECT : cub::BLOCK_STORE_WARP_TRANSPOSE,
