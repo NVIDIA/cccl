@@ -392,7 +392,7 @@ struct exponential_backon_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      int prev_delay = max_delay >> 1;
+      const int prev_delay = max_delay >> 1;
       always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
       max_delay = prev_delay;
     }

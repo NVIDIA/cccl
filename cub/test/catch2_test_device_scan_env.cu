@@ -622,11 +622,10 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
   constexpr auto p1_la = cub::ScanLookaheadPolicy{3, 8, 4, 2};
   constexpr auto p1    = cub::ScanPolicy{cub::ScanAlgorithm::lookback, p1_lb, p1_la};
   STATIC_REQUIRE(p1_lb.tiles_per_batch == 0);
-  constexpr auto custom_batch = [=] {
-    auto p            = p1_lb;
+  constexpr auto custom_batch = [](auto p) {
     p.tiles_per_batch = 17;
     return p;
-  }();
+  }(p1_lb);
   STATIC_REQUIRE(custom_batch.tiles_per_batch == 17);
   STATIC_REQUIRE(custom_batch != p1_lb);
   STATIC_REQUIRE_FALSE(custom_batch == p1_lb);
