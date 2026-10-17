@@ -57,10 +57,11 @@ TEST_FUNC _CCCL_CONSTEXPR_BIT_CAST void test_fp_get_exp(T val)
     test_fp_get_exp(cuda::std::numeric_limits<T>::lowest(), cuda::std::__fp_exp_min_v<fmt>);
   }
 
-  // Denormals have all zeros, so its one less than __fp_exp_min_v
+  // Denormals have a zero exponent field, so the exponent is that of their highest set bit
   if constexpr (cuda::std::__fp_has_denorm_v<fmt>)
   {
-    test_fp_get_exp(cuda::std::numeric_limits<T>::denorm_min(), cuda::std::__fp_exp_min_v<fmt> - 1);
+    test_fp_get_exp(cuda::std::numeric_limits<T>::denorm_min(),
+                    cuda::std::__fp_exp_min_v<fmt> - cuda::std::__fp_digits_v<fmt> + 1);
   }
 
   // infinity and NaN have full zeros, so one more than __fp_exp_max_v
