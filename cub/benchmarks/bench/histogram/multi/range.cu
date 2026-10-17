@@ -223,7 +223,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, LocalCounte
                  launch,
                  cuda::execution::tune(
                    bench_policy_selector<SampleT, LocalCounterT, num_channels, num_active_channels, false>{}));
-               _CCCL_TRY_CUDA_API(
+               _CCCL_TRY_RUNTIME_API(
                  (cub::DeviceHistogram::MultiHistogramRange<num_channels, num_active_channels>),
                  "MultiHistogramRange failed",
                  d_input,

@@ -120,7 +120,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, LocalCounter
                timer.start();
                auto env = cub_bench_env(
                  alloc, launch, cuda::execution::tune(bench_policy_selector<SampleT, LocalCounterT, 1, 1, true>{}));
-               _CCCL_TRY_CUDA_API(
+               _CCCL_TRY_RUNTIME_API(
                  cub::DeviceHistogram::HistogramEven,
                  "HistogramEven failed",
                  d_input,
