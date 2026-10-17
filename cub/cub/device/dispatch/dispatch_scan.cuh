@@ -1020,14 +1020,20 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
     return error;
   }
 
-  // Size the persistent scan grid independently of the problem size
+  // Launch one resident wave of the persistent scan kernel.
   int sm_count = 0;
   if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
   {
     return error;
   }
+  int scan_sm_occupancy = 0;
+  if (const auto error = CubDebug(
+        launcher_factory.MaxSmOccupancy(scan_sm_occupancy, kernel_source.BatchScanKernel(), policy.threads_per_block)))
+  {
+    return error;
+  }
   const int scan_grid_size =
-    (::cuda::std::min) (static_cast<int>(detail::scan::tiles_per_batch), detail::scan::batch_ctas_per_sm * sm_count);
+    (::cuda::std::min) (static_cast<int>(detail::scan::tiles_per_batch), scan_sm_occupancy * sm_count);
 
   // Invoke the scan kernel; its CTAs dynamically claim tiles until the deferred range is exhausted
   _CUB_LOG_KERNEL_LAUNCH("DeviceScanBatchKernel", scan_grid_size, 1, 1, policy.threads_per_block, 0, stream, "");

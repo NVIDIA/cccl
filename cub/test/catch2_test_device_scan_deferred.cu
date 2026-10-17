@@ -462,6 +462,59 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries", "[devic
   REQUIRE(output == expected);
 }
 
+template <cub::LookbackDelayAlgorithm Kind, unsigned int Delay, unsigned int L2WriteLatency>
+struct batch_wait_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
+  {
+    auto policy = small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{}(cc);
+    policy.lookback.lookback_delay = {Kind, Delay, L2WriteLatency};
+    return policy;
+  }
+};
+
+using batch_wait_policies =
+  c2h::type_list<batch_wait_policy_selector<cub::LookbackDelayAlgorithm::fixed_delay, 350, 450>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::fixed_delay, 0, 450>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::fixed_delay, 350, 0>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::fixed_delay, 0, 0>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::no_delay, 0, 450>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::no_delay, 0, 0>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::exponential_backoff, 350, 450>,
+                 batch_wait_policy_selector<cub::LookbackDelayAlgorithm::exponential_backon_jitter_window, 350, 450>>;
+
+CUB_TEST("DeviceScan batched lookback supports tuned delay policies",
+         "[device][scan][deferred][batch]",
+         CUB_SMALL,
+         batch_wait_policies)
+{
+  using policy_selector_t             = c2h::get<0, TestType>;
+  using large_count_t                 = int64_t;
+  constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
+  const large_count_t num_items       = GENERATE_COPY(large_count_t{0}, large_count_t{129}, batch_items + 17);
+  CAPTURE(num_items);
+
+  const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
+  const c2h::device_vector<large_count_t> device_num_items(1, num_items);
+  c2h::device_vector<scan_value_t> expected(static_cast<size_t>(num_items), scan_value_t{-1});
+  c2h::device_vector<scan_value_t> output(static_cast<size_t>(num_items), scan_value_t{-1});
+  const auto env = cuda::execution::tune(policy_selector_t{});
+
+  REQUIRE(cudaSuccess
+          == cub::DeviceScan::ExclusiveScan(
+            input.begin(), expected.begin(), cuda::std::plus<>{}, scan_value_t{7}, num_items, env));
+  REQUIRE(
+    cudaSuccess
+    == cub::DeviceScan::ExclusiveScan(
+      input.begin(),
+      output.begin(),
+      cuda::std::plus<>{},
+      scan_value_t{7},
+      cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())},
+      env));
+  REQUIRE(output == expected);
+}
+
 CUB_TEST("DeviceScan batched lookback preserves noncommutative order", "[device][scan][deferred][batch]", CUB_SMALL)
 {
   using large_count_t               = int64_t;
