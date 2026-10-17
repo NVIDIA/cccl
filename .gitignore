@@ -26,3 +26,7 @@ bench-artifacts/
 CLAUDE.local.md
 .codegraph/*
 .cursor/rules/codegraph.mdc
+# autocuda experiment scratch dir: sweep drivers, result JSONs/CSVs, generated
+# figures, build helpers. Local provenance only -- shippable tooling lives under
+# cub/benchmarks/bench/histogram/. Never committed.
+autocuda/

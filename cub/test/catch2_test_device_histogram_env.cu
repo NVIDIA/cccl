@@ -13,6 +13,8 @@ struct stream_registry_factory_t;
 
 #include <cuda/std/array>
 #include <cuda/std/execution>
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include <sstream>
 
@@ -1473,6 +1475,172 @@ struct histogram_tuning
   }
 };
 
+template <int BlockThreads, typename LocalCounterT>
+struct histogram_tuning_with_local_counter : histogram_tuning<BlockThreads>
+{
+  using local_counter_type = LocalCounterT;
+};
+
+using mixed_counter_tuning_t  = histogram_tuning_with_local_counter<128, unsigned int>;
+using legacy_counter_tuning_t = histogram_tuning<128>;
+
+static_assert(cuda::std::is_same_v<cub::detail::histogram::local_counter_t<mixed_counter_tuning_t, unsigned long long>,
+                                   unsigned int>);
+static_assert(cuda::std::is_same_v<cub::detail::histogram::local_counter_t<legacy_counter_tuning_t, unsigned long long>,
+                                   unsigned long long>);
+
+#  if TEST_LAUNCH == 0
+
+template <typename CounterT>
+void check_single_hot_histogram(const c2h::device_vector<CounterT>& d_histogram, int hot_bin, CounterT expected_count)
+{
+  const c2h::host_vector<CounterT> h_histogram = d_histogram;
+  CounterT sum{};
+  for (const CounterT count : h_histogram)
+  {
+    sum += count;
+  }
+
+  REQUIRE(h_histogram[hot_bin] == expected_count);
+  REQUIRE(sum == expected_count);
+}
+
+template <typename Tuning>
+void test_histogram_even_with_wide_output(Tuning tuning)
+{
+  using sample_t         = unsigned int;
+  using output_counter_t = unsigned long long;
+
+  constexpr int num_bins    = 65536;
+  constexpr int num_levels  = num_bins + 1;
+  constexpr int num_samples = 1 << 16;
+  constexpr int hot_bin     = 12345;
+
+  const c2h::device_vector<sample_t> d_samples(num_samples, sample_t{hot_bin});
+  c2h::device_vector<output_counter_t> d_histogram(num_bins, output_counter_t{0});
+  auto env = cuda::execution::tune(tuning);
+
+  histogram_even(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    sample_t{0},
+    sample_t{num_bins},
+    num_samples,
+    env);
+
+  check_single_hot_histogram(d_histogram, hot_bin, output_counter_t{num_samples});
+}
+
+template <typename Tuning>
+void test_histogram_range_with_wide_output(Tuning tuning)
+{
+  using sample_t         = unsigned int;
+  using output_counter_t = unsigned long long;
+
+  constexpr int num_bins    = 65536;
+  constexpr int num_levels  = num_bins + 1;
+  constexpr int num_samples = 1 << 16;
+  constexpr int hot_bin     = 12345;
+
+  c2h::host_vector<sample_t> h_levels(num_levels);
+  for (int level = 0; level < num_levels; ++level)
+  {
+    h_levels[level] = static_cast<sample_t>(level);
+  }
+
+  const c2h::device_vector<sample_t> d_samples(num_samples, sample_t{hot_bin});
+  const c2h::device_vector<sample_t> d_levels = h_levels;
+  c2h::device_vector<output_counter_t> d_histogram(num_bins, output_counter_t{0});
+  auto env = cuda::execution::tune(tuning);
+
+  histogram_range(
+    thrust::raw_pointer_cast(d_samples.data()),
+    thrust::raw_pointer_cast(d_histogram.data()),
+    num_levels,
+    thrust::raw_pointer_cast(d_levels.data()),
+    num_samples,
+    env);
+
+  check_single_hot_histogram(d_histogram, hot_bin, output_counter_t{num_samples});
+}
+
+template <typename Tuning>
+void test_multi_histogram_even_with_wide_output(Tuning tuning)
+{
+  using sample_t         = unsigned int;
+  using output_counter_t = unsigned long long;
+
+  constexpr int num_channels        = 4;
+  constexpr int num_active_channels = 3;
+  constexpr int num_bins            = 65536;
+  constexpr int num_pixels          = 1 << 14;
+
+  const c2h::device_vector<sample_t> d_samples(num_pixels * num_channels, sample_t{0});
+  c2h::device_vector<output_counter_t> d_histogram_r(num_bins, output_counter_t{0});
+  c2h::device_vector<output_counter_t> d_histogram_g(num_bins, output_counter_t{0});
+  c2h::device_vector<output_counter_t> d_histogram_b(num_bins, output_counter_t{0});
+
+  cuda::std::array<output_counter_t*, num_active_channels> d_histograms = {
+    thrust::raw_pointer_cast(d_histogram_r.data()),
+    thrust::raw_pointer_cast(d_histogram_g.data()),
+    thrust::raw_pointer_cast(d_histogram_b.data())};
+  const cuda::std::array<int, num_active_channels> num_levels        = {num_bins + 1, num_bins + 1, num_bins + 1};
+  const cuda::std::array<sample_t, num_active_channels> lower_levels = {0, 0, 0};
+  const cuda::std::array<sample_t, num_active_channels> upper_levels = {num_bins, num_bins, num_bins};
+  auto env                                                           = cuda::execution::tune(tuning);
+
+  multi_histogram_even<num_channels, num_active_channels>(
+    thrust::raw_pointer_cast(d_samples.data()), d_histograms, num_levels, lower_levels, upper_levels, num_pixels, env);
+
+  check_single_hot_histogram(d_histogram_r, 0, output_counter_t{num_pixels});
+  check_single_hot_histogram(d_histogram_g, 0, output_counter_t{num_pixels});
+  check_single_hot_histogram(d_histogram_b, 0, output_counter_t{num_pixels});
+}
+
+__global__ void widening_output_atomic_spill_kernel(unsigned long long* output)
+{
+  cub::detail::histogram::output_atomic_spill::state<unsigned int> state{};
+  cub::detail::histogram::output_atomic_spill::spill(state, output, 0, 2u);
+}
+
+CUB_TEST("DeviceHistogram tuning supports a narrower local counter than its output counter",
+         "[histogram][device]",
+         CUB_SMALL)
+{
+  SECTION("HistogramEven")
+  {
+    test_histogram_even_with_wide_output(mixed_counter_tuning_t{});
+  }
+  SECTION("HistogramRange")
+  {
+    test_histogram_range_with_wide_output(mixed_counter_tuning_t{});
+  }
+  SECTION("MultiHistogramEven")
+  {
+    test_multi_histogram_even_with_wide_output(mixed_counter_tuning_t{});
+  }
+}
+
+CUB_TEST("DeviceHistogram tuning defaults its local counter to the output counter", "[histogram][device]", CUB_SMALL)
+{
+  test_histogram_even_with_wide_output(legacy_counter_tuning_t{});
+}
+
+CUB_TEST("DeviceHistogram widens a local contribution before spilling to its output", "[histogram][device]", CUB_SMALL)
+{
+  using local_counter_t  = unsigned int;
+  using output_counter_t = unsigned long long;
+
+  constexpr output_counter_t initial = cuda::std::numeric_limits<local_counter_t>::max();
+  c2h::device_vector<output_counter_t> d_output(1, initial);
+  widening_output_atomic_spill_kernel<<<1, 1>>>(thrust::raw_pointer_cast(d_output.data()));
+  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE(d_output[0] == initial + 2);
+}
+
+#  endif // TEST_LAUNCH == 0
+
 using block_sizes =
   c2h::type_list<cuda::std::integral_constant<unsigned int, 64>, cuda::std::integral_constant<unsigned int, 128>>;
 
@@ -1623,6 +1791,8 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
   REQUIRE(to_string(p1)
           == "HistogramPolicy { .threads_per_block = 128, .pixels_per_thread = 7, .vec_size = 4"
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_LDG, .rle_compress = 0"
-             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048 }");
+             ", .mem_preference = SMEM, .use_work_stealing = 0, .init_kernel_pdl_trigger_max_bins = 2048"
+             ", .direct_atomic_threads_per_block = 0, .static_smem_threads_per_block = 0"
+             ", .static_smem_items_per_block = 0, .warp_coalesce = 1 }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
