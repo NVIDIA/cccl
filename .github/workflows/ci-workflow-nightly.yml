@@ -96,9 +96,9 @@ jobs:
       workflows: nightly
       source_repo: &selected_source_repo ${{ inputs.source_repo || github.repository }}
       source_ref: &selected_source_ref ${{ inputs.source_ref || github.ref }}
-      matrix_repo: &selected_matrix_repo ${{ inputs.matrix_repo || github.repository }}
-      matrix_ref: &selected_matrix_ref ${{ inputs.matrix_ref || github.ref }}
-      matrix_path: &selected_matrix_path ${{ inputs.matrix_path || 'ci/matrix.yaml' }}
+      matrix_repo: ${{ inputs.matrix_repo || github.repository }}
+      matrix_ref: ${{ inputs.matrix_ref || github.ref }}
+      matrix_path: ${{ inputs.matrix_path || 'ci/matrix.yaml' }}
 
   build-rapids:
     name: Build RAPIDS
@@ -110,9 +110,6 @@ jobs:
     with:
       source_repo: *selected_source_repo
       source_ref: *selected_source_ref
-      matrix_repo: *selected_matrix_repo
-      matrix_ref: *selected_matrix_ref
-      matrix_path: *selected_matrix_path
       enable_slack_alerts: true
 
   build-matx:
@@ -125,9 +122,6 @@ jobs:
     with:
       source_repo: *selected_source_repo
       source_ref: *selected_source_ref
-      matrix_repo: *selected_matrix_repo
-      matrix_ref: *selected_matrix_ref
-      matrix_path: *selected_matrix_path
       enable_slack_alerts: true
 
   build-pytorch:
@@ -140,9 +134,6 @@ jobs:
     with:
       source_repo: *selected_source_repo
       source_ref: *selected_source_ref
-      matrix_repo: *selected_matrix_repo
-      matrix_ref: *selected_matrix_ref
-      matrix_path: *selected_matrix_path
       enable_slack_alerts: true
 
   analyze-failures:

@@ -80,9 +80,6 @@ jobs:
       MATRIX_PATH: ${{ inputs.matrix_path || 'ci/matrix.yaml' }}
     outputs:
       source_repo: ${{ env.SOURCE_REPO }}
-      matrix_repo: ${{ env.MATRIX_REPO }}
-      matrix_ref: ${{ env.MATRIX_REF }}
-      matrix_path: ${{ env.MATRIX_PATH }}
       base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
       merge_base_sha: ${{ steps.export-pr-info.outputs.merge_base_sha }}
       pr_number: ${{ steps.export-pr-info.outputs.pr_number }}
@@ -470,9 +467,6 @@ jobs:
     with:
       source_repo: ${{ needs.build-workflow.outputs.source_repo }}
       source_ref: ${{ needs.build-workflow.outputs.source_sha }}
-      matrix_repo: ${{ needs.build-workflow.outputs.matrix_repo }}
-      matrix_ref: ${{ needs.build-workflow.outputs.matrix_ref }}
-      matrix_path: ${{ needs.build-workflow.outputs.matrix_path }}
 
   build-matx:
     name: Build MatX (optional)
@@ -490,9 +484,6 @@ jobs:
     with:
       source_repo: ${{ needs.build-workflow.outputs.source_repo }}
       source_ref: ${{ needs.build-workflow.outputs.source_sha }}
-      matrix_repo: ${{ needs.build-workflow.outputs.matrix_repo }}
-      matrix_ref: ${{ needs.build-workflow.outputs.matrix_ref }}
-      matrix_path: ${{ needs.build-workflow.outputs.matrix_path }}
 
   build-pytorch:
     name: Build PyTorch (optional)
@@ -510,9 +501,6 @@ jobs:
     with:
       source_repo: ${{ needs.build-workflow.outputs.source_repo }}
       source_ref: ${{ needs.build-workflow.outputs.source_sha }}
-      matrix_repo: ${{ needs.build-workflow.outputs.matrix_repo }}
-      matrix_ref: ${{ needs.build-workflow.outputs.matrix_ref }}
-      matrix_path: ${{ needs.build-workflow.outputs.matrix_path }}
 
   # Test that cuda.compute can be imported on a CPU-only machine (no CUDA drivers).
   test-cpu-import:

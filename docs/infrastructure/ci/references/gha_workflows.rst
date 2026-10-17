@@ -54,9 +54,8 @@ remain outside this gate.
 Source and matrix selection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Callable CI profiles, wheel builds, bisect, and third-party builds accept the
-following inputs. Repository and ref inputs default to the caller repository
-and calling ref.
+Callable CI profiles, wheel builds, and bisect accept the following inputs.
+Repository and ref inputs default to the caller repository and calling ref.
 
 .. list-table::
    :header-rows: 1
@@ -77,11 +76,11 @@ and calling ref.
        ``ci/matrix.yaml``.
 
 Matrix-driven CI and wheel builds generate jobs from the selected matrix file
-and run them against the selected source commit. Bisect and third-party builds
-use the selected source and keep their existing execution inputs. Benchmark
-comparisons accept ``source_repo`` and ``source_ref`` alongside their benchmark
-inputs. Nested workflows and composite actions use the defining workflow's
-repository and revision through ``$/`` references.
+and run them against the selected source commit. Bisect uses the selected source
+with its build and test inputs. Benchmark comparisons and third-party builds
+accept ``source_repo`` and ``source_ref`` alongside their other inputs. Nested
+workflows and composite actions use the defining workflow's repository and
+revision through ``$/`` references.
 
 For example, a caller can select source and matrix repositories independently:
 
