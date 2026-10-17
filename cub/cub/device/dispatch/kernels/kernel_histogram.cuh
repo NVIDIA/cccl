@@ -1164,21 +1164,6 @@ struct Transforms
       }
     }
 
-    template <typename T>
-    [[nodiscard]] _CCCL_HOST_DEVICE_API _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale) const noexcept
-    {
-      return static_cast<int>((sample - min_level) * scale.reciprocal);
-    }
-
-    //! @brief Bin computation for custom types and __[u]int128
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */) const
-    {
-      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
-    }
-
     //! @brief Bin computation for integral types of up to 64-bit types.
     //! Uses a precomputed magic-multiplier + shift to avoid the runtime
     //! 64-bit integer divide that previously dominated the EVEN-path
@@ -1239,11 +1224,8 @@ struct Transforms
     template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
     _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale) const
     {
-      return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
-    }
-
 #if _CCCL_HAS_NVFP16()
-      else if constexpr (::cuda::std::is_same_v<T, ::__half>)
+      if constexpr (::cuda::std::is_same_v<T, ::__half>)
       {
         NV_IF_ELSE_TARGET(
           NV_PROVIDES_SM_53,
@@ -1251,25 +1233,27 @@ struct Transforms
           (return static_cast<int>(
                     (::__half2float(sample) - ::__half2float(min_level)) * ::__half2float(scale.reciprocal));));
       }
+      else
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-      else if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
+        if constexpr (::cuda::std::is_same_v<T, ::__nv_bfloat16>)
       {
         // Compute in float on all architectures: bfloat16 cannot represent all bin indices beyond 256.
         return static_cast<int>(
           (::__bfloat162float(sample) - ::__bfloat162float(min_level)) * ::__bfloat162float(scale.reciprocal));
       }
-#endif // _CCCL_HAS_NVBF16()
-      else if constexpr (::cuda::std::is_floating_point_v<T>)
-      {
-        return static_cast<int>((sample - min_level) * scale.reciprocal);
-      }
       else
-      {
-        // Custom types and __[u]int128
-        return static_cast<int>(((sample - min_level) * static_cast<CommonT>(scale.fraction.bins))
-                                / static_cast<CommonT>(scale.fraction.range));
-      }
+#endif // _CCCL_HAS_NVBF16()
+        if constexpr (::cuda::std::is_floating_point_v<T>)
+        {
+          return static_cast<int>((sample - min_level) * scale.reciprocal);
+        }
+        else
+        {
+          // Custom types and __[u]int128
+          return static_cast<int>(((sample - min_level) * static_cast<CommonT>(scale.fraction.bins))
+                                  / static_cast<CommonT>(scale.fraction.range));
+        }
     }
 
   public:
@@ -1354,9 +1338,9 @@ struct Transforms
         // reinterprets the bit pattern: int8_t(-128..127) -> uint8_t(128..255, 0..127).
         // Without this reinterpretation, negative samples cast directly to
         // `int` produce negative bin indices and are silently dropped.
-        if constexpr (::cuda::std::is_integral_v<_SampleT>)
+        if constexpr (::cuda::std::is_integral_v<Sample>)
         {
-          using UT = ::cuda::std::make_unsigned_t<_SampleT>;
+          using UT = ::cuda::std::make_unsigned_t<Sample>;
           bin      = static_cast<int>(static_cast<UT>(sample));
         }
         else
@@ -1795,7 +1779,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
     _CCCL_GRID_CONSTANT const int smem_split                                        = 0,
     _CCCL_GRID_CONSTANT const int secondary_size                                    = 0)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
   namespace cg        = ::cooperative_groups;
   cg::grid_group grid = cg::this_grid();
@@ -1805,14 +1789,14 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
   const unsigned int tid_global      = block_id * blockDim.x + threadIdx.x;
   const unsigned int total_threads   = blocks_per_grid * blockDim.x;
 
-  using AgentHistogramPolicyT = AgentHistogramPolicy<
+  using AgentHistogramPolicyT = agent_histogram_policy<
     hp.threads_per_block,
     hp.pixels_per_thread,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,
     hp.mem_preference,
-    hp.work_stealing,
+    hp.use_work_stealing,
     hp.vec_size,
     hp.warp_coalesce>;
 
@@ -1960,7 +1944,7 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), Hybri
     }
 
     // Drain-reset + grid.sync only when work stealing is enabled.
-    if constexpr (hp.work_stealing)
+    if constexpr (hp.use_work_stealing)
     {
       if (tid_global == 0)
       {
@@ -3282,16 +3266,16 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block), 2)
     _CCCL_GRID_CONSTANT const int tiles_per_row,
     GridQueue<int> tile_queue)
 {
-  static constexpr histogram_policy hp = current_policy<PolicySelector>();
+  static constexpr HistogramPolicy hp = current_policy<PolicySelector>();
 
-  using AgentHistogramPolicyT = AgentHistogramPolicy<
+  using AgentHistogramPolicyT = agent_histogram_policy<
     hp.threads_per_block,
     hp.pixels_per_thread,
     hp.load_algorithm,
     hp.load_modifier,
     hp.rle_compress,
     hp.mem_preference,
-    hp.work_stealing,
+    hp.use_work_stealing,
     hp.vec_size,
     hp.warp_coalesce>;
   using AgentHistogramT =

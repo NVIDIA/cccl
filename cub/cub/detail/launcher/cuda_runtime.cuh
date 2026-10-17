@@ -75,14 +75,13 @@ struct TripleChevronFactory
     // method still compiles when instantiated under device-side launch (the
     // cooperative path is not supported there -> cudaErrorNotSupported), mirroring
     // thrust::cuda_cub::detail::triple_chevron::doit_host/doit_device.
-    NV_IF_ELSE_TARGET(
-      NV_IS_HOST,
-      ({
-        void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
-        return ::cudaLaunchCooperativeKernel(
-          reinterpret_cast<const void*>(kernel), grid, block, kernel_args, shared_mem, stream);
-      }),
-      ({ return cudaErrorNotSupported; }));
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      ({
+                        void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
+                        return ::cudaLaunchCooperativeKernel(
+                          reinterpret_cast<const void*>(kernel), grid, block, kernel_args, shared_mem, stream);
+                      }),
+                      ({ return cudaErrorNotSupported; }));
   }
 
   template <class T = void>

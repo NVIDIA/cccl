@@ -77,8 +77,7 @@ struct HistogramPolicy
         && lhs.init_kernel_pdl_trigger_max_bins == rhs.init_kernel_pdl_trigger_max_bins
         && lhs.direct_atomic_threads_per_block == rhs.direct_atomic_threads_per_block
         && lhs.static_smem_threads_per_block == rhs.static_smem_threads_per_block
-        && lhs.static_smem_items_per_block == rhs.static_smem_items_per_block
-        && lhs.warp_coalesce == rhs.warp_coalesce;
+        && lhs.static_smem_items_per_block == rhs.static_smem_items_per_block && lhs.warp_coalesce == rhs.warp_coalesce;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -264,11 +263,12 @@ _CCCL_HOST_DEVICE_API constexpr counter_size classify_counter_size()
 template <class SampleT>
 _CCCL_HOST_DEVICE_API constexpr sample_size classify_sample_size()
 {
-  return sizeof(SampleT) == 1   ? sample_size::_1
-       : sizeof(SampleT) == 2   ? sample_size::_2
-       : sizeof(SampleT) == 4   ? sample_size::_4
-       : sizeof(SampleT) == 8   ? sample_size::_8
-                                : sample_size::unknown;
+  return sizeof(SampleT) == 1 ? sample_size::_1
+       : sizeof(SampleT) == 2 ? sample_size::_2
+       : sizeof(SampleT) == 4 ? sample_size::_4
+       : sizeof(SampleT) == 8
+         ? sample_size::_8
+         : sample_size::unknown;
 }
 
 // TODO(bgruber): drop in CCCL 4.0
@@ -571,7 +571,7 @@ public:
         if (is_even)
         {
           // EVEN: 768 threads. I32 -> 12 ipt, F64 -> 6 ipt (t_scale(12)).
-          return histogram_policy{768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048};
+          return HistogramPolicy{768, t_scale(12), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 2048};
         }
         else
         {
@@ -633,8 +633,19 @@ public:
           // The dynamic-SMEM sweep keeps 768; the direct-atomic path keeps 512.
           const int static_threads = (sample_size_bytes >= 8) ? 384 : 768;
           const int static_items   = (sample_size_bytes >= 8) ? t_scale(16) : 0;
-          return histogram_policy{
-            768, t_scale(12), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 1 << 2, 2048, 512, static_threads, static_items};
+          return HistogramPolicy{
+            768,
+            t_scale(12),
+            1 << 2,
+            BLOCK_LOAD_DIRECT,
+            LOAD_LDG,
+            true,
+            SMEM,
+            false,
+            2048,
+            512,
+            static_threads,
+            static_items};
         }
       }
 
@@ -678,7 +689,7 @@ public:
           // but UNDERFILLS the SMs at small inputs (1M elements) -> ~0.90x vs main there.
           // Narrow JUST the static <=256 tier to 384 (main's width); the dynamic sweep and
           // direct-atomic kernels keep 1024. (Single-channel RANGE does the same.)
-          return histogram_policy{1024, t_scale(16), BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 4, 0, 0, 384};
+          return HistogramPolicy{1024, t_scale(16), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_LDG, true, SMEM, false, 0, 0, 384};
         }
         else
         {
@@ -697,7 +708,7 @@ public:
           // registers, not SMEM, gate occupancy). rle=true is load-bearing
           // (dropping the same-bin RLE coalescing collapses the multi-channel even
           // path). LOAD_CA matches the single-channel SM100 even tuning.
-          return histogram_policy{1024, t_scale(8), BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 4, 0};
+          return HistogramPolicy{1024, t_scale(8), 1 << 2, BLOCK_LOAD_DIRECT, LOAD_CA, true, SMEM, false, 0};
         }
       }
     }

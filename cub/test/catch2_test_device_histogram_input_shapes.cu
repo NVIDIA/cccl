@@ -22,6 +22,7 @@
 // The generator header lives in the benchmarks tree; include it by relative
 // path. It is self-contained (thrust + cuda/std only), so this is safe.
 #include "../benchmarks/bench/histogram/histogram_inputs.cuh"
+#include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 
 namespace
@@ -142,7 +143,7 @@ constexpr int32_t LO = 0;
 constexpr int32_t HI = 4096; // bin width 1 at B=4096; >1 below that
 } // namespace
 
-C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input_shapes]")
+CUB_TEST("histogram input: concentrated endpoints are exact", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
 
@@ -166,7 +167,7 @@ C2H_TEST("histogram input: concentrated endpoints are exact", "[histogram][input
   }
 }
 
-C2H_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][input_shapes]")
+CUB_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
   // As the entropy knob falls, the top-bin share must rise monotonically.
@@ -184,7 +185,7 @@ C2H_TEST("histogram input: concentrated entropy knob is monotone", "[histogram][
   REQUIRE(prev_share > 0.99); // entropy 0 ends at ~100% top share
 }
 
-C2H_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_shapes]")
+CUB_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 64;
   // Different seeds should move the hot bin (spike-slab at entropy 0.3).
@@ -200,7 +201,7 @@ C2H_TEST("histogram input: hot bin is not pinned to zero", "[histogram][input_sh
   REQUIRE(argmax_seen.size() >= 2);
 }
 
-C2H_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_shapes]")
+CUB_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   auto counts        = bin_counts_even<int32_t>(parse_input_shape("powerlaw:0.4"), N, num_bins, LO, HI);
@@ -220,7 +221,7 @@ C2H_TEST("histogram input: powerlaw is a decaying warm set", "[histogram][input_
   REQUIRE(top1 < 0.99); // but not a single spike
 }
 
-C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][input_shapes]")
+CUB_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   // Entropy decreases across the loop, so the top-bin share must RISE
@@ -237,7 +238,9 @@ C2H_TEST("histogram input: powerlaw knob is monotone in entropy", "[histogram][i
   }
 }
 
-C2H_TEST("histogram input: powerlaw has stable rank weights and literal bin placement", "[histogram][input_shapes]")
+CUB_TEST("histogram input: powerlaw has stable rank weights and literal bin placement",
+         "[histogram][input_shapes]",
+         CUB_SMALL)
 {
   // These are literal output-bin contracts, deliberately NOT computed with
   // scatter_bin(). A change to the shared scatter helper must not silently
@@ -283,7 +286,9 @@ C2H_TEST("histogram input: powerlaw has stable rank weights and literal bin plac
     build_pmf(parse_input_shape("powerlaw"), 256, 42, 0) == build_pmf(parse_input_shape("powerlaw:0.5"), 256, 42, 0));
 }
 
-C2H_TEST("histogram input: every interleaved channel preserves powerlaw placement", "[histogram][input_shapes]")
+CUB_TEST("histogram input: every interleaved channel preserves powerlaw placement",
+         "[histogram][input_shapes]",
+         CUB_SMALL)
 {
   constexpr int channels = 4;
   constexpr int samples  = 100000;
@@ -309,7 +314,7 @@ C2H_TEST("histogram input: every interleaved channel preserves powerlaw placemen
   }
 }
 
-C2H_TEST("histogram input: stale_resident stays in its upper working-set window", "[histogram][input_shapes]")
+CUB_TEST("histogram input: stale_resident stays in its upper working-set window", "[histogram][input_shapes]", CUB_SMALL)
 {
   constexpr int64_t cache_slots = 8192;
   constexpr int64_t samples     = 800000;
@@ -331,7 +336,7 @@ C2H_TEST("histogram input: stale_resident stays in its upper working-set window"
   }
 }
 
-C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]")
+CUB_TEST("histogram input: temporal_phases changes the hot bin across phases", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   const int phases   = 8;
@@ -380,7 +385,7 @@ C2H_TEST("histogram input: temporal_phases changes the hot bin across phases", "
   REQUIRE(phase_mode.front() + num_bins - phase_mode.back() == num_bins / phases);
 }
 
-C2H_TEST("histogram input: strided_sweep is flat in distribution but ordered", "[histogram][input_shapes]")
+CUB_TEST("histogram input: strided_sweep is flat in distribution but ordered", "[histogram][input_shapes]", CUB_SMALL)
 {
   const int num_bins = 256;
   auto counts        = bin_counts_even<int32_t>(parse_input_shape("strided_sweep"), N, num_bins, LO, HI);
@@ -389,7 +394,9 @@ C2H_TEST("histogram input: strided_sweep is flat in distribution but ordered", "
   REQUIRE(normalized_entropy_counts(counts, N) > 0.98);
 }
 
-C2H_TEST("histogram input: every interleaved ordering channel visits the full support", "[histogram][input_shapes]")
+CUB_TEST("histogram input: every interleaved ordering channel visits the full support",
+         "[histogram][input_shapes]",
+         CUB_SMALL)
 {
   constexpr int channels = 4;
   constexpr int num_bins = 256;
@@ -416,7 +423,7 @@ C2H_TEST("histogram input: every interleaved ordering channel visits the full su
   }
 }
 
-C2H_TEST("histogram input: scattered sawtooth has a stable upper-window support", "[histogram][input_shapes]")
+CUB_TEST("histogram input: scattered sawtooth has a stable upper-window support", "[histogram][input_shapes]", CUB_SMALL)
 {
   constexpr int period = 8192;
   const std::array<int, 8> expected_prefix{16383, 9806, 11421, 13036, 14651, 16266, 9689, 11304};
@@ -461,7 +468,7 @@ C2H_TEST("histogram input: scattered sawtooth has a stable upper-window support"
   REQUIRE(nonzero_bins(bin_counts(decimal_bins, 60000)) == period);
 }
 
-C2H_TEST("histogram input: hash_synonym blocks both cache probes", "[histogram][input_shapes]")
+CUB_TEST("histogram input: hash_synonym blocks both cache probes", "[histogram][input_shapes]", CUB_SMALL)
 {
   constexpr int num_bins          = 32768;
   constexpr int cache_slots       = 1024;
@@ -499,7 +506,7 @@ C2H_TEST("histogram input: hash_synonym blocks both cache probes", "[histogram][
   REQUIRE(observed == expected);
 }
 
-C2H_TEST("histogram input: poison blockers occupy both real cache candidates", "[histogram][input_shapes]")
+CUB_TEST("histogram input: poison blockers occupy both real cache candidates", "[histogram][input_shapes]", CUB_SMALL)
 {
   constexpr int num_bins    = 32768;
   constexpr int cache_slots = 8192;
@@ -511,7 +518,7 @@ C2H_TEST("histogram input: poison blockers occupy both real cache candidates", "
           == benchmark_cache_slot(bins.poison, cache_slots, cub::detail::histogram::cache_secondary_hash_multiplier));
 }
 
-C2H_TEST("histogram input: poison schedule follows explicit channel layout", "[histogram][input_shapes]")
+CUB_TEST("histogram input: poison schedule follows explicit channel layout", "[histogram][input_shapes]", CUB_SMALL)
 {
   constexpr int num_bins = 32768;
 
@@ -551,7 +558,7 @@ C2H_TEST("histogram input: poison schedule follows explicit channel layout", "[h
   }
 }
 
-C2H_TEST("histogram input: RANGE path maps bins into level intervals", "[histogram][input_shapes]")
+CUB_TEST("histogram input: RANGE path maps bins into level intervals", "[histogram][input_shapes]", CUB_SMALL)
 {
   // Build a simple strictly-increasing level array and check that a constant
   // (entropy 0) input lands every sample inside one [levels[b], levels[b+1]).

@@ -191,8 +191,8 @@ template <int ThreadsPerBlock,
           bool RleCompress,
           BlockHistogramMemoryPreference MemoryPreference,
           bool WorkStealing,
-          int VecSize        = 4,
-          bool WarpCoalesce  = true>
+          int VecSize       = 4,
+          bool WarpCoalesce = true>
 struct agent_histogram_policy
 {
   /// Threads per thread block

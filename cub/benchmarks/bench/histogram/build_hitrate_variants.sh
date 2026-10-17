@@ -39,4 +39,5 @@ r=subprocess.run(link, cwd=build)
 if r.returncode!=0: sys.exit(f'link {L} hitrate failed')
 PY
 done
-echo "=== hitrate variants: ==="; ls -la bin/*hitrate 2>/dev/null | awk '{print $5,$9}'
+echo "=== hitrate variants: ==="
+find bin -maxdepth 1 -type f -name '*hitrate' -printf '%s %p\n'

@@ -49,4 +49,4 @@ PY
   done
 done
 echo "=== built variants: ==="
-ls -la bin/*cap* 2>/dev/null | awk '{print $5, $9}'
+find bin -maxdepth 1 -type f -name '*cap*' -printf '%s %p\n'

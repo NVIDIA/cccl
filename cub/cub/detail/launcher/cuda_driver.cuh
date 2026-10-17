@@ -111,7 +111,8 @@ struct CudaDriverLauncherFactory
     void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
     ::CUfunction kernel_fn;
     auto kernel_handle = reinterpret_cast<::CUkernel>(const_cast<void*>(kernel));
-    if (auto status = static_cast<::cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel_handle)); status != cudaSuccess)
+    if (auto status = static_cast<::cudaError_t>(::cuKernelGetFunction(&kernel_fn, kernel_handle));
+        status != cudaSuccess)
     {
       return status;
     }
