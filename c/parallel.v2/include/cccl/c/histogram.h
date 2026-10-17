@@ -85,7 +85,7 @@ CCCL_C_API CUresult cccl_device_histogram_even(
   cccl_value_t num_output_levels,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream);

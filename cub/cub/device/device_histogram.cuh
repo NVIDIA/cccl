@@ -422,7 +422,7 @@ struct DeviceHistogram
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input samples and output histograms
-  //!    int              num_items;         // e.g., 5
+  //!    int              num_items;          // e.g., 5
   //!    unsigned char*   d_samples;          // e.g., [(2, 6, 7, 5), (3, 0, 2, 1), (7, 0, 6, 2),
   //!                                         //        (0, 6, 7, 5), (3, 0, 2, 6)]
   //!    int*             d_histogram[3];     // e.g., three device pointers to three device buffers,
@@ -511,7 +511,8 @@ struct DeviceHistogram
   //!   The upper sample value bound (exclusive) for the highest histogram bin in each active channel.
   //!
   //! @param[in] num_items
-  //!   The number of multi-channel items (i.e., the length of `d_samples / NumChannels`)
+  //!   The number of interleaved multi-channel records. The input range contains
+  //!   ``NumChannels * num_items`` individual samples.
   //!
   //! @param[in] env
   //!   @rst
@@ -649,7 +650,7 @@ public:
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers for input
   //!    // samples and output histograms
-  //!    int              num_row_items;     // e.g., 3
+  //!    int              num_row_items;      // e.g., 3
   //!    int              num_rows;           // e.g., 2
   //!    size_t           row_stride_bytes;   // e.g., 4 * sizeof(unsigned char) * NumChannels
   //!    unsigned char*   d_samples;          // e.g., [(2, 6, 7, 5), (3, 0, 2, 1), (7, 0, 6, 2), (-, -, -, -),
@@ -740,7 +741,7 @@ public:
   //!   The upper sample value bound (exclusive) for the highest histogram bin in each active channel.
   //!
   //! @param[in] num_row_items
-  //!   The number of multi-channel items per row in the region of interest
+  //!   The number of interleaved multi-channel records per row in the region of interest
   //!
   //! @param[in] num_rows
   //!   The number of rows in the region of interest
@@ -1176,7 +1177,7 @@ public:
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // input samples and output histograms
-  //!    int            num_items;       // e.g., 5
+  //!    int            num_items;        // e.g., 5
   //!    unsigned char  *d_samples;       // e.g., [(2, 6, 7, 5),(3, 0, 2, 1),(7, 0, 6, 2),
   //!                                     //        (0, 6, 7, 5),(3, 0, 2, 6)]
   //!    unsigned int   *d_histogram[3];  // e.g., [[ -, -, -, -],[ -, -, -, -],[ -, -, -, -]];
@@ -1264,7 +1265,8 @@ public:
   //!   are exclusive.
   //!
   //! @param[in] num_items
-  //!   The number of multi-channel items (i.e., the length of `d_samples / NumChannels`)
+  //!   The number of interleaved multi-channel records. The input range contains
+  //!   ``NumChannels * num_items`` individual samples.
   //!
   //! @param[in] env
   //!   @rst
@@ -1377,7 +1379,7 @@ public:
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers for input
   //!    // samples and output histograms
-  //!    int              num_row_items;     // e.g., 3
+  //!    int              num_row_items;      // e.g., 3
   //!    int              num_rows;           // e.g., 2
   //!    size_t           row_stride_bytes;   // e.g., 4 * sizeof(unsigned char) * NumChannels
   //!    unsigned char*   d_samples;          // e.g., [(2, 6, 7, 5),(3, 0, 2, 1),(1, 1, 1, 1),(-, -, -, -),
@@ -1469,7 +1471,7 @@ public:
   //!   are exclusive.
   //!
   //! @param[in] num_row_items
-  //!   The number of multi-channel items per row in the region of interest
+  //!   The number of interleaved multi-channel records per row in the region of interest
   //!
   //! @param[in] num_rows
   //!   The number of rows in the region of interest
@@ -1894,7 +1896,8 @@ public:
   //!   Array of the upper sample value bound (exclusive) for the highest bin of each active channel.
   //!
   //! @param[in] num_items
-  //!   The number of multi-channel items (i.e., the length of `d_samples / NumChannels`)
+  //!   The number of interleaved multi-channel records. The input range contains
+  //!   ``NumChannels * num_items`` individual samples.
   //!
   //! @param[in] env
   //!   @rst
@@ -2034,7 +2037,7 @@ public:
   //!   The upper sample value bound (exclusive) for the highest histogram bin in each active channel.
   //!
   //! @param[in] num_row_items
-  //!   The number of multi-channel items per row in the region of interest
+  //!   The number of interleaved multi-channel records per row in the region of interest
   //!
   //! @param[in] num_rows
   //!   The number of rows in the region of interest
@@ -2386,7 +2389,8 @@ public:
   //!   Array of pointers to the arrays of boundaries (levels) for each active channel.
   //!
   //! @param[in] num_items
-  //!   The number of multi-channel items (i.e., the length of `d_samples / NumChannels`)
+  //!   The number of interleaved multi-channel records. The input range contains
+  //!   ``NumChannels * num_items`` individual samples.
   //!
   //! @param[in] env
   //!   @rst
@@ -2501,7 +2505,7 @@ public:
   //!   Array of pointers to the arrays of boundaries (levels) for each active channel.
   //!
   //! @param[in] num_row_items
-  //!   The number of multi-channel items per row in the region of interest
+  //!   The number of interleaved multi-channel records per row in the region of interest
   //!
   //! @param[in] num_rows
   //!   The number of rows in the region of interest
