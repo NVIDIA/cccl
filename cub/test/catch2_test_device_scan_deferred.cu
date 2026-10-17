@@ -60,7 +60,7 @@ static_assert(cuda::std::is_same_v<cub::detail::num_items_offset_t<cuda::args::i
 using scan_value_t = int32_t;
 using count_t      = int32_t;
 
-template <typename InputT, typename OutputT, typename AccumT, typename ScanOpT>
+template <typename InputT, typename OutputT, typename AccumT, typename ScanOpT, int TilesPerBatch = 0>
 struct small_batch_policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability cc) const -> cub::ScanPolicy
@@ -71,6 +71,7 @@ struct small_batch_policy_selector
     policy.algorithm                  = cub::ScanAlgorithm::lookback;
     policy.lookback.threads_per_block = 128;
     policy.lookback.items_per_thread  = 1;
+    policy.lookback.tiles_per_batch   = TilesPerBatch;
     return policy;
   }
 };
@@ -78,6 +79,11 @@ struct small_batch_policy_selector
 using default_deferred_int_policy = cub::detail::scan::
   policy_selector_from_types<const scan_value_t*, scan_value_t*, scan_value_t, uint32_t, cuda::std::plus<>, false, true>;
 static_assert(default_deferred_int_policy{}(cuda::compute_capability{10, 0}).algorithm == cub::ScanAlgorithm::lookback);
+static_assert(default_deferred_int_policy{}(cuda::compute_capability{10, 0}).lookback.tiles_per_batch == 65536);
+
+using default_immediate_int_policy = cub::detail::scan::
+  policy_selector_from_types<const scan_value_t*, scan_value_t*, scan_value_t, uint32_t, cuda::std::plus<>>;
+static_assert(default_immediate_int_policy{}(cuda::compute_capability{10, 0}).lookback.tiles_per_batch == 0);
 
 using default_stable_deferred_float_policy =
   cub::detail::scan::policy_selector_from_types<const float*, float*, float, uint32_t, cuda::std::plus<>, true, true>;
@@ -407,11 +413,22 @@ CUB_TEST("DeviceScan::ExclusiveSum uses batched lookback within a single batch f
   REQUIRE(output == expected);
 }
 
-CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries", "[device][scan][deferred][batch]", CUB_SMALL)
+using scan_batch_sizes        = c2h::enum_type_list<int, 0, 1, 17, 128>;
+using custom_scan_batch_sizes = c2h::enum_type_list<int, 0, 17>;
+
+CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries",
+         "[device][scan][deferred][batch]",
+         CUB_SMALL,
+         scan_batch_sizes)
 {
-  using large_count_t                 = int64_t;
-  constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
-  const large_count_t num_items       = GENERATE_COPY(
+  constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
+  using large_count_t                  = int64_t;
+  constexpr large_count_t batch_items =
+    (configured_batch_tiles == 0 ? cub::detail::scan::lookback_default_tiles_per_batch : configured_batch_tiles)
+    * large_count_t{128};
+  using policy_selector_t =
+    small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>, configured_batch_tiles>;
+  const large_count_t num_items = GENERATE_COPY(
     large_count_t{0},
     large_count_t{1},
     batch_items - 1,
@@ -425,14 +442,39 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries", "[devic
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
   c2h::device_vector<scan_value_t> expected(static_cast<size_t>(num_items), scan_value_t{-1});
   c2h::device_vector<scan_value_t> output(static_cast<size_t>(num_items), scan_value_t{-1});
-  const auto env =
-    cuda::execution::tune(small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{});
+  const auto env = cuda::execution::tune(policy_selector_t{});
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), expected.begin(), num_items, env));
   REQUIRE(
     cudaSuccess
     == cub::DeviceScan::ExclusiveSum(
       input.begin(), output.begin(), cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())}, env));
+  REQUIRE(output == expected);
+
+  const auto count_ptr       = thrust::raw_pointer_cast(device_num_items.data());
+  const auto unbounded_count = cuda::args::deferred{count_ptr};
+  const auto bounded_count =
+    cuda::args::deferred<const large_count_t*, cuda::args::static_bounds<large_count_t{0}, 8 * batch_items + 17>>{
+      count_ptr};
+  const auto query_storage = [&](auto count) {
+    size_t bytes = 0;
+    REQUIRE(
+      cudaSuccess
+      == cub::detail::scan::dispatch(
+        nullptr,
+        bytes,
+        input.begin(),
+        output.begin(),
+        cuda::std::plus<>{},
+        cub::detail::InputValue<scan_value_t>{0},
+        count,
+        nullptr,
+        policy_selector_t{}));
+    return bytes;
+  };
+  // Both bounds exceed the configured batch size, so temporary storage must stay bounded by that size.
+  REQUIRE(query_storage(unbounded_count) == query_storage(bounded_count));
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), output.begin(), bounded_count, env));
   REQUIRE(output == expected);
 
   REQUIRE(cudaSuccess == cub::DeviceScan::InclusiveSum(input.begin(), expected.begin(), num_items, env));
@@ -494,10 +536,11 @@ CUB_TEST("DeviceScan batched lookback supports tuned delay policies",
          CUB_SMALL,
          batch_wait_policies)
 {
-  using policy_selector_t             = c2h::get<0, TestType>;
-  using large_count_t                 = int64_t;
-  constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
-  const large_count_t num_items       = GENERATE_COPY(large_count_t{0}, large_count_t{129}, batch_items + 17);
+  using policy_selector_t = c2h::get<0, TestType>;
+  using large_count_t     = int64_t;
+  constexpr large_count_t batch_items =
+    static_cast<large_count_t>(cub::detail::scan::lookback_default_tiles_per_batch) * 128;
+  const large_count_t num_items = GENERATE_COPY(large_count_t{0}, large_count_t{129}, batch_items + 17);
   CAPTURE(num_items);
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
@@ -521,10 +564,17 @@ CUB_TEST("DeviceScan batched lookback supports tuned delay policies",
   REQUIRE(output == expected);
 }
 
-CUB_TEST("DeviceScan batched lookback preserves noncommutative order", "[device][scan][deferred][batch]", CUB_SMALL)
+CUB_TEST("DeviceScan batched lookback preserves noncommutative order",
+         "[device][scan][deferred][batch]",
+         CUB_SMALL,
+         custom_scan_batch_sizes)
 {
-  using large_count_t               = int64_t;
-  constexpr large_count_t num_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128 + 17;
+  constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
+  using large_count_t                  = int64_t;
+  constexpr large_count_t num_items =
+    (configured_batch_tiles == 0 ? cub::detail::scan::lookback_default_tiles_per_batch : configured_batch_tiles)
+      * large_count_t{128}
+    + 17;
 
   c2h::host_vector<affine_value_t> host_input(static_cast<size_t>(num_items));
   for (large_count_t i = 0; i < num_items; ++i)
@@ -536,7 +586,11 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order", "[device]
   c2h::device_vector<affine_value_t> expected(static_cast<size_t>(num_items));
   c2h::device_vector<affine_value_t> output(static_cast<size_t>(num_items));
   const auto env = cuda::execution::tune(
-    small_batch_policy_selector<affine_value_t, affine_value_t, affine_value_t, compose_affine_t>{});
+    small_batch_policy_selector<affine_value_t,
+                                affine_value_t,
+                                affine_value_t,
+                                compose_affine_t,
+                                configured_batch_tiles>{});
 
   REQUIRE(
     cudaSuccess == cub::DeviceScan::InclusiveScan(input.begin(), expected.begin(), compose_affine_t{}, num_items, env));
@@ -571,11 +625,15 @@ CUB_TEST("DeviceScan batched lookback preserves noncommutative order", "[device]
 // tuning a single batch would cover the whole input and no CTA would ever wait.
 CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
          "[device][scan][deferred][batch]",
-         CUB_SMALL)
+         CUB_SMALL,
+         custom_scan_batch_sizes)
 {
-  using large_count_t                 = int64_t;
-  constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
-  constexpr large_count_t num_items   = 2 * batch_items + 12'345;
+  constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
+  using large_count_t                  = int64_t;
+  constexpr large_count_t batch_items =
+    (configured_batch_tiles == 0 ? cub::detail::scan::lookback_default_tiles_per_batch : configured_batch_tiles)
+    * large_count_t{128};
+  constexpr large_count_t num_items = 2 * batch_items + 12'345;
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
@@ -590,8 +648,8 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   REQUIRE(cudaSuccess == cudaStreamCreate(&first_stream));
   REQUIRE(cudaSuccess == cudaStreamCreate(&second_stream));
 
-  const auto tuning =
-    cuda::execution::tune(small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>>{});
+  const auto tuning = cuda::execution::tune(
+    small_batch_policy_selector<scan_value_t, scan_value_t, scan_value_t, cuda::std::plus<>, configured_batch_tiles>{});
   const auto first_env  = cuda::std::execution::env{cuda::stream_ref{first_stream}, tuning};
   const auto second_env = cuda::std::execution::env{cuda::stream_ref{second_stream}, tuning};
 
@@ -800,9 +858,10 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size accepts run_to_run and g
          "[device][scan][deferred][determinism]",
          CUB_SMALL)
 {
-  using large_count_t                 = int64_t;
-  constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
-  const large_count_t num_items       = GENERATE_COPY(large_count_t{30'000}, batch_items + 4'567);
+  using large_count_t = int64_t;
+  constexpr large_count_t batch_items =
+    static_cast<large_count_t>(cub::detail::scan::lookback_default_tiles_per_batch) * 128;
+  const large_count_t num_items = GENERATE_COPY(large_count_t{30'000}, batch_items + 4'567);
   CAPTURE(num_items);
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
@@ -841,11 +900,15 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size accepts run_to_run and g
 // configuration must agree bit for bit, including across batch boundaries.
 CUB_TEST("DeviceScan::ExclusiveSum with a deferred size is bitwise reproducible under run_to_run",
          "[device][scan][deferred][determinism]",
-         CUB_SMALL)
+         CUB_SMALL,
+         custom_scan_batch_sizes)
 {
-  using large_count_t                 = int64_t;
-  constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
-  constexpr large_count_t num_items   = batch_items + 4'567;
+  constexpr int configured_batch_tiles = c2h::get<0, TestType>::value;
+  using large_count_t                  = int64_t;
+  constexpr large_count_t batch_items =
+    (configured_batch_tiles == 0 ? cub::detail::scan::lookback_default_tiles_per_batch : configured_batch_tiles)
+    * large_count_t{128};
+  constexpr large_count_t num_items = batch_items + 4'567;
 
   c2h::device_vector<float> input(static_cast<size_t>(num_items), thrust::no_init);
   c2h::gen(C2H_SEED(1), input, -1.0e5f, 1.0e5f);
@@ -856,7 +919,8 @@ CUB_TEST("DeviceScan::ExclusiveSum with a deferred size is bitwise reproducible 
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
   const auto env   = cuda::std::execution::env{
     cuda::execution::require(cuda::execution::determinism::run_to_run),
-    cuda::execution::tune(small_batch_policy_selector<float, float, float, cuda::std::plus<>>{})};
+    cuda::execution::tune(
+      small_batch_policy_selector<float, float, float, cuda::std::plus<>, configured_batch_tiles>{})};
 
   REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), first.begin(), count, env));
   for (int i = 0; i < 3; ++i)
