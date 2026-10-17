@@ -412,7 +412,13 @@ CUB_TEST("DeviceScan reusable lookback batches handle exact boundaries", "[devic
   using large_count_t                 = int64_t;
   constexpr large_count_t batch_items = static_cast<large_count_t>(cub::detail::scan::tiles_per_batch) * 128;
   const large_count_t num_items       = GENERATE_COPY(
-    large_count_t{0}, large_count_t{1}, batch_items - 1, batch_items, batch_items + 1, 2 * batch_items + 17);
+    large_count_t{0},
+    large_count_t{1},
+    batch_items - 1,
+    batch_items,
+    batch_items + 1,
+    2 * batch_items,
+    2 * batch_items + 17);
   CAPTURE(num_items);
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
@@ -573,9 +579,11 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
 
   const c2h::device_vector<scan_value_t> input(static_cast<size_t>(num_items), scan_value_t{1});
   const c2h::device_vector<large_count_t> device_num_items(1, num_items);
+  c2h::device_vector<scan_value_t> expected(static_cast<size_t>(num_items));
   c2h::device_vector<scan_value_t> first(static_cast<size_t>(num_items), scan_value_t{-1});
   c2h::device_vector<scan_value_t> second(static_cast<size_t>(num_items), scan_value_t{-1});
   const auto count = cuda::args::deferred{thrust::raw_pointer_cast(device_num_items.data())};
+  REQUIRE(cudaSuccess == cub::DeviceScan::ExclusiveSum(input.begin(), expected.begin(), num_items));
 
   cudaStream_t first_stream{};
   cudaStream_t second_stream{};
@@ -594,10 +602,8 @@ CUB_TEST("DeviceScan batched lookback makes progress on concurrent streams",
   REQUIRE(cudaSuccess == cudaStreamDestroy(first_stream));
   REQUIRE(cudaSuccess == cudaStreamDestroy(second_stream));
 
-  REQUIRE(first.front() == scan_value_t{0});
-  REQUIRE(first.back() == static_cast<scan_value_t>(num_items - 1));
-  REQUIRE(second.front() == scan_value_t{0});
-  REQUIRE(second.back() == static_cast<scan_value_t>(num_items - 1));
+  REQUIRE(first == expected);
+  REQUIRE(second == expected);
 }
 
 CUB_TEST("DeviceScan::ExclusiveSum consumes a deferred count produced in another stream after an event",
