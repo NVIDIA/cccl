@@ -22,7 +22,7 @@ using namespace hostjit::codegen;
 //      d_histogram,                // output pointer (counter_t*)
 //      &num_levels,                // int (host pointer)
 //      &lower_level, &upper_level, // level_t (host pointer)
-//      &num_row_pixels,            // long long (host pointer)
+//      &num_row_items,             // long long (host pointer)
 //      &num_rows,                  // long long (host pointer)
 //      &row_stride_bytes,          // size_t (host-precomputed: row_stride_samples * sizeof(sample_t))
 //      stream)
@@ -79,7 +79,7 @@ try
             typed_scalar(k_int_type, "num_levels"),
             typed_scalar(level_type, "lower_level"),
             typed_scalar(level_type, "upper_level"),
-            typed_scalar(k_int64_type, "num_row_pixels"),
+            typed_scalar(k_int64_type, "num_row_items"),
             typed_scalar(k_int64_type, "num_rows"),
             typed_scalar(k_size_type, "row_stride_bytes"),
             stream)
@@ -150,7 +150,7 @@ CUresult cccl_device_histogram_even(
   cccl_value_t num_output_levels,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
-  int64_t num_row_pixels,
+  int64_t num_row_items,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
@@ -163,9 +163,9 @@ try
 
   // CUB takes row_stride_bytes (not samples). Pre-compute on the host so the
   // JIT wrapper doesn't need a sizeof(sample_t) computation.
-  long long num_row_pixels_ll = static_cast<long long>(num_row_pixels);
-  long long num_rows_ll       = static_cast<long long>(num_rows);
-  size_t row_stride_bytes     = static_cast<size_t>(row_stride_samples) * build.sample_type.size;
+  long long num_row_items_ll = static_cast<long long>(num_row_items);
+  long long num_rows_ll      = static_cast<long long>(num_rows);
+  size_t row_stride_bytes    = static_cast<size_t>(row_stride_samples) * build.sample_type.size;
 
   auto fn          = reinterpret_cast<histogram_fn_t>(build.histogram_fn);
   const int status = fn(
@@ -176,7 +176,7 @@ try
     num_output_levels.state,
     lower_level.state,
     upper_level.state,
-    &num_row_pixels_ll,
+    &num_row_items_ll,
     &num_rows_ll,
     &row_stride_bytes,
     reinterpret_cast<void*>(stream));
