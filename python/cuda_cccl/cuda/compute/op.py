@@ -68,7 +68,11 @@ def _check_raw_op_layout(
     if isinstance(td, cccl_types.PointerTypeDescriptor):
         # The pointee is a separate allocation that cuda.compute does not
         # place, so only a struct pointee's own field layout can disagree.
-        if isinstance(td.pointee, cccl_types.StructTypeDescriptor):
+        # Follow pointer chains to reach such a struct.
+        if isinstance(
+            td.pointee,
+            (cccl_types.StructTypeDescriptor, cccl_types.PointerTypeDescriptor),
+        ):
             _check_raw_op_layout(td.pointee, path=f"*{path}")
         return
 

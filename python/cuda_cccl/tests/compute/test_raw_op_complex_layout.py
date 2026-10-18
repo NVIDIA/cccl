@@ -256,13 +256,16 @@ def test_bare_complex_argument_alignment_mismatch_is_rejected():
         op.compile((td,), None)
 
 
-def test_pointer_to_mismatched_complex_struct_rejected():
-    inner = types.struct(
+@pytest.mark.parametrize("depth", [1, 2])
+def test_pointer_to_mismatched_complex_struct_rejected(depth):
+    td = types.struct(
         {"idx": types.int64, "val": types.from_numpy_dtype(np.dtype("complex128"))}
     )
+    for _ in range(depth):
+        td = td.pointer()
     op = RawOp(ltoir=b"", name="unused")
     with pytest.raises(TypeError, match="native CUDA/C\\+\\+ code"):
-        op.compile((inner.pointer(),), None)
+        op.compile((td,), None)
 
 
 @pytest.mark.parametrize("cplx_dtype", ["complex64", "complex128"])
