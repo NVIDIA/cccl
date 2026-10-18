@@ -582,63 +582,35 @@ public:
         return policy;
       };
 
-      if (num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive && sample_size == 1)
+      if (is_even && num_channels == 1 && num_active_channels == 1 && counter_size == 4 && sample_is_primitive
+          && sample_size == 1)
       {
-        if (is_even)
-        {
-          // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
-          return with_histocache_threshold(HistogramPolicy{
-            928,
-            12,
-            1 << 2,
-            BLOCK_LOAD_DIRECT,
-            LOAD_CA,
-            false,
-            SMEM,
-            false,
-            2048,
-            HistogramHighBinAlgorithm::histocache,
-            HistoCachePolicy{
-              HistogramCacheAlgorithm::single_probe,
-              HistogramSpillAlgorithm::global_memory_privatized,
-              HistogramAggregationAlgorithm::rle,
-              65536,
-              1,
-              4,
-              0,
-              0,
-              0,
-              0}});
-        }
-        else
-        {
-          // ipt_12.tpb_448.rle_0.ws_0.mem_1.ld_1.laid_0.vec_2 1.078987  0.985542  1.085118  1.175637
-          return with_histocache_threshold(HistogramPolicy{
-            448,
-            12,
-            1 << 2,
-            BLOCK_LOAD_DIRECT,
-            LOAD_LDG,
-            false,
-            SMEM,
-            false,
-            2048,
-            HistogramHighBinAlgorithm::histocache,
-            HistoCachePolicy{
-              HistogramCacheAlgorithm::single_probe,
-              HistogramSpillAlgorithm::global_memory_privatized,
-              HistogramAggregationAlgorithm::rle,
-              32768,
-              1,
-              4,
-              0,
-              0,
-              0,
-              0}});
-        }
+        // ipt_12.tpb_928.rle_0.ws_0.mem_1.ld_2.laid_0.vec_2 1.033332  0.940517  1.031835  1.195876
+        return with_histocache_threshold(HistogramPolicy{
+          928,
+          12,
+          1 << 2,
+          BLOCK_LOAD_DIRECT,
+          LOAD_CA,
+          false,
+          SMEM,
+          false,
+          2048,
+          HistogramHighBinAlgorithm::histocache,
+          HistoCachePolicy{
+            HistogramCacheAlgorithm::single_probe,
+            HistogramSpillAlgorithm::global_memory_privatized,
+            HistogramAggregationAlgorithm::rle,
+            65536,
+            1,
+            4,
+            0,
+            0,
+            0,
+            0}});
       }
 
-      if (counter_size == 4 && sample_is_primitive && num_channels == 1 && num_active_channels == 1
+      if (is_even && counter_size == 4 && sample_is_primitive && num_channels == 1 && num_active_channels == 1
           && (sample_size == 4 || sample_size == 8))
       {
         return with_histocache_threshold(HistogramPolicy{
@@ -665,7 +637,7 @@ public:
             0}});
       }
 
-      if (counter_size == 4 && sample_is_primitive && num_channels >= 2)
+      if (is_even && counter_size == 4 && sample_is_primitive && num_channels >= 2)
       {
         return with_histocache_threshold(HistogramPolicy{
           384,

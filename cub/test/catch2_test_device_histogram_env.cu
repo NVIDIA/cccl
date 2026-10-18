@@ -1943,19 +1943,22 @@ CUB_TEST("Test HistogramPolicy properties", "[histogram][device]", CUB_SMALL)
     cub::detail::histogram::policy_selector_from_types<int, unsigned int, 4, 3, false>{}(sm100);
 
   // Match the raw selector's dynamic-SMEM tiers: three-active-channel EVEN uses
-  // the full SM100 capacity, while four-channel EVEN and RANGE retain their
-  // measured per-channel crossover budgets.
+  // the full SM100 capacity, while four-channel EVEN retains its measured
+  // per-channel crossover budget. RANGE remains on global-memory privatization
+  // until cached range decoding is available.
+  STATIC_REQUIRE(single_channel_even_policy.high_bin_algorithm == cub::HistogramHighBinAlgorithm::histocache);
+  STATIC_REQUIRE(three_channel_even_policy.high_bin_algorithm == cub::HistogramHighBinAlgorithm::histocache);
+  STATIC_REQUIRE(
+    single_channel_range_policy.high_bin_algorithm == cub::HistogramHighBinAlgorithm::global_memory_privatized);
+  STATIC_REQUIRE(
+    three_channel_range_policy.high_bin_algorithm == cub::HistogramHighBinAlgorithm::global_memory_privatized);
   STATIC_REQUIRE(three_channel_even_policy.histocache.min_histogram_bytes
                  == single_channel_even_policy.histocache.min_histogram_bytes);
   STATIC_REQUIRE(
     four_channel_even_policy.histocache.min_histogram_bytes < three_channel_even_policy.histocache.min_histogram_bytes);
-  STATIC_REQUIRE(three_channel_range_policy.histocache.min_histogram_bytes
-                 < three_channel_even_policy.histocache.min_histogram_bytes);
   STATIC_REQUIRE(one_active_channel_even_policy.histocache.cache_count_replicas == 1);
   STATIC_REQUIRE(three_channel_even_policy.histocache.cache_count_replicas == 4);
   STATIC_REQUIRE(single_channel_even_policy.histocache.threads_per_block == 768);
-  STATIC_REQUIRE(single_channel_range_policy.histocache.threads_per_block == 512);
   STATIC_REQUIRE(three_channel_even_policy.histocache.threads_per_block == 1024);
-  STATIC_REQUIRE(three_channel_range_policy.histocache.threads_per_block == 1024);
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)
