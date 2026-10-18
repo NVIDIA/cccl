@@ -107,7 +107,7 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads work", "[segmented][scan][fix
 {
   using value_t = c2h::get<0, TestType>;
 
-  // Sizes around the default tile size, in which several segments are grouped into one block
+  // Ranges from many segments per block to segments spanning several tiles
   const int segment_size  = GENERATE(1, 2, 3, 31, 64, 575, 576, 577, 1151, 1152, 1153, 5000);
   const auto num_segments = static_cast<cuda::std::int64_t>(GENERATE_COPY(1, 2, 3, 17, (1 << 16) / segment_size + 1));
   const auto num_items    = num_segments * segment_size;
