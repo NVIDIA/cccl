@@ -33,6 +33,7 @@
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/require.h>
+#include <cuda/__execution/tie_break.h>
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/__stream/get_stream.h>
@@ -93,10 +94,26 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk(
                 "cub::DeviceTopK only supports the case where determinism is not guaranteed and output order is "
                 "unsorted.");
 
-  // TODO (elstehle): align requirement validation with cub::DeviceBatchedTopK in CCCL 4.0. cub::DeviceTopK does not
-  // yet inspect cuda::execution::tie_break, so it still accepts requirement combinations that cub::DeviceBatchedTopK
-  // rejects. It should enforce that determinism and tie_break are requested together (or both omitted to take the
-  // default) and that an explicit tie_break requires cuda::execution::determinism::gpu_to_gpu.
+  // A concrete tie-break (prefer_smaller_index / prefer_larger_index) pins the result set and requires
+  // cuda::execution::determinism::gpu_to_gpu, which cub::DeviceTopK does not implement yet; it would be silently
+  // ignored. Reject it here. Omitting tie_break entirely (the pre-3.5 `require(not_guaranteed, unsorted)` idiom) and
+  // tie_break::unspecified stay accepted.
+  static_assert(!::cuda::std::execution::__queryable_with<EnvT, ::cuda::execution::tie_break::__get_tie_break_t>,
+                "Tie-break should be used inside cuda::execution::require to have an effect.");
+  using requested_tie_break_t =
+    ::cuda::std::execution::__query_result_or_t<requirements_t,
+                                                ::cuda::execution::tie_break::__get_tie_break_t,
+                                                ::cuda::execution::tie_break::unspecified_t>;
+  static_assert(
+    ::cuda::std::is_same_v<requested_tie_break_t, ::cuda::execution::tie_break::unspecified_t>,
+    "cub::DeviceTopK only supports cuda::execution::tie_break::unspecified (or no tie_break): a "
+    "prefer_smaller_index / prefer_larger_index tie-break requires cuda::execution::determinism::gpu_to_gpu, "
+    "which cub::DeviceTopK does not implement yet.");
+
+  // TODO (elstehle, CCCL 4.0): enforce the determinism/tie_break *pairing* rule (both inside require(...), or both
+  // omitted to take the defaults) like cub::DeviceBatchedTopK does. Not done in 3.x because it rejects
+  // `require(not_guaranteed, unsorted)`, the only accepted form since CCCL 3.2; users can already write
+  // `tie_break::unspecified` to be forward-compatible. Tracked in https://github.com/NVIDIA/cccl/issues/3701.
 
   // Query relevant properties from the environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
@@ -194,10 +211,13 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_topk_hub(
 //!
 //!    **Current support.** This release only implements the fully opted-out configuration, which must be requested
 //!    explicitly: ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-//!    cuda::execution::output_ordering::unsorted)``. Any other combination (including an empty, no-requirement
-//!    environment) is rejected at compile time. In this configuration the output is unordered and may be
-//!    non-deterministic: if multiple items tie at the K-th position, the subset of tied elements returned is not
-//!    uniquely defined and may vary between runs.
+//!    cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)``. Omitting the
+//!    ``tie_break`` is still accepted in CCCL 3.x, but CCCL 4.0 will enforce the determinism/tie_break pairing rule
+//!    (both specified or both omitted) that ``cub::DeviceBatchedTopK`` already applies, so prefer the explicit form.
+//!    Any other combination (including an empty, no-requirement environment, or a ``prefer_smaller_index`` /
+//!    ``prefer_larger_index`` tie-break, which would require ``determinism::gpu_to_gpu``) is rejected at compile
+//!    time. In this configuration the output is unordered and may be non-deterministic: if multiple items tie at the
+//!    K-th position, the subset of tied elements returned is not uniquely defined and may vary between runs.
 //!
 //! Usage Considerations
 //! ++++++++++++++++++++++++++

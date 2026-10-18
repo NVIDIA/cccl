@@ -226,10 +226,14 @@ Reading the table:
 
 .. note::
 
-   This determinism and tie_break pairing rule is currently enforced only by
-   :cpp:struct:`cub::DeviceBatchedTopK`. :cpp:struct:`cub::DeviceTopK` does not yet inspect
-   ``tie_break``, so it still accepts requirement combinations that ``cub::DeviceBatchedTopK`` rejects.
-   The same enforcement will be added to ``cub::DeviceTopK`` in the next major release of CCCL (4.0).
+   Both algorithms reject an explicit ``prefer_smaller_index`` / ``prefer_larger_index`` that is not
+   paired with ``gpu_to_gpu`` (which :cpp:struct:`cub::DeviceTopK` does not implement yet). The
+   determinism and tie_break *pairing* rule (both specified or both omitted) is currently enforced only
+   by :cpp:struct:`cub::DeviceBatchedTopK`. ``cub::DeviceTopK`` still accepts
+   ``require(determinism::not_guaranteed, output_ordering::unsorted)`` without a ``tie_break`` and will
+   enforce the pairing in the next major release of CCCL (4.0). To be forward-compatible, spell the
+   tie-break out today: ``require(determinism::not_guaranteed, tie_break::unspecified,
+   output_ordering::unsorted)``.
 
 Worked example: set membership x output ordering
 -------------------------------------------------
