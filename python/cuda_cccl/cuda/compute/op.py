@@ -66,8 +66,10 @@ def _check_raw_op_layout(
     different layout, the RawOp reads or writes the wrong bytes.
     """
     if isinstance(td, cccl_types.PointerTypeDescriptor):
-        # The pointee is a separate allocation: check it as its own root.
-        _check_raw_op_layout(td.pointee, path=f"*{path}")
+        # The pointee is a separate allocation that cuda.compute does not
+        # place, so only a struct pointee's own field layout can disagree.
+        if isinstance(td.pointee, cccl_types.StructTypeDescriptor):
+            _check_raw_op_layout(td.pointee, path=f"*{path}")
         return
 
     if not isinstance(td, cccl_types.StructTypeDescriptor):

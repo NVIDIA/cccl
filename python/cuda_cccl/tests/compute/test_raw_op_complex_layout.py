@@ -265,6 +265,18 @@ def test_pointer_to_mismatched_complex_struct_rejected():
         op.compile((inner.pointer(),), None)
 
 
+@pytest.mark.parametrize("cplx_dtype", ["complex64", "complex128"])
+def test_pointer_to_bare_complex_is_accepted(cplx_dtype):
+    """A pointer to a bare complex value points at memory cuda.compute does
+    not lay out, and its element stride matches native code, so it must not
+    be rejected for NumPy's lower alignment."""
+    cplx_ptr = types.from_numpy_dtype(np.dtype(cplx_dtype)).pointer()
+    holder = types.struct({"n": types.int32, "p": cplx_ptr})
+    op = RawOp(ltoir=b"", name="unused")
+    op.compile((cplx_ptr,), None)  # must not raise
+    op.compile((holder,), None)  # must not raise
+
+
 # ---------------------------------------------------------------------------
 # End-to-end: the actual issue #11347 repro shape, through a real RawOp
 # compiled from C++ against <cuda/std/complex>.
