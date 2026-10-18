@@ -72,7 +72,7 @@ def parse_matrix(path: Path, workflow: Workflow) -> dict[str, Any]:
     with path.open() as f:
         matrix = yaml.safe_load(f)
 
-    configs = matrix["sass"][workflow]
+    configs = (matrix.get("sass") or {}).get(workflow) or []
     return {"include": [matrix_entry(matrix, config) for config in configs]}
 
 

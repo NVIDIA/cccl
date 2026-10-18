@@ -24,20 +24,78 @@ defaults:
 
 on:
   workflow_dispatch:
+    inputs:
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ""
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_path: &matrix_path_input
+        description: "Path to the matrix file within matrix_repo."
+        type: string
+        default: "ci/matrix.yaml"
   schedule:
     - cron: "0 8 * * 0" # Every Sunday at 00:00 PST, 03:00 EST, 08:00 UTC
+  workflow_call:
+    inputs:
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ${{ github.repository }}
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ${{ github.ref }}
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ${{ github.repository }}
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ${{ github.ref }}
+      matrix_path: *matrix_path_input
+    secrets:
+      NVINFERENCE_API_KEY:
+        description: NVIDIA Inference Hub API key for CI failure analysis and SASS triage.
+        required: false
+      SLACK_CHANNEL_CI_ALERT:
+        description: Slack channel ID for CI failure alerts.
+        required: false
+      SLACK_CHANNEL_CI_LOG:
+        description: Slack channel ID for CI logs.
+        required: false
+      SLACK_NOTIFIER_BOT_TOKEN:
+        description: Slack bot token for CI notifications.
+        required: false
 
 concurrency:
-  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}-weekly-${{ inputs.source_repo }}@${{ inputs.source_ref }}-${{ inputs.matrix_repo }}@${{ inputs.matrix_ref }}-${{ inputs.matrix_path }}
 
 jobs:
 
   matrix-build:
     name: Build & dispatch CI matrix
-    uses: ./.github/workflows/ci-matrix-build.yml
+    uses: $/.github/workflows/ci-matrix-build.yml
     secrets: inherit
     with:
       workflows: weekly
+      source_repo: ${{ inputs.source_repo || github.repository }}
+      source_ref: ${{ inputs.source_ref || github.ref }}
+      matrix_repo: ${{ inputs.matrix_repo || github.repository }}
+      matrix_ref: ${{ inputs.matrix_ref || github.ref }}
+      matrix_path: ${{ inputs.matrix_path || 'ci/matrix.yaml' }}
 
   # This analyzes the current run. Keep every job whose failures should be
   # included in this job's direct or transitive `needs` so log collection starts
@@ -70,7 +128,7 @@ jobs:
 
       - name: Analyze failures
         id: analyze
-        uses: ./.github/actions/ci-failure-analysis
+        uses: $/.github/actions/ci-failure-analysis
         with:
           inference_api_key: ${{ secrets.NVINFERENCE_API_KEY }}
           run_id: ${{ github.run_id }}
@@ -78,7 +136,7 @@ jobs:
       - name: Render GitHub verbose failure analysis summary
         if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
         id: render-github-verbose-summary
-        uses: ./.github/actions/ci-failure-analysis-render
+        uses: $/.github/actions/ci-failure-analysis-render
         with:
           analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: github-verbose-summary
@@ -94,7 +152,7 @@ jobs:
       - name: Render Slack failure analysis
         if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
         id: render-slack
-        uses: ./.github/actions/ci-failure-analysis-render
+        uses: $/.github/actions/ci-failure-analysis-render
         with:
           analysis_file: ${{ steps.analyze.outputs.analysis_file }}
           format: slack

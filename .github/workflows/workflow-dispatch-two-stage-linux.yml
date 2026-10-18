@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: "Workflow/Dispatch/TwoStage/Linux"
 
 defaults:
@@ -16,7 +19,7 @@ on:
         type: string
         required: true
       repo:
-        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        description: "Repository to checkout."
         type: string
         required: false
         default: ${{ github.repository }}
@@ -31,7 +34,7 @@ jobs:
   # The build-workflow.py script will emit an error if more than one producer is specified.
   producer:
     name: ${{ fromJSON(inputs.producers)[0].name }}
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && fromJSON(inputs.producers)[0].runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -43,7 +46,7 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.commit }}
       - name: Run job
-        uses: ./.github/actions/workflow-run-job-linux
+        uses: $/.github/actions/workflow-run-job-linux
         with:
           id:          ${{ fromJSON(inputs.producers)[0].id }}
           environment: ${{ fromJSON(inputs.producers)[0].environment }}
@@ -57,7 +60,7 @@ jobs:
   consumers:
     name: "${{ matrix.name }}"
     needs: producer
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && matrix.runner || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -73,7 +76,7 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.commit }}
       - name: Run job
-        uses: ./.github/actions/workflow-run-job-linux
+        uses: $/.github/actions/workflow-run-job-linux
         with:
           id:          ${{ matrix.id }}
           environment: ${{ matrix.environment }}

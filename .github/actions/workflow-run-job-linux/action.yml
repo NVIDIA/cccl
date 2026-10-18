@@ -71,7 +71,7 @@ runs:
         echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
 
     - name: Get AWS credentials for sccache bucket
-      if: ${{ github.repository == 'NVIDIA/cccl' }}
+      if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
       uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -81,6 +81,7 @@ runs:
     - name: Print CI override matrix job def
       env:
         GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
       continue-on-error: true
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
@@ -106,6 +107,7 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
         CI: true
         COMMAND: "${{inputs.command}}"
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
@@ -141,8 +143,12 @@ runs:
         if [[ "$exit_code" -ne 0 ]]; then
           echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
           echo "::error:: To replicate this failure locally, follow the steps below:"
+          source_url=$(git remote get-url origin)
+          source_sha=$(git rev-parse HEAD)
+          source_directory="${source_url##*/}"
+          source_directory="${source_directory%.git}"
           echo "1. Clone the repository, and navigate to the correct branch and commit:"
-          echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+          echo "   git clone ${source_url} && cd ${source_directory} && git fetch origin ${source_sha} && git checkout ${source_sha}"
           echo ""
           echo "2. Run the failed command inside the same Docker container used by this CI job:"
           echo "   .devcontainer/launch.sh -d -c ${{inputs.cuda}} -H ${{inputs.host}} -- ${COMMAND}"
@@ -217,6 +223,7 @@ runs:
             --env "CI=true" \
             --env "COMMAND=$COMMAND" \
             --env "GH_TOKEN=$GH_TOKEN" \
+            --env "GH_REPO=$GH_REPO" \
             --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_RUN_ID=$GITHUB_RUN_ID" \
@@ -238,6 +245,6 @@ runs:
 
     - name: Upload job artifacts
       if: ${{ always() && steps.run.outputs.ARTIFACTS != '' && fromJson(steps.run.outputs.ARTIFACTS)[0] != null }}
-      uses: ./.github/actions/upload-artifacts
+      uses: $/.github/actions/upload-artifacts
       with:
         artifacts: ${{ steps.run.outputs.ARTIFACTS }}

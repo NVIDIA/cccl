@@ -1,8 +1,33 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: Build and Test Python Wheels
 
 on:
   workflow_dispatch:
+    inputs: &input_args
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_repo:
+        description: "Repository containing the matrix. Defaults to the caller repository."
+        type: string
+        default: ""
+      matrix_ref:
+        description: "Matrix branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
+      matrix_path:
+        description: "Path to the matrix file within matrix_repo."
+        type: string
+        default: "ci/matrix.yaml"
   workflow_call:
+    inputs: *input_args
 
 defaults:
   run:
@@ -15,16 +40,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      SOURCE_REPO: ${{ inputs.source_repo || github.repository }}
+      SOURCE_REF: ${{ inputs.source_ref || github.ref }}
+      MATRIX_REPO: ${{ inputs.matrix_repo || github.repository }}
+      MATRIX_REF: ${{ inputs.matrix_ref || github.ref }}
+      MATRIX_PATH: ${{ inputs.matrix_path || 'ci/matrix.yaml' }}
     outputs:
+      source_repo: ${{ env.SOURCE_REPO }}
       workflow: ${{ steps.build-workflow.outputs.workflow }}
+      source_sha: ${{ steps.checkout.outputs.source_sha }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - name: Checkout source and matrix
+        id: checkout
+        uses: $/.github/actions/workflow-checkout
         with:
-          persist-credentials: false
+          source_repo: ${{ env.SOURCE_REPO }}
+          source_ref: ${{ env.SOURCE_REF }}
+          matrix_repo: ${{ env.MATRIX_REPO }}
+          matrix_ref: ${{ env.MATRIX_REF }}
+          matrix_path: ${{ env.MATRIX_PATH }}
       - name: Build workflow
         id: build-workflow
-        uses: ./.github/actions/workflow-build
+        uses: $/.github/actions/workflow-build
         with:
           workflows: python-wheels
 
@@ -39,9 +77,11 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-linux.yml
+    uses: $/.github/workflows/workflow-dispatch-two-stage-group-linux.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-windows-two-stage:
     name: ${{ matrix.name }}
@@ -54,9 +94,11 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-two-stage-group-windows.yml
+    uses: $/.github/workflows/workflow-dispatch-two-stage-group-windows.yml
     with:
       pc-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_two_stage']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-linux-standalone:
     name: ${{ matrix.name }}
@@ -69,9 +111,11 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-linux.yml
+    uses: $/.github/workflows/workflow-dispatch-standalone-group-linux.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   dispatch-groups-windows-standalone:
     name: ${{ matrix.name }}
@@ -84,9 +128,11 @@ jobs:
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['keys'] }}
-    uses: ./.github/workflows/workflow-dispatch-standalone-group-windows.yml
+    uses: $/.github/workflows/workflow-dispatch-standalone-group-windows.yml
     with:
       job-array: ${{ toJSON(fromJSON(needs.build-workflow.outputs.workflow)['windows_standalone']['jobs'][matrix.name]) }}
+      repo: ${{ needs.build-workflow.outputs.source_repo }}
+      commit: ${{ needs.build-workflow.outputs.source_sha }}
 
   verify-workflow:
     name: Verify and summarize workflow results
@@ -102,11 +148,6 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
       - name: Check workflow success
         id: check-workflow
-        uses: ./.github/actions/workflow-results
+        uses: $/.github/actions/workflow-results

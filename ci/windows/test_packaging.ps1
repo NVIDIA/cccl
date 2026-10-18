@@ -29,7 +29,7 @@ $PRESET = "packaging"
 $LOCAL_CMAKE_OPTIONS = ""
 
 if ($env:GITHUB_SHA) {
-    $LOCAL_CMAKE_OPTIONS = '"-DCCCL_EXAMPLE_CPM_TAG={0}"' -f $env:GITHUB_SHA
+    $LOCAL_CMAKE_OPTIONS = '"-DCCCL_EXAMPLE_CPM_TAG={0}"' -f (git rev-parse HEAD)
 }
 
 configure_preset "Packaging" $PRESET $LOCAL_CMAKE_OPTIONS

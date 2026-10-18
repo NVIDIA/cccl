@@ -1,8 +1,19 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: Build all RAPIDS repositories
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &input_args
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
       override_cccl_tag:
         description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
         required: false
@@ -19,31 +30,20 @@ on:
         default: false
         type: boolean
   workflow_call:
-    inputs:
-      override_cccl_tag:
-        description: "If set, override the tag used when pulling the CCCL repository into RAPIDS."
+    inputs: *input_args
+    secrets:
+      SLACK_CHANNEL_RAPIDS_CI_ALERT:
+        description: Slack channel ID for RAPIDS CI failure alerts.
         required: false
-        default: ""
-        type: string
-      override_cccl_version:
-        description: "If set, override the version used by rapids-cmake to patch CCCL."
+      SLACK_NOTIFIER_BOT_TOKEN:
+        description: Slack bot token for CI notifications.
         required: false
-        default: ""
-        type: string
-      enable_slack_alerts:
-        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   build-rapids:
     name: "${{ matrix.libs }}"
-    if: >-
-      (github.repository == 'NVIDIA/cccl' &&
-       contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)) ||
-      (github.repository != 'NVIDIA/cccl' && github.event_name == 'pull_request')
-    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu16"') }}
+    if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
+    runs-on: linux-amd64-cpu16
     strategy:
       fail-fast: false
       matrix:
@@ -57,15 +57,17 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Checkout repo
+      - name: Checkout source
         uses: actions/checkout@v6
         with:
+          repository: ${{ inputs.source_repo || github.repository }}
+          ref: ${{ inputs.source_ref || github.ref }}
           fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -112,8 +114,13 @@ jobs:
               echo "::error:: Failures: ${failures[*]}"
               echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
               echo "::error:: To replicate this failure locally, follow the steps below:"
+              local source_url source_sha source_directory
+              source_url=$(git -C ~/cccl remote get-url origin)
+              source_sha=$(git -C ~/cccl rev-parse HEAD)
+              source_directory="${source_url##*/}"
+              source_directory="${source_directory%.git}"
               echo "1. Clone the repository, and navigate to the correct branch and commit:"
-              echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+              echo "   git clone ${source_url} && cd ${source_directory} && git fetch origin ${source_sha} && git checkout ${source_sha}"
               echo ""
               echo "2. Run the failed command inside the same Docker container used by this CI job:"
               cat <<____EOF

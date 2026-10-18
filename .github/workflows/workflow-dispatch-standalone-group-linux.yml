@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: "Workflow/Dispatch/StandaloneGroup/Linux"
 
 defaults:
@@ -12,7 +15,7 @@ on:
         type: string
         required: true
       repo:
-        description: "Repository to checkout (e.g. 'NVIDIA/cccl' or 'NVIDIA-dev/cccl_private')."
+        description: "Repository to checkout."
         type: string
         required: false
         default: ${{ github.repository }}
@@ -32,7 +35,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ${{ (github.repository == 'NVIDIA/cccl' || github.repository == 'NVIDIA-dev/cccl_private') && matrix.runner || 'ubuntu-latest' }}
+    runs-on: ${{ (github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev') && matrix.runner || 'ubuntu-latest' }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -41,7 +44,7 @@ jobs:
           repository: ${{ inputs.repo }}
           ref: ${{ inputs.commit }}
       - name: Run job
-        uses: ./.github/actions/workflow-run-job-linux
+        uses: $/.github/actions/workflow-run-job-linux
         with:
           id:          ${{ matrix.id }}
           environment: ${{ matrix.environment }}

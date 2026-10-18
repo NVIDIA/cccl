@@ -17,9 +17,13 @@ inputs:
     description: "If defined, use this base ref for inspect-changes script."
     default: ""
     required: false
+  inspect_changes_head_sha:
+    description: "Source commit to compare against the base ref; defaults to the caller SHA."
+    default: ${{ github.sha }}
+    required: false
   matrix_file:
-    description: "Path to the matrix file in the consumer repository."
-    default: "ci/matrix.yaml"
+    description: "Path to the CI matrix file."
+    default: ${{ runner.temp }}/matrix.yaml
     required: false
   matrix_parser:
     description: "Path to the matrix parser script (default if blank: build-workflow.py from action dir)"
@@ -72,10 +76,11 @@ runs:
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
         base_ref: ${{ inputs.inspect_changes_base_sha }}
+        head_ref: ${{ inputs.inspect_changes_head_sha }}
       run: |
         echo "Running inspect-changes script..."
         mkdir workflow
-        ${{ inputs.inspect_changes_script }} --refs ${base_ref} ${GITHUB_SHA} --summary workflow/changes.md
+        ${{ inputs.inspect_changes_script }} --refs "${base_ref}" "${head_ref}" --summary workflow/changes.md
 
     - name: Parse matrix file into a workflow
       id: build-workflow
@@ -91,7 +96,7 @@ runs:
         echo "Parsing matrix file into a workflow..."
 
         echo "::group::Generating GHA workflow from matrix.yaml"
-        ${{ env.matrix_parser }} ${{ inputs.matrix_file }}                     \
+        ${{ env.matrix_parser }} "${{ inputs.matrix_file }}"                   \
             --workflows ${{ inputs.workflows }}                                \
             ${{ env.allow_override }}                                          \
             ${{ env.full_build_projects_flag }} ${{ env.full_build_projects }} \

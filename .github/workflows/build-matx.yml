@@ -1,8 +1,19 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: Build MatX
 
 on:
   workflow_dispatch:
-    inputs:
+    inputs: &input_args
+      source_repo:
+        description: "Repository containing the source. Defaults to the caller repository."
+        type: string
+        default: ""
+      source_ref:
+        description: "Source branch, tag, or SHA. Defaults to the calling ref."
+        type: string
+        default: ""
       override_cccl_tag:
         description: "If set, override the tag used when pulling the CCCL repository into MatX."
         required: false
@@ -19,40 +30,35 @@ on:
         default: false
         type: boolean
   workflow_call:
-    inputs:
-      override_cccl_tag:
-        description: "If set, override the tag used when pulling the CCCL repository into MatX."
+    inputs: *input_args
+    secrets:
+      SLACK_CHANNEL_CI_ALERT:
+        description: Slack channel ID for CI failure alerts.
         required: false
-        default: ""
-        type: string
-      override_cccl_version:
-        description: "If set, override the version used by rapids-cmake to patch CCCL."
+      SLACK_NOTIFIER_BOT_TOKEN:
+        description: Slack bot token for CI notifications.
         required: false
-        default: ""
-        type: string
-      enable_slack_alerts:
-        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   build-matx:
     name: Build MatX
+    if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
     runs-on: linux-amd64-cpu16m
     permissions:
       id-token: write
       contents: read
     steps:
-      - name: Checkout repo
+      - name: Checkout source
         uses: actions/checkout@v6
         with:
+          repository: ${{ inputs.source_repo || github.repository }}
+          ref: ${{ inputs.source_ref || github.ref }}
           fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2

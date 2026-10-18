@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 name: Compile-time Benchmark
 
 defaults:
@@ -7,6 +10,14 @@ defaults:
 on:
   workflow_call:
     inputs:
+      source_repo:
+        description: Source repository; defaults to the caller repository.
+        type: string
+        default: ${{ github.repository }}
+      source_ref:
+        description: Source branch, tag, or SHA; defaults to the calling ref.
+        type: string
+        default: ${{ github.ref }}
       id:
         description: "Stable compile-time benchmark config id."
         required: true
@@ -75,10 +86,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
+          repository: ${{ inputs.source_repo }}
+          ref: ${{ inputs.source_ref }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ github.repository_owner == 'NVIDIA' || github.repository_owner == 'NVIDIA-dev' }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
