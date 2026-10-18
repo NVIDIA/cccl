@@ -88,6 +88,17 @@ template <typename TargetT, typename ParameterT>
   }
 }
 
+#  if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+// Work around for NVCC emitting invalid lambda-dependent type aliases
+template <typename TargetT, typename SourceT, typename StaticBoundsT>
+[[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE constexpr auto
+parameter_from_host(::cuda::args::deferred<SourceT, StaticBoundsT> parameter) noexcept
+  -> ::cuda::args::deferred<SourceT, StaticBoundsT>
+{
+  return parameter;
+}
+#  endif
+
 template <typename TargetT, typename ParameterT>
 using parameter_from_host_t = decltype(parameter_from_host<TargetT>(::cuda::std::declval<ParameterT>()));
 
