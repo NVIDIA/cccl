@@ -86,7 +86,7 @@ void load_input_file(std::string filename, std::vector<body>& particles)
   // Loop until we reach the end of the file
   while (infile >> mass >> posX >> posY >> posZ >> velX >> velY >> velZ)
   {
-    body p;
+    body p{};
     p.mass = mass;
 
     p.pos[0] = posX;

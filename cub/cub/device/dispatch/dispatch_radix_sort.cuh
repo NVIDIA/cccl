@@ -21,12 +21,13 @@
 #endif // no system header
 
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/max.h>
@@ -446,15 +447,15 @@ public:
   template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
   struct PassConfig
   {
-    UpsweepKernelT upsweep_kernel;
+    UpsweepKernelT upsweep_kernel{};
     detail::KernelConfig upsweep_config;
-    ScanKernelT scan_kernel;
+    ScanKernelT scan_kernel{};
     detail::KernelConfig scan_config;
-    DownsweepKernelT downsweep_kernel;
+    DownsweepKernelT downsweep_kernel{};
     detail::KernelConfig downsweep_config;
-    int radix_bits;
-    int radix_digits;
-    int max_downsweep_grid_size;
+    int radix_bits{};
+    int radix_digits{};
+    int max_downsweep_grid_size{};
     GridEvenShare<OffsetT> even_share;
 
     // TODO(bgruber): Remove in CCCL 4.0
@@ -1229,15 +1230,15 @@ namespace detail::radix_sort
 template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT, typename OffsetT>
 struct pass_config
 {
-  UpsweepKernelT upsweep_kernel;
+  UpsweepKernelT upsweep_kernel{};
   KernelConfig upsweep_config;
-  ScanKernelT scan_kernel;
+  ScanKernelT scan_kernel{};
   KernelConfig scan_config;
-  DownsweepKernelT downsweep_kernel;
+  DownsweepKernelT downsweep_kernel{};
   KernelConfig downsweep_config;
-  int radix_bits;
-  int radix_digits;
-  int max_downsweep_grid_size;
+  int radix_bits{};
+  int radix_digits{};
+  int max_downsweep_grid_size{};
   GridEvenShare<OffsetT> even_share;
 
   template <typename KernelLauncherFactory>

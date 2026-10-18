@@ -1,3 +1,4 @@
 docs/index.rst
 README.md
 .github/actions/docs-build/action.yml
+cudax/LICENSE.TXT

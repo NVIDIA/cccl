@@ -55,10 +55,7 @@ inline auto& managed_pool()
 }
 
 // maximum number of entries in the host-allocated pool
-enum : size_t
-{
-  maxPoolEntries = 16 * 1024
-};
+inline constexpr size_t maxPoolEntries = 16 * 1024;
 } // namespace reserved
 
 /**
@@ -172,7 +169,10 @@ inline void deallocateHostMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFreeHost(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::host_pool().insert(::std::make_pair(sz, p));
@@ -212,7 +212,10 @@ inline void deallocateManagedMemory(
   }
   catch (...)
   {
-    cuda_safe_call(cudaFree(p));
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   reserved::managed_pool().insert(::std::make_pair(sz, p));
@@ -231,8 +234,11 @@ inline void deallocateHostMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFreeHost(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFreeHost>(p);
+    };
   };
   // Own the heap pair until the launch succeeds; release ownership to the
   // callback only after cuda_try returns without throwing, so a failed
@@ -266,8 +272,11 @@ inline void deallocateManagedMemory(void* p, size_t sz, cudaStream_t stream)
 {
   SCOPE(fail)
   {
-    // In case of failure make sure we don't leak.
-    cuda_safe_call(cudaFree(p));
+    // In case of failure make sure we don't leak; a failing free is reported.
+    ON_THROW(notify)
+    {
+      cuda_try<cudaFree>(p);
+    };
   };
   auto args = ::std::make_unique<::std::pair<size_t, void*>>(sz, p);
   cuda_try(cudaLaunchHostFunc(
@@ -895,7 +904,7 @@ public:
     {
       if (small_length < small_cap)
       {
-        new (small_begin() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(::cuda::std::move(value));
         ++small_length;
         return;
       }
@@ -903,7 +912,7 @@ public:
       assert(!is_small());
       // fall through to big case
     }
-    big().push_back(mv(value));
+    big().push_back(::cuda::std::move(value));
   }
 
   template <class... Args>
@@ -1108,7 +1117,7 @@ private:
 
   void adopt_big_vector(::std::vector<T>&& vec)
   {
-    new (&big())::std::vector<T>(mv(vec));
+    new (&big())::std::vector<T>(::cuda::std::move(vec));
     small_length = small_size_t(-1);
   }
 
@@ -1141,7 +1150,7 @@ private:
 
   union
   {
-    alignas(T) unsigned char small_[sizeof(T) * small_cap];
+    alignas(T) unsigned char small_[sizeof(T) * small_cap]{};
     alignas(::std::vector<T>) unsigned char big_[sizeof(::std::vector<T>)];
   };
   small_size_t small_length = 0;

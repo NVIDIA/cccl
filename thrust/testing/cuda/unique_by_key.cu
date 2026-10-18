@@ -123,7 +123,7 @@ TEST_CASE("TestUniqueByKeyDeviceNoSync", "[unique_by_key]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
+void test_unique_by_key_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -177,12 +177,12 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestUniqueByKeyCudaStreamsSync", "[unique_by_key]")
 {
-  TestUniqueByKeyCudaStreams(thrust::cuda::par);
+  test_unique_by_key_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestUniqueByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
-  TestUniqueByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_unique_by_key_cuda_streams(thrust::cuda::par_nosync);
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -312,7 +312,7 @@ TEST_CASE("TestUniqueCopyByKeyDeviceNoSync", "[unique_by_key]")
 #endif
 
 template <typename ExecutionPolicy>
-void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
+void test_unique_copy_by_key_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -378,10 +378,10 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
 
 TEST_CASE("TestUniqueCopyByKeyCudaStreamsSync", "[unique_by_key]")
 {
-  TestUniqueCopyByKeyCudaStreams(thrust::cuda::par);
+  test_unique_copy_by_key_cuda_streams(thrust::cuda::par);
 }
 
 TEST_CASE("TestUniqueCopyByKeyCudaStreamsNoSync", "[unique_by_key]")
 {
-  TestUniqueCopyByKeyCudaStreams(thrust::cuda::par_nosync);
+  test_unique_copy_by_key_cuda_streams(thrust::cuda::par_nosync);
 }

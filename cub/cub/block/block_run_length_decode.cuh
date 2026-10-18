@@ -14,11 +14,12 @@
 #endif // no system header
 
 #include <cub/block/block_scan.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 
@@ -175,8 +176,7 @@ private:
   uint32_t linear_tid;
 
 public:
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // CONSTRUCTOR

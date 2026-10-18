@@ -19,8 +19,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 
@@ -218,6 +219,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
+  // The shuffle instructions fill every output word.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   T output;
   ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);
@@ -296,6 +299,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
 
   constexpr int WORDS = (sizeof(T) + sizeof(ShuffleWord) - 1) / sizeof(ShuffleWord);
 
+  // The shuffle instructions fill every output word.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   T output;
   ShuffleWord* output_alias      = reinterpret_cast<ShuffleWord*>(&output);
   const ShuffleWord* input_alias = reinterpret_cast<ShuffleWord*>(&input);

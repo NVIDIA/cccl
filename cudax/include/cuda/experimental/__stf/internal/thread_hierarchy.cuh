@@ -104,12 +104,9 @@ public:
    */
   thread_hierarchy(int devid, interpreted_execution_policy<spec...>& p)
       : devid(devid)
+      , launch_config(p.get_config())
+      , cg_system(p.get_cg_system())
   {
-    launch_config = p.get_config();
-
-    // If we may synchronize across multiple devices.
-    cg_system = p.cg_system;
-
     size_t i = 0;
     for (auto& l : p.get_levels())
     {
@@ -476,7 +473,7 @@ UNITTEST("thread hierarchy sync")
 
   void* args[] = {&h};
   cuda_try(cudaLaunchCooperativeKernel(
-    (void*) reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>,
+    reinterpret_cast<void*>(reserved::unit_test_thread_hierarchy_sync<true, size_t(0), true, size_t(1)>),
     config[1],
     config[2],
     args,

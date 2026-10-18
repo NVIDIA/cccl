@@ -9,6 +9,7 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
 #include <cuda/iterator>
 
 #include <algorithm>
@@ -100,7 +101,7 @@ TEST_CASE("TestCopyToDiscardIteratorZipped", "[copy]")
 }
 
 template <class Vector>
-void TestCopyMatchingTypes()
+void test_copy_matching_types()
 {
   using T = typename Vector::value_type;
 
@@ -121,13 +122,13 @@ void TestCopyMatchingTypes()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
+DECLARE_VECTOR_UNITTEST(test_copy_matching_types);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244) // '=': conversion from 'int' to '_Ty', possible loss of data
 
 template <class Vector>
-void TestCopyMixedTypes()
+void test_copy_mixed_types()
 {
   Vector v{0, 1, 2, 3, 4};
 
@@ -145,7 +146,7 @@ void TestCopyMixedTypes()
   REQUIRE(d == dref);
   REQUIRE(d_result == d.end());
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_copy_mixed_types);
 
 _CCCL_DIAG_POP
 
@@ -167,7 +168,7 @@ TEST_CASE("TestCopyVectorBool", "[copy]")
 }
 
 template <class Vector>
-void TestCopyListTo()
+void test_copy_list_to()
 {
   using T = typename Vector::value_type;
 
@@ -200,16 +201,7 @@ void TestCopyListTo()
   REQUIRE(*iter == T(4));
   iter++;
 }
-DECLARE_VECTOR_UNITTEST(TestCopyListTo);
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (x & 1) == 0;
-  }
-};
+DECLARE_VECTOR_UNITTEST(test_copy_list_to);
 
 template <typename T>
 struct is_true
@@ -230,7 +222,7 @@ struct mod_3
 };
 
 template <class Vector>
-void TestCopyIfSimple()
+void test_copy_if_simple()
 {
   using T = typename Vector::value_type;
 
@@ -244,10 +236,10 @@ void TestCopyIfSimple()
   REQUIRE(ref == dest);
   REQUIRE(dest.end() == dest_end);
 }
-DECLARE_VECTOR_UNITTEST(TestCopyIfSimple);
+DECLARE_VECTOR_UNITTEST(test_copy_if_simple);
 
 template <typename T>
-void TestCopyIf(const size_t n)
+void test_copy_if(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -268,10 +260,10 @@ void TestCopyIf(const size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIf);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(test_copy_if);
 
 template <typename T>
-void TestCopyIfIntegral(const size_t n)
+void test_copy_if_integral(const size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -284,8 +276,8 @@ void TestCopyIfIntegral(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -307,10 +299,10 @@ void TestCopyIfIntegral(const size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfIntegral);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(test_copy_if_integral);
 
 template <typename T>
-void TestCopyIfSequence(const size_t n)
+void test_copy_if_sequence(const size_t n)
 {
   thrust::host_vector<T> h_data(n);
   thrust::sequence(h_data.begin(), h_data.end());
@@ -325,8 +317,8 @@ void TestCopyIfSequence(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -348,10 +340,10 @@ void TestCopyIfSequence(const size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfSequence);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(test_copy_if_sequence);
 
 template <class Vector>
-void TestCopyIfStencilSimple()
+void test_copy_if_stencil_simple()
 {
   using T = typename Vector::value_type;
 
@@ -366,10 +358,10 @@ void TestCopyIfStencilSimple()
   REQUIRE(ref == dest);
   REQUIRE(dest.end() == dest_end);
 }
-DECLARE_VECTOR_UNITTEST(TestCopyIfStencilSimple);
+DECLARE_VECTOR_UNITTEST(test_copy_if_stencil_simple);
 
 template <typename T>
-void TestCopyIfStencil(const size_t n)
+void test_copy_if_stencil(const size_t n)
 {
   thrust::host_vector<T> h_data(n);
   thrust::sequence(h_data.begin(), h_data.end());
@@ -386,8 +378,8 @@ void TestCopyIfStencil(const size_t n)
     thrust::host_vector<T> h_result(n);
     thrust::device_vector<T> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_stencil.begin(), h_result.begin(), is_even<T>());
-    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), is_even<T>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_stencil.begin(), h_result.begin(), cuda::__is_even{});
+    d_new_end = thrust::copy_if(d_data.begin(), d_data.end(), d_stencil.begin(), d_result.begin(), cuda::__is_even{});
 
     h_result.resize(h_new_end - h_result.begin());
     d_result.resize(d_new_end - d_result.begin());
@@ -395,7 +387,7 @@ void TestCopyIfStencil(const size_t n)
     REQUIRE(h_result == d_result);
   }
 }
-DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestCopyIfStencil);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(test_copy_if_stencil);
 
 namespace
 {
@@ -403,21 +395,19 @@ struct object_with_non_trivial_ctor
 {
   // This struct will only properly assign if its `magic` member is
   // set to this certain number.
-  static constexpr int MAGIC = 923390;
+  static constexpr int expected_magic = 923390;
 
   int field;
   int magic;
 
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor()
-  {
-    magic = MAGIC;
-    field = 0;
-  }
+      : field(0)
+      , magic(expected_magic)
+  {}
   _CCCL_HOST_DEVICE object_with_non_trivial_ctor(int f)
-  {
-    magic = MAGIC;
-    field = f;
-  }
+      : field(f)
+      , magic(expected_magic)
+  {}
 
   object_with_non_trivial_ctor(const object_with_non_trivial_ctor& x) = default;
 
@@ -427,7 +417,7 @@ struct object_with_non_trivial_ctor
   {
     // To really copy over x's field value, require we have magic value set.
     // If copy_if copies to uninitialized bits, the field will rarely be 923390.
-    if (magic == MAGIC)
+    if (magic == expected_magic)
     {
       field = x.field;
     }
@@ -451,11 +441,9 @@ TEST_CASE("TestCopyIfNonTrivial", "[copy]")
   {
     static constexpr size_t BufferAlign = alignof(object_with_non_trivial_ctor);
     static constexpr size_t BufferSize  = sizeof(object_with_non_trivial_ctor);
-    alignas(BufferAlign) std::array<unsigned char, BufferSize> buffer;
-
     // Fill buffer with 0s to prevent warnings about uninitialized reads while
     // ensure that the 'magic number' mechanism works as intended:
-    std::fill(buffer.begin(), buffer.end(), static_cast<unsigned char>(0));
+    alignas(BufferAlign) std::array<unsigned char, BufferSize> buffer{};
 
     object_with_non_trivial_ctor initialized;
     object_with_non_trivial_ctor* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());
@@ -487,7 +475,7 @@ TEST_CASE("TestCopyIfNonTrivial", "[copy]")
 }
 
 template <typename Vector>
-void TestCopyCountingIterator()
+void test_copy_counting_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -502,10 +490,10 @@ void TestCopyCountingIterator()
   REQUIRE(vec[2] == 3);
   REQUIRE(vec[3] == 4);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyCountingIterator);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_copy_counting_iterator);
 
 template <typename Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestCopyZipIterator()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void test_copy_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -531,10 +519,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestCopyZipIterator()
   REQUIRE(v1 == v3);
   REQUIRE(v2 == v4);
 };
-DECLARE_VECTOR_UNITTEST(TestCopyZipIterator);
+DECLARE_VECTOR_UNITTEST(test_copy_zip_iterator);
 
 template <typename Vector>
-void TestCopyConstantIteratorToZipIterator()
+void test_copy_constant_iterator_to_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -550,7 +538,7 @@ void TestCopyConstantIteratorToZipIterator()
   REQUIRE(v1 == ref1);
   REQUIRE(v2 == ref2);
 };
-DECLARE_VECTOR_UNITTEST(TestCopyConstantIteratorToZipIterator);
+DECLARE_VECTOR_UNITTEST(test_copy_constant_iterator_to_zip_iterator);
 
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(my_system& system, InputIterator, InputIterator, OutputIterator result)
@@ -734,7 +722,7 @@ struct iterator_traits<only_set_when_expected_it>
 };
 _CCCL_END_NAMESPACE_CUDA_STD
 
-void TestCopyWithBigIndexesHelper(int magnitude)
+void test_copy_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(0);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -755,10 +743,10 @@ void TestCopyWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestCopyWithBigIndexes", "[copy]")
 {
-  TestCopyWithBigIndexesHelper(30);
-  TestCopyWithBigIndexesHelper(31);
-  TestCopyWithBigIndexesHelper(32);
-  TestCopyWithBigIndexesHelper(33);
+  test_copy_with_big_indexes_helper(30);
+  test_copy_with_big_indexes_helper(31);
+  test_copy_with_big_indexes_helper(32);
+  test_copy_with_big_indexes_helper(33);
 }
 
 #endif

@@ -664,7 +664,7 @@ public:
     static constexpr size_t pool_size      = exec_place_default_pool_size;
     static constexpr size_t data_pool_size = exec_place_default_data_pool_size;
 
-  protected:
+  private:
     friend class exec_place;
     data_place affine = data_place::invalid();
   };

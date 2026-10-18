@@ -46,8 +46,8 @@ void run()
   const double alpha = 2.0;
 
   double *dX, *dY;
-  cuda_safe_call(cudaMalloc((void**) &dX, n * sizeof(double)));
-  cuda_safe_call(cudaMalloc((void**) &dY, n * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dX), n * sizeof(double)));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dY), n * sizeof(double)));
 
   // Use a kernel to setup values
   setup_vectors<<<16, 16>>>(n, dX, dY);

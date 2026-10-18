@@ -14,10 +14,11 @@
 #endif // no system header
 
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
@@ -30,6 +31,7 @@
 CUB_NAMESPACE_BEGIN
 
 //! The tuning policy for all algorithms in @ref DeviceMerge.
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergePolicy
 {
   int threads_per_block; //!< Number of threads in a CUDA block

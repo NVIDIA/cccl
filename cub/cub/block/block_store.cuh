@@ -18,8 +18,11 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
@@ -420,7 +423,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 
 //! cub::BlockStoreAlgorithm enumerates alternative algorithms for cub::BlockStore to write a
 //! blocked arrangement of items across a CUDA thread block to a linear segment of memory.
-enum BlockStoreAlgorithm
+enum BlockStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -740,8 +743,7 @@ class BlockStore
 
 public:
   //! @smemstorage{BlockStore}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

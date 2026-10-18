@@ -45,7 +45,7 @@ struct less_div_10
 };
 
 template <class Vector>
-void InitializeSimpleStableKeySortTest(Vector& unsorted_keys, Vector& sorted_keys)
+void initialize_simple_stable_key_sort_test(Vector& unsorted_keys, Vector& sorted_keys)
 {
   unsorted_keys.resize(9);
   unsorted_keys = {25, 14, 35, 16, 26, 34, 36, 24, 15};
@@ -55,20 +55,20 @@ void InitializeSimpleStableKeySortTest(Vector& unsorted_keys, Vector& sorted_key
 }
 
 template <class Vector>
-void TestStableSortSimple()
+void test_stable_sort_simple()
 {
   using T = typename Vector::value_type;
 
   Vector unsorted_keys;
   Vector sorted_keys;
 
-  InitializeSimpleStableKeySortTest(unsorted_keys, sorted_keys);
+  initialize_simple_stable_key_sort_test(unsorted_keys, sorted_keys);
 
   thrust::stable_sort(unsorted_keys.begin(), unsorted_keys.end(), less_div_10<T>());
 
   REQUIRE(unsorted_keys == sorted_keys);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_sort_simple);
 
 template <typename T>
 struct TestStableSort
@@ -119,7 +119,7 @@ struct comp_mod3
 };
 
 template <typename Vector>
-void TestStableSortWithIndirection()
+void test_stable_sort_with_indirection()
 {
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
@@ -132,4 +132,4 @@ void TestStableSortWithIndirection()
   Vector ref{3, 3, 0, 1, 1, 5, 2};
   REQUIRE(data == ref);
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestStableSortWithIndirection);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_sort_with_indirection);

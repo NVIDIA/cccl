@@ -67,16 +67,7 @@ int main()
   using VectorIterator = Vector::iterator;
 
   // initialize values
-  Vector values(8);
-
-  values[0] = 2;
-  values[1] = 5;
-  values[2] = 7;
-  values[3] = 1;
-  values[4] = 6;
-  values[5] = 0;
-  values[6] = 3;
-  values[7] = 8;
+  Vector values{2, 5, 7, 1, 6, 0, 3, 8};
 
   print_range("values         ", values.begin(), values.end());
 

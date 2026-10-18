@@ -21,8 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_member_function_pointer.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/is_member_function_pointer.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

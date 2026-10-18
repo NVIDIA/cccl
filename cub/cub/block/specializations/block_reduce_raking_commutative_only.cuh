@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/block/specializations/block_reduce_raking.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
@@ -96,8 +97,7 @@ struct BlockReduceRakingCommutativeOnly
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Thread fields
   _TempStorage& temp_storage;

@@ -31,7 +31,7 @@ TEST_CASE("TestForEachLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
   cudaGetDevice(&current_device);
-  cudaDeviceProp prop;
+  cudaDeviceProp prop{};
   cudaGetDeviceProperties(&prop, current_device);
 
   thrust::device_vector<int> data(NUM_REGISTERS, 12345);
@@ -45,7 +45,7 @@ TEST_CASE("TestForEachNLargeRegisterFootprint", "[for_each]")
 {
   int current_device = -1;
   cudaGetDevice(&current_device);
-  cudaDeviceProp prop;
+  cudaDeviceProp prop{};
   cudaGetDeviceProperties(&prop, current_device);
 
   thrust::device_vector<int> data(NUM_REGISTERS, 12345);
@@ -221,8 +221,7 @@ TEST_CASE("TestForEachCudaStreams", "[for_each]")
   thrust::device_vector<int> input{3, 2, 3, 4, 6};
   thrust::device_vector<int> output(7, 0);
 
-  mark_present_for_each<int> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<int> f{thrust::raw_pointer_cast(output.data())};
 
   thrust::for_each(thrust::cuda::par.on(s), input.begin(), input.end(), f);
 

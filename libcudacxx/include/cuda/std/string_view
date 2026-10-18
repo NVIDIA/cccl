@@ -28,7 +28,7 @@
 #include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/string.h>
-#include <cuda/std/__fwd/string_view.h>
+#include <cuda/std/__fwd/string_view.h> // IWYU pragma: export
 #include <cuda/std/__host_stdlib/stdexcept>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__iterator/bounded_iter.h>

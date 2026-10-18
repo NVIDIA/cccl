@@ -24,15 +24,14 @@ public:
 };
 
 template <class Vector>
-void TestForEachSimple()
+void test_for_each_simple()
 {
   using T = typename Vector::value_type;
 
   Vector input{3, 2, 3, 4, 6};
   Vector output(7, (T) 0);
 
-  mark_present_for_each<T> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<T> f{thrust::raw_pointer_cast(output.data())};
 
   const typename Vector::iterator result = thrust::for_each(input.begin(), input.end(), f);
 
@@ -40,7 +39,7 @@ void TestForEachSimple()
   REQUIRE(output == ref);
   REQUIRE((result == input.end()));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_for_each_simple);
 
 template <typename InputIterator, typename Function>
 InputIterator for_each(my_system& system, InputIterator first, InputIterator, Function)
@@ -76,15 +75,14 @@ TEST_CASE("TestForEachDispatchImplicit", "[for_each]")
 }
 
 template <class Vector>
-void TestForEachNSimple()
+void test_for_each_n_simple()
 {
   using T = typename Vector::value_type;
 
   Vector input{3, 2, 3, 4, 6};
   Vector output(7, (T) 0);
 
-  mark_present_for_each<T> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<T> f{thrust::raw_pointer_cast(output.data())};
 
   const typename Vector::iterator result = thrust::for_each_n(input.begin(), input.size(), f);
 
@@ -92,7 +90,7 @@ void TestForEachNSimple()
   REQUIRE(output == ref);
   REQUIRE((result == input.end()));
 }
-DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachNSimple);
+DECLARE_INTEGRAL_VECTOR_UNITTEST(test_for_each_n_simple);
 
 template <typename InputIterator, typename Size, typename Function>
 InputIterator for_each_n(my_system& system, InputIterator first, Size, Function)
@@ -131,8 +129,7 @@ TEST_CASE("TestForEachSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
-  mark_present_for_each<int> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<int> f{thrust::raw_pointer_cast(output.data())};
 
   const thrust::counting_iterator<int> result =
     thrust::for_each(thrust::make_counting_iterator(0), thrust::make_counting_iterator(5), f);
@@ -146,8 +143,7 @@ TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
 {
   thrust::device_vector<int> output(7, 0);
 
-  mark_present_for_each<int> f;
-  f.ptr = thrust::raw_pointer_cast(output.data());
+  const mark_present_for_each<int> f{thrust::raw_pointer_cast(output.data())};
 
   const thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
 
@@ -157,7 +153,7 @@ TEST_CASE("TestForEachNSimpleAnySystem", "[for_each]")
 }
 
 template <typename T>
-void TestForEach(const size_t n)
+void test_for_each(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
@@ -173,10 +169,8 @@ void TestForEach(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  mark_present_for_each<T> h_f;
-  mark_present_for_each<T> d_f;
-  h_f.ptr = &h_output[0];
-  d_f.ptr = (&d_output[0]).get();
+  const mark_present_for_each<T> h_f{&h_output[0]};
+  const mark_present_for_each<T> d_f{(&d_output[0]).get()};
 
   const typename thrust::host_vector<T>::iterator h_result = thrust::for_each(h_input.begin(), h_input.end(), h_f);
 
@@ -186,10 +180,10 @@ void TestForEach(const size_t n)
   REQUIRE((h_result == h_input.end()));
   REQUIRE((d_result == d_input.end()));
 }
-DECLARE_VARIABLE_UNITTEST(TestForEach);
+DECLARE_VARIABLE_UNITTEST(test_for_each);
 
 template <typename T>
-void TestForEachN(const size_t n)
+void test_for_each_n(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
@@ -205,10 +199,8 @@ void TestForEachN(const size_t n)
   thrust::host_vector<T> h_output(output_size, (T) 0);
   thrust::device_vector<T> d_output(output_size, (T) 0);
 
-  mark_present_for_each<T> h_f;
-  mark_present_for_each<T> d_f;
-  h_f.ptr = &h_output[0];
-  d_f.ptr = (&d_output[0]).get();
+  const mark_present_for_each<T> h_f{&h_output[0]};
+  const mark_present_for_each<T> d_f{(&d_output[0]).get()};
 
   const typename thrust::host_vector<T>::iterator h_result = thrust::for_each_n(h_input.begin(), h_input.size(), h_f);
 
@@ -218,7 +210,7 @@ void TestForEachN(const size_t n)
   REQUIRE((h_result == h_input.end()));
   REQUIRE((d_result == d_input.end()));
 }
-DECLARE_VARIABLE_UNITTEST(TestForEachN);
+DECLARE_VARIABLE_UNITTEST(test_for_each_n);
 
 template <typename T, unsigned int N>
 struct SetFixedVectorToConstant
@@ -236,7 +228,7 @@ struct SetFixedVectorToConstant
 };
 
 template <typename T, unsigned int N>
-void _TestForEachWithLargeTypes()
+void test_for_each_with_large_types()
 {
   const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -259,24 +251,24 @@ void _TestForEachWithLargeTypes()
 
 TEST_CASE("TestForEachWithLargeTypes", "[for_each]")
 {
-  _TestForEachWithLargeTypes<int, 1>();
-  _TestForEachWithLargeTypes<int, 2>();
-  _TestForEachWithLargeTypes<int, 4>();
-  _TestForEachWithLargeTypes<int, 8>();
-  _TestForEachWithLargeTypes<int, 16>();
+  test_for_each_with_large_types<int, 1>();
+  test_for_each_with_large_types<int, 2>();
+  test_for_each_with_large_types<int, 4>();
+  test_for_each_with_large_types<int, 8>();
+  test_for_each_with_large_types<int, 16>();
 
-  _TestForEachWithLargeTypes<int, 32>(); // fails on Linux 32 w/ gcc 4.1
-  _TestForEachWithLargeTypes<int, 64>();
-  _TestForEachWithLargeTypes<int, 128>();
-  _TestForEachWithLargeTypes<int, 256>();
-  _TestForEachWithLargeTypes<int, 512>();
+  test_for_each_with_large_types<int, 32>(); // fails on Linux 32 w/ gcc 4.1
+  test_for_each_with_large_types<int, 64>();
+  test_for_each_with_large_types<int, 128>();
+  test_for_each_with_large_types<int, 256>();
+  test_for_each_with_large_types<int, 512>();
 
   // XXX parallel_for doesn't support large types
-  //    _TestForEachWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
+  //    test_for_each_with_large_types<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
 
 template <typename T, unsigned int N>
-void _TestForEachNWithLargeTypes()
+void test_for_each_n_with_large_types()
 {
   const size_t n = (64 * 1024) / sizeof(FixedVector<T, N>);
 
@@ -299,20 +291,20 @@ void _TestForEachNWithLargeTypes()
 
 TEST_CASE("TestForEachNWithLargeTypes", "[for_each]")
 {
-  _TestForEachNWithLargeTypes<int, 1>();
-  _TestForEachNWithLargeTypes<int, 2>();
-  _TestForEachNWithLargeTypes<int, 4>();
-  _TestForEachNWithLargeTypes<int, 8>();
-  _TestForEachNWithLargeTypes<int, 16>();
+  test_for_each_n_with_large_types<int, 1>();
+  test_for_each_n_with_large_types<int, 2>();
+  test_for_each_n_with_large_types<int, 4>();
+  test_for_each_n_with_large_types<int, 8>();
+  test_for_each_n_with_large_types<int, 16>();
 
-  _TestForEachNWithLargeTypes<int, 32>(); // fails on Linux 32 w/ gcc 4.1
-  _TestForEachNWithLargeTypes<int, 64>();
-  _TestForEachNWithLargeTypes<int, 128>();
-  _TestForEachNWithLargeTypes<int, 256>();
-  _TestForEachNWithLargeTypes<int, 512>();
+  test_for_each_n_with_large_types<int, 32>(); // fails on Linux 32 w/ gcc 4.1
+  test_for_each_n_with_large_types<int, 64>();
+  test_for_each_n_with_large_types<int, 128>();
+  test_for_each_n_with_large_types<int, 256>();
+  test_for_each_n_with_large_types<int, 512>();
 
   // XXX parallel_for doesn't support large types
-  //    _TestForEachNWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
+  //    test_for_each_n_with_large_types<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
 
 _CCCL_DIAG_POP
@@ -331,7 +323,7 @@ struct only_set_when_expected
   }
 };
 
-void TestForEachWithBigIndexesHelper(int magnitude)
+void test_for_each_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<unsigned long long> begin(0);
   const thrust::counting_iterator<unsigned long long> end = begin + static_cast<std::ptrdiff_t>(1ull << magnitude);
@@ -352,8 +344,8 @@ void TestForEachWithBigIndexesHelper(int magnitude)
 
 TEST_CASE("TestForEachWithBigIndexes", "[for_each]")
 {
-  TestForEachWithBigIndexesHelper(30);
-  TestForEachWithBigIndexesHelper(31);
-  TestForEachWithBigIndexesHelper(32);
-  TestForEachWithBigIndexesHelper(33);
+  test_for_each_with_big_indexes_helper(30);
+  test_for_each_with_big_indexes_helper(31);
+  test_for_each_with_big_indexes_helper(32);
+  test_for_each_with_big_indexes_helper(33);
 }

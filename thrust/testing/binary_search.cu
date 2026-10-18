@@ -259,7 +259,7 @@ TEST_CASE("ScalarEqualRangeDispatchImplicit", "[binary_search]")
 
 _CCCL_DIAG_POP
 
-void TestBoundsWithBigIndexesHelper(int magnitude)
+void test_bounds_with_big_indexes_helper(int magnitude)
 {
   const thrust::counting_iterator<long long> begin(1);
   const thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
@@ -287,6 +287,6 @@ TEST_CASE("BoundsWithBigIndexes", "[binary_search]")
 {
   for (const int magnitude : {30, 31, 32, 33})
   {
-    TestBoundsWithBigIndexesHelper(magnitude);
+    test_bounds_with_big_indexes_helper(magnitude);
   }
 }

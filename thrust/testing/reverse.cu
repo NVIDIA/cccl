@@ -7,7 +7,7 @@
 using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>;
 
 template <typename Vector>
-void TestReverseSimple()
+void test_reverse_simple()
 {
   Vector data{1, 2, 3, 4, 5};
 
@@ -17,7 +17,7 @@ void TestReverseSimple()
 
   REQUIRE(ref == data);
 }
-DECLARE_VECTOR_UNITTEST(TestReverseSimple);
+DECLARE_VECTOR_UNITTEST(test_reverse_simple);
 
 template <typename BidirectionalIterator>
 void reverse(my_system& system, BidirectionalIterator, BidirectionalIterator)
@@ -51,7 +51,7 @@ TEST_CASE("TestReverseDispatchImplicit", "[reverse]")
 }
 
 template <typename Vector>
-void TestReverseCopySimple()
+void test_reverse_copy_simple()
 {
   using Iterator = typename Vector::iterator;
 
@@ -65,7 +65,7 @@ void TestReverseCopySimple()
   REQUIRE(5 == iter - output.begin());
   REQUIRE(ref == output);
 }
-DECLARE_VECTOR_UNITTEST(TestReverseCopySimple);
+DECLARE_VECTOR_UNITTEST(test_reverse_copy_simple);
 
 template <typename BidirectionalIterator, typename OutputIterator>
 OutputIterator reverse_copy(my_system& system, BidirectionalIterator, BidirectionalIterator, OutputIterator result)

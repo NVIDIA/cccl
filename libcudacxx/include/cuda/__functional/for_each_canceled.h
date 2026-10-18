@@ -25,10 +25,7 @@
 
 #  include <cuda/std/__functional/invoke.h>
 #  include <cuda/std/__utility/move.h>
-#  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/cstdint>
-
-#  include <nv/target>
 
 #  include <cuda/std/__cccl/prologue.h>
 

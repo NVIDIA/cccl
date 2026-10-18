@@ -28,13 +28,13 @@
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__memory/allocator_traits.h> // __pointer
 #include <cuda/std/__memory/compressed_pair.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/dependent_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_assignable.h>
@@ -217,7 +217,8 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
-  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20
+  unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
   {}
 
@@ -232,7 +233,8 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterAssignable<_Ep>>
-  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
+  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr&
+  operator=(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     reset(__u.release());
     __ptr_.second() = ::cuda::std::forward<_Ep>(__u.get_deleter());
@@ -429,7 +431,8 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterConvertible<_Ep>>
-  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
+  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20
+  unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
       : __ptr_(__u.release(), ::cuda::std::forward<_Ep>(__u.get_deleter()))
   {}
 
@@ -437,7 +440,8 @@ public:
             class _Ep,
             class = _EnableIfMoveConvertible<unique_ptr<_Up, _Ep>, _Up>,
             class = _EnableIfDeleterAssignable<_Ep>>
-  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr& operator=(unique_ptr<_Up, _Ep>&& __u) noexcept
+  _CCCL_HOST_DEVICE_API inline _CCCL_CONSTEXPR_CXX20 unique_ptr&
+  operator=(unique_ptr<_Up, _Ep>&& __u) noexcept // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
   {
     reset(__u.release());
     __ptr_.second() = ::cuda::std::forward<_Ep>(__u.get_deleter());

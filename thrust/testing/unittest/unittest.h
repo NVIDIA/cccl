@@ -13,10 +13,11 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstddef>
-#include <cuda/std/cstdlib>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstdlib>
+#include <memory>
 #include <string>
 #include <typeinfo>
 #include <vector>
@@ -355,15 +356,10 @@ inline std::string demangle(const char* name)
 {
   // for demangling the result of type_info.name() with msvc, type_info.name() is already demangled
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-  int status     = 0;
-  char* realname = abi::__cxa_demangle(name, nullptr, nullptr, &status);
-  if (realname == nullptr)
-  {
-    return name;
-  }
-  std::string result(realname);
-  ::cuda::std::free(realname);
-  return result;
+  int status = 0;
+  const std::unique_ptr<char, decltype(&std::free)> realname{
+    abi::__cxa_demangle(name, nullptr, nullptr, &status), &std::free};
+  return realname ? realname.get() : name;
 #else
   return name;
 #endif

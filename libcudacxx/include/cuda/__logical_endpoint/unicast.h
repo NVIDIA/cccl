@@ -139,9 +139,9 @@ public:
 
 //! @brief Move-only owning RAII wrapper for a unicast CUDA logical endpoint.
 //!
-//! This type owns endpoint creation and destruction. It can be passed as a kernel argument through `cuda::launch`; CCCL
-//! launch argument transformation converts it to `unicast_logical_endpoint_ref`. Raw `<<<>>>` launches do not perform
-//! that transformation, so they should pass `unicast_logical_endpoint_ref` explicitly.
+//! This type owns endpoint creation/import and destruction. It can be passed as a kernel argument through
+//! `cuda::launch`; CCCL launch argument transformation converts it to `unicast_logical_endpoint_ref`. Raw `<<<>>>`
+//! launches do not perform that transformation, so they should pass `unicast_logical_endpoint_ref` explicitly.
 class unicast_logical_endpoint
     : public ::cuda::__detail::__logical_endpoint_owner_base<unicast_logical_endpoint_ref,
                                                              ::cuda::__detail::__logical_endpoint_type::__unicast>
@@ -171,6 +171,13 @@ public:
       : unicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __spec, __bytes)
   {}
 
+  //! @brief Reserves one ID and imports a unicast logical endpoint.
+  //!
+  //! @param[in] __handle The exported logical endpoint fabric handle.
+  _CCCL_HOST_API explicit unicast_logical_endpoint(const logical_endpoint_fabric_handle& __handle)
+      : unicast_logical_endpoint(logical_endpoint_id_range{1}, 0, __handle)
+  {}
+
   //! @brief Creates a unicast logical endpoint from a caller-managed ID.
   //!
   //! @param[in] __id The caller-managed logical endpoint ID.
@@ -180,6 +187,15 @@ public:
     logical_endpoint_id __id, const unicast_logical_endpoint_spec& __spec, ::cuda::std::uint64_t __bytes)
   {
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
+  }
+
+  //! @brief Imports a unicast logical endpoint into a caller-managed ID.
+  //!
+  //! @param[in] __id The caller-managed logical endpoint ID.
+  //! @param[in] __handle The exported logical endpoint fabric handle.
+  _CCCL_HOST_API unicast_logical_endpoint(logical_endpoint_id __id, const logical_endpoint_fabric_handle& __handle)
+  {
+    this->__import_endpoint(__id, __handle);
   }
 
   //! @brief Creates a unicast logical endpoint from an ID in a retained range.
@@ -196,6 +212,20 @@ public:
   {
     const auto __id = __range.at(__index);
     this->__create_endpoint(__id, __spec.__as_prop(__bytes));
+    this->__retain_id_range(__range);
+  }
+
+  //! @brief Imports a unicast logical endpoint into an ID in a retained range.
+  //!
+  //! @param[in] __range The logical endpoint ID range to retain.
+  //! @param[in] __index The ID index in the range.
+  //! @param[in] __handle The exported logical endpoint fabric handle.
+  _CCCL_HOST_API unicast_logical_endpoint(const logical_endpoint_id_range& __range,
+                                          ::cuda::std::uint32_t __index,
+                                          const logical_endpoint_fabric_handle& __handle)
+  {
+    const auto __id = __range.at(__index);
+    this->__import_endpoint(__id, __handle);
     this->__retain_id_range(__range);
   }
 };

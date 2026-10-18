@@ -289,7 +289,7 @@ struct TestZipIteratorReference
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestZipIteratorReference, NumericTypes);
 
 template <typename Vector>
-void TestZipIteratorCopy()
+void test_zip_iterator_copy()
 {
   using T = typename Vector::value_type;
 
@@ -307,7 +307,7 @@ void TestZipIteratorCopy()
   REQUIRE(input0 == output0);
   REQUIRE(input1 == output1);
 }
-DECLARE_VECTOR_UNITTEST(TestZipIteratorCopy);
+DECLARE_VECTOR_UNITTEST(test_zip_iterator_copy);
 
 struct SumTwoTuple
 {
@@ -467,7 +467,7 @@ TEST_CASE("TestZipIteratorCopySoAToAoS", "[zip_iterator]")
 }
 
 template <typename T>
-void TestZipIteratorDereferenceToValueType(const T& t)
+void test_zip_iterator_dereference_to_value_type(const T& t)
 {
   thrust::device_vector<T> data(1, t);
 
@@ -490,11 +490,12 @@ void TestZipIteratorDereferenceToValueType(const T& t)
 
 TEST_CASE("TestZipIteratorDereferenceToValue", "[zip_iterator]")
 {
-  TestZipIteratorDereferenceToValueType(1);
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1));
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1, cuda::std::make_tuple(1)));
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(1, cuda::std::make_tuple(1, 1)));
-  TestZipIteratorDereferenceToValueType(cuda::std::make_tuple(cuda::std::make_tuple(1), cuda::std::make_tuple(1, 1)));
+  test_zip_iterator_dereference_to_value_type(1);
+  test_zip_iterator_dereference_to_value_type(cuda::std::make_tuple(1));
+  test_zip_iterator_dereference_to_value_type(cuda::std::make_tuple(1, cuda::std::make_tuple(1)));
+  test_zip_iterator_dereference_to_value_type(cuda::std::make_tuple(1, cuda::std::make_tuple(1, 1)));
+  test_zip_iterator_dereference_to_value_type(
+    cuda::std::make_tuple(cuda::std::make_tuple(1), cuda::std::make_tuple(1, 1)));
 }
 
 TEST_CASE("TestZipIteratorNestedCopy", "[zip_iterator]")

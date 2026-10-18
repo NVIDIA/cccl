@@ -13,9 +13,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/type_size.cuh>
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
-#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -277,6 +278,7 @@ _CCCL_DEVICE void transform_kernel_vectorized(
   // if we can vectorize, we convert f's return type to the output type right away, so we can reinterpret later
   using output_array_t                  = ::cuda::std::conditional_t<can_vectorize_store, output_t, result_t>;
   constexpr auto output_array_alignment = can_vectorize_store ? sizeof(output_t) * VecSize : alignof(result_t);
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
   ::cuda::__uninitialized_array<output_array_t, ItemsPerThread, output_array_alignment> output;
 
   auto provide_array = [&](auto... inputs) {

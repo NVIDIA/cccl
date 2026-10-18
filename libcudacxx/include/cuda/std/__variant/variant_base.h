@@ -20,9 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/variant.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -180,8 +182,8 @@ protected:
     return sizeof...(_Types);
   }
 
-  __union<_DestructibleTrait, 0, _Types...> __data_;
-  __index_t __index_;
+  __union<_DestructibleTrait, 0, _Types...> __data_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
+  __index_t __index_; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
   friend struct __access::__base;
 };

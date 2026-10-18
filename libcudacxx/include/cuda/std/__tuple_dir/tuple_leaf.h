@@ -20,18 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/get.h>
-#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/tuple_constraints.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
-#include <cuda/std/__tuple_dir/tuple_indices.h>
-#include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/fold.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_final.h>
@@ -43,7 +40,9 @@
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -75,8 +74,16 @@ class __tuple_leaf;
 
 _CCCL_EXEC_CHECK_DISABLE
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
-_CCCL_API inline void swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x,
-                           __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<_Hp>)
+_CCCL_API constexpr void
+swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<_Hp>)
+{
+  swap(__x.__get(), __y.__get());
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
+_CCCL_API constexpr void swap(const __tuple_leaf<_Ip, _Hp, _Ep>& __x,
+                              const __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(is_nothrow_swappable_v<const _Hp>)
 {
   swap(__x.__get(), __y.__get());
 }
@@ -120,19 +127,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&)
       : __value_()
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a)
       : __value_(__a)
   {}
 
@@ -146,19 +153,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -170,7 +177,12 @@ public:
     return *this;
   }
 
-  _CCCL_API inline void swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<_Hp>)
+  _CCCL_API constexpr void swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<_Hp>)
+  {
+    ::cuda::std::swap(*this, __t);
+  }
+
+  _CCCL_API constexpr void swap(const __tuple_leaf& __t) const noexcept(is_nothrow_swappable_v<const _Hp>)
   {
     ::cuda::std::swap(*this, __t);
   }
@@ -220,7 +232,7 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : __value_(::cuda::std::forward<_Tp>(__t))
   {
     static_assert(__can_bind_reference<_Tp&&>,
@@ -259,7 +271,12 @@ public:
     return *this;
   }
 
-  _CCCL_API inline void swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<_Hp>)
+  _CCCL_API constexpr void swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<_Hp>)
+  {
+    ::cuda::std::swap(*this, __t);
+  }
+
+  _CCCL_API constexpr void swap(const __tuple_leaf& __t) const noexcept(is_nothrow_swappable_v<const _Hp>)
   {
     ::cuda::std::swap(*this, __t);
   }
@@ -294,18 +311,18 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a)
       : _Hp(allocator_arg_t(), __a)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
-  _CCCL_API inline __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
+  _CCCL_API constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a)
       : _Hp(__a)
   {}
 
@@ -319,19 +336,19 @@ public:
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_none, const _Alloc&, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_arg, const _Alloc& __a, _Tp&& __t)
       : _Hp(allocator_arg_t(), __a, ::cuda::std::forward<_Tp>(__t))
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
-  _CCCL_API explicit constexpr __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
+  _CCCL_API explicit constexpr __tuple_leaf(__select_uses_allocator_last, const _Alloc& __a, _Tp&& __t)
       : _Hp(::cuda::std::forward<_Tp>(__t), __a)
   {}
 
@@ -352,7 +369,13 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_API inline void swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<_Hp>)
+  _CCCL_API constexpr void swap(__tuple_leaf& __t) noexcept(is_nothrow_swappable_v<_Hp>)
+  {
+    ::cuda::std::swap(*this, __t);
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_API constexpr void swap(const __tuple_leaf& __t) const noexcept(is_nothrow_swappable_v<const _Hp>)
   {
     ::cuda::std::swap(*this, __t);
   }
@@ -380,8 +403,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_copy_assign(_Dest& __dest, _Source const& __source, __tuple_indices<_Indices...>)
 {
-  using ::cuda::std::get;
-  ((void) (get<_Indices>(__dest) = get<_Indices>(__source)), ...);
+  ((void) (::cuda::std::get<_Indices>(__dest) = ::cuda::std::get<_Indices>(__source)), ...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -389,19 +411,18 @@ template <class _Dest, class _Source, class... _Up, size_t... _Indices>
 _CCCL_API constexpr void
 __memberwise_forward_assign(_Dest& __dest, _Source&& __source, __type_list<_Up...>, __tuple_indices<_Indices...>)
 {
-  using ::cuda::std::get;
-  ((void) (get<_Indices>(__dest) = ::cuda::std::forward<_Up>(get<_Indices>(__source))), ...);
+  ((void) (::cuda::std::get<_Indices>(__dest) = ::cuda::std::forward<_Up>(::cuda::std::get<_Indices>(__source))), ...);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Dest, class _Source, size_t... _Indices>
 _CCCL_API constexpr void __memberwise_tuple_assign(_Dest& __dest, _Source&& __source, __tuple_indices<_Indices...>)
 {
-  using ::cuda::std::get;
   // clang-tidy incorrectly reports "'__source' used after it was forwarded".
   // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct element.
   // NOLINTNEXTLINE(bugprone-use-after-move)
-  ((void) (get<_Indices>(__dest) = get<_Indices>(::cuda::std::forward<_Source>(__source))), ...);
+  ((void) (::cuda::std::get<_Indices>(__dest) = ::cuda::std::get<_Indices>(::cuda::std::forward<_Source>(__source))),
+   ...);
 }
 
 template <class _Indx, class... _Tp>
@@ -454,9 +475,9 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   template <class _Tuple>
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, _Tuple&& __t)
       // clang-tidy incorrectly reports "'__t' used after it was forwarded".
-      // Each expansion forwards the tuple only to select __adl_get<I>'s cvref-qualified overload for a distinct
+      // Each expansion forwards the tuple only to select get<I>'s cvref-qualified overload for a distinct
       // element. NOLINTNEXTLINE(bugprone-use-after-move)
-      : __tuple_leaf<_Indx, _Tp>(::cuda::std::__adl_get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
+      : __tuple_leaf<_Indx, _Tp>(::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -464,7 +485,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_API constexpr __tuple_impl(__tuple_like_constructor_tag, allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
-                                 ::cuda::std::__adl_get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
+                                 ::cuda::std::get<_Indx>(::cuda::std::forward<_Tuple>(__t)))...
   {}
 
   _CCCL_HIDE_FROM_ABI __tuple_impl(const __tuple_impl&)            = default;
@@ -472,22 +493,17 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(const __tuple_impl&) = default;
   _CCCL_HIDE_FROM_ABI __tuple_impl& operator=(__tuple_impl&&)      = default;
 
-  // Using a fold exppression here breaks nvrtc
-  _CCCL_API inline void swap(__tuple_impl& __t)
-  // NVCC 12.0.X has a bug where it instantiates friend functions eagerly. This leads to errors
-  // because the friend swap() in tuple causes this swap() to (transitively) be instantiated
-  // regardless of whether it is called or not.
-  //
-  // When using tuples of incomplete types this causes errors with is_nothrow_swappable (or
-  // rather, any is_swappable trait) as they require the types to be complete. In this case we
-  // need to lazily instantiate these templates so we can short-circuit if _Tp is incomplete.
-#if _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
-    noexcept(__fold_and_v<__is_complete_and_nothrow_swappable_v<remove_cvref_t<_Tp>>...>)
-#else // ^^^  _CCCL_CUDA_COMPILER(NVCC, <, 12, 1) ^^^ / vvv  _CCCL_CUDA_COMPILER(NVCC, >=, 12, 1) vvv
-    noexcept(__fold_and_v<is_nothrow_swappable_v<_Tp>...>)
-#endif //  _CCCL_CUDA_COMPILER(NVCC, <, 12, 1)
+  template <class _Constraints = __tuple_swap_constraints<_Tp...>, enable_if_t<_Constraints::__all_swappable, int> = 0>
+  _CCCL_API constexpr void swap(__tuple_impl& __t) noexcept(_Constraints::__all_nothrow_swappable)
   {
     (__tuple_leaf<_Indx, _Tp>::swap(static_cast<__tuple_leaf<_Indx, _Tp>&>(__t)), ...);
+  }
+
+  template <class _Constraints                                    = __tuple_swap_constraints<_Tp...>,
+            enable_if_t<_Constraints::__all_const_swappable, int> = 0>
+  _CCCL_API constexpr void swap(const __tuple_impl& __t) const noexcept(_Constraints::__all_nothrow_const_swappable)
+  {
+    (__tuple_leaf<_Indx, _Tp>::swap(static_cast<const __tuple_leaf<_Indx, _Tp>&>(__t)), ...);
   }
 };
 

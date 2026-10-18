@@ -9,6 +9,8 @@
 #include <thrust/functional.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
+#include <thrust/system/cuda/error.h>
+#include <thrust/system_error.h>
 #include <thrust/transform.h>
 
 #include <cuda/iterator>
@@ -18,6 +20,7 @@
 #include <cstdint>
 #include <limits>
 #include <new> // bad_alloc
+#include <string>
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
@@ -453,6 +456,10 @@ void do_large_offset_test(std::size_t num_items)
 
   CAPTURE(num_items, is_descending);
 
+  const std::string allocation_failure_message =
+    std::string{"Skipping radix sort test with "} + std::to_string(num_items) + " elements ("
+    + std::to_string(num_items * sizeof(KeyT)) + " bytes): insufficient device memory";
+
   try
   {
     large_array_sort_helper<KeyT> arrays;
@@ -474,14 +481,17 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
   }
-  catch ([[maybe_unused]] std::bad_alloc& e)
+  catch (const std::bad_alloc&)
   {
-#ifdef DEBUG_CHECKED_ALLOC_FAILURE
-    const std::size_t num_bytes = num_items * sizeof(KeyT);
-    std::cerr
-      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
-#endif // DEBUG_CHECKED_ALLOC_FAILURE
-    SUCCEED("allocation failure is not a test failure");
+    SKIP(allocation_failure_message);
+  }
+  catch (const thrust::system_error& e)
+  {
+    if (e.code() != thrust::system::error_code{cudaErrorMemoryAllocation, thrust::cuda_category()})
+    {
+      throw;
+    }
+    SKIP(allocation_failure_message);
   }
 }
 

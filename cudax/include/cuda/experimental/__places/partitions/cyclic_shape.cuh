@@ -216,9 +216,9 @@ public:
   template <size_t dimensions>
   _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
-    ::std::array<size_t, dimensions> begins;
-    ::std::array<size_t, dimensions> ends;
-    ::std::array<size_t, dimensions> strides;
+    ::std::array<size_t, dimensions> begins{};
+    ::std::array<size_t, dimensions> ends{};
+    ::std::array<size_t, dimensions> strides{};
     for (size_t d = 0; d < dimensions; d++)
     {
       begins[d]  = in.get_begin(d) + place_position.get(d);

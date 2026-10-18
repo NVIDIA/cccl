@@ -74,7 +74,7 @@ TEST_CASE("TestUninitializedCopyNDispatchImplicit", "[uninitialized_copy]")
 }
 
 template <class Vector>
-void TestUninitializedCopySimplePOD()
+void test_uninitialized_copy_simple_pod()
 {
   Vector v1{0, 1, 2, 3, 4};
 
@@ -84,10 +84,10 @@ void TestUninitializedCopySimplePOD()
   Vector ref{0, 1, 2, 3, 4};
   REQUIRE(v2 == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestUninitializedCopySimplePOD);
+DECLARE_VECTOR_UNITTEST(test_uninitialized_copy_simple_pod);
 
 template <typename Vector>
-void TestUninitializedCopyNSimplePOD()
+void test_uninitialized_copy_n_simple_pod()
 {
   Vector v1{0, 1, 2, 3, 4};
 
@@ -97,7 +97,7 @@ void TestUninitializedCopyNSimplePOD()
   Vector ref{0, 1, 2, 3, 4};
   REQUIRE(v2 == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
+DECLARE_VECTOR_UNITTEST(test_uninitialized_copy_n_simple_pod);
 
 TEST_CASE("TestUninitializedCopyNonPODDevice", "[uninitialized_copy]")
 {

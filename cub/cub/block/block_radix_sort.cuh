@@ -23,8 +23,10 @@
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -497,8 +499,7 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
   /// @smemstorage{BlockRadixSort}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{

@@ -11,7 +11,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 template <class Vector>
-void TestFillSimple()
+void test_fill_simple()
 {
   using T = typename Vector::value_type;
 
@@ -37,7 +37,7 @@ void TestFillSimple()
   ref = Vector(5, 1);
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestFillSimple);
+DECLARE_VECTOR_UNITTEST(test_fill_simple);
 
 TEST_CASE("TestFillDiscardIterator", "[fill]")
 {
@@ -50,7 +50,7 @@ TEST_CASE("TestFillDiscardIterator", "[fill]")
 }
 
 template <class Vector>
-void TestFillMixedTypes()
+void test_fill_mixed_types()
 {
   Vector v(4);
 
@@ -64,10 +64,10 @@ void TestFillMixedTypes()
   ref = Vector(4, 20);
   REQUIRE(v == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestFillMixedTypes);
+DECLARE_VECTOR_UNITTEST(test_fill_mixed_types);
 
 template <typename T>
-void TestFill(size_t n)
+void test_fill(size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -97,10 +97,10 @@ void TestFill(size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestFill);
+DECLARE_VARIABLE_UNITTEST(test_fill);
 
 template <class Vector>
-void TestFillNSimple()
+void test_fill_n_simple()
 {
   using T = typename Vector::value_type;
 
@@ -134,7 +134,7 @@ void TestFillNSimple()
 
   REQUIRE((v.end() == iter));
 }
-DECLARE_VECTOR_UNITTEST(TestFillNSimple);
+DECLARE_VECTOR_UNITTEST(test_fill_n_simple);
 
 TEST_CASE("TestFillNDiscardIterator", "[fill]")
 {
@@ -151,7 +151,7 @@ TEST_CASE("TestFillNDiscardIterator", "[fill]")
 }
 
 template <class Vector>
-void TestFillNMixedTypes()
+void test_fill_n_mixed_types()
 {
   Vector v(4);
 
@@ -167,10 +167,10 @@ void TestFillNMixedTypes()
   REQUIRE(v == ref);
   REQUIRE((v.end() == iter));
 }
-DECLARE_VECTOR_UNITTEST(TestFillNMixedTypes);
+DECLARE_VECTOR_UNITTEST(test_fill_n_mixed_types);
 
 template <typename T>
-void TestFillN(size_t n)
+void test_fill_n(size_t n)
 {
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
@@ -204,10 +204,10 @@ void TestFillN(size_t n)
 
   REQUIRE(h_data == d_data);
 }
-DECLARE_VARIABLE_UNITTEST(TestFillN);
+DECLARE_VARIABLE_UNITTEST(test_fill_n);
 
 template <typename Vector>
-void TestFillZipIterator()
+void test_fill_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -228,7 +228,7 @@ void TestFillZipIterator()
   Vector ref3{13, 13, 13};
   REQUIRE(ref3 == v3);
 };
-DECLARE_VECTOR_UNITTEST(TestFillZipIterator);
+DECLARE_VECTOR_UNITTEST(test_fill_zip_iterator);
 
 TEST_CASE("TestFillTuple", "[fill]")
 {

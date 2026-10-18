@@ -23,22 +23,21 @@
 #if _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/get_memory_resource.h>
-#  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream.h>
 #  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__cstddef/types.h>
+#  include <cuda/std/__type_traits/is_const.h>
+#  include <cuda/std/__type_traits/is_reference.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/integer_sequence.h>
 #endif // _CCCL_HAS_CTK() && !_CCCL_COMPILER(NVRTC)
 #include <cuda/std/__bit/has_single_bit.h>
-#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__fwd/execution_policy.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -111,7 +110,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       { // The user passed a prvalue, which indicates we should own the resource
         return __with(prop{::cuda::mr::get_memory_resource,
                            ::cuda::mr::any_resource<> {
-                             ::cuda::std::move(__env)
+                             ::cuda::std::forward<_Env>(__env)
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
       }
@@ -149,7 +148,7 @@ struct __execution_policy_base : env<__unwrap_reference_t<_Envs>...>
       { // The user passed a prvalue, which indicates we should own the resource
         return __with(prop{__tag,
                            ::cuda::mr::any_resource<> {
-                             ::cuda::std::move(__value)
+                             ::cuda::std::forward<_Value>(__value)
                            }},
                       ::cuda::std::make_index_sequence<sizeof...(_Envs)>());
       }

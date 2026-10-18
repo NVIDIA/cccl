@@ -37,7 +37,7 @@ namespace detail
 //! @param env The execution environment
 //! @param algorithm_callable Callable that invokes the algorithm implementation with determinism specified
 template <typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, const AlgorithmCallable& algorithm_callable)
 {
   // Query stream from environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
@@ -76,7 +76,8 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(const EnvT& env, AlgorithmCal
 //! @endcond
 
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
-CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(const EnvT& env, AlgorithmCallable&& algorithm_callable)
+CUB_RUNTIME_FUNCTION cudaError_t
+dispatch_with_env_and_tuning(const EnvT& env, const AlgorithmCallable& algorithm_callable)
 {
   return detail::dispatch_with_env(
     env,
@@ -102,7 +103,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(const EnvT& env, A
 //! @param algorithm_callable Callable that invokes the algorithm implementation with determinism specified
 template <typename EnvT, typename AlgorithmCallable>
 CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
-  void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
+  void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, const AlgorithmCallable& algorithm_callable)
 {
   // Query stream from environment
   auto stream = ::cuda::__call_or(::cuda::get_stream, ::cuda::stream_ref{cudaStream_t{}}, env);
@@ -116,7 +117,7 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env(
 
 template <typename DefaultPolicySelector, typename EnvT, typename AlgorithmCallable>
 CUB_RUNTIME_FUNCTION cudaError_t dispatch_with_env_and_tuning(
-  void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, AlgorithmCallable&& algorithm_callable)
+  void* d_temp_storage, size_t& temp_storage_bytes, const EnvT& env, const AlgorithmCallable& algorithm_callable)
 {
   return detail::dispatch_with_env(
     d_temp_storage,

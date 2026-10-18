@@ -3,7 +3,7 @@
 
 #include <unittest/unittest.h>
 template <class Vector>
-void TestMismatchSimple()
+void test_mismatch_simple()
 {
   Vector a{1, 2, 3, 4};
   Vector b{1, 2, 4, 3};
@@ -21,10 +21,10 @@ void TestMismatchSimple()
   REQUIRE(thrust::mismatch(a.begin(), a.end(), b.begin()).first - a.begin() == 4);
   REQUIRE(thrust::mismatch(a.begin(), a.end(), b.begin()).second - b.begin() == 4);
 }
-DECLARE_VECTOR_UNITTEST(TestMismatchSimple);
+DECLARE_VECTOR_UNITTEST(test_mismatch_simple);
 
 template <class Vector>
-void TestMismatchBoundedSimple()
+void test_mismatch_bounded_simple()
 {
   using T = typename Vector::value_type;
 
@@ -91,7 +91,7 @@ void TestMismatchBoundedSimple()
     REQUIRE(result.second - b.begin() == 0);
   }
 }
-DECLARE_VECTOR_UNITTEST(TestMismatchBoundedSimple);
+DECLARE_VECTOR_UNITTEST(test_mismatch_bounded_simple);
 
 TEST_CASE("TestMismatchBoundedWithExec", "[mismatch]")
 {

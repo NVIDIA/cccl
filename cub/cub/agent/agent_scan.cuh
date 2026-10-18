@@ -25,6 +25,9 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_device.cuh>
@@ -233,8 +236,7 @@ struct AgentScan
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Per-thread fields
@@ -366,6 +368,8 @@ struct AgentScan
     if (tile_idx == 0)
     {
       // Scan first tile
+      // ScanFirstTile fills the aggregate before it is read.
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
       AccumT block_aggregate;
       ScanFirstTile(items, init_value, scan_op, block_aggregate);
 

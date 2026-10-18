@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/optional>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -40,6 +41,7 @@
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/exception_policy.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh> // for reserved::counter
 
 namespace cuda::experimental::stf
@@ -223,7 +225,7 @@ public:
   stream_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
-    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    return stream_task<Deps...>(*this, mv(e_place), mv(deps)...); // NOLINT(cppcoreguidelines-slicing)
   }
 
   template <typename... Deps>
@@ -543,19 +545,31 @@ public:
     // device so we can restore it on exit (0 means we never switched).
     int prev_device = 0;
 
+    // The events are releases: a failing destroy leaks that event and is reported, one policy per
+    // release. Restoring the caller's device is not: if it fails, the caller continues on the wrong
+    // device and fails somewhere unrelated, so that one reports and aborts.
     SCOPE(exit)
     {
       if (startEvent)
       {
-        cuda_safe_call(cudaEventDestroy(startEvent));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(startEvent);
+        };
       }
       if (stopEvent)
       {
-        cuda_safe_call(cudaEventDestroy(stopEvent));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(stopEvent);
+        };
       }
       if (prev_device != 0)
       {
-        cuda_safe_call(cudaSetDevice(prev_device));
+        ON_THROW(abort)
+        {
+          cuda_try<cudaSetDevice>(prev_device);
+        };
       }
     };
 
@@ -833,20 +847,19 @@ UNITTEST("logical_data_untyped moveable")
     scalar(stream_ctx& ctx)
     {
       const size_t s = sizeof(double);
-      double* h_addr = (double*) malloc(s);
-      SCOPE(fail)
-      {
-        free(h_addr);
-      };
+      auto owner     = ::cuda::std::make_unique<double>();
+      double* h_addr = owner.get();
       cuda_try<cudaHostRegister>(h_addr, s, cudaHostRegisterPortable);
-      // Registered memory must be unregistered before it is freed. Guards run in reverse
-      // order of declaration, so this one undoes the registration before the guard above
-      // releases the buffer.
+      // Unregister memory before owner deletes it on failure.
       SCOPE(fail)
       {
-        cuda_safe_call(cudaHostUnregister(h_addr));
+        ON_THROW(notify)
+        {
+          cuda_try<cudaHostUnregister>(h_addr);
+        };
       };
       handle = ctx.logical_data(h_addr, 1);
+      owner.release();
     }
 
     scalar& operator=(scalar&& rhs) noexcept

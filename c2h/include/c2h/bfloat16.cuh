@@ -10,7 +10,7 @@
 
 #include <cuda_bf16.h>
 
-#include <cub/util_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/limits>
@@ -38,9 +38,8 @@ struct bfloat16_t
 
   /// Constructor from __nv_bfloat16
   __host__ __device__ __forceinline__ explicit bfloat16_t(const __nv_bfloat16& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit bfloat16_t(int a)
@@ -136,6 +135,12 @@ struct bfloat16_t
   __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other) const
   {
     return bfloat16_t(static_cast<float>(*this) * static_cast<float>(other));
+  }
+
+  /// Divide
+  __host__ __device__ __forceinline__ bfloat16_t operator/(const bfloat16_t& other) const
+  {
+    return bfloat16_t(static_cast<float>(*this) / static_cast<float>(other));
   }
 
   /// Add

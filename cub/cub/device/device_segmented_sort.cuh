@@ -25,7 +25,9 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/double_buffer.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -229,6 +231,7 @@ private:
     cudaStream_t stream,
     TuningEnvT tuning_env = {})
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     return sort_keys<Order>(
       d_temp_storage,
@@ -2313,7 +2316,9 @@ private:
     cudaStream_t stream,
     TuningEnvT tuning_env = {})
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
     return sort_pairs<Order>(
       d_temp_storage,

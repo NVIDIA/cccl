@@ -22,11 +22,12 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -181,8 +182,7 @@ struct AgentRadixSortUpsweep
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields (aggregate state bundle)

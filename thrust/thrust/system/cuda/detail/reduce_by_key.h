@@ -34,14 +34,16 @@
 #  include <thrust/system/cuda/detail/get_value.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/__functional/operator_properties.h>
 #  include <cuda/__memory/uninitialized_array.h>
+#  include <cuda/__type_traits/is_floating_point.h>
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
+#  include <cuda/std/__cmath/fpclassify.h>
 #  include <cuda/std/__functional/operations.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__type_traits/conditional.h>
 #  include <cuda/std/__type_traits/is_arithmetic.h>
-#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/pair.h>
 #  include <cuda/std/cstdint>
 
@@ -66,13 +68,6 @@ namespace cuda_cub
 {
 namespace __reduce_by_key
 {
-template <bool>
-struct is_true : thrust::detail::false_type
-{};
-template <>
-struct is_true<true> : thrust::detail::true_type
-{};
-
 template <int BlockThreads,
           int ItemsPerThread                    = 1,
           cub::BlockLoadAlgorithm LoadAlgorithm = cub::BLOCK_LOAD_DIRECT,
@@ -80,13 +75,13 @@ template <int BlockThreads,
           cub::BlockScanAlgorithm ScanAlgorithm = cub::BLOCK_SCAN_WARP_SCANS>
 struct PtxPolicy
 {
-  static constexpr int BLOCK_THREADS    = BlockThreads;
-  static constexpr int ITEMS_PER_THREAD = ItemsPerThread;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = ItemsPerThread;
+  static constexpr int items_per_tile   = block_threads * items_per_thread;
 
-  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = LoadAlgorithm;
-  static const cub::CacheLoadModifier LOAD_MODIFIER   = LoadModifier;
-  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = ScanAlgorithm;
+  static const cub::BlockLoadAlgorithm load_algorithm = LoadAlgorithm;
+  static const cub::CacheLoadModifier load_modifier   = LoadModifier;
+  static const cub::BlockScanAlgorithm scan_algorithm = ScanAlgorithm;
 }; // struct PtxPolicy
 
 template <class Arch, class Key, class Value>
@@ -95,24 +90,24 @@ struct Tuning;
 template <class Key, class Value>
 struct Tuning<core::detail::sm52, Key, Value>
 {
-  static constexpr int MAX_INPUT_BYTES             = (::cuda::std::max) (int{sizeof(Key)}, int{sizeof(Value)});
-  static constexpr int COMBINED_INPUT_BYTES        = int{sizeof(Key)} + int{sizeof(Value)};
-  static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
-  static constexpr int ITEMS_PER_THREAD =
-    (MAX_INPUT_BYTES <= 8)
+  static constexpr int max_input_bytes             = (::cuda::std::max) (int{sizeof(Key)}, int{sizeof(Value)});
+  static constexpr int combined_input_bytes        = int{sizeof(Key)} + int{sizeof(Value)};
+  static constexpr int nominal_4b_items_per_thread = 9;
+  static constexpr int items_per_thread =
+    (max_input_bytes <= 8)
       ? 9
-      : (::cuda::std::min) (NOMINAL_4B_ITEMS_PER_THREAD,
+      : (::cuda::std::min) (nominal_4b_items_per_thread,
                             (::cuda::std::max) (1,
-                                                ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1)
-                                                  / COMBINED_INPUT_BYTES));
+                                                ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1)
+                                                  / combined_input_bytes));
 
   using type =
-    PtxPolicy<256, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
+    PtxPolicy<256, items_per_thread, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>;
 }; // Tuning sm52
 
 // a helper metaprogram that returns type of a block loader
 template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
-using BlockLoad = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
+using BlockLoad = cub::BlockLoad<T, PtxPlan::block_threads, PtxPlan::items_per_thread, PtxPlan::load_algorithm, 1, 1>;
 
 template <class KeysInputIt,
           class ValuesInputIt,
@@ -139,16 +134,16 @@ struct ReduceByKeyAgent
   {
     using tuning = Tuning<Arch, key_type, value_type>;
 
-    using KeysLoadIt   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, KeysInputIt>;
-    using ValuesLoadIt = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::LOAD_MODIFIER, ValuesInputIt>;
+    using KeysLoadIt   = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, KeysInputIt>;
+    using ValuesLoadIt = cub::detail::try_make_cache_modified_iterator_t<PtxPlan::load_modifier, ValuesInputIt>;
 
     using BlockLoadKeys   = BlockLoad<PtxPlan, KeysLoadIt>;
     using BlockLoadValues = BlockLoad<PtxPlan, ValuesLoadIt>;
 
-    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::BLOCK_THREADS, 1, 1>;
+    using BlockDiscontinuityKeys = cub::BlockDiscontinuity<key_type, PtxPlan::block_threads, 1, 1>;
 
     using TilePrefixCallback = cub::TilePrefixCallbackOp<size_value_pair_t, ReduceBySegmentOp, ScanTileState>;
-    using BlockScan          = cub::BlockScan<size_value_pair_t, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1>;
+    using BlockScan          = cub::BlockScan<size_value_pair_t, PtxPlan::block_threads, PtxPlan::scan_algorithm, 1, 1>;
 
     union TempStorage
     {
@@ -162,7 +157,7 @@ struct ReduceByKeyAgent
       typename BlockLoadKeys::TempStorage load_keys;
       typename BlockLoadValues::TempStorage load_values;
 
-      ::cuda::__uninitialized_array<key_value_pair_t, PtxPlan::ITEMS_PER_TILE + 1> raw_exchange;
+      ::cuda::__uninitialized_array<key_value_pair_t, PtxPlan::items_per_tile + 1> raw_exchange;
     }; // union TempStorage
   }; // struct PtxPlan
 
@@ -177,14 +172,28 @@ struct ReduceByKeyAgent
   using BlockScan              = typename ptx_plan::BlockScan;
   using TempStorage            = typename ptx_plan::TempStorage;
 
-  static constexpr int BLOCK_THREADS      = ptx_plan::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD   = ptx_plan::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE     = ptx_plan::ITEMS_PER_TILE;
-  static constexpr bool TWO_PHASE_SCATTER = (ITEMS_PER_THREAD > 1);
+  static constexpr int block_threads      = ptx_plan::block_threads;
+  static constexpr int items_per_thread   = ptx_plan::items_per_thread;
+  static constexpr int items_per_tile     = ptx_plan::items_per_tile;
+  static constexpr bool two_phase_scatter = (items_per_thread > 1);
 
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
-  static constexpr int HAS_IDENTITY_ZERO = ::cuda::identity_element<ReductionOp, value_type>() == 0;
+  static constexpr bool has_identity_zero = []() constexpr {
+    if constexpr (::cuda::has_identity_element_v<ReductionOp, value_type>)
+    {
+      if constexpr (::cuda::std::is_arithmetic_v<value_type>)
+      {
+        return ::cuda::identity_element<ReductionOp, value_type>() == 0;
+      }
+      else if constexpr (::cuda::is_floating_point_v<value_type>)
+      {
+        // extended floating-point types (__half, __nv_bfloat16, ...): not `== 0`, which may be ambiguous
+        return ::cuda::std::fpclassify(::cuda::identity_element<ReductionOp, value_type>()) == FP_ZERO;
+      }
+    }
+    return false;
+  }();
 
   struct impl
   {
@@ -208,12 +217,12 @@ struct ReduceByKeyAgent
     // Scan first tile
     // Without an identity, the first output item is undefined.
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-    scan_first_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD], size_value_pair_t& tile_aggregate)
+    scan_first_tile(size_value_pair_t (&scan_items)[items_per_thread], size_value_pair_t& tile_aggregate)
     {
-      if constexpr (HAS_IDENTITY_ZERO)
+      if constexpr (has_identity_zero)
       {
         size_value_pair_t identity;
-        identity.value = 0;
+        identity.value = value_type{};
         identity.key   = 0;
         BlockScan(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, identity, scan_op, tile_aggregate);
       }
@@ -226,7 +235,7 @@ struct ReduceByKeyAgent
     // Scan subsequent tile
     // Without an identity, the first output item is undefined.
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
-    scan_tile(size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
+    scan_tile(size_value_pair_t (&scan_items)[items_per_thread],
               size_value_pair_t& tile_aggregate,
               TilePrefixCallback& prefix_op)
     {
@@ -241,16 +250,16 @@ struct ReduceByKeyAgent
     template <bool IsLastTile>
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_values_and_flags(
       size_type num_remaining,
-      value_type (&values)[ITEMS_PER_THREAD],
-      size_type (&segment_flags)[ITEMS_PER_THREAD],
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD])
+      value_type (&values)[items_per_thread],
+      size_type (&segment_flags)[items_per_thread],
+      size_value_pair_t (&scan_items)[items_per_thread])
     {
       // Zip values and segment_flags
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
       {
         // Set segment_flags for first out-of-bounds item, zero for others
-        if (IsLastTile && Size(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
+        if (IsLastTile && Size(threadIdx.x * items_per_thread) + ITEM == num_remaining)
         {
           segment_flags[ITEM] = 1;
         }
@@ -261,14 +270,14 @@ struct ReduceByKeyAgent
     }
 
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void zip_keys_and_values(
-      key_type (&keys)[ITEMS_PER_THREAD],
-      size_type (&segment_indices)[ITEMS_PER_THREAD],
-      size_value_pair_t (&scan_items)[ITEMS_PER_THREAD],
-      key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD])
+      key_type (&keys)[items_per_thread],
+      size_type (&segment_indices)[items_per_thread],
+      size_value_pair_t (&scan_items)[items_per_thread],
+      key_value_pair_t (&scatter_items)[items_per_thread])
     {
       // Zip values and segment_flags
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
       {
         scatter_items[ITEM].key   = keys[ITEM];
         scatter_items[ITEM].value = scan_items[ITEM].value;
@@ -283,13 +292,13 @@ struct ReduceByKeyAgent
     // Directly scatter flagged items to output offsets
     // (specialized for IS_SEGMENTED_REDUCTION_FIXUP == false)
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter_direct(
-      key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
-      size_type (&segment_flags)[ITEMS_PER_THREAD],
-      size_type (&segment_indices)[ITEMS_PER_THREAD])
+      key_value_pair_t (&scatter_items)[items_per_thread],
+      size_type (&segment_flags)[items_per_thread],
+      size_type (&segment_indices)[items_per_thread])
     {
       // Scatter flagged keys and values
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
       {
         if (segment_flags[ITEM])
         {
@@ -307,9 +316,9 @@ struct ReduceByKeyAgent
     //   * the scatter offsets must be decremented for value aggregates
     //
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter_two_phase(
-      key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
-      size_type (&segment_flags)[ITEMS_PER_THREAD],
-      size_type (&segment_indices)[ITEMS_PER_THREAD],
+      key_value_pair_t (&scatter_items)[items_per_thread],
+      size_type (&segment_flags)[items_per_thread],
+      size_type (&segment_indices)[items_per_thread],
       size_type num_tile_segments,
       size_type num_tile_segments_prefix)
     {
@@ -317,7 +326,7 @@ struct ReduceByKeyAgent
 
       // Compact and scatter keys
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int ITEM = 0; ITEM < items_per_thread; ++ITEM)
       {
         if (segment_flags[ITEM])
         {
@@ -328,7 +337,7 @@ struct ReduceByKeyAgent
 
       __syncthreads();
 
-      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += BLOCK_THREADS)
+      for (int item = static_cast<int>(threadIdx.x); item < num_tile_segments; item += block_threads)
       {
         const size_type idx         = num_tile_segments_prefix + item;
         const key_value_pair_t pair = storage.raw_exchange[item];
@@ -340,15 +349,15 @@ struct ReduceByKeyAgent
     // Scatter flagged items
     //
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void scatter(
-      key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD],
-      size_type (&segment_flags)[ITEMS_PER_THREAD],
-      size_type (&segment_indices)[ITEMS_PER_THREAD],
+      key_value_pair_t (&scatter_items)[items_per_thread],
+      size_type (&segment_flags)[items_per_thread],
+      size_type (&segment_indices)[items_per_thread],
       size_type num_tile_segments,
       size_type num_tile_segments_prefix)
     {
       // Do a one-phase scatter if (a) two-phase is disabled or
       // (b) the average number of selected items per thread is less than one
-      if (TWO_PHASE_SCATTER && (num_tile_segments > BLOCK_THREADS))
+      if (two_phase_scatter && (num_tile_segments > block_threads))
       {
         scatter_two_phase(scatter_items, segment_flags, segment_indices, num_tile_segments, num_tile_segments_prefix);
       }
@@ -368,11 +377,11 @@ struct ReduceByKeyAgent
     finalize_last_tile(size_type num_segments, size_type num_remaining, key_type last_key, value_type last_value)
     {
       // Last thread will output final count and last item, if necessary
-      if (threadIdx.x == BLOCK_THREADS - 1)
+      if (threadIdx.x == block_threads - 1)
       {
         // If the last tile is a whole tile, the inclusive prefix
         // contains accumulated value reduction for the last segment
-        if (num_remaining == ITEMS_PER_TILE)
+        if (num_remaining == items_per_tile)
         {
           // Scatter key and value
           keys_output_it[num_segments]   = last_key;
@@ -397,13 +406,13 @@ struct ReduceByKeyAgent
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_first_tile(Size num_remaining, Size tile_offset, ScanTileState& tile_state)
     {
-      key_type keys[ITEMS_PER_THREAD]; // Tile keys
-      key_type pred_keys[ITEMS_PER_THREAD]; // Tile keys shifted up (predecessor)
-      value_type values[ITEMS_PER_THREAD]; // Tile values
-      size_type segment_flags[ITEMS_PER_THREAD]; // Segment head flags
-      size_type segment_indices[ITEMS_PER_THREAD]; // Segment indices
-      size_value_pair_t scan_items[ITEMS_PER_THREAD]; // Zipped values and segment flags|indices
-      key_value_pair_t scatter_items[ITEMS_PER_THREAD]; // Zipped key value pairs for scattering
+      key_type keys[items_per_thread]; // Tile keys
+      key_type pred_keys[items_per_thread]; // Tile keys shifted up (predecessor)
+      value_type values[items_per_thread]; // Tile values
+      size_type segment_flags[items_per_thread]; // Segment head flags
+      size_type segment_indices[items_per_thread]; // Segment indices
+      size_value_pair_t scan_items[items_per_thread]; // Zipped values and segment flags|indices
+      key_value_pair_t scatter_items[items_per_thread]; // Zipped key value pairs for scattering
 
       // Load keys (last tile repeats final element)
       if (IsLastTile)
@@ -463,7 +472,7 @@ struct ReduceByKeyAgent
 
         // Initialize the segment index for the first scan item if necessary
         // (the exclusive prefix for the first item is garbage)
-        if (!HAS_IDENTITY_ZERO)
+        if (!has_identity_zero)
         {
           scan_items[0].key = 0;
         }
@@ -478,7 +487,7 @@ struct ReduceByKeyAgent
       if (IsLastTile)
       {
         // Finalize the carry-out from the last tile
-        finalize_last_tile(tile_aggregate.key, num_remaining, keys[ITEMS_PER_THREAD - 1], tile_aggregate.value);
+        finalize_last_tile(tile_aggregate.key, num_remaining, keys[items_per_thread - 1], tile_aggregate.value);
       }
     }
 
@@ -490,13 +499,13 @@ struct ReduceByKeyAgent
     _CCCL_DEVICE_API _CCCL_FORCEINLINE void
     consume_subsequent_tile(Size num_remaining, int tile_idx, Size tile_offset, ScanTileState& tile_state)
     {
-      key_type keys[ITEMS_PER_THREAD]; // Tile keys
-      key_type pred_keys[ITEMS_PER_THREAD]; // Tile keys shifted up (predecessor)
-      value_type values[ITEMS_PER_THREAD]; // Tile values
-      size_type segment_flags[ITEMS_PER_THREAD]; // Segment head flags
-      size_type segment_indices[ITEMS_PER_THREAD]; // Segment indices
-      size_value_pair_t scan_items[ITEMS_PER_THREAD]; // Zipped values and segment flags|indices
-      key_value_pair_t scatter_items[ITEMS_PER_THREAD]; // Zipped key value pairs for scattering
+      key_type keys[items_per_thread]; // Tile keys
+      key_type pred_keys[items_per_thread]; // Tile keys shifted up (predecessor)
+      value_type values[items_per_thread]; // Tile values
+      size_type segment_flags[items_per_thread]; // Segment head flags
+      size_type segment_indices[items_per_thread]; // Segment indices
+      size_value_pair_t scan_items[items_per_thread]; // Zipped values and segment flags|indices
+      key_value_pair_t scatter_items[items_per_thread]; // Zipped key value pairs for scattering
 
       // Load keys (last tile repeats final element)
       if (IsLastTile)
@@ -549,7 +558,7 @@ struct ReduceByKeyAgent
       {
         // Finalize the carry-out from the last tile
         finalize_last_tile(
-          tile_inclusive_prefix.key, num_remaining, keys[ITEMS_PER_THREAD - 1], tile_inclusive_prefix.value);
+          tile_inclusive_prefix.key, num_remaining, keys[items_per_thread - 1], tile_inclusive_prefix.value);
       }
     }
     template <bool IsLastTile>
@@ -583,8 +592,8 @@ struct ReduceByKeyAgent
       int /*num_tiles*/,
       ScanTileState& tile_state)
         : storage(storage_)
-        , keys_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(keys_input_it_))
-        , values_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::LOAD_MODIFIER>(values_input_it_))
+        , keys_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::load_modifier>(keys_input_it_))
+        , values_load_it(cub::detail::try_make_cache_modified_iterator<ptx_plan::load_modifier>(values_input_it_))
         , keys_output_it(keys_output_it_)
         , values_output_it(values_output_it_)
         , num_runs_output_it(num_runs_output_it_)
@@ -595,10 +604,10 @@ struct ReduceByKeyAgent
       // so just assign one tile per block
       //
       const int tile_idx = static_cast<int>(blockIdx.x);
-      Size tile_offset   = static_cast<Size>(tile_idx) * ITEMS_PER_TILE;
+      Size tile_offset   = static_cast<Size>(tile_idx) * items_per_tile;
       Size num_remaining = num_items - tile_offset;
 
-      if (num_remaining > ITEMS_PER_TILE)
+      if (num_remaining > items_per_tile)
       {
         // Not the last tile (full)
         consume_tile<false>(num_remaining, tile_idx, tile_offset, tile_state);
@@ -733,7 +742,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
   ia.launch(tile_state, num_tiles, num_runs_output_it);
   _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
-  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : nullptr;
+  char* vshmem_ptr = vshmem_size > 0 ? static_cast<char*>(allocations[1]) : nullptr;
 
   const reduce_by_key_agent rbka(
     reduce_by_key_plan, num_items, stream, vshmem_ptr, "reduce_by_keys::reduce_by_key_agent");

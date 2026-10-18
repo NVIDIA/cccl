@@ -22,9 +22,9 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
@@ -120,8 +120,7 @@ struct AgentRadixSortHistogram
     ShmemAtomicCounterT bins[MAX_NUM_PASSES][RADIX_DIGITS][NUM_PARTS];
   };
 
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // thread fields
   // shared memory storage

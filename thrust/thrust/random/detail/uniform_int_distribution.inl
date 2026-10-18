@@ -52,7 +52,7 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
   //     values if the range of the RNG is smaller than the range of the distribution
   //     we should improve this implementation in a later version
 
-  using float_type = typename thrust::detail::largest_available_float::type;
+  using float_type = double;
 
   const float_type real_min(static_cast<float_type>(parm.first));
   const float_type real_max(static_cast<float_type>(parm.second));
