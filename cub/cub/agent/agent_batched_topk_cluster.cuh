@@ -1529,25 +1529,29 @@ private:
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       const int pos = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
-      flags[i]      = flag_none;
-      if (pos < num_keys)
+      // No per-key branch: an out-of-range lane (only in the last, partial tile) reads the last in-range key, which
+      // exists because `process_tiles` classifies a tile only while `tile_base < num_keys`, and is forced to
+      // `flag_none` below. Keeping the per-key body straight-line avoids the reconvergence bookkeeping ptxas emits
+      // once the body grows past its if-conversion threshold.
+      const bool in_range = pos < num_keys;
+      const int clamped   = in_range ? pos : num_keys - 1;
+      // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
+      // local read and the segment-local value index.
+      const int folded_pos = Reversed ? (num_keys - 1 - clamped) : clamped;
+      if constexpr (FromSmem)
       {
-        // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
-        // local read and the segment-local value index.
-        const int folded_pos = Reversed ? (num_keys - 1 - pos) : pos;
-        if constexpr (FromSmem)
-        {
-          keys[i] = smem_src[folded_pos];
-        }
-        else
-        {
-          keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
-        }
-        const auto cls = state.identify_op(keys[i]);
-        flags[i]       = (cls == detail::topk::candidate_class::candidate)
-                         ? flag_candidate
-                         : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+        keys[i] = smem_src[folded_pos];
       }
+      else
+      {
+        keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
+      }
+      const auto cls = state.identify_op(keys[i]);
+      const offset_t flag =
+        (cls == detail::topk::candidate_class::candidate)
+          ? flag_candidate
+          : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+      flags[i] = in_range ? flag : flag_none;
     }
   }
 

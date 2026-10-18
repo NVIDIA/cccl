@@ -33,6 +33,7 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
@@ -50,6 +51,37 @@ template <typename T, int BitsPerPass>
 {
   const int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
+}
+
+// Bit ordering used by the top-k radix passes. Without `NormalizeMinusZero` this is `Traits<T>::TwiddleIn`. With it,
+// floating-point keys use a variant that negates (rather than complements) keys with the sign bit set. `TwiddleIn`
+// complements negative keys, which leaves -0.0 at `0x7FFF...`, one below +0.0 at `0x8000...`. Negation is that
+// complement plus one, so it shifts the whole negative half up by one and -0.0 lands exactly on +0.0 with no separate
+// fix-up. Every sign-clear pattern is unchanged and every sign-set pattern moves by exactly +1, so the relative order
+// is preserved everywhere (-NaN stays below -inf, +NaN above +inf) and the only new equivalence is the two zeros.
+template <typename T, bool NormalizeMinusZero>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename Traits<T>::UnsignedBits
+twiddle_in_bits(typename Traits<T>::UnsignedBits bits)
+{
+  using bits_t = typename Traits<T>::UnsignedBits;
+  // Every FLOATING_POINT specialization of `Traits` asserts `::cuda::is_floating_point_v<T>`, so this branch covers
+  // every key type whose `TwiddleIn` is the floating-point one.
+  if constexpr (NormalizeMinusZero && ::cuda::is_floating_point_v<T>)
+  {
+    // 0 for sign-clear keys, ~0 for sign-set keys. Unsigned arithmetic only.
+    const bits_t neg_mask = static_cast<bits_t>(bits_t{0} - static_cast<bits_t>(bits >> (8 * sizeof(bits_t) - 1)));
+    // `neg_mask | HIGH_BIT` is the mask `Traits<T>::TwiddleIn` xors with (HIGH_BIT for sign-clear keys, ~0 for
+    // sign-set keys). Adding `neg_mask` first subtracts one from sign-set keys, so after the xor they are
+    // `~(bits - 1) == -bits` while sign-clear keys are `bits | HIGH_BIT` as before. Spelled add-then-xor (rather than
+    // xor-then-subtract) so the xor is the last op: the twiddle is a shift, an add and one three-input logic op, and
+    // the complement that the max direction applies afterwards folds into that same logic op.
+    return static_cast<bits_t>(
+      static_cast<bits_t>(bits + neg_mask) ^ static_cast<bits_t>(neg_mask | Traits<T>::HIGH_BIT));
+  }
+  else
+  {
+    return Traits<T>::TwiddleIn(bits);
+  }
 }
 
 // Get the bin ID from the value of element
@@ -80,12 +112,7 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeM
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (NormalizeMinusZero)
-    {
-      // Rank -0.0 as +0.0 so that both zeros compare equal, as in DeviceRadixSort and BlockTopK
-      bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(bits);
-    }
+    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits);
     if constexpr (SelectDirection != select::min)
     {
       bits = ~bits;
@@ -147,12 +174,7 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (NormalizeMinusZero)
-    {
-      // Must match the normalization in extract_bin_op_t, which produced kth_key_bits
-      bits = BaseDigitExtractor<T>::ProcessFloatMinusZero(bits);
-    }
+    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits); // must match extract_bin_op_t, which built kth_key_bits
 
     if constexpr (SelectDirection != select::min)
     {
