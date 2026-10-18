@@ -66,10 +66,8 @@ protected:
     pthread_once(&cudaCallbackStateCtxKeys::instance().cb_key_once, &cb_key_init);
   }
 
-  ~cudaCallbackStateCtx()
-  {
-    pthread_key_delete(cudaCallbackStateCtxKeys::instance().cb_key);
-  }
+  // Callback workers may still use the TLS key during static teardown.
+  ~cudaCallbackStateCtx() = default;
 
 public:
   void set_current_cb(cb* cb)
