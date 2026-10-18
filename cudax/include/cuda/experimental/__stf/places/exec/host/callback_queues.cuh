@@ -68,7 +68,7 @@ protected:
 
   ~cudaCallbackStateCtx()
   {
-    pthread_key_delete(cudaCallbackStateCtxKeys::instance().cb_key_once);
+    pthread_key_delete(cudaCallbackStateCtxKeys::instance().cb_key);
   }
 
 public:
