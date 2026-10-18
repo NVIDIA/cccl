@@ -500,7 +500,7 @@ jobs:
       arch: ${{ matrix.arch }}
       base_ref: ${{ matrix.base_ref }}
       test_ref: ${{ matrix.test_ref }}
-      cub_filters: ${{ matrix.cub_filters }}
+      cpp_filters: ${{ matrix.cpp_filters }}
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
