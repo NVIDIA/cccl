@@ -2,6 +2,10 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/sort.h>
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 #include <unittest/unittest.h>
 
 template <typename RandomAccessIterator>
@@ -133,3 +137,41 @@ void test_stable_sort_with_indirection()
   REQUIRE(data == ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(test_stable_sort_with_indirection);
+
+// -0.0 and +0.0 compare equal, so a stable sort has to keep them in their input order (see #750)
+template <typename T, typename Compare>
+void test_stable_sort_signed_zeros(Compare comp)
+{
+  const int n = 10000;
+  thrust::host_vector<T> h_keys(n);
+  for (int i = 0; i < n; ++i)
+  {
+    h_keys[i] = i % 3 == 0 ? T(0.0) : i % 3 == 1 ? T(-0.0) : T(i % 7) - T(3.0);
+  }
+
+  std::vector<T> expected(h_keys.begin(), h_keys.end());
+  std::stable_sort(expected.begin(), expected.end(), comp);
+
+  thrust::device_vector<T> d_keys = h_keys;
+  thrust::stable_sort(h_keys.begin(), h_keys.end(), comp);
+  thrust::stable_sort(d_keys.begin(), d_keys.end(), comp);
+  const thrust::host_vector<T> d_result = d_keys;
+
+  bool host_matches   = true;
+  bool device_matches = true;
+  for (int i = 0; i < n; ++i)
+  {
+    host_matches &= h_keys[i] == expected[i] && std::signbit(h_keys[i]) == std::signbit(expected[i]);
+    device_matches &= d_result[i] == expected[i] && std::signbit(d_result[i]) == std::signbit(expected[i]);
+  }
+  REQUIRE(host_matches);
+  REQUIRE(device_matches);
+}
+
+TEST_CASE("TestStableSortSignedZeros", "[stable_sort]")
+{
+  test_stable_sort_signed_zeros<float>(thrust::less<float>());
+  test_stable_sort_signed_zeros<float>(thrust::greater<float>());
+  test_stable_sort_signed_zeros<double>(thrust::less<double>());
+  test_stable_sort_signed_zeros<double>(thrust::greater<double>());
+}
