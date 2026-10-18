@@ -327,6 +327,151 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
   REQUIRE(d_out == expected);
 }
 
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (fixed size) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  // example-begin exclusive-segmented-sum-fixed-size-env
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  ::cuda::std::int64_t num_segments = 2;
+  int segment_size                  = 4;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedSum failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 12};
+  // example-end exclusive-segmented-sum-fixed-size-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (fixed size) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  // example-begin exclusive-segmented-scan-fixed-size-env
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  ::cuda::std::int64_t num_segments = 2;
+  int segment_size                  = 4;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, cuda::maximum<>{}, 4, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::ExclusiveSegmentedScan failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{4, 8, 8, 8, 4, 4, 4, 9};
+  // example-end exclusive-segmented-scan-fixed-size-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (fixed size) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  // example-begin inclusive-segmented-sum-fixed-size-env
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  ::cuda::std::int64_t num_segments = 2;
+  int segment_size                  = 4;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedSum failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{8, 14, 21, 26, 3, 3, 12, 13};
+  // example-end inclusive-segmented-sum-fixed-size-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (fixed size) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  // example-begin inclusive-segmented-scan-fixed-size-env
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  ::cuda::std::int64_t num_segments = 2;
+  int segment_size                  = 4;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, cuda::maximum<>{}, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScan failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{8, 8, 8, 8, 3, 3, 9, 9};
+  // example-end inclusive-segmented-scan-fixed-size-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (fixed size) accepts stream",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  // example-begin inclusive-segmented-scan-init-fixed-size-env
+  // Two segments of four items each: [8, 6, 7, 5] and [3, 0, 9, 1]
+  ::cuda::std::int64_t num_segments = 2;
+  int segment_size                  = 4;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
+
+  auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+    d_in.begin(), d_out.begin(), num_segments, segment_size, cuda::maximum<>{}, 4, stream_ref);
+  if (error != cudaSuccess)
+  {
+    std::cerr << "cub::DeviceSegmentedScan::InclusiveSegmentedScanInit failed with status: " << error << '\n';
+  }
+
+  const thrust::device_vector<int> expected{8, 8, 8, 8, 4, 4, 9, 9};
+  // example-end inclusive-segmented-scan-init-fixed-size-env
+  stream.sync();
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
 #if _CCCL_STD_VER >= 2020
 
 // example-begin segmented-scan-policy-selector
@@ -372,6 +517,30 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
 
   thrust::device_vector<int> expected{0, 8, 14, 21, 0, 3, 3, 0, 1};
   // example-end segmented-scan-tuning
+
+  REQUIRE(error == cudaSuccess);
+  REQUIRE(d_out == expected);
+}
+
+CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (fixed size) accepts a custom policy selector",
+         "[segmented_scan][env]",
+         CUB_SMALL)
+{
+  ::cuda::std::int64_t num_segments = 3;
+  int segment_size                  = 3;
+  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  thrust::device_vector<int> d_out(d_in.size());
+
+  const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+    d_in.begin(),
+    d_out.begin(),
+    num_segments,
+    segment_size,
+    ::cuda::std::plus<>{},
+    0,
+    cuda::execution::tune(SegmentedScanPolicySelector{}));
+
+  thrust::device_vector<int> expected{0, 8, 14, 0, 5, 8, 0, 9, 10};
 
   REQUIRE(error == cudaSuccess);
   REQUIRE(d_out == expected);

@@ -126,6 +126,78 @@ static void varying_segment_size_bench(nvbench::state& state, nvbench::type_list
   return bench_impl<1, T, OffsetT>(state, tl);
 }
 
+// Compares the offset-based API against the fixed-size API on identical segments
+template <typename T, typename OffsetT>
+static void fixed_size_api_bench(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+{
+#if !TUNE_BASE
+  using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
+#endif
+
+  const bool use_offsets  = state.get_string("API{io}") == "offsets";
+  const auto segment_size = static_cast<OffsetT>(state.get_int64("SegmentSize{io}"));
+  // Only whole segments, so that both APIs process the same items
+  const auto num_segments = static_cast<OffsetT>(state.get_int64("Elements{io}")) / segment_size;
+  const auto elements     = num_segments * segment_size;
+  auto& summary           = state.add_summary("user/derived/segment_count");
+  summary.set_string("name", "#Segments");
+  summary.set_int64("value", num_segments);
+
+  thrust::device_vector<T> input = generate(elements);
+  thrust::device_vector<T> output(elements, thrust::default_init);
+
+  thrust::device_vector<OffsetT> offsets(use_offsets ? num_segments + 1 : 0, thrust::no_init);
+  thrust::tabulate(offsets.begin(), offsets.end(), to_offsets_functor<OffsetT>{elements, segment_size, 0});
+
+  const T* d_input         = thrust::raw_pointer_cast(input.data());
+  T* d_output              = thrust::raw_pointer_cast(output.data());
+  const OffsetT* d_offsets = thrust::raw_pointer_cast(offsets.data());
+
+  state.add_element_count(elements, "Elements");
+  state.add_global_memory_reads<T>(elements);
+  state.add_global_memory_reads<OffsetT>(offsets.size());
+  state.add_global_memory_writes<T>(elements);
+
+  caching_allocator_t alloc;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    auto env = cub_bench_env(
+      alloc,
+      launch
+#if !TUNE_BASE
+      ,
+      cuda::execution::tune(policy_t{})
+#endif // !TUNE_BASE
+    );
+    if (use_offsets)
+    {
+      _CCCL_TRY_RUNTIME_API(
+        cub::DeviceSegmentedScan::ExclusiveSegmentedScan,
+        "ExclusiveSegmentedScan failed",
+        d_input,
+        d_output,
+        d_offsets,
+        d_offsets + 1,
+        num_segments,
+        op_t{},
+        T{},
+        env);
+    }
+    else
+    {
+      _CCCL_TRY_RUNTIME_API(
+        cub::DeviceSegmentedScan::ExclusiveSegmentedScan,
+        "ExclusiveSegmentedScan failed",
+        d_input,
+        d_output,
+        num_segments,
+        static_cast<int>(segment_size),
+        op_t{},
+        T{},
+        env);
+    }
+  });
+}
+
 #if (_CCCL_CUDA_COMPILER(NVCC, >=, 12, 1))
 using benched_value_types = all_types;
 #else
@@ -149,5 +221,12 @@ NVBENCH_BENCH_TYPES(varying_segment_size_bench, NVBENCH_TYPE_AXES(benched_value_
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
   .add_int64_axis("SegmentSize{io}", {51, 123, 233, 513, 1337, 4417});
+
+NVBENCH_BENCH_TYPES(fixed_size_api_bench, NVBENCH_TYPE_AXES(benched_value_types, offset_types))
+  .set_name("fixed_size_api_comparison")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_string_axis("API{io}", {"offsets", "fixed"})
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(18, 26, 4))
+  .add_int64_axis("SegmentSize{io}", {1, 7, 32, 51, 123, 233, 513, 1337, 4417});
 // .add_int64_axis("SegmentsPerWorker{io}", {1}) // public API doesn' expose them (yet)
 // .add_string_axis("Worker{io}", {"block"});
