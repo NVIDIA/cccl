@@ -86,8 +86,10 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
        -- and segments larger than a single thread block are also supported.
 
    * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
-     (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break
-     dimension yet, so it omits the ``tie_break`` token. Its sorted output remains unimplemented.
+     (``cuda::execution::determinism::not_guaranteed`` with unsorted output). It accepts
+     ``tie_break::unspecified`` (the recommended, forward-compatible spelling) and, in CCCL 3.x, also
+     the omission of ``tie_break``; ``prefer_smaller_index`` / ``prefer_larger_index`` are rejected
+     because they require ``gpu_to_gpu``. Its sorted output remains unimplemented.
 
    The remaining deterministic, tie-broken, and stable-sorted modes documented here define the
    committed long-term contract and will become available (including as the no-requirement default) as
