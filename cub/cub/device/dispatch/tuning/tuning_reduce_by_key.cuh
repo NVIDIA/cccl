@@ -1050,22 +1050,23 @@ struct policy_selector
   bool op_is_primitive;
 
 private:
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(CacheLoadModifier load_mod) const
+  // The default policy is a mix of the old CUB and Thrust default policy. We pick whichever is better.
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
+  __make_default_policy(CacheLoadModifier load_mod, bool prefer_thrust_tuning = false) const
     -> ReduceByKeyLookbackPolicy
   {
-    // from the former Thrust implementation of reduce_by_key
-    constexpr int nominal_4B_items_per_thread = 9;
-    const int combined_input_bytes            = key_size + accum_size;
-    const int max_input_bytes                 = (::cuda::std::max) (key_size, accum_size);
+    const int nominal_4B_items_per_thread = prefer_thrust_tuning ? 9 : 6;
+    const int combined_input_bytes        = key_size + accum_size;
+    const int max_input_bytes             = (::cuda::std::max) (key_size, accum_size);
     const int items_per_thread =
       (max_input_bytes <= 8)
         ? nominal_4B_items_per_thread
         : ::cuda::std::clamp(
             ::cuda::ceil_div(nominal_4B_items_per_thread * 8, combined_input_bytes), 1, nominal_4B_items_per_thread);
     return ReduceByKeyLookbackPolicy{
-      256,
+      prefer_thrust_tuning ? 256 : 128,
       items_per_thread,
-      BLOCK_LOAD_WARP_TRANSPOSE,
+      prefer_thrust_tuning ? BLOCK_LOAD_WARP_TRANSPOSE : BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
       default_reduce_by_key_delay_constructor_policy(
@@ -1547,8 +1548,21 @@ private:
         }
       }
 
-      // no tuning, use a default one
-      return __make_default_policy(LOAD_DEFAULT);
+      // no tuning, use a default one based on Thrust (always neutral or faster)
+      return __make_default_policy(LOAD_DEFAULT, true);
+    }
+
+    if (cc == ::cuda::compute_capability{8, 9}) // L4
+    {
+      const bool prefer_thrust_tuning = accum_size == 16;
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
+    }
+
+    if (cc == ::cuda::compute_capability{8, 6}) // RTX A6000
+    {
+      const bool prefer_thrust_tuning =
+        (key_size <= 4 && accum_size <= 4) || accum_size == 16 || (key_size == 16 && accum_size == 8);
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
     }
 
     if (cc >= ::cuda::compute_capability{8, 6})
@@ -1757,6 +1771,13 @@ private:
 
       // no tuning, use a default one
       return __make_default_policy(LOAD_DEFAULT);
+    }
+
+    if (cc == ::cuda::compute_capability{7, 5}) // T4
+    {
+      const auto prefer_thrust_tuning = (key_size == 1 && (accum_size == 1 || accum_size == 16))
+                                     || (key_size == 4 && accum_size == 4) || (key_size >= 8 && accum_size == 16);
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
     }
 
     // for SM50
