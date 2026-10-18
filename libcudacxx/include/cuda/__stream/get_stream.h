@@ -109,14 +109,15 @@ struct get_stream_t
     return __env.query(get_stream_t{});
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_nonconst_stream_conversion<_Tp>)
-  _CCCL_API ::cuda::stream_ref _CCCL_STATIC_CALL_OPERATOR(const _Tp&) noexcept
+  [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref _CCCL_STATIC_CALL_OPERATOR(const _Tp&) noexcept
   {
     static_assert(!__has_nonconst_stream_conversion<_Tp>,
                   "The type is convertible to a stream only through a non-const conversion operator, which "
                   "cuda::get_stream cannot use. Make the conversion operator const.");
-    return ::cuda::stream_ref{};
+    return ::cuda::stream_ref{::cudaStream_t{}};
   }
 
   [[nodiscard]] _CCCL_API static constexpr auto query(::cuda::std::execution::forwarding_query_t) noexcept -> bool
