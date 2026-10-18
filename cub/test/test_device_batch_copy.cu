@@ -23,6 +23,7 @@
 
 #include "cub_non_catch2_test_memory.h"
 #include "test_util.h"
+#include <c2h/allocation_failure.h>
 #include <c2h/catch2_test_helper.h>
 #include <c2h/vector.h>
 
@@ -254,15 +255,16 @@ try
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
-catch ([[maybe_unused]] std::bad_alloc& e)
+catch (...)
 {
+  c2h::rethrow_unless_allocation_failure();
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
   std::cout
     << "Skipping test 'RunTest(" << num_ranges << ", " //
     << min_range_size << ", " //
     << max_range_size << ", " //
     << TestDataGenToString(output_gen) << ")" //
-    << "' due to insufficient memory: " << e.what() << "\n";
+    << "' due to insufficient memory\n";
 #endif // DEBUG_CHECKED_ALLOC_FAILURE
   return;
 }

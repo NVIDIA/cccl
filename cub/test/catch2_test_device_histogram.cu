@@ -21,12 +21,11 @@
 #include <algorithm>
 #include <exception>
 #include <limits>
-#include <new>
-#include <string>
 #include <tuple>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/extended_types.h>
 #include <c2h/vector.h>
 
@@ -757,13 +756,9 @@ try
     c2h::device_policy, d_bin_indices.begin(), d_bin_indices.end(), d_histogram.begin(), d_selected_bins.begin());
   CHECK(d_selected_bins == c2h::host_vector<counter_t>{1, 0});
 }
-catch (const std::bad_alloc&)
+catch (...)
 {
-  SUCCEED("allocation failure is not a test failure");
-}
-catch (const std::exception& e)
-{
-  FAIL("Unexpected exception: " + std::string(e.what()));
+  c2h::skip_if_allocation_failure();
 }
 
 // Our bin computation for HistogramEven is guaranteed only for when (max_level - min_level) * num_bins does not
