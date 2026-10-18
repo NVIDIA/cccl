@@ -55,10 +55,8 @@ _CCCL_HOST_DEVICE ::cuda::std::pair<OutputIterator1, OutputIterator2> reduce_by_
 
 namespace cuda_cub
 {
-
 namespace detail
 {
-
 template <typename Derived,
           typename KeysInputIt,
           typename ValuesInputIt,
@@ -87,11 +85,13 @@ struct dispatch_reduce_by_key
     size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
     void* allocations[2]{nullptr, nullptr};
 
+    // TODO(bgruber): remove the accum_t customization in CCCL 4.0
     // Accumulator type for compatibility with old thrust::reduce_by_key behavior.
     using accum_t              = thrust::detail::it_value_t<ValuesInputIt>;
     using num_uniques_out_it_t = OffsetT*;
 
-    using dispatch_reduce_by_key_t = cub::DispatchReduceByKey<
+    // Query algorithm memory requirements
+    status = cub::detail::reduce_by_key::dispatch<
       KeysInputIt,
       KeysOutputIt,
       ValuesInputIt,
@@ -100,10 +100,7 @@ struct dispatch_reduce_by_key
       EqualityOp,
       ReductionOp,
       OffsetT,
-      accum_t>;
-
-    // Query algorithm memory requirements
-    status = dispatch_reduce_by_key_t::Dispatch(
+      accum_t>(
       nullptr,
       allocation_sizes[0],
       keys_first,
@@ -117,7 +114,7 @@ struct dispatch_reduce_by_key
       stream);
     _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    status = cub::detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
@@ -130,7 +127,16 @@ struct dispatch_reduce_by_key
     auto d_num_unique_keys_out = thrust::detail::aligned_reinterpret_cast<num_uniques_out_it_t>(allocations[1]);
 
     // Run algorithm
-    status = dispatch_reduce_by_key_t::Dispatch(
+    status = cub::detail::reduce_by_key::dispatch<
+      KeysInputIt,
+      KeysOutputIt,
+      ValuesInputIt,
+      ValuesOutputIt,
+      num_uniques_out_it_t,
+      EqualityOp,
+      ReductionOp,
+      OffsetT,
+      accum_t>(
       allocations[0],
       allocation_sizes[0],
       keys_first,
@@ -251,7 +257,6 @@ THRUST_RUNTIME_FUNCTION ::cuda::std::pair<KeysOutputIt, ValuesOutputIt> reduce_b
 
   return result_end;
 }
-
 } // namespace detail
 
 //-------------------------
@@ -329,7 +334,6 @@ template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, 
   return cuda_cub::reduce_by_key(
     policy, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyT>());
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END
