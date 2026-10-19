@@ -111,7 +111,7 @@ struct agent_t
   CompareOp compare_op;
 
   template <bool IsFullTile>
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(int tile_idx, Offset diag0, int total_in_tile)
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void consume_tile(Offset tile_idx, Offset diag0, int total_in_tile)
   {
     const Offset range_beg = range_beg_offsets[tile_idx];
     const Offset range_end = range_beg_offsets[tile_idx + 1];
@@ -202,9 +202,8 @@ struct agent_t
     }
   }
 
-  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
+  _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Offset tile_idx)
   {
-    const int tile_idx      = static_cast<int>(blockIdx.x);
     const Offset diag0      = static_cast<Offset>(tile_size) * tile_idx;
     const Offset diag1      = ::cuda::std::min(diag0 + static_cast<Offset>(tile_size), range_count + values_count);
     const int total_in_tile = static_cast<int>(diag1 - diag0);
