@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
 #include <cuda/__functional/maximum.h>

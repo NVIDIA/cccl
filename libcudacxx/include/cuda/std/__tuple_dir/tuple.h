@@ -20,7 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
@@ -32,16 +34,20 @@
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__type_traits/sfinae_traits.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
-#include <cuda/std/__utility/swap.h>
+#include <cuda/std/__utility/piecewise_construct.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -556,14 +562,17 @@ public:
     return *this;
   }
 
-  _CCCL_API void swap(tuple& __t) noexcept(noexcept(__base_.swap(__t.__base_)))
+  template <class _Constraints = __tuple_swap_constraints<_Tp...>, enable_if_t<_Constraints::__all_swappable, int> = 0>
+  _CCCL_API constexpr void swap(tuple& __t) noexcept(_Constraints::__all_nothrow_swappable)
   {
     __base_.swap(__t.__base_);
   }
 
-  _CCCL_API friend void swap(tuple& __t, tuple& __u) noexcept(noexcept(__t.swap(__u)))
+  template <class _Constraints                                    = __tuple_swap_constraints<_Tp...>,
+            enable_if_t<_Constraints::__all_const_swappable, int> = 0>
+  _CCCL_API constexpr void swap(const tuple& __t) const noexcept(_Constraints::__all_nothrow_const_swappable)
   {
-    __t.swap(__u);
+    __base_.swap(__t.__base_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -648,6 +657,24 @@ public:
   }
 };
 
+template <class... _Types,
+          class _Constraints                              = __tuple_swap_constraints<_Types...>,
+          enable_if_t<_Constraints::__all_swappable, int> = 0>
+_CCCL_API constexpr void
+swap(tuple<_Types...>& __t, tuple<_Types...>& __u) noexcept(_Constraints::__all_nothrow_swappable)
+{
+  __t.swap(__u);
+}
+
+template <class... _Types,
+          class _Constraints                                    = __tuple_swap_constraints<_Types...>,
+          enable_if_t<_Constraints::__all_const_swappable, int> = 0>
+_CCCL_API constexpr void
+swap(const tuple<_Types...>& __t, const tuple<_Types...>& __u) noexcept(_Constraints::__all_nothrow_const_swappable)
+{
+  __t.swap(__u);
+}
+
 template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT tuple<>
 {
@@ -692,6 +719,9 @@ public:
   }
 
   _CCCL_API constexpr void swap(tuple&) noexcept {}
+  _CCCL_API constexpr void swap(const tuple&) const noexcept {}
+
+  _CCCL_API friend constexpr void swap(const tuple&, const tuple&) noexcept {}
 
   [[nodiscard]] _CCCL_API friend constexpr bool operator==(const tuple&, const tuple&) noexcept
   {

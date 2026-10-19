@@ -56,6 +56,15 @@ std::string hash_pch_options(const std::vector<std::string>& options, const std:
 
   append(pch_preamble_source);
   append(kind_name);
+  if (kind_name == "host")
+  {
+    // Bump when the host PCH's hardcoded -include list changes (see
+    // LIBNVCC_PCH_HOST in generatePCH): that list isn't part of `options`
+    // (config.appendCommandLineArguments only serializes CompilerConfig
+    // fields), so without this a stale cached PCH from before such a change
+    // would otherwise be reused as-is.
+    append("host-pch-cxa-guard-v1");
+  }
   for (const auto& option : options)
   {
     append(option);

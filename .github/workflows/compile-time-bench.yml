@@ -213,6 +213,8 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
           rc=0
+          # These strings intentionally contain multiple launch arguments.
+          # shellcheck disable=SC2086
           .devcontainer/launch.sh \
             -d ${LAUNCH_ARGS} \
             --env "AWS_ROLE_ARN=" \

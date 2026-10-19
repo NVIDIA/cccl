@@ -26,6 +26,11 @@ file(
   "tests/*.cpp"
 )
 
+# Disable sort smoke test on arm64 until nvbug 6937623 is resolved.
+if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "aarch64")
+  list(REMOVE_ITEM test_files "sort.cpp")
+endif()
+
 function(cccl_add_stdpar_test test_file)
   get_filename_component(test_name ${test_file} NAME_WE)
 
