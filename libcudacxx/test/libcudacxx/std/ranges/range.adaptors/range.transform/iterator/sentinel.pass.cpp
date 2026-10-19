@@ -24,8 +24,8 @@ TEST_FUNC constexpr bool test()
   // Going to const and back.
   auto sent1 = transformView1.end();
   cuda::std::ranges::sentinel_t<const cuda::std::ranges::transform_view<SizedSentinelView, PlusOne>> sent2{sent1};
-  cuda::std::ranges::sentinel_t<const cuda::std::ranges::transform_view<SizedSentinelView, PlusOne>> sent3{sent2};
-  unused(sent3);
+  [[maybe_unused]] cuda::std::ranges::sentinel_t<const cuda::std::ranges::transform_view<SizedSentinelView, PlusOne>>
+    sent3{sent2};
 
   static_assert(!EndIsIter<decltype(sent1)>);
   static_assert(!EndIsIter<decltype(sent2)>);

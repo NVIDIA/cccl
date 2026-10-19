@@ -24,28 +24,26 @@ TEST_FUNC constexpr bool test()
   {
     cuda::std::ranges::repeat_view<int, int> rv(0, 10);
     assert(rv.begin() + 10 == rv.end());
-    decltype(auto) iter = rv.end();
+    [[maybe_unused]] decltype(auto) iter = rv.end();
     static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<decltype(rv)>, decltype(iter)>);
     static_assert(cuda::std::same_as<decltype(*iter), const int&>);
     for (const auto& i : rv)
     {
       assert(i == 0);
     }
-    unused(iter);
   }
 
   // unbound
   {
     cuda::std::ranges::repeat_view<int> rv(0);
     assert(rv.begin() + 10 != rv.end());
-    decltype(auto) iter = rv.end();
+    [[maybe_unused]] decltype(auto) iter = rv.end();
     static_assert(cuda::std::same_as<cuda::std::unreachable_sentinel_t, decltype(iter)>);
     static_assert(noexcept(rv.end()));
     for (const auto& i : rv | cuda::std::views::take(10))
     {
       assert(i == 0);
     }
-    unused(iter);
   }
   return true;
 }

@@ -20,7 +20,7 @@ TEST_FUNC constexpr bool test()
   cuda::std::ranges::transform_view<MoveOnlyView, PlusOneMutable> transformView1{};
   auto iter1 = cuda::std::move(transformView1).begin();
   cuda::std::ranges::transform_view<MoveOnlyView, PlusOneMutable> transformView2{};
-  auto iter2 = cuda::std::move(transformView2).begin();
+  [[maybe_unused]] auto iter2 = cuda::std::move(transformView2).begin();
   iter1 += 4;
   assert((iter1 + 1).base() == globalBuff + 5);
   assert((1 + iter1).base() == globalBuff + 5);
@@ -29,7 +29,6 @@ TEST_FUNC constexpr bool test()
   assert((iter1 + 2) - 2 == iter1);
   assert((iter1 - 2) + 2 == iter1);
 
-  unused(iter2);
   return true;
 }
 

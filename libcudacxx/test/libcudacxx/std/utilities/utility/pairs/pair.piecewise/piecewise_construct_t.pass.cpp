@@ -17,8 +17,7 @@
 
 int main(int, char**)
 {
-  cuda::std::piecewise_construct_t x = cuda::std::piecewise_construct;
-  unused(x);
+  [[maybe_unused]] cuda::std::piecewise_construct_t x = cuda::std::piecewise_construct;
 
   return 0;
 }

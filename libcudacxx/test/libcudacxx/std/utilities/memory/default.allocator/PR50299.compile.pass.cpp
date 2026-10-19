@@ -21,10 +21,9 @@
 
 #include "test_macros.h"
 
-TEST_GLOBAL_VARIABLE cuda::std::allocator<void> alloc;
+[[maybe_unused]] TEST_GLOBAL_VARIABLE cuda::std::allocator<void> alloc;
 
 int main(int, char**)
 {
-  unused(alloc);
   return 0;
 }

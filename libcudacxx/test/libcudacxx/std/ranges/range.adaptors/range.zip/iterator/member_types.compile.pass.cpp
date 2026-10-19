@@ -193,47 +193,43 @@ TEST_FUNC void test()
   {
     // difference_type of single view
     cuda::std::ranges::zip_view v{DiffTypeRange<intptr_t>{}};
-    decltype(auto) it = v.begin();
-    using Iter        = decltype(it);
+    [[maybe_unused]] decltype(auto) it = v.begin();
+    using Iter                         = decltype(it);
     static_assert(cuda::std::is_same_v<Iter::difference_type, intptr_t>);
-    unused(it);
   }
 
   {
     // difference_type of multiple views should be the common type
     cuda::std::ranges::zip_view v{DiffTypeRange<intptr_t>{}, DiffTypeRange<cuda::std::ptrdiff_t>{}};
-    decltype(auto) it = v.begin();
-    using Iter        = decltype(it);
+    [[maybe_unused]] decltype(auto) it = v.begin();
+    using Iter                         = decltype(it);
     static_assert(
       cuda::std::is_same_v<Iter::difference_type, cuda::std::common_type_t<intptr_t, cuda::std::ptrdiff_t>>);
-    unused(it);
   }
 
   const cuda::std::array<Foo, 1> foos{Foo{}};
   cuda::std::array<Bar, 2> bars{Bar{}, Bar{}};
   {
     // value_type of single view
-    cuda::std::ranges::zip_view v{foos};
+    [[maybe_unused]] cuda::std::ranges::zip_view v{foos};
     using Iter = decltype(v.begin());
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<Foo>>);
-    unused(v);
   }
 
   {
     // value_type of multiple views with different value_type
-    cuda::std::ranges::zip_view v{foos, bars};
+    [[maybe_unused]] cuda::std::ranges::zip_view v{foos, bars};
     using Iter = decltype(v.begin());
     static_assert(cuda::std::is_same_v<Iter::value_type, cuda::std::tuple<Foo, Bar>>);
-    unused(v);
   }
 
   {
     // const-iterator different from iterator
     cuda::std::ranges::zip_view v{ConstVeryDifferentRange{}};
-    decltype(auto) it  = v.begin();
-    decltype(auto) cit = cuda::std::as_const(v).begin();
-    using Iter         = decltype(it);
-    using ConstIter    = decltype(cit);
+    [[maybe_unused]] decltype(auto) it  = v.begin();
+    [[maybe_unused]] decltype(auto) cit = cuda::std::as_const(v).begin();
+    using Iter                          = decltype(it);
+    using ConstIter                     = decltype(cit);
 
     static_assert(cuda::std::is_same_v<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::is_same_v<Iter::iterator_category, cuda::std::input_iterator_tag>);
@@ -244,8 +240,6 @@ TEST_FUNC void test()
     static_assert(cuda::std::is_same_v<ConstIter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::is_same_v<ConstIter::difference_type, cuda::std::ptrdiff_t>);
     static_assert(cuda::std::is_same_v<ConstIter::value_type, cuda::std::tuple<double>>);
-    unused(it);
-    unused(cit);
   }
 }
 

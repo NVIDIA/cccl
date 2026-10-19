@@ -77,12 +77,11 @@ template <int Bytes, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_to_bitset()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-  Mask mask(true);
+  [[maybe_unused]] Mask mask(true);
 
   static_assert(cuda::std::is_same_v<decltype(mask.to_bitset()), cuda::std::bitset<N>>);
   static_assert(noexcept(mask.to_bitset()));
   static_assert(is_const_member_function_v<decltype(&Mask::to_bitset)>);
-  unused(mask);
 
   Mask all_false(false);
   auto bitset_false = all_false.to_bitset();
@@ -108,12 +107,11 @@ template <int Bytes, int N>
 TEST_HOST_DEVICE_FUNC constexpr void test_to_ullong()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
-  Mask mask(true);
+  [[maybe_unused]] Mask mask(true);
 
   static_assert(cuda::std::is_same_v<decltype(mask.to_ullong()), unsigned long long>);
   static_assert(!noexcept(mask.to_ullong()));
   static_assert(is_const_member_function_v<decltype(&Mask::to_ullong)>);
-  unused(mask);
 
   Mask all_false(false);
   assert(all_false.to_ullong() == 0ULL);

@@ -264,9 +264,8 @@ TEST_HOST_DEVICE_FUNC constexpr void test_reduce_throwing_op()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
-  Vec vec{};
-  Mask mask(true);
-  unused(vec, mask);
+  [[maybe_unused]] Vec vec{};
+  [[maybe_unused]] Mask mask(true);
 
   static_assert(!noexcept(simd::reduce(vec, throwing_plus{})));
   static_assert(!noexcept(simd::reduce(vec, mask, throwing_plus{}, T{})));

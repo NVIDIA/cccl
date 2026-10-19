@@ -40,16 +40,14 @@ TEST_FUNC constexpr bool tests()
     using C = cuda::std::array<T, 0>;
     C c     = {};
     static_assert(noexcept(c.data()));
-    T* p = c.data();
-    unused(p);
+    [[maybe_unused]] T* p = c.data();
   }
   {
     using T = double;
     using C = cuda::std::array<const T, 0>;
     C c     = {{}};
     static_assert(noexcept(c.data()));
-    const T* p = c.data();
-    unused(p);
+    [[maybe_unused]] const T* p = c.data();
     static_assert((cuda::std::is_same<decltype(c.data()), const T*>::value));
   }
   {
@@ -57,8 +55,7 @@ TEST_FUNC constexpr bool tests()
     using C = cuda::std::array<T, 0>;
     C c     = {};
     static_assert(noexcept(c.data()));
-    T* p = c.data();
-    unused(p);
+    [[maybe_unused]] T* p = c.data();
   }
   {
     cuda::std::array<int, 5> c = {0, 1, 2, 3, 4};

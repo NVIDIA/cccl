@@ -145,7 +145,7 @@ struct LessThan3
 
 // Test Constraint
 template <class I, class S>
-_CCCL_CONCEPT HasEqual = _CCCL_REQUIRES_EXPR((I, S), const I i, const S s)(unused(i == s));
+_CCCL_CONCEPT HasEqual = _CCCL_REQUIRES_EXPR((I, S), const I i, const S s)(i == s);
 
 using cuda::std::ranges::iterator_t;
 using cuda::std::ranges::sentinel_t;

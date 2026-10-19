@@ -50,10 +50,10 @@ using result_rvlaue_borrowed_range =
 
 TEST_FUNC void testCTAD()
 {
-  View v;
-  Range r;
-  BorrowedRange br;
-  PlusOne f;
+  [[maybe_unused]] View v;
+  [[maybe_unused]] Range r;
+  [[maybe_unused]] BorrowedRange br;
+  [[maybe_unused]] PlusOne f;
 
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::transform_view(v, f)),
                                    cuda::std::ranges::transform_view<View, PlusOne>>);
@@ -68,11 +68,6 @@ TEST_FUNC void testCTAD()
                        cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<BorrowedRange>, PlusOne>>);
   static_assert(cuda::std::same_as<decltype(cuda::std::ranges::transform_view(cuda::std::move(br), f)),
                                    result_rvlaue_borrowed_range>);
-
-  unused(v);
-  unused(r);
-  unused(br);
-  unused(f);
 }
 
 int main(int, char**)

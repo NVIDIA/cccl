@@ -34,12 +34,11 @@ struct all_equal
 TEST_FUNC constexpr void test_all_equal(cuda::std::initializer_list<int> il)
 {
   binary_counting_predicate<all_equal, int, int> pred(all_equal{});
-  cuda::std::pair<int, int> p = cuda::std::minmax(il, pred);
-  const int* ptr              = il.end();
+  cuda::std::pair<int, int> p     = cuda::std::minmax(il, pred);
+  [[maybe_unused]] const int* ptr = il.end();
   assert(p.first == *il.begin());
   assert(p.second == *--ptr);
   assert(pred.count() <= ((3 * il.size()) / 2));
-  unused(ptr);
 }
 
 TEST_FUNC constexpr bool test()

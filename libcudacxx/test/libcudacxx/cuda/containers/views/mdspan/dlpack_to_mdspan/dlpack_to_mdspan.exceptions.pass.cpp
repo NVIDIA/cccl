@@ -41,7 +41,9 @@ void test_exception_wrong_rank()
   try
   {
     // Try to convert rank-2 tensor to rank-1 mdspan
-    unused(cuda::to_host_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -66,7 +68,9 @@ void test_exception_wrong_dtype()
   try
   {
     // Try to convert int tensor to float mdspan
-    unused(cuda::to_host_mdspan<float, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<float, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -89,7 +93,9 @@ void test_exception_null_data()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -110,7 +116,9 @@ void test_exception_null_shape()
   bool caught   = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -134,7 +142,9 @@ void test_exception_negative_shape()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -158,7 +168,9 @@ void test_exception_wrong_device_type_host()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -182,7 +194,9 @@ void test_exception_wrong_device_type_device()
   bool caught    = false;
   try
   {
-    unused(cuda::to_device_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_device_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -206,7 +220,9 @@ void test_exception_wrong_device_type_managed()
   bool caught    = false;
   try
   {
-    unused(cuda::to_managed_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_managed_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -230,7 +246,9 @@ void test_exception_stride_mismatch_layout_right()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<float, 2, cuda::std::layout_right>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<float, 2, cuda::std::layout_right>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -254,7 +272,9 @@ void test_exception_stride_mismatch_layout_left()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<float, 2, cuda::std::layout_left>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<float, 2, cuda::std::layout_left>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -278,7 +298,9 @@ void test_exception_zero_stride_layout_stride()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 2, cuda::std::layout_stride>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 2, cuda::std::layout_stride>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -302,7 +324,9 @@ void test_no_exception_zero_stride_layout_stride_relaxed()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 2, cuda::layout_stride_relaxed>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 2, cuda::layout_stride_relaxed>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -327,7 +351,9 @@ void test_no_exception_negative_stride_layout_stride_relaxed()
   bool caught        = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 1, cuda::layout_stride_relaxed>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1, cuda::layout_stride_relaxed>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -350,7 +376,9 @@ void test_exception_null_strides_dlpack_v12()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<float, 2>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<float, 2>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {
@@ -377,7 +405,9 @@ void test_exception_misaligned_data()
   bool caught    = false;
   try
   {
-    unused(cuda::to_host_mdspan<int, 1>(tensor));
+    {
+      [[maybe_unused]] auto&& discarded = cuda::to_host_mdspan<int, 1>(tensor);
+    }
   }
   catch (const std::invalid_argument&)
   {

@@ -21,8 +21,7 @@
 template <class It>
 TEST_FUNC constexpr void test()
 {
-  cuda::std::reverse_iterator<It> r;
-  unused(r);
+  [[maybe_unused]] cuda::std::reverse_iterator<It> r;
 }
 
 TEST_FUNC constexpr bool tests()

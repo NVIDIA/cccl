@@ -17,7 +17,7 @@ template <typename Mdspan>
 TEST_FUNC void test_submdspan(int* ptr)
 {
   Mdspan md{ptr, cuda::std::dims<1>{4}};
-  auto submd = cuda::std::submdspan(md, cuda::std::pair{1, 3});
+  [[maybe_unused]] auto submd = cuda::std::submdspan(md, cuda::std::pair{1, 3});
   if constexpr (cuda::is_device_accessible_v<Mdspan>)
   {
     NV_IF_TARGET(NV_IS_DEVICE, (assert(submd(0) == 2); assert(submd(1) == 3);))
@@ -26,7 +26,6 @@ TEST_FUNC void test_submdspan(int* ptr)
   {
     NV_IF_TARGET(NV_IS_HOST, (assert(submd(0) == 2); assert(submd(1) == 3);))
   }
-  unused(submd);
 }
 
 #if !_CCCL_TILE_COMPILATION() // error: a non-__tile__ variable ("managed_array") cannot be used in tile code
