@@ -28,8 +28,7 @@ device_buffer_to_host_buffer(const cuda::device_buffer<T>& d_items, std::size_t 
   const auto stream = d_items.stream();
   const auto device = stream.device();
 
-  auto h_items = ::c2h::make_host_buffer<T>(stream, device, num_items, cuda::no_init);
-  cuda::copy_bytes(stream, d_items.first(num_items), h_items);
+  auto h_items = ::c2h::make_host_buffer<T>(stream, device, d_items.first(num_items));
   stream.sync();
 
   return h_items;
