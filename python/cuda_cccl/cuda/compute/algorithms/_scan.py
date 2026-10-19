@@ -49,6 +49,13 @@ class _Scan(Serializable):
         "init_kind",
         "force_inclusive",
         "device_scan_fn",
+        # Perf: see the matching comment on _Reduce.__slots__ -- same
+        # rationale, same strong-reference-identity caching, applied here.
+        # init_value is NOT cached this way for the same reason h_init isn't
+        # in _Reduce: it's a plain mutable array/GpuStruct/iterator the
+        # caller may mutate in place while reusing the same object.
+        "_last_loaded_build_result",
+        "_last_stateless_op",
     ]
 
     __serialization_schema__ = (
@@ -114,6 +121,8 @@ class _Scan(Serializable):
 
         # loaded_build_result / device_scan_fn are bound lazily on the first
         # __call__ (see _bind_device_scan_fn).
+        self._last_loaded_build_result = None
+        self._last_stateless_op = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceScanBuildResult,
             d_in,
@@ -135,10 +144,22 @@ class _Scan(Serializable):
             ),
         )
 
+    def _after_deserialize(self) -> None:
+        # deserialize() bypasses __init__ (see Serializable.deserialize),
+        # where these two caches are otherwise initialized.
+        self._last_loaded_build_result = None
+        self._last_stateless_op = None
+
     def _bind_device_scan_fn(self) -> None:
         # Derived from force_inclusive + init_kind, from the loaded build result (not
         # serialized as a function); bound at __call__ once resolve_build_result picks
         # + loads the current device's build result.
+        #
+        # Perf: force_inclusive/init_kind are fixed for this instance, so the
+        # match below is a pure function of loaded_build_result's identity --
+        # see the matching comment on _Reduce._bind_device_reduce_fn.
+        if self.loaded_build_result is self._last_loaded_build_result:
+            return
         match (self.force_inclusive, self.init_kind):
             case (True, _bindings.InitKind.FUTURE_VALUE_INIT):
                 self.device_scan_fn = (
@@ -156,6 +177,93 @@ class _Scan(Serializable):
                 self.device_scan_fn = self.loaded_build_result.compute_exclusive
             case (False, _bindings.InitKind.NO_INIT):
                 raise ValueError("Exclusive scan with No init value is not supported")
+        self._last_loaded_build_result = self.loaded_build_result
+
+    def set_op(self, op: Callable | OpAdapter) -> None:
+        """Explicitly rebind this scanner's operator.
+
+        ``execute()`` (unlike ``__call__``) never re-derives op state on its
+        own -- if the operator or its captured state has changed since
+        construction or the last ``set_op()``, you must call this first, or
+        ``execute()`` will silently launch with stale op state. Call this
+        only when it has actually changed; it is not needed after every
+        ``execute()``.
+        """
+        op_adapter = make_op_adapter(op)
+        self.op_cccl.state = op_adapter.get_state()
+
+    def set_h_init(
+        self, init_value: np.ndarray | DeviceArrayLike | GpuStruct
+    ) -> None:
+        """Explicitly rebind this scanner's initial value.
+
+        For ``VALUE_INIT``, the underlying ``Value`` object points directly
+        at ``init_value``'s host buffer, so mutating that same array object
+        in place is picked up automatically. What is NOT picked up
+        automatically (for either ``VALUE_INIT`` or ``FUTURE_VALUE_INIT``) is
+        passing a *different* array/iterator object as the initial value on a
+        later ``execute()`` call: ``execute()`` has no ``init_value``
+        parameter and never re-reads it, so the bound state keeps referencing
+        whichever object was bound by ``__init__`` or the last
+        ``set_h_init()``. Call this whenever you swap in a new ``init_value``
+        object, or ``execute()`` will silently launch against the old one.
+        Has no effect when this scanner was built with ``NO_INIT``.
+        """
+        match self.init_kind:
+            case _bindings.InitKind.FUTURE_VALUE_INIT:
+                self.init_value_cccl = cast(_bindings.Iterator, self.init_value_cccl)
+                set_cccl_iterator_state(self.init_value_cccl, init_value)
+
+            case _bindings.InitKind.VALUE_INIT:
+                self.init_value_cccl = cast(_bindings.Value, self.init_value_cccl)
+                self.init_value_cccl.state = to_cccl_value_state(
+                    cast("np.ndarray | GpuStruct", init_value)
+                )
+
+    def execute(
+        self,
+        *,
+        temp_storage,
+        d_in,
+        d_out,
+        num_items: int,
+        stream=None,
+    ):
+        """Minimal per-call path: updates only the ``d_in``/``d_out`` pointer
+        state and issues the launch. Unlike ``__call__``, this never
+        re-derives op state or the initial-value state -- construct with the
+        right initial value (or call ``set_op``/``set_h_init`` beforehand)
+        and reuse this for repeat calls against the same op/init_value. See
+        ``_Reduce.execute`` for the full rationale; the tradeoff is identical.
+        """
+        self.loaded_build_result = cccl.resolve_build_result(
+            self.build_results, self._bound_build_result
+        )
+        self._bind_device_scan_fn()
+
+        set_cccl_iterator_state(self.d_in_cccl, d_in)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
+
+        stream_handle = validate_and_get_stream(stream)
+
+        if temp_storage is None:
+            temp_storage_bytes = 0
+            d_temp_storage = 0
+        else:
+            temp_storage_bytes = temp_storage.nbytes
+            d_temp_storage = get_data_pointer(temp_storage)
+
+        temp_storage_bytes = self.device_scan_fn(
+            d_temp_storage,
+            temp_storage_bytes,
+            self.d_in_cccl,
+            self.d_out_cccl,
+            num_items,
+            self.op_cccl,
+            self.init_value_cccl,
+            stream_handle,
+        )
+        return temp_storage_bytes
 
     def __call__(
         self,
@@ -178,9 +286,12 @@ class _Scan(Serializable):
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        # Update op state for stateful ops
+        # Update op state for stateful ops. See _Reduce.__call__ for the
+        # stateless-op caching rationale.
         op_adapter = make_op_adapter(op)
-        self.op_cccl.state = op_adapter.get_state()
+        if op_adapter.is_stateful or op is not self._last_stateless_op:
+            self.op_cccl.state = op_adapter.get_state()
+            self._last_stateless_op = None if op_adapter.is_stateful else op
 
         match self.init_kind:
             case _bindings.InitKind.FUTURE_VALUE_INIT:
