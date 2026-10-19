@@ -19,7 +19,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
+
+#include <cuda/std/__type_traits/is_callable.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -191,7 +195,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanExclusivePartial(
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(is_fixed_size_random_access_range_v<Output>,
                 "Output must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ScanOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ScanOp, ValueT, ValueT>,
                 "ScanOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr auto length = static_size_v<Input>;
   static_assert(static_size_v<Output> == length);
@@ -441,7 +445,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadScanInclusivePartial(
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(is_fixed_size_random_access_range_v<Output>,
                 "Output must support the subscript operator[] and have a compile-time size");
-  static_assert(has_binary_call_operator<ScanOp, ValueT>::value,
+  static_assert(::cuda::std::__is_callable_v<ScanOp, ValueT, ValueT>,
                 "ScanOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr auto length = static_size_v<Input>;
   static_assert(static_size_v<Output> == length);

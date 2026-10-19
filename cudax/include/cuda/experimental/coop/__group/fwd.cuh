@@ -21,9 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-// Q: Do we want to enable this by default, or do we want the user to define some macro to get the interoperability with
-//    cooperative groups?
-#if __has_include(<cooperative_groups.h>)
+#if __has_include(<cooperative_groups.h>) && !defined(_CUDAX_DISABLE_CG_INTEROP)
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 1
 #else // ^^^ has cooperative groups ^^^ / vvv no cooperative groups vvv
 #  define _CCCL_HAS_COOPERATIVE_GROUPS() 0
@@ -32,6 +30,12 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/cstdint>
+
+#if _CCCL_HAS_COOPERATIVE_GROUPS()
+// We don't need to include the whole <cooperative_groups.h> header, we can just forward declare the CG group classes in
+// the CG namespace. However, the CG namespace is versioned, so we still need to include the minimal header.
+#  include <cooperative_groups/details/info.h>
+#endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -133,6 +137,22 @@ struct non_exhaustive_t;
 
 inline constexpr ::cuda::std::uint32_t __invalid_count_or_rank = 0xffff'ffff;
 } // namespace cuda::experimental::coop
+
+#  if _CCCL_HAS_COOPERATIVE_GROUPS()
+_CG_BEGIN_NAMESPACE
+
+class thread_group;
+class grid_group;
+#    if defined(_CG_HAS_CLUSTER_GROUP)
+class cluster_group;
+#    endif // _CG_HAS_CLUSTER_GROUP
+class thread_block;
+class coalesced_group;
+template <unsigned _Size, typename _ParentT>
+class thread_block_tile;
+
+_CG_END_NAMESPACE
+#  endif // _CCCL_HAS_COOPERATIVE_GROUPS()
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 

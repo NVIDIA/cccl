@@ -25,7 +25,6 @@
 #include <cuda/std/__floating_point/constants.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/properties.h>
-#include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/always_false.h>
 
 #include <cuda/std/__cccl/prologue.h>

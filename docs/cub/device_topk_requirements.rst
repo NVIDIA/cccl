@@ -31,8 +31,8 @@ sequenced in the output (unless you also request a stable ordering, as described
 the selected items in the output buffer may still vary unless you also request a specific output
 ordering. Non-determinism arises only when more elements compare equal at the selection boundary
 than there are remaining slots in the top-*K*. For example, with *K* = 3 and four elements tied for
-the third-largest position, the algorithm must choose three of the four, and that choice is the
-source of variability.
+the largest key, the algorithm must choose three of the four, and that choice is the source of
+variability.
 
 **Output ordering applies to the result sequence.** Once the result set is fixed, output ordering
 specifies how those *K* items are laid out in the output buffer.
@@ -125,6 +125,9 @@ across GPUs, so it requires ``determinism::gpu_to_gpu``. Pairing it with ``run_t
 ``not_guaranteed`` is rejected at compile time. ``determinism`` and ``tie_break`` must always be
 specified together (or both omitted to take the default). Use ``tie_break::unspecified`` to leave the
 boundary policy to the implementation, for example alongside ``not_guaranteed`` or ``run_to_run``.
+
+For floating-point keys, -0.0 and +0.0 compare equal. Under ``prefer_smaller_index`` and
+``prefer_larger_index`` the index preference decides between them.
 
 .. list-table::
    :header-rows: 1
@@ -238,7 +241,7 @@ Consider ``cub::DeviceTopK::MaxKeys`` with *K* = 3 on this input:
    index :  0     1     2     3     4     5
    key   : 10     8     8     8     6     5
 
-The top three keys are ``10`` and two ``8``\ s. Four elements compare equal at the boundary (the
+The top three keys are ``10`` and two ``8``\ s. Three elements compare equal at the boundary (the
 ``8``\ s at indices 1, 2, 3), but only two can be kept. That is the tie. The notation ``key@index``
 identifies an element by both its key and its source position (for example ``8@2`` is the ``8`` at
 index 2).

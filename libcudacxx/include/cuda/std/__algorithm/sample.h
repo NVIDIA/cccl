@@ -20,14 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__random/uniform_int_distribution.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

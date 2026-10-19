@@ -30,8 +30,6 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Equality on the full multi-precision value, not just its double image, so a
 // wrong low word cannot pass unnoticed.
 template <class T>
@@ -98,7 +96,7 @@ TEST_HOST_DEVICE_FUNC void test_incdec()
   // The increment must land in the low word when the high word cannot hold it:
   // 2^30 + 1 is not representable in fp32, so a double-float that dropped the
   // low word would come back as 2^30 exactly.
-  if constexpr (::cuda::std::is_same_v<T, cudax::fp32mp2> || ::cuda::std::is_same_v<T, cudax::fp64mp2>)
+  if constexpr (::cuda::std::is_same_v<T, cuda::fp32mp2> || ::cuda::std::is_same_v<T, cuda::fp64mp2>)
   {
     T x(1073741824.0); // 2^30
     ++x;
@@ -222,18 +220,18 @@ TEST_HOST_DEVICE_FUNC void test_type()
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  test_type<cudax::fp32mp2>();
-  test_type<cudax::fp32mp2_low>();
-  test_type<cudax::fp32mp2_mid>();
-  test_type<cudax::fp32mp2_high>();
+  test_type<cuda::fp32mp2>();
+  test_type<cuda::fp32mp2_low>();
+  test_type<cuda::fp32mp2_mid>();
+  test_type<cuda::fp32mp2_high>();
 
-  test_type<cudax::fp64mp2>();
-  test_type<cudax::fp64mp2_low>();
-  test_type<cudax::fp64mp2_mid>();
-  test_type<cudax::fp64mp2_high>();
+  test_type<cuda::fp64mp2>();
+  test_type<cuda::fp64mp2_low>();
+  test_type<cuda::fp64mp2_mid>();
+  test_type<cuda::fp64mp2_high>();
 
-  test_compound_scalar<cudax::fp32mp2, float>();
-  test_compound_scalar<cudax::fp64mp2, double>();
+  test_compound_scalar<cuda::fp32mp2, float>();
+  test_compound_scalar<cuda::fp64mp2, double>();
 }
 
 int main(int, char**)
