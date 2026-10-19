@@ -27,6 +27,7 @@
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/remove_const.h>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -114,7 +115,7 @@ struct get_stream_t
   _CCCL_REQUIRES(__has_nonconst_stream_conversion<_Tp>)
   [[nodiscard]] _CCCL_API constexpr ::cuda::stream_ref _CCCL_STATIC_CALL_OPERATOR(const _Tp&) noexcept
   {
-    static_assert(!__has_nonconst_stream_conversion<_Tp>,
+    static_assert(::cuda::std::__always_false_v<_Tp>,
                   "The type is convertible to a stream only through a non-const conversion operator, which "
                   "cuda::get_stream cannot use. Make the conversion operator const.");
     return ::cuda::stream_ref{::cudaStream_t{}};
