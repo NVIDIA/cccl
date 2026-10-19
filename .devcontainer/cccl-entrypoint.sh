@@ -8,7 +8,16 @@ if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
     echo "::group::Initializing devcontainer..."
 fi
 
-setup-cuda-compat;
+# The CUDA forward compatibility (cuda-compat) libraries are only supported on
+# data center GPUs; activating them on other GPUs breaks CUDA. GPU jobs set
+# DATA_CENTER_GPU ('1' or '0') via the CI matrix, based on the runner's GPU.
+# Local users with a data center GPU can opt in with:
+#   .devcontainer/launch.sh --env DATA_CENTER_GPU=1
+if [[ "${DATA_CENTER_GPU:-0}" = "1" ]]; then
+    setup-cuda-compat;
+else
+    echo "DATA_CENTER_GPU is '${DATA_CENTER_GPU:-0}', skipping cuda-compat configuration.";
+fi
 devcontainer-utils-post-create-command;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;

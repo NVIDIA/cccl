@@ -281,6 +281,12 @@ def get_gpu(gpu_string):
     if "gpu_count" not in result:
         result["gpu_count"] = 1
 
+    # dc (data center GPU) defaults to False. Used to decide whether the CUDA
+    # forward compatibility (cuda-compat) libraries may be activated in the
+    # container; they are only supported on data center GPUs.
+    if "dc" not in result:
+        result["dc"] = False
+
     # runner_id defaults to the GPU key. Used in runner label templates as {gpu_id}.
     if "runner_id" not in result:
         result["runner_id"] = gpu_string
@@ -597,7 +603,21 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
 
 def generate_dispatch_job_environment(matrix_job, job_type):
-    return json.dumps(matrix_job.get("environment") or [])
+    environment = list(matrix_job.get("environment") or [])
+
+    # Inject the GPU's data center classification into every GPU job. The
+    # devcontainer entrypoint uses this to decide whether to run the
+    # setup-cuda-compat script, since the CUDA forward compatibility
+    # (cuda-compat) libraries are only supported on data center GPUs.
+    # Explicitly emit both cases ('1' and '0') so mock jobs reproduce CI.
+    # Skip if the tag already set the variable to allow manual overrides.
+    if get_job_type_info(job_type)["gpu"] and not any(
+        env.startswith("DATA_CENTER_GPU=") for env in environment
+    ):
+        gpu = get_gpu(matrix_job["gpu"])
+        environment.append(f"DATA_CENTER_GPU={'1' if gpu['dc'] else '0'}")
+
+    return json.dumps(environment)
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
