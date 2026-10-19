@@ -382,7 +382,7 @@ struct WarpScanShfl
    *   Up-offset to pull from
    */
   template <typename Tp, typename ScanOpT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(Tp input, ScanOpT scan_op, int first_lane, int offset)
+  _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(const Tp& input, ScanOpT scan_op, int first_lane, int offset)
   {
     Tp temp = ShuffleUp<LogicalWarpThreads>(input, offset, first_lane, member_mask);
 
@@ -479,7 +479,7 @@ struct WarpScanShfl
    */
   template <typename Tp, typename ScanOpT>
   _CCCL_DEVICE _CCCL_FORCEINLINE Tp InclusiveScanStep(
-    Tp input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
+    const Tp& input, ScanOpT scan_op, int first_lane, int offset, ::cuda::std::false_type /*is_small_unsigned*/)
   {
     return InclusiveScanStep(input, scan_op, first_lane, offset);
   }
