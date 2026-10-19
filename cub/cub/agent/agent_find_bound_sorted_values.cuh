@@ -206,7 +206,9 @@ struct agent_t
   {
     const int tile_idx = static_cast<int>(blockIdx.x);
     const Offset diag0 = static_cast<Offset>(tile_size) * tile_idx;
-    // Clamp the remaining count instead of computing a potentially overflowing end diagonal.
+    // The following expression is equivalent to
+    // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
+    // but avoid overflow of the offset type
     const int total_in_tile =
       static_cast<int>(::cuda::std::min(static_cast<Offset>(tile_size), range_count + values_count - diag0));
 
