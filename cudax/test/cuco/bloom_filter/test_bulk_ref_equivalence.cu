@@ -130,7 +130,7 @@ C2H_TEST("bloom_filter: host bulk add equals device ref add", "[bloom_filter]", 
   using cfg    = c2h::get<0, TestType>;
   using Key    = typename cfg::key_type;
   using Policy = typename cfg::policy_type;
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using filter_type = cuco::bloom_filter<Key, cuda::std::dynamic_extent, cuda::thread_scope_device, Policy>;
@@ -245,7 +245,7 @@ C2H_TEST("bloom_filter: host bulk contains equals device ref contains", "[bloom_
   using cfg    = c2h::get<0, TestType>;
   using Key    = typename cfg::key_type;
   using Policy = typename cfg::policy_type;
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using filter_type = cuco::bloom_filter<Key, cuda::std::dynamic_extent, cuda::thread_scope_device, Policy>;

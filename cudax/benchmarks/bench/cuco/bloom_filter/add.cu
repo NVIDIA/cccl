@@ -93,7 +93,7 @@ void bloom_filter_add(
     }
 
     const auto device = cuda::device_ref{0};
-    cuda::stream stream{device};
+    const cuda::stream stream{device};
     const cuda::device_memory_pool_ref mr = cuda::device_default_memory_pool(device);
 
     auto keys = cuda::make_device_buffer<Key>(stream, device, num_keys, cuda::no_init);

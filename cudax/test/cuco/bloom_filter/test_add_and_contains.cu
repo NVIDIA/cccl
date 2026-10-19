@@ -111,7 +111,7 @@ C2H_TEST("bloom_filter add and contains", "[bloom_filter]", configs)
   constexpr int num_keys                 = (cuda::std::numeric_limits<key_type>::max() > 397) ? 397 : 97;
   constexpr cuda::std::size_t num_blocks = 1000;
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   filter_type filter{stream, mr, num_blocks};
@@ -190,7 +190,7 @@ C2H_TEST("bloom_filter static block count", "[bloom_filter]")
 
   STATIC_REQUIRE(filter_type::num_blocks_v == num_blocks);
 
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   filter_type filter{stream, mr};
