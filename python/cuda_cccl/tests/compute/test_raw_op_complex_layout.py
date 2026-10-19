@@ -217,6 +217,44 @@ def test_pointer_to_subarray_of_complex_struct_is_rejected():
         op.compile((inner.pointer(),), None)
 
 
+@pytest.mark.parametrize("shape", [(1,), (3,)])
+def test_array_of_mismatched_complex_structs_is_rejected(shape):
+    """{int64 a; Inner arr[N]} with Inner = {int32 n; complex64 z}: for N=1
+    the outer offsets, size and alignment all match native code, but z sits
+    at offset 12 instead of 16, so the array's elements must be checked."""
+    inner = types.struct(
+        {"n": types.int32, "z": types.from_numpy_dtype(np.dtype("complex64"))}
+    )
+    arr = types.from_numpy_dtype(np.dtype((inner.dtype, shape)))
+    outer = types.struct({"a": types.int64, "arr": arr})
+    op = RawOp(ltoir=b"", name="unused")
+    with pytest.raises(TypeError, match=r"'<value>\.arr\[0\]\.z' sits at absolute"):
+        op.compile((outer,), None)
+
+
+def test_array_of_complex_structs_with_mismatched_stride_is_rejected():
+    """Inner = {complex64 z; int32 n}: its fields sit at native offsets, but
+    its size is 12 instead of 16, so arr[1] onward would be misplaced."""
+    inner = types.struct(
+        {"z": types.from_numpy_dtype(np.dtype("complex64")), "n": types.int32}
+    )
+    arr = types.from_numpy_dtype(np.dtype((inner.dtype, (2,))))
+    outer = types.struct({"a": types.int64, "arr": arr})
+    op = RawOp(ltoir=b"", name="unused")
+    with pytest.raises(TypeError, match=r"'<value>\.arr' has element stride 12"):
+        op.compile((outer,), None)
+
+
+def test_array_of_coincidentally_aligned_complex_structs_is_accepted():
+    inner = types.struct(
+        {"idx": types.int64, "val": types.from_numpy_dtype(np.dtype("complex64"))}
+    )
+    arr = types.from_numpy_dtype(np.dtype((inner.dtype, (3,))))
+    outer = types.struct({"n": types.int32, "arr": arr})
+    op = RawOp(ltoir=b"", name="unused")
+    op.compile((outer,), None)  # must not raise
+
+
 def test_single_complex_field_alignment_only_mismatch_is_rejected():
     """{complex64 z} alone: NumPy gives offsets=[0], itemsize=8 -- identical
     to what native CUDA/C++ would give -- but NumPy's struct alignment (4)

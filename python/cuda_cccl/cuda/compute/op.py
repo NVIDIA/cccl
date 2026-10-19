@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import math
 import sys
 import sysconfig
 import warnings
@@ -112,7 +113,7 @@ def _check_inline_fields(
     native_base: int,
 ) -> None:
     """Check every field's absolute offset against native CUDA/C++,
-    recursing into nested structs and pointer pointees."""
+    recursing into nested structs, arrays of structs and pointer pointees."""
     assert td.dtype is not None
     expected_offsets, _, _ = _native_layout(td)
     for (field_name, field_type), native_offset in zip(
@@ -140,6 +141,26 @@ def _check_inline_fields(
             _check_inline_fields(
                 field_type, field_path, actual_base=actual_abs, native_base=native_abs
             )
+        elif field_type.dtype is not None and field_type.dtype.subdtype is not None:
+            # An array of structs: check the first element's fields, then the
+            # element stride, which places every later element.
+            base_dtype, shape = field_type.dtype.subdtype
+            base_type = cccl_types.from_numpy_dtype(base_dtype)
+            if isinstance(base_type, cccl_types.StructTypeDescriptor):
+                _check_inline_fields(
+                    base_type,
+                    f"{field_path}[0]",
+                    actual_base=actual_abs,
+                    native_base=native_abs,
+                )
+                _, native_stride, _ = _native_layout(base_type)
+                if math.prod(shape) > 1 and base_dtype.itemsize != native_stride:
+                    raise TypeError(
+                        f"'{field_path}' has element stride "
+                        f"{base_dtype.itemsize} in cuda.compute's layout, but "
+                        f"native CUDA/C++ code would use {native_stride}. "
+                        f"{_UNAFFECTED}"
+                    )
 
 
 def _is_well_known_op(op: OpKind) -> bool:
