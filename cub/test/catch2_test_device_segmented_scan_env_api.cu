@@ -9,6 +9,7 @@
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/functional>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
 #include <cuda/stream>
@@ -28,10 +29,13 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum accepts stream", "[seg
   // example-begin exclusive-segmented-sum-env
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_offsets              = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  auto d_offsets_it           = d_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  // Static host storage stays valid until the asynchronous copies complete.
+  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
+  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  auto d_offsets_it = d_offsets.begin();
+  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, stream);
@@ -52,10 +56,12 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts stream", "[se
   // example-begin exclusive-segmented-scan-env
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_offsets              = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  auto d_offsets_it           = d_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
+  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  auto d_offsets_it = d_offsets.begin();
+  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, cuda::maximum<>{}, 4, stream);
@@ -76,10 +82,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum accepts stream", "[seg
   // example-begin inclusive-segmented-sum-env
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_offsets              = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  auto d_offsets_it           = d_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
+  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  auto d_offsets_it = d_offsets.begin();
+  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, stream);
@@ -100,10 +108,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan accepts stream", "[se
   // example-begin inclusive-segmented-scan-env
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_offsets              = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  auto d_offsets_it           = d_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
+  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  auto d_offsets_it = d_offsets.begin();
+  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, cuda::maximum<>{}, stream);
@@ -124,10 +134,12 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit accepts stream", 
   // example-begin inclusive-segmented-scan-init-env
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_offsets              = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
-  auto d_offsets_it           = d_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
+  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
+  auto d_offsets_it = d_offsets.begin();
+  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, cuda::maximum<>{}, 4, stream);
@@ -151,12 +163,15 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum (separate offsets) acc
   const auto sentinel         = -1;
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_in_offsets           = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
-  auto d_out_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
-  auto d_in_off_it            = d_in_offsets.begin();
-  auto d_out_off_it           = d_out_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
+  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
+  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
+  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  auto d_in_off_it   = d_in_offsets.begin();
+  auto d_out_off_it  = d_out_offsets.begin();
+  static constexpr cuda::std::array<int, 8> d_in_values{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, stream);
@@ -180,12 +195,15 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan (separate offsets) ac
   const auto sentinel         = -1;
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_in_offsets           = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
-  auto d_out_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
-  auto d_in_off_it            = d_in_offsets.begin();
-  auto d_out_off_it           = d_out_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {3, 1, 4, 1, 5, 9, 2, 6});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
+  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
+  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
+  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  auto d_in_off_it   = d_in_offsets.begin();
+  auto d_out_off_it  = d_out_offsets.begin();
+  static constexpr cuda::std::array<int, 8> d_in_values{3, 1, 4, 1, 5, 9, 2, 6};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, cuda::maximum<>{}, 2, stream);
@@ -209,12 +227,15 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum (separate offsets) acc
   const auto sentinel         = -1;
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_in_offsets           = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
-  auto d_out_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
-  auto d_in_off_it            = d_in_offsets.begin();
-  auto d_out_off_it           = d_out_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
+  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
+  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
+  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  auto d_in_off_it   = d_in_offsets.begin();
+  auto d_out_off_it  = d_out_offsets.begin();
+  static constexpr cuda::std::array<int, 8> d_in_values{1, 2, 3, 4, 5, 6, 7, 8};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedSum(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, stream);
@@ -238,12 +259,15 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan (separate offsets) ac
   const auto sentinel         = -1;
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_in_offsets           = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
-  auto d_out_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
-  auto d_in_off_it            = d_in_offsets.begin();
-  auto d_out_off_it           = d_out_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {3, 1, 4, 1, 5, 9, 2, 6});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
+  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
+  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
+  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  auto d_in_off_it   = d_in_offsets.begin();
+  auto d_out_off_it  = d_out_offsets.begin();
+  static constexpr cuda::std::array<int, 8> d_in_values{3, 1, 4, 1, 5, 9, 2, 6};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, cuda::maximum<>{}, stream);
@@ -267,12 +291,15 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit (separate offsets
   const auto sentinel         = -1;
   const auto num_segments     = ::cuda::std::int64_t{3};
   const auto [device, stream] = cub_test::make_current_device_and_owning_stream();
-  auto d_in_offsets           = cuda::make_device_buffer<int>(stream, device, {0, 3, 5, 8});
-  auto d_out_offsets          = cuda::make_device_buffer<int>(stream, device, {0, 4, 7});
-  auto d_in_off_it            = d_in_offsets.begin();
-  auto d_out_off_it           = d_out_offsets.begin();
-  auto d_in                   = cuda::make_device_buffer<int>(stream, device, {3, 1, 4, 1, 5, 9, 2, 6});
-  auto d_out                  = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
+  static constexpr cuda::std::array<int, 4> d_in_offsets_values{0, 3, 5, 8};
+  auto d_in_offsets = cuda::make_device_buffer<int>(stream, device, d_in_offsets_values);
+  static constexpr cuda::std::array<int, 3> d_out_offsets_values{0, 4, 7};
+  auto d_out_offsets = cuda::make_device_buffer<int>(stream, device, d_out_offsets_values);
+  auto d_in_off_it   = d_in_offsets.begin();
+  auto d_out_off_it  = d_out_offsets.begin();
+  static constexpr cuda::std::array<int, 8> d_in_values{3, 1, 4, 1, 5, 9, 2, 6};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, 10, sentinel);
 
   auto error = cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
     d_in.begin(), d_out.begin(), d_in_off_it, d_in_off_it + 1, d_out_off_it, num_segments, cuda::maximum<>{}, 7, stream);
@@ -314,10 +341,12 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan accepts a custom poli
   const auto num_segments = ::cuda::std::int64_t{3};
   auto [device, stream]   = cub_test::make_current_device_and_owning_stream();
   auto env = cuda::std::execution::env{cuda::stream_ref{stream}, cuda::execution::tune(SegmentedScanPolicySelector{})};
-  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, {0, 4, 7, 9});
+  static constexpr cuda::std::array<int, 4> d_offsets_values{0, 4, 7, 9};
+  auto d_offsets    = cuda::make_device_buffer<int>(stream, device, d_offsets_values);
   auto d_offsets_it = d_offsets.begin();
-  auto d_in         = cuda::make_device_buffer<int>(stream, device, {8, 6, 7, 5, 3, 0, 9, 1, 2});
-  auto d_out        = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
+  static constexpr cuda::std::array<int, 9> d_in_values{8, 6, 7, 5, 3, 0, 9, 1, 2};
+  auto d_in  = cuda::make_device_buffer<int>(stream, device, d_in_values);
+  auto d_out = cuda::make_device_buffer<int>(stream, device, d_in.size(), cuda::no_init);
 
   const auto error = cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
     d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, ::cuda::std::plus<>{}, 0, env);

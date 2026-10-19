@@ -11,6 +11,7 @@
 #include <cuda/cmath>
 #include <cuda/devices>
 #include <cuda/iterator>
+#include <cuda/std/array>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 #include <cuda/std/span>
@@ -45,8 +46,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with two offsets w
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // example-begin exclusive-segmented-sum-two-offsets
-  auto input        = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8});
-  auto offsets      = cuda::make_device_buffer<size_t>(stream, device, {0, 3, 5, 8});
+  // Static host storage stays valid until the asynchronous copies complete.
+  static constexpr cuda::std::array<int, 8> input_values{1, 2, 3, 4, 5, 6, 7, 8};
+  auto input = cuda::make_device_buffer<int>(stream, device, input_values);
+  static constexpr cuda::std::array<size_t, 4> offsets_values{0, 3, 5, 8};
+  auto offsets      = cuda::make_device_buffer<size_t>(stream, device, offsets_values);
   auto output       = cuda::make_device_buffer<int>(stream, device, input.size(), cuda::no_init);
   auto num_segments = offsets.size() - 1;
 
@@ -102,20 +106,24 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum API with three offsets
 
   // example-begin exclusive-segmented-sum-three-offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
-  auto input = cuda::make_device_buffer<int>(stream, device, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+  static constexpr cuda::std::array<int, 16> input_values{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  auto input = cuda::make_device_buffer<int>(stream, device, input_values);
 
   // offsets to starts of each of 4 rows
-  constexpr size_t row_size   = 4;
-  const auto in_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {0, row_size, 2 * row_size});
+  constexpr size_t row_size = 4;
+  static constexpr cuda::std::array<size_t, 3> in_begin_offsets_values{0, row_size, 2 * row_size};
+  const auto in_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, in_begin_offsets_values);
   const auto num_segments     = in_begin_offsets.size();
   // Perform row-wise sum for 3-by-3 principal sub-matrix
   constexpr size_t segment_size = 3;
 
-  const auto in_end_offsets = cuda::make_device_buffer<size_t>(
-    stream, device, {0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size});
+  static constexpr cuda::std::array<size_t, 3> in_end_offsets_values{
+    0 * row_size + segment_size, 1 * row_size + segment_size, 2 * row_size + segment_size};
+  const auto in_end_offsets = cuda::make_device_buffer<size_t>(stream, device, in_end_offsets_values);
 
   auto output = cuda::make_device_buffer<int>(stream, device, num_segments * segment_size, cuda::no_init);
-  const auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {0, segment_size, 2 * segment_size});
+  static constexpr cuda::std::array<size_t, 3> out_begin_offsets_values{0, segment_size, 2 * segment_size};
+  const auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, out_begin_offsets_values);
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -172,8 +180,10 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with two offsets w
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // example-begin inclusive-segmented-sum-two-offsets
-  auto input   = cuda::make_device_buffer<int>(stream, device, {2, 1, 1, 2, 1, 2, 1, 1});
-  auto offsets = cuda::make_device_buffer<size_t>(stream, device, {0, 3, 5, 8});
+  static constexpr cuda::std::array<int, 8> input_values{2, 1, 1, 2, 1, 2, 1, 1};
+  auto input = cuda::make_device_buffer<int>(stream, device, input_values);
+  static constexpr cuda::std::array<size_t, 4> offsets_values{0, 3, 5, 8};
+  auto offsets = cuda::make_device_buffer<size_t>(stream, device, offsets_values);
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -228,18 +238,21 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum API with three offsets
   // Sequence of 16 values, representing 4x4 matrix in row-major layout
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
-  auto input = cuda::make_device_buffer<int>(stream, device, {1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2});
+  static constexpr cuda::std::array<int, 16> input_values{1, 1, 1, 1, -1, -1, -1, -1, 2, 2, 2, 2, -2, -2, -2, -2};
+  auto input = cuda::make_device_buffer<int>(stream, device, input_values);
 
   // begin offsets for each of 4 rows
   constexpr size_t m = 4;
-  auto row_offsets   = cuda::make_device_buffer<size_t>(stream, device, {0, m, 2 * m, 3 * m, 4 * m});
-  auto num_segments  = row_offsets.size() - 1;
+  static constexpr cuda::std::array<size_t, 5> row_offsets_values{0, m, 2 * m, 3 * m, 4 * m};
+  auto row_offsets  = cuda::make_device_buffer<size_t>(stream, device, row_offsets_values);
+  auto num_segments = row_offsets.size() - 1;
 
   // Allocate m rows of m + 1 filled with zero-initialized values
   auto output = cuda::make_device_buffer<int>(stream, device, (m + 1) * m, 0);
   // begin offsets to second element of each row
-  constexpr size_t lda   = m + 1;
-  auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, {1, lda + 1, 2 * lda + 1, 3 * lda + 1});
+  constexpr size_t lda = m + 1;
+  static constexpr cuda::std::array<size_t, 4> out_begin_offsets_values{1, lda + 1, 2 * lda + 1, 3 * lda + 1};
+  auto out_begin_offsets = cuda::make_device_buffer<size_t>(stream, device, out_begin_offsets_values);
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
   size_t temp_storage_bytes          = 0;
@@ -297,14 +310,14 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit API with two offs
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   constexpr unsigned prime = 7;
-  const auto input         = cuda::make_device_buffer<unsigned>(
-    stream,
-    device,
-    {2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6});
+  static constexpr cuda::std::array<unsigned, 35> input_values{
+    2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6};
+  const auto input = cuda::make_device_buffer<unsigned>(stream, device, input_values);
 
   constexpr size_t row_size = static_cast<size_t>(prime);
-  const auto row_offsets    = cuda::make_device_buffer<size_t>(
-    stream, device, {0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size});
+  static constexpr cuda::std::array<size_t, 6> row_offsets_values{
+    0, row_size, 2 * row_size, 3 * row_size, 4 * row_size, 5 * row_size};
+  const auto row_offsets    = cuda::make_device_buffer<size_t>(stream, device, row_offsets_values);
   const size_t num_segments = row_offsets.size() - 1;
 
   auto output = cuda::make_device_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
@@ -376,24 +389,23 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
 
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
-  auto input = cuda::make_device_buffer<unsigned>(
-    stream,
-    device,
-    {0x64b40b1b, 0x7bf23c0c, 0xaa982e07, 0x652cae12, 0xb5411ce2, 0x6b1b7da4, 0xa04a0320, 0xd81dd7c0, 0x88a92288,
-     0xd26bc5ab, 0x006645f6, 0xfdf477a4, 0x9afbfc45, 0x563d312d, 0x732653a5, 0x424fa289, 0x572b509a, 0xb2b1eb5e,
-     0x03cb95ee, 0xdfd59321, 0x5defeea3, 0x0bdf0744, 0xc9895d47, 0x57c652d6, 0xc4a9f967, 0x665eb273, 0xcbd5aa63,
-     0x7059b1b0, 0x75d72e04, 0x2d2577c7, 0x0a8f5913, 0x7113b3d7, 0x6ebd37c3, 0x738ec95f, 0xebea2011, 0x40c89a64,
-     0xae8aca44, 0x600620da, 0x83456476, 0x3fb8b857, 0x070b9bb3, 0x4816bd31, 0xbfc3741e, 0x79dea106, 0x915c6344,
-     0x18b29de0, 0x43acca5e, 0x92a02255, 0x2ddd27d2, 0x3b99996b, 0xde125f8b, 0x864d5acd, 0x79d40c79, 0xc5f60fbf,
-     0xd1a71410, 0xd9cb4af9, 0xfdd9b196, 0xb09af168, 0x49f492af, 0xdfe6a0b1, 0x3b2ac7c1, 0xdd833839, 0x3425c3c2,
-     0xde52cf5d, 0x61993a11, 0xb031c2a2, 0xa8209f30, 0xa03344bd, 0x03924ec3, 0xab55c23e, 0xb58286f8, 0x39668eda,
-     0x7fb87b9c, 0x48b6eb6b, 0x99520666, 0x45d922e4, 0x2eacd69e, 0x5c67a6f1, 0xc037688f, 0xe01fe6d5, 0x909bfcab,
-     0xd81a9b3b, 0xc6538ec6, 0xa1f8e3b5, 0xe4fd6301, 0xc947df61, 0x1fb54d95, 0xd2fa61e1, 0xd828fe18, 0xde128980,
-     0x46d559c2, 0x10ee7bcf, 0x96559474, 0x32581ef0, 0xaab3dd8d, 0xb0e153e7, 0x24152e51, 0xc3c04f6d, 0x02c10c65,
-     0x6a060a23, 0x5cc30312, 0x5d803563, 0x412eadc8, 0xf2c9af0a, 0xe4bc978a, 0xf30b8541, 0x10cd5dd8, 0xd1b720c8,
-     0x6cc02e30, 0xd4a0e86f, 0x9db5bd3d, 0x17497b1f, 0x29e479ef, 0xdcd198aa, 0xb9bad1b6, 0x7e8a3128, 0xc808df66,
-     0x83e8eb06, 0xa82782b5, 0x779045ae, 0x1ff3d860, 0x7492bc8c, 0xa8f95df2, 0x340b73ed, 0x14481ee0, 0xa673ddc3,
-     0x292a814a, 0x39de627e});
+  static constexpr cuda::std::array<unsigned, 128> input_values{
+    0x64b40b1b, 0x7bf23c0c, 0xaa982e07, 0x652cae12, 0xb5411ce2, 0x6b1b7da4, 0xa04a0320, 0xd81dd7c0, 0x88a92288,
+    0xd26bc5ab, 0x006645f6, 0xfdf477a4, 0x9afbfc45, 0x563d312d, 0x732653a5, 0x424fa289, 0x572b509a, 0xb2b1eb5e,
+    0x03cb95ee, 0xdfd59321, 0x5defeea3, 0x0bdf0744, 0xc9895d47, 0x57c652d6, 0xc4a9f967, 0x665eb273, 0xcbd5aa63,
+    0x7059b1b0, 0x75d72e04, 0x2d2577c7, 0x0a8f5913, 0x7113b3d7, 0x6ebd37c3, 0x738ec95f, 0xebea2011, 0x40c89a64,
+    0xae8aca44, 0x600620da, 0x83456476, 0x3fb8b857, 0x070b9bb3, 0x4816bd31, 0xbfc3741e, 0x79dea106, 0x915c6344,
+    0x18b29de0, 0x43acca5e, 0x92a02255, 0x2ddd27d2, 0x3b99996b, 0xde125f8b, 0x864d5acd, 0x79d40c79, 0xc5f60fbf,
+    0xd1a71410, 0xd9cb4af9, 0xfdd9b196, 0xb09af168, 0x49f492af, 0xdfe6a0b1, 0x3b2ac7c1, 0xdd833839, 0x3425c3c2,
+    0xde52cf5d, 0x61993a11, 0xb031c2a2, 0xa8209f30, 0xa03344bd, 0x03924ec3, 0xab55c23e, 0xb58286f8, 0x39668eda,
+    0x7fb87b9c, 0x48b6eb6b, 0x99520666, 0x45d922e4, 0x2eacd69e, 0x5c67a6f1, 0xc037688f, 0xe01fe6d5, 0x909bfcab,
+    0xd81a9b3b, 0xc6538ec6, 0xa1f8e3b5, 0xe4fd6301, 0xc947df61, 0x1fb54d95, 0xd2fa61e1, 0xd828fe18, 0xde128980,
+    0x46d559c2, 0x10ee7bcf, 0x96559474, 0x32581ef0, 0xaab3dd8d, 0xb0e153e7, 0x24152e51, 0xc3c04f6d, 0x02c10c65,
+    0x6a060a23, 0x5cc30312, 0x5d803563, 0x412eadc8, 0xf2c9af0a, 0xe4bc978a, 0xf30b8541, 0x10cd5dd8, 0xd1b720c8,
+    0x6cc02e30, 0xd4a0e86f, 0x9db5bd3d, 0x17497b1f, 0x29e479ef, 0xdcd198aa, 0xb9bad1b6, 0x7e8a3128, 0xc808df66,
+    0x83e8eb06, 0xa82782b5, 0x779045ae, 0x1ff3d860, 0x7492bc8c, 0xa8f95df2, 0x340b73ed, 0x14481ee0, 0xa673ddc3,
+    0x292a814a, 0x39de627e};
+  auto input = cuda::make_device_buffer<unsigned>(stream, device, input_values);
 
   // example-begin exclusive-segmented-scan-two-offsets
 
@@ -407,10 +419,11 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan API with two offsets 
   const unsigned init_value = 0u;
 
   // 128 input elements
-  // auto input = cuda::make_device_buffer<unsigned>(stream, device, {0x64b40b1b, 0x7bf23c0c, 0xaa982e07, ... });
+  // auto input = cuda::make_device_buffer<unsigned>(stream, device, input_values);
 
   // 4 segments
-  auto offsets = cuda::make_device_buffer<unsigned>(stream, device, {0, 40, 77, 101, 128});
+  static constexpr cuda::std::array<unsigned, 5> offsets_values{0, 40, 77, 101, 128};
+  auto offsets = cuda::make_device_buffer<unsigned>(stream, device, offsets_values);
   auto output  = cuda::make_device_buffer<unsigned>(stream, device, input.size(), cuda::no_init);
 
   cuda::std::uint8_t* d_temp_storage = nullptr;
@@ -487,7 +500,8 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
 
   // example-begin inclusive-segmented-scan-three-offsets
   constexpr size_t n = 8;
-  auto input = cuda::make_device_buffer<float>(stream, device, {0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f});
+  static constexpr cuda::std::array<float, 8> input_values{0.21f, 0.33f, 0.17f, 0.56f, 0.31f, 0.25f, 1.0f, 0.72f};
+  auto input = cuda::make_device_buffer<float>(stream, device, input_values);
 
   constexpr unsigned _zero{0};
   constexpr auto _n     = static_cast<unsigned>(n);
