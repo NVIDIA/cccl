@@ -83,6 +83,25 @@ declare -a cmake_args=(
   # Need to define this explicitly, torch's FindCUDA logic adds ancient arches if left undefined:
   "-DTORCH_CUDA_ARCH_LIST=7.5;8.0;9.0;10.0;12.0"
 )
+if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+  export CUDACXX="$PWD/cuda/bin/nvcc"
+  # Profile one architecture; newer targets also add per-source GPU images.
+  # Compiling those images can exceed the CI budget during trace collection.
+  export TORCH_CUDA_ARCH_LIST=8.0
+  # PyTorch forwards launcher environment variables into CMake with FORCE.
+  unset CMAKE_CUDA_COMPILER_LAUNCHER CMAKE_CXX_COMPILER_LAUNCHER CMAKE_C_COMPILER_LAUNCHER
+  export USE_CCACHE=OFF
+  cmake_args+=(
+    "-DCMAKE_CUDA_COMPILER:FILEPATH=${CUDACXX}"
+    "-DCUDA_NVCC_EXECUTABLE:FILEPATH=${CUDACXX}"
+    "-DCUDA_TOOLKIT_ROOT_DIR:PATH=${CUDA_HOME}"
+    "-DTORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST}"
+    "-DCMAKE_CUDA_FLAGS=--fdevice-time-trace=-"
+    "-DUSE_CCACHE=OFF"
+    "-DCMAKE_CUDA_COMPILER_LAUNCHER="
+    "-DCMAKE_CXX_COMPILER_LAUNCHER="
+  )
+fi
 SCCACHE_NO_DIST_COMPILE=1 cmake -S ./pytorch -B ./build -G Ninja "${cmake_args[@]}"
 echo "::endgroup::"
 

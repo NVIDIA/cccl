@@ -23,6 +23,9 @@ SYMBOL_SCOPE_EVENT_NAMES = {
     "OptFunction",
 }
 ITANIUM_CV_QUALIFIERS = frozenset("KOVR")
+GROUP_BY_EVENT = "event"
+GROUP_BY_PRIMARY_TEMPLATE = "primary-template"
+GROUP_BY_CHOICES = (GROUP_BY_EVENT, GROUP_BY_PRIMARY_TEMPLATE)
 
 
 @dataclass(frozen=True)
@@ -45,6 +48,7 @@ class ReportConfig:
     tag: str | None
     threshold_us: float = 0.0
     scope_filter: re.Pattern[str] | None = None
+    group_by: str = GROUP_BY_EVENT
 
 
 @dataclass
@@ -57,6 +61,7 @@ class TraceEvent:
     tid: int
     root_tu: str
     synthetic: bool = False
+    project_file: str | None = None
     children: list["TraceEvent"] = field(default_factory=list)
 
     @property
@@ -64,6 +69,8 @@ class TraceEvent:
         return self.end_us - self.start_us
 
     def key(self, repo_root: Path) -> str:
+        if self.project_file is not None:
+            return self.project_file
         if self.detail:
             return normalize_detail(self.detail, repo_root)
         return self.name
@@ -143,6 +150,7 @@ class SliceWork:
     tag: str | None
     threshold_us: float
     scope_filter: str
+    group_by: str = GROUP_BY_EVENT
 
 
 @dataclass(frozen=True)
@@ -153,6 +161,7 @@ class TraceTask:
     baseline_repo_root: str
     current_repo_root: str
     slices: tuple[SliceWork, ...]
+    cccl_only: bool = False
 
 
 @dataclass
@@ -207,14 +216,13 @@ def generated_tu_input(tu: str) -> str:
 
 
 def normalize_detail(detail: str, repo_root: Path) -> str:
-    detail_path = Path(detail)
-    if detail_path.is_absolute():
-        try:
-            detail = detail_path.resolve(strict=False).relative_to(repo_root).as_posix()
-        except ValueError:
-            pass
-
-    return detail
+    # Template names are not paths. Path() on 100kB specializations is expensive.
+    if not detail or not os.path.isabs(detail):
+        return detail
+    try:
+        return Path(detail).resolve(strict=False).relative_to(repo_root).as_posix()
+    except ValueError:
+        return detail
 
 
 def normalize_project_file(detail: str, repo_root: Path) -> str | None:
@@ -230,6 +238,39 @@ def normalize_project_file(detail: str, repo_root: Path) -> str | None:
     if detail.startswith("build/"):
         return None
     return detail
+
+
+def normalize_cccl_file(detail: str, repo_root: Path) -> str | None:
+    if not detail or not os.path.isabs(detail):
+        return None
+    try:
+        parts = Path(detail).resolve(strict=False).relative_to(repo_root).parts
+    except ValueError:
+        return None
+    # MatX and RAPIDS fetch CCCL into one or more CMake build trees. Treat
+    # every such checkout as the same CCCL root, including nested dependencies.
+    for index in range(len(parts) - 1, 0, -1):
+        if parts[index - 1 : index + 1] == ("_deps", "cccl-src"):
+            relative = parts[index + 1 :]
+            if relative and "build" not in relative:
+                return Path(*relative).as_posix()
+            return None
+    # PyTorch consumes the custom CCCL installation in its copied CUDA tree.
+    # Canonicalize installed headers to their paths in the CCCL repository.
+    if parts and parts[0] == "cuda":
+        for index in range(1, len(parts) - 1):
+            if parts[index : index + 2] == ("include", "cccl"):
+                relative = parts[index + 2 :]
+                if not relative:
+                    return None
+                if relative[0] in ("cub", "thrust"):
+                    return Path(relative[0], *relative).as_posix()
+                if relative[:2] == ("cuda", "experimental"):
+                    return Path("cudax", "include", *relative).as_posix()
+                if relative[0] in ("cuda", "nv"):
+                    return Path("libcudacxx", "include", *relative).as_posix()
+                return None
+    return None
 
 
 def general_event_identity(event: TraceEvent, repo_root: Path) -> tuple[str, str]:
@@ -251,6 +292,15 @@ def strip_angle_arguments(symbol: str) -> str:
     return "".join(stripped)
 
 
+def leading_untemplated_name(symbol: str) -> str:
+    cut = len(symbol)
+    for token in ("<", "("):
+        index = symbol.find(token)
+        if index != -1:
+            cut = min(cut, index)
+    return symbol[:cut].strip()
+
+
 def symbol_name_prefix(symbol: str) -> str:
     before_parameters = strip_angle_arguments(symbol).split("(", 1)[0].strip()
     if not before_parameters:
@@ -260,6 +310,15 @@ def symbol_name_prefix(symbol: str) -> str:
         prefix_start = before_parameters.rfind(" ", 0, operator_scope)
         return before_parameters[prefix_start + 1 :]
     return before_parameters.rsplit(None, 1)[-1]
+
+
+def primary_template_name(detail: str) -> str:
+    # NVCC supplies the primary template before the bracketed specialization.
+    # Prefer that label over attempting to parse arbitrary C++ symbol syntax.
+    reported_primary, separator, _ = detail.partition(" [")
+    if separator and reported_primary.strip():
+        return reported_primary.strip()
+    return symbol_name_prefix(detail)
 
 
 def itanium_nested_scope_candidates(symbol: str) -> list[str]:
@@ -296,16 +355,32 @@ def itanium_nested_scope_candidates(symbol: str) -> list[str]:
 def symbol_scope_candidates(event: TraceEvent) -> list[str]:
     if event.name not in SYMBOL_SCOPE_EVENT_NAMES or not event.detail:
         return []
+    return list(_scope_candidate_texts(event.detail))
 
-    candidates = [symbol_name_prefix(event.detail)]
-    if " [" in event.detail:
-        _, bracketed_symbol = event.detail.split(" [", 1)
-        candidates.append(symbol_name_prefix(bracketed_symbol.rstrip("]")))
 
-    for candidate in list(candidates):
-        candidates.extend(itanium_nested_scope_candidates(candidate))
-
-    return candidates
+def _scope_candidate_texts(detail: str) -> Iterator[str]:
+    # NVCC template events are "primary [specialization]". Prefer the primary
+    # label and the untemplated specialization name; do not strip angle
+    # arguments from the specialization (often 10k–100kB).
+    primary, separator, rest = detail.partition(" [")
+    primary = primary.strip()
+    if separator and primary:
+        owner = symbol_name_prefix(primary)
+        yield owner
+        yield from itanium_nested_scope_candidates(owner)
+    if separator:
+        specialization = rest[:-1] if rest.endswith("]") else rest
+        leading = leading_untemplated_name(specialization)
+        if leading:
+            yield leading
+            yield from itanium_nested_scope_candidates(leading)
+        return
+    prefix = symbol_name_prefix(detail)
+    if prefix:
+        yield prefix
+        yield from itanium_nested_scope_candidates(
+            detail if detail.startswith("_Z") else prefix
+        )
 
 
 def matches_scope_filter(
@@ -331,9 +406,11 @@ def report_event_identity(
         return None
 
     if config.spec.label == "file-processing":
-        event_key = normalize_project_file(event.detail, repo_root)
+        event_key = event.project_file
         if event_key is None:
             return None
+    elif config.group_by == GROUP_BY_PRIMARY_TEMPLATE:
+        event_key = primary_template_name(event.detail)
     else:
         event_key = event.key(repo_root)
 
@@ -359,7 +436,9 @@ def iter_trace_paths(trace_dir: Path) -> list[Path]:
     return sorted(p for p in trace_dir.rglob("*.json") if p.is_file())
 
 
-def iter_duration_events(trace_path: Path, repo_root: Path) -> list[TraceEvent]:
+def iter_duration_events(
+    trace_path: Path, repo_root: Path, *, cccl_only: bool = False
+) -> list[TraceEvent]:
     with trace_path.open(encoding="utf-8") as f:
         trace = json.load(f)
 
@@ -391,6 +470,11 @@ def iter_duration_events(trace_path: Path, repo_root: Path) -> list[TraceEvent]:
                 pid=int(event.get("pid", 0)),
                 tid=int(event.get("tid", 0)),
                 root_tu=root_tu,
+                project_file=(
+                    normalize_cccl_file if cccl_only else normalize_project_file
+                )(detail, repo_root)
+                if name == "Processing Header File"
+                else None,
             )
         )
 
@@ -443,8 +527,10 @@ def link_child_events(events: list[TraceEvent]) -> None:
             stack.append(event)
 
 
-def read_trace_events(trace_path: Path, repo_root: Path) -> list[TraceEvent]:
-    events = iter_duration_events(trace_path, repo_root)
+def read_trace_events(
+    trace_path: Path, repo_root: Path, *, cccl_only: bool = False
+) -> list[TraceEvent]:
+    events = iter_duration_events(trace_path, repo_root, cccl_only=cccl_only)
     link_child_events(events)
     return events
 
@@ -923,6 +1009,8 @@ def default_output_path(
     if config.timing == "exclusive":
         pieces.append(config.exclusive_scope)
     pieces.append(f"by-{config.sort_by}")
+    if config.group_by != GROUP_BY_EVENT:
+        pieces.append(f"grouped-by-{config.group_by}")
     if config.tag:
         pieces.append(slugify(config.tag))
     return output_dir / ("-".join(slugify(piece) for piece in pieces) + ".csv")
@@ -937,6 +1025,8 @@ def comparison_output_path(
     if config.timing == "exclusive":
         pieces.append(config.exclusive_scope)
     pieces.extend([f"by-{config.sort_by}", direction])
+    if config.group_by != GROUP_BY_EVENT:
+        pieces.append(f"grouped-by-{config.group_by}")
     if config.tag:
         pieces.append(slugify(config.tag))
     return output_dir / ("-".join(slugify(piece) for piece in pieces) + ".csv")
@@ -1156,6 +1246,7 @@ def report_config(
     tag: str | None,
     threshold_s: float,
     scope_filter: re.Pattern[str] | None,
+    group_by: str = GROUP_BY_EVENT,
 ) -> ReportConfig:
     spec = resolve_filter(filter_name)
     resolved_exclusive_scope = (
@@ -1172,6 +1263,7 @@ def report_config(
         tag=tag,
         threshold_us=threshold_s * 1_000_000.0,
         scope_filter=scope_filter,
+        group_by=group_by,
     )
 
 
@@ -1189,6 +1281,7 @@ def single_slice_request(
         tag=args.tag,
         threshold_s=args.threshold,
         scope_filter=compile_scope_filter(args.scope_filter, parser),
+        group_by=args.group_by,
     )
     return SliceRequest(config=config, filter_name=args.filter)
 
@@ -1227,6 +1320,9 @@ def slice_request_from_json(
     top_n = require_slice_field(slice_data, "top", path)
     threshold = require_slice_field(slice_data, "threshold", path)
     exclusive_scope = slice_data.get("exclusive_scope", "auto")
+    group_by = slice_data.get("group_by", GROUP_BY_EVENT)
+    if group_by not in GROUP_BY_CHOICES:
+        raise ValueError(f"{path}: unsupported group_by {group_by!r}")
     scope_filter_pattern = slice_data.get("scope_filter", DEFAULT_SCOPE_FILTER)
 
     if not isinstance(title, str) or not title:
@@ -1265,6 +1361,7 @@ def slice_request_from_json(
         tag=None,
         threshold_s=float(threshold),
         scope_filter=compile_scope_filter(scope_filter_pattern, parser),
+        group_by=group_by,
     )
     children = tuple(
         slice_request_from_json(
@@ -1322,6 +1419,7 @@ def slice_work_from_request(request: SliceRequest) -> SliceWork:
         top_n=config.top_n,
         tag=config.tag,
         threshold_us=config.threshold_us,
+        group_by=config.group_by,
         scope_filter=(
             config.scope_filter.pattern if config.scope_filter is not None else ""
         ),
@@ -1346,6 +1444,7 @@ def config_from_slice_work(work: SliceWork) -> ReportConfig:
         top_n=work.top_n,
         tag=work.tag,
         threshold_us=work.threshold_us,
+        group_by=work.group_by,
         scope_filter=re.compile(work.scope_filter) if work.scope_filter else None,
     )
 
@@ -1355,14 +1454,18 @@ def process_trace_task(task: TraceTask) -> dict[str, SliceTraceResult]:
     if task.baseline_path is not None:
         baseline_root = Path(task.baseline_repo_root)
         parsed["baseline"] = (
-            read_trace_events(Path(task.baseline_path), baseline_root),
+            read_trace_events(
+                Path(task.baseline_path), baseline_root, cccl_only=task.cccl_only
+            ),
             baseline_root,
             task.baseline_path,
         )
     if task.current_path is not None:
         current_root = Path(task.current_repo_root)
         parsed["current"] = (
-            read_trace_events(Path(task.current_path), current_root),
+            read_trace_events(
+                Path(task.current_path), current_root, cccl_only=task.cccl_only
+            ),
             current_root,
             task.current_path,
         )
@@ -1500,6 +1603,8 @@ def trace_tasks_for_slices(
     repo_root: Path,
     baseline_repo_root: Path,
     works: tuple[SliceWork, ...],
+    *,
+    cccl_only: bool = False,
 ) -> tuple[list[TraceTask], int, int | None]:
     current_paths = trace_paths_by_relative_root(trace_dir)
     if not current_paths:
@@ -1530,6 +1635,7 @@ def trace_tasks_for_slices(
             baseline_repo_root=baseline_repo_root.as_posix(),
             current_repo_root=repo_root.as_posix(),
             slices=works,
+            cccl_only=cccl_only,
         )
         for rel_path in rel_paths
     ]
@@ -1588,6 +1694,7 @@ def run_slice_report(
         "timing": config.timing,
         "exclusive_scope": config.exclusive_scope,
         "sort": config.sort_by,
+        "group_by": config.group_by,
         "top": config.top_n,
         "threshold_s": config.threshold_us / 1_000_000.0,
         "output_dir": slice_output_dir.as_posix(),
@@ -1687,7 +1794,14 @@ def run_slice_report(
             output_csv,
         )
         manifest["reports"] = {
-            "current": {"csv": report_csv.as_posix(), "row_count": row_count}
+            "current": {
+                "csv": report_csv.as_posix(),
+                "row_count": row_count,
+                "rows": [
+                    event_stats_csv_row(rank, row, config.timing)
+                    for rank, row in enumerate(sorted_rows(stats, config), 1)
+                ],
+            }
         }
         if not row_count:
             manifest["warnings"] = [
@@ -1838,6 +1952,12 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--cccl-only",
+        action="store_true",
+        help="Select only CCCL headers from third-party build trees.",
+    )
+    parser.add_argument("--group-by", choices=GROUP_BY_CHOICES, default=GROUP_BY_EVENT)
+    parser.add_argument(
         "--repo-root", default=Path(__file__).resolve().parents[2], type=Path
     )
     parser.add_argument(
@@ -1876,6 +1996,7 @@ def main() -> None:
             ),
             (args.scope_filter != parser.get_default("scope_filter"), "--scope-filter"),
             (args.tag is not None, "--tag"),
+            (args.group_by != GROUP_BY_EVENT, "--group-by"),
         )
         ignored_names = [name for changed, name in ignored_slice_options if changed]
         if ignored_names:
@@ -1915,6 +2036,7 @@ def main() -> None:
 
     manifest = {
         "schema_version": 1,
+        "header_scope": "cccl" if args.cccl_only else "repo",
         "mode": "comparison" if baseline_dir is not None else "single",
         "trace_dir": trace_dir.as_posix(),
         "baseline_dir": baseline_dir.as_posix() if baseline_dir else None,
@@ -1930,6 +2052,7 @@ def main() -> None:
         repo_root,
         baseline_repo_root,
         works,
+        cccl_only=args.cccl_only,
     )
     aggregates = summarize_trace_tasks(tasks, args.jobs)
     current_trace_count = sum(task.current_path is not None for task in tasks)

@@ -116,6 +116,11 @@ _create_rapids_cmake_override_json() {
     cmake_args+=("-Drapids-cmake-repo=${rapids_cmake_upstream}/rapids-cmake");
     cmake_args+=("-DRAPIDS_CMAKE_CPM_DEFAULT_VERSION_FILE=${HOME}/rapids-cmake-override-versions.json");
 
+    if [[ "${CCCL_COMPILE_TIME_BENCH:-0}" == 1 ]]; then
+        cmake_args+=("-DCMAKE_CUDA_COMPILER_LAUNCHER=${HOME}/cccl/ci/compile_time/nvcc_time_trace.py");
+        cmake_args+=("-DCMAKE_CXX_COMPILER_LAUNCHER=");
+    fi
+
     # Inject the CMake args into manifest.yaml
     sudo yq -i "(.repos[] | .cpp[] | .args.cmake) += \" ${cmake_args[*]}\"" "${PROJECT_MANIFEST_YML}";
     sudo yq -i "(.repos[] | .python[] | .args.cmake) += \" ${cmake_args[*]}\"" "${PROJECT_MANIFEST_YML}";
