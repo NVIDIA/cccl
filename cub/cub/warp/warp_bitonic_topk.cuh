@@ -179,7 +179,7 @@ enum class WarpBitonicTopKAlgorithm
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
 //!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<
-//!          max_k, int, warp_threads, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::eager>;
+//!          int, max_k, warp_threads, cub::NullType, cub::detail::WarpBitonicTopKAlgorithm::eager>;
 //!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage[warps_per_block];
 //!
 //!        // Obtain items and put them in thread_keys
@@ -210,7 +210,7 @@ enum class WarpBitonicTopKAlgorithm
 //!        constexpr int max_k = 32;
 //!        const int warp_id = static_cast<int>(threadIdx.x) / warp_threads;
 //!
-//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<max_k, int>;
+//!        using WarpBitonicTopKT = cub::detail::WarpBitonicTopK<int, max_k>;
 //!        __shared__ typename WarpBitonicTopKT::TempStorage temp_storage[warps_per_block];
 //!
 //!        int keys_out[max_k / warp_threads];
@@ -225,11 +225,11 @@ enum class WarpBitonicTopKAlgorithm
 //!
 //! @endrst
 //!
-//! @tparam MaxK
-//!   The maximum number of selected items. Must be a positive multiple of the logical warp size.
-//!
 //! @tparam KeyT
 //!   Key type. Should be default constructible and trivially copyable.
+//!
+//! @tparam MaxK
+//!   The maximum number of selected items. Must be a positive multiple of the logical warp size.
 //!
 //! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> Number of threads per logical warp. Must be a power of two no greater than the architectural
@@ -242,8 +242,8 @@ enum class WarpBitonicTopKAlgorithm
 //!
 //! @tparam Algorithm
 //!   <b>[optional]</b> WarpBitonicTopKAlgorithm to use (default: WarpBitonicTopKAlgorithm::buffered).
-template <int MaxK,
-          typename KeyT,
+template <typename KeyT,
+          int MaxK,
           int LogicalWarpThreads             = detail::warp_threads,
           typename ValueT                    = NullType,
           WarpBitonicTopKAlgorithm Algorithm = WarpBitonicTopKAlgorithm::buffered>
@@ -251,8 +251,8 @@ class WarpBitonicTopK;
 
 // The eager specialization lacks an iterator overload, even though it could outperform the buffered specialization when
 // `num_items` is small. This is because the array overload should be preferred in such cases.
-template <int MaxK, typename KeyT, int LogicalWarpThreads, typename ValueT>
-class WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::eager>
+template <typename KeyT, int MaxK, int LogicalWarpThreads, typename ValueT>
+class WarpBitonicTopK<KeyT, MaxK, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::eager>
 {
 private:
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
@@ -529,8 +529,8 @@ private:
 
 // The buffered specialization initializes a retained top-k set from per-thread arrays or random-access
 // iterators, buffers candidates that pass the current key threshold, and merges them into the retained set.
-template <int MaxK, typename KeyT, int LogicalWarpThreads, typename ValueT>
-class WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::buffered>
+template <typename KeyT, int MaxK, int LogicalWarpThreads, typename ValueT>
+class WarpBitonicTopK<KeyT, MaxK, LogicalWarpThreads, ValueT, WarpBitonicTopKAlgorithm::buffered>
 {
 private:
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,

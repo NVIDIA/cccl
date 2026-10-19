@@ -41,7 +41,7 @@ template <int MaxK,
 __global__ void
 array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int k, int num_items, ActionT action)
 {
-  using warp_topk_t        = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, Algo>;
+  using warp_topk_t        = cub::detail::WarpBitonicTopK<KeyT, MaxK, LogicalWarpThreads, ValueT, Algo>;
   constexpr bool keys_only = cuda::std::is_same_v<ValueT, cub::NullType>;
 
   // Get linear thread and warp index
@@ -116,7 +116,7 @@ template <int MaxK,
 __global__ void iterator_kernel(
   KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_out, int k, int num_items, ActionT action)
 {
-  using warp_topk_t        = cub::detail::WarpBitonicTopK<MaxK, KeyT, LogicalWarpThreads, ValueT, Algo>;
+  using warp_topk_t        = cub::detail::WarpBitonicTopK<KeyT, MaxK, LogicalWarpThreads, ValueT, Algo>;
   constexpr bool keys_only = cuda::std::is_same_v<ValueT, cub::NullType>;
 
   // Get linear thread and warp index
