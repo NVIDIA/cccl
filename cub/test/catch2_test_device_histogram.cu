@@ -364,7 +364,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
     [[maybe_unused]] auto fp_scales = array<LevelT, ActiveChannels>{}; // only used when LevelT is floating point
     for (size_t c = 0; c < ActiveChannels; ++c)
     {
-      if constexpr (!cs::is_integral<LevelT>::value)
+      if constexpr (!cs::is_integral_v<LevelT>)
       {
         fp_scales[c] = static_cast<LevelT>(num_levels[c] - 1) / static_cast<LevelT>(upper_level[c] - lower_level[c]);
       }
@@ -380,7 +380,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       {
         return n; // out of range
       }
-      if constexpr (cs::is_integral<LevelT>::value)
+      if constexpr (cs::is_integral_v<LevelT>)
       {
         // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
         return static_cast<int>(static_cast<uint64_t>(promoted_sample - min) * static_cast<uint64_t>(n - 1)
