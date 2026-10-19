@@ -18,6 +18,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_sort.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
@@ -66,11 +67,7 @@ struct MergeSortPolicy
 
   //! Whether to unroll the loops inside the block merge sort and serial merge implementation
   // RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
-#if defined(CCCL_AVOID_SORT_UNROLL)
-  bool unroll = false;
-#else // CCCL_AVOID_SORT_UNROLL
-  bool unroll = true;
-#endif // CCCL_AVOID_SORT_UNROLL
+  bool unroll = detail::sort_unroll_default;
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const MergeSortPolicy& lhs, const MergeSortPolicy& rhs)
