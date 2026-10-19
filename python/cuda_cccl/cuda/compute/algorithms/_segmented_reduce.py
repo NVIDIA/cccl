@@ -77,7 +77,7 @@ class _SegmentedReduce(Serializable):
 
         self.op_cccl = op.compile((value_type, value_type), value_type)
 
-        self._last_stateless_op = None
+        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceSegmentedReduceBuildResult,
             d_in,
@@ -118,6 +118,12 @@ class _SegmentedReduce(Serializable):
         """
         op_adapter = make_op_adapter(op)
         self.op_cccl.state = op_adapter.get_state()
+        # Perf: invalidate __call__'s stateless-op cache -- a RawOp with
+        # state still reports is_stateful=False, so without this, a later
+        # __call__ with the same (now stale) op object would see the
+        # identity match and skip rebinding, launching with this op's state
+        # instead of that op's.
+        self._last_stateless_op = None
 
     def set_h_init(self, h_init) -> None:
         """Explicitly rebind this reducer's initial value.
@@ -170,6 +176,19 @@ class _SegmentedReduce(Serializable):
 
         if max_segment_size is None:
             max_segment_size = 0  # CCCL.c treats 0 as "not specified"
+
+        if max_segment_size > 0:
+            try:
+                from .._build_info import USING_V2  # type: ignore[import-not-found]
+            except ImportError:
+                USING_V2 = False
+            if USING_V2:
+                import warnings
+
+                warnings.warn(
+                    "max_segment_size is not used by the v2 backend and will be ignored",
+                    stacklevel=2,
+                )
 
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)

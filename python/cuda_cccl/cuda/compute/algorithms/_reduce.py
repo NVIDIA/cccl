@@ -134,7 +134,7 @@ class _Reduce(Serializable):
         # loaded_build_result / device_reduce_fn are bound lazily on the first
         # __call__ (see _bind_device_reduce_fn).
         self._last_loaded_build_result = None
-        self._last_stateless_op = None
+        self._last_stateless_op: Callable | OpAdapter | None = None
         self.build_results, self._bound_build_result = cache_build_results(
             _bindings.DeviceReduceBuildResult,
             d_in,
@@ -198,6 +198,12 @@ class _Reduce(Serializable):
         """
         op_adapter = make_op_adapter(op)
         self.op_cccl.state = op_adapter.get_state()
+        # Perf: invalidate __call__'s stateless-op cache -- a RawOp with
+        # state still reports is_stateful=False, so without this, a later
+        # __call__ with the same (now stale) op object would see the
+        # identity match and skip rebinding, launching with this op's state
+        # instead of that op's.
+        self._last_stateless_op = None
 
     def set_h_init(self, h_init: np.ndarray | GpuStruct) -> None:
         """Explicitly rebind this reducer's initial value.
