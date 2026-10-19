@@ -75,6 +75,15 @@ C2H_CCCLRT_TEST("locality domains", "[device][locality_domain]")
     return;
   }
 
+#  if _CCCL_CTK_AT_LEAST(13, 4)
+  // locality domains require CUDA 13.4 driver
+  if (test::cuda_driver_version() < 13040)
+  {
+    SUCCEED("Driver is too old for locality domain tests (requires CUDA 13.4 / R615 or later)");
+    return;
+  }
+#  endif // _CCCL_CTK_AT_LEAST(13, 4)
+
   SECTION("Returns at least one domain per device")
   {
     for (auto dev : cuda::devices)
