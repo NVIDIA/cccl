@@ -20,6 +20,7 @@
 #include <cub/agent/agent_find_bound_sorted_values.cuh>
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
 #include <cub/util_device.cuh>

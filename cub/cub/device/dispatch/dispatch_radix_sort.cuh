@@ -22,6 +22,7 @@
 
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/double_buffer.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/kernels/kernel_radix_sort.cuh>
