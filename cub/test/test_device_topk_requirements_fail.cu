@@ -14,9 +14,9 @@
 #include <iostream>
 
 // Verifies that cub::DeviceTopK rejects, at compile time, tie-break requests it cannot honor. DeviceTopK implements
-// only the fully opted-out configuration (determinism::not_guaranteed + output_ordering::unsorted), so a tie-break of
-// prefer_smaller_index / prefer_larger_index -- which pins the result set and requires determinism::gpu_to_gpu --
-// would otherwise be silently ignored. Each variant checks a single diagnostic:
+// only the fully opted-out configuration (determinism::not_guaranteed + output_ordering::unsorted) and no tie-breaking
+// yet, so a prefer_smaller_index / prefer_larger_index tie-break would otherwise be silently ignored. Each variant
+// checks a single diagnostic:
 //
 //   * variant 0: tie_break placed in the environment outside require(...), where it has no effect
 //   * variants 1-2: an explicit prefer_smaller_index / prefer_larger_index together with not_guaranteed
