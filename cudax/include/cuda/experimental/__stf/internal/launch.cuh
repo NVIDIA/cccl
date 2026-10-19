@@ -180,6 +180,14 @@ void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_plac
   void* all_args[] = {&f, &kernel_args};
 
   p->*[&] {
+    // The context graph is shared by all tasks submitted to a graph_ctx,
+    // including tasks submitted concurrently from several host threads. The
+    // cudaGraphAddKernelNode call below mutates that single cudaGraph_t and the
+    // CUDA graph-construction API is not thread-safe per graph, so it must be
+    // serialized on the context's graph_mutex -- exactly like the device
+    // parallel_for path (parallel_for_scope.cuh) and cuda_kernel/host_launch.
+    // Without this lock, concurrent ctx.launch() calls corrupt the graph.
+    const auto lock = t.lock_ctx_graph();
     cuda_launcher_graph(
       interpreted_policy, reserved::launch_kernel<Fun, args_type>, all_args, t.get_ctx_graph(), t.get_node());
   };
