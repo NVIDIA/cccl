@@ -120,14 +120,15 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
   return cudaMalloc(ptr, bytes);
 }
 
-[[nodiscard]] inline bool is_valid_cuda_malloc_alignment(std::size_t alignment) noexcept
+// Returns whether alignment is valid and guaranteed to be satisfied by cudaMalloc.
+[[nodiscard]] inline bool cuda_malloc_satisfies_alignment(std::size_t alignment) noexcept
 {
   return ::cuda::__is_valid_alignment(alignment) && alignment <= ::cuda::mr::default_cuda_malloc_alignment;
 }
 
 [[nodiscard]] inline void* checked_device_allocate(int device, std::size_t bytes, std::size_t alignment)
 {
-  if (!is_valid_cuda_malloc_alignment(alignment))
+  if (!cuda_malloc_satisfies_alignment(alignment))
   {
     throw std::bad_alloc{};
   }
