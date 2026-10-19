@@ -23,6 +23,7 @@
 
 #if _CCCL_HAS_CTK()
 
+#  include <cuda/__memory/is_aligned.h>
 #  include <cuda/__memory_resource/allocation_alignment.h>
 #  include <cuda/__memory_resource/any_resource.h>
 #  include <cuda/__memory_resource/properties.h>
@@ -461,6 +462,29 @@ public:
   _CCCL_HOST_API __uninitialized_async_buffer __replace_allocation(const size_t __count)
   {
     return __replace_allocation(__stream_, __count);
+  }
+
+  _CCCL_HOST_API static __uninitialized_async_buffer __adopt_allocation(
+    const ::cuda::stream_ref __stream, __async_resource __mr, _Tp* __ptr, const size_t __count, const size_t __alignment)
+  {
+    __uninitialized_async_buffer __ret{::cuda::std::move(__mr), __stream, 0, __alignment};
+    __validate_element_count(__count, __alignment);
+    if (__ptr == nullptr ? __count != 0 : !::cuda::is_aligned(__ptr, __alignment))
+    {
+      _CCCL_THROW(::std::invalid_argument, "cuda::__uninitialized_async_buffer: Invalid allocation");
+    }
+    __ret.__count_ = __count;
+    __ret.__buf_   = __ptr;
+    return __ret;
+  }
+
+  [[nodiscard]] _CCCL_HOST_API __async_resource __release_allocation() noexcept
+  {
+    __stream_    = ::cuda::stream_ref{::cudaStream_t{}};
+    __count_     = 0;
+    __alignment_ = alignof(_Tp);
+    __buf_       = nullptr;
+    return ::cuda::std::move(__mr_);
   }
 
   _CCCL_HOST_API void
