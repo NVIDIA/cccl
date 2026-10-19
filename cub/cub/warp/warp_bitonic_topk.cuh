@@ -264,8 +264,8 @@ private:
   static constexpr bool keys_only       = ::cuda::std::is_same_v<ValueT, NullType>;
 
   template <int ItemsPerThread>
-  using WarpBitonicSortT = WarpBitonicSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
-  using MaxKSortT        = WarpBitonicSortT<max_k_per_thread>;
+  using SortNetworkT = WarpBitonicSortNetwork<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
+  using MaxKSortT     = SortNetworkT<max_k_per_thread>;
 
   using _TempStorage = cub::NullType;
 
@@ -360,13 +360,13 @@ public:
     }
     else if constexpr (valid_items == ::cuda::next_power_of_two(static_cast<unsigned>(MaxK)))
     {
-      // For non-power-of-two input size, WarpBitonicSort conceptually pads the sorting network to the next
+      // For non-power-of-two input size, WarpBitonicSortNetwork conceptually pads the sorting network to the next
       // power-of-two. If input size equals this rounded-up value for MaxK, sort input directly.
-      WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op);
+      SortNetworkT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op);
     }
     else
     {
-      // For non-power-of-two MaxK, WarpBitonicSort::merge requires the retained set to remain reverse-sorted while
+      // For non-power-of-two MaxK, WarpBitonicSortNetwork::merge requires the retained set to remain reverse-sorted while
       // merging incoming data.
       constexpr bool reverse = !::cuda::is_power_of_two(MaxK);
       MaxKSortT{}.template sort<CompareOp, reverse>(keys, values, compare_op);
@@ -384,7 +384,7 @@ public:
       if constexpr (constexpr int remain = ItemsPerThread % max_k_per_thread; remain != 0)
       {
         constexpr int offset = ItemsPerThread / max_k_per_thread * max_k_per_thread;
-        WarpBitonicSortT<remain>{}.template sort<CompareOp, !reverse>(keys + offset, values + offset, compare_op);
+        SortNetworkT<remain>{}.template sort<CompareOp, !reverse>(keys + offset, values + offset, compare_op);
         if constexpr (reverse)
         {
           warp_bitonic_topk::compare_and_replace<remain>(keys, values, keys + offset, values + offset, compare_op);
@@ -513,14 +513,14 @@ public:
   }
 
 private:
-  // WarpBitonicSort's private sort(..., valid_items) requires all items to be initialized, including those beyond
+  // WarpBitonicSortNetwork::sort(..., valid_items) requires all items to be initialized, including those beyond
   // valid_items. This wrapper handles that initialization.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   sort_partial(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     warp_bitonic_topk::initialize_invalid_items<ItemsPerThread, LogicalWarpThreads>(keys, values, valid_items, lane);
-    WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
+    SortNetworkT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
   }
 
   int lane                 = detail::logical_lane_id<LogicalWarpThreads>();
@@ -542,9 +542,9 @@ private:
   static constexpr bool keys_only       = ::cuda::std::is_same_v<ValueT, NullType>;
 
   template <int ItemsPerThread>
-  using WarpBitonicSortT = WarpBitonicSort<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
-  using MaxKSortT        = WarpBitonicSortT<max_k_per_thread>;
-  using CandidateSortT   = WarpBitonicSortT<1>;
+  using SortNetworkT   = WarpBitonicSortNetwork<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
+  using MaxKSortT      = SortNetworkT<max_k_per_thread>;
+  using CandidateSortT = SortNetworkT<1>;
 
   struct _TempStorage
   {
@@ -623,9 +623,9 @@ public:
     }
     else if constexpr (valid_items == ::cuda::next_power_of_two(static_cast<unsigned>(MaxK)))
     {
-      // For non-power-of-two input size, WarpBitonicSort conceptually pads the sorting network to the next
+      // For non-power-of-two input size, WarpBitonicSortNetwork conceptually pads the sorting network to the next
       // power-of-two. If input size equals this rounded-up value for MaxK, sort input directly.
-      WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op);
+      SortNetworkT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op);
     }
     else
     {
@@ -836,14 +836,14 @@ public:
   }
 
 private:
-  // WarpBitonicSort's private sort(..., valid_items) requires all items to be initialized, including those beyond
+  // WarpBitonicSortNetwork::sort(..., valid_items) requires all items to be initialized, including those beyond
   // valid_items. This wrapper handles that initialization.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   sort_partial(KeyT* keys, ValueT* values, CompareOp compare_op, int valid_items) const
   {
     warp_bitonic_topk::initialize_invalid_items<ItemsPerThread, LogicalWarpThreads>(keys, values, valid_items, lane);
-    WarpBitonicSortT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
+    SortNetworkT<ItemsPerThread>{}.template sort<CompareOp, false>(keys, values, compare_op, valid_items);
   }
 
   template <typename CompareOp>
