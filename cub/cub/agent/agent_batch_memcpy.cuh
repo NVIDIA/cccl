@@ -100,7 +100,7 @@ using AgentBatchMemcpyPolicy
     TlevBytesPerThread,
     PreferPow2Bits,
     BlockLevelTileSize,
-    ::cuda::std::min(uint32_t{0}, WarpLevelThreshold),
+    ::cuda::std::min(uint32_t{8}, WarpLevelThreshold),
     ::cuda::std::min(uint32_t{192}, WarpLevelThreshold),
     ::cuda::std::min(uint32_t{384}, WarpLevelThreshold),
     WarpLevelThreshold,
