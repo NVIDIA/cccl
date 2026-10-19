@@ -171,6 +171,8 @@ __driver_api_status(__driver_status __status, const char*) noexcept
 
 #  else // ^^^ _CCCL_HOSTED() ^^^ / vvv !_CCCL_HOSTED() vvv
 
+// Freestanding callers must install the function pointer once, before any CUDA call.
+// Late installation or replacement is unsupported, so lookups can cache the pointer.
 [[nodiscard]]
 _CCCL_HOST_API inline __driver_function_result<decltype(&::cuGetProcAddress)>
 __getProcAddressFn(decltype(::cuGetProcAddress)* __ptr = nullptr, bool __set = false) noexcept
@@ -214,12 +216,7 @@ __getProcAddressFn(decltype(::cuGetProcAddress)* __ptr = nullptr, bool __set = f
 [[nodiscard]] _CCCL_HOST_API inline __driver_entry_point_result
 __get_driver_entry_point_no_init(const char* __name, int __major = 12, int __minor = 0) noexcept
 {
-#  if _CCCL_HOSTED()
   static const auto __get_proc_addr_fn = ::cuda::__driver::__getProcAddressFn();
-#  else
-  // Freestanding callers can install the function pointer after an earlier failed lookup.
-  const auto __get_proc_addr_fn = ::cuda::__driver::__getProcAddressFn();
-#  endif
   if (!__get_proc_addr_fn.__status_.__ok())
   {
     return {nullptr, __get_proc_addr_fn.__status_};
