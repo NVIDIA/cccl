@@ -82,6 +82,7 @@ CUB_TEST("c2h integral environment parser rejects invalid values", "[c2h][buffer
 CUB_TEST("c2h checked host allocation rejects invalid alignments", "[c2h][buffers][host_resource]", CUB_SMALL)
 {
   REQUIRE_THROWS_AS(c2h::detail::checked_host_allocation_size(1, 3), std::bad_alloc);
+  REQUIRE_THROWS_AS(c2h::detail::checked_host_allocate(0, 0, 3), std::bad_alloc);
 }
 
 CUB_TEST("c2h checked memory rejects sizes that overflow padding", "[c2h][buffers][device_resource]", CUB_SMALL)

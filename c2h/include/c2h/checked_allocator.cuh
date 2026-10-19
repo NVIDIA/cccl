@@ -58,9 +58,6 @@ struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_
   [[nodiscard]] _CCCL_HOST_API void* do_allocate(std::size_t bytes, // NOLINT(google-default-arguments)
                                                  std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
   {
-    // Some systems with integrated host/device memory have issues with allocating more memory
-    // than is available. Check the amount of free memory before attempting to allocate on
-    // integrated systems.
     int device = 0;
 
     if (cudaGetDevice(&device) != cudaSuccess)
@@ -68,19 +65,7 @@ struct checked_host_memory_resource final : public THRUST_NS_QUALIFIER::mr::new_
       throw std::bad_alloc{};
     }
 
-    // Validate allocation-size arithmetic before delegating to new_delete_resource_base.
-    const std::size_t allocation_size = detail::checked_host_allocation_size(bytes, alignment);
-
-    if (detail::is_integrated_device(device))
-    {
-      const auto status = detail::check_free_device_memory(allocation_size);
-      if (status != cudaSuccess)
-      {
-        throw std::bad_alloc{};
-      }
-    }
-
-    return this->new_delete_resource_base::do_allocate(bytes, alignment);
+    return detail::checked_host_allocate(device, bytes, alignment);
   }
 };
 

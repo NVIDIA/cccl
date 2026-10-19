@@ -187,12 +187,12 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
 
 [[nodiscard]] inline void* checked_host_allocate(int device, std::size_t bytes, std::size_t alignment)
 {
+  const std::size_t allocation_size = checked_host_allocation_size(bytes, alignment);
+
   if (bytes == 0)
   {
     return nullptr;
   }
-
-  const std::size_t allocation_size = checked_host_allocation_size(bytes, alignment);
 
   if (is_integrated_device(device))
   {
