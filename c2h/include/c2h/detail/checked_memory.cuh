@@ -6,11 +6,9 @@
 #include <cuda/__device/attributes.h>
 #include <cuda/__memory/is_valid_alignment.h>
 #include <cuda/__memory_resource/properties.h>
-#include <cuda/__numeric/add_overflow.h>
 
 #include <algorithm>
 #include <cstddef>
-#include <cstring>
 #include <iostream>
 #include <new>
 
@@ -168,38 +166,8 @@ inline void checked_device_deallocate(int device, void* ptr) noexcept
   {
     throw std::bad_alloc{};
   }
-
-#if __cpp_aligned_new >= 201606L
   return bytes;
-#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
-  const auto padded_size = ::cuda::add_overflow(bytes, alignment);
-  if (padded_size.overflow)
-  {
-    throw std::bad_alloc{};
-  }
-
-  const auto allocation_size = ::cuda::add_overflow(padded_size.value, sizeof(std::size_t));
-  if (allocation_size.overflow)
-  {
-    throw std::bad_alloc{};
-  }
-  return allocation_size.value;
-#endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
-
-#if __cpp_aligned_new < 201606L
-inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::size_t offset) noexcept
-{
-  std::memcpy(ptr + bytes, &offset, sizeof(offset));
-}
-
-[[nodiscard]] inline std::size_t load_checked_host_offset(char* ptr, std::size_t bytes) noexcept
-{
-  std::size_t offset{};
-  std::memcpy(&offset, ptr + bytes, sizeof(offset));
-  return offset;
-}
-#endif // __cpp_aligned_new < 201606L
 
 [[nodiscard]] inline bool is_integrated_device(int device)
 {
@@ -235,38 +203,20 @@ inline void store_checked_host_offset(char* ptr, std::size_t bytes, const std::s
     }
   }
 
-#if __cpp_aligned_new >= 201606L
   return ::operator new(bytes, std::align_val_t(alignment));
-#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
-  // Allocate memory for bytes, plus potential alignment correction, plus store of the correction offset.
-  void* const p             = ::operator new(allocation_size);
-  const std::size_t ptr_int = reinterpret_cast<std::size_t>(p);
-  const std::size_t offset  = (ptr_int % alignment) ? (alignment - ptr_int % alignment) : 0;
-  char* const ptr           = static_cast<char*>(p) + offset;
-  store_checked_host_offset(ptr, bytes, offset);
-  return static_cast<void*>(ptr);
-#endif // ^^^ __cpp_aligned_new < 201606L ^^^
 }
 
-inline void
-checked_host_deallocate(void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) noexcept
+inline void checked_host_deallocate(void* ptr, [[maybe_unused]] std::size_t bytes, std::size_t alignment) noexcept
 {
   if (ptr == nullptr)
   {
     return;
   }
 
-#if __cpp_aligned_new >= 201606L
-#  if __cpp_sized_deallocation >= 201309L
+#if __cpp_sized_deallocation >= 201309L
   ::operator delete(ptr, bytes, std::align_val_t(alignment));
-#  else // ^^^ __cpp_sized_deallocation >= 201309L ^^^ / vvv __cpp_sized_deallocation < 201309L vvv
+#else // ^^^ __cpp_sized_deallocation >= 201309L ^^^ / vvv __cpp_sized_deallocation < 201309L vvv
   ::operator delete(ptr, std::align_val_t(alignment));
-#  endif // ^^^ __cpp_sized_deallocation < 201309L ^^^
-#else // ^^^ __cpp_aligned_new >= 201606L ^^^ / vvv __cpp_aligned_new < 201606L vvv
-  char* const raw_ptr      = static_cast<char*>(ptr);
-  const std::size_t offset = load_checked_host_offset(raw_ptr, bytes);
-  ptr                      = static_cast<void*>(raw_ptr - offset);
-  ::operator delete(ptr);
-#endif // ^^^ __cpp_aligned_new < 201606L ^^^
+#endif // ^^^ __cpp_sized_deallocation < 201309L ^^^
 }
 } // namespace c2h::detail
