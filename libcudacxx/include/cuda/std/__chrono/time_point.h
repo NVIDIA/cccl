@@ -215,7 +215,7 @@ template <class _Clock, class _Duration1, class _Duration2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
 common_type<chrono::time_point<_Clock, _Duration1>, chrono::time_point<_Clock, _Duration2>>
 {
-  using type = chrono::time_point<_Clock, typename common_type<_Duration1, _Duration2>::type>;
+  using type = chrono::time_point<_Clock, common_type_t<_Duration1, _Duration2>>;
 };
 
 namespace chrono
