@@ -10,6 +10,7 @@
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -92,15 +93,15 @@
     }                                                                                                 \
   }
 
-#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)           \
-  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                 \
-  [[maybe_unused]] inline constexpr struct WRAPPED_API_NAME##_t \
-  {                                                             \
-    template <class... As>                                      \
-    void operator()(As... args) const                           \
-    {                                                           \
-      launch(WRAPPED_API_NAME##_invocable_t{}, args...);        \
-    }                                                           \
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                            \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                  \
+  [[maybe_unused]] inline constexpr struct WRAPPED_API_NAME##_t                  \
+  {                                                                              \
+    template <class... As>                                                       \
+    void operator()(As&&... args) const                                          \
+    {                                                                            \
+      launch(WRAPPED_API_NAME##_invocable_t{}, cuda::std::forward<As>(args)...); \
+    }                                                                            \
   } WRAPPED_API_NAME
 
 #define ESCAPE_LIST(...) __VA_ARGS__
@@ -169,9 +170,9 @@ T read_single(cuda::stream_ref stream, const cuda::device_buffer<T>& buffer)
 #define DECLARE_TMPL_LAUNCH_WRAPPER(API, WRAPPED_API_NAME, TMPL_PARAMS, TMPL_ARGS)                         \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME, ESCAPE_LIST(template <TMPL_PARAMS>), ESCAPE_LIST(<TMPL_ARGS>)); \
   template <TMPL_PARAMS, class... As>                                                                      \
-  static void WRAPPED_API_NAME(As... args)                                                                 \
+  static void WRAPPED_API_NAME(As&&... args)                                                               \
   {                                                                                                        \
-    launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, args...);                                          \
+    launch(WRAPPED_API_NAME##_invocable_t<TMPL_ARGS>{}, cuda::std::forward<As>(args)...);                  \
   }
 
 #if TEST_LAUNCH == 2

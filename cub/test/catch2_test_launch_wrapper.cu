@@ -108,6 +108,7 @@ struct cub_api_example_t
 
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
+DECLARE_TMPL_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0_templated, ESCAPE_LIST(class T), ESCAPE_LIST(T));
 
 struct stream_with_get_stream
 {
@@ -161,6 +162,23 @@ CUB_TEST("Launch wrapper accepts stream-like arguments", "[test][utils]", CUB_SM
   int* const d_in  = thrust::raw_pointer_cast(in.data());
   int* const d_out = thrust::raw_pointer_cast(out.data());
 
+  SECTION("cuda::stream")
+  {
+    x2_0(stream, d_in, d_out, num_items);
+  }
+  SECTION("const cuda::stream")
+  {
+    const auto& const_stream = stream;
+    x2_0(const_stream, d_in, d_out, num_items);
+  }
+  SECTION("temporary cuda::stream")
+  {
+    x2_0(cuda::stream{device}, d_in, d_out, num_items);
+  }
+  SECTION("templated wrapper with cuda::stream")
+  {
+    x2_0_templated<int>(stream, d_in, d_out, num_items);
+  }
   SECTION("cuda::stream_ref")
   {
     x2_0(cuda::get_stream(stream), d_in, d_out, num_items);
