@@ -9,6 +9,7 @@
 #include <cuda/iterator>
 
 #include <algorithm>
+#include <cstdint>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -90,15 +91,21 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues works", "[find][device][binary-sear
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound);
 }
 
-CUB_TEST("DeviceFind::LowerBoundSortedValues works with a transform output iterator",
+using count_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+
+CUB_TEST("DeviceFind sorted bounds work with a transform output iterator",
          "[find][device][binary-search]",
-         CUB_SMALL)
+         CUB_SMALL,
+         count_types)
 {
   using value_type = int;
   using Result     = std::ptrdiff_t;
+  using count_type = c2h::get<0, TestType>;
 
-  const std::size_t range_num_items  = 7492;
-  const std::size_t values_num_items = 749;
+  const bool upper_bound            = GENERATE(false, true);
+  const count_type range_num_items  = 7492;
+  const count_type values_num_items = 749;
+  CAPTURE(upper_bound);
 
   c2h::device_vector<value_type> range_d(range_num_items, thrust::default_init);
   c2h::gen(C2H_SEED(1), range_d);
@@ -112,23 +119,33 @@ CUB_TEST("DeviceFind::LowerBoundSortedValues works with a transform output itera
   c2h::device_vector<Result> offsets_d(values_num_items, thrust::default_init);
   auto offsets_out = cuda::make_transform_output_iterator(offsets_d.begin(), cuda::std::negate{});
 
-  lower_bound_sorted_values(
-    thrust::raw_pointer_cast(range_d.data()),
-    range_num_items,
-    thrust::raw_pointer_cast(values_d.data()),
-    values_num_items,
-    offsets_out,
-    cuda::std::less<value_type>{});
+  const auto run = [&](auto variant) {
+    variant(thrust::raw_pointer_cast(range_d.data()),
+            range_num_items,
+            thrust::raw_pointer_cast(values_d.data()),
+            values_num_items,
+            offsets_out,
+            cuda::std::less<value_type>{});
+  };
+  if (upper_bound)
+  {
+    run(upper_bound_sorted_values);
+  }
+  else
+  {
+    run(lower_bound_sorted_values);
+  }
 
   c2h::host_vector<value_type> range_h     = range_d;
   c2h::host_vector<value_type> values_h    = values_d;
   const c2h::host_vector<Result> offsets_h = offsets_d;
 
   c2h::host_vector<Result> offsets_ref(values_num_items);
-  for (auto i = 0u; i < values_num_items; ++i)
+  for (count_type i = 0; i < values_num_items; ++i)
   {
-    offsets_ref[i] =
-      -(std::lower_bound(range_h.data(), range_h.data() + range_num_items, values_h[i]) - range_h.data());
+    const auto bound = upper_bound ? std::upper_bound(range_h.data(), range_h.data() + range_num_items, values_h[i])
+                                   : std::lower_bound(range_h.data(), range_h.data() + range_num_items, values_h[i]);
+    offsets_ref[i]   = cuda::std::negate{}(bound - range_h.data());
   }
 
   CHECK(offsets_ref == offsets_h);
