@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -152,18 +152,16 @@ C2H_TEST("Driver function results preserve lookup and call diagnostics", "[utili
 
 C2H_TEST("NoThrow driver API lookup reports missing symbol", "[utility]")
 {
-  namespace driver = ::cuda::__driver;
-
   const auto missing_symbol =
     _CCCLRT_GET_DRIVER_FUNCTION_TYPED_NO_INIT(::CUresult(CUDAAPI*)(), "__cccl_missing_driver_symbol_for_test");
 
   CCCLRT_REQUIRE(missing_symbol.__status_ != cudaSuccess);
   CCCLRT_REQUIRE(missing_symbol.__fn_ == nullptr);
-  CCCLRT_REQUIRE(missing_symbol.__status_.__source_ == driver::__driver_error_source::__entry_point_lookup);
+  CCCLRT_REQUIRE(missing_symbol.__status_.__source_ == cuda::__driver::__driver_error_source::__entry_point_lookup);
   CCCLRT_REQUIRE(missing_symbol.__status_.__message_ != nullptr);
 
   const auto missing_call = _CCCLRT_CALL_DRIVER_FUNCTION(missing_symbol);
-  CCCLRT_REQUIRE(missing_call.__source_ == driver::__driver_error_source::__entry_point_lookup);
+  CCCLRT_REQUIRE(missing_call.__source_ == cuda::__driver::__driver_error_source::__entry_point_lookup);
   CCCLRT_REQUIRE(missing_call.__message_ == missing_symbol.__status_.__message_);
 }
 
