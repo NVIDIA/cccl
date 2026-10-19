@@ -66,4 +66,16 @@ foreach (test_src IN LISTS test_srcs)
   cccl_c_parallel_v2_add_test(test_target "${v1_test_dir}/${test_src}")
 endforeach()
 
+# Tests for v2-only features (no v1 counterpart) live next to this file.
+file(
+  GLOB v2_only_test_srcs
+  RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+  CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+)
+
+foreach (test_src IN LISTS v2_only_test_srcs)
+  cccl_c_parallel_v2_add_test(test_target "${CMAKE_CURRENT_SOURCE_DIR}/${test_src}")
+endforeach()
+
 add_subdirectory(freestanding)

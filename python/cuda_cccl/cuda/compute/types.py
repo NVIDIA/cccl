@@ -38,6 +38,37 @@ except ImportError:
     pass
 
 
+# Emulated floating-point types (cuda::experimental::fpemu<double, accuracy>,
+# from <cuda/fpemu>), available on the v2 (HostJIT) backend only. fpemu<double>
+# is bit-identical to a 64-bit IEEE-754 double, but is a distinct C++ type whose
+# arithmetic is emulated in software, so it needs a NumPy dtype that is distinct
+# from float64. A single-field structured dtype with a reserved field name
+# serves: it survives __cuda_array_interface__ (via ``descr``), works with
+# ``ndarray.view`` and with CuPy, accepts float scalars on assignment
+# (``np.array([1.5], dtype=dt)``), and cannot be mistaken for a user-defined
+# struct.
+_FPEMU_ACCURACIES = ("high", "mid", "low")
+
+
+def _fpemu_field_name(accuracy: str) -> str:
+    return f"__cccl_fp64emu_{accuracy}__"
+
+
+_FPEMU_ENUMS: dict[str, TypeEnum | None] = {
+    accuracy: getattr(TypeEnum, f"FP64EMU_{accuracy.upper()}", None)
+    for accuracy in _FPEMU_ACCURACIES
+}
+
+for _accuracy, _enum in _FPEMU_ENUMS.items():
+    if _enum is not None:
+        _ENUM_TO_DTYPE[_enum] = np.dtype([(_fpemu_field_name(_accuracy), "<f8")])
+
+
+def is_fpemu_type_enum(type_enum: int) -> bool:
+    """True if ``type_enum`` is one of the emulated floating-point types."""
+    return any(e is not None and type_enum == e for e in _FPEMU_ENUMS.values())
+
+
 class TypeDescriptor:
     def __init__(self, size: int, alignment: int, type_enum: TypeEnum):
         self._type_info = TypeInfo(size, alignment, type_enum)
@@ -227,6 +258,21 @@ float64 = TypeDescriptor(8, 8, TypeEnum.FLOAT64)
 boolean = TypeDescriptor(1, 1, TypeEnum.BOOLEAN)
 
 
+# Emulated double-precision floating point (v2 backend only; None elsewhere).
+# Named after the libcudacxx aliases in <cuda/fpemu> (cuda::experimental::
+# fp64emu_{low,mid,high}).
+def _make_fpemu(accuracy: str) -> TypeDescriptor | None:
+    type_enum = _FPEMU_ENUMS[accuracy]
+    return None if type_enum is None else TypeDescriptor(8, 8, type_enum)
+
+
+fp64emu_high = _make_fpemu("high")
+fp64emu_mid = _make_fpemu("mid")
+fp64emu_low = _make_fpemu("low")
+# Like libcudacxx, the bare name is the default accuracy level (high).
+fp64emu = fp64emu_high
+
+
 # Mapping from numpy dtype to TypeDescriptor for POD types
 _DTYPE_TO_TD: dict[np.dtype, TypeDescriptor] = {
     np.dtype("int8"): int8,
@@ -245,6 +291,10 @@ _DTYPE_TO_TD: dict[np.dtype, TypeDescriptor] = {
 
 if bfloat16.dtype is not None:
     _DTYPE_TO_TD[bfloat16.dtype] = bfloat16
+
+for _td in (fp64emu_high, fp64emu_mid, fp64emu_low):
+    if _td is not None:
+        _DTYPE_TO_TD[_td.dtype] = _td  # type: ignore[index]
 
 
 def to_ctypes_type(td: TypeDescriptor):
@@ -310,6 +360,10 @@ __all__ = [
     "float32",
     "float64",
     "boolean",
+    "fp64emu",
+    "fp64emu_high",
+    "fp64emu_mid",
+    "fp64emu_low",
     "struct",
     "pointer",
     "from_numpy_dtype",
