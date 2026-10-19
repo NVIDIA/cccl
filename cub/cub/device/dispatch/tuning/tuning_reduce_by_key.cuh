@@ -1051,9 +1051,10 @@ struct policy_selector
 
 private:
   // The default policy is a mix of the old CUB and Thrust default policy. We pick whichever is better.
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto
-  __make_default_policy(CacheLoadModifier load_mod, bool prefer_thrust_tuning = false) const
-    -> ReduceByKeyLookbackPolicy
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto __make_default_policy(
+    CacheLoadModifier load_mod,
+    bool prefer_thrust_tuning                = false,
+    BlockLoadAlgorithm thrust_load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE) const -> ReduceByKeyLookbackPolicy
   {
     const int nominal_4B_items_per_thread = prefer_thrust_tuning ? 9 : 6;
     const int combined_input_bytes        = key_size + accum_size;
@@ -1066,7 +1067,7 @@ private:
     return ReduceByKeyLookbackPolicy{
       prefer_thrust_tuning ? 256 : 128,
       items_per_thread,
-      prefer_thrust_tuning ? BLOCK_LOAD_WARP_TRANSPOSE : BLOCK_LOAD_DIRECT,
+      prefer_thrust_tuning ? thrust_load_algorithm : BLOCK_LOAD_DIRECT,
       load_mod,
       BLOCK_SCAN_WARP_SCANS,
       default_reduce_by_key_delay_constructor_policy(
@@ -1562,7 +1563,9 @@ private:
     {
       const bool prefer_thrust_tuning =
         (key_size <= 4 && accum_size <= 4) || accum_size == 16 || (key_size == 16 && accum_size == 8);
-      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
+      // the direct load is faster than the warp transpose for small keys and accumulators
+      const auto load_algorithm = accum_size <= 4 ? BLOCK_LOAD_DIRECT : BLOCK_LOAD_WARP_TRANSPOSE;
+      return __make_default_policy(LOAD_LDG, prefer_thrust_tuning, load_algorithm);
     }
 
     if (cc >= ::cuda::compute_capability{8, 6})
@@ -1775,8 +1778,7 @@ private:
 
     if (cc == ::cuda::compute_capability{7, 5}) // T4
     {
-      const auto prefer_thrust_tuning = (key_size == 1 && (accum_size == 1 || accum_size == 16))
-                                     || (key_size == 4 && accum_size == 4) || (key_size >= 8 && accum_size == 16);
+      const bool prefer_thrust_tuning = (key_size == 4 && accum_size == 4) || (key_size >= 8 && accum_size == 16);
       return __make_default_policy(LOAD_LDG, prefer_thrust_tuning);
     }
 
