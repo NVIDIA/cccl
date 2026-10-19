@@ -36,7 +36,7 @@ benchmarks:
       # Examples:
       # - '^cub\.bench\.for_each\.base'
       # - '^cub\.bench\.reduce\.(sum|min)\.'
-      # - '^thrust\..*\.bench\.reduce\.'
+      # - '^thrust\.bench\.reduce\.'
       # - '^libcudacxx\.bench\.'
 
     # Python benchmark filters (regex matched against paths under benchmarks/).
