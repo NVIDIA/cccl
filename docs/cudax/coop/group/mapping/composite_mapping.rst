@@ -8,7 +8,7 @@
   namespace cuda::experimental::coop {
 
   template <typename... Mappings>
-  class composite_mapping
+  class composite_mapping : public /*group-mapping-interface-for*/<composite_mapping>
   {
     cuda::std::tuple<Mappings...> /*mappings_*/; // exposition-only
 
@@ -17,10 +17,6 @@
       noexcept((cuda::std::is_nothrow_copy_constructible_v<Mappings> && ...))
       : /*mappings_*/{mappings...}
     {}
-
-    template <typename Unit, typename ParentGroup, typename PrevMappingResult>
-    [[nodiscard]] __device__
-    auto map(const Unit&, const ParentGroup&, const PrevMappingResult&) noexcept;
   };
 
   template <typename... Mappings>

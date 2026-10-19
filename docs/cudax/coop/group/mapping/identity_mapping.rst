@@ -7,14 +7,10 @@
 
   namespace cuda::experimental::coop {
 
-  class identity_mapping
+  class identity_mapping : public /*group-mapping-interface-for*/<identity_mapping>
   {
   public:
     explicit identity_mapping() = default;
-
-    template <typename Unit, typename ParentGroup, typename PrevMappingResult>
-    [[nodiscard]] __device__
-    auto map(const Unit&, const ParentGroup&, const PrevMappingResult&) const noexcept;
   };
 
   } // namespace cuda::experimental::coop

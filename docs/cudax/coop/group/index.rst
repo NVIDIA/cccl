@@ -99,10 +99,7 @@ Imagine a group of :math:`N` units that shall be split into :math:`N / M` groups
 
 Cases **1.** and **3.** can be handled inside the mapping implementation; however, case **2.** requires additional support from the groups implementation.
 
-For this reason, CCCL Cooperative Groups introduce the optional participation feature, which allows the group object to be in an invalidated state -- we say that the unit is not part of the group.
-
-Such a unit cannot participate in any collective operations, such as creating a new group or calling a cooperative algorithm.
-
+For this reason, CCCL Cooperative Groups introduce the optional participation feature in the form of non-exhaustive group construction that return an *optional* of the group.
 
 Requirements on Groups
 ----------------------
@@ -176,16 +173,14 @@ The supported query kinds are:
   qunit.static_count(group); // (1), always constexpr
   qunit.count_as<T>(group);  // (2)
   qunit.rank_as<T>(group);   // (3)
-  qunit.is_part_of(group);   // (4)
 
-  qunit.count(group);        // (5)
-  qunit.rank(group);         // (6)
-  qunit.is_root_rank(group); // (7)
+  qunit.count(group);        // (4)
+  qunit.rank(group);         // (5)
+  qunit.is_root_rank(group); // (6)
 
 #. Queries the statically known number of ``qunit`` units inside the ``group`` group. When equal to ``cuda::std::dynamic_extent``, the value is known only at runtime.
 #. Queries the number of ``qunit`` units inside the ``group`` group, returned as type ``T``.
 #. Queries the current ``qunit``'s rank within the ``group`` group. Returns a value in the range ``[0, qunit.count(group))`` as type ``T``.
-#. Queries whether ``group`` is a valid object for the current ``qunit``. Always returns ``true`` when ``group.is_always_exhaustive() == true``.
 #. Equivalent to ``qunit.count_as</*default-T*/>(group)``.
 #. Equivalent to ``qunit.rank_as</*default-T*/>(group)``.
 #. Equivalent to ``qunit.rank(group) == 0``.
@@ -225,9 +220,6 @@ The supported query kinds are:
 #. Equivalent to ``group.count_as</*default-T*/>(/*parent-group-or-qlevel*/)``.
 #. Equivalent to ``group.rank_as</*default-T*/>(/*parent-group-or-qlevel*/)``.
 
-.. warning:: All non-static queries except for the ``is_part_of(...)`` query can be done only by units that belong to the group. Executing any other non-static query by units for which ``qunit.is_part_of(group) == false`` is undefined behavior.
-
-
 Predefined Groups
 -----------------
 
@@ -241,6 +233,35 @@ CCCL Cooperative Groups come with several predefined group types.
   - :ref:`cudax-coop-group-virtual-group`
 3. A non-owning group view over a group.
   - :ref:`cudax-coop-group-group-view`
+
+
+Factory Functions and Optional Participation Support
+-----------------------------------------------------
+
+CCCL Cooperative Groups can be constructed 2 ways -- using their constructor or the ``make_group`` factory function:
+
+.. code:: cuda
+
+  namespace cuda::experimental::coop
+  {
+
+  template <template <typename...> typename GroupTempl, typename... Args>
+  [[nodiscard]] __device__
+  auto make_group(Args&&... args) noexcept
+    -> /*GroupTempl-instantiated-with-args*/;                      // (1)
+
+  template <template <typename...> typename GroupTempl, typename... Args>
+  [[nodiscard]] __device__
+  auto make_group(const non_exhaustive_t&, Args&&... args) noexcept
+    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>; // (2)
+
+  } // namespace cuda::experimental::coop
+
+Both overloads take the ``GroupTempl`` template template parameter that denotes the group kind that shall be constructed from ``args`` arguments.
+
+The overload (1) is equivalent to  ``GroupTempl{args...}``.
+
+The overload (2) takes the ``cuda::experimental::coop::non_exhaustive`` tag as the first argument, which makes allows the group mapping to be non-exhaustive. This means that some of the units may not be assigned to a group, getting an empty ``cuda::std::optional``.
 
 
 Interoperability with CTK's Cooperative Groups

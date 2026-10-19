@@ -8,7 +8,7 @@
   namespace cuda::experimental::coop {
 
   template <cuda::std::size_t StaticUnitCount>
-  class take
+  class take : public /*group-mapping-interface-for*/<take>
   {
     cuda::std::uint32_t /*unit_count_*/; // exposition-only
 
@@ -16,10 +16,6 @@
     __device__ explicit take(cuda::std::uint32_t unit_count) noexcept
       : /*unit_count_*/{unit_count}
     {}
-
-    template <typename Unit, typename ParentGroup, typename PrevMappingResult>
-    [[nodiscard]] __device__
-    auto map(const Unit&, const ParentGroup&, const PrevMappingResult&) const noexcept;
   };
 
   template <typename T>

@@ -8,7 +8,7 @@
   namespace cuda::experimental::coop {
 
   template <typename Fn>
-  class binary_partition
+  class binary_partition : public /*group-mapping-interface-for*/<binary_partition>
   {
     Fn /*fn_*/; // exposition-only
 
@@ -16,11 +16,6 @@
     __device__ explicit binary_partition(Fn fn) noexcept(cuda::std::is_nothrow_move_constructible_v<Fn>)
       : /*fn_*/(cuda::std::move(fn))
     {}
-
-    template <typename Unit, typename ParentGroup, typename PrevMappingResult>
-    [[nodiscard]] __device__
-    auto map(const Unit&, const ParentGroup&, const PrevMappingResult&)
-      noexcept(cuda::std::is_nothrow_invocable_v<Fn&, const PrevMappingResult&>);
   };
 
   template <typename Fn>

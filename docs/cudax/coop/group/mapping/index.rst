@@ -1,5 +1,15 @@
 .. _cudax-coop-group-mapping:
 
+.. toctree::
+  :hidden:
+
+  identity_mapping
+  group_by
+  group_as
+  take
+  binary_partition
+  composite_mapping
+
 Group Mappings
 ==============
 
@@ -57,7 +67,7 @@ Group Mapping Process
 The group mapping process has 3 steps:
 
 1. The initial mapping result describes the parent group as one group: the static and runtime group counts are ``1``, the group rank is ``0``, and the unit count and rank are queried for the requested unit level. The exhaustive property is ``true`` relative to the parent group, and the contiguous property and lane mask are copied from the parent.
-2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result.
+2. The mapping's ``.map(...)`` member function is invoked with the initial mapping result. When a non-exhaustve mapping is done, the ``cuda::experimental::coop::non_exhaustive`` tag is passed as the first parameter to the ``.map(...)`` method.
 3. The transformed mapping result is used to initialize the newly created group.
 
 Only units that belong to the parent group may create a child group. For a unit larger than a thread, all threads in that unit must agree on its assignment and participation.
@@ -78,25 +88,28 @@ Every group mapping type must implement the group mapping interface, which can b
                                         const PrevMappingResult& prev_mapping_result)
   {
     { t.map(unit, parent_group, prev_mapping_result) } -> /*group-mapping-result*/;
+    { t.map(non_exhaustive, unit, parent_group, prev_mapping_result) } -> /*group-mapping-result*/;
   };
 
 Where:
 
-- ``Unit`` is the unit-level type of the newly created group.
-- ``ParentGroup`` is the parent group of the newly created group. It can be used to synchronize all units.
-- ``PrevMappingResult`` is the input mapping result being transformed.
+- ``unit`` is the unit-level of the newly created group.
+- ``parent_group`` is the parent group of the newly created group. It can be used to synchronize all units.
+- ``prev_mapping_result`` is the input mapping result being transformed.
+- ``non_exhaustive`` is the ``cuda::experimental::coop::non_exhaustive`` tag.
+
+The overload that takes the ``non_exhaustive`` tag does the non-exhaustive mapping.
 
 Mappings can be chained with ``|`` to transform the result from left to right. This is implemented by :ref:`cudax-coop-group-mapping-composite-mapping`.
 
 Predefined Mappings
 -------------------
 
-.. toctree::
-  :maxdepth: 1
+The implementation comes with several predefined mappings that should cover most of the use cases. The documentation hides the group mapping interface behind a ``/*group-mapping-interface-for*/`` parent class.
 
-  identity_mapping
-  group_by
-  group_as
-  take
-  binary_partition
-  composite_mapping
+- :doc:`identity_mapping <identity_mapping>` preserves the previous mapping result without further partitioning.
+- :doc:`group_by <group_by>` splits each group into subgroups with the same specified number of units.
+- :doc:`group_as <group_as>` splits each group into subgroups with individually specified sizes.
+- :doc:`take <take>` selects the first specified number of units from each group.
+- :doc:`binary_partition <binary_partition>` splits threads within a warp into two groups based on a predicate.
+- :doc:`composite_mapping <composite_mapping>` applies multiple mappings in sequence, composed with the pipe operator (``|``).
