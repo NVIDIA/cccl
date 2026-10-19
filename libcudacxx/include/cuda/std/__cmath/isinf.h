@@ -90,14 +90,6 @@ template <class _Tp>
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
-#if _CCCL_CUDA_COMPILATION()
-[[nodiscard]] _CCCL_DEVICE_API inline uint64_t __fp64_opaque_storage_device(uint64_t __storage) noexcept
-{
-  asm("mov.b64 %0, %0;" : "+l"(__storage));
-  return __storage;
-}
-#endif // _CCCL_CUDA_COMPILATION()
-
 // Storage for the integer classification of double on GPUs with slow FP64. On SM100+ (new NVVM), integer checks on the
 // storage are turned back into double comparisons, e.g. a check for the infinity pattern becomes fabs(x) == inf. Hide
 // the storage from the optimizer there.
@@ -107,7 +99,10 @@ template <class _Tp>
 #if !_CCCL_TILE_COMPILATION() // asm statement is unsupported in tile code
   _CCCL_IF_NOT_CONSTEVAL_DEFAULT
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_100, (__storage = ::cuda::std::__fp64_opaque_storage_device(__storage);))
+    // asm is not allowed in a constexpr function before C++20, so wrap it in a lambda
+    NV_IF_TARGET(NV_PROVIDES_SM_100, ([&] {
+                   asm("mov.b64 %0, %0;" : "+l"(__storage));
+                 }();))
   }
 #endif // !_CCCL_TILE_COMPILATION()
   return __storage;

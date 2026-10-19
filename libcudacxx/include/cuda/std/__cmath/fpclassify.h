@@ -27,6 +27,7 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -130,9 +131,11 @@ template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __fpclassify_storage(double __x) noexcept
 {
   const auto __storage = ::cuda::std::__fp64_classify_storage(__x);
-  const auto __exp     = __storage & __fp_exp_mask_of_v<double>;
-  const auto __mant    = __storage & __fp_mant_mask_of_v<double>;
-  if (__exp == __fp_exp_mask_of_v<double>)
+  // The exponent is in the upper 32 bits, so check it there
+  constexpr auto __exp_mask_hi = static_cast<uint32_t>(__fp_exp_mask_of_v<double> >> 32);
+  const auto __exp             = static_cast<uint32_t>(__storage >> 32) & __exp_mask_hi;
+  const bool __mant            = (__storage & __fp_mant_mask_of_v<double>) != 0;
+  if (__exp == __exp_mask_hi)
   {
     return __mant ? FP_NAN : FP_INFINITE;
   }
