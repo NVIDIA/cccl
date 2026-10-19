@@ -19,12 +19,12 @@
 
 // the default for the Unroll template parameter must honor the macro
 static_assert(cuda::std::is_same_v<cub::BlockMergeSort<int, 128, 4>, //
-                                   cub::BlockMergeSort<int, 128, 4, cub::NullType, 1, 1, false>>);
+                                   cub::BlockMergeSort<int, 128, 4, cub::NullType, 1, 1, /*Unroll=*/false>>);
 
 // WarpMergeSort has no Unroll parameter and inherits it from its base class
-static_assert(
-  cuda::std::is_base_of_v<cub::BlockMergeSortStrategy<int, cub::NullType, 32, 4, cub::WarpMergeSort<int, 4>, false>,
-                          cub::WarpMergeSort<int, 4>>);
+static_assert(cuda::std::is_base_of_v<
+              cub::BlockMergeSortStrategy<int, cub::NullType, 32, 4, cub::WarpMergeSort<int, 4>, /*Unroll=*/false>,
+              cub::WarpMergeSort<int, 4>>);
 
 CUB_TEST_CASE("CCCL_AVOID_SORT_UNROLL is honored by default tuning policies", "[merge_sort][unroll]", CUB_SMALL)
 {
