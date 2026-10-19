@@ -13,11 +13,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__cmath/pow2.h>
 #include <cuda/std/__algorithm/min.h>

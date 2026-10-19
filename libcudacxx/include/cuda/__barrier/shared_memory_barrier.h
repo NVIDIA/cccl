@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_SHARED_BARRIER_H
-#define _CUDA___BARRIER_SHARED_BARRIER_H
+#ifndef _CUDA___BARRIER_SHARED_MEMORY_BARRIER_H
+#define _CUDA___BARRIER_SHARED_MEMORY_BARRIER_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,24 +43,30 @@
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
-//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_barrier`.
-[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_barrier& __b);
+//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_memory_barrier`.
+template <::cuda::thread_scope _Scope>
+[[nodiscard]] _CCCL_DEVICE_API ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_memory_barrier<_Scope>& __b);
 _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-//! @brief A block-scope shared-memory barrier backed by an mbarrier layout-v1 object.
+//! @brief A shared-memory barrier backed by an mbarrier layout-v1 object.
 //!
-//! `cuda::shared_barrier` is a device-side barrier type for local shared-memory storage. It exposes the common
+//! `cuda::shared_memory_barrier` is a device-side barrier type for local shared-memory storage. It exposes the common
 //! `cuda::barrier<cuda::thread_scope_block>` arrival and wait operations, plus layout-v1 status-reporting waits,
 //! conditional-phase waits, and transaction-count operations.
 //!
 //! The object must be placed in local shared memory and initialized with `cuda::init`. Host and non-shared-memory
-//! fallback behavior is not provided by this type.
-class shared_barrier : private ::cuda::__shared_mbarrier_impl
+//! fallback behavior is not provided by this type. Cluster scope does not change this local-storage requirement.
+//! Cluster-scoped barriers additionally provide explicit remote arrivals to initialized barriers in cluster shared
+//! memory. Waiting, initialization, and invalidation must still be performed by threads in the owning block.
+//!
+//! @tparam _Scope Synchronization scope: `cuda::thread_scope_block` (the default) or `cuda::thread_scope_cluster`.
+template <thread_scope _Scope>
+class shared_memory_barrier : private ::cuda::__shared_mbarrier_impl<_Scope>
 {
-  _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle(
-    ::cuda::shared_barrier& __b);
+  _CCCL_DEVICE_API friend ::cuda::std::uint64_t* ::cuda::device::_LIBCUDACXX_ABI_NAMESPACE::barrier_native_handle<
+    _Scope>(::cuda::shared_memory_barrier<_Scope>& __b);
 
 public:
   //! @brief Result of a status-bearing wait operation.
@@ -82,19 +88,20 @@ public:
         , __report_value_(__complete ? __report_value : 0)
     {}
 
-    _CCCL_HOST_DEVICE_API constexpr operation_status(::cuda::__shared_mbarrier_impl::__wait_status __result) noexcept
+    _CCCL_HOST_DEVICE_API constexpr operation_status(
+      typename ::cuda::__shared_mbarrier_impl<_Scope>::__wait_status __result) noexcept
         : __complete_(__result.__complete)
         // PTX leaves both report outputs undefined until the phase completes.
         , __report_predicate_(__result.__complete && __result.__report_predicate)
         , __report_value_(__result.__complete ? __result.__report_value : 0)
     {}
 
-    friend class shared_barrier;
+    friend class shared_memory_barrier;
 
     _CCCL_HOST_DEVICE_API void __verify_report_inspected() const noexcept
     {
       _CCCL_VERIFY(!__report_predicate_ || __report_inspected_,
-                   "shared_barrier operation_status report was not inspected");
+                   "shared_memory_barrier operation_status report was not inspected");
     }
 
   public:
@@ -157,7 +164,7 @@ public:
   private:
     _CCCL_DEVICE_API static void __verify_fabric_status(::cudaError_t __status) noexcept
     {
-      _CCCL_VERIFY(__status == ::cudaSuccess, "failed to decode shared_barrier status");
+      _CCCL_VERIFY(__status == ::cudaSuccess, "failed to decode shared_memory_barrier status");
     }
 
     [[nodiscard]] _CCCL_HOST_DEVICE_API static bool __encodes_fabric_errors(status_source __source) noexcept
@@ -198,7 +205,8 @@ public:
     [[nodiscard]] _CCCL_DEVICE_API ::cudaFabricOpStatusInfo
     __error_status(status_source __source, unsigned int __status_index) const noexcept
     {
-      _CCCL_ASSERT(__encodes_fabric_errors(__source), "shared_barrier status source does not encode fabric errors");
+      _CCCL_ASSERT(__encodes_fabric_errors(__source),
+                   "shared_memory_barrier status source does not encode fabric errors");
       ::cudaFabricOpStatusInfo __status_info{};
       auto __report_value = __report_value_;
       __verify_fabric_status(
@@ -237,7 +245,7 @@ public:
     [[nodiscard]] _CCCL_DEVICE_API status_action classify(status_source __source) const noexcept
     {
       __report_inspected_ = true;
-      _CCCL_VERIFY(__report_predicate_, "cannot classify a shared_barrier operation_status without a report");
+      _CCCL_VERIFY(__report_predicate_, "cannot classify a shared_memory_barrier operation_status without a report");
       return __error_count(__source) == 0 ? status_action::retry : status_action::abort;
     }
   };
@@ -254,25 +262,25 @@ public:
         : __token_(__token)
     {}
 
-    friend class shared_barrier;
+    friend class shared_memory_barrier;
 
   public:
     //! @brief Constructs a token with no associated arrival.
     _CCCL_HOST_DEVICE_API constexpr arrival_token() noexcept {}
   };
 
-  //! @brief Constructs an uninitialized `shared_barrier` object.
+  //! @brief Constructs an uninitialized `shared_memory_barrier` object.
   //!
   //! The object must be initialized with `cuda::init` before use.
-  _CCCL_HIDE_FROM_ABI shared_barrier() = default;
+  _CCCL_HIDE_FROM_ABI shared_memory_barrier() = default;
 
-  shared_barrier(const shared_barrier&)            = delete;
-  shared_barrier& operator=(const shared_barrier&) = delete;
+  shared_memory_barrier(const shared_memory_barrier&)            = delete;
+  shared_memory_barrier& operator=(const shared_memory_barrier&) = delete;
 
 private:
   [[noreturn]] _CCCL_HOST_DEVICE_API static void __unsupported_storage() noexcept
   {
-    _CCCL_VERIFY(false, "shared_barrier requires local shared memory and mbarrier layout v1 support");
+    _CCCL_VERIFY(false, "shared_memory_barrier requires local shared memory and mbarrier layout v1 support");
     _CCCL_UNREACHABLE();
   }
 
@@ -300,100 +308,101 @@ private:
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void __assert_supported_storage() const
   {
-    if (!::cuda::device::is_object_from(__storage_ref(), ::cuda::device::address_space::shared))
+    if (!::cuda::device::is_object_from(this->__storage_ref(), ::cuda::device::address_space::shared))
     {
       NV_IF_TARGET(
         NV_PROVIDES_SM_90,
-        (_CCCL_ASSERT(!::cuda::device::is_object_from(__storage_ref(), ::cuda::device::address_space::cluster_shared),
-                      "shared_barrier must not be in another block's cluster shared memory");))
+        (_CCCL_ASSERT(
+           !::cuda::device::is_object_from(this->__storage_ref(), ::cuda::device::address_space::cluster_shared),
+           "shared_memory_barrier must not be in another block's cluster shared memory");))
       __unsupported_storage();
     }
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __poll_test_wait_status(arrival_token __token) const
   {
-    return operation_status(__test_wait_status(__token_value(__token)));
+    return operation_status(this->__test_wait_status(__token_value(__token)));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_test_wait_status(::cuda::std::uint32_t __phase) const
   {
-    return operation_status(__test_wait_phase_status(__phase));
+    return operation_status(this->__test_wait_phase_status(__phase));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status __poll_try_wait_status(arrival_token __token) const
   {
-    return operation_status(__try_wait_status(__token_value(__token)));
+    return operation_status(this->__try_wait_status(__token_value(__token)));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_try_wait_status(::cuda::std::uint32_t __phase) const
   {
-    return operation_status(__try_wait_phase_status(__phase));
+    return operation_status(this->__try_wait_phase_status(__phase));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_try_wait_status(arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return operation_status(__try_wait_status(__token_value(__token), __suspend_time_hint));
+    return operation_status(this->__try_wait_status(__token_value(__token), __suspend_time_hint));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE operation_status
   __poll_try_wait_status(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return operation_status(__try_wait_phase_status(__phase, __suspend_time_hint));
+    return operation_status(this->__try_wait_phase_status(__phase, __suspend_time_hint));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __poll_test_wait_ignoring_status(arrival_token __token) const
   {
-    return __test_wait(__token_value(__token));
+    return this->__test_wait(__token_value(__token));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_test_wait_ignoring_status(::cuda::std::uint32_t __phase) const
   {
-    return __test_wait_phase(__phase);
+    return this->__test_wait_phase(__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_test_wait_ignoring_status(__conditional_phase __phase) const
   {
-    return __test_wait_conditional_phase(__phase.__phase);
+    return this->__test_wait_conditional_phase(__phase.__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool __poll_try_wait_ignoring_status(arrival_token __token) const
   {
-    return __try_wait(__token_value(__token));
+    return this->__try_wait(__token_value(__token));
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(::cuda::std::uint32_t __phase) const
   {
-    return __try_wait_phase(__phase);
+    return this->__try_wait_phase(__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(__conditional_phase __phase) const
   {
-    return __try_wait_conditional_phase(__phase.__phase);
+    return this->__try_wait_conditional_phase(__phase.__phase);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(arrival_token __token, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return __try_wait(__token_value(__token), __suspend_time_hint);
+    return this->__try_wait(__token_value(__token), __suspend_time_hint);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(::cuda::std::uint32_t __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return __try_wait_phase(__phase, __suspend_time_hint);
+    return this->__try_wait_phase(__phase, __suspend_time_hint);
   }
 
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE bool
   __poll_try_wait_ignoring_status(__conditional_phase __phase, ::cuda::std::uint32_t __suspend_time_hint) const
   {
-    return __try_wait_conditional_phase(__phase.__phase, __suspend_time_hint);
+    return this->__try_wait_conditional_phase(__phase.__phase, __suspend_time_hint);
   }
 
   template <class _WaitArg>
@@ -518,23 +527,23 @@ public:
   //! @brief Destroys the mbarrier object.
   //!
   //! The storage must not be reused for another purpose until the mbarrier object is invalidated.
-  _CCCL_HOST_DEVICE_API ~shared_barrier()
+  _CCCL_HOST_DEVICE_API ~shared_memory_barrier()
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__inval(); return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__inval(); return;))
 
     __unsupported_storage();
   }
 
-  //! @brief Initializes a `shared_barrier`.
+  //! @brief Initializes a `shared_memory_barrier`.
   //!
-  //! @param __b Pointer to a `shared_barrier` object in local shared memory.
+  //! @param __b Pointer to a `shared_memory_barrier` object in local shared memory.
   //! @param __expected Expected arrival count for each phase.
   _CCCL_HOST_DEVICE_API friend void
-  init([[maybe_unused]] shared_barrier* __b, [[maybe_unused]] ::cuda::std::ptrdiff_t __expected)
+  init([[maybe_unused]] shared_memory_barrier* __b, [[maybe_unused]] ::cuda::std::ptrdiff_t __expected)
   {
     _CCCL_ASSERT(1 <= __expected, "Expected arrival count must be at least one.");
     _CCCL_ASSERT(__expected <= __max_expected_count(),
-                 "Expected arrival count cannot exceed the shared_barrier layout-v1 limit.");
+                 "Expected arrival count cannot exceed the shared_memory_barrier layout-v1 limit.");
 
     NV_IF_TARGET(
       NV_PROVIDES_SM_90,
@@ -554,9 +563,29 @@ public:
   {
     _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__update <= __max_expected_count(),
-                 "Arrival count update cannot exceed the shared_barrier layout-v1 limit.");
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
 
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return arrival_token(__arrive(__update));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return arrival_token(this->__arrive(__update));))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Arrives at a cluster-shared barrier without returning an arrival token.
+  //!
+  //! This operation is available only for `cuda::thread_scope_cluster`. The target must be an initialized barrier
+  //! in shared memory of the calling cluster; it may belong to the calling block or another block. The owning block
+  //! must publish initialization before remote arrivals and keep the storage alive until those arrivals complete.
+  //! The operation has release semantics at cluster scope. Wait operations remain local to the owning block.
+  //!
+  //! @param[in] __update Arrival count update.
+  _CCCL_HOST_DEVICE_API void remote_arrive([[maybe_unused]] ::cuda::std::ptrdiff_t __update = 1)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_arrive requires cluster scope");
+    _CCCL_ASSERT(1 <= __update, "Arrival count update must be at least one.");
+    _CCCL_ASSERT(__update <= __max_expected_count(),
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_arrive(__update); return;))
 
     __unsupported_storage();
   }
@@ -570,7 +599,26 @@ public:
     _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
                  "Transaction count update cannot exceed the mbarrier transaction count limit.");
 
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__expect_tx(__transaction_count_update); return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__expect_tx(__transaction_count_update); return;))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Increases the expected transaction count of a cluster-shared barrier.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. It has relaxed
+  //! semantics at cluster scope and does not perform an arrival. The expectation must be established before the
+  //! barrier phase completes.
+  //!
+  //! @param[in] __transaction_count_update Transaction count update.
+  _CCCL_HOST_DEVICE_API void remote_expect_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_expect_tx requires cluster scope");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_expect_tx(__transaction_count_update); return;))
 
     __unsupported_storage();
   }
@@ -587,13 +635,56 @@ public:
   {
     _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
     _CCCL_ASSERT(__arrive_count_update <= __max_expected_count(),
-                 "Arrival count update cannot exceed the shared_barrier layout-v1 limit.");
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
     _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
     _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
                  "Transaction count update cannot exceed the mbarrier transaction count limit.");
 
     NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (return arrival_token(__arrive_tx(__arrive_count_update, __transaction_count_update));))
+                 (return arrival_token(this->__arrive_tx(__arrive_count_update, __transaction_count_update));))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Arrives at a cluster-shared barrier and increases its expected transaction count without returning a token.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. The transaction
+  //! expectation is updated before arrival. Arrival has release semantics at cluster scope.
+  //!
+  //! @param[in] __arrive_count_update Arrival count update.
+  //! @param[in] __transaction_count_update Transaction count update.
+  _CCCL_HOST_DEVICE_API void remote_arrive_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __arrive_count_update,
+                                              [[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_arrive_tx requires cluster scope");
+    _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
+    _CCCL_ASSERT(__arrive_count_update <= __max_expected_count(),
+                 "Arrival count update cannot exceed the shared_memory_barrier layout-v1 limit.");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (this->__remote_arrive_tx(__arrive_count_update, __transaction_count_update); return;))
+
+    __unsupported_storage();
+  }
+
+  //! @brief Signals transaction completion on a cluster-shared barrier.
+  //!
+  //! This operation has the same cluster-scope and storage-lifetime requirements as `remote_arrive`. It has relaxed
+  //! semantics at cluster scope and does not perform an arrival. It only updates the transaction count; it does not
+  //! wait for or order memory operations. Transactions completed by hardware must not also be completed by this call.
+  //!
+  //! @param[in] __transaction_count_update Number of completed transactions.
+  _CCCL_HOST_DEVICE_API void remote_complete_tx([[maybe_unused]] ::cuda::std::ptrdiff_t __transaction_count_update)
+  {
+    static_assert(_Scope == thread_scope_cluster, "remote_complete_tx requires cluster scope");
+    _CCCL_ASSERT(0 <= __transaction_count_update, "Transaction count update must be non-negative.");
+    _CCCL_ASSERT(__transaction_count_update <= __max_transaction_count_update(),
+                 "Transaction count update cannot exceed the mbarrier transaction count limit.");
+
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__remote_complete_tx(__transaction_count_update); return;))
 
     __unsupported_storage();
   }
@@ -607,7 +698,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   test_wait([[maybe_unused]] arrival_token __token, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__test_wait_status(__token_value(__token)));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__test_wait_status(__token_value(__token)));))
 
     __unsupported_storage();
   }
@@ -620,7 +711,7 @@ public:
   //! @return `true` if the phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool test_wait([[maybe_unused]] arrival_token __token, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait(__token_value(__token));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__test_wait(__token_value(__token));))
 
     __unsupported_storage();
   }
@@ -634,7 +725,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   try_wait([[maybe_unused]] arrival_token __token, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__try_wait_status(__token_value(__token)));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__try_wait_status(__token_value(__token)));))
 
     __unsupported_storage();
   }
@@ -647,7 +738,7 @@ public:
   //! @return `true` if the phase completed, otherwise `false`.
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool try_wait([[maybe_unused]] arrival_token __token, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait(__token_value(__token));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait(__token_value(__token));))
 
     __unsupported_storage();
   }
@@ -686,7 +777,7 @@ public:
   //! @brief Arrives at the barrier and removes one expected arrival from subsequent phases.
   _CCCL_HOST_DEVICE_API void arrive_and_drop()
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (__arrive_and_drop(); return;))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (this->__arrive_and_drop(); return;))
 
     __unsupported_storage();
   }
@@ -700,7 +791,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   test_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__test_wait_phase_status(__phase));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__test_wait_phase_status(__phase));))
 
     __unsupported_storage();
   }
@@ -714,7 +805,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   test_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__test_wait_phase(__phase);))
 
     __unsupported_storage();
   }
@@ -728,7 +819,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API operation_status
   try_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, return_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(__try_wait_phase_status(__phase));))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return operation_status(this->__try_wait_phase_status(__phase));))
 
     __unsupported_storage();
   }
@@ -742,7 +833,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   try_wait([[maybe_unused]] ::cuda::std::uint32_t __phase, ignore_status_t) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_phase(__phase);))
 
     __unsupported_storage();
   }
@@ -773,7 +864,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   test_wait_conditional_phase([[maybe_unused]] ::cuda::std::uint32_t __phase) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __test_wait_conditional_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__test_wait_conditional_phase(__phase);))
 
     __unsupported_storage();
   }
@@ -787,7 +878,7 @@ public:
   [[nodiscard]] _CCCL_HOST_DEVICE_API bool
   try_wait_conditional_phase([[maybe_unused]] ::cuda::std::uint32_t __phase) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (return __try_wait_conditional_phase(__phase);))
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return this->__try_wait_conditional_phase(__phase);))
 
     __unsupported_storage();
   }
@@ -941,8 +1032,10 @@ _CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
 
-//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_barrier`.
-[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t* barrier_native_handle(::cuda::shared_barrier& __b)
+//! @brief Returns the native shared-memory mbarrier address for a `cuda::shared_memory_barrier`.
+template <::cuda::thread_scope _Scope>
+[[nodiscard]] _CCCL_DEVICE_API inline ::cuda::std::uint64_t*
+barrier_native_handle(::cuda::shared_memory_barrier<_Scope>& __b)
 {
   return __b.__native_handle();
 }
@@ -953,4 +1046,4 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 
-#endif // _CUDA___BARRIER_SHARED_BARRIER_H
+#endif // _CUDA___BARRIER_SHARED_MEMORY_BARRIER_H

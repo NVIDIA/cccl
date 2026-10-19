@@ -83,7 +83,7 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 | ``__cccl_ptx_isa``   | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
 +----------------------+-------------------------------------------------------------------------------------------------------------------+
 
-*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``0``.
+*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``NV_TARGET_MINIMUM_SM_INTEGER * 10``.
 
 ----
 

@@ -36,12 +36,6 @@ __device__ T make_instance_for(unsigned rank)
 template <class T, class Group>
 __device__ void test_group(const Group& group)
 {
-  // Exit all threads that are not part of the group.
-  if (!cuda::gpu_thread.is_part_of(group))
-  {
-    return;
-  }
-
   const auto my_rank  = cuda::gpu_thread.rank_as<unsigned>(group);
   const auto my_value = make_instance_for<T>(my_rank);
 
@@ -115,9 +109,18 @@ __device__ void test_type(const Config& config)
   test_group<T>(
     cudax::coop::generic_group{cuda::gpu_thread, warp, cudax::coop::group_by{1}, cudax::coop::lane_synchronizer{}});
   test_group<T>(cudax::coop::generic_group{
-    cuda::gpu_thread, warp, cudax::coop::group_by{cudax::coop::non_exhaustive, 3}, cudax::coop::lane_synchronizer{}});
-  test_group<T>(cudax::coop::generic_group{
     cuda::gpu_thread, warp, cudax::coop::binary_partition{CustomBinaryPartition{}}, cudax::coop::lane_synchronizer{}});
+
+  // Test non-exhaustive groups.
+  if (auto g = cudax::coop::make_group<cudax::coop::generic_group>(
+        cudax::coop::non_exhaustive,
+        cuda::gpu_thread,
+        warp,
+        cudax::coop::group_by{cudax::coop::non_exhaustive, 3},
+        cudax::coop::lane_synchronizer{}))
+  {
+    test_group<T>(*g);
+  }
 }
 
 struct TestKernel

@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/__execution/require.h>

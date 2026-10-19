@@ -106,9 +106,7 @@ So a freshly constructed value still holds whatever ``double`` it was given:
 
 .. code-block:: cuda
 
-    namespace cudax = cuda::experimental;
-
-    cudax::fp64_custom<8, 23> x{1.0 / 3.0};
+    cuda::fp64_custom<8, 23> x{1.0 / 3.0};
     static_cast<double>(x);          // still the full double 1/3, unreduced
     static_cast<double>(x + zero);   // now rounded to 23 mantissa bits
 
@@ -151,8 +149,8 @@ The sizes can come from the template arguments or from a variable:
 
 .. code-block:: cuda
 
-    using fp_dynamic = cudax::fp64_custom<cudax::fp_custom_dynamic_size,
-                                          cudax::fp_custom_dynamic_size>;
+    using fp_dynamic = cuda::fp64_custom<cuda::fp_custom_dynamic_size,
+                                         cuda::fp_custom_dynamic_size>;
 
 ``fp_custom_dynamic_size`` can be used on either axis or both, so one axis can stay fixed while the
 other is swept. The trade is the usual one. With the sizes in the type, the emulation is
@@ -293,7 +291,7 @@ that is itself an ``fp_custom``, and neither does assigning one format to anothe
 
 .. code-block:: cuda
 
-    cudax::fp64_custom<5, 10> x{static_cast<double>(y)};
+    cuda::fp64_custom<5, 10> x{static_cast<double>(y)};
 
 Where several formats are wanted for the same number, the simplest arrangement is to keep the input
 in a ``double`` and build each format from it, as the example does. Note that this route carries the

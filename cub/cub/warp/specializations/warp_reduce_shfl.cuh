@@ -20,9 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
 
 #include <cuda/__cmath/pow2.h>

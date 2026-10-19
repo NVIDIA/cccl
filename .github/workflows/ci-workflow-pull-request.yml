@@ -454,7 +454,8 @@ jobs:
         run: |
           echo "Artifact contents:"
           find artifact -name "*.whl" -type f
-          pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
+          wheel=$(find artifact -name "*.whl" -type f | head -1)
+          pip install "${wheel}[cu13]"
 
       - name: Test CPU-only import
         if: steps.check-wheel.outputs.skip != 'true'

@@ -15,6 +15,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -383,10 +384,9 @@ CUB_TEST("DeviceFind::LowerBound really large input",
     const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
     test_vectorized<value_type>(lower_bound, std_lower_bound, size);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }
 
@@ -401,9 +401,8 @@ CUB_TEST("DeviceFind::UpperBound really large input",
     const auto size  = std::int64_t{1} << GENERATE(30, 31, 32, 33);
     test_vectorized<value_type>(upper_bound, std_upper_bound, size);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }

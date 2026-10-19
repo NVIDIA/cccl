@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/unary_function.h>
+#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__functional/unary_function.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
-
-#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
@@ -57,10 +57,10 @@ CCCL_DEPRECATED _CCCL_API constexpr unary_negate<_Predicate> not1(const _Predica
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
-
 _CCCL_END_NAMESPACE_CUDA_STD
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
 #endif // _CUDA_STD___FUNCTIONAL_UNARY_NEGATE_H

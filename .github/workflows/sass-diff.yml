@@ -112,6 +112,8 @@ jobs:
         run: |
           mkdir -p "${ARTIFACT_ROOT}"
 
+          # LAUNCH_ARGS intentionally contains multiple launch arguments.
+          # shellcheck disable=SC2086
           .devcontainer/launch.sh \
             -d ${LAUNCH_ARGS} \
             --env "AWS_ROLE_ARN=" \
