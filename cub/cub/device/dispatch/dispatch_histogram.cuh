@@ -1788,19 +1788,21 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
       }
 
 #  if _CCCL_HOSTED()
-      if (::std::getenv("CUB_HISTO_DEBUG_GRID"))
-      {
-        ::std::fprintf(
-          stderr,
-          "[CUB_HISTO_DEBUG_GRID] blocks=%u threads=%d total_threads=%lld sm_count=%d "
-          "direct_occ=%d slots=%d\n",
-          direct_atomic_grid_dims.x,
-          direct_atomic_threads_per_block,
-          static_cast<long long>(direct_atomic_grid_dims.x) * direct_atomic_threads_per_block,
-          sm_count,
-          direct_atomic_sm_occupancy,
-          cache_slots_per_channel);
-      }
+      NV_IF_TARGET(NV_IS_HOST, ({
+                     if (::std::getenv("CUB_HISTO_DEBUG_GRID"))
+                     {
+                       ::std::fprintf(
+                         stderr,
+                         "[CUB_HISTO_DEBUG_GRID] blocks=%u threads=%d total_threads=%lld sm_count=%d "
+                         "direct_occ=%d slots=%d\n",
+                         direct_atomic_grid_dims.x,
+                         direct_atomic_threads_per_block,
+                         static_cast<long long>(direct_atomic_grid_dims.x) * direct_atomic_threads_per_block,
+                         sm_count,
+                         direct_atomic_sm_occupancy,
+                         cache_slots_per_channel);
+                     }
+                   }));
 #  endif
 
       if (coop_query_ok && selected_fits)

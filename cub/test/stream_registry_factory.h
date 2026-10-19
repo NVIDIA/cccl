@@ -193,7 +193,10 @@ struct stream_registry_factory_t
   template <typename Kernel>
   CUB_RUNTIME_FUNCTION cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
   {
-    return cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size);
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      ({ return cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size); }),
+      ({ return cudaErrorNotSupported; }))
   }
 };
 
