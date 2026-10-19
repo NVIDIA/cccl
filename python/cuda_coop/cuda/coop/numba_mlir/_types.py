@@ -3153,6 +3153,7 @@ def _strip_source_preamble(src, algo, udf_decls):
 def prepare_ltoir_bundle(
     algorithms: Sequence[Algorithm],
     *,
+    raw_invocables: Sequence[RawCAbiInvocable] = (),
     allow_single: bool = False,
 ) -> bytes | None:
     """Compile distinct provider specializations into one shared LTO artifact.
@@ -3176,13 +3177,16 @@ def prepare_ltoir_bundle(
     algorithms : sequence of Algorithm
         Concrete provider specializations to bundle, using each algorithm's
         stored logical warp width and enclosing block configuration.
+    raw_invocables : sequence of RawCAbiInvocable, optional
+        Uncompiled group helpers to include in the same translation unit.
+        Their callable objects retain the shared artifact after compilation.
     allow_single : bool, optional
         Compile even one distinct representative when true. Defaults to false.
 
     Returns
     -------
     bytes or None
-        Shared provider LTO image. ``None`` means no input algorithms, or fewer
+        Shared provider LTO image. ``None`` means no input providers, or fewer
         than two representatives with ``allow_single=False``.
 
     Raises
@@ -3195,7 +3199,7 @@ def prepare_ltoir_bundle(
         layout name or invalid scratch size/alignment.
     """
 
-    if not algorithms:
+    if not algorithms and not raw_invocables:
         return None
 
     deduped_by_id = OrderedDict()
@@ -3204,12 +3208,16 @@ def prepare_ltoir_bundle(
     all_algos = list(deduped_by_id.values())
 
     compile_contexts = {algo._resolved_compile_context() for algo in all_algos}
+    raw_helpers = list(dict.fromkeys(raw_invocables))
+    compile_contexts.update(raw.compile_context for raw in raw_helpers)
     if len(compile_contexts) != 1:
         raise RuntimeError(
             "coalesced providers must use one exact compiler context"
         )
     compile_context = next(iter(compile_contexts))
     target = _current_compile_target()
+    if any(raw.target != target for raw in raw_helpers):
+        raise RuntimeError("coalesced providers must use one exact target")
     compile_identity = nvrtc.compiler_identity(
         context=compile_context,
         rdc=True,
@@ -3227,7 +3235,7 @@ def prepare_ltoir_bundle(
         rep_for_algo_id[id(algo)] = rep
 
     reps = list(key_to_rep.values())
-    if len(reps) < 2 and not allow_single:
+    if len(reps) + len(raw_helpers) < 2 and not allow_single:
         return None
 
     rep_src = {}
@@ -3276,7 +3284,9 @@ def prepare_ltoir_bundle(
         )
         bodies.append(body.rstrip() + "\n")
 
-    src = buf.getvalue() + "\n".join(bodies)
+    src = buf.getvalue() + "\n".join(
+        [*bodies, *(raw.source for raw in raw_helpers)]
+    )
 
     # Query CUB TempStorage types, not kernel argument types. For example, a
     # transpose Load -> Store contributes two types, even when both calls share
@@ -3321,6 +3331,9 @@ def prepare_ltoir_bundle(
         )
         algo.__dict__["_link_input_suffixes"] = [".ltoir"] * len(extras)
         algo.__dict__["lto_irs"] = extras
+
+    for raw in raw_helpers:
+        raw._temp_file = bundle_temp_file
 
     return ltoir_blob
 
@@ -3507,12 +3520,13 @@ class Invocable:
 class RawCAbiInvocable:
     """Expose generated C-ABI device code as a compiler-local callable.
 
-    Group queries already have a concrete
-    C signature; they do not need the CUB ``Algorithm`` wrapper
-    machinery. Construction validates that signature, compiles
-    the source to LTO IR, and owns a temporary link file until
-    this object is finalized. Numba obtains a callable type lazily
-    from ``_numba_type_`` without global overload registration.
+    Group queries already have a concrete C signature; they do not need the
+    CUB ``Algorithm`` wrapper machinery. Construction validates the signature
+    and retains source for provider collection. The whole-function rewrite can
+    bundle it with other providers before typing. Otherwise the first link-file
+    request compiles it individually. The callable retains its artifact until
+    it is finalized. Numba obtains a callable type lazily from ``_numba_type_``
+    without global overload registration.
 
     Parameters
     ----------
@@ -3611,17 +3625,6 @@ class RawCAbiInvocable:
             else parameter
             for parameter, transform in zip(parameters, abi_transforms)
         )
-        _, lto_ir = nvrtc.compile(
-            cpp=source,
-            rdc=True,
-            code="lto",
-            context=compile_context,
-            **target.nvrtc_kwargs(),
-        )
-
-        from ._compiler._artifacts import make_binary_tempfile
-
-        temp_file = make_binary_tempfile(bytes(cast(bytes, lto_ir)), ".ltoir")
         self.source = source
         self.symbol = symbol
         self.return_type = return_type
@@ -3634,10 +3637,7 @@ class RawCAbiInvocable:
         self.execution_scope = execution_scope
         self.synchronization_scope = synchronization_scope
         self.specialization = None
-        self._temp_file = temp_file
-        self._temp_file_finalizer = weakref.finalize(
-            self, _cleanup_temp_files, (temp_file.name,)
-        )
+        self._temp_file: _NamedTempFile | _SharedTempFile | None = None
         self._numba_type = None
 
     @property
@@ -3650,6 +3650,23 @@ class RawCAbiInvocable:
 
     @property
     def files(self) -> list[str]:
+        if self._temp_file is None:
+            _, lto_ir = nvrtc.compile(
+                cpp=self.source,
+                rdc=True,
+                code="lto",
+                context=self.compile_context,
+                **self.target.nvrtc_kwargs(),
+            )
+
+            from ._compiler._artifacts import make_binary_tempfile
+
+            self._temp_file = make_binary_tempfile(
+                bytes(cast(bytes, lto_ir)), ".ltoir"
+            )
+            self._temp_file_finalizer = weakref.finalize(
+                self, _cleanup_temp_files, (self._temp_file.name,)
+            )
         return [self._temp_file.name]
 
     @property

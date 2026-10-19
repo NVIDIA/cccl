@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile group queries and synchronization helpers to device LTO IR.
+"""Render group queries and synchronization helpers for provider compilation.
 
 A public group descriptor exists only during compilation. Its rank, count,
 membership, and synchronization methods become C-ABI device helpers with the
@@ -230,7 +230,7 @@ def make_group_method_invocable(
     level: str = "thread",
     compile_context: _nvrtc.CompileContext | None = None,
 ) -> RawCAbiInvocable:
-    """Compile one rank, count, membership, or synchronization helper.
+    """Prepare one rank, count, membership, or synchronization helper.
 
     The group planner calls this after validating a method call and
     reuses the result for equivalent calls in the same compilation
@@ -244,8 +244,9 @@ def make_group_method_invocable(
 
     Mapped physical-warp synchronization is rejected because its barrier
     lifetime is not managed here. The planner must resolve supported group and
-    launch facts before calling this factory. Construction compiles LTO IR and
-    returns a compiler-local ``RawCAbiInvocable`` with no operands.
+    launch facts before calling this factory. Construction retains source in
+    a compiler-local ``RawCAbiInvocable`` with no operands. The whole-function
+    rewrite bundles this source with other providers before compiling LTO IR.
 
     Parameters
     ----------
