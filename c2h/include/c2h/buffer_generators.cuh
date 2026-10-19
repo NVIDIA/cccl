@@ -33,6 +33,20 @@ device_buffer_to_host_buffer(const cuda::device_buffer<T>& d_items, std::size_t 
 
   return h_items;
 }
+
+template <typename T>
+[[nodiscard]] cuda::device_buffer<T> make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const T&)
+{
+  return ::c2h::make_device_buffer<T>(stream, num_items, cuda::no_init);
+}
+
+// custom_type_t generation only overwrites key and val, so initialize the remaining members from min.
+template <template <typename> class... Ps>
+[[nodiscard]] cuda::device_buffer<custom_type_t<Ps...>>
+make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const custom_type_t<Ps...>& min)
+{
+  return ::c2h::make_device_buffer<custom_type_t<Ps...>>(stream, num_items, min);
+}
 } // namespace detail
 
 //! @brief Generates random values in @p data using its associated stream.
@@ -89,9 +103,7 @@ template <typename T>
   T min = ::cuda::std::numeric_limits<T>::lowest(),
   T max = ::cuda::std::numeric_limits<T>::max())
 {
-  // gen only overwrites key and val for custom_type_t which may have padding bytes;
-  // initialize the remaining members from min without requiring T to be default constructible.
-  auto d_items = ::c2h::make_device_buffer<T>(stream, num_items, min);
+  auto d_items = ::c2h::detail::make_generator_buffer(stream, num_items, min);
   ::c2h::gen(seed, d_items, min, max);
 
   const auto items_count = d_items.size();
