@@ -73,9 +73,9 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
     return status;
   }
 
-  // Avoid allocating all available memory:
+  // Avoid allocating all available memory, i.e., if info.free < bytes + padding
   constexpr std::size_t padding = 16 * 1024 * 1024; // 16 MiB
-  if (bytes > info.free || info.free - bytes < padding)
+  if (info.free < bytes || info.free - bytes < padding)
   {
     if (get_debug_checked_allocs())
     {
