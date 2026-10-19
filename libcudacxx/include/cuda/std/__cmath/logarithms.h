@@ -21,12 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/abs.h>
+#include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__cmath/abs.h> // IWYU pragma: keep
 #include <cuda/std/__cmath/fpclassify.h>
-#include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__host_stdlib/math.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -201,7 +202,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-[[nodiscard]] _CCCL_API inline __half log10(__half __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __half log10(__half __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_53, (return ::hlog10(__x);), (return __float2half(::cuda::std::log10f(__half2float(__x)));))
@@ -209,7 +210,7 @@ template <class _Integer, enable_if_t<is_integral_v<_Integer>, int> = 0>
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-[[nodiscard]] _CCCL_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline __nv_bfloat16 log10(__nv_bfloat16 __x) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (return ::hlog10(__x);), (return __float2bfloat16(::cuda::std::log10f(__bfloat162float(__x)));))

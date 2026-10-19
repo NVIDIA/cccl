@@ -32,16 +32,18 @@
 #  include <cuda/__memory_resource/get_memory_resource.h>
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__memory/construct_at.h>
 #  include <cuda/std/__type_traits/is_callable.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__type_traits/type_list.h>
 #  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/integer_sequence.h>
+#  include <cuda/std/array>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -110,7 +112,7 @@ class __temporary_storage
   __get_storage(void* __ptr, const _Sizes... __elements_stored) noexcept
   {
     array<void*, 1 + sizeof...(_StoredTypes)> __storage{__ptr};
-    array<size_t, sizeof...(_StoredTypes)> __num_elements{static_cast<size_t>(__elements_stored)...};
+    const array<size_t, sizeof...(_StoredTypes)> __num_elements{static_cast<size_t>(__elements_stored)...};
     return __get_storage<0>(__storage, __num_elements);
   }
 
@@ -133,6 +135,7 @@ class __temporary_storage
                        || __dynamic_accessibility == ::cuda::mr::__memory_accessibility::__host_device,
                      "Memory resources need to provide device accessible memory");
       }
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
       return ::cuda::mr::resource_ref<>{const_cast<__resource_t&>(__resource)};
     }
     else if constexpr (__is_callable_v<::cuda::get_stream_t, const _Policy&>)
@@ -143,7 +146,7 @@ class __temporary_storage
     {
       // If no stream was specified, use the current device.
       int __curr_device{};
-      _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
+      _CCCL_TRY_RUNTIME_API(::cudaGetDevice, "Failed to get current device", &__curr_device);
       return ::cuda::device_default_memory_pool(__curr_device);
     }
   }

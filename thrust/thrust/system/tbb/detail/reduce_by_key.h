@@ -59,14 +59,14 @@ reduce_last_segment_backward(
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  thrust::detail::it_difference_t<InputIterator1> n = keys_last - keys_first;
+  const thrust::detail::it_difference_t<InputIterator1> n = keys_last - keys_first;
 
   // reverse the ranges and consume from the end
   ::cuda::std::reverse_iterator<InputIterator1> keys_first_r(keys_last);
-  ::cuda::std::reverse_iterator<InputIterator1> keys_last_r(keys_first);
+  const ::cuda::std::reverse_iterator<InputIterator1> keys_last_r(keys_first);
   ::cuda::std::reverse_iterator<InputIterator2> values_first_r(values_first + n);
 
-  thrust::detail::it_value_t<InputIterator1> result_key                        = *keys_first_r;
+  const thrust::detail::it_value_t<InputIterator1> result_key                  = *keys_first_r;
   typename partial_sum_type<InputIterator2, BinaryFunction>::type result_value = *values_first_r;
 
   // consume the entirety of the first key's sequence
@@ -204,7 +204,7 @@ struct serial_reduce_by_key_body
     // store to my_keys_result & my_values_result otherwise
 
     // create tail_flags so we can check for a carry
-    thrust::detail::tail_flags<Iterator1, BinaryPredicate> flags =
+    const thrust::detail::tail_flags<Iterator1, BinaryPredicate> flags =
       thrust::detail::make_tail_flags(keys_first, keys_first + n, binary_pred);
 
     if (interval_has_carry(interval_idx, interval_size, num_intervals, flags.begin()))
@@ -283,8 +283,8 @@ template <typename DerivedPolicy,
   BinaryPredicate binary_pred,
   BinaryFunction binary_op)
 {
-  using difference_type = thrust::detail::it_difference_t<Iterator1>;
-  difference_type n     = keys_last - keys_first;
+  using difference_type   = thrust::detail::it_difference_t<Iterator1>;
+  const difference_type n = keys_last - keys_first;
   if (n == 0)
   {
     return ::cuda::std::make_pair(keys_result, values_result);
@@ -306,16 +306,16 @@ template <typename DerivedPolicy,
   // generate O(P) intervals of sequential work
   // XXX oversubscribing is a tuning opportunity
   const unsigned int subscription_rate = 1;
-  difference_type interval_size        = ::cuda::std::min<difference_type>(
+  const difference_type interval_size  = ::cuda::std::min<difference_type>(
     parallelism_threshold, ::cuda::std::max<difference_type>(n, n / (subscription_rate * p)));
-  difference_type num_intervals = reduce_by_key_detail::divide_ri(n, interval_size);
+  const difference_type num_intervals = reduce_by_key_detail::divide_ri(n, interval_size);
 
   // decompose the input into intervals of size N / num_intervals
   // add one extra element to this vector to store the size of the entire result
   thrust::detail::temporary_array<difference_type, DerivedPolicy> interval_output_offsets(0, exec, num_intervals + 1);
 
   // first count the number of tail flags in each interval
-  thrust::detail::tail_flags<Iterator1, BinaryPredicate> tail_flags =
+  const thrust::detail::tail_flags<Iterator1, BinaryPredicate> tail_flags =
     thrust::detail::make_tail_flags(keys_first, keys_last, binary_pred);
   thrust::system::tbb::detail::reduce_intervals(
     exec,
@@ -355,7 +355,7 @@ template <typename DerivedPolicy,
       binary_op),
     ::tbb::simple_partitioner());
 
-  difference_type size_of_result = interval_output_offsets[num_intervals];
+  const difference_type size_of_result = interval_output_offsets[num_intervals];
 
   // sequentially accumulate the carries
   // note that the last interval does not have a carry
@@ -366,7 +366,7 @@ template <typename DerivedPolicy,
     // if it does not have a carry, then we need to ignore carry_value[i]
     if (reduce_by_key_detail::interval_has_carry(i, interval_size, num_intervals, tail_flags.begin()))
     {
-      difference_type output_idx = interval_output_offsets[i + 1];
+      const difference_type output_idx = interval_output_offsets[i + 1];
 
       values_result[output_idx] = binary_op(values_result[output_idx], carries[i]);
     }

@@ -17,7 +17,7 @@
 #include <test_util.h>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -70,7 +70,10 @@ struct fixed_policy_selector
   }
 };
 
-C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_list<large_type_vsmem, large_type_fallb>)
+CUB_TEST("DeviceMerge::MergeKeys large key types",
+         "[merge][device]",
+         CUB_LARGE,
+         c2h::type_list<large_type_vsmem, large_type_fallb>)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = int;

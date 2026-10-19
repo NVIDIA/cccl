@@ -23,6 +23,7 @@
 
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/common_with.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -35,15 +36,17 @@
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/add_pointer.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/ctad_support.h>
-#include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/move.h>
+
+#include <nv/target>
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/detail/libcxx/include/compare>
@@ -407,20 +410,20 @@ public:
 
   template <class _I2>
   _CCCL_API friend constexpr auto iter_swap(const counted_iterator& __x, const counted_iterator<_I2>& __y) noexcept(
-    noexcept(::cuda::std::ranges::__iter_swap_cpo{}(__x.__current_, __y.__current_)))
+    noexcept(::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_)))
     _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_I2, _Iter>)
   {
     _CCCL_ASSERT(__x.__count_ > 0 && __y.__count_ > 0, "Iterators must not be past end of range.");
-    return ::cuda::std::ranges::__iter_swap_cpo{}(__x.__current_, __y.__current_);
+    return ::cuda::std::ranges::iter_swap(__x.__current_, __y.__current_);
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(input_iterator<_I2>)
   [[nodiscard]] _CCCL_API friend constexpr decltype(auto)
-  iter_move(const counted_iterator& __i) noexcept(noexcept(::cuda::std::ranges::__iter_move_cpo{}(__i.base())))
+  iter_move(const counted_iterator& __i) noexcept(noexcept(::cuda::std::ranges::iter_move(__i.base())))
   {
     _CCCL_ASSERT(__i.count() > 0, "Iterator must not be past end of range.");
-    return ::cuda::std::ranges::__iter_move_cpo{}(__i.base());
+    return ::cuda::std::ranges::iter_move(__i.base());
   }
 };
 _CCCL_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);

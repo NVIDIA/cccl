@@ -20,20 +20,34 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/add_rvalue_reference.h>
-#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_constructible.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
+
+#if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_move_constructible : public bool_constant<_CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, add_rvalue_reference_t<_Tp>)>
+{};
+
+template <class _Tp>
+inline constexpr bool is_move_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, add_rvalue_reference_t<_Tp>);
+
+#else // ^^^ Use builtin ^^^ / vvv No builtin
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_constructible : public is_constructible<_Tp, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>
-inline constexpr bool is_move_constructible_v = is_move_constructible<_Tp>::value;
+inline constexpr bool is_move_constructible_v = is_constructible_v<_Tp, add_rvalue_reference_t<_Tp>>;
+
+#endif // No builtin
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

@@ -11,7 +11,7 @@
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_TRANSPOSE trp 0:1:1
+// %RANGE% TUNE_TRANSPOSE trp 0:2:1
 // %RANGE% TUNE_LOAD ld 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
@@ -22,8 +22,10 @@
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
+#  elif TUNE_TRANSPOSE == 1
 #    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
+#  else // TUNE_TRANSPOSE == 2
+#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_VECTORIZE
 #  endif // TUNE_TRANSPOSE
 
 #  if TUNE_LOAD == 0
@@ -37,12 +39,13 @@ struct policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const -> cub::PartitionPolicy
   {
-    return {TUNE_THREADS_PER_BLOCK,
-            TUNE_ITEMS_PER_THREAD,
-            TUNE_LOAD_ALGORITHM,
-            TUNE_LOAD_MODIFIER,
-            cub::BLOCK_SCAN_WARP_SCANS,
-            lookback_delay_policy};
+    return {cub::PartitionAlgorithm::lookback,
+            {TUNE_THREADS_PER_BLOCK,
+             TUNE_ITEMS_PER_THREAD,
+             TUNE_LOAD_ALGORITHM,
+             TUNE_LOAD_MODIFIER,
+             cub::BLOCK_SCAN_WARP_SCANS,
+             lookback_delay_policy}};
   }
 };
 #endif // !TUNE_BASE
@@ -106,7 +109,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
       cuda::execution::tune(policy_selector<T>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DevicePartition::If,
       "If failed",
       d_in,

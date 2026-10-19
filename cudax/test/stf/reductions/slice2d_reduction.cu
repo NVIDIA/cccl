@@ -15,8 +15,8 @@ using namespace cuda::experimental::stf;
 
 __global__ void add(slice<int, 2> s, int val)
 {
-  size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
-  size_t nthreads = blockDim.x * gridDim.x;
+  const size_t tid      = threadIdx.x + blockIdx.x * blockDim.x;
+  const size_t nthreads = blockDim.x * gridDim.x;
 
   for (size_t j = 0; j < s.extent(1); j++)
   {

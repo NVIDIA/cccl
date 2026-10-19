@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
 
 #include <cuda/std/memory>
 

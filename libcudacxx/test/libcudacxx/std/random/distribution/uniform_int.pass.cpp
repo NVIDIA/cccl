@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -28,7 +29,7 @@ struct uniform_int_cdf
 {
   using P = typename cuda::std::uniform_int_distribution<T>::param_type;
 
-  TEST_FUNC double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; a, b) = (floor(x) - a + 1) / (b - a + 1) for a <= x <= b
     //                 = 0 for x < a
@@ -48,7 +49,7 @@ struct uniform_int_cdf
 };
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   [[maybe_unused]] const bool test_constexpr = true;
   using D                                    = cuda::std::uniform_int_distribution<T>;
@@ -65,7 +66,7 @@ TEST_FUNC void test()
 
 // P4037R1: made signed char / unsigned char valid IntType template arguments.
 
-TEST_FUNC void test_p4037r1_small_types()
+TEST_HOST_DEVICE_FUNC void test_p4037r1_small_types()
 {
   using D_s = cuda::std::uniform_int_distribution<signed char>;
   using D_u = cuda::std::uniform_int_distribution<unsigned char>;

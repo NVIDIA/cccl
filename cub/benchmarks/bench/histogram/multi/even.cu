@@ -68,7 +68,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
       cuda::execution::tune(bench_policy_selector<key_t, num_channels, num_active_channels>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       (cub::DeviceHistogram::MultiHistogramEven<num_channels, num_active_channels>),
       "MultiHistogramEven failed",
       d_input,

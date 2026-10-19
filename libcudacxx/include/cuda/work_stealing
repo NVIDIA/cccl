@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__functional/for_each_canceled.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_WORK_STEALING_

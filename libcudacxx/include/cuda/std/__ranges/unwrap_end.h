@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
@@ -35,12 +36,12 @@ _CCCL_REQUIRES(forward_range<_Range>)
 {
   if constexpr (common_range<_Range>)
   {
-    return ::cuda::std::ranges::__end_cpo{}(__range);
+    return ::cuda::std::ranges::end(__range);
   }
   else
   {
-    auto __ret = ::cuda::std::ranges::__begin_cpo{}(__range);
-    ::cuda::std::ranges::__advance_cpo{}(__ret, ::cuda::std::ranges::__end_cpo{}(__range));
+    auto __ret = ::cuda::std::ranges::begin(__range);
+    ::cuda::std::ranges::advance(__ret, ::cuda::std::ranges::end(__range));
     return __ret;
   }
 }

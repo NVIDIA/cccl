@@ -20,14 +20,11 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/unexpect.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
-#include <cuda/std/__type_traits/is_assignable.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -44,7 +41,6 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
-#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/delegate_constructors.h>
 #include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/__utility/forward.h>
@@ -63,7 +59,7 @@ struct __expected_construct_from_invoke_tag
 template <class _Tp, class _Err, bool = is_trivially_destructible_v<_Tp> && is_trivially_destructible_v<_Err>>
 union __expected_union_t
 {
-  struct __empty_cpo
+  struct __empty
   {};
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -118,7 +114,7 @@ union __expected_union_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
-  _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
+  _CCCL_NO_UNIQUE_ADDRESS __empty __empty_;
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
   _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
 };
@@ -126,7 +122,7 @@ union __expected_union_t
 template <class _Tp, class _Err>
 union __expected_union_t<_Tp, _Err, true>
 {
-  struct __empty_cpo
+  struct __empty
   {};
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -177,7 +173,7 @@ union __expected_union_t<_Tp, _Err, true>
       : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
   {}
 
-  _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
+  _CCCL_NO_UNIQUE_ADDRESS __empty __empty_;
   _CCCL_NO_UNIQUE_ADDRESS _Tp __val_;
   _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
 };
@@ -751,7 +747,7 @@ struct __expected_destruct<void, _Err, false, false>
 {
   _CCCL_NO_UNIQUE_ADDRESS union __expected_union_t
   {
-    struct __empty_cpo
+    struct __empty
     {};
 
     _CCCL_API constexpr __expected_union_t() noexcept
@@ -779,7 +775,7 @@ struct __expected_destruct<void, _Err, false, false>
     _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API inline _CCCL_CONSTEXPR_CXX20 ~__expected_union_t() {}
 
-    _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
+    _CCCL_NO_UNIQUE_ADDRESS __empty __empty_;
     _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
   } __union_{};
   bool __has_val_{true};
@@ -828,7 +824,7 @@ struct __expected_destruct<void, _Err, false, true>
   // Using `_CCCL_NO_UNIQUE_ADDRESS` here crashes nvcc
   /* _CCCL_NO_UNIQUE_ADDRESS */ union __expected_union_t
   {
-    struct __empty_cpo
+    struct __empty
     {};
 
     _CCCL_API constexpr __expected_union_t() noexcept
@@ -852,7 +848,7 @@ struct __expected_destruct<void, _Err, false, true>
         : __unex_(::cuda::std::invoke(::cuda::std::forward<_Fun>(__fun), ::cuda::std::forward<_Args>(__args)...))
     {}
 
-    _CCCL_NO_UNIQUE_ADDRESS __empty_cpo __empty_;
+    _CCCL_NO_UNIQUE_ADDRESS __empty __empty_;
     _CCCL_NO_UNIQUE_ADDRESS _Err __unex_;
   } __union_{};
   bool __has_val_{true};

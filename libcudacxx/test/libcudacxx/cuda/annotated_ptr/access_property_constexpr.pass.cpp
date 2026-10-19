@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 // UNSUPPORTED: nvrtc
@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC constexpr bool test_constexpr()
+TEST_HOST_DEVICE_FUNC constexpr bool test_constexpr()
 {
   using namespace cuda;
   access_property a{}; // default constructor

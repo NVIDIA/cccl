@@ -349,10 +349,8 @@ __get_tensor_address(const ::DLTensor& __tensor, tma_interleave_layout __interle
   {
     _CCCL_THROW(::std::invalid_argument, "tensor.data (address) is not sufficiently aligned");
   }
-  if (!::cuda::is_device_accessible(__address, __tensor.device.device_id))
-  {
-    _CCCL_THROW(::std::invalid_argument, "Address is not a valid GPU global address");
-  }
+  _CCCL_ASSERT(::cuda::is_device_accessible(__address, __tensor.device.device_id),
+               "Address is not a valid GPU global address");
   return static_cast<void*>(__address);
 }
 
@@ -434,7 +432,12 @@ __get_tensor_sizes(const ::DLTensor& __tensor, int __rank, ::CUtensorMapDataType
     return __output_strides;
 #    endif // ^^^ _CCCL_DLPACK_BELOW(1, 2) ^^^
   }
-  // TMA ignores the innermost stride (always 1).
+
+  if (__input_strides[__rank - 1] != 1)
+  {
+    _CCCL_THROW(::std::invalid_argument, "The inner most stride is required to be 1");
+  }
+
   for (int __i = __rank - 2; __i >= 0; --__i)
   {
     const auto __next_stride = (__i == __rank - 2) ? int64_t{1} : __input_strides[__i + 1];
@@ -488,8 +491,7 @@ _CCCL_HOST_API inline __tma_box_sizes_array_t __get_box_sizes(
     __total_size *= __box_size;
     __box_sizes_output[__i] = __box_size;
   }
-  const auto __inner_dimension_bytes =
-    ::cuda::__driver::__cutensormap_size_bytes(__box_sizes_output[__rank - 1], __data_type);
+  const auto __inner_dimension_bytes = ::cuda::__driver::__cutensormap_size_bytes(__box_sizes_output[0], __data_type);
   if (__interleave_layout == tma_interleave_layout::none)
   {
     if (__inner_dimension_bytes % 16 != 0)

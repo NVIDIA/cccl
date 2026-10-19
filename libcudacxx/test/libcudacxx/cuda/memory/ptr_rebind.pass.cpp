@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
 
 #include <cuda/memory>
@@ -19,14 +19,14 @@
 #include "test_macros.h"
 
 template <typename T, typename U, typename V>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   uintptr_t ptr_int         = 16;
   [[maybe_unused]] auto ptr = reinterpret_cast<T>(ptr_int);
   static_assert(cuda::std::is_same_v<U, decltype(cuda::ptr_rebind<V>(ptr))>);
 }
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   test<char*, char*, char>();
   test<char*, short*, short>();

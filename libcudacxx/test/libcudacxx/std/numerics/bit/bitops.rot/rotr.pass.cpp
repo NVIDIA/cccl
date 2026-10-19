@@ -43,6 +43,17 @@ TEST_FUNC constexpr T expected_rotr(T value, int count)
   return result;
 }
 
+template <class T>
+TEST_FUNC constexpr T invoke_rotr(T value, int count)
+{
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
+  {
+    DoNotOptimize(value);
+    DoNotOptimize(count);
+  }
+  return cuda::std::rotr(value, count);
+}
+
 template <typename T>
 TEST_FUNC constexpr void test()
 {
@@ -60,7 +71,7 @@ TEST_FUNC constexpr void test()
   {
     for (int count = -34; count <= 34; ++count)
     {
-      auto rotated = cuda::std::rotr(value, count);
+      auto rotated = invoke_rotr(value, count);
       assert(rotated == expected_rotr(value, count));
       assert(rotated == cuda::std::rotl(value, -count));
       assert(cuda::std::rotl(rotated, count) == value);
@@ -75,13 +86,6 @@ TEST_FUNC constexpr bool test()
   test<unsigned>();
   test<unsigned long>();
   test<unsigned long long>();
-  test<uint8_t>();
-  test<uint16_t>();
-  test<uint32_t>();
-  test<uint64_t>();
-  test<size_t>();
-  test<uintmax_t>();
-  test<uintptr_t>();
 #if _CCCL_HAS_INT128()
   test<__uint128_t>();
 #endif // _CCCL_HAS_INT128()

@@ -3,6 +3,9 @@
 
 #include <thrust/sequence.h>
 
+#include <cuda/std/limits>
+#include <cuda/std/type_traits>
+
 #include <nvbench_helper.cuh>
 
 #include "histogram_common.cuh"
@@ -24,10 +27,20 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   const auto num_bins  = state.get_int64("Bins");
   const int num_levels = static_cast<int>(num_bins) + 1;
 
+  // Skip invalid configurations where LevelT (= SampleT) cannot represent the number of bins
+  if constexpr (cuda::std::is_integral_v<SampleT>)
+  {
+    if (num_bins > static_cast<int64_t>(cuda::std::numeric_limits<SampleT>::max()))
+    {
+      state.skip("Number of bins exceeds what LevelT (= SampleT) can represent");
+      return;
+    }
+  }
+
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  SampleT step = (upper_level - lower_level) / num_bins;
+  const SampleT step = (upper_level - lower_level) / num_bins;
   thrust::device_vector<SampleT> levels(num_bins + 1);
 
   // TODO Extract sequence to the helper TU
@@ -54,7 +67,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       cuda::execution::tune(bench_policy_selector<key_t, 1, 1>{})
 #endif // !TUNE_BASE
     );
-    _CCCL_TRY_CUDA_API(
+    _CCCL_TRY_RUNTIME_API(
       cub::DeviceHistogram::HistogramRange,
       "HistogramRange failed",
       d_input,

@@ -6,6 +6,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 
+#include <cuda/__type_traits/is_trivially_copyable.h>
+
 #include <nvbench_helper.cuh>
 
 template <typename T>
@@ -57,7 +59,7 @@ struct non_trivial
 };
 
 static_assert(!::cuda::std::is_trivially_copyable<non_trivial>::value); // as required by the C++ standard
-static_assert(!thrust::is_trivially_relocatable<non_trivial>::value); // thrust uses this check internally
+static_assert(!::cuda::is_trivially_copyable_v<non_trivial>); // thrust uses this check internally
 
 using types =
   nvbench::type_list<nvbench::uint8_t, nvbench::uint16_t, nvbench::uint32_t, nvbench::uint64_t, non_trivial>;

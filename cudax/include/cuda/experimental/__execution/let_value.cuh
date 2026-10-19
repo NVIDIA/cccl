@@ -62,7 +62,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   //! @brief Computes the type of a variant of tuples to hold the results of the
   //! predecessor sender.
   template <class _SetTag, class _Completions, class _Env>
-  using __sndr1_results_t _CCCL_NODEBUG_ALIAS =
+  using __sndr1_results_t _CCCL_NODEBUG =
     __gather_completion_signatures<_Completions, _SetTag, ::cuda::std::__decayed_tuple, __variant>;
 
   // This environment is part of the receiver used to connect the secondary sender.
@@ -85,17 +85,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   }
 
   template <class _SetTag, class _Attrs, class... _Env>
-  using __env2_t _CCCL_NODEBUG_ALIAS =
+  using __env2_t _CCCL_NODEBUG =
     decltype(__let_t::__mk_env2<_SetTag>(::cuda::std::declval<_Attrs>(), ::cuda::std::declval<_Env>()...));
 
   template <class _SetTag, class _Attrs, class _Env>
-  using __join_env2_t _CCCL_NODEBUG_ALIAS = __join_env_t<__env2_t<_SetTag, _Attrs, _Env>, _Env>;
+  using __join_env2_t _CCCL_NODEBUG = __join_env_t<__env2_t<_SetTag, _Attrs, _Env>, _Env>;
 
   template <class _Fn>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr2_fn
   {
     template <class... _As>
-    using __call _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, decay_t<_As>&...>;
+    using __call _CCCL_NODEBUG = __call_result_t<_Fn, decay_t<_As>&...>;
   };
 
   template <class _Rcvr, class _Env2>
@@ -114,7 +114,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     //! @brief For a given set of result datums, compute the type of the secondary
     //! sender's operation state.
     template <class... _As>
-    using __sndr2_opstate_fn _CCCL_NODEBUG_ALIAS =
+    using __sndr2_opstate_fn _CCCL_NODEBUG =
       connect_result_t<::cuda::std::__type_call<__sndr2_fn<_Fn>, _As...>, __sndr2_rcvr_t<_Rcvr, _Env2>>;
 
     __rcvr_with_env_t<_Rcvr, _Env2> __rcvr_;
@@ -124,7 +124,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   template <class _SetTag, class _Fn, class _Rcvr, class _Env2, class _Completions>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Fn, _Rcvr, _Env2>
   {
-    using __sndr2_opstate_t _CCCL_NODEBUG_ALIAS =
+    using __sndr2_opstate_t _CCCL_NODEBUG =
       __gather_completion_signatures<_Completions,
                                      _SetTag,
                                      __state_t::__state_base_t::template __sndr2_opstate_fn,
@@ -243,7 +243,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   struct __domain_transform_fn
   {
     template <class... _As>
-    using __call _CCCL_NODEBUG_ALIAS =
+    using __call _CCCL_NODEBUG =
       __compl_domain_t<_SetTag,
                        ::cuda::std::__type_call<__sndr2_fn<_Fn>, _As...>,
                        __join_env2_t<_SetTag, _Attrs, _Env>...>;
@@ -272,7 +272,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
   }
 
   template <class _SetTag, class _SetTag2, class _Sndr, class _Fn, class... _Env>
-  using __let_completion_domain_t _CCCL_NODEBUG_ALIAS =
+  using __let_completion_domain_t _CCCL_NODEBUG =
     __unless_one_of_t<decltype(__let_t::__get_completion_domain<_SetTag, _SetTag2, _Sndr, _Fn, _Env...>()),
                       __not_a_domain>;
 
@@ -340,13 +340,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
     using __env2_t = __let_t::__join_env2_t<_SetTag, env_of_t<_Sndr>, _Env>;
 
     template <class... _Ts>
-    using __call _CCCL_NODEBUG_ALIAS = ::cuda::std::bool_constant<
+    using __call _CCCL_NODEBUG = ::cuda::std::bool_constant<
       (noexcept(_LIBCUDACXX_AUTO_CAST(declval<_Ts>())) && ...)
       && noexcept(execution::connect(declval<_Fn>()(declval<decay_t<_Ts>&>()...), __receiver_archetype<__env2_t>()))>;
   };
 
   template <class _SetTag, class _Sndr, class _Fn, class _Env>
-  using __has_nothrow_completions _CCCL_NODEBUG_ALIAS =
+  using __has_nothrow_completions _CCCL_NODEBUG =
     __gather_completion_signatures<completion_signatures_of_t<_Sndr, _Env>,
                                    _SetTag,
                                    __has_nothrow_completions_fn<_SetTag, _Sndr, _Fn, _Env>::template __call,

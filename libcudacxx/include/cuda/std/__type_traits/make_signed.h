@@ -20,13 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/copy_cvref.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_enum.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/nat.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__type_traits/copy_cvref.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/integral_constant.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_enum.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cv.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/type_list.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -49,7 +48,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 #if defined(_CCCL_BUILTIN_MAKE_SIGNED)
 
 template <class _Tp>
-using make_signed_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);
+using make_signed_t _CCCL_NODEBUG = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_MAKE_SIGNED ^^^ / vvv !_CCCL_BUILTIN_MAKE_SIGNED vvv
 
@@ -138,14 +137,14 @@ struct __make_signed_impl<__uint128_t, true>
 #  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-using make_signed_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_signed_impl<remove_cv_t<_Tp>>::type>;
+using make_signed_t _CCCL_NODEBUG = __copy_cvref_t<_Tp, typename __make_signed_impl<remove_cv_t<_Tp>>::type>;
 
 #endif // ^^^ !_CCCL_BUILTIN_MAKE_SIGNED !!!
 
 template <class _Tp>
 struct make_signed
 {
-  using type _CCCL_NODEBUG_ALIAS = make_signed_t<_Tp>;
+  using type _CCCL_NODEBUG = make_signed_t<_Tp>;
 };
 
 _CCCL_END_NAMESPACE_CUDA_STD

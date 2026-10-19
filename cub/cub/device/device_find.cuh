@@ -16,6 +16,7 @@
 #include <cub/detail/binary_search_helpers.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/device_for.cuh>
 #include <cub/device/device_transform.cuh>
 #include <cub/device/dispatch/dispatch_find.cuh>
@@ -152,15 +153,10 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      d_temp_storage,
-      temp_storage_bytes,
-      env,
-      [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
+    return detail::dispatch_with_env(
+      d_temp_storage, temp_storage_bytes, env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
         return detail::find::dispatch(
-          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
+          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
       });
   }
 
@@ -499,13 +495,10 @@ struct DeviceFind
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    using default_policy_selector = detail::find::policy_selector_from_types<detail::it_value_t<InputIteratorT>>;
-
-    return detail::dispatch_with_env_and_tuning<default_policy_selector>(
-      env, [&](auto policy_selector, void* storage, size_t& bytes, cudaStream_t stream) {
-        return detail::find::dispatch(
-          storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, policy_selector);
-      });
+    return detail::dispatch_with_env(env, [&](auto tuning_env, void* storage, size_t& bytes, cudaStream_t stream) {
+      return detail::find::dispatch(
+        storage, bytes, d_in, d_out, static_cast<OffsetT>(num_items), scan_op, stream, tuning_env);
+    });
   }
 
   //! @rst
@@ -960,7 +953,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::LowerBoundSortedValues");
 
@@ -1200,7 +1193,7 @@ struct DeviceFind
     ValuesNumItemsT values_num_items,
     OutputIteratorT d_output,
     CompareOpT comp,
-    EnvT env = {})
+    const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFind::UpperBoundSortedValues");
 

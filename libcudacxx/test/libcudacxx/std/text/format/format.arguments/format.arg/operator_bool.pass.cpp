@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: bit field read/write is unsupported in tile code
 
 // <cuda/std/format>
@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class CharT>
-TEST_FUNC void test_operator_bool()
+TEST_HOST_DEVICE_FUNC void test_operator_bool()
 {
   using Context = cuda::std::basic_format_context<CharT*, CharT>;
 
@@ -38,7 +38,7 @@ TEST_FUNC void test_operator_bool()
   assert(!static_cast<bool>(format_arg));
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_operator_bool<char>();
 #if _CCCL_HAS_WCHAR_T()

@@ -19,7 +19,7 @@
 // Marking checkers with _CCCL_NOINLINE greatly improves ptxas compile times.
 
 template <class CharT, class... Args>
-TEST_FUNC _CCCL_NOINLINE bool
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE bool
 check(cuda::std::basic_string_view<CharT> expected, cuda::std::basic_string_view<CharT> fmt, Args&&... args)
 {
   assert(expected.size() < 4096 && "Update the size of the buffer.");
@@ -48,7 +48,7 @@ check(cuda::std::basic_string_view<CharT> expected, cuda::std::basic_string_view
 }
 
 template <class CharT, class... Args>
-TEST_FUNC _CCCL_NOINLINE bool check_exception(
+TEST_HOST_DEVICE_FUNC _CCCL_NOINLINE bool check_exception(
   [[maybe_unused]] cuda::std::string_view what,
   [[maybe_unused]] cuda::std::basic_string_view<CharT> fmt,
   [[maybe_unused]] Args&&... args)

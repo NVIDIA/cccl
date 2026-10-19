@@ -18,9 +18,9 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/functional>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_topk][device]")
+CUB_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_topk][device]", CUB_SMALL)
 {
   // example-begin batched-topk-max-keys
   constexpr int num_segments = 2;
@@ -76,7 +76,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_t
   REQUIRE(keys_out == expected_result_set);
 }
 
-C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_topk][device]")
+CUB_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_topk][device]", CUB_SMALL)
 {
   // example-begin batched-topk-min-keys
   constexpr int num_segments = 2;
@@ -124,7 +124,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_t
   REQUIRE(keys_out == expected_result_set);
 }
 
-C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_topk][device]")
+CUB_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_topk][device]", CUB_SMALL)
 {
   // example-begin batched-topk-max-pairs
   constexpr int num_segments = 2;
@@ -197,7 +197,7 @@ C2H_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
   REQUIRE(keys_out == expected_result_set);
 }
 
-C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_topk][device]")
+CUB_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_topk][device]", CUB_SMALL)
 {
   // example-begin batched-topk-min-pairs
   constexpr int num_segments = 2;
@@ -271,7 +271,9 @@ C2H_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
 
 // The temporary storage size requirement must not assume a particular base-pointer alignment (the public contract
 // states that no special alignment is required). Over-allocate by one byte and offset the base pointer.
-C2H_TEST("cub::DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer", "[batched_topk][device]")
+CUB_TEST("cub::DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage pointer",
+         "[batched_topk][device]",
+         CUB_SMALL)
 {
   constexpr int num_segments = 2;
   constexpr int segment_size = 8;

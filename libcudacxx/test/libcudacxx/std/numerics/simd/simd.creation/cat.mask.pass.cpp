@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.creation], cat (basic_mask)
@@ -27,7 +30,7 @@
 // cat(basic_mask) - single argument
 
 template <typename T>
-TEST_FUNC constexpr void test_cat_one_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_cat_one_mask()
 {
   constexpr cuda::std::size_t Bytes = sizeof(T);
   using Mask4                       = simd::basic_mask<Bytes, simd::fixed_size<4>>;
@@ -45,7 +48,7 @@ TEST_FUNC constexpr void test_cat_one_mask()
 // cat(basic_mask, basic_mask, basic_mask)
 
 template <typename T>
-TEST_FUNC constexpr void test_cat_three_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_cat_three_mask()
 {
   constexpr cuda::std::size_t Bytes = sizeof(T);
   using Mask2                       = simd::basic_mask<Bytes, simd::fixed_size<2>>;
@@ -67,13 +70,13 @@ TEST_FUNC constexpr void test_cat_three_mask()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_cat_one_mask<T>();
   test_cat_three_mask<T>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_type<cuda::std::int16_t>();
   test_type<float>();

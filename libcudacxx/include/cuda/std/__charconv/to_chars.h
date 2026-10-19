@@ -29,11 +29,11 @@
 #include <cuda/std/__charconv/to_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__system_error/errc.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/num_bits.h>
@@ -104,8 +104,8 @@ template <int _Base, class _Tp>
     return ::cuda::ceil_div(__num_bits_v<_Tp> - ::cuda::std::countl_zero(static_cast<_Tp>(__v | 1)), __base_ilog2);
   }
   else if constexpr (_Base == 10)
-  {
-    return (__v > 1) ? ::cuda::ceil_ilog10(__v) : 1;
+  { // the number of digits of __v is ilog10(__v) + 1
+    return (__v > 1) ? ::cuda::ilog10(__v) + 1 : 1;
   }
   else
   {

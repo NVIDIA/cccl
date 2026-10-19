@@ -109,8 +109,9 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
     detail::should_enable_nvtx_for_policy<System1>() || detail::should_enable_nvtx_for_policy<System2>(),
     "thrust::copy");
 
-  System1 system1;
-  System2 system2;
+  // thrust systems must be mutable
+  System1 system1; // NOLINT(misc-const-correctness)
+  System2 system2; // NOLINT(misc-const-correctness)
 
   return thrust::detail::two_system_copy(system1, system2, first, last, result);
 } // end copy()
@@ -124,8 +125,9 @@ OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
     detail::should_enable_nvtx_for_policy<System1>() || detail::should_enable_nvtx_for_policy<System2>(),
     "thrust::copy_n");
 
-  System1 system1;
-  System2 system2;
+  // thrust systems must be mutable
+  System1 system1; // NOLINT(misc-const-correctness)
+  System2 system2; // NOLINT(misc-const-correctness)
 
   return thrust::detail::two_system_copy_n(system1, system2, first, n, result);
 } // end copy_n()

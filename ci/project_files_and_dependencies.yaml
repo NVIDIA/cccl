@@ -54,6 +54,7 @@ projects:
     lite_dependencies: [c2h]
     full_dependencies: [libcudacxx_public]
     include_regexes: ["libcudacxx/"]
+    exclude_regexes: ["^libcudacxx/LICENSE\\.TXT$"]
     exclude_project_files: [libcudacxx_public]
 
   cub_public:
@@ -68,6 +69,7 @@ projects:
     lite_dependencies: [c2h, nvbench_helper]
     full_dependencies: [cub_public]
     include_regexes: ["cub/"]
+    exclude_regexes: ["^cub/LICENSE\\.TXT$"]
     exclude_project_files: [cub_public]
 
   thrust_public:
@@ -82,6 +84,7 @@ projects:
     lite_dependencies: [nvbench_helper]
     full_dependencies: [thrust_public]
     include_regexes: ["thrust/"]
+    exclude_regexes: ["^thrust/LICENSE$"]
     exclude_project_files: [thrust_public]
 
   cudax_public:
@@ -96,6 +99,7 @@ projects:
     lite_dependencies: [c2h, nvbench_helper]
     full_dependencies: [cudax_public]
     include_regexes: ["cudax/"]
+    exclude_regexes: ["^cudax/LICENSE\\.TXT$"]
     exclude_project_files: [cudax_public]
 
   cccl_c_parallel_public:
@@ -137,6 +141,22 @@ projects:
       - "python/cuda_cccl/"
       - "pyproject\\.toml"
 
+  python_tsan:
+    name: "Python (cuda.compute free-threaded ThreadSanitizer)"
+    matrix_project: "python_tsan"
+    # Same v1 sources as `python`, rebuilt with ThreadSanitizer. Must be listed
+    # here or the per-PR python_tsan job is pruned as never-dirty and never runs.
+    # cccl_c_parallel_public covers c/parallel/{src,include}; c/parallel/CMakeLists.txt
+    # is listed directly because the TSan build config (the -fsanitize=thread option)
+    # lives there and is owned by cccl_c_parallel_internal, which this lane otherwise
+    # does not depend on -- without it a change to the TSan flags would skip this lane.
+    lite_dependencies: [cccl_c_parallel_public]
+    full_dependencies: []
+    include_regexes:
+      - "python/cuda_cccl/"
+      - "pyproject\\.toml"
+      - "c/parallel/CMakeLists\\.txt"
+
   cccl_c_stf:
     name: "CCCL C CUDASTF Library"
     matrix_project: "cccl_c_stf"
@@ -148,11 +168,36 @@ projects:
   python:
     name: "Python"
     matrix_project: "python"
-    lite_dependencies: [cccl_c_parallel_public]
+    lite_dependencies: [cccl_c_parallel_public, cccl_c_stf]
     full_dependencies: []
     include_regexes:
-    - "python/"
+    - "python/cuda_cccl/"
+    - "python/cuda_stf/"
     - "pyproject.toml"
+    exclude_regexes: []
+
+  cuda_coop_python:
+    name: "cuda.coop Python"
+    matrix_project: "cuda_coop_python"
+    # The wheel carries these three public header trees at one CCCL revision.
+    # Header changes therefore exercise the focused installed-wheel lane.
+    lite_dependencies:
+      - libcudacxx_public
+      - cub_public
+      - thrust_public
+    full_dependencies: []
+    include_regexes:
+    - "python/cuda_coop/"
+    - "ci/build_cuda_coop_python\\.sh"
+    - "ci/test_cuda_coop_python\\.sh"
+    - "ci/validate_cuda_coop_wheel\\.py"
+    - "ci/windows/build_cuda_coop_python\\.ps1"
+    - "^LICENSE$"
+    - "^cub/LICENSE\\.TXT$"
+    - "^libcudacxx/LICENSE\\.TXT$"
+    - "^thrust/LICENSE$"
+    - "^pyproject\\.toml$"
+    exclude_regexes: []
 
   packaging:
     name: "CCCL Packaging"
@@ -240,6 +285,8 @@ projects:
 
 # Files matching any of these regexes will be ignored globally.
 ignore_regexes:
+  - '^cudax/LICENSE\.TXT$'
+  - '^libcudacxx/test/LICENSE\.TXT$'
   - '.+\.md$'
   - '\.branch_notes/'
   - '\.coderabbit\.yaml'
@@ -259,6 +306,7 @@ ignore_regexes:
   - '\.github/problem-matchers/problem-matcher\.json'
   - '\.github/workflows/backport-prs\.yml'
   - '\.github/workflows/bench.*\.yml'
+  - '\.github/workflows/compile-time-bench\.yml'
   - '\.github/workflows/build-docs\.yml'
   - '\.github/workflows/build-matx\.yml'
   - '\.github/workflows/build-pytorch\.yml'
@@ -278,4 +326,3 @@ ignore_regexes:
   - 'ci/pytorch/'
   - 'ci/rapids/'
   - 'docs/'
-  - 'LICENSE'

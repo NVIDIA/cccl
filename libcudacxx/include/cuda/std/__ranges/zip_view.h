@@ -20,10 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__iterator/zip_common.h>
 #include <cuda/__iterator/zip_iterator.h>
 #include <cuda/std/__algorithm/ranges_min.h>
-#include <cuda/std/__algorithm/ranges_min_element.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__ranges/access.h>
@@ -34,15 +36,11 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__tuple_dir/apply.h>
-#include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
-#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/maybe_const.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -57,13 +55,12 @@ struct __zv_functors
   struct __zip_begin
   {
     template <class... _Types>
-    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<const ::cuda::std::ranges::__begin_cpo&, _Types>...>
-    operator()(_Types&&... __tuple_elements) const
-      noexcept(noexcept(tuple<invoke_result_t<const ::cuda::std::ranges::__begin_cpo&, _Types>...>{
-        ::cuda::std::invoke(::cuda::std::ranges::__begin_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...}))
+    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<const ::cuda::std::ranges::__begin::__fn&, _Types>...>
+    _CCCL_STATIC_CALL_OPERATOR(_Types&&... __tuple_elements) noexcept(
+      noexcept(tuple<invoke_result_t<const ::cuda::std::ranges::__begin::__fn&, _Types>...>{
+        ::cuda::std::ranges::begin(::cuda::std::forward<_Types>(__tuple_elements))...}))
     {
-      return {
-        ::cuda::std::invoke(::cuda::std::ranges::__begin_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...};
+      return {::cuda::std::ranges::begin(::cuda::std::forward<_Types>(__tuple_elements))...};
     }
   };
 
@@ -77,12 +74,12 @@ struct __zv_functors
   struct __zip_end
   {
     template <class... _Types>
-    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<const ::cuda::std::ranges::__end_cpo&, _Types>...>
-    operator()(_Types&&... __tuple_elements) const
-      noexcept(noexcept(tuple<invoke_result_t<::cuda::std::ranges::__end_cpo&, _Types>...>{
-        ::cuda::std::invoke(::cuda::std::ranges::__end_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...}))
+    [[nodiscard]] _CCCL_API constexpr tuple<invoke_result_t<const ::cuda::std::ranges::__end::__fn&, _Types>...>
+    _CCCL_STATIC_CALL_OPERATOR(_Types&&... __tuple_elements) noexcept(
+      noexcept(tuple<invoke_result_t<::cuda::std::ranges::__end::__fn&, _Types>...>{
+        ::cuda::std::ranges::end(::cuda::std::forward<_Types>(__tuple_elements))...}))
     {
-      return {::cuda::std::invoke(::cuda::std::ranges::__end_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...};
+      return {::cuda::std::ranges::end(::cuda::std::forward<_Types>(__tuple_elements))...};
     }
   };
 
@@ -99,16 +96,14 @@ struct __zv_functors
     [[nodiscard]] _CCCL_API static constexpr auto __get_min(_Sizes&&... __tuple_sizes) noexcept
     {
       using __size_type = make_unsigned_t<common_type_t<_Sizes...>>;
-      return ::cuda::std::ranges::__min_cpo{}({static_cast<__size_type>(__tuple_sizes)...});
+      return ::cuda::std::ranges::min({static_cast<__size_type>(__tuple_sizes)...});
     }
 
     template <class... _Types>
-    [[nodiscard]] _CCCL_API constexpr auto operator()(_Types&&... __tuple_elements) const
-      noexcept(noexcept(__zip_size::__get_min(
-        ::cuda::std::invoke(::cuda::std::ranges::__size_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...)))
+    [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Types&&... __tuple_elements) noexcept(
+      noexcept(__zip_size::__get_min(::cuda::std::ranges::size(::cuda::std::forward<_Types>(__tuple_elements))...)))
     {
-      return __zip_size::__get_min(
-        ::cuda::std::invoke(::cuda::std::ranges::__size_cpo{}, ::cuda::std::forward<_Types>(__tuple_elements))...);
+      return __zip_size::__get_min(::cuda::std::ranges::size(::cuda::std::forward<_Types>(__tuple_elements))...);
     }
   };
 
@@ -202,7 +197,7 @@ public:
     else if constexpr (__zip_all_random_access</*const*/ false, _Views...>)
     {
       // MSVC cannot deal with iter_difference_t here
-      using __diff_t _CCCL_NODEBUG_ALIAS = common_type_t<range_difference_t<_Views>...>;
+      using __diff_t _CCCL_NODEBUG = common_type_t<range_difference_t<_Views>...>;
 
       return begin() + static_cast<__diff_t>(size());
     }
@@ -371,7 +366,7 @@ _CCCL_BEGIN_NAMESPACE_CPO(__zip)
 
 struct __fn
 {
-  [[nodiscard]] _CCCL_API constexpr empty_view<tuple<>> operator()() const noexcept
+  [[nodiscard]] _CCCL_API constexpr empty_view<tuple<>> _CCCL_STATIC_CALL_OPERATOR() noexcept
   {
     return empty<tuple<>>;
   }
@@ -381,9 +376,9 @@ struct __fn
 
   _CCCL_TEMPLATE(class... _Ranges)
   _CCCL_REQUIRES((sizeof...(_Ranges) > 0) _CCCL_AND __all_input<_Ranges...>)
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Ranges&&... __rs) const
-    noexcept(noexcept(zip_view<all_t<_Ranges&&>...>{::cuda::std::forward<_Ranges>(__rs)...}))
-      -> decltype(zip_view<all_t<_Ranges&&>...>(::cuda::std::forward<_Ranges>(__rs)...))
+  [[nodiscard]] _CCCL_API constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Ranges&&... __rs) noexcept(
+    noexcept(zip_view<all_t<_Ranges&&>...>{::cuda::std::forward<_Ranges>(__rs)...}))
+    -> decltype(zip_view<all_t<_Ranges&&>...>(::cuda::std::forward<_Ranges>(__rs)...))
   {
     return zip_view<all_t<_Ranges>...>{::cuda::std::forward<_Ranges>(__rs)...};
   }

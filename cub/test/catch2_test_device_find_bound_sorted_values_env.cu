@@ -13,20 +13,20 @@ struct stream_registry_factory_t;
 
 #include <sstream>
 
-#include "catch2_test_env_launch_helper.h"
+#include "catch2_test_launch_helper.h"
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::LowerBoundSortedValues, device_lower_bound_sorted_values);
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFind::UpperBoundSortedValues, device_upper_bound_sorted_values);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::LowerBoundSortedValues, device_lower_bound_sorted_values);
+DECLARE_LAUNCH_WRAPPER_ENV(cub::DeviceFind::UpperBoundSortedValues, device_upper_bound_sorted_values);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace stdexec = cuda::std::execution;
 
 #if TEST_LAUNCH == 0
 
-TEST_CASE("Device LowerBoundSortedValues works with default environment", "[find][device][binary-search]")
+CUB_TEST_CASE("Device LowerBoundSortedValues works with default environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -41,11 +41,11 @@ TEST_CASE("Device LowerBoundSortedValues works with default environment", "[find
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
 
-  c2h::device_vector<int> expected = {0, 2, 2, 4};
+  const c2h::device_vector<int> expected = {0, 2, 2, 4};
   REQUIRE(d_output == expected);
 }
 
-TEST_CASE("Device UpperBoundSortedValues works with default environment", "[find][device][binary-search]")
+CUB_TEST_CASE("Device UpperBoundSortedValues works with default environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -60,13 +60,13 @@ TEST_CASE("Device UpperBoundSortedValues works with default environment", "[find
     cuda::std::less{});
   REQUIRE(error == cudaSuccess);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
 #endif
 
-C2H_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binary-search]")
+CUB_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -96,11 +96,11 @@ C2H_TEST("Device LowerBoundSortedValues uses environment", "[find][device][binar
     cuda::std::less{},
     env);
 
-  c2h::device_vector<int> expected = {0, 2, 2, 4};
+  const c2h::device_vector<int> expected = {0, 2, 2, 4};
   REQUIRE(d_output == expected);
 }
 
-C2H_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]")
+CUB_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binary-search]", CUB_SMALL)
 {
   auto d_range  = c2h::device_vector<int>{0, 2, 4, 6, 8};
   auto d_values = c2h::device_vector<int>{0, 3, 4, 7};
@@ -130,12 +130,12 @@ C2H_TEST("Device UpperBoundSortedValues uses environment", "[find][device][binar
     cuda::std::less{},
     env);
 
-  c2h::device_vector<int> expected = {1, 2, 3, 4};
+  const c2h::device_vector<int> expected = {1, 2, 3, 4};
   REQUIRE(d_output == expected);
 }
 
 #if _CCCL_COMPILER(GCC, >=, 8) // gcc 7 cannot preserve constexpr-ness from p1 to p2
-C2H_TEST("Test FindBoundSortedValuesPolicy properties", "[find][device][binary-search]")
+CUB_TEST("Test FindBoundSortedValuesPolicy properties", "[find][device][binary-search]", CUB_SMALL)
 {
   STATIC_REQUIRE(::cuda::std::semiregular<cub::FindBoundSortedValuesPolicy>);
   STATIC_REQUIRE(::cuda::std::is_aggregate_v<cub::FindBoundSortedValuesPolicy>);

@@ -14,9 +14,11 @@
 #endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__utility/forward.h>
@@ -163,7 +165,7 @@ struct agent_t
 
     const auto partition_comp = Mode::make_partition_comp(compare_op);
 
-    int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x);
+    int d0_thread = ItemsPerThread * static_cast<int>(threadIdx.x); // NOLINT(misc-const-correctness)
     if constexpr (!IsFullTile)
     {
       d0_thread = ::cuda::std::min(d0_thread, total_in_tile);

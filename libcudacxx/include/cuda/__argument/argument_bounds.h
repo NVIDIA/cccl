@@ -24,7 +24,7 @@
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/limits>
+#include <cuda/std/limits> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -147,7 +147,7 @@ public:
 
 #ifndef _CCCL_DOXYGEN_INVOKED
 template <class _Tp>
-_CCCL_HOST_DEVICE runtime_bounds(_Tp, _Tp) -> runtime_bounds<_Tp>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES runtime_bounds(_Tp, _Tp) -> runtime_bounds<_Tp>;
 #endif // _CCCL_DOXYGEN_INVOKED
 
 template <class _Tp>

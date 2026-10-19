@@ -38,12 +38,8 @@ TEST_FUNC constexpr bool tests()
     int* e                                      = array + 5;
     cuda::std::__bounded_iter<Iter> const iter1 = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter> const iter2 = cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
-    assert(cuda::std::__to_address(iter1) == b); // in-bounds iterator
-    assert(cuda::std::__to_address(iter2) == e); // out-of-bounds iterator
-#if TEST_STD_VER > 2017
     assert(cuda::std::to_address(iter1) == b); // in-bounds iterator
     assert(cuda::std::to_address(iter2) == e); // out-of-bounds iterator
-#endif // TEST_STD_VER > 2017
   }
 
   return true;

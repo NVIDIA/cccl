@@ -28,8 +28,8 @@
 #  include <cuda/std/__algorithm/iter_swap.h>
 #  include <cuda/std/__algorithm/reverse.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
 #  include <cuda/std/__iterator/distance.h>
+#  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/reverse_iterator.h>
 #  include <cuda/std/__pstl/dispatch.h>
@@ -39,7 +39,7 @@
 #  include <cuda/std/__utility/move.h>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/for_each_n.h>
+#    include <cuda/std/__pstl/cuda/for_each_n.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -64,7 +64,7 @@ struct __reverse_fn
 
   _CCCL_DEVICE_API constexpr void operator()(const iter_difference_t<_InputIterator> __index) const noexcept
   {
-    ::cuda::std::__iter_swap_cpo{}(__first_ + __index, __last_ + __index);
+    ::cuda::std::iter_swap(__first_ + __index, __last_ + __index);
   }
 };
 

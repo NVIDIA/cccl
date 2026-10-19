@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import cuda.bench as bench
 import cupy as cp
 import numpy as np
 from utils import (
@@ -27,7 +28,6 @@ from utils import (
     generate_uniform_segment_offsets,
 )
 
-import cuda.bench as bench
 from cuda.compute import OpKind, make_segmented_reduce
 
 TYPE_MAP = {k: ALL_TYPES[k] for k in ("I32", "I64", "F32", "F64")}

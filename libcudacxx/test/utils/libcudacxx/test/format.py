@@ -25,21 +25,33 @@ class LibcxxTestFormat(object):
     """
     Custom test format handler for use with the test format use by libc++.
 
-    Tests fall into two categories:
+    Tests fall into four categories:
       FOO.pass.cpp - Executable test which should compile, run, and exit with
                      code 0.
       FOO.fail.cpp - Negative test case which is expected to fail compilation.
       FOO.runfail.cpp - Negative test case which is expected to compile, run,
                         and exit with non-zero exit code.
       FOO.sh.cpp   - A test that uses LIT's ShTest format.
+
+      Build mode retains pass/runfail executables. Replay uses those artifacts,
+      skips compile-fail tests, and runs shell tests normally.
     """
 
-    def __init__(self, cxx, use_verify_for_fail, execute_external, executor, exec_env):
+    def __init__(
+        self,
+        cxx,
+        use_verify_for_fail,
+        execute_external,
+        executor,
+        exec_env,
+        test_executable_mode="normal",
+    ):
         self.cxx = copy.deepcopy(cxx)
         self.use_verify_for_fail = use_verify_for_fail
         self.execute_external = execute_external
         self.executor = executor
         self.exec_env = dict(exec_env)
+        self.test_executable_mode = test_executable_mode
 
     @staticmethod
     def _make_custom_parsers():
@@ -49,6 +61,9 @@ class LibcxxTestFormat(object):
             ),
             IntegratedTestKeywordParser(
                 "FORCE_ALL_WARNINGS.", ParserKind.TAG, initial_value=False
+            ),
+            IntegratedTestKeywordParser(
+                "TREAT_WARNINGS_AS_ERRORS.", ParserKind.TAG, initial_value=False
             ),
             IntegratedTestKeywordParser(
                 "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
@@ -107,6 +122,10 @@ class LibcxxTestFormat(object):
         is_pass_test = name.endswith(".pass.cpp") or name.endswith(".pass.mm")
         is_fail_test = name.endswith(".fail.cpp") or name.endswith(".fail.mm")
         is_runfail_test = name.endswith(".runfail.cpp") or name.endswith(".runfail.mm")
+        is_compile_only_test = test.path_in_suite[:2] == (
+            "cuda",
+            "ptx",
+        ) and name.endswith(".compile.pass.cpp")
         assert is_sh_test or name_ext == ".cpp" or name_ext == ".mm", (
             "non-cpp file must be sh test"
         )
@@ -128,6 +147,18 @@ class LibcxxTestFormat(object):
                 return lit.Test.Result(lit.Test.XFAIL)
             return lit.Test.Result(lit.Test.PASS)
 
+        if self.test_executable_mode == "replay":
+            if is_fail_test:
+                return (
+                    lit.Test.UNSUPPORTED,
+                    "compile-fail test covered by build mode",
+                )
+            if is_compile_only_test:
+                return (
+                    lit.Test.UNSUPPORTED,
+                    "compile-only test covered by build mode",
+                )
+
         # Check that we don't have run lines on tests that don't support them.
         if not is_sh_test and len(script) != 0:
             lit_config.fatal("Unsupported RUN line found in test %s" % name)
@@ -140,11 +171,17 @@ class LibcxxTestFormat(object):
         if is_fail_test:
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
+            test_cxx.treatWarningsAsErrors(False)
 
         force_all_warnings = self._get_parser("FORCE_ALL_WARNINGS.", parsers).getValue()
-
         if force_all_warnings:
             test_cxx.useWarnings(True)
+
+        treat_warnings_as_errors = self._get_parser(
+            "TREAT_WARNINGS_AS_ERRORS.", parsers
+        ).getValue()
+        if treat_warnings_as_errors:
+            test_cxx.treatWarningsAsErrors()
 
         extra_compile_definitions = self._get_parser(
             "ADDITIONAL_COMPILE_DEFINITIONS:", parsers
@@ -231,7 +268,12 @@ class LibcxxTestFormat(object):
             return self._evaluate_fail_test(test, test_cxx, parsers)
         elif is_pass_test:
             return self._evaluate_pass_test(
-                test, tmpBase, lit_config, test_cxx, parsers
+                test,
+                tmpBase,
+                lit_config,
+                test_cxx,
+                parsers,
+                compile_only=is_compile_only_test,
             )
         elif is_runfail_test:
             return self._evaluate_pass_test(
@@ -245,7 +287,14 @@ class LibcxxTestFormat(object):
         libcudacxx.util.cleanFile(exec_path)
 
     def _evaluate_pass_test(
-        self, test, tmpBase, lit_config, test_cxx, parsers, run_should_pass=True
+        self,
+        test,
+        tmpBase,
+        lit_config,
+        test_cxx,
+        parsers,
+        run_should_pass=True,
+        compile_only=False,
     ):
         execDir = os.path.dirname(test.getExecPath())
         source_path = test.getSourcePath()
@@ -253,16 +302,33 @@ class LibcxxTestFormat(object):
         object_path = tmpBase + ".o"
         # Create the output directory if it does not already exist.
         libcudacxx.util.mkdir_p(os.path.dirname(tmpBase))
+        use_precompiled = self.test_executable_mode == "replay"
+        keep_artifact = self.test_executable_mode in ("build", "replay")
         try:
-            # Compile the test
-            cmd, out, err, rc = test_cxx.compileLinkTwoSteps(
-                source_path, out=exec_path, object_file=object_path, cwd=execDir
-            )
-            compile_cmd = cmd
-            if rc != 0:
+            compile_cmd = None
+            if use_precompiled:
+                if not os.path.exists(exec_path):
+                    report = "Missing precompiled executable: %s" % exec_path
+                    return lit.Test.Result(lit.Test.FAIL, report)
+            elif compile_only:
+                cmd, out, err, rc = test_cxx.compile(
+                    source_path, out=object_path, cwd=execDir
+                )
                 report = libcudacxx.util.makeReport(cmd, out, err, rc)
-                report += "Compilation failed unexpectedly!"
-                return lit.Test.Result(lit.Test.FAIL, report)
+                if rc != 0:
+                    report += "Compilation failed unexpectedly!"
+                    return lit.Test.Result(lit.Test.FAIL, report)
+                return lit.Test.Result(lit.Test.PASS, report)
+            else:
+                # Compile the test
+                cmd, out, err, rc = test_cxx.compileLinkTwoSteps(
+                    source_path, out=exec_path, object_file=object_path, cwd=execDir
+                )
+                compile_cmd = cmd
+                if rc != 0:
+                    report = libcudacxx.util.makeReport(cmd, out, err, rc)
+                    report += "Compilation failed unexpectedly!"
+                    return lit.Test.Result(lit.Test.FAIL, report)
             # Run the test
             local_cwd = os.path.dirname(source_path)
             env = None
@@ -283,7 +349,10 @@ class LibcxxTestFormat(object):
                 cmd, out, err, rc = self.executor.run(
                     exec_path, [exec_path], local_cwd, data_files, env
                 )
-                report = "Compiled With: '%s'\n" % " ".join(compile_cmd)
+                if compile_cmd is None:
+                    report = "Using precompiled executable: '%s'\n" % exec_path
+                else:
+                    report = "Compiled With: '%s'\n" % " ".join(compile_cmd)
                 report += libcudacxx.util.makeReport(cmd, out, err, rc)
                 result_expected = (rc == 0) == run_should_pass
                 if result_expected:
@@ -306,7 +375,8 @@ class LibcxxTestFormat(object):
             # Note that cleanup of exec_file happens in `_clean()`. If you
             # override this, cleanup is your responsibility.
             libcudacxx.util.cleanFile(object_path)
-            self._clean(exec_path)
+            if not keep_artifact:
+                self._clean(exec_path)
 
     def _evaluate_fail_test(self, test, test_cxx, parsers):
         source_path = test.getSourcePath()

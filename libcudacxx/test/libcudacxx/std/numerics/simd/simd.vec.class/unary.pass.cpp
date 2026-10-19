@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -37,7 +37,7 @@ TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, 
 // operator++ (pre)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_pre_increment()
+TEST_HOST_DEVICE_FUNC constexpr void test_pre_increment()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{5});
@@ -56,7 +56,7 @@ TEST_FUNC constexpr void test_pre_increment()
 // operator++ (post)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_post_increment()
+TEST_HOST_DEVICE_FUNC constexpr void test_post_increment()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{5});
@@ -75,7 +75,7 @@ TEST_FUNC constexpr void test_post_increment()
 // operator-- (pre)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_pre_decrement()
+TEST_HOST_DEVICE_FUNC constexpr void test_pre_decrement()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{5});
@@ -94,7 +94,7 @@ TEST_FUNC constexpr void test_pre_decrement()
 // operator-- (post)
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_post_decrement()
+TEST_HOST_DEVICE_FUNC constexpr void test_post_decrement()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{5});
@@ -113,7 +113,7 @@ TEST_FUNC constexpr void test_post_decrement()
 // operator!
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_logical_not()
+TEST_HOST_DEVICE_FUNC constexpr void test_logical_not()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -132,7 +132,7 @@ TEST_FUNC constexpr void test_logical_not()
 // operator~
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_bitwise_not()
+TEST_HOST_DEVICE_FUNC constexpr void test_bitwise_not()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{0});
@@ -150,7 +150,7 @@ TEST_FUNC constexpr void test_bitwise_not()
 // operator+
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unary_plus()
+TEST_HOST_DEVICE_FUNC constexpr void test_unary_plus()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{42});
@@ -168,7 +168,7 @@ TEST_FUNC constexpr void test_unary_plus()
 // operator-
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_unary_minus()
+TEST_HOST_DEVICE_FUNC constexpr void test_unary_minus()
 {
   using Vec = simd::basic_vec<T, simd::fixed_size<N>>;
   Vec vec(T{3});
@@ -185,7 +185,7 @@ TEST_FUNC constexpr void test_unary_minus()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_pre_increment<T, N>();
   test_post_increment<T, N>();

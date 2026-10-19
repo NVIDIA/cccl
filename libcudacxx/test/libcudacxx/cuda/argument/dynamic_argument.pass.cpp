@@ -36,6 +36,14 @@ TEST_FUNC constexpr bool test()
     assert(cuda::args::__unwrap(da) == 6);
   }
 
+  // Unannotated scalar values behave like immediate values for runtime bounds
+  {
+    int value = 5;
+    auto da   = cuda::args::immediate{value};
+    assert(cuda::args::__lowest_(value) == cuda::args::__lowest_(da));
+    assert(cuda::args::__highest_(value) == cuda::args::__highest_(da));
+  }
+
   // Uniform scalar with static bounds
   {
     auto da = cuda::args::immediate{5, cuda::args::bounds<1, 8>()};

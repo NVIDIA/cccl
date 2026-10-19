@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/exception_macros.h>
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -38,6 +39,7 @@
 #include <cuda/experimental/__stf/internal/stf_places_extended_exports.cuh>
 #include <cuda/experimental/__stf/internal/stf_places_into_stf_core.cuh>
 
+#include <iterator>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -98,6 +100,14 @@ public:
     }
   }
 
+  //! Move every entry of \p other into this pool (\p other is left in a
+  //! moved-from state)
+  void import_from(linear_pool&& other)
+  {
+    payload.insert(
+      payload.end(), ::std::make_move_iterator(other.payload.begin()), ::std::make_move_iterator(other.payload.end()));
+  }
+
 private:
   ::std::vector<::std::unique_ptr<T>> payload;
 };
@@ -142,11 +152,9 @@ struct cached_localized_array
  */
 struct cached_cute_localized_array
 {
-  template <typename F>
   explicit cached_cute_localized_array(
     exec_place grid_,
     ::cuda::experimental::places::cute_partition_descriptor partition_,
-    F&& delinearize,
     size_t total_size,
     size_t elem_size,
     dim4 data_dims_)
@@ -156,11 +164,17 @@ struct cached_cute_localized_array
       , data_dims(data_dims_)
       , elemsize(elem_size)
   {
-    const auto owner_of = ::std::function<pos4(size_t)>(
-      [partition = this->partition, delinearize = ::cuda::std::forward<F>(delinearize)](size_t ind) {
-        return partition.owner(delinearize(ind));
-      });
-    array = ::std::make_unique<localized_array>(grid, owner_of, total_size, elem_size, data_dims);
+    // Structured tier: the descriptor's ownership mapping is defined by its
+    // value alone, so no caller-supplied delinearization is taken (the
+    // provider uses dim4::index_to_pos, the composite path's linearization
+    // convention -- see slice.cuh).
+    array = ::std::make_unique<localized_array>(
+      grid,
+      ::cuda::experimental::places::make_partition_placement_provider(
+        this->partition, data_dims_, total_size, elem_size),
+      total_size,
+      elem_size,
+      data_dims_);
   }
 
   explicit cached_cute_localized_array(
@@ -182,11 +196,11 @@ struct cached_cute_localized_array
   bool operator==(::cuda::std::tuple<P&...> t) const
   {
     // tuple arguments:
-    // 0: grid, 1: partition, 2: delinearize function, 3: total size,
-    // 4: element size, 5: data dimensions
+    // 0: grid, 1: partition, 2: total size, 3: element size,
+    // 4: data dimensions
     return grid == ::cuda::std::get<0>(t) && partition == ::cuda::std::get<1>(t)
-        && total_size_bytes == ::cuda::std::get<3>(t) * ::cuda::std::get<4>(t) && elemsize == ::cuda::std::get<4>(t)
-        && data_dims == ::cuda::std::get<5>(t);
+        && total_size_bytes == ::cuda::std::get<2>(t) * ::cuda::std::get<3>(t) && elemsize == ::cuda::std::get<3>(t)
+        && data_dims == ::cuda::std::get<4>(t);
   }
 
   exec_place grid;
@@ -221,6 +235,30 @@ public:
       entry.prereqs.clear();
     });
     return result;
+  }
+
+  //! Take every cached allocation from \p other (e.g. the cache of a popped
+  //! nested context), gating any reuse on \p completion.
+  //!
+  //! The localized_array teardown unmaps VMM backing with synchronous driver
+  //! calls that no event can defer, so a nested context's cached arrays must
+  //! not be destroyed with it: they are handed over to the parent so their
+  //! release happens once the parent has synchronized with the nested work
+  //! (the parent's completion depends on the nested context's completion).
+  //! \p completion should carry the nested body's completion events: the
+  //! entries' own prereqs were already harvested by deinit() when the nested
+  //! context was finalized, and a parent-level task reusing an entry must
+  //! wait for the nested graph that last used it.
+  void import_from(composite_slice_cache&& other, const event_list& completion)
+  {
+    other.partition_fn_cache.each([&](auto& entry) {
+      entry.prereqs.merge(completion);
+    });
+    other.cute_partition_cache.each([&](auto& entry) {
+      entry.prereqs.merge(completion);
+    });
+    partition_fn_cache.import_from(mv(other.partition_fn_cache));
+    cute_partition_cache.import_from(mv(other.cute_partition_cache));
   }
 
   void put(const data_place& place,
@@ -258,12 +296,14 @@ public:
       const auto& partition = cute_place->get_partition();
       if (!(data_dims == partition.true_dims()))
       {
-        throw ::std::invalid_argument("cute composite data_place: requested extents do not match the partition's true "
-                                      "extents");
+        _CCCL_THROW(::std::invalid_argument,
+                    "cute composite data_place: requested extents do not match the partition's true "
+                    "extents");
       }
 
-      auto entry = cute_partition_cache.get(
-        place.affine_exec_place(), partition, ::cuda::std::forward<F>(delinearize), total_size, elem_size, data_dims);
+      // The cute tier does not take the delinearize callable: the partition
+      // value fully determines placement (see cached_cute_localized_array).
+      auto entry = cute_partition_cache.get(place.affine_exec_place(), partition, total_size, elem_size, data_dims);
       event_list prereqs = mv(entry->prereqs);
       return {mv(entry->array), mv(prereqs)};
     }

@@ -15,6 +15,10 @@
 #
 #     [bench-only]
 #
+# To skip compile-time benchmark telemetry on unrelated changes, use:
+#
+#     [skip-compile-time-bench]
+#
 # ## Quick start:
 #
 # 1. Add one or more benchmark regexes under benchmarks.filters.cub and/or
@@ -38,7 +42,6 @@ benchmarks:
       # Examples:
       # - 'compute/reduce/sum\.py'
       # - 'compute/transform/.*\.py'
-      # - 'coop/_experimental/bench_warp_reduce\.py'
 
   # Select GPUs. These are limited and shared, be intentional and conservative.
   gpus:
@@ -60,8 +63,11 @@ benchmarks:
   arch: "native"
   nvbench_args: >-
     --timeout 30
-    --skip-time 15e-6
+    --skip-time 5e-6
     --stopping-criterion entropy
     --throttle-threshold 90
     --throttle-recovery-delay 0.15
+    --cold-warmup-runs 10
+    --cold-max-warmup-walltime 0.05
   nvbench_compare_args: ""
+  nvbench_compare_legacy_args: ""

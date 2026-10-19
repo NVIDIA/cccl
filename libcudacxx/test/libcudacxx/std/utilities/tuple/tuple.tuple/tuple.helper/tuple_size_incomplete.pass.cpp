@@ -14,11 +14,8 @@
 //   struct tuple_size<tuple<Types...>>
 //     : public integral_constant<size_t, sizeof...(Types)> { };
 
-// XFAIL: gcc-4.8, gcc-4.9
-
+#include <cuda/std/array>
 #include <cuda/std/tuple>
-// cuda::std::array not supported
-// #include <cuda/std/array>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
@@ -76,8 +73,7 @@ int main(int, char**)
   test_complete<cuda::std::tuple<int&>>();
   test_complete<cuda::std::tuple<int&&, int&, void*>>();
   test_complete<cuda::std::pair<int, long>>();
-  // cuda::std::array not supported
-  // test_complete<cuda::std::array<int, 5> >();
+  test_complete<cuda::std::array<int, 5>>();
   test_complete<Dummy1>();
 
   test_incomplete<void>();

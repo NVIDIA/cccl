@@ -7,7 +7,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 
@@ -51,7 +51,7 @@ type_triple<custom_t>
 // clang-format on
 #endif
 
-C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_list)
+CUB_TEST("Device reduce-by-key works", "[by_key][reduce][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using value_t  = typename params::item_t;
@@ -77,7 +77,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
+  const c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
     C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
@@ -102,7 +102,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     using accum_t = cuda::std::__accumulator_t<op_t, value_t, output_t>;
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_values, segment_offsets, reduction_op, accum_t{}, expected_result.begin());
-    c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
+    const c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test
     c2h::device_vector<offset_t> num_unique_keys(1);
@@ -133,7 +133,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
     c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(
       in_values, segment_offsets, op_t{}, cuda::std::numeric_limits<value_t>::max(), expected_result.begin());
-    c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
+    const c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
     // Run test
     c2h::device_vector<offset_t> num_unique_keys(1);

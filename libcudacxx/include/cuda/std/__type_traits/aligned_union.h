@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/aligned_storage.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -53,7 +52,7 @@ struct aligned_union
 };
 
 template <size_t _Len, class... _Types>
-using aligned_union_t _CCCL_NODEBUG_ALIAS = typename aligned_union<_Len, _Types...>::type;
+using aligned_union_t _CCCL_NODEBUG = typename aligned_union<_Len, _Types...>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

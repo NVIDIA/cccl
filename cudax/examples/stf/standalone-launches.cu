@@ -32,14 +32,14 @@ int main()
 
   for (size_t ind = 0; ind < N; ind++)
   {
-    X[ind] = X0(ind);
+    X[ind] = X0(static_cast<int>(ind));
     Y[ind] = 0;
     Z[ind] = 0;
   }
 
-  auto handle_X = ctx.logical_data(X, {N});
-  auto handle_Y = ctx.logical_data(Y, {N});
-  auto handle_Z = ctx.logical_data(Z, {N});
+  auto handle_X = ctx.logical_data(X, N);
+  auto handle_Y = ctx.logical_data(Y, N);
+  auto handle_Z = ctx.logical_data(Z, N);
 
   ctx.task(handle_X.read(), handle_Y.write(), handle_Z.write())
       ->*[](cudaStream_t s, slice<const int> x, slice<int> y, slice<int> z) {
@@ -48,8 +48,8 @@ int main()
             auto spec = par(1024);
             reserved::launch(spec, exec_place::current_device(), streams, std::tuple{x, y})
                 ->*[] _CCCL_DEVICE(auto t, slice<const int> x, slice<int> y) {
-                      size_t tid      = t.rank();
-                      size_t nthreads = t.size();
+                      const size_t tid      = t.rank();
+                      const size_t nthreads = t.size();
                       for (size_t ind = tid; ind < N; ind += nthreads)
                       {
                         y(ind) = 2 * x(ind);
@@ -58,8 +58,8 @@ int main()
 
             reserved::launch(spec, exec_place::current_device(), streams, std::tuple{y, z})
                 ->*[] _CCCL_DEVICE(auto t, slice<int> y, slice<int> z) {
-                      size_t tid      = t.rank();
-                      size_t nthreads = t.size();
+                      const size_t tid      = t.rank();
+                      const size_t nthreads = t.size();
                       for (size_t ind = tid; ind < N; ind += nthreads)
                       {
                         z(ind) = 3 * y(ind);

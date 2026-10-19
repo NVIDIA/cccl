@@ -18,8 +18,13 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -212,7 +217,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -233,7 +238,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerTh
 //!
 //! @param[in] items
 //!   Data to store
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
@@ -243,7 +248,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+    thread_itr[(ITEM * BlockThreads)] = items[ITEM];
   }
 }
 
@@ -257,7 +262,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //! @striped
 //! @endrst
 //!
-//! @tparam BLOCK_THREADS
+//! @tparam BlockThreads
 //!   The thread block size in threads
 //!
 //! @tparam T
@@ -281,7 +286,7 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!
 //! @param[in] valid_items
 //!   Number of valid items to write
-template <int BLOCK_THREADS, typename T, int ItemsPerThread, typename OutputIteratorT>
+template <int BlockThreads, typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
@@ -291,9 +296,9 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
   {
-    if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
+    if ((ITEM * BlockThreads) + linear_tid < valid_items)
     {
-      thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
+      thread_itr[(ITEM * BlockThreads)] = items[ITEM];
     }
   }
 }
@@ -339,9 +344,9 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread])
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -393,9 +398,9 @@ template <typename T, int ItemsPerThread, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPerThread], int valid_items)
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ItemsPerThread;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ItemsPerThread;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -418,7 +423,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[Ite
 
 //! cub::BlockStoreAlgorithm enumerates alternative algorithms for cub::BlockStore to write a
 //! blocked arrangement of items across a CUDA thread block to a linear segment of memory.
-enum BlockStoreAlgorithm
+enum BlockStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview
@@ -548,7 +553,7 @@ enum BlockStoreAlgorithm
 #if _CCCL_HOSTED() && !defined(_CCCL_DOXYGEN_INVOKED)
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(BlockStoreAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -738,8 +743,7 @@ class BlockStore
 
 public:
   //! @smemstorage{BlockStore}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //! @name Collective constructors
   //! @{
@@ -838,7 +842,7 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_STORE_VECTORIZE)
     {
-      if constexpr (::cuda::std::contiguous_iterator<OutputIteratorT> && ::cuda::std::__can_to_address<OutputIteratorT>)
+      if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<OutputIteratorT>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }

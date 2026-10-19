@@ -6,9 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: a return statement inside a loop is not currently supported in a tile function
-
 // <algorithm>
 
 // template<ForwardIterator Iter1, ForwardIterator Iter2>
@@ -22,6 +19,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class Iter1, class Iter2>
 TEST_FUNC constexpr bool test()
 {
@@ -47,7 +45,8 @@ TEST_FUNC constexpr bool test()
   return true;
 }
 
-int main(int, char**)
+_CCCL_EXEC_CHECK_DISABLE
+TEST_FUNC constexpr bool test()
 {
   test<forward_iterator<const int*>, forward_iterator<const int*>>();
   test<forward_iterator<const int*>, bidirectional_iterator<const int*>>();
@@ -62,19 +61,17 @@ int main(int, char**)
 #if !TEST_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (test<host_only_iterator<const int*>, host_only_iterator<const int*>>();))
 #endif // !TEST_COMPILER(NVRTC)
-#if TEST_CUDA_COMPILATION()
+#if TEST_CUDA_COMPILATION() && !defined(CCCL_FORCE_TILE_TESTS)
   NV_IF_TARGET(NV_IS_DEVICE, (test<device_only_iterator<const int*>, device_only_iterator<const int*>>();))
-#endif // TEST_CUDA_COMPILATION()
+#endif // TEST_CUDA_COMPILATION() && !CCCL_FORCE_TILE_TESTS
 
-  static_assert(test<forward_iterator<const int*>, forward_iterator<const int*>>());
-  static_assert(test<forward_iterator<const int*>, bidirectional_iterator<const int*>>());
-  static_assert(test<forward_iterator<const int*>, random_access_iterator<const int*>>());
-  static_assert(test<bidirectional_iterator<const int*>, forward_iterator<const int*>>());
-  static_assert(test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>>());
-  static_assert(test<bidirectional_iterator<const int*>, random_access_iterator<const int*>>());
-  static_assert(test<random_access_iterator<const int*>, forward_iterator<const int*>>());
-  static_assert(test<random_access_iterator<const int*>, bidirectional_iterator<const int*>>());
-  static_assert(test<random_access_iterator<const int*>, random_access_iterator<const int*>>());
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
 
   return 0;
 }

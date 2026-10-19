@@ -44,7 +44,7 @@ static_assert(is_transparent<cuda::std::ranges::equal_to>);
 
 TEST_FUNC constexpr bool test()
 {
-  auto fn = cuda::std::ranges::equal_to();
+  [[maybe_unused]] auto fn = cuda::std::ranges::equal_to();
 
   assert(fn(MoveOnly(42), MoveOnly(42)));
 

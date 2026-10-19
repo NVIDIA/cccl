@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/cstdint>
 #if _CCCL_CUDA_COMPILATION()
 #  include <cuda/__memory/address_space.h>
-#  include <cuda/__ptx/instructions/get_sreg.h>
+#  include <cuda/__ptx/instructions/get_sreg.h> // IWYU pragma: keep
 #endif // _CCCL_CUDA_COMPILATION()
 
 #include <nv/target>
@@ -62,7 +62,8 @@ _CCCL_END_NAMESPACE_CUDA_DEVICE
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
-[[nodiscard]] _CCCL_API inline bool __is_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool
+__is_valid_address_range(const void* __ptr, ::cuda::std::size_t __n) noexcept
 {
   if (__n == 0)
   {
@@ -89,7 +90,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA
   return (__ptr != nullptr);
 }
 
-[[nodiscard]] _CCCL_API inline bool __is_valid_address(const void* __ptr) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API inline bool __is_valid_address(const void* __ptr) noexcept
 {
   return ::cuda::__is_valid_address_range(__ptr, 0);
 }

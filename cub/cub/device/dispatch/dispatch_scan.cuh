@@ -25,7 +25,10 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
@@ -220,11 +223,11 @@ template <
   typename ScanOpT,
   typename InitValueT,
   typename OffsetT,
-  typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::it_value_t<InputIteratorT>,
-                                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                  cub::detail::it_value_t<InputIteratorT>,
-                                                                                  typename InitValueT::value_type>>,
+  typename AccumT = ::cuda::std::__accumulator_t<ScanOpT,
+                                                 cub::detail::it_value_t<InputIteratorT>,
+                                                 ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
+                                                                  cub::detail::it_value_t<InputIteratorT>,
+                                                                  typename InitValueT::value_type>>,
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename PolicyHub              = detail::scan::
     policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
@@ -387,9 +390,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     // Log init_kernel configuration
     const int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -411,12 +412,17 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       return error;
     }
 
-    // Get SM occupancy for scan_kernel
-    int scan_sm_occupancy;
-    if (const auto error =
-          CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().ThreadsPerBlock())))
+    // Get SM occupancy for scan_kernel (only needed for logging)
+    int scan_sm_occupancy = 0;
+#ifndef CUB_DEBUG_LOG
+    if (detail::logging_enabled())
+#endif // CUB_DEBUG_LOG
     {
-      return error;
+      if (const auto error =
+            CubDebug(launcher_factory.MaxSmOccupancy(scan_sm_occupancy, scan_kernel, policy.Scan().ThreadsPerBlock())))
+      {
+        return error;
+      }
     }
 
     // Get max x-dimension of grid
@@ -430,17 +436,18 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              policy.Scan().ThreadsPerBlock(),
-              (long long) stream,
-              policy.Scan().ItemsPerThread(),
-              scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      // Log scan_kernel configuration
+      _CUB_LOG_KERNEL_LAUNCH(
+        "scan_kernel",
+        scan_grid_size,
+        1,
+        1,
+        policy.Scan().ThreadsPerBlock(),
+        0,
+        stream,
+        ", SM occupancy: %d, epoch: %d",
+        scan_sm_occupancy,
+        start_tile);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -552,50 +559,51 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     int smem_size  = smem_size_1_stage;
 
     // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
-                   // 1 CTA per SM +1 since it tends to improve performance
-                   // TODO(bgruber): make the +1 a tuning parameter
-                   const int max_stages_for_even_workload = static_cast<int>(
-                     ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
+    NV_IF_TARGET(
+      NV_IS_HOST, ({
+        // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
+        // 1 CTA per SM +1 since it tends to improve performance
+        // TODO(bgruber): make the +1 a tuning parameter
+        const int max_stages_for_even_workload = static_cast<int>(
+          ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
 
-                   while (num_stages <= max_stages_for_even_workload)
-                   {
-                     const int next_smem_size = detail::scan::smem_for_stages(
-                       lookahead_policy,
-                       num_stages + 1,
-                       static_cast<int>(kernel_source.InputSize()),
-                       static_cast<int>(kernel_source.InputAlign()),
-                       static_cast<int>(kernel_source.OutputAlign()),
-                       static_cast<int>(kernel_source.AccumSize()),
-                       static_cast<int>(kernel_source.AccumAlign()));
-                     if (next_smem_size > max_dynamic_smem_size)
-                     {
-                       // This number of stages failed, so stay at the current settings
-                       break;
-                     }
+        while (num_stages <= max_stages_for_even_workload)
+        {
+          const int next_smem_size = detail::scan::smem_for_stages(
+            lookahead_policy,
+            num_stages + 1,
+            static_cast<int>(kernel_source.InputSize()),
+            static_cast<int>(kernel_source.InputAlign()),
+            static_cast<int>(kernel_source.OutputAlign()),
+            static_cast<int>(kernel_source.AccumSize()),
+            static_cast<int>(kernel_source.AccumAlign()));
+          if (next_smem_size > max_dynamic_smem_size)
+          {
+            // This number of stages failed, so stay at the current settings
+            break;
+          }
 
-                     smem_size = next_smem_size;
-                     ++num_stages;
-                   }
+          smem_size = next_smem_size;
+          ++num_stages;
+        }
 
-                   if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
-                   {
-                     return error;
-                   }
-                 }))
+        // Set scan kernel's max shared memory limit to the max smem value. We might not use all of it, but it prevents
+        // multiple kernels from overwriting the max shared memory limit by different values.
+        //
+        // TODO: Since CTK 13.2 we can use CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE to allow non-portable shared memory
+        //       sizes, however we need something that works even with older CTKs.
+        if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, max_dynamic_smem_size))
+        {
+          return error;
+        }
+      }))
 
     // Invoke init kernel
     {
       constexpr auto init_kernel_threads = 128;
       const auto init_grid_size          = ::cuda::ceil_div(grid_dim, init_kernel_threads);
 
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-              init_grid_size,
-              init_kernel_threads,
-              (long long) stream);
-#  endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH("DeviceScanInitKernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(init_grid_size,
@@ -627,9 +635,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     {
       const int block_dim = detail::scan::num_total_threads(lookahead_policy);
 
-#  ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
+      _CUB_LOG_KERNEL_LAUNCH("DeviceScanKernel", grid_dim, 1, 1, block_dim, smem_size, stream, "");
 
       if (const auto error = CubDebug(
             launcher_factory(grid_dim, block_dim, smem_size, stream, /* dependent_launch */ ptx_version >= 900)
@@ -714,9 +720,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     constexpr int init_kernel_threads = 128;
     const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
     if (const auto error = CubDebug(
@@ -738,12 +742,17 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
       return error;
     }
 
-    // Get SM occupancy for scan_kernel
-    int scan_sm_occupancy;
-    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-          scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+    // Get SM occupancy for scan_kernel (only needed for logging)
+    int scan_sm_occupancy = 0;
+#ifndef CUB_DEBUG_LOG
+    if (detail::logging_enabled())
+#endif // CUB_DEBUG_LOG
     {
-      return error;
+      if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+            scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+      {
+        return error;
+      }
     }
 
     // Get max x-dimension of grid
@@ -757,17 +766,18 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceScan") DispatchScan
     const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
     for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
     {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              start_tile,
-              scan_grid_size,
-              active_policy.threads_per_block,
-              (long long) stream,
-              active_policy.items_per_thread,
-              scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      // Log scan_kernel configuration
+      _CUB_LOG_KERNEL_LAUNCH(
+        "scan_kernel",
+        scan_grid_size,
+        1,
+        1,
+        active_policy.threads_per_block,
+        0,
+        stream,
+        ", SM occupancy: %d, epoch: %d",
+        scan_sm_occupancy,
+        start_tile);
 
       // Invoke scan_kernel
       if (const auto error = CubDebug(
@@ -982,9 +992,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   constexpr int init_kernel_threads = 128;
   const int init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, init_kernel_threads, (long long) stream);
-#endif // CUB_DEBUG_LOG
+  _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
   // Invoke init_kernel to initialize tile descriptors
   if (const auto error = CubDebug(
@@ -1006,12 +1014,17 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
     return error;
   }
 
-  // Get SM occupancy for scan_kernel
-  int scan_sm_occupancy;
-  if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+  // Get SM occupancy for scan_kernel (only needed for logging)
+  int scan_sm_occupancy = 0;
+#ifndef CUB_DEBUG_LOG
+  if (logging_enabled())
+#endif // CUB_DEBUG_LOG
   {
-    return error;
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          scan_sm_occupancy, kernel_source.ScanKernel(), active_policy.threads_per_block)))
+    {
+      return error;
+    }
   }
 
   // Get max x-dimension of grid
@@ -1025,17 +1038,18 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
   const int scan_grid_size = ::cuda::std::min(num_tiles, max_dim_x);
   for (int start_tile = 0; start_tile < num_tiles; start_tile += scan_grid_size)
   {
-// Log scan_kernel configuration
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-            "per thread, %d SM occupancy\n",
-            start_tile,
-            scan_grid_size,
-            active_policy.threads_per_block,
-            (long long) stream,
-            active_policy.items_per_thread,
-            scan_sm_occupancy);
-#endif // CUB_DEBUG_LOG
+    // Log scan_kernel configuration
+    _CUB_LOG_KERNEL_LAUNCH(
+      "scan_kernel",
+      scan_grid_size,
+      1,
+      1,
+      active_policy.threads_per_block,
+      0,
+      stream,
+      ", SM occupancy: %d, epoch: %d",
+      scan_sm_occupancy,
+      start_tile);
 
     // Invoke scan_kernel
     if (const auto error = CubDebug(
@@ -1163,50 +1177,51 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   int smem_size  = smem_size_1_stage;
 
   // When launched from the host, maximize the number of stages that we can fit inside the shared memory.
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
-                 // 1 CTA per SM +1 since it tends to improve performance
-                 // TODO(bgruber): make the +1 a tuning parameter
-                 const int max_stages_for_even_workload = static_cast<int>(
-                   ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
+  NV_IF_TARGET(
+    NV_IS_HOST, ({
+      // number of stages to have an even workload across all SMs (improves small problem sizes), assuming
+      // 1 CTA per SM +1 since it tends to improve performance
+      // TODO(bgruber): make the +1 a tuning parameter
+      const int max_stages_for_even_workload = static_cast<int>(
+        ::cuda::ceil_div(num_items, static_cast<OffsetT>(sm_count * lookahead_policy.tile_size())) + 1);
 
-                 while (num_stages <= max_stages_for_even_workload)
-                 {
-                   const int next_smem_size = detail::scan::smem_for_stages(
-                     lookahead_policy,
-                     num_stages + 1,
-                     static_cast<int>(kernel_source.InputSize()),
-                     static_cast<int>(kernel_source.InputAlign()),
-                     static_cast<int>(kernel_source.OutputAlign()),
-                     static_cast<int>(kernel_source.AccumSize()),
-                     static_cast<int>(kernel_source.AccumAlign()));
-                   if (next_smem_size > max_dynamic_smem_size)
-                   {
-                     // This number of stages failed, so stay at the current settings
-                     break;
-                   }
+      while (num_stages <= max_stages_for_even_workload)
+      {
+        const int next_smem_size = detail::scan::smem_for_stages(
+          lookahead_policy,
+          num_stages + 1,
+          static_cast<int>(kernel_source.InputSize()),
+          static_cast<int>(kernel_source.InputAlign()),
+          static_cast<int>(kernel_source.OutputAlign()),
+          static_cast<int>(kernel_source.AccumSize()),
+          static_cast<int>(kernel_source.AccumAlign()));
+        if (next_smem_size > max_dynamic_smem_size)
+        {
+          // This number of stages failed, so stay at the current settings
+          break;
+        }
 
-                   smem_size = next_smem_size;
-                   ++num_stages;
-                 }
+        smem_size = next_smem_size;
+        ++num_stages;
+      }
 
-                 if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, smem_size))
-                 {
-                   return error;
-                 }
-               }))
+      // Set scan kernel's max shared memory limit to the max smem value. We might not use all of it, but it prevents
+      // multiple kernels from overwriting the max shared memory limit by different values.
+      //
+      // TODO: Since CTK 13.2 we can use CU_LAUNCH_ATTRIBUTE_SHARED_MEMORY_MODE to allow non-portable shared memory
+      //       sizes, however we need something that works even with older CTKs.
+      if (const auto error = launcher_factory.set_max_dynamic_smem_size_for(scan_kernel, max_dynamic_smem_size))
+      {
+        return error;
+      }
+    }))
 
   // Invoke init kernel
   {
     constexpr auto init_kernel_threads = 128;
     const auto init_grid_size          = ::cuda::ceil_div(num_tiles, init_kernel_threads);
 
-#  ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking DeviceScanInitKernel<<<%d, %d, 0, %lld>>>()\n",
-            init_grid_size,
-            init_kernel_threads,
-            (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceScanInitKernel", init_grid_size, 1, 1, init_kernel_threads, 0, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(init_grid_size, init_kernel_threads, 0, stream, dependent_launch)
@@ -1233,10 +1248,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookahead(
   // Invoke scan kernel
   {
     const int block_dim = detail::scan::num_total_threads(lookahead_policy);
-#  ifdef CUB_DEBUG_LOG
-    _CubLog(
-      "Invoking DeviceScanKernel<<<%d, %d, %d, %lld>>>()\n", scan_grid_dim, block_dim, smem_size, (long long) stream);
-#  endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH("DeviceScanKernel", scan_grid_dim, 1, 1, block_dim, smem_size, stream, "");
 
     if (const auto error = CubDebug(
           launcher_factory(scan_grid_dim, block_dim, smem_size, stream, dependent_launch)
@@ -1382,18 +1394,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceScan to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+    detail::log_dispatch("DeviceScan", cc, policy_getter());
+
     return invoke(
       policy_getter,
       d_temp_storage,

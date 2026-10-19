@@ -15,7 +15,7 @@
 #include <algorithm>
 
 #include "catch2_test_device_merge_sort_common.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 using namespace cub;
 
@@ -36,7 +36,7 @@ struct my_policy_hub
   };
 };
 
-C2H_TEST("DispatchMergeSort::Dispatch: custom policy hub", "[merge][sort][device]")
+CUB_TEST("DispatchMergeSort::Dispatch: custom policy hub", "[merge][sort][device]", CUB_SMALL)
 {
   using key_t              = int;
   using offset_t           = unsigned;

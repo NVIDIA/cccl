@@ -8,14 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: asm statement is unsupported in tile code
 
 #include "test_macros.h"
 #include "utils.h"
 
 template <typename T>
-TEST_FUNC __noinline__ void test_global_implicit_property(T ap, cudaAccessProperty cp)
+TEST_HOST_DEVICE_FUNC __noinline__ void test_global_implicit_property(T ap, cudaAccessProperty cp)
 {
   // Test implicit conversions
   cudaAccessProperty v = ap;
@@ -32,14 +32,14 @@ TEST_FUNC __noinline__ void test_global_implicit_property(T ap, cudaAccessProper
   assert(x == y);
 }
 
-TEST_FUNC __noinline__ void test_global()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_global()
 {
   cuda::access_property o(cuda::access_property::global{});
   uint64_t x = (uint64_t) o;
   unused(x);
 }
 
-TEST_FUNC __noinline__ void test_shared()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_shared()
 {
   (void) cuda::access_property::shared{};
 }

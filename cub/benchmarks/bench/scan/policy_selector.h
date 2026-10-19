@@ -10,6 +10,20 @@
 #if !TUNE_BASE
 #  if !USES_LOOKAHEAD()
 #    include <look_back_helper.cuh>
+
+#    if TUNE_TRANSPOSE == 0
+#      define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
+#      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
+#    else // TUNE_TRANSPOSE == 1
+#      define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
+#      define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
+#    endif // TUNE_TRANSPOSE
+
+#    if TUNE_LOAD == 0
+#      define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#    else // TUNE_LOAD == 1
+#      define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#    endif // TUNE_LOAD
 #  endif // !USES_LOOKAHEAD()
 
 template <typename AccumT>
@@ -21,11 +35,7 @@ struct policy_selector
     return {cub::ScanAlgorithm::lookahead,
             cub::ScanLookbackPolicy{},
             cub::ScanLookaheadPolicy{
-              TUNE_NUM_REDUCE_SCAN_WARPS,
-              TUNE_ITEMS_PLUS_ONE - 1,
-              TUNE_NUM_LOOKBACK_ITEMS,
-              TUNE_LOOKBACK_STAGES,
-              TUNE_BLOCK_IDX_STAGES}};
+              TUNE_NUM_REDUCE_SCAN_WARPS, TUNE_ITEMS_PLUS_ONE - 1, TUNE_NUM_LOOKBACK_ITEMS, TUNE_LOOKBACK_STAGES}};
 #  else
     return cub::detail::scan::make_mem_scaled_lookback_scan_policy(
       TUNE_THREADS,

@@ -30,11 +30,7 @@
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstddef>
@@ -67,6 +63,7 @@ _CCCL_API void __insertion_sort_move(
       {
         ::cuda::std::__construct_at(__j2, ::cuda::std::move(*__i2));
         __d.template __incr<value_type>();
+        // NOLINTNEXTLINE(bugprone-inc-dec-in-conditions)
         for (--__j2; __i2 != __first2 && __comp(*__first1, *--__i2); --__j2)
         {
           *__j2 = ::cuda::std::move(*__i2);
@@ -222,6 +219,7 @@ _CCCL_API void __stable_sort_move(
     ::cuda::std::__insertion_sort_move<_AlgPolicy, _Compare>(__first1, __last1, __first2, __comp);
     return;
   }
+  // NOLINTNEXTLINE(misc-const-correctness)
   typename iterator_traits<_RandomAccessIterator>::difference_type __l2 = __len / 2;
   _RandomAccessIterator __m                                             = __first1 + __l2;
   ::cuda::std::__stable_sort<_AlgPolicy, _Compare>(__first1, __m, __comp, __l2, __first2, __l2);
@@ -230,10 +228,10 @@ _CCCL_API void __stable_sort_move(
 }
 
 template <class _Tp>
-struct __stable_sort_switch
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL unsigned __stable_sort_switch() noexcept
 {
-  static const unsigned value = 128 * is_trivially_copy_assignable_v<_Tp>;
-};
+  return 128 * is_trivially_copy_assignable_v<_Tp>;
+}
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
 _CCCL_API void __stable_sort(
@@ -258,17 +256,19 @@ _CCCL_API void __stable_sort(
       }
       return;
   }
-  if (__len <= static_cast<difference_type>(__stable_sort_switch<value_type>::value))
+  if (__len <= static_cast<difference_type>(::cuda::std::__stable_sort_switch<value_type>()))
   {
     ::cuda::std::__insertion_sort<_AlgPolicy, _Compare>(__first, __last, __comp);
     return;
   }
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   typename iterator_traits<_RandomAccessIterator>::difference_type __l2 = __len / 2;
   _RandomAccessIterator __m                                             = __first + __l2;
   if (__len <= __buff_size)
   {
     __destruct_n __d(0);
+    // NOLINTNEXTLINE(misc-const-correctness)
     unique_ptr<value_type, __destruct_n&> __h2(__buff, __d);
     ::cuda::std::__stable_sort_move<_AlgPolicy, _Compare>(__first, __m, __comp, __l2, __buff);
     __d.__set(__l2, (value_type*) nullptr);
@@ -289,10 +289,11 @@ _CCCL_API void __stable_sort_impl(_RandomAccessIterator __first, _RandomAccessIt
   using value_type      = typename iterator_traits<_RandomAccessIterator>::value_type;
   using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
 
+  // NOLINTNEXTLINE(misc-const-correctness)
   difference_type __len = __last - __first;
   pair<value_type*, ptrdiff_t> __buf(0, 0);
   unique_ptr<value_type, __return_temporary_buffer> __h;
-  if (__len > static_cast<difference_type>(__stable_sort_switch<value_type>::value))
+  if (__len > static_cast<difference_type>(::cuda::std::__stable_sort_switch<value_type>()))
   {
     __buf = ::cuda::std::get_temporary_buffer<value_type>(__len);
     __h.reset(__buf.first);

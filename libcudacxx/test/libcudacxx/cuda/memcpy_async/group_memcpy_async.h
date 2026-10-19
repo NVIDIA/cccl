@@ -29,7 +29,7 @@ struct storage
   constexpr static int size = 67;
   static_assert(size >= thread_block_size);
 
-  TEST_FUNC storage(T val = 0)
+  TEST_HOST_DEVICE_FUNC storage(T val = 0)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -40,7 +40,7 @@ struct storage
   storage(const storage&)            = default;
   storage& operator=(const storage&) = default;
 
-  TEST_FUNC friend bool operator==(const storage& lhs, const storage& rhs)
+  TEST_HOST_DEVICE_FUNC friend bool operator==(const storage& lhs, const storage& rhs)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -53,7 +53,7 @@ struct storage
     return true;
   }
 
-  TEST_FUNC friend bool operator==(const storage& lhs, const T& rhs)
+  TEST_HOST_DEVICE_FUNC friend bool operator==(const storage& lhs, const T& rhs)
   {
     for (cuda::std::size_t i = 0; i < size; ++i)
     {
@@ -195,7 +195,7 @@ TEST_DEVICE_FUNC __noinline__ void test_select_destination()
 }
 
 template <class T>
-TEST_FUNC __noinline__ void test_select_source()
+TEST_HOST_DEVICE_FUNC __noinline__ void test_select_source()
 {
   NV_IF_TARGET(
     NV_IS_DEVICE,

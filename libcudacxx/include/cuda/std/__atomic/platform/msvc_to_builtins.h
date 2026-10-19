@@ -63,7 +63,7 @@ inline int __stronger_order_msvc(int __a, int __b)
   return __xform[__a < __b ? __a : __b];
 }
 
-static inline void __atomic_signal_fence(int __memorder)
+inline void __atomic_signal_fence(int __memorder)
 {
   if (__memorder != __ATOMIC_RELAXED)
   {
@@ -71,7 +71,7 @@ static inline void __atomic_signal_fence(int __memorder)
   }
 }
 
-static inline void __atomic_thread_fence(int __memorder)
+inline void __atomic_thread_fence(int __memorder)
 {
   if (__memorder != __ATOMIC_RELAXED)
   {
@@ -267,7 +267,7 @@ bool __atomic_compare_exchange(
   _Type volatile* __ptr, _Type* __expected, const _Type* __desired, bool, int __success_memorder, int __failure_memorder)
 {
   bool success = false;
-  switch (__stronger_order_msvc(__success_memorder, __failure_memorder))
+  switch (::cuda::std::__stronger_order_msvc(__success_memorder, __failure_memorder))
   {
     case __ATOMIC_RELEASE:
       _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER();

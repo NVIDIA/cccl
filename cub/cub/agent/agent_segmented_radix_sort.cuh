@@ -16,8 +16,10 @@
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -185,7 +187,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
@@ -198,7 +200,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
@@ -219,7 +221,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {
@@ -232,7 +234,7 @@ struct AgentSegmentedRadixSort
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
-        int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
+        const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
 
         if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
         {

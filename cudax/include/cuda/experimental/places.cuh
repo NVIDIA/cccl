@@ -25,6 +25,8 @@
 #include <cuda/experimental/__places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__places/exec/green_context.cuh>
 #include <cuda/experimental/__places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__places/exec/locality_domain.cuh>
+#include <cuda/experimental/__places/exec/locality_domain_view.cuh>
 #include <cuda/experimental/__places/localized_array.cuh>
 #include <cuda/experimental/__places/machine.cuh>
 #include <cuda/experimental/__places/partitions/blocked_partition.cuh>

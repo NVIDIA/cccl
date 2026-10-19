@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
 
 #include <cuda/memory>
 #include <cuda/std/cassert>
@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   uintptr_t ptr_int = 10;
   auto ptr          = reinterpret_cast<int*>(ptr_int);

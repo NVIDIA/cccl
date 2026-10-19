@@ -38,7 +38,7 @@ _CCCL_BEGIN_NAMESPACE_CUDA_MR
 template <class _Derived>
 struct memory_resource_base
 {
-  [[nodiscard]] _CCCL_API constexpr const _Derived& query(const __get_memory_resource_t&) const noexcept
+  [[nodiscard]] _CCCL_API constexpr const _Derived& query(const get_memory_resource_t&) const noexcept
   {
     return static_cast<const _Derived&>(*this);
   }

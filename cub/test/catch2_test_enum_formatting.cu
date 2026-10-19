@@ -1,7 +1,20 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <cub/cub.cuh>
+#include <cub/agent/agent_histogram.cuh>
+#include <cub/agent/agent_radix_sort_onesweep.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <sstream>
 #include <string_view>
@@ -10,7 +23,7 @@
 #  include <format>
 #endif // __cpp_lib_format >= 201907L
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 struct OStreamOperatorTester
 {
@@ -195,7 +208,7 @@ void do_test(const Tester& tester)
   }
 }
 
-C2H_TEST("Enum formatting", "")
+CUB_TEST("Enum formatting", "", CUB_SMALL)
 {
   do_test(OStreamOperatorTester{});
 #if __cpp_lib_format >= 201907L

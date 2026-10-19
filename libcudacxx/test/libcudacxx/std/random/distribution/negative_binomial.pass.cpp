@@ -7,10 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: dynamic memory allocation is unsupported in tile code
 //
 // REQUIRES: long_tests
+
+// UNSUPPORTED: force-tile
+// error: dynamic allocation is not supported in tile mode
 
 // <random>
 
@@ -29,7 +30,7 @@ struct negative_binomial_cdf
 {
   using P = typename cuda::std::negative_binomial_distribution<T>::param_type;
 
-  TEST_FUNC double operator()(double x, const P& p) const
+  TEST_HOST_DEVICE_FUNC double operator()(double x, const P& p) const
   {
     // CDF: F(x; k, p) = I_p(k, x+1) where I_p is the regularized incomplete beta function
     // This represents P(X <= x) where X is the number of failures before k successes
@@ -44,7 +45,7 @@ struct negative_binomial_cdf
 };
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   // Cannot be constexpr due to gamma_distribution and log/exp
   [[maybe_unused]] const bool test_constexpr = false;

@@ -16,13 +16,13 @@
 #include "test_macros.h"
 
 // Provided by the selected checker.
-TEST_FUNC bool check(...);
-TEST_FUNC bool check_exception(...);
+TEST_HOST_DEVICE_FUNC bool check(...);
+TEST_HOST_DEVICE_FUNC bool check_exception(...);
 
 // Using a const ref for world and universe so a string literal will be a character array.
 // When passed as character array W and U have different types.
 template <class CharT, class W, class U>
-TEST_FUNC void test_string(const W& world, const U& universe)
+TEST_HOST_DEVICE_FUNC void test_string(const W& world, const U& universe)
 {
   // *** Valid input tests ***
   // Unused argument is ignored. TODO FMT what does the Standard mandate?
@@ -141,7 +141,7 @@ TEST_FUNC void test_string(const W& world, const U& universe)
 }
 
 template <class CharT>
-TEST_FUNC void test_string()
+TEST_HOST_DEVICE_FUNC void test_string()
 {
   const auto& world    = TEST_STRLIT(CharT, "world");
   const auto& universe = TEST_STRLIT(CharT, "universe");
@@ -168,7 +168,7 @@ TEST_FUNC void test_string()
   //   std::basic_string_view<CharT>{world}, std::basic_string_view<CharT>{universe});
 }
 
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test_string<char>();
 #if _CCCL_HAS_WCHAR_T()

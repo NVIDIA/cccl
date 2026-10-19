@@ -80,8 +80,8 @@ _CCCL_HOST_DEVICE Pointer uninitialized_copy_with_allocator(
     using IteratorTuple = ::cuda::std::tuple<InputIterator, Pointer>;
     using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
-    ZipIterator begin = thrust::make_zip_iterator(first, result);
-    ZipIterator end   = begin;
+    const ZipIterator begin = thrust::make_zip_iterator(first, result);
+    ZipIterator end         = begin;
 
     // get a zip_iterator pointing to the end
     const thrust::detail::it_difference_t<InputIterator> n = ::cuda::std::distance(first, last);

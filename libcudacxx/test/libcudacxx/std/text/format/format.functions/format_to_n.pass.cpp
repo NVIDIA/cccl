@@ -7,6 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a __host__ __device__ function in tile is not allowed
+
+// UNSUPPORTED: enable-tile
+// nvbug6537343: error: Internal Compiler Error (tile codegen): "Static local variables not handled yet."
+
 // <cuda/std/format>
 
 // template<class Out, class... Args>

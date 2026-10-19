@@ -20,17 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conjunction.h>
-#include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_base_of.h>
-#include <cuda/std/__type_traits/is_destructible.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/negation.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/declval.h>
+#include <cuda/std/__type_traits/is_base_of.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_destructible.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_same.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/remove_cvref.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -55,8 +52,8 @@ struct __is_invalid_base_to_derived_cast
   static_assert(is_reference_v<_To>, "Wrong specialization");
   using _RawFrom = remove_cvref_t<_From>;
   using _RawTo   = remove_cvref_t<_To>;
-  static const bool value =
-    _And<_IsNotSame<_RawFrom, _RawTo>, is_base_of<_RawFrom, _RawTo>, _Not<__cccl_is_constructible<_RawTo, _From>>>::value;
+  static constexpr bool value =
+    !is_same_v<_RawFrom, _RawTo> && is_base_of_v<_RawFrom, _RawTo> && !__cccl_is_constructible<_RawTo, _From>::value;
 };
 
 template <class _To, class _From>
@@ -70,8 +67,8 @@ struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&>
 {
   using _RawFrom = remove_cvref_t<_FromRef>;
   using _RawTo   = remove_cvref_t<_ToRef>;
-  static const bool value =
-    _And<_Not<is_function<_RawTo>>, _Or<_IsSame<_RawFrom, _RawTo>, is_base_of<_RawTo, _RawFrom>>>::value;
+  static constexpr bool value =
+    !is_function_v<_RawTo> && (is_same_v<_RawFrom, _RawTo> || is_base_of_v<_RawTo, _RawFrom>);
 };
 
 struct __is_constructible_helper

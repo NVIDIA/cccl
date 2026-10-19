@@ -15,7 +15,7 @@ Almost all of CUB's device-wide APIs come in two flavors:
 * the traditional two-phase style that requires calling the API twice and managing temporary storage explicitly,
 * and the newer single-phase style where temporary storage is obtained from a memory resource in the execution environment.
 
-Some APIs that do not require any temporary storage may have a traditional single-phase overload in addition to an newer environment one.
+Some APIs that do not require any temporary storage may also have a traditional single-phase form in addition to the newer environment-based one.
 
 .. _device-temp-storage:
 
@@ -54,7 +54,7 @@ Example pattern:
 Environment API (single phase)
 ++++++++++++++++++++++++++++++
 
-Environment-based overloads are available for all CUB device-wide algorithms.
+The environment-based API is available for all CUB device-wide algorithms.
 They remove the split of query/execute phase and manually obtaining the temporary storage.
 Instead, the temporary storage is automatically requested from a memory resource queried from the execution environment argument.
 The environment supports further properties like passing a stream or an execution requirement in addition to a memory resource.
@@ -80,6 +80,29 @@ Example pattern:
    :dedent:
    :start-after: example-begin env-overload-run
    :end-before: example-end env-overload-run
+
+Further information on CUB execution environments can be found in
+:ref:`Execution Environments <cub-environment>`.
+
+
+NVTX
+++++
+
+The `NVIDIA Tools Extension SDK (NVTX) <https://nvidia.github.io/NVTX/>`_ is a cross-platform API
+for annotating source code to provide contextual information to developer tools.
+All device-scope algorithms in CUB are annotated with NVTX ranges,
+allowing their start and stop to be visualized in profilers
+like `NVIDIA Nsight Systems <https://developer.nvidia.com/nsight-systems>`_.
+Only the public APIs available in the ``<cub/device/device_xxx.cuh>`` headers are annotated,
+excluding direct calls to the dispatch layer.
+For two phase APIs, the NVTX range is not emitted when querying the temporary storage size, only during algorithm execution.
+For single phase APIs, the NVTX range is emitted for the entire duration of the algorithm call.
+CCCL's NVTX annotations can be disabled by defining ``CCCL_NVTX_DISABLE`` during compilation.
+To disable NVTX annotations in general, define ``NVTX_DISABLE`` during compilation.
+When CUB device algorithms are called on a stream during
+`graph capture <https://developer.nvidia.com/blog/cuda-graphs/>`_,
+the NVTX range is reported for the duration of capture (where no execution happens),
+and not when a captured graph is executed later (the actual execution).
 
 
 API overview

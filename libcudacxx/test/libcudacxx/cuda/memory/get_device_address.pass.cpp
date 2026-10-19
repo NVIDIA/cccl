@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: a non-__tile__ variable cannot be used in tile code
 
 #include <cuda/__runtime/ensure_current_context.h>
 #include <cuda/devices>
@@ -88,7 +88,7 @@ void test_explicit_device_with_different_current_device()
 #endif // !TEST_COMPILER(NVRTC)
 
 template <class T>
-TEST_FUNC void test(T& object)
+TEST_HOST_DEVICE_FUNC void test(T& object)
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE, (assert(cuda::std::addressof(object) == cuda::get_device_address(object));), (test_host(object);))

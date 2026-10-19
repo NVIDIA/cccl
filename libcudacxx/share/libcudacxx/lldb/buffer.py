@@ -9,15 +9,12 @@ from __future__ import annotations
 import re
 from typing import NamedTuple
 
+import cccl_common
 import memory_resource
 
 import lldb
 
 _BUFFER_PATTERN = re.compile(r"^cuda::buffer<.+>$")
-# LLDB sees cudaMemcpyKind through cudaMemcpy's declaration, but its expression
-# parser does not necessarily import the enum constants. This is the value of
-# cudaMemcpyDefault from the CUDA Runtime API.
-_CUDA_MEMCPY_DEFAULT = 4
 InternalDict = dict[str, object]
 
 
@@ -32,13 +29,12 @@ class BufferInfo(NamedTuple):
 
 
 def is_cuda_buffer(value_type: lldb.SBType, _internal_dict: InternalDict) -> bool:
-    type_name = (
-        value_type.GetCanonicalType().GetUnqualifiedType().GetDisplayTypeName() or ""
-    )
+    type_name = cccl_common.canonical_type_name(value_type)
     return _BUFFER_PATTERN.fullmatch(type_name) is not None
 
 
 def _buffer_info(value: lldb.SBValue) -> BufferInfo | None:
+    value = cccl_common.strip_reference_value(value)
     value = value.GetNonSyntheticValue()
     storage = value.GetChildMemberWithName("__buf_")
     if not storage.IsValid():
@@ -106,71 +102,45 @@ class BufferSyntheticProvider:
     """Expose cuda::buffer elements as LLDB synthetic children."""
 
     def __init__(self, value: lldb.SBValue, _internal_dict: InternalDict) -> None:
+        self.declared_type = value.GetType()
+        value = cccl_common.strip_reference_value(value)
         self.value = value.GetNonSyntheticValue()
-        self.host_copy = lldb.SBValue()
-        self.clear()
+        self.stop_id: int | None = None
         self.update()
 
-    def __del__(self) -> None:
-        self.clear()
-
-    def _evaluate(self, expression: str) -> lldb.SBValue:
-        frame = self.value.GetFrame()
-        if not frame.IsValid():
-            return lldb.SBValue()
-        options = lldb.SBExpressionOptions()
-        options.SetIgnoreBreakpoints(True)
-        options.SetUnwindOnError(True)
-        return frame.EvaluateExpression(expression, options)
-
-    def clear(self) -> None:
-        """Release the staged copy and reset all cached buffer information."""
-        if self.host_copy.IsValid():
-            address = self.host_copy.GetValueAsUnsigned(0)
-            if address:
-                self._evaluate(f"(void)free((void*){address:#x})")
-        self.host_copy = lldb.SBValue()
-        self.size = 0
-        self.data_address = 0
-        self.value_type = lldb.SBType()
-        self.value_size = 0
-
-    def _copy_to_host(self) -> bool:
-        if self.size == 0:
-            return True
-
-        byte_count = self.size * self.value_size
-        self.host_copy = self._evaluate(f"(void*)malloc({byte_count})")
-        if not self.host_copy.IsValid() or self.host_copy.GetError().Fail():
-            return False
-
-        host_address = self.host_copy.GetValueAsUnsigned(0)
-        result = self._evaluate(
-            "(int)cudaMemcpy((void*)"
-            f"{host_address:#x}, (const void*){self.data_address:#x}, {byte_count}, "
-            f"{_CUDA_MEMCPY_DEFAULT})"
-        )
-        if (
-            not result.IsValid()
-            or result.GetError().Fail()
-            or result.GetValueAsSigned(-1) != 0
-        ):
-            self.clear()
-            return False
-        return True
+    def _current_stop_id(self) -> int | None:
+        process = self.value.GetProcess()
+        return process.GetStopID() if process.IsValid() else None
 
     def update(self) -> bool:
-        self.clear()
+        # update() runs before every read of a synthetic child, so one print
+        # causes hundreds of calls. Restage only after the process stops again.
+        # Anything that changes target memory must resume and re-stop it, so this
+        # cannot report stale data.
+        if self.stop_id is not None and self._current_stop_id() == self.stop_id:
+            return True
+
+        self.host_address = 0
+        self.size = 0
+        self.value_type = lldb.SBType()
+        self.value_size = 0
 
         info = _buffer_info(self.value)
         if info is None:
             return False
 
-        self.size = info.size
-        self.data_address = info.data_address
         self.value_type = info.value_type
         self.value_size = self.value_type.GetByteSize()
-        self._copy_to_host()
+        # A formatter must not raise into the debugger; report no elements.
+        try:
+            self.host_address = cccl_common.stage_device_memory(
+                self.value, info.data_address, info.size * self.value_size
+            )
+            self.size = info.size
+        except cccl_common.StagingError:
+            pass
+        # Staging advances the stop ID, so record what the next call sees.
+        self.stop_id = self._current_stop_id()
         return True
 
     def num_children(self) -> int:
@@ -183,8 +153,7 @@ class BufferSyntheticProvider:
         # STL element access can preserve an alloc_traits::value_type typedef.
         # Report the canonical display name so LLDB shows cuda::buffer instead.
         return (
-            self.value.GetType()
-            .GetCanonicalType()
+            self.declared_type.GetCanonicalType()
             .GetUnqualifiedType()
             .GetDisplayTypeName()
             or ""
@@ -199,12 +168,10 @@ class BufferSyntheticProvider:
         return -1
 
     def get_child_at_index(self, index: int) -> lldb.SBValue | None:
-        if index < 0:
+        if index < 0 or index >= self.size or not self.host_address:
             return None
-        if index >= self.size:
-            return None
-        offset = index * self.value_size
-        return self.host_copy.CreateChildAtOffset(f"[{index}]", offset, self.value_type)
+        address = self.host_address + index * self.value_size
+        return self.value.CreateValueFromAddress(f"[{index}]", address, self.value_type)
 
 
 def register(debugger: lldb.SBDebugger, category: str, module: str) -> None:

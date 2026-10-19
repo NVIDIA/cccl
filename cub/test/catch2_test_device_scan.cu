@@ -10,7 +10,7 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 #include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
@@ -68,7 +68,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
+CUB_TEST("Device scan works with all device interfaces", "[scan][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
@@ -122,7 +122,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, accum_t{});
 
@@ -151,7 +151,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_reference(host_items.cbegin(), host_items.cend(), expected_result.begin(), accum_t{}, op_t{});
 
@@ -181,7 +181,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     CAPTURE(c2h::type_name<op_t>(), c2h::type_name<accum_t>());
 
     // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(
       host_items.cbegin(),
@@ -218,7 +218,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
 
     // Run test
@@ -254,7 +254,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), accum_t{}, scan_op);
@@ -290,7 +290,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Prepare verification data
     accum_t init_value{};
     init_default_constant(init_value);
-    c2h::host_vector<input_t> host_items(in_items);
+    const c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_reference(
       host_items.cbegin(), host_items.cend(), expected_result.begin(), init_value, scan_op);

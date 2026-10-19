@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 #include <cuda/__complex_>
 #include <cuda/numeric>
 #include <cuda/std/cassert>
@@ -33,7 +36,7 @@ inline constexpr bool has_isclose_abs_tol_v<
     cuda::std::declval<T>(), cuda::std::declval<T>(), 0.0f, cuda::std::declval<AbsTol>()))>> = true;
 
 template <class T>
-TEST_FUNC bool test_floating_point()
+TEST_HOST_DEVICE_FUNC bool test_floating_point()
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}))>);
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}, 0.0f))>);
@@ -62,7 +65,7 @@ TEST_FUNC bool test_floating_point()
 }
 
 template <typename T>
-TEST_FUNC bool test_integral()
+TEST_HOST_DEVICE_FUNC bool test_integral()
 {
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}))>);
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(T{}, T{}, 0.0f))>);
@@ -105,7 +108,7 @@ TEST_FUNC bool test_integral()
   return true;
 }
 
-TEST_FUNC bool test_integral_boundaries()
+TEST_HOST_DEVICE_FUNC bool test_integral_boundaries()
 {
   constexpr uint64_t rhs       = 18446744073586094827ull;
   constexpr uint64_t threshold = 1844674434846400176ull;
@@ -137,7 +140,7 @@ TEST_FUNC bool test_integral_boundaries()
 }
 
 template <class Complex>
-TEST_FUNC void test_complex()
+TEST_HOST_DEVICE_FUNC void test_complex()
 {
   using T = typename Complex::value_type;
   static_assert(cuda::std::is_same_v<bool, decltype(cuda::isclose(Complex{}, Complex{}))>);
@@ -171,7 +174,7 @@ TEST_FUNC void test_complex()
   assert(!cuda::isclose(Complex{nan, T{}}, Complex{}));
 }
 
-TEST_FUNC constexpr void test_invalid_complex_cases()
+TEST_HOST_DEVICE_FUNC constexpr void test_invalid_complex_cases()
 {
   static_assert(!has_isclose_abs_tol_v<cuda::std::complex<double>, float>);
   static_assert(!has_isclose_abs_tol_v<cuda::complex<double>, float>);
@@ -183,7 +186,7 @@ TEST_FUNC constexpr void test_invalid_complex_cases()
 #endif // _CCCL_HAS_HOST_STD_LIB()
 }
 
-TEST_FUNC bool test_standard_types()
+TEST_HOST_DEVICE_FUNC bool test_standard_types()
 {
   test_floating_point<float>();
   test_floating_point<double>();
@@ -214,7 +217,7 @@ TEST_FUNC bool test_standard_types()
 }
 
 template <template <typename> class Complex>
-TEST_FUNC void test_complex_types()
+TEST_HOST_DEVICE_FUNC void test_complex_types()
 {
   test_complex<Complex<float>>();
   test_complex<Complex<double>>();
@@ -224,7 +227,7 @@ TEST_FUNC void test_complex_types()
   // complex__float128 support requires std::hypot overload
 }
 
-TEST_FUNC bool test_extended_fp()
+TEST_HOST_DEVICE_FUNC bool test_extended_fp()
 {
 #if _LIBCUDACXX_HAS_NVFP16()
   test_floating_point<__half>();

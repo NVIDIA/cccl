@@ -10,7 +10,6 @@
 #include <thrust/reverse.h>
 
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/std/iterator>
@@ -18,9 +17,11 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -89,7 +90,7 @@ using types =
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
-C2H_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", types)
+CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -107,7 +108,7 @@ C2H_TEST("DevicePartition::Flagged can run with empty input", "[device][partitio
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DevicePartition::Flagged handles all matched", "[device][partition_flagged]", types)
+CUB_TEST("DevicePartition::Flagged handles all matched", "[device][partition_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -128,7 +129,7 @@ C2H_TEST("DevicePartition::Flagged handles all matched", "[device][partition_fla
   REQUIRE(out == in);
 }
 
-C2H_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flagged]", types)
+CUB_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -152,7 +153,7 @@ C2H_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flag
   REQUIRE(out == in);
 }
 
-C2H_TEST("DevicePartition::Flagged does not change input", "[device][partition_flagged]", types)
+CUB_TEST("DevicePartition::Flagged does not change input", "[device][partition_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -171,7 +172,7 @@ C2H_TEST("DevicePartition::Flagged does not change input", "[device][partition_f
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   partition_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
 
@@ -179,7 +180,7 @@ C2H_TEST("DevicePartition::Flagged does not change input", "[device][partition_f
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
+CUB_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -205,8 +206,9 @@ C2H_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DevicePartition::Flagged works with user provided memory and environment",
+CUB_TEST("DevicePartition::Flagged works with user provided memory and environment",
          "[device][partition_flagged]",
+         CUB_SMALL,
          types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -261,51 +263,11 @@ C2H_TEST("DevicePartition::Flagged works with user provided memory and environme
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DevicePartition::Flagged works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_partition_flagged(stream.get());
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_partition_flagged(stream);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_partition_flagged(stream_ref);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_partition_flagged(env);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_partition_flagged(policy);
-  }
-
-  SECTION("DevicePartition::Flagged works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_partition_flagged(policy);
-  }
+  test_with_custom_streams(test_partition_flagged);
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DevicePartition::Flagged works with iterators", "[device][partition_flagged]", all_types)
+CUB_TEST("DevicePartition::Flagged works with iterators", "[device][partition_flagged]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -330,7 +292,7 @@ C2H_TEST("DevicePartition::Flagged works with iterators", "[device][partition_fl
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::Flagged works with pointers", "[device][partition_flagged]", types)
+CUB_TEST("DevicePartition::Flagged works with pointers", "[device][partition_flagged]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -383,7 +345,9 @@ struct convertible_to_bool
   }
 };
 
-C2H_TEST("DevicePartition::Flagged works with flags that are convertible to bool", "[device][partition_flagged]")
+CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool",
+         "[device][partition_flagged]",
+         CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -409,7 +373,7 @@ C2H_TEST("DevicePartition::Flagged works with flags that are convertible to bool
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::Flagged works with flags that alias input", "[device][partition_flagged]")
+CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device][partition_flagged]", CUB_SMALL)
 {
   using type = int;
 
@@ -460,7 +424,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]")
+CUB_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -485,8 +449,9 @@ C2H_TEST("DevicePartition::Flagged works with different output type", "[device][
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::Flagged works for very large number of items",
+CUB_TEST("DevicePartition::Flagged works for very large number of items",
          "[device][partition_flagged][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL,
          offset_types)
 try
 {
@@ -529,8 +494,7 @@ try
   REQUIRE(num_selected_out[0] == cut_off_index);
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

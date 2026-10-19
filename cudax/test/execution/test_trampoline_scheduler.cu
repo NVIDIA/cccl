@@ -13,9 +13,9 @@
 #include "./common/retry.cuh"
 #include "testing.cuh"
 
-namespace ex = ::cuda::experimental::execution;
-
 #if !_CCCL_DEVICE_COMPILATION()
+
+namespace ex = ::cuda::experimental::execution;
 
 namespace
 {

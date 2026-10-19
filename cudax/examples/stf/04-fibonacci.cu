@@ -17,6 +17,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 int fibo_ref(int n)
@@ -64,7 +66,7 @@ logical_data<slice<int>> compute_fibo(context& ctx, int n)
 
 int main(int argc, char** argv)
 {
-  int n = (argc > 1) ? atoi(argv[1]) : 4;
+  int n = (argc > 1) ? ::std::stoi(argv[1]) : 4;
 
   context ctx; // = graph_ctx();
   auto result = compute_fibo(ctx, n);

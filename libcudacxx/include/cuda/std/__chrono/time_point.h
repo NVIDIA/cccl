@@ -26,6 +26,7 @@
 #  include <cuda/std/__compare/ordering.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/limits>
@@ -164,8 +165,8 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _Duration2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator!=(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator!=(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
   {
     return __lhs.time_since_epoch() != __rhs.time_since_epoch();
   }
@@ -181,8 +182,8 @@ public:
   }
 #else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   template <class _Duration2>
-  [[nodiscard]] _CCCL_API friend constexpr bool
-  operator<(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
+  [[nodiscard]]
+  _CCCL_API friend constexpr bool operator<(const time_point& __lhs, const time_point<_Clock, _Duration2>& __rhs)
   {
     return __lhs.time_since_epoch() < __rhs.time_since_epoch();
   }

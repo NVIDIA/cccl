@@ -30,6 +30,7 @@
 #define TEST_DEVICE_FUNC      _CCCL_DEVICE
 #define TEST_TILE_FUNC        _CCCL_TILE
 #define TEST_TILE_DEVICE_FUNC _CCCL_TILE _CCCL_DEVICE
+#define TEST_HOST_DEVICE_FUNC _CCCL_HOST_DEVICE
 
 // Use the CCCL C++ dialect detection
 #define TEST_STD_VER _CCCL_STD_VER
@@ -116,8 +117,10 @@ TEST_FUNC inline void DoNotOptimize(Tp& value)
 {
   [[maybe_unused]] const volatile void* volatile ptr = &reinterpret_cast<const volatile char&>(value);
 
+#if !_CCCL_TILE_COMPILATION()
   // Device path.
   NV_IF_TARGET(NV_IS_DEVICE, ({ asm volatile("" ::"l"(ptr) : "memory"); }))
+#endif // !_CCCL_TILE_COMPILATION()
 
   // Host path.
 #if TEST_COMPILER(CLANG)

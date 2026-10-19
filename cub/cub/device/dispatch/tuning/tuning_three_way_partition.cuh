@@ -21,7 +21,6 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -74,7 +73,7 @@ enum class ThreeWayPartitionAlgorithm
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(ThreeWayPartitionAlgorithm algo) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(ThreeWayPartitionAlgorithm algo) noexcept
 {
   switch (algo)
   {
@@ -98,13 +97,13 @@ struct ThreeWayPartitionPolicy
   ThreeWayPartitionLookbackPolicy lookback; //!< The policy for the three-way partition algorithm based on
                                             //!< decoupled-lookback. Only used when @p algorithm is @lookback.
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
   {
     return lhs.algorithm == rhs.algorithm && lhs.lookback == rhs.lookback;
   }
 
-  [[nodiscard]] _CCCL_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator!=(const ThreeWayPartitionPolicy& lhs, const ThreeWayPartitionPolicy& rhs) noexcept
   {
     return !(lhs == rhs);
@@ -527,6 +526,66 @@ private:
       LOAD_DEFAULT,
       BLOCK_SCAN_WARP_SCANS,
       default_delay_constructor_policy(true)}; // we assume that the OffsetT is trivially copyable
+
+    // tunings from cub/benchmarks/bench/partition/three_way.cu
+    if (cc >= ::cuda::compute_capability{10, 7} && cc < ::cuda::compute_capability{11, 0} && offset_size == 4)
+    {
+      if (input_size == 1)
+      {
+        // trp_0.ipt_11.tpb_448.ns_84.dcid_0.l2w_500  2^24 1.065  2^28 1.106
+        return ThreeWayPartitionLookbackPolicy{
+          448,
+          11,
+          BLOCK_LOAD_DIRECT,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 84, 500}};
+      }
+      if (input_size == 2)
+      {
+        // trp_1.ipt_12.tpb_512.ns_84.dcid_0.l2w_520  2^24 1.150  2^28 1.233
+        return ThreeWayPartitionLookbackPolicy{
+          512,
+          12,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 84, 520}};
+      }
+      if (input_size == 4)
+      {
+        // trp_1.ipt_12.tpb_448.ns_208.dcid_0.l2w_975  2^28: int32 1.576, float 1.576
+        return ThreeWayPartitionLookbackPolicy{
+          448,
+          12,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 208, 975}};
+      }
+      if (input_size == 8)
+      {
+        // trp_1.ipt_10.tpb_448.ns_32.dcid_6.l2w_725  2^28: int64 1.432, double 1.423
+        return ThreeWayPartitionLookbackPolicy{
+          448,
+          10,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::exponential_backon_jitter, 32, 725}};
+      }
+      if (input_size == 16)
+      {
+        // trp_1.ipt_19.tpb_128.ns_1232.dcid_0.l2w_940  2^24 1.255  2^28 1.313
+        return ThreeWayPartitionLookbackPolicy{
+          128,
+          19,
+          BLOCK_LOAD_WARP_TRANSPOSE,
+          LOAD_DEFAULT,
+          BLOCK_SCAN_WARP_SCANS,
+          LookbackDelayPolicy{LookbackDelayAlgorithm::no_delay, 1232, 940}};
+      }
+    }
 
     if (cc >= ::cuda::compute_capability{10, 0})
     {

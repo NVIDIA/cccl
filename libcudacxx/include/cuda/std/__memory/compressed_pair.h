@@ -36,6 +36,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/cstddef>
@@ -57,20 +58,25 @@ struct __compressed_pair_elem
   using reference       = _Tp&;
   using const_reference = const _Tp&;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __compressed_pair_elem(__default_init_tag) noexcept(
     is_nothrow_default_constructible_v<_Tp>)
   {}
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __compressed_pair_elem(__value_init_tag) noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __value_()
   {}
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Up, enable_if_t<!is_same_v<__compressed_pair_elem, decay_t<_Up>>, int> = 0>
   _CCCL_API constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>)
       : __value_(::cuda::std::forward<_Up>(__u))
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args, size_t... _Indices>
   _CCCL_API constexpr explicit __compressed_pair_elem(
     piecewise_construct_t,
@@ -100,22 +106,28 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
   using const_reference = const _Tp&;
   using __value_type    = _Tp;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI explicit constexpr __compressed_pair_elem() = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __compressed_pair_elem(__default_init_tag) noexcept(
     is_nothrow_default_constructible_v<_Tp>)
   {}
+
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr explicit __compressed_pair_elem(__value_init_tag) noexcept(is_nothrow_default_constructible_v<_Tp>)
       : __value_type()
   {}
 
   // NOLINTBEGIN(bugprone-forwarding-reference-overload)
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Up, enable_if_t<!is_same_v<__compressed_pair_elem, decay_t<_Up>>, int> = 0>
   _CCCL_API constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(is_nothrow_constructible_v<_Tp, _Up>)
       : __value_type(::cuda::std::forward<_Up>(__u))
   {}
   // NOLINTEND(bugprone-forwarding-reference-overload)
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args, size_t... _Indices>
   _CCCL_API constexpr __compressed_pair_elem(
     piecewise_construct_t,
@@ -149,9 +161,10 @@ public:
                 "The current implementation is NOT ABI-compatible with the previous implementation for this "
                 "configuration");
 
-  using _Base1 _CCCL_NODEBUG_ALIAS = __compressed_pair_elem<_T1, 0>;
-  using _Base2 _CCCL_NODEBUG_ALIAS = __compressed_pair_elem<_T2, 1>;
+  using _Base1 _CCCL_NODEBUG = __compressed_pair_elem<_T1, 0>;
+  using _Base2 _CCCL_NODEBUG = __compressed_pair_elem<_T2, 1>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <bool _Dummy = true,
             class       = enable_if_t<__dependent_type<is_default_constructible<_T1>, _Dummy>::value
                                       && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>>
@@ -161,6 +174,7 @@ public:
       , _Base2(__value_init_tag())
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _U1, class _U2>
   _CCCL_API constexpr explicit __compressed_pair(_U1&& __t1, _U2&& __t2) noexcept(
     is_constructible_v<_T1, _U1> && is_constructible_v<_T2, _U2>)
@@ -168,6 +182,7 @@ public:
       , _Base2(::cuda::std::forward<_U2>(__t2))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args1, class... _Args2>
   _CCCL_API constexpr explicit __compressed_pair(
     piecewise_construct_t __pc,
@@ -206,6 +221,7 @@ public:
     return static_cast<_Base2*>(__pair);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_API constexpr void
   swap(__compressed_pair& __x) noexcept(is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)
   {
@@ -215,6 +231,7 @@ public:
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _T1, class _T2>
 _CCCL_API constexpr void swap(__compressed_pair<_T1, _T2>& __x, __compressed_pair<_T1, _T2>& __y) noexcept(
   is_nothrow_swappable_v<_T1> && is_nothrow_swappable_v<_T2>)

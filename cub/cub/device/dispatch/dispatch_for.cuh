@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_for.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/kernels/kernel_for_each.cuh>
 #include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/thread/thread_load.cuh>
@@ -36,7 +37,7 @@ template <typename PolicySelector, typename OffsetT, typename OpT>
 CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
 invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPolicy active_policy)
 {
-  int threads_per_block = 256;
+  int threads_per_block = 256; // NOLINT(misc-const-correctness)
   auto kernel           = detail::for_each::dynamic_kernel<PolicySelector, OffsetT, OpT>;
   NV_IF_TARGET(NV_IS_HOST, ({
                  int _{};
@@ -49,14 +50,15 @@ invoke_dynamic_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPol
   const auto tile_size = static_cast<OffsetT>(threads_per_block * active_policy.items_per_thread);
   const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking detail::for_each::dynamic_kernel<<<%d, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          static_cast<int>(num_tiles),
-          static_cast<int>(threads_per_block),
-          reinterpret_cast<long long>(stream),
-          static_cast<int>(active_policy.items_per_thread));
-#endif
+  _CUB_LOG_KERNEL_LAUNCH(
+    "detail::for_each::dynamic_kernel",
+    static_cast<int>(num_tiles),
+    1,
+    1,
+    static_cast<int>(threads_per_block),
+    0,
+    stream,
+    "");
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -84,14 +86,15 @@ invoke_static_block_size(OffsetT num_items, OpT op, cudaStream_t stream, ForPoli
   const auto tile_size        = static_cast<OffsetT>(threads_per_block) * static_cast<OffsetT>(items_per_thread);
   const auto num_tiles        = ::cuda::ceil_div(num_items, tile_size);
 
-#ifdef CUB_DEBUG_LOG
-  _CubLog("Invoking detail::for_each::static_kernel<<<%d, %d, 0, %lld>>>(), "
-          "%d items per thread\n",
-          static_cast<int>(num_tiles),
-          static_cast<int>(threads_per_block),
-          reinterpret_cast<long long>(stream),
-          static_cast<int>(items_per_thread));
-#endif
+  _CUB_LOG_KERNEL_LAUNCH(
+    "detail::for_each::static_kernel",
+    static_cast<int>(num_tiles),
+    1,
+    1,
+    static_cast<int>(threads_per_block),
+    0,
+    stream,
+    "");
 
   if (const auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
@@ -126,19 +129,11 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceFor to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
-  return CubDebug(dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
+  return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     constexpr ForPolicy active_policy = policy_getter();
+
+    detail::log_dispatch("DeviceFor", cc, active_policy);
+
     if constexpr (active_policy.threads_per_block > 0)
     {
       return invoke_static_block_size<PolicySelector>(num_items, op, stream, active_policy);
@@ -147,7 +142,7 @@ dispatch(OffsetT num_items, OpT op, cudaStream_t stream, PolicySelector policy_s
     {
       return invoke_dynamic_block_size<PolicySelector>(num_items, op, stream, active_policy);
     }
-  }));
+  });
 }
 } // namespace detail::for_each
 

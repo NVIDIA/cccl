@@ -16,6 +16,9 @@
 #pragma once
 
 #include <cuda/__cccl_config>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/limits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -59,12 +62,12 @@ class maxval
 public:
   static __host__ __device__ void init_op(T& dst)
   {
-    dst = ::std::numeric_limits<T>::lowest();
+    dst = ::cuda::std::numeric_limits<T>::lowest();
   }
 
   static __host__ __device__ void apply_op(T& dst, const T& src)
   {
-    dst = ::std::max(dst, src);
+    dst = ::cuda::std::max(dst, src);
   }
 };
 
@@ -77,12 +80,12 @@ class minval
 public:
   static __host__ __device__ void init_op(T& dst)
   {
-    dst = ::std::numeric_limits<T>::max();
+    dst = ::cuda::std::numeric_limits<T>::max();
   }
 
   static __host__ __device__ void apply_op(T& dst, const T& src)
   {
-    dst = ::std::min(dst, src);
+    dst = ::cuda::std::min(dst, src);
   }
 };
 

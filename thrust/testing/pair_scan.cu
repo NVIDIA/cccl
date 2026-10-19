@@ -5,10 +5,6 @@
 
 #include <unittest/unittest.h>
 
-#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <unittest/cuda/testframework.h>
-#endif
-
 struct make_pair_functor
 {
   template <typename T1, typename T2>
@@ -42,9 +38,9 @@ struct TestPairScan
     // zip up pairs on the host
     thrust::transform(h_p1.begin(), h_p1.end(), h_p2.begin(), h_pairs.begin(), make_pair_functor());
 
-    thrust::device_vector<T> d_p1    = h_p1;
-    thrust::device_vector<T> d_p2    = h_p2;
-    thrust::device_vector<P> d_pairs = h_pairs;
+    const thrust::device_vector<T> d_p1 = h_p1;
+    const thrust::device_vector<T> d_p2 = h_p2;
+    thrust::device_vector<P> d_pairs    = h_pairs;
     thrust::device_vector<P> d_output(n);
 
     P init = cuda::std::make_pair(13, 13);
@@ -52,23 +48,23 @@ struct TestPairScan
     // scan with plus
     thrust::inclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), add_pairs());
     thrust::inclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), add_pairs());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // scan with maximum (thrust issue #69)
     thrust::inclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), ::cuda::maximum<P>());
     thrust::inclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), ::cuda::maximum<P>());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // scan with plus
     thrust::exclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), init, add_pairs());
     thrust::exclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), init, add_pairs());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // scan with maximum (thrust issue #69)
     thrust::exclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), init, ::cuda::maximum<P>());
     thrust::exclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), init, ::cuda::maximum<P>());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
   }
 };
-VariableUnitTest<TestPairScan, unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>>
-  TestPairScanInstance;
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairScan,
+                                          unittest::type_list<unittest::int8_t, unittest::int16_t, unittest::int32_t>);

@@ -9,13 +9,45 @@ Requires Python 3.12 or newer.
 
 from __future__ import annotations
 
+import annotated_ptr
+import atomic
 import buffer
+import complex
+import event
+import hierarchy
+import inplace_vector
+import mdspan
+import memory_pool
 import memory_resource
+import optional
+import shared_resource
+import span
+import std_array
+import stream
+import tuple
 
 import lldb
 
 _CATEGORY = "cccl"
-_FORMATTERS = (memory_resource, buffer)
+_FORMATTERS = (
+    memory_resource,
+    atomic,
+    annotated_ptr,
+    buffer,
+    std_array,
+    complex,
+    stream,
+    tuple,
+    inplace_vector,
+    event,
+    hierarchy,
+    mdspan,
+    memory_pool,
+    span,
+    optional,
+    shared_resource,
+)
+
 InternalDict = dict[str, object]
 
 

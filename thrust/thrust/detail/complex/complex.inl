@@ -224,11 +224,19 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const T1& y)
   return !(x == y);
 }
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 template <typename T>
 struct proclaim_trivially_relocatable<complex<T>> : thrust::true_type
 {};
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 THRUST_NAMESPACE_END
+
+_CCCL_BEGIN_NAMESPACE_CUDA
+template <typename T>
+inline constexpr bool is_trivially_copyable_v<THRUST_NS_QUALIFIER::complex<T>> = true;
+_CCCL_END_NAMESPACE_CUDA
 
 #include <thrust/detail/complex/arithmetic.h>
 #include <thrust/detail/complex/catrig.h>

@@ -22,14 +22,14 @@
 // Used to exercise composite data place with a grid of execution places.
 static void blocked_mapper_1d(stf_pos4* result, stf_pos4 data_coords, stf_dim4 data_dims, stf_dim4 grid_dims)
 {
-  uint64_t extent    = data_dims.x;
-  uint64_t nplaces   = grid_dims.x;
-  uint64_t part_size = ::cuda::ceil_div(extent, nplaces);
+  const uint64_t extent  = data_dims.x;
+  const uint64_t nplaces = grid_dims.x;
+  uint64_t part_size     = ::cuda::ceil_div(extent, nplaces);
   if (part_size == 0)
   {
     part_size = 1;
   }
-  int64_t c       = static_cast<int64_t>(data_coords.x);
+  const int64_t c = static_cast<int64_t>(data_coords.x);
   int64_t place_x = c / static_cast<int64_t>(part_size);
   if (place_x >= static_cast<int64_t>(nplaces))
   {
@@ -100,7 +100,7 @@ C2H_TEST("exec place from an externally-owned CUDA context", "[task][places][cud
 
 C2H_TEST("empty stf tasks", "[task]")
 {
-  size_t N = 1000000;
+  const size_t N = 1000000;
 
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
@@ -187,7 +187,7 @@ C2H_TEST("composite data place with grid of places (same device repeated)", "[ta
   REQUIRE(composite_dplace != nullptr);
   stf_exec_place_grid_destroy(grid);
 
-  size_t N           = 1024;
+  const size_t N     = 1024;
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
@@ -244,7 +244,7 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   {
     place = stf_exec_place_device(0);
   }
-  stf_dim4 grid_dims         = {2, 2, 1, 1};
+  const stf_dim4 grid_dims   = {2, 2, 1, 1};
   stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, &grid_dims);
   REQUIRE(grid != nullptr);
   for (auto& place : places)
@@ -256,7 +256,7 @@ C2H_TEST("composite data place with stf_exec_place_grid_create (vector of places
   REQUIRE(composite_dplace != nullptr);
   stf_exec_place_grid_destroy(grid);
 
-  size_t N           = 512;
+  const size_t N     = 512;
   stf_ctx_handle ctx = stf_ctx_create();
   REQUIRE(ctx != nullptr);
 
@@ -323,7 +323,7 @@ C2H_TEST("task on exec_place_grid: get_grid_dims and get_custream_at_index", "[t
   stf_task_start(t);
 
   stf_dim4 dims;
-  int got_dims = stf_task_get_grid_dims(t, &dims);
+  const int got_dims = stf_task_get_grid_dims(t, &dims);
   REQUIRE(got_dims == 0);
   REQUIRE(dims.x == 2);
   REQUIRE(dims.y == 1);
@@ -507,6 +507,73 @@ C2H_TEST("exec_place_get_place on grid", "[places][accessor][grid]")
   stf_exec_place_destroy(sub0);
   stf_exec_place_destroy(sub1);
   stf_exec_place_grid_destroy(grid);
+}
+
+C2H_TEST("exec place grid reshape and collapse preserve linear order", "[places][grid][reshape]")
+{
+  constexpr size_t nplaces = 24;
+  stf_exec_place_handle places[nplaces];
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    places[i] = (i % 2 == 0) ? stf_exec_place_host() : stf_exec_place_device(0);
+  }
+
+  const stf_dim4 original_dims     = {2, 3, 4, 1};
+  const stf_exec_place_handle grid = stf_exec_place_grid_create(places, nplaces, &original_dims);
+  REQUIRE(grid != nullptr);
+  const stf_dim4 invalid_grid_dims = {2, 2, 1, 1};
+  REQUIRE(stf_exec_place_grid_create(places, nplaces, &invalid_grid_dims) == nullptr);
+  for (const auto place : places)
+  {
+    stf_exec_place_destroy(place);
+  }
+
+  const stf_dim4 reshaped_dims         = {6, 4, 1, 1};
+  const stf_exec_place_handle reshaped = stf_exec_place_grid_reshape(grid, &reshaped_dims);
+  REQUIRE(reshaped != nullptr);
+
+  const stf_exec_place_handle collapsed = stf_exec_place_grid_collapse_axes(grid, 0, 1);
+  REQUIRE(collapsed != nullptr);
+
+  stf_dim4 actual_dims;
+  stf_exec_place_get_dims(reshaped, &actual_dims);
+  REQUIRE(actual_dims.x == 6);
+  REQUIRE(actual_dims.y == 4);
+  REQUIRE(actual_dims.z == 1);
+  REQUIRE(actual_dims.t == 1);
+  stf_exec_place_get_dims(collapsed, &actual_dims);
+  REQUIRE(actual_dims.x == 6);
+  REQUIRE(actual_dims.y == 4);
+  REQUIRE(actual_dims.z == 1);
+  REQUIRE(actual_dims.t == 1);
+
+  for (size_t i = 0; i < nplaces; i++)
+  {
+    const stf_exec_place_handle original_place  = stf_exec_place_get_place(grid, i);
+    const stf_exec_place_handle reshaped_place  = stf_exec_place_get_place(reshaped, i);
+    const stf_exec_place_handle collapsed_place = stf_exec_place_get_place(collapsed, i);
+    REQUIRE(original_place != nullptr);
+    REQUIRE(reshaped_place != nullptr);
+    REQUIRE(collapsed_place != nullptr);
+    REQUIRE(stf_exec_place_is_host(original_place) == (i % 2 == 0));
+    REQUIRE(stf_exec_place_is_host(reshaped_place) == stf_exec_place_is_host(original_place));
+    REQUIRE(stf_exec_place_is_host(collapsed_place) == stf_exec_place_is_host(original_place));
+    stf_exec_place_destroy(collapsed_place);
+    stf_exec_place_destroy(reshaped_place);
+    stf_exec_place_destroy(original_place);
+  }
+
+  stf_exec_place_grid_destroy(grid);
+  REQUIRE(stf_exec_place_size(reshaped) == nplaces);
+  REQUIRE(stf_exec_place_size(collapsed) == nplaces);
+
+  const stf_dim4 invalid_dims = {2, 2, 1, 1};
+  REQUIRE(stf_exec_place_grid_reshape(reshaped, &invalid_dims) == nullptr);
+  REQUIRE(stf_exec_place_grid_collapse_axes(reshaped, 2, 1) == nullptr);
+  REQUIRE(stf_exec_place_grid_collapse_axes(reshaped, 0, 4) == nullptr);
+
+  stf_exec_place_grid_destroy(collapsed);
+  stf_exec_place_grid_destroy(reshaped);
 }
 
 C2H_TEST("exec_place_get_place on scalar", "[places][accessor]")

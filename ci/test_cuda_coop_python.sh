@@ -1,44 +1,124 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+# Test the installed cuda-coop wheel's host-side API and header resolution.
+# These checks do not compile or launch GPU kernels.
 
 set -euo pipefail
 
 ci_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$ci_dir/pyenv_helper.sh"
+repo_root="$(cd "$ci_dir/.." && pwd)"
 
-# Parse common arguments
+usage="Usage: $0 -py-version <python_version> [-stage contracts]"
+
+# shellcheck source=ci/util/python/common_arg_parser.sh
 source "$ci_dir/util/python/common_arg_parser.sh"
 parse_python_args "$@"
-cuda_major_version=$(nvcc --version | grep release | awk '{print $6}' | tr -d ',' | cut -d '.' -f 1 | cut -d 'V' -f 2)
+require_py_version "$usage" || exit 1
 
-# Setup Python environment
-setup_python_env "${py_version}"
+stage="contracts"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -stage | --stage)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "Error: $1 requires a value" >&2
+        exit 1
+      fi
+      stage="$2"
+      shift 2
+      ;;
+    -stage=* | --stage=*)
+      stage="${1#*=}"
+      if [[ -z "$stage" ]]; then
+        echo "Error: $1 requires a value" >&2
+        exit 1
+      fi
+      shift
+      ;;
+    -py-version | -ctk-mode)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "Error: $1 requires a value" >&2
+        exit 1
+      fi
+      shift 2
+      ;;
+    -py-version=* | -ctk-mode=*)
+      shift
+      ;;
+    *)
+      echo "Error: unknown argument '$1'" >&2
+      echo "$usage" >&2
+      exit 1
+      ;;
+  esac
+done
 
-# Fetch or build the cuda_cccl wheel:
+if [[ "$stage" != "contracts" ]]; then
+  echo "Error: unknown cuda.coop test stage '$stage'" >&2
+  echo "$usage" >&2
+  exit 1
+fi
+
+# shellcheck source=ci/pyenv_helper.sh
+source "$ci_dir/pyenv_helper.sh"
+
+setup_python_env "${py_version}" ".cccl-coop-test-venv"
+
 if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-  wheel_artifact_name=$("$ci_dir/util/workflow/get_wheel_artifact_name.sh")
-  "$ci_dir/util/artifacts/download.sh" "${wheel_artifact_name}" /home/coder/cccl/
+  wheel_artifact_name="$(CCCL_WHEEL_KIND=coop "$ci_dir/util/workflow/get_wheel_artifact_name.sh")"
+  "$ci_dir/util/artifacts/download.sh" "$wheel_artifact_name" "$repo_root/"
 else
-  "$ci_dir/build_cuda_cccl_python.sh" -py-version "${py_version}"
+  CCCL_CUDA_COOP_PYENV_READY=1 \
+    "$ci_dir/build_cuda_coop_python.sh" -py-version "${py_version}"
 fi
 
-# Install cuda_cccl. (cuda-bench, for the benchmark smoke test below, is
-# installed best-effort further down since it does not always ship a wheel for
-# the newest Python.)
-CUDA_CCCL_WHEEL_PATH="$(ls /home/coder/cccl/wheelhouse/cuda_cccl-*.whl)"
-python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test-cu${cuda_major_version}]"
-
-# Run tests for coop module
-cd "/home/coder/cccl/python/cuda_cccl/tests/"
-python -m pytest -n auto -v coop/_experimental/
-
-# Smoke-test the coop benchmark: --profile runs each configuration once (no
-# sampling) so a benchmark that stops building/running fails CI here instead of
-# rotting until someone runs the perf suite. cuda-bench does not always ship a
-# wheel for the newest Python, so install it best-effort and skip (with a
-# warning) rather than failing the lane when it is unavailable.
-if python -m pip install "cuda-bench[cu${cuda_major_version}]"; then
-  cd "/home/coder/cccl/python/cuda_cccl/benchmarks/coop/_experimental/"
-  python bench_warp_reduce.py --profile
-else
-  echo "::warning::cuda-bench has no wheel for Python ${py_version}; skipping the coop benchmark smoke test."
+mapfile -t wheels < <(find "$repo_root/wheelhouse" -maxdepth 1 -name 'cuda_coop-*.whl' -print | sort)
+if [[ ${#wheels[@]} -ne 1 ]]; then
+  echo "Error: expected exactly one cuda-coop wheel, found ${#wheels[@]}:" >&2
+  printf '  %s\n' "${wheels[@]}" >&2
+  exit 1
 fi
+
+python -m pip install "${wheels[0]}[test]"
+
+python -m pip check
+# Isolated mode prevents the checkout or PYTHONPATH from hiding wheel defects.
+python -I - <<'PY'
+import importlib.metadata
+import sys
+from pathlib import Path
+
+import cuda
+from cuda import coop
+from cuda.coop._headers import resolve_include_paths
+
+distribution = importlib.metadata.distribution("cuda-coop")
+expected_root = Path(
+    distribution.locate_file("cuda/coop/__init__.py")
+).resolve()
+assert Path(coop.__file__).resolve() == expected_root
+assert getattr(cuda, "__file__", None) is None
+assert coop.this_block().kind == "block"
+
+paths = resolve_include_paths(
+    start=Path(sys.prefix),
+    required_headers=(
+        "cub/block/block_load.cuh",
+        "cub/block/block_store.cuh",
+        "thrust/detail/raw_pointer_cast.h",
+        "cuda/std/cstdint",
+    ),
+)
+assert paths.origin == "cuda-coop wheel header bundle"
+PY
+
+tests_root="$repo_root/python/cuda_coop/tests"
+
+# Check shared helpers without requiring optional compiler backends.
+python -m pyright --warnings --project "$repo_root/python/cuda_coop/tests/typing/pyright-unused.json" \
+  --pythonpath "$(command -v python)"
+
+cd "$tests_root"
+python -m pytest -v test_*.py

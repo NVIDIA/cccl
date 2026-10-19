@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
 
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/atomic>
 
@@ -28,7 +28,7 @@ template <class T,
           bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn
 {
-  TEST_FUNC void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     // Test greater
     {
@@ -70,7 +70,7 @@ struct TestFn
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn<T, Selector, ThreadScope, true>
 {
-  TEST_FUNC void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     // Call unsigned tests
     TestFn<T, Selector, ThreadScope, false>()();
@@ -114,7 +114,7 @@ struct TestFn<T, Selector, ThreadScope, true>
 template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFnDispatch
 {
-  TEST_FUNC void operator()() const
+  TEST_HOST_DEVICE_FUNC void operator()() const
   {
     TestFn<T, Selector, ThreadScope>()();
   }

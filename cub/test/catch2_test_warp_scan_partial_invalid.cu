@@ -9,8 +9,8 @@
 #include <cuda/std/limits>
 
 #include "catch2_test_warp_scan_partial_helper.cuh"
+#include "cub_test_macros.h"
 #include "thread_reduce/catch2_test_thread_reduce_helper.cuh"
-#include <c2h/catch2_test_helper.h>
 
 using invalid_types        = c2h::type_list<segment>;
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 9, 2>;
@@ -72,7 +72,7 @@ template <scan_mode Mode>
 struct merge_init_value_op_t
 {
   segment initial_value;
-  bool* error_flag_ptr;
+  bool* error_flag_ptr{};
 
   template <class WarpScanT>
   __device__ void operator()(WarpScanT& scan, segment& thread_data, int valid_items) const
@@ -91,10 +91,10 @@ struct merge_init_value_op_t
 template <scan_mode Mode>
 struct merge_init_value_aggregate_op_t
 {
-  int m_target_thread_id;
+  int m_target_thread_id{};
   segment initial_value;
-  segment* m_d_warp_aggregate;
-  bool* error_flag_ptr;
+  segment* m_d_warp_aggregate{};
+  bool* error_flag_ptr{};
 
   template <int LogicalWarpThreads>
   __device__ void
@@ -149,8 +149,12 @@ struct merge_init_value_scan_op_t
   }
 };
 
-C2H_TEST(
-  "Partial warp scan does not apply op to invalid elements", "[scan][warp]", invalid_types, logical_warp_threads, modes)
+CUB_TEST("Partial warp scan does not apply op to invalid elements",
+         "[scan][warp]",
+         CUB_SMALL,
+         invalid_types,
+         logical_warp_threads,
+         modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -198,8 +202,9 @@ C2H_TEST(
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Partial warp scan does not apply op to invalid elements and returns valid warp aggregate",
+CUB_TEST("Partial warp scan does not apply op to invalid elements and returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          invalid_types,
          logical_warp_threads,
          modes)
@@ -262,8 +267,9 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and returns va
   }
 }
 
-C2H_TEST("Partial warp scan does not apply op to invalid elements and works with initial value",
+CUB_TEST("Partial warp scan does not apply op to invalid elements and works with initial value",
          "[scan][warp]",
+         CUB_SMALL,
          invalid_types,
          logical_warp_threads,
          modes)
@@ -307,8 +313,9 @@ C2H_TEST("Partial warp scan does not apply op to invalid elements and works with
   REQUIRE(h_out == d_out);
 }
 
-C2H_TEST("Partial warp scan with initial value does not apply op to invalid elements and returns valid warp aggregate",
+CUB_TEST("Partial warp scan with initial value does not apply op to invalid elements and returns valid warp aggregate",
          "[scan][warp]",
+         CUB_SMALL,
          invalid_types,
          logical_warp_threads,
          modes)
@@ -362,7 +369,10 @@ C2H_TEST("Partial warp scan with initial value does not apply op to invalid elem
   }
 }
 
-C2H_TEST("Partial warp combination scan does not apply op to invalid elements", "[scan][warp]", logical_warp_threads)
+CUB_TEST("Partial warp combination scan does not apply op to invalid elements",
+         "[scan][warp]",
+         CUB_SMALL,
+         logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
@@ -421,8 +431,9 @@ C2H_TEST("Partial warp combination scan does not apply op to invalid elements", 
   REQUIRE(h_exclusive_out == d_exclusive_out);
 }
 
-C2H_TEST("Partial warp combination custom scan does not apply op to invalid elements and works with initial value",
+CUB_TEST("Partial warp combination custom scan does not apply op to invalid elements and works with initial value",
          "[scan][warp]",
+         CUB_SMALL,
          logical_warp_threads)
 {
   constexpr int logical_warp_threads = c2h::get<0, TestType>();

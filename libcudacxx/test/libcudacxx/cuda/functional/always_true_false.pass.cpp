@@ -17,7 +17,7 @@
 TEST_FUNC constexpr bool test_always_true()
 {
   // Default-constructible
-  cuda::always_true at{};
+  [[maybe_unused]] cuda::always_true at{};
 
   // Returns true with no arguments
   assert(at() == true);
@@ -55,7 +55,7 @@ TEST_FUNC constexpr bool test_always_true()
 TEST_FUNC constexpr bool test_always_false()
 {
   // Default-constructible
-  cuda::always_false af{};
+  [[maybe_unused]] cuda::always_false af{};
 
   // Returns false with no arguments
   assert(af() == false);

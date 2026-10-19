@@ -16,8 +16,9 @@
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/iterator>
+#include <cuda/std/ranges>
 
-#include <cuda/experimental/__multi_gpu/algorithm/scan/scan.h>
+#include <cuda/experimental/mgmn/scan>
 
 #include <numeric>
 #include <vector>
@@ -59,8 +60,6 @@ MULTI_GPU_TEST("inclusive_scan, range overloads default values", )
     envs.emplace_back(streams[i]);
   }
 
-  auto outputs = make_output_iterators(out);
-
   const auto expected_values = [&] {
     std::vector<T> reference(static_cast<cuda::std::size_t>(comms.front().size()) * values_per_rank);
 
@@ -86,27 +85,60 @@ MULTI_GPU_TEST("inclusive_scan, range overloads default values", )
     }
   };
 
+  auto input_iters = in | cuda::std::views::transform(cuda::std::ranges::begin);
+  auto input_sizes = in | cuda::std::views::transform(cuda::std::ranges::size);
+
   SECTION("Default init, op, ident (all)")
   {
-    cudax::inclusive_scan(cudax::distributed, comms, envs, in, outputs);
+    cudax::mgmn::inclusive_scan(
+      cudax::distributed,
+      comms,
+      envs,
+      input_iters,
+      input_sizes,
+      out | cuda::std::views::transform(cuda::std::ranges::begin));
     check_outputs();
   }
 
   SECTION("Default op, ident")
   {
-    cudax::inclusive_scan(cudax::distributed, comms, envs, in, outputs, init);
+    cudax::mgmn::inclusive_scan(
+      cudax::distributed,
+      comms,
+      envs,
+      input_iters,
+      input_sizes,
+      out | cuda::std::views::transform(cuda::std::ranges::begin),
+      init);
     check_outputs();
   }
 
   SECTION("Default ident")
   {
-    cudax::inclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op);
+    cudax::mgmn::inclusive_scan(
+      cudax::distributed,
+      comms,
+      envs,
+      input_iters,
+      input_sizes,
+      out | cuda::std::views::transform(cuda::std::ranges::begin),
+      init,
+      op);
     check_outputs();
   }
 
   SECTION("Default none")
   {
-    cudax::inclusive_scan(cudax::distributed, comms, envs, in, outputs, init, op, ident);
+    cudax::mgmn::inclusive_scan(
+      cudax::distributed,
+      comms,
+      envs,
+      input_iters,
+      input_sizes,
+      out | cuda::std::views::transform(cuda::std::ranges::begin),
+      init,
+      op,
+      ident);
     check_outputs();
   }
 }

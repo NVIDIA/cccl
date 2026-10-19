@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cmath>
 
@@ -26,7 +26,7 @@ TEST_DIAG_SUPPRESS_MSVC(4305) // 'argument': truncation from 'T' to 'float'
 TEST_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
 
 template <typename T>
-TEST_FUNC void test_acos(T val)
+TEST_HOST_DEVICE_FUNC void test_acos(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::acos(T{})), ret>);
@@ -68,7 +68,7 @@ TEST_FUNC void test_acos(T val)
 }
 
 template <typename T>
-TEST_FUNC void test_asin(T val)
+TEST_HOST_DEVICE_FUNC void test_asin(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::asin(T{})), ret>);
@@ -115,7 +115,7 @@ TEST_FUNC void test_asin(T val)
 }
 
 template <typename T>
-TEST_FUNC void test_atan(T val)
+TEST_HOST_DEVICE_FUNC void test_atan(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::atan(T{})), ret>);
@@ -158,7 +158,7 @@ TEST_FUNC void test_atan(T val)
 }
 
 template <typename T>
-TEST_FUNC void test_atan2(T val)
+TEST_HOST_DEVICE_FUNC void test_atan2(T val)
 {
   using ret = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
   static_assert(cuda::std::is_same_v<decltype(cuda::std::atan2(T{}, T{})), ret>);
@@ -341,7 +341,7 @@ TEST_FUNC void test_atan2(T val)
 }
 
 template <typename T>
-TEST_FUNC void test(const T val)
+TEST_HOST_DEVICE_FUNC void test(const T val)
 {
   test_acos<T>(val);
   test_asin<T>(val);
@@ -349,7 +349,7 @@ TEST_FUNC void test(const T val)
   test_atan2<T>(val);
 }
 
-TEST_FUNC void test(const float val)
+TEST_HOST_DEVICE_FUNC void test(const float val)
 {
   test<float>(val);
   test<double>(val);

@@ -59,17 +59,20 @@ TEST_FUNC void test_const_array(const T (&array)[Sz])
 
 int main(int, char**)
 {
+#if !_CCCL_TILE_COMPILATION() // error: calling a host device function in tile mode
   cuda::std::inplace_vector<int, 3> v;
   v.push_back(1);
+  test_container(v);
+  test_const_container(v);
+#endif // !_CCCL_TILE_COMPILATION()
+
   cuda::std::array<int, 1> a;
   a[0]                                = 3;
   cuda::std::initializer_list<int> il = {4};
 
-  test_container(v);
   test_container(a);
   test_container(il);
 
-  test_const_container(v);
   test_const_container(a);
   test_const_container(il);
 

@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: nvrtc, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement unsupported in tile mode
 
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
@@ -21,7 +21,7 @@ template <int Operand>
 struct store_tester
 {
   template <typename A>
-  TEST_FUNC static void initialize(A& v)
+  TEST_HOST_DEVICE_FUNC static void initialize(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T = decltype(a.load());
@@ -29,7 +29,7 @@ struct store_tester
   }
 
   template <typename A>
-  TEST_FUNC static void validate(A& v)
+  TEST_HOST_DEVICE_FUNC static void validate(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T = decltype(a.load());
@@ -41,7 +41,7 @@ template <int PreviousValue, int Operand>
 struct exchange_tester
 {
   template <typename A>
-  TEST_FUNC static void initialize(A& v)
+  TEST_HOST_DEVICE_FUNC static void initialize(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T = decltype(a.load());
@@ -49,7 +49,7 @@ struct exchange_tester
   }
 
   template <typename A>
-  TEST_FUNC static void validate(A& v)
+  TEST_HOST_DEVICE_FUNC static void validate(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T = decltype(a.load());
@@ -65,7 +65,7 @@ struct strong_cas_tester
     ShouldSucceed = (Expected == PreviousValue)
   };
   template <typename A>
-  TEST_FUNC static void initialize(A& v)
+  TEST_HOST_DEVICE_FUNC static void initialize(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T    = decltype(a.load());
@@ -75,7 +75,7 @@ struct strong_cas_tester
   }
 
   template <typename A>
-  TEST_FUNC static void validate(A& v)
+  TEST_HOST_DEVICE_FUNC static void validate(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T = decltype(a.load());
@@ -91,7 +91,7 @@ struct weak_cas_tester
     ShouldSucceed = (Expected == PreviousValue)
   };
   template <typename A>
-  TEST_FUNC static void initialize(A& v)
+  TEST_HOST_DEVICE_FUNC static void initialize(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T    = decltype(a.load());
@@ -109,7 +109,7 @@ struct weak_cas_tester
   }
 
   template <typename A>
-  TEST_FUNC static void validate(A& v)
+  TEST_HOST_DEVICE_FUNC static void validate(A& v)
   {
     cuda::std::atomic_ref<A> a(v);
     using T = decltype(a.load());
@@ -122,7 +122,7 @@ struct weak_cas_tester
   struct operation##_tester                                          \
   {                                                                  \
     template <typename A>                                            \
-    TEST_FUNC static void initialize(A& v)                           \
+    TEST_HOST_DEVICE_FUNC static void initialize(A& v)               \
     {                                                                \
       cuda::std::atomic_ref<A> a(v);                                 \
       using T = decltype(a.load());                                  \
@@ -130,7 +130,7 @@ struct weak_cas_tester
     }                                                                \
                                                                      \
     template <typename A>                                            \
-    TEST_FUNC static void validate(A& v)                             \
+    TEST_HOST_DEVICE_FUNC static void validate(A& v)                 \
     {                                                                \
       cuda::std::atomic_ref<A> a(v);                                 \
       using T = decltype(a.load());                                  \

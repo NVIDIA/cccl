@@ -26,11 +26,8 @@
 #  include <cuda/__stream/stream_ref.h>
 #  include <cuda/__type_traits/is_instantiable_with.h>
 #  include <cuda/std/__memory/addressof.h>
-#  include <cuda/std/__memory/construct_at.h>
-#  include <cuda/std/__new/launder.h>
 #  include <cuda/std/__optional/optional.h>
 #  include <cuda/std/__tuple_dir/ignore.h>
-#  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/is_callable.h>
 #  include <cuda/std/__type_traits/is_reference.h>
 #  include <cuda/std/__utility/declval.h>
@@ -191,7 +188,7 @@ _CCCL_GLOBAL_CONSTANT auto launch_transform = __tfx::__launch_transform_t{};
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Doxygen chokes here
 template <typename _Arg>
-using transformed_device_argument_t _CCCL_NODEBUG_ALIAS =
+using transformed_device_argument_t _CCCL_NODEBUG =
   __remove_rvalue_reference_t<::cuda::std::__call_result_t<__tfx::__launch_transform_t, ::cuda::stream_ref, _Arg>>;
 #  endif // ^^^ _CCCL_DOXYGEN_INVOKED ^^^
 _CCCL_END_NAMESPACE_CUDA

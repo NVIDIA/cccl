@@ -75,10 +75,10 @@ TEST_FUNC constexpr int process_segments(_SegSizeArg __seg_size)
 
 TEST_FUNC constexpr bool test()
 {
-  // Plain scalar: no bounds, global memory, buffer clamped to default
+  // Plain scalar: no bounds, global memory, buffer = value
   {
     static_assert(select_variant(100) == algorithm_variant::global_memory);
-    assert(compute_buffer_size(100, 4) == default_max_segment_size * 4);
+    assert(compute_buffer_size(100, 4) == 100 * 4);
     assert(process_segments(100) == 100);
   }
 

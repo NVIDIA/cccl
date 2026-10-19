@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
 
 // <cuda/std/__simd_>
 
@@ -43,7 +43,7 @@
 // compress: basic_vec
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_compress_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_compress_vec()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -90,7 +90,7 @@ TEST_FUNC constexpr void test_compress_vec()
 // expand: basic_vec
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_expand_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_expand_vec()
 {
   using Vec  = simd::basic_vec<T, simd::fixed_size<N>>;
   using Mask = typename Vec::mask_type;
@@ -152,7 +152,7 @@ TEST_FUNC constexpr void test_expand_vec()
 // compress: basic_mask
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_compress_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_compress_mask()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
   Mask src(is_even{});
@@ -195,7 +195,7 @@ TEST_FUNC constexpr void test_compress_mask()
 // expand: basic_mask
 
 template <int Bytes, int N>
-TEST_FUNC constexpr void test_expand_mask()
+TEST_HOST_DEVICE_FUNC constexpr void test_expand_mask()
 {
   using Mask = simd::basic_mask<Bytes, simd::fixed_size<N>>;
 
@@ -257,7 +257,7 @@ TEST_FUNC constexpr void test_expand_mask()
 //----------------------------------------------------------------------------------------------------------------------
 // noexcept
 
-TEST_FUNC constexpr void test_noexcept()
+TEST_HOST_DEVICE_FUNC constexpr void test_noexcept()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = simd::basic_mask<4, simd::fixed_size<4>>;
@@ -279,7 +279,7 @@ TEST_FUNC constexpr void test_noexcept()
 //----------------------------------------------------------------------------------------------------------------------
 // Return type
 
-TEST_FUNC constexpr void test_return_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_return_type()
 {
   using Vec  = simd::basic_vec<int, simd::fixed_size<4>>;
   using Mask = simd::basic_mask<4, simd::fixed_size<4>>;
@@ -299,7 +299,7 @@ TEST_FUNC constexpr void test_return_type()
 //----------------------------------------------------------------------------------------------------------------------
 
 // do not depend on element types
-TEST_FUNC constexpr bool test_fixed_type()
+TEST_HOST_DEVICE_FUNC constexpr bool test_fixed_type()
 {
   test_noexcept();
   test_return_type();
@@ -320,7 +320,7 @@ TEST_FUNC constexpr bool test_fixed_type()
 // Test drivers
 
 template <typename T, int N>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_compress_vec<T, N>();
   test_expand_vec<T, N>();

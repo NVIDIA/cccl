@@ -16,7 +16,7 @@
 #include <cmath>
 
 #include "catch2_test_block_topk_common.cuh"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
 namespace
 {
@@ -37,6 +37,9 @@ __global__ void topk_kernel(cuda::std::span<const KeyT> g_in, cuda::std::span<Ke
   }
   else
   {
+    // TODO (elstehle): block_topk consumes and returns a blocked arrangement. Enable this branch once the striped
+    // *_striped_to_striped overloads land.
+    static_assert(BlockedInput, "block_topk requires the input in a blocked arrangement");
     cub::LoadDirectStriped<BlockDim>(static_cast<int>(threadIdx.x), g_in.data(), keys, num_valid, oob_sentinel);
   }
 
@@ -84,7 +87,7 @@ void check_topk(const c2h::host_vector<KeyT>& h_in, cuda::std::span<const KeyT> 
   std::sort(h_top.begin(),
             h_top.end(),
             direction_to_comparator_t<SelectMax ? cub::detail::topk::select::max : cub::detail::topk::select::min>{});
-  c2h::host_vector<KeyT> h_ref_vec(h_ref.begin(), h_ref.end());
+  const c2h::host_vector<KeyT> h_ref_vec(h_ref.begin(), h_ref.end());
   CAPTURE(bit_repr(h_top), bit_repr(h_ref_vec));
   REQUIRE(h_top == h_ref_vec);
 }
@@ -103,7 +106,8 @@ struct block_shape
 using block_shapes_full_tile =
   c2h::type_list<block_shape<64, 8>, block_shape<256, 2>, block_shape<32, 16>, block_shape<128, 4>>;
 
-C2H_TEST("block_topk preserves keys across FP edge cases", "[block][topk]", fp_key_types, select_direction_max)
+CUB_TEST(
+  "block_topk preserves keys across FP edge cases", "[block][topk]", CUB_SMALL, fp_key_types, select_direction_max)
 {
   using key_t                            = c2h::get<0, TestType>;
   static constexpr bool select_max       = c2h::get<1, TestType>::value;
@@ -122,13 +126,14 @@ C2H_TEST("block_topk preserves keys across FP edge cases", "[block][topk]", fp_k
   CAPTURE(c2h::type_name<key_t>(), select_max);
 
   const int num_valid = tile_size / 2 + 7;
-  c2h::host_vector<key_t> h_in_partial(h_in.begin(), h_in.begin() + num_valid);
+  const c2h::host_vector<key_t> h_in_partial(h_in.begin(), h_in.begin() + num_valid);
 
   SECTION("full tile, blocked input")
   {
     static constexpr bool is_full_tile  = true;
     static constexpr bool blocked_input = true;
-    const int k                         = GENERATE_COPY(values<int>({1, tile_size / 4, tile_size - 1}));
+    // k == tile_size selects every item, which is served by a dedicated short-circuit
+    const int k = GENERATE_COPY(values<int>({1, tile_size / 4, tile_size - 1, tile_size}));
     CAPTURE(k);
     const auto h_ref = sorted_top_k<select_max>(h_in, k);
     check_topk<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>(
@@ -139,7 +144,8 @@ C2H_TEST("block_topk preserves keys across FP edge cases", "[block][topk]", fp_k
   {
     static constexpr bool is_full_tile  = false;
     static constexpr bool blocked_input = true;
-    const int k                         = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1}));
+    // k == num_valid selects every valid item, which is served by a dedicated short-circuit
+    const int k = GENERATE_COPY(values<int>({1, num_valid / 4, num_valid - 1, num_valid}));
     CAPTURE(num_valid, k);
     const auto h_ref = sorted_top_k<select_max>(h_in_partial, k);
     check_topk<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>(
@@ -147,8 +153,9 @@ C2H_TEST("block_topk preserves keys across FP edge cases", "[block][topk]", fp_k
   }
 }
 
-C2H_TEST("block_topk::select_* selects the right top-k on a full tile",
+CUB_TEST("block_topk::select_* selects the right top-k on a full tile",
          "[block][topk]",
+         CUB_SMALL,
          fp_key_types,
          block_shapes_full_tile,
          select_direction_max)
@@ -170,7 +177,7 @@ C2H_TEST("block_topk::select_* selects the right top-k on a full tile",
 
   auto run_check = [&](rng_t& local_rng, key_t boundary_key) {
     CAPTURE(c2h::type_name<key_t>(), select_max, k, overhang, boundary_key);
-    c2h::host_vector<key_t> h_in =
+    const c2h::host_vector<key_t> h_in =
       gen_keys_from_boundary_key<select_max>(tile_size, k, overhang, boundary_key, local_rng);
     const auto h_ref = sorted_top_k<select_max>(h_in, k);
     check_topk<key_t, threads_per_block, items_per_thread, is_full_tile, blocked_input, select_max>(
@@ -190,7 +197,7 @@ C2H_TEST("block_topk::select_* selects the right top-k on a full tile",
   }
 }
 
-C2H_TEST("block_topk::{Min,Max}Keys preserve -0.0 in output", "[block][topk][float]", select_direction_max)
+CUB_TEST("block_topk::{Min,Max}Keys preserve -0.0 in output", "[block][topk][float]", CUB_SMALL, select_direction_max)
 {
   static constexpr bool select_max       = c2h::get<0, TestType>::value;
   static constexpr int threads_per_block = 128;

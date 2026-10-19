@@ -80,7 +80,7 @@ template <class _Callback>
 class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback;
 
 template <class _Token, class _Callback>
-using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
+using stop_callback_for_t _CCCL_NODEBUG = typename _Token::template callback_type<_Callback>;
 
 template <class _Env, class _Query, bool _Default>
 _CCCL_CONCEPT __nothrow_queryable_with_or =
@@ -99,16 +99,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler_t
 {};
 
 template <class _Ty>
-using __sender_concept_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_Ty>::sender_concept;
+using __sender_concept_t _CCCL_NODEBUG = typename ::cuda::std::remove_reference_t<_Ty>::sender_concept;
 
 template <class _Ty>
-using __receiver_concept_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_Ty>::receiver_concept;
+using __receiver_concept_t _CCCL_NODEBUG = typename ::cuda::std::remove_reference_t<_Ty>::receiver_concept;
 
 template <class _Ty>
-using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename ::cuda::std::remove_reference_t<_Ty>::scheduler_concept;
+using __scheduler_concept_t _CCCL_NODEBUG = typename ::cuda::std::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
-using __operation_state_concept_t _CCCL_NODEBUG_ALIAS =
+using __operation_state_concept_t _CCCL_NODEBUG =
   typename ::cuda::std::remove_reference_t<_Ty>::operation_state_concept;
 
 template <class _Ty>
@@ -134,7 +134,7 @@ template <class _Sndr, class... _Env>
 _CCCL_HOST_DEVICE_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
-using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
+using completion_signatures_of_t _CCCL_NODEBUG = decltype(execution::get_completion_signatures<_Sndr, _Env...>());
 
 #if _CCCL_HAS_CONSTEXPR_EXCEPTIONS()
 template <class... _What, class... _Values>
@@ -163,13 +163,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t;
 
 template <class _Sch>
-using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<schedule_t>()(declval<_Sch>()));
+using schedule_result_t _CCCL_NODEBUG = decltype(declval<schedule_t>()(declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
-using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
+using connect_result_t _CCCL_NODEBUG = decltype(declval<connect_t>()(declval<_Sndr>(), declval<_Rcvr>()));
 
 template <class _Sndr, class _Env>
-using transform_sender_result_t _CCCL_NODEBUG_ALIAS =
+using transform_sender_result_t _CCCL_NODEBUG =
   decltype(declval<transform_sender_t>()(declval<_Sndr>(), declval<_Env>()));
 
 template <class _Sndr, class _Rcvr>
@@ -226,17 +226,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_domain_t;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT get_completion_behavior_t;
 
 template <class _Ty>
-using stop_token_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_stop_token_t, _Ty>>;
+using stop_token_of_t _CCCL_NODEBUG = decay_t<__call_result_t<get_stop_token_t, _Ty>>;
 
 template <class _Env>
-using __scheduler_of_t _CCCL_NODEBUG_ALIAS = decay_t<__call_result_t<get_scheduler_t, _Env>>;
+using __scheduler_of_t _CCCL_NODEBUG = decay_t<__call_result_t<get_scheduler_t, _Env>>;
 
 template <class _Env>
-using __domain_of_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_domain_t, _Env>;
+using __domain_of_t _CCCL_NODEBUG = __call_result_t<get_domain_t, _Env>;
 
 template <class _Tag, class _Sndr, class... _Env>
-using __completion_domain_of_t _CCCL_NODEBUG_ALIAS =
-  __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
+using __completion_domain_of_t _CCCL_NODEBUG = __call_result_t<get_completion_domain_t<_Tag>, env_of_t<_Sndr>, _Env...>;
 
 // get_forward_progress_guarantee:
 enum class forward_progress_guarantee
@@ -263,7 +262,7 @@ extern __fn_ptr_t<_Tag> __tag_of_v;
 
 _CCCL_TEMPLATE(class _Sndr)
 _CCCL_REQUIRES(__is_sender<_Sndr>)
-using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>());
+using tag_of_t _CCCL_NODEBUG = decltype(__detail::__tag_of_v<_Sndr>());
 
 template <class _Sndr, class... _Tag>
 inline constexpr bool __sender_for_v = _CCCL_REQUIRES_EXPR((_Sndr, variadic _Tag))(tag_of_t<_Sndr>{});

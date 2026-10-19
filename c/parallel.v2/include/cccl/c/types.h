@@ -40,10 +40,12 @@ typedef enum cccl_type_enum
   CCCL_UINT64  = 7,
   CCCL_FLOAT16 = 8, // This may be unsupported if _CCCL_HAS_NVFP16() is false but we can't include the header to check
                     // that here
-  CCCL_FLOAT32 = 9,
-  CCCL_FLOAT64 = 10,
-  CCCL_STORAGE = 11,
-  CCCL_BOOLEAN = 12,
+  CCCL_FLOAT32  = 9,
+  CCCL_FLOAT64  = 10,
+  CCCL_STORAGE  = 11,
+  CCCL_BOOLEAN  = 12,
+  CCCL_BFLOAT16 = 13, // This may be unsupported if _CCCL_HAS_NVBF16() is false but we can't include the header to
+                      // check that here
 } cccl_type_enum;
 
 typedef struct cccl_type_info
@@ -124,6 +126,9 @@ typedef struct cccl_build_config
   size_t num_extra_include_dirs;
   int enable_pch; // Cache precompiled headers on disk to speed up repeated builds
   int verbose; // Log PCH generation/usage and compiler args to build diagnostics
+  // Directory holding the precompiled-header cache. Required when enable_pch is
+  // set. NULL or empty disables PCH regardless of enable_pch.
+  const char* pch_cache_dir;
 } cccl_build_config;
 
 typedef enum cccl_iterator_kind_t

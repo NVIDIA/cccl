@@ -23,22 +23,18 @@
 
 #if _CCCL_HOSTED()
 
-#  include <cuda/__functional/address_stability.h>
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/iter_swap.h>
 #  include <cuda/std/__algorithm/swap_ranges.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__type_traits/is_swappable.h>
 #  include <cuda/std/__utility/move.h>
@@ -46,8 +42,8 @@
 #  include <cuda/std/tuple>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/for_each_n.h>
-#    include <cuda/std/__pstl/cuda/transform.h>
+#    include <cuda/std/__pstl/cuda/for_each_n.h> // IWYU pragma: keep
+#    include <cuda/std/__pstl/cuda/transform.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -63,15 +59,14 @@ struct __swap_ranges_iter_swap_fn
   template <class _DifferenceType>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr void operator()(const _DifferenceType __index) const
   {
-    ::cuda::std::__iter_swap_cpo{}(
-      __first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
+    ::cuda::std::iter_swap(__first1 + __index, __first2 + static_cast<iter_difference_t<_InputIterator2>>(__index));
   }
 };
 
 struct __swap_ranges_transform_fn
 {
   template <class _Tp, class _Up>
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto operator()(_Tp __lhs, _Up __rhs) const
+  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE constexpr auto _CCCL_STATIC_CALL_OPERATOR(_Tp __lhs, _Up __rhs)
   {
     using ::cuda::std::swap;
     swap(__lhs, __rhs);

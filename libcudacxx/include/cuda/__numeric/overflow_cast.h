@@ -24,7 +24,6 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__utility/cmp.h>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -44,7 +43,7 @@ _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(::cuda::std::__cccl_is_integer_v<_To> _CCCL_AND ::cuda::std::__cccl_is_cv_integer_v<_From>)
 [[nodiscard]] _CCCL_API constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
 {
-  bool __overflow = false;
+  bool __overflow = false; // NOLINT(misc-const-correctness)
   if constexpr (!__is_integer_representable_v<_From, _To>)
   {
     __overflow = !::cuda::std::in_range<_To>(__from);

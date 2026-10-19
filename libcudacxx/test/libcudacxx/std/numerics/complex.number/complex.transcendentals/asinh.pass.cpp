@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// nvbug6077402: error: "call to non-tile function not supported!"
+// UNSUPPORTED: force-tile
+// error calling a __host__ __device__ function from a __host__ __device__ __tile__ function is not allowed
 
 // <cuda/std/complex>
 
@@ -23,19 +23,19 @@
 #include "test_macros.h"
 
 template <class T>
-TEST_FUNC void test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
+TEST_HOST_DEVICE_FUNC void test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
 {
   assert(asinh(c) == x);
 }
 
 template <class T>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   test(cuda::std::complex<T>(0, 0), cuda::std::complex<T>(0, 0));
 }
 
 template <class T>
-TEST_FUNC void test_edges()
+TEST_HOST_DEVICE_FUNC void test_edges()
 {
   const T pi       = cuda::std::atan2(+0., -0.);
   auto testcases   = get_testcases<T>();
@@ -141,19 +141,19 @@ int main(int, char**)
 #if _CCCL_HAS_LONG_DOUBLE()
   test<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVBF16()
   test_edges<double>();
-#if _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16() && !_CCCL_TILE_COMPILATION()
-#if _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16() && !_CCCL_TILE_COMPILATION()
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

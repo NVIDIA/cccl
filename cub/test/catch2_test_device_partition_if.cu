@@ -11,7 +11,6 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
@@ -20,9 +19,11 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
@@ -62,7 +63,7 @@ using types =
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
-C2H_TEST("DevicePartition::If can run with empty input", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If can run with empty input", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -79,7 +80,7 @@ C2H_TEST("DevicePartition::If can run with empty input", "[device][partition_if]
   REQUIRE(num_selected_out[0] == 0);
 }
 
-C2H_TEST("DevicePartition::If handles all matched", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If handles all matched", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -98,7 +99,7 @@ C2H_TEST("DevicePartition::If handles all matched", "[device][partition_if]", ty
   REQUIRE(out == in);
 }
 
-C2H_TEST("DevicePartition::If handles no matched", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If handles no matched", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -120,7 +121,7 @@ C2H_TEST("DevicePartition::If handles no matched", "[device][partition_if]", typ
   REQUIRE(out == in);
 }
 
-C2H_TEST("DevicePartition::If does not change input", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If does not change input", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -130,21 +131,21 @@ C2H_TEST("DevicePartition::If does not change input", "[device][partition_if]", 
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
   int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  c2h::device_vector<type> reference = in;
+  const c2h::device_vector<type> reference = in;
 
   partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
   REQUIRE(reference == in);
 }
 
-C2H_TEST("DevicePartition::If is stable", "[device][partition_if]")
+CUB_TEST("DevicePartition::If is stable", "[device][partition_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -154,7 +155,7 @@ C2H_TEST("DevicePartition::If is stable", "[device][partition_if]")
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -174,7 +175,8 @@ C2H_TEST("DevicePartition::If is stable", "[device][partition_if]")
 }
 
 #if TEST_LAUNCH == 0
-C2H_TEST("DevicePartition::If works with user provided memory and environment", "[device][partition_if]", types)
+CUB_TEST(
+  "DevicePartition::If works with user provided memory and environment", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -232,51 +234,11 @@ C2H_TEST("DevicePartition::If works with user provided memory and environment", 
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DevicePartition::If works with cudaStream_t")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_partition_if(stream.get());
-  }
-
-  SECTION("DevicePartition::If works with cuda::stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    test_partition_if(stream);
-  }
-
-  SECTION("DevicePartition::If works with cuda::stream_ref")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    cuda::stream_ref stream_ref{stream};
-    test_partition_if(stream_ref);
-  }
-
-  SECTION("DevicePartition::If works with cuda::std::execution::env")
-  {
-    cuda::std::execution::env env{};
-    test_partition_if(env);
-  }
-
-  SECTION("DevicePartition::If works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_partition_if(policy);
-  }
-
-  SECTION("DevicePartition::If works with cuda::execution::gpu with stream")
-  {
-    cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_partition_if(policy);
-  }
+  test_with_custom_streams(test_partition_if);
 }
 #endif // TEST_LAUNCH == 0
 
-C2H_TEST("DevicePartition::If works with iterators", "[device][partition_if]", all_types)
+CUB_TEST("DevicePartition::If works with iterators", "[device][partition_if]", CUB_SMALL, all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -286,7 +248,7 @@ C2H_TEST("DevicePartition::If works with iterators", "[device][partition_if]", a
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -305,7 +267,7 @@ C2H_TEST("DevicePartition::If works with iterators", "[device][partition_if]", a
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::If works with pointers", "[device][partition_if]", types)
+CUB_TEST("DevicePartition::If works with pointers", "[device][partition_if]", CUB_SMALL, types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -315,7 +277,7 @@ C2H_TEST("DevicePartition::If works with pointers", "[device][partition_if]", ty
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -355,7 +317,7 @@ struct convertible_from_T
   }
 };
 
-C2H_TEST("DevicePartition::If works with a different output type", "[device][partition_if]")
+CUB_TEST("DevicePartition::If works with a different output type", "[device][partition_if]", CUB_SMALL)
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -365,7 +327,7 @@ C2H_TEST("DevicePartition::If works with a different output type", "[device][par
   c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
-  less_than_t<type> le{in[num_items / 2]};
+  const less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -384,8 +346,9 @@ C2H_TEST("DevicePartition::If works with a different output type", "[device][par
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::If works for very large number of items",
+CUB_TEST("DevicePartition::If works for very large number of items",
          "[device][partition_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         CUB_SMALL,
          offset_types)
 try
 {
@@ -427,8 +390,7 @@ try
   REQUIRE(num_selected_out[0] == cut_off_index);
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

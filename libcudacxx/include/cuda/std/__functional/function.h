@@ -21,35 +21,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__functional/binary_function.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__functional/unary_function.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/allocator_arg_t.h>
-#include <cuda/std/__memory/allocator_destructor.h>
-#include <cuda/std/__memory/allocator_traits.h>
-#include <cuda/std/__memory/builtin_new_allocator.h>
-#include <cuda/std/__memory/compressed_pair.h>
-#include <cuda/std/__memory/uses_allocator.h>
-#include <cuda/std/__new_>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/decay.h>
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/is_scalar.h>
-#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#include <cuda/std/__type_traits/is_trivially_destructible.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
-#include <cuda/std/__utility/forward.h>
-#include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/piecewise_construct.h>
-#include <cuda/std/__utility/swap.h>
-#include <cuda/std/tuple>
-
 #ifndef __cuda_std__
+
+#  include <cuda/std/__exception/terminate.h>
+#  include <cuda/std/__functional/binary_function.h>
+#  include <cuda/std/__functional/invoke.h>
+#  include <cuda/std/__functional/unary_function.h>
+#  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/allocator_arg_t.h>
+#  include <cuda/std/__memory/allocator_destructor.h>
+#  include <cuda/std/__memory/allocator_traits.h>
+#  include <cuda/std/__memory/builtin_new_allocator.h>
+#  include <cuda/std/__memory/compressed_pair.h>
+#  include <cuda/std/__memory/uses_allocator.h>
+#  include <cuda/std/__new_>
+#  include <cuda/std/__type_traits/conditional.h>
+#  include <cuda/std/__type_traits/decay.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/is_scalar.h>
+#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#  include <cuda/std/__type_traits/is_trivially_destructible.h>
+#  include <cuda/std/__type_traits/is_void.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
+#  include <cuda/std/__utility/forward.h>
+#  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/piecewise_construct.h>
+#  include <cuda/std/__utility/swap.h>
+#  include <cuda/std/tuple>
 
 #  if _CCCL_HAS_EXCEPTIONS()
 #    include <function>
@@ -135,8 +135,8 @@ class __alloc_func<_Fp, _Ap, _Rp(_ArgTypes...)>
   __compressed_pair<_Fp, _Ap> __f_;
 
 public:
-  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
-  using _Alloc _CCCL_NODEBUG_ALIAS  = _Ap;
+  using _Target _CCCL_NODEBUG = _Fp;
+  using _Alloc _CCCL_NODEBUG  = _Ap;
 
   _CCCL_API inline const _Target& __target() const
   {
@@ -206,7 +206,7 @@ class __default_alloc_func<_Fp, _Rp(_ArgTypes...)>
   _Fp __f_;
 
 public:
-  using _Target _CCCL_NODEBUG_ALIAS = _Fp;
+  using _Target _CCCL_NODEBUG = _Fp;
 
   _CCCL_API inline const _Target& __target() const
   {
@@ -1055,7 +1055,7 @@ public:
 };
 
 template <class _Rp, class... _Ap>
-function(_Rp (*)(_Ap...)) -> function<_Rp(_Ap...)>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES function(_Rp (*)(_Ap...)) -> function<_Rp(_Ap...)>;
 
 template <class _Fp>
 struct __strip_signature;
@@ -1145,7 +1145,7 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile & noexcept>
 };
 
 template <class _Fp, class _Stripped = typename __strip_signature<decltype(&_Fp::operator())>::type>
-function(_Fp) -> function<_Stripped>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES function(_Fp) -> function<_Stripped>;
 
 template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(const function& __f)

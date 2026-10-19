@@ -55,7 +55,7 @@ Once a device thread makes progress:
 
 - If it is part of a `Cooperative Grid <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__EXECUTION.html#group__CUDART__EXECUTION_1g504b94170f83285c71031be6d5d15f73>`__,
   all device threads in its grid shall eventually make progress.
-- Otherwise, all device threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#thread-block-clusters>`__
+- Otherwise, all device threads in its `thread-block cluster <https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html#thread-block-clusters>`__
   shall eventually make progress.
 
     [Note: Threads in other thread-block clusters are not guaranteed to eventually make progress. - end note.]
@@ -248,8 +248,8 @@ Dependencies
 
 A device thread shall not start until all its dependencies have completed.
 
-  [Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via `CUDA Stream Commands <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams>`__ .
-  These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#kernels>`__ . - end note.]
+  [Note: Dependencies that prevent device threads from starting to make progress can be created, for example, via `CUDA Stream Commands <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#cuda-streams>`__ .
+  These may include dependencies on the completion of, among others, `CUDA Events <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#cuda-events>`__ and `CUDA Kernels <https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/writing-cuda-kernels.html#writing-simt-kernels>`__ . - end note.]
 
 .. dropdown:: Examples of CUDA API forward progress guarantees due to dependencies
 

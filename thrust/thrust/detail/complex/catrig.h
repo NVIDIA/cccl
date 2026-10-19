@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE inline void raise_inexact()
 {
   const volatile float tiny = 7.888609052210118054117286e-31; /* 0x1p-100; */
   // needs the volatile to prevent compiler from ignoring it
-  [[maybe_unused]] volatile float junk = 1 + tiny;
+  [[maybe_unused]] const volatile float junk = 1 + tiny;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z);
@@ -305,7 +305,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
 {
   double x, y, ax, ay, rx, ry, B, sqrt_A2my2, new_y;
   int B_is_usable;
-  complex<double> w;
+  complex<double> w{};
   const double RECIP_EPSILON = 1.0 / DBL_EPSILON;
   x                          = z.real();
   y                          = z.imag();
@@ -384,7 +384,7 @@ _CCCL_HOST_DEVICE inline complex<double> casinh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> casin(complex<double> z)
 {
-  complex<double> w = casinh(complex<double>(z.imag(), z.real()));
+  const complex<double> w = casinh(complex<double>(z.imag(), z.real()));
 
   return (complex<double>(w.imag(), w.real()));
 }
@@ -406,7 +406,7 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
   double x, y, ax, ay, rx, ry, B, sqrt_A2mx2, new_x;
   int sx, sy;
   int B_is_usable;
-  complex<double> w;
+  complex<double> w{};
   const double pio2_hi          = 1.5707963267948966e0; /*  0x1921fb54442d18.0p-52 */
   const volatile double pio2_lo = 6.1232339957367659e-17; /*  0x11a62633145c07.0p-106 */
 
@@ -507,10 +507,8 @@ _CCCL_HOST_DEVICE inline complex<double> cacos(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
 {
-  complex<double> w;
+  const complex<double> w = cacos(z);
   double rx, ry;
-
-  w  = cacos(z);
   rx = w.real();
   ry = w.imag();
   /* cacosh(NaN + I*NaN) = NaN + I*NaN */
@@ -520,9 +518,9 @@ _CCCL_HOST_DEVICE inline complex<double> cacosh(complex<double> z)
   }
   /* cacosh(NaN + I*+-Inf) = +Inf + I*NaN */
   /* cacosh(+-Inf + I*NaN) = +Inf + I*NaN */
-  if (isnan(rx))
+  if (::cuda::std::isnan(rx))
   {
-    return (complex<double>(fabs(ry), rx));
+    return (complex<double>(::cuda::std::fabs(ry), rx));
   }
   /* cacosh(0 + I*NaN) = NaN + I*NaN */
   if (::cuda::std::isnan(ry))
@@ -754,7 +752,7 @@ _CCCL_HOST_DEVICE inline complex<double> catanh(complex<double> z)
  */
 _CCCL_HOST_DEVICE inline complex<double> catan(complex<double> z)
 {
-  complex<double> w = catanh(complex<double>(z.imag(), z.real()));
+  const complex<double> w = catanh(complex<double>(z.imag(), z.real()));
   return (complex<double>(w.imag(), w.real()));
 }
 } // namespace detail::complex

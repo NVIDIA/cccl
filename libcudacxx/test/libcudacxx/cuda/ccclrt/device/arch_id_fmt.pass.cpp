@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: return in loop statement is not supported
-
 #include <cuda/devices>
 
 #if __cpp_lib_format >= 201907L
@@ -36,12 +33,14 @@ void test()
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_90) == TEST_STRLIT(C, "sm_90"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_100) == TEST_STRLIT(C, "sm_100"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_103) == TEST_STRLIT(C, "sm_103"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_107) == TEST_STRLIT(C, "sm_107"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_110) == TEST_STRLIT(C, "sm_110"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_120) == TEST_STRLIT(C, "sm_120"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_121) == TEST_STRLIT(C, "sm_121"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_90a) == TEST_STRLIT(C, "sm_90a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_100a) == TEST_STRLIT(C, "sm_100a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_103a) == TEST_STRLIT(C, "sm_103a"));
+  assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_107a) == TEST_STRLIT(C, "sm_107a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_110a) == TEST_STRLIT(C, "sm_110a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_120a) == TEST_STRLIT(C, "sm_120a"));
   assert(std::format(TEST_STRLIT(C, "{}"), cuda::arch_id::sm_121a) == TEST_STRLIT(C, "sm_121a"));

@@ -18,7 +18,13 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
@@ -27,6 +33,7 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__host_stdlib/sstream>
@@ -42,8 +49,39 @@ namespace detail::topk
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
 {
-  int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
+  const int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
   return (1 << num_bits) - 1;
+}
+
+// Bit ordering used by the top-k radix passes. Without `NormalizeMinusZero` this is `Traits<T>::TwiddleIn`. With it,
+// floating-point keys use a variant that negates (rather than complements) keys with the sign bit set. `TwiddleIn`
+// complements negative keys, which leaves -0.0 at `0x7FFF...`, one below +0.0 at `0x8000...`. Negation is that
+// complement plus one, so it shifts the whole negative half up by one and -0.0 lands exactly on +0.0 with no separate
+// fix-up. Every sign-clear pattern is unchanged and every sign-set pattern moves by exactly +1, so the relative order
+// is preserved everywhere (-NaN stays below -inf, +NaN above +inf) and the only new equivalence is the two zeros.
+template <typename T, bool NormalizeMinusZero>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename Traits<T>::UnsignedBits
+twiddle_in_bits(typename Traits<T>::UnsignedBits bits)
+{
+  using bits_t = typename Traits<T>::UnsignedBits;
+  // Every FLOATING_POINT specialization of `Traits` asserts `::cuda::is_floating_point_v<T>`, so this branch covers
+  // every key type whose `TwiddleIn` is the floating-point one.
+  if constexpr (NormalizeMinusZero && ::cuda::is_floating_point_v<T>)
+  {
+    // 0 for sign-clear keys, ~0 for sign-set keys. Unsigned arithmetic only.
+    const bits_t neg_mask = static_cast<bits_t>(bits_t{0} - static_cast<bits_t>(bits >> (8 * sizeof(bits_t) - 1)));
+    // `neg_mask | HIGH_BIT` is the mask `Traits<T>::TwiddleIn` xors with (HIGH_BIT for sign-clear keys, ~0 for
+    // sign-set keys). Adding `neg_mask` first subtracts one from sign-set keys, so after the xor they are
+    // `~(bits - 1) == -bits` while sign-clear keys are `bits | HIGH_BIT` as before. Spelled add-then-xor (rather than
+    // xor-then-subtract) so the xor is the last op: the twiddle is a shift, an add and one three-input logic op, and
+    // the complement that the max direction applies afterwards folds into that same logic op.
+    return static_cast<bits_t>(
+      static_cast<bits_t>(bits + neg_mask) ^ static_cast<bits_t>(neg_mask | Traits<T>::HIGH_BIT));
+  }
+  else
+  {
+    return Traits<T>::TwiddleIn(bits);
+  }
 }
 
 // Get the bin ID from the value of element
@@ -51,11 +89,12 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
+          bool NormalizeMinusZero,
           bool CanTwiddle = detail::radix::can_twiddle<T>>
 struct extract_bin_op_t;
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, true>
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using bit_ordered_type              = typename Traits<T>::UnsignedBits;
@@ -73,18 +112,18 @@ struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
   {
     auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
+    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits);
     if constexpr (SelectDirection != select::min)
     {
       bits = ~bits;
     }
-    int bucket = (bits >> start_bit) & mask;
+    const int bucket = (bits >> start_bit) & mask;
     return bucket;
   }
 };
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, false>
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using radix_traits_t                = detail::radix::traits_t<T>;
@@ -115,11 +154,12 @@ template <typename T,
           select SelectDirection,
           int BitsPerPass,
           typename DecomposerT,
+          bool NormalizeMinusZero,
           bool CanTwiddle = detail::radix::can_twiddle<T>>
 struct identify_candidates_op_t;
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, true>
 {
   using unsigned_bits_t = typename Traits<T>::UnsignedBits;
   using key_prefix_t    = key_prefix_storage_t<T>;
@@ -128,14 +168,13 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
   identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
       : kth_key_bits(&kth_key_bits->bits)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(pass - 1);
-  }
+      , start_bit(calc_start_bit<T, BitsPerPass>(pass - 1))
+  {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
   {
     auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
+    bits      = twiddle_in_bits<T, NormalizeMinusZero>(bits); // must match extract_bin_op_t, which built kth_key_bits
 
     if constexpr (SelectDirection != select::min)
     {
@@ -151,8 +190,8 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, tr
   }
 };
 
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
+template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT, bool NormalizeMinusZero>
+struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, NormalizeMinusZero, false>
 {
   static constexpr bool is_descending = SelectDirection != select::min;
   using radix_traits_t                = detail::radix::traits_t<T>;
@@ -448,16 +487,18 @@ __launch_bounds__(int(current_policy<PolicySelector>().threads_per_block))
 //! @tparam DecomposerT
 //!   Implementation detail, do not specify directly, requirements on the content of this type are subject to breaking
 //!   change.
-template <select SelectDirection,
-          typename KeyInputIteratorT,
-          typename KeyOutputIteratorT,
-          typename ValueInputIteratorT,
-          typename ValueOutputIteratorT,
-          typename OffsetT,
-          typename OutOffsetT,
-          typename DecomposerT           = detail::identity_decomposer_t,
-          typename PolicySelector        = policy_selector_from_types<it_value_t<KeyInputIteratorT>>,
-          typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+template <
+  select SelectDirection,
+  typename KeyInputIteratorT,
+  typename KeyOutputIteratorT,
+  typename ValueInputIteratorT,
+  typename ValueOutputIteratorT,
+  typename OffsetT,
+  typename OutOffsetT,
+  typename DecomposerT = detail::identity_decomposer_t,
+  typename PolicySelector =
+    policy_selector_from_types<it_value_t<KeyInputIteratorT>, it_value_t<ValueInputIteratorT>, OffsetT, OutOffsetT>,
+  typename KernelLauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 #if _CCCL_HAS_CONCEPTS()
   requires topk_policy_selector<PolicySelector>
 #endif // _CCCL_HAS_CONCEPTS()
@@ -481,22 +522,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     return error;
   }
 
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-  NV_IF_TARGET(NV_IS_HOST, ({
-                 std::stringstream ss;
-                 ss << policy_selector(cc);
-                 _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
-                         cc.major_cap(),
-                         cc.minor_cap(),
-                         ss.str().c_str());
-               }))
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-    using key_in_t                             = it_value_t<KeyInputIteratorT>;
-    using value_in_t                           = it_value_t<ValueInputIteratorT>;
-    static constexpr bool keys_only            = ::cuda::std::is_same_v<value_in_t, NullType>;
+    detail::log_dispatch("DeviceTopK", cc, active_policy);
+    using key_in_t                  = it_value_t<KeyInputIteratorT>;
+    using value_in_t                = it_value_t<ValueInputIteratorT>;
+    static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
 
     // atomicAdd does not implement overloads for all integer types, so we limit OffsetT to uint32_t or unsigned long
     // long
@@ -524,8 +555,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators
-    using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
-    using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
+    // The trailing `false` skips the -0.0 normalization: DeviceTopK has no index tie-break, so any set of tied keys is
+    // valid and -0.0 may rank below +0.0
+    using identify_candidates_op =
+      identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, false>;
+    using extract_bin_op = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, false>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
@@ -538,7 +572,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const OffsetT candidate_buffer_length =
       (::cuda::std::max) (OffsetT{1}, num_items / coefficient_for_candidate_buffer);
 
-    constexpr int allocations_array_size            = keys_only ? 4 : 6;
+    constexpr int allocations_array_size = keys_only ? 4 : 6;
+    // NOLINTNEXTLINE(misc-const-correctness)
     size_t allocation_sizes[allocations_array_size] = {
       size_counter,
       size_histogram,
@@ -599,19 +634,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
     const auto topk_grid_size            = (::cuda::std::min) (main_kernel_max_occupancy, num_tiles);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
-            "%lld>>>(), %d items per thread, %d SM occupancy\n",
-            topk_grid_size,
-            threads_per_block,
-            (long long) stream,
-            items_per_thread,
-            main_kernel_blocks_per_sm);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "topk_kernel", topk_grid_size, 1, 1, threads_per_block, 0, stream, ", SM occupancy: %d", main_kernel_blocks_per_sm);
 
     // Initialize address variables
     counter_t* counter = static_cast<counter_t*>(allocations[0]);
-    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]);
+    OffsetT* histogram = static_cast<decltype(histogram)>(allocations[1]); // NOLINT(misc-const-correctness)
 
     // Pass 0: dedicated histogram-only kernel over the full input
     {
@@ -635,7 +663,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       const auto histogram_kernel_max_occupancy = static_cast<unsigned int>(histogram_kernel_blocks_per_sm * num_sms);
       const auto histogram_grid_size            = (::cuda::std::min) (histogram_kernel_max_occupancy, num_tiles);
 
-      extract_bin_op extract_op(0, total_bits, decomposer);
+      const extract_bin_op extract_op(0, total_bits, decomposer);
       if (const auto error = CubDebug(
             launcher_factory(histogram_grid_size, threads_per_block, 0, stream)
               .doit(histogram_kernel,
@@ -668,8 +696,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     int pass = 1;
     for (; pass < num_passes; pass++)
     {
-      extract_bin_op extract_op(pass, total_bits, decomposer);
-      identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
+      const extract_bin_op extract_op(pass, total_bits, decomposer);
+      const identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
 
       if (const auto error = CubDebug(
             launcher_factory(topk_grid_size, threads_per_block, 0, stream)
@@ -713,7 +741,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
       key_in_t,
       identify_candidates_op>;
 
-    identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
+    const identify_candidates_op identify_op(&counter->kth_key_bits, pass, total_bits, decomposer);
     int last_filter_kernel_blocks_per_sm = 0;
     if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
           last_filter_kernel_blocks_per_sm, topk_last_filter_kernel, threads_per_block)))

@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: calling a host device function in tile mode
+
 // <cuda/std/__simd_>
 
 // [simd.creation], chunk (basic_vec)
@@ -29,7 +32,7 @@
 // chunk<SubVec>(basic_vec) - exact divisor
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_exact_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_exact_vec()
 {
   using SrcAbi                   = simd::fixed_size<8>;
   using SubVec                   = simd::basic_vec<T, simd::fixed_size<4>>;
@@ -48,7 +51,7 @@ TEST_FUNC constexpr void test_chunk_exact_vec()
 // chunk<SubVec>(basic_vec) - remainder
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_remainder_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_remainder_vec()
 {
   using SrcAbi                   = simd::fixed_size<6>;
   using SubVec                   = simd::basic_vec<T, simd::fixed_size<4>>;
@@ -74,7 +77,7 @@ TEST_FUNC constexpr void test_chunk_remainder_vec()
 // chunk<N>(basic_vec) - exact divisor
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_by_n_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_by_n_vec()
 {
   using SrcAbi                   = simd::fixed_size<8>;
   using SubVec                   = simd::basic_vec<T, simd::fixed_size<2>>;
@@ -95,7 +98,7 @@ TEST_FUNC constexpr void test_chunk_by_n_vec()
 // chunk<N>(basic_vec) - remainder
 
 template <typename T>
-TEST_FUNC constexpr void test_chunk_by_n_remainder_vec()
+TEST_HOST_DEVICE_FUNC constexpr void test_chunk_by_n_remainder_vec()
 {
   using SrcAbi                   = simd::fixed_size<6>;
   using SubVec                   = simd::basic_vec<T, simd::fixed_size<4>>;
@@ -120,7 +123,7 @@ TEST_FUNC constexpr void test_chunk_by_n_remainder_vec()
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T>
-TEST_FUNC constexpr void test_type()
+TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   test_chunk_exact_vec<T>();
   test_chunk_remainder_vec<T>();
@@ -128,7 +131,7 @@ TEST_FUNC constexpr void test_type()
   test_chunk_by_n_remainder_vec<T>();
 }
 
-TEST_FUNC constexpr bool test()
+TEST_HOST_DEVICE_FUNC constexpr bool test()
 {
   test_type<cuda::std::int16_t>();
   test_type<float>();

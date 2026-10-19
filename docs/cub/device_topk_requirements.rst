@@ -31,8 +31,8 @@ sequenced in the output (unless you also request a stable ordering, as described
 the selected items in the output buffer may still vary unless you also request a specific output
 ordering. Non-determinism arises only when more elements compare equal at the selection boundary
 than there are remaining slots in the top-*K*. For example, with *K* = 3 and four elements tied for
-the third-largest position, the algorithm must choose three of the four, and that choice is the
-source of variability.
+the largest key, the algorithm must choose three of the four, and that choice is the source of
+variability.
 
 **Output ordering applies to the result sequence.** Once the result set is fixed, output ordering
 specifies how those *K* items are laid out in the output buffer.
@@ -63,16 +63,35 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
 
 .. note::
 
-   **Current support.** This initial API surface only implements the fully opted-out configuration.
-   For :cpp:struct:`cub::DeviceBatchedTopK` it must be requested **explicitly** as
-   ``cuda::execution::require(cuda::execution::determinism::not_guaranteed,
-   cuda::execution::tie_break::unspecified, cuda::execution::output_ordering::unsorted)``
-   (:cpp:struct:`cub::DeviceTopK` has no tie-break dimension yet and omits the ``tie_break`` token).
-   The algorithms ``static_assert`` for any other combination (including an empty, no-requirement
-   environment), so the deterministic default described above cannot yet be exercised in code. The
-   deterministic, tie-broken, and (stable-)sorted modes documented here define the committed long-term
-   contract and will become available (including as the no-requirement default) as those code paths
-   land.
+   **Current support.** :cpp:struct:`cub::DeviceBatchedTopK` supports ``unsorted`` and ``sorted`` output.
+   ``stable_sorted`` (and therefore an empty, no-requirement environment, which resolves to
+   ``stable_sorted``) ``static_assert``s at compile time. Sorted batched output requires
+   ``min(k bound, segment-size bound)`` to fit a block-wide radix-sort tile and additional temporary
+   storage proportional to ``num_segments * min(k bound, segment-size bound)``. It supports a *k* of
+   at least 2048 whenever ``max(sizeof(key), sizeof(value)) <= 16``; a wider value may require a
+   tighter bound. As indicative common cases, 4-byte key/value pairs cover 8192 and an 8-byte key
+   with a 4-byte value covers 4096. The supported *selection* requirements differ by algorithm and, for
+   :cpp:struct:`cub::DeviceBatchedTopK`, by architecture:
+
+   * :cpp:struct:`cub::DeviceBatchedTopK`:
+
+     - **Pre-Hopper (compute capability < 9.0):** only the fully non-deterministic request
+       ``(not_guaranteed, unspecified)`` is supported, and every segment must fit a single thread
+       block. Deterministic / tie-break requests and larger segments require SM 9.0+ and are diagnosed
+       at compile time (or, when ``CUB_DISABLE_TOPK_UNSUPPORTED_ARCH_ASSERT`` is defined, deferred to
+       runtime as ``cudaErrorNotSupported``).
+     - **Hopper and newer (compute capability >= 9.0):** every acknowledged ``(determinism,
+       tie_break)`` pair is supported -- ``(not_guaranteed, unspecified)``, ``(run_to_run,
+       unspecified)``, and ``(gpu_to_gpu, {unspecified, prefer_smaller_index, prefer_larger_index})``
+       -- and segments larger than a single thread block are also supported.
+
+   * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
+     (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break
+     dimension yet, so it omits the ``tie_break`` token. Its sorted output remains unimplemented.
+
+   The remaining deterministic, tie-broken, and stable-sorted modes documented here define the
+   committed long-term contract and will become available (including as the no-requirement default) as
+   those code paths land.
 
 Requirements reference
 ----------------------
@@ -106,6 +125,9 @@ across GPUs, so it requires ``determinism::gpu_to_gpu``. Pairing it with ``run_t
 ``not_guaranteed`` is rejected at compile time. ``determinism`` and ``tie_break`` must always be
 specified together (or both omitted to take the default). Use ``tie_break::unspecified`` to leave the
 boundary policy to the implementation, for example alongside ``not_guaranteed`` or ``run_to_run``.
+
+For floating-point keys, -0.0 and +0.0 compare equal. Under ``prefer_smaller_index`` and
+``prefer_larger_index`` the index preference decides between them.
 
 .. list-table::
    :header-rows: 1
@@ -156,7 +178,7 @@ execution environment alongside other properties such as a stream:
      cuda::execution::require(
        cuda::execution::determinism::gpu_to_gpu,
        cuda::execution::tie_break::prefer_smaller_index,
-       cuda::execution::output_ordering::sorted),
+       cuda::execution::output_ordering::unsorted),
      stream_ref};
 
 .. _cub-topk-set-membership:
@@ -219,7 +241,7 @@ Consider ``cub::DeviceTopK::MaxKeys`` with *K* = 3 on this input:
    index :  0     1     2     3     4     5
    key   : 10     8     8     8     6     5
 
-The top three keys are ``10`` and two ``8``\ s. Four elements compare equal at the boundary (the
+The top three keys are ``10`` and two ``8``\ s. Three elements compare equal at the boundary (the
 ``8``\ s at indices 1, 2, 3), but only two can be kept. That is the tie. The notation ``key@index``
 identifies an element by both its key and its source position (for example ``8@2`` is the ``8`` at
 index 2).

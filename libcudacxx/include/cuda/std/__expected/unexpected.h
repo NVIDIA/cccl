@@ -22,7 +22,6 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__fwd/unexpected.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_constructible.h>
@@ -157,7 +156,7 @@ private:
 };
 
 template <class _Err>
-unexpected(_Err) -> unexpected<_Err>;
+_CCCL_DEDUCTION_GUIDE_ATTRIBUTES unexpected(_Err) -> unexpected<_Err>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

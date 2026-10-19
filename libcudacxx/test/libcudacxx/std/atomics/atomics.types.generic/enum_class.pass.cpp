@@ -6,11 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-// XFAIL: enable-tile
-// error: asm statement is unsupported in tile code
-
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
+
+// UNSUPPORTED: force-tile
+// error: asm statement is unsupported in tile code
 
 // <cuda/std/atomic>
 
@@ -67,7 +67,7 @@ enum class foo_bar_enum : uint8_t
 };
 
 template <class A, class T, template <typename, typename> class Selector>
-TEST_FUNC void test()
+TEST_HOST_DEVICE_FUNC void test()
 {
   Selector<A, constructor_initializer> sel;
   A& obj = *sel.construct(T(0));
@@ -84,21 +84,25 @@ int main(int, char**)
     NV_IS_HOST,
     (test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, local_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, local_memory_selector>();
+     test<cuda::atomic<foo_bar_enum, cuda::thread_scope_cluster>, foo_bar_enum, local_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, local_memory_selector>();),
     NV_PROVIDES_SM_70,
     (test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, local_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, local_memory_selector>();
+     test<cuda::atomic<foo_bar_enum, cuda::thread_scope_cluster>, foo_bar_enum, local_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, local_memory_selector>();))
 
   NV_IF_TARGET(
     NV_IS_DEVICE,
     (test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, shared_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, shared_memory_selector>();
+     test<cuda::atomic<foo_bar_enum, cuda::thread_scope_cluster>, foo_bar_enum, shared_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, shared_memory_selector>();
 
      test<cuda::std::atomic<foo_bar_enum>, foo_bar_enum, global_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, global_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, global_memory_selector>();
+     test<cuda::atomic<foo_bar_enum, cuda::thread_scope_cluster>, foo_bar_enum, global_memory_selector>();
      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, global_memory_selector>();))
 
   return 0;

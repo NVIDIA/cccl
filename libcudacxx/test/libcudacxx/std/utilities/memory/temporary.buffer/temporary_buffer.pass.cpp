@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: force-tile
+// error: dynamic allocations are not supported in tile mode
+
 // <memory>
 
 // ADDITIONAL_COMPILE_DEFINITIONS: CCCL_IGNORE_DEPRECATED_API
@@ -21,9 +24,6 @@
 //   return_temporary_buffer(T* p);
 
 // UNSUPPORTED: nvrtc
-
-// XFAIL: enable-tile
-// In tile mode dynamic memory allocation is unsupported
 
 #include <cuda/std/cassert>
 #include <cuda/std/memory>

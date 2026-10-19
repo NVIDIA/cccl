@@ -11,49 +11,54 @@
 
 #include <cuda_runtime_api.h>
 
-template <class T>
-[[gnu::noinline]] void keep_for_debugger(const T& value)
-{
-  asm volatile("" : : "g"(&value) : "memory");
-}
+// Give the inspected parameter a stack location that survives optimization, so the
+// debugger can read it in this frame. Without this the parameter stays in a
+// caller-clobbered register and reads as unavailable at -O3.
+#define KEEP_FOR_DEBUGGER(values) asm volatile("" : : "g"(&(values)) : "memory")
 
 [[gnu::noinline]] void inspect_normal(const cuda::device_buffer<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 using device_buffer_alias = cuda::buffer<int, cuda::mr::device_accessible>;
 
 [[gnu::noinline]] void inspect_alias(const device_buffer_alias& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
+
+// An optimized build inlines every use of std::vector::operator[], so no
+// out-of-line copy is left for the debugger to call. Instantiate that one member
+// explicitly to keep a copy, which lets the debugger evaluate values[i]. A full
+// class instantiation does not compile because the buffer is move-only.
+template typename std::vector<cuda::device_buffer<int>>::const_reference
+  std::vector<cuda::device_buffer<int>>::operator[](size_type) const;
 
 [[gnu::noinline]] void inspect_vector(const std::vector<cuda::device_buffer<int>>& values)
 {
-  keep_for_debugger(values[0]);
-  keep_for_debugger(values[1]);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 template <class Buffer>
 [[gnu::noinline]] void inspect_host_device(const Buffer& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_empty(const cuda::device_buffer<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_before_update(const cuda::device_buffer<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 [[gnu::noinline]] void inspect_after_update(const cuda::device_buffer<int>& values)
 {
-  keep_for_debugger(values);
+  KEEP_FOR_DEBUGGER(values);
 }
 
 int main()

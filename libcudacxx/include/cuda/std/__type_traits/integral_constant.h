@@ -24,17 +24,17 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _Tp, _Tp __v>
+template <class _Tp, _Tp _Vp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
-  static constexpr const _Tp value = __v;
+  static constexpr const _Tp value = _Vp;
   using value_type                 = _Tp;
   using type                       = integral_constant;
   _CCCL_API constexpr operator value_type() const noexcept
   {
     return value;
   }
-  _CCCL_API constexpr value_type operator()() const noexcept
+  _CCCL_API constexpr value_type _CCCL_STATIC_CALL_OPERATOR() noexcept
   {
     return value;
   }
@@ -43,8 +43,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 using true_type  = integral_constant<bool, true>;
 using false_type = integral_constant<bool, false>;
 
-template <bool __b>
-using bool_constant = integral_constant<bool, __b>;
+template <bool _Bp>
+using bool_constant = integral_constant<bool, _Bp>;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

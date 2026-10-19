@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
+// UNSUPPORTED: force-tile
 // error: a non-__tile__ variable cannot be used in tile code
 
 // cuda::std::views::filter
@@ -66,6 +66,40 @@ struct Pred
   [[nodiscard]] TEST_FUNC constexpr bool operator()(int i) const
   {
     return i % 2 == 0;
+  }
+};
+
+struct CopyOnlyPred
+{
+  int limit_;
+
+  TEST_FUNC constexpr explicit CopyOnlyPred(int limit)
+      : limit_(limit)
+  {}
+  constexpr CopyOnlyPred(const CopyOnlyPred&) = default;
+  CopyOnlyPred(CopyOnlyPred&&)                = delete;
+
+  [[nodiscard]] TEST_FUNC constexpr bool operator()(int i) const
+  {
+    return i < limit_;
+  }
+};
+
+struct ThrowingMovePred
+{
+  int limit_;
+
+  TEST_FUNC constexpr explicit ThrowingMovePred(int limit)
+      : limit_(limit)
+  {}
+  constexpr ThrowingMovePred(const ThrowingMovePred&) = default;
+  TEST_FUNC constexpr ThrowingMovePred(ThrowingMovePred&& other) noexcept(false)
+      : limit_(other.limit_)
+  {}
+
+  [[nodiscard]] TEST_FUNC constexpr bool operator()(int i) const
+  {
+    return i < limit_;
   }
 };
 
@@ -201,6 +235,19 @@ TEST_FUNC constexpr bool test()
 
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::views::filter), decltype(cuda::std::views::filter)>);
+  }
+
+  // A copy-only predicate, and a predicate whose move may throw, can form a partial `views::filter`.
+  {
+    CopyOnlyPred copy_only{4};
+    static_assert(noexcept(cuda::std::views::filter(copy_only)));
+    [[maybe_unused]] auto copy_only_partial = cuda::std::views::filter(copy_only);
+
+    ThrowingMovePred throwing_move{4};
+    static_assert(noexcept(cuda::std::views::filter(throwing_move)));
+    auto throwing_partial = cuda::std::views::filter(throwing_move);
+    Range const range(buff, buff + 8);
+    compareViews(range | throwing_partial, {0, 1, 2, 3});
   }
 
   return true;

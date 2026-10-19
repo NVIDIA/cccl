@@ -34,7 +34,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if<true, _Tp>
 };
 
 template <bool _Bp, class _Tp = void>
-using enable_if_t _CCCL_NODEBUG_ALIAS = typename enable_if<_Bp, _Tp>::type;
+using enable_if_t _CCCL_NODEBUG = typename enable_if<_Bp, _Tp>::type;
 
 _CCCL_END_NAMESPACE_CUDA_STD
 

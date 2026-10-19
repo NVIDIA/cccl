@@ -19,8 +19,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
+
+#include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -37,7 +42,7 @@ CUB_NAMESPACE_BEGIN
 //-----------------------------------------------------------------------------
 
 //! @brief Enumeration of cache modifiers for memory load operations.
-enum CacheLoadModifier
+enum CacheLoadModifier // NOLINT(cppcoreguidelines-use-enum-class)
 {
   LOAD_DEFAULT, ///< Default (no modifier)
   LOAD_CA, ///< Cache at all levels
@@ -51,7 +56,7 @@ enum CacheLoadModifier
 #if _CCCL_HOSTED()
 namespace detail
 {
-[[nodiscard]] _CCCL_API constexpr const char* to_string(CacheLoadModifier modifier) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr const char* to_string(CacheLoadModifier modifier) noexcept
 {
   switch (modifier)
   {
@@ -348,7 +353,7 @@ template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
   using T = detail::it_value_t<RandomAccessIterator>;
-  if constexpr (!::cuda::std::__4::contiguous_iterator<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)
+  if constexpr (!THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator> || MODIFIER == LOAD_DEFAULT)
   {
     return *itr;
   }

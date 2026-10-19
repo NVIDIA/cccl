@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: enable-tile
-// error: asm statement is unsupported in tile code
+// UNSUPPORTED: force-tile
+// nvbug6327166: error: Internal Compiler Error (tile codegen): "call to unknown tile builtin function!"
 
 #include <cuda/memory>
 #include <cuda/std/cassert>
@@ -32,7 +32,7 @@ TEST_DEVICE_FUNC void device_test()
   assert(!cuda::device::__is_smem_valid_address_range(&var, cuda::std::numeric_limits<size_t>::max()));
 }
 
-TEST_FUNC void host_device_test()
+TEST_HOST_DEVICE_FUNC void host_device_test()
 {
   int var = 0;
   assert(cuda::__is_valid_address_range(&var, sizeof(var)));
@@ -43,7 +43,7 @@ TEST_FUNC void host_device_test()
   assert(!cuda::__is_valid_address_range(ptr2, 4));
 }
 
-TEST_FUNC bool test()
+TEST_HOST_DEVICE_FUNC bool test()
 {
   NV_IF_TARGET(NV_IS_DEVICE, (device_test();))
   return true;

@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_destructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -62,6 +63,14 @@ protected:
   };
   friend typename __wrapper<_Tp>::type;
 
+  //! @brief The type actually instantiated by `instance()`. Deriving from `_Tp` is what
+  //! grants access to its protected default constructor. Naming it here rather than inside
+  //! `instance()` is what lets the exception specification refer to it; like the body, it
+  //! is instantiated only once `_Tp` is complete.
+  template <class _Up>
+  struct __instance_of : _Up
+  {};
+
   meyers_singleton()                        = default;
   ~meyers_singleton()                       = default;
   meyers_singleton(const meyers_singleton&) = delete;
@@ -72,17 +81,18 @@ public:
   //!
   //! @return A reference to the singleton instance.
   //!
-  //! If the instance hasn't been created yet, this function will create it.
-  static _Tp& instance() noexcept
+  //! If the instance hasn't been created yet, this function will create it. Creating it
+  //! runs `_Tp`'s constructor, so this function throws whatever that constructor throws,
+  //! in which case a later call tries to create the instance again. It is `noexcept` when
+  //! that constructor is.
+  static _Tp& instance() noexcept(::cuda::std::is_nothrow_default_constructible_v<__instance_of<_Tp>>)
   {
     static_assert(!::cuda::std::is_default_constructible_v<_Tp>,
                   "Make the default constructor of your Meyers singleton protected.");
     static_assert(!::cuda::std::is_destructible_v<_Tp>, "Make the destructor of your Meyers singleton protected.");
     static_assert(!::cuda::std::is_copy_constructible_v<_Tp>, "Disable the copy constructor of your Meyers singleton.");
     static_assert(!::cuda::std::is_move_constructible_v<_Tp>, "Disable the move constructor of your Meyers singleton.");
-    struct _Derived : _Tp
-    {};
-    static _Derived __instance;
+    static __instance_of<_Tp> __instance;
     return __instance;
   }
 };

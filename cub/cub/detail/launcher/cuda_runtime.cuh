@@ -29,11 +29,11 @@ struct TripleChevronFactory
   {
     if (dependent_launch)
     {
-      [[maybe_unused]] int sm_version = 0;
+      [[maybe_unused]] int sm_version = 0; // NOLINT(misc-const-correctness)
       _CCCL_ASSERT(SmVersion(sm_version) == cudaSuccess, "Failed to query SM compute capability");
       if (sm_version >= 900)
       {
-        [[maybe_unused]] ::cuda::compute_capability cc;
+        [[maybe_unused]] ::cuda::compute_capability cc; // NOLINT(misc-const-correctness)
         _CCCL_ASSERT(PtxComputeCap(cc) == cudaSuccess, "Failed to query PTX compute capability");
         _CCCL_ASSERT((cc >= ::cuda::compute_capability{9, 0}),
                      "Enabling PDL for a kernel launch requires CC 9.0+ PTX/SASS when running on SM90+");
@@ -42,10 +42,16 @@ struct TripleChevronFactory
   }
 
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron operator()(
-    dim3 grid, dim3 block, ::cuda::std::size_t shared_mem, ::cudaStream_t stream, bool dependent_launch = false) const
+    dim3 grid,
+    dim3 block,
+    ::cuda::std::size_t shared_mem,
+    ::cudaStream_t stream,
+    bool dependent_launch = false,
+    dim3 cluster_dim      = dim3{0, 0, 0}) const
   {
     __assert_pdl_allowed(dependent_launch);
-    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(grid, block, shared_mem, stream, dependent_launch);
+    return THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+      grid, block, shared_mem, stream, dependent_launch, cluster_dim);
   }
 
   template <class T = void>
@@ -63,7 +69,7 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MultiProcessorCount(int& sm_count) const
   {
     int device_ordinal;
-    ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
+    const ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
     if (::cudaSuccess != error)
     {
       return error;
@@ -83,7 +89,7 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t MaxGridDimX(int& max_grid_dim_x) const
   {
     int device_ordinal;
-    ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
+    const ::cudaError_t error = CubDebug(::cudaGetDevice(&device_ordinal));
     if (::cudaSuccess != error)
     {
       return error;

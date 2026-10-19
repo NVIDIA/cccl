@@ -23,8 +23,6 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/ordering.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__functional/hash.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -85,11 +83,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
   using argument_type = monostate;
   using result_type   = size_t;
 
-  _CCCL_API inline result_type operator()(const argument_type&) const noexcept
+  _CCCL_API inline result_type _CCCL_STATIC_CALL_OPERATOR(const argument_type&) noexcept
   {
     return 66740831; // return a fundamentally attractive random value.
   }
 };
+
 #endif // __cuda_std__
 
 _CCCL_END_NAMESPACE_CUDA_STD

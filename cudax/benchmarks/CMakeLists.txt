@@ -5,24 +5,6 @@ cccl_get_nvbench_helper()
 
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 
-function(get_recursive_subdirs subdirs)
-  set(dirs)
-  file(
-    GLOB_RECURSE contents
-    CONFIGURE_DEPENDS
-    LIST_DIRECTORIES ON
-    "${CMAKE_CURRENT_LIST_DIR}/bench/*"
-  )
-
-  foreach (bench_dir IN LISTS contents)
-    if (IS_DIRECTORY "${bench_dir}")
-      list(APPEND dirs "${bench_dir}")
-    endif()
-  endforeach()
-
-  set(${subdirs} "${dirs}" PARENT_SCOPE)
-endfunction()
-
 function(add_bench target_name bench_name bench_src)
   set(bench_target ${bench_name})
   set(${target_name} ${bench_target} PARENT_SCOPE)
@@ -36,11 +18,21 @@ function(add_bench target_name bench_name bench_src)
   )
 endfunction()
 
-function(add_bench_dir bench_dir)
-  file(GLOB bench_srcs CONFIGURE_DEPENDS "${bench_dir}/*.cu")
-  file(RELATIVE_PATH bench_prefix "${benches_root}" "${bench_dir}")
+# Creates one benchmark target per source file in `bench_srcs`. The created targets are
+# returned in `bench_targets_var` so the caller can attach any extra dependencies its
+# benchmarks need.
+function(add_bench_dir bench_targets_var)
+  set(bench_srcs ${ARGN})
+  file(
+    RELATIVE_PATH
+    bench_prefix
+    "${benches_root}"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
   file(TO_CMAKE_PATH "${bench_prefix}" bench_prefix)
   string(REPLACE "/" "." bench_prefix "${bench_prefix}")
+
+  set(bench_targets)
 
   foreach (bench_src IN LISTS bench_srcs)
     get_filename_component(bench_name "${bench_src}" NAME_WLE)
@@ -59,11 +51,11 @@ function(add_bench_dir bench_dir)
         "$<$<COMPILE_LANGUAGE:CUDA>:-UCCCL_ENABLE_ASSERTIONS>"
         "$<$<COMPILE_LANGUAGE:CXX>:-UCCCL_ENABLE_ASSERTIONS>"
     )
+
+    list(APPEND bench_targets "${bench_name}")
   endforeach()
+
+  set(${bench_targets_var} "${bench_targets}" PARENT_SCOPE)
 endfunction()
 
-get_recursive_subdirs(subdirs)
-
-foreach (subdir IN LISTS subdirs)
-  add_bench_dir("${subdir}")
-endforeach()
+add_subdirectory(bench)

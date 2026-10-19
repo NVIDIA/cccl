@@ -13,17 +13,17 @@
 
 #include <iostream>
 
-#include <c2h/catch2_test_helper.h>
+#include "cub_test_macros.h"
 
-C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
+CUB_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]", CUB_SMALL)
 {
   // example-begin merge-keys-env
   auto keys1  = thrust::device_vector<int>{0, 2, 5};
   auto keys2  = thrust::device_vector<int>{0, 3, 3, 4};
   auto result = thrust::device_vector<int>(7);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceMerge::MergeKeys(
     keys1.begin(),
@@ -38,7 +38,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
     std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  const thrust::device_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys-env
 
   stream.sync();
@@ -46,7 +46,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts env with stream", "[merge][env]")
   REQUIRE(result == expected);
 }
 
-C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
+CUB_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]", CUB_SMALL)
 {
   // example-begin merge-pairs-env
   auto keys1   = thrust::device_vector<int>{0, 2, 5};
@@ -57,8 +57,8 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
   auto result_keys   = thrust::device_vector<int>(7);
   auto result_values = thrust::device_vector<char>(7);
 
-  cuda::stream stream{cuda::devices[0]};
-  cuda::stream_ref stream_ref{stream};
+  const cuda::stream stream{cuda::devices[0]};
+  const cuda::stream_ref stream_ref{stream};
 
   auto error = cub::DeviceMerge::MergePairs(
     keys1.begin(),
@@ -76,8 +76,8 @@ C2H_TEST("cub::DeviceMerge::MergePairs accepts env with stream", "[merge][env]")
     std::cerr << "cub::DeviceMerge::MergePairs failed with status: " << error << '\n';
   }
 
-  thrust::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  thrust::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  const thrust::device_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  const thrust::device_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs-env
 
   stream.sync();
@@ -103,7 +103,7 @@ struct MergePolicySelector
 };
 // example-end merge-keys-policy-selector
 
-C2H_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge][env]")
+CUB_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge][env]", CUB_SMALL)
 {
   // example-begin merge-keys-tuning
   auto keys1  = thrust::device_vector<int>{0, 2, 5};
@@ -118,6 +118,7 @@ C2H_TEST("cub::DeviceMerge::MergeKeys accepts a custom policy selector", "[merge
     result.begin(),
     cuda::std::less{},
     cuda::execution::tune(MergePolicySelector{}));
+
   if (error != cudaSuccess)
   {
     std::cerr << "cub::DeviceMerge::MergeKeys failed with status: " << error << '\n';
