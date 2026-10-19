@@ -31,8 +31,8 @@ sequenced in the output (unless you also request a stable ordering, as described
 the selected items in the output buffer may still vary unless you also request a specific output
 ordering. Non-determinism arises only when more elements compare equal at the selection boundary
 than there are remaining slots in the top-*K*. For example, with *K* = 3 and four elements tied for
-the third-largest position, the algorithm must choose three of the four, and that choice is the
-source of variability.
+the largest key, the algorithm must choose three of the four, and that choice is the source of
+variability.
 
 **Output ordering applies to the result sequence.** Once the result set is fixed, output ordering
 specifies how those *K* items are laid out in the output buffer.
@@ -241,7 +241,7 @@ Consider ``cub::DeviceTopK::MaxKeys`` with *K* = 3 on this input:
    index :  0     1     2     3     4     5
    key   : 10     8     8     8     6     5
 
-The top three keys are ``10`` and two ``8``\ s. Four elements compare equal at the boundary (the
+The top three keys are ``10`` and two ``8``\ s. Three elements compare equal at the boundary (the
 ``8``\ s at indices 1, 2, 3), but only two can be kept. That is the tie. The notation ``key@index``
 identifies an element by both its key and its source position (for example ``8@2`` is the ``8`` at
 index 2).
