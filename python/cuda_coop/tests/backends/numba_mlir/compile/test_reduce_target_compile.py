@@ -135,3 +135,73 @@ def test_reduce_lineinfo_reaches_helpers_and_providers(recorded):
         "lineinfo" not in request and "arch_suffix" not in request
         for request in recorded.callbacks
     )
+
+
+@pytest.mark.parametrize(
+    "with_primitives,bundle_failure",
+    [(False, False), (True, False), (True, True)],
+    ids=["queries", "mixed", "fallback"],
+)
+def test_group_queries_share_provider_compilation(
+    recorded, monkeypatch, with_primitives, bundle_failure
+):
+    """Compile the walkthrough's queries with optional Load/Store providers.
+
+    Distinct query and synchronization helpers must share one provider image,
+    including when the kernel has no CUB primitive to initiate collection.
+    """
+
+    from cuda import coop
+
+    if bundle_failure:
+        from cuda.coop.numba_mlir._compiler import _rewrite_invocables
+
+        def fail_bundle(*args, **kwargs):
+            raise RuntimeError("exercise individual provider fallback")
+
+        monkeypatch.setattr(
+            _rewrite_invocables, "prepare_ltoir_bundle", fail_bundle
+        )
+
+    @cuda.jit(chip="sm_80", lineinfo=True)
+    def kernel(source, output, queries):
+        thread = coop.this_thread()
+        warp = coop.this_warp()
+        block = coop.this_block()
+        grid = coop.this_grid()
+        lanes = warp.group_by(8)
+        index = cuda.grid(1)
+
+        thread.sync()
+        warp.sync_aligned()
+        lanes.sync_aligned()
+        block.sync()
+        queries[0, index] = thread.rank("block")
+        queries[1, index] = warp.rank()
+        queries[2, index] = block.rank_as(types.int64, "grid")
+        queries[3, index] = block.count_as(types.int64)
+        queries[4, index] = grid.rank()
+        queries[5, index] = grid.count()
+        queries[6, index] = lanes.rank()
+        queries[7, index] = lanes.count()
+        if with_primitives:
+            values = coop.ThreadData(items_per_thread=4)
+            coop.load(block, source, values, algorithm="transpose")
+            coop.store(block, output, values, algorithm="transpose")
+
+    result = kernel._compile_launch_config_signature(
+        types.void(types.int32[::1], types.int32[::1], types.int64[:, ::1]),
+        _LAUNCH_CONFIG_KEY,
+    )
+
+    assert result.metadata["cubin"]
+    assert len(recorded.nvrtc) == (14 if bundle_failure else 1)
+    sources = "\n".join(request["cpp"] for request in recorded.nvrtc)
+    assert "cuda_coop_numba_mlir_group_" in sources
+    assert ("cub::BlockLoad" in sources) == with_primitives
+    assert ("cub::BlockStore" in sources) == with_primitives
+    assert all(request["cc"] == 80 for request in recorded.nvrtc)
+    assert all(
+        b"-lineinfo" in request["compiler_options"]
+        for request in recorded.nvrtc
+    )
