@@ -8,7 +8,7 @@
 #include <thrust/memory.h>
 
 #include <cuda/cmath>
-#include <cuda/std/limits>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 
 #include <algorithm>
@@ -16,31 +16,12 @@
 
 #include <cuda_runtime_api.h>
 
+#include "catch2_test_warp_bitonic_common.cuh"
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/custom_type.h>
-
-struct CustomLess
-{
-  template <typename T>
-  [[nodiscard]] __device__ __host__ bool operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs;
-  }
-
-  template <typename T>
-  [[nodiscard]] static __device__ __host__ T get_oob_default()
-  {
-    if constexpr (cuda::std::is_same_v<T, float>)
-    {
-      return cuda::std::numeric_limits<T>::infinity();
-    }
-    else
-    {
-      return cuda::std::numeric_limits<T>::max();
-    }
-  };
-};
+#include <c2h/vector.h>
+#include <catch2/matchers/catch_matchers_range_equals.hpp>
 
 using cub::detail::warp_threads;
 using cub::detail::WarpBitonicTopKAlgorithm;
@@ -421,8 +402,8 @@ template <typename KeyT>
 void verify_topk_result(
   const c2h::device_vector<KeyT>& d_keys_in, const c2h::device_vector<KeyT>& d_keys_out, int total_warps)
 {
-  c2h::host_vector<KeyT> keys_in  = d_keys_in;
-  c2h::host_vector<KeyT> keys_out = d_keys_out;
+  c2h::host_vector<KeyT> keys_in        = d_keys_in;
+  const c2h::host_vector<KeyT> keys_out = d_keys_out;
 
   const int num_items = keys_in.size() / total_warps;
   const int k         = keys_out.size() / total_warps;
@@ -434,8 +415,10 @@ void verify_topk_result(
 
     // The keys of the WarpBitonicTopK result are sorted, so check them using std::sort.
     std::sort(keys_in.begin() + in_offset, keys_in.begin() + in_offset + num_items);
-    REQUIRE(c2h::host_vector<KeyT>(keys_in.begin() + in_offset, keys_in.begin() + in_offset + k)
-            == c2h::host_vector<KeyT>(keys_out.begin() + out_offset, keys_out.begin() + out_offset + k));
+
+    const cuda::std::span<const KeyT> expected(thrust::raw_pointer_cast(keys_in.data()) + in_offset, k);
+    const cuda::std::span<const KeyT> actual(thrust::raw_pointer_cast(keys_out.data()) + out_offset, k);
+    REQUIRE_THAT(actual, Catch::Matchers::RangeEquals(expected));
   }
 }
 
@@ -466,9 +449,11 @@ void verify_topk_result(
     auto pair_out_end   = pair_out_begin + k;
 
     std::sort(pair_in_begin, pair_in_end);
+
     // The keys of the WarpBitonicTopK result are sorted, so check them are sorted before sorting the output pairs
-    REQUIRE(c2h::host_vector<KeyT>(keys_in.begin() + in_offset, keys_in.begin() + in_offset + k)
-            == c2h::host_vector<KeyT>(keys_out.begin() + out_offset, keys_out.begin() + out_offset + k));
+    const cuda::std::span<const KeyT> expected(thrust::raw_pointer_cast(keys_in.data()) + in_offset, k);
+    const cuda::std::span<const KeyT> actual(thrust::raw_pointer_cast(keys_out.data()) + out_offset, k);
+    REQUIRE_THAT(actual, Catch::Matchers::RangeEquals(expected));
 
     // Top-k results are not unique when ties exist at the k-th key, so further check that each output (key, value) pair
     // appears in the input
@@ -520,6 +505,10 @@ void test_topk_keys(int k, int num_items)
   c2h::device_vector<key_type> d_keys_in(total_warps * num_items);
   c2h::device_vector<key_type> d_keys_out(total_warps * k);
   c2h::gen(C2H_SEED(5), d_keys_in);
+  if constexpr (cuda::std::is_same_v<ActionT, topk_keys_partial_oob_t>)
+  {
+    clamp_keys_below(d_keys_in, CustomLess::get_oob_default<key_type>());
+  }
 
   // Run test
   warp_bitonic_topk<max_k, logical_warp_threads, algo, items_per_thread, total_warps>(
@@ -548,6 +537,10 @@ void test_topk_pairs(int k, int num_items)
   c2h::device_vector<value_type> d_values_out(total_warps * k);
   c2h::gen(C2H_SEED(5), d_keys_in);
   c2h::gen(C2H_SEED(1), d_values_in);
+  if constexpr (cuda::std::is_same_v<ActionT, topk_pairs_partial_oob_t>)
+  {
+    clamp_keys_below(d_keys_in, CustomLess::get_oob_default<key_type>());
+  }
 
   // Run test
   warp_bitonic_topk<max_k, logical_warp_threads, algo, items_per_thread, total_warps>(

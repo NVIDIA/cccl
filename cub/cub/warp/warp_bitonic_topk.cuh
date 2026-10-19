@@ -136,6 +136,13 @@ enum class WarpBitonicTopKAlgorithm
 //! ++++++++++++++++
 //!
 //!   WarpBitonicTopK selects the ``k`` items ordered first by a comparison functor with less-than semantics.
+//!   The selected items are sorted in ascending order according to that comparison functor. The result is
+//!   deterministic but not stable: the relative order of items with equivalent keys is not preserved.
+//!
+//!   TopK can also be performed by a "logical" warp of ``LogicalWarpThreads`` lanes, in which case each logical
+//!   warp selects its own items independently of the other logical warps in the same architectural warp.
+//!   All lanes of a logical warp must call the same TopK overload. The arguments ``k``, ``valid_items``, and
+//!   ``num_items``, where applicable, must be uniform across the logical warp.
 //!
 //!   Two kinds of TopK functions are provided:
 //!   (1) Array overloads operate on items already held by each lane. Input and
@@ -222,14 +229,16 @@ enum class WarpBitonicTopKAlgorithm
 //!   The maximum number of selected items. Must be a positive multiple of the logical warp size.
 //!
 //! @tparam KeyT
-//!   Key type.
+//!   Key type. Should be default constructible and trivially copyable.
 //!
 //! @tparam LogicalWarpThreads
 //!   <b>[optional]</b> Number of threads per logical warp. Must be a power of two no greater than the architectural
 //!   warp size.
 //!
+//!
 //! @tparam ValueT
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates keys-only top-k).
+//!   Should be default constructible and trivially copyable.
 //!
 //! @tparam Algorithm
 //!   <b>[optional]</b> WarpBitonicTopKAlgorithm to use (default: WarpBitonicTopKAlgorithm::buffered).
@@ -297,7 +306,8 @@ public:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
   //! @param[in] k Number of keys to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid keys across the logical warp.
-  //! @param[in] oob_default Default value for out-of-bound key.
+  //! @param[in] oob_default Default value for out-of-bound key. It's assigned to all keys that are out of `valid_items`
+  //! boundary. Must be ordered strictly after any key in the `valid_items` boundary according to ``compare_op``.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items, KeyT oob_default) const
@@ -412,7 +422,8 @@ public:
   //! @param[in] compare_op Comparison functor which returns true if the first argument is ordered before the second.
   //! @param[in] k Number of pairs to select. Valid range is [1, min(`MaxK`, `valid_items`)].
   //! @param[in] valid_items Total number of valid pairs across the logical warp.
-  //! @param[in] oob_default Default value for out-of-bound key.
+  //! @param[in] oob_default Default value for out-of-bound key. It's assigned to all keys that are out of `valid_items`
+  //! boundary. Must be ordered strictly after any key in the `valid_items` boundary according to ``compare_op``.
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread],
@@ -938,7 +949,16 @@ private:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE KeyT
   get_key_threshold(const KeyT* keys_out, int k_th_item, int k_th_lane) const
   {
-    return ::cuda::device::warp_shuffle_idx<LogicalWarpThreads>(keys_out[k_th_item], k_th_lane, member_mask);
+    KeyT k_th;
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int i = 0; i < max_k_per_thread; ++i)
+    {
+      if (i == k_th_item)
+      {
+        k_th = keys_out[i];
+      }
+    }
+    return ::cuda::device::warp_shuffle_idx<LogicalWarpThreads>(k_th, k_th_lane, member_mask);
   }
 
   _TempStorage* storage;
