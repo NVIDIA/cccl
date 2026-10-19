@@ -40,7 +40,7 @@ Overview
 
 ``cuda::experimental::coop::coalesced_group`` is a predefined group that groups all currently active threads within a warp. It is useful for opportunistic programming. The mapping result is determined based on the lane mask returned by the ``__activemask()`` intrinsic. The group can be explicitly constructed from a hierarchy-like object.
 
-A *coalesced* group is always exhaustive; however, it's not always contiguous.
+A *coalesced* group is not always contiguous.
 
 A *coalesced* group uses the :ref:`cuda::experimental::coop::lane_synchronizer <cudax-coop-group-synchronizer-lane-synchronizer>` synchronizer for synchronization.
 

@@ -54,7 +54,7 @@ Overview
 
 Because every this group is a separate type, the ``cuda::experimental::coop::make_this_group(...)`` factory function is provided to construct any this group based on the parameters.
 
-*This* groups are always exhaustive and contiguous.
+*This* groups are always contiguous.
 
 *This* groups use the :ref:`cuda::experimental::coop::level_synchronizer <cudax-coop-group-synchronizer-level-synchronizer>` synchronizer for synchronization.
 
