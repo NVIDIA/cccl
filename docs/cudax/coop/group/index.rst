@@ -248,12 +248,16 @@ CCCL Cooperative Groups can be constructed 2 ways -- using their constructor or 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
   auto make_group(Args&&... args) noexcept
-    -> /*GroupTempl-instantiated-with-args*/;                      // (1)
+    -> /*GroupTempl-instantiated-with-args*/;                                                   // (1)
 
   template <template <typename...> typename GroupTempl, typename... Args>
   [[nodiscard]] __device__
   auto make_group(const non_exhaustive_t&, Args&&... args) noexcept
-    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>; // (2)
+    -> cuda::std::optional</*GroupTempl-instantiated-with-args*/>;                              // (2)
+
+  template <typename CgGroup, /*hierarchy-like-type*/ HierarchyLike>
+  [[nodiscard]] __device__
+  group auto make_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like) noexcept; // (3)
 
   } // namespace cuda::experimental::coop
 
@@ -263,23 +267,6 @@ The overload (1) is equivalent to  ``GroupTempl{args...}``.
 
 The overload (2) takes the ``cuda::experimental::coop::non_exhaustive`` tag as the first argument, which makes allows the group mapping to be non-exhaustive. This means that some of the units may not be assigned to a group, getting an empty ``cuda::std::optional``.
 
-
-Interoperability with CTK's Cooperative Groups
-----------------------------------------------
-
-CCCL Cooperative Groups don't provide an CTK's Cooperative Groups-like interface and thus cannot be used in algorithms that expect a CTK's Cooperative Groups group.
-
-However, CCCL Cooperative Groups provide the ``cuda::experimental::coop::make_cg_equivalent_group(...)`` function that converts a CTK Cooperative Groups group to an equivalent CCCL group.
-
-.. code:: cuda
-
-  namespace cuda::experimental::coop
-  {
-
-  template <typename CgGroup, /*hierarchy-like-type*/ HierarchyLike>
-  [[nodiscard]] __device__
-  group auto make_cg_equivalent_group(const CgGroup& cg_group, const HierarchyLike& hierarchy_like) noexcept;
-
-  } // namespace cuda::experimental::coop
+The overload (3) takes a CTK's Cooperative Groups group and converts it to a CCCL Cooperative Groups equivalent group.
 
 .. note:: The group returned by ``cuda::experimental::coop::make_cg_equivalent_group(...)`` doesn't take ownership of the resources owned by ``cg_group``, so ``cg_group`` should outlive the returned group.
