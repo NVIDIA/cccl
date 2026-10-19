@@ -1,0 +1,3602 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+# cython: language_level=3
+# cython: freethreading_compatible=True
+
+from cpython.mem cimport PyMem_Free, PyMem_Malloc
+from cpython.object cimport PyObject
+from cpython.pycapsule cimport PyCapsule_GetPointer, PyCapsule_IsValid, PyCapsule_SetName
+from cpython.tuple cimport PyTuple_New, PyTuple_SET_ITEM
+from cpython.long cimport PyLong_FromLongLong
+from cpython.ref cimport Py_INCREF
+from cpython.bytes cimport PyBytes_FromStringAndSize
+from libc.stdint cimport INT64_MAX, int32_t, int64_t, uint8_t, uint16_t, uint32_t, uint64_t, uintptr_t
+
+import operator
+
+from cuda.compute import _cccl_interop as cccl
+from cuda.compute._caching import (
+    cache_build_results,
+    cache_with_registered_key_functions,
+)
+
+
+# Keep these local Cython declarations in sync with DLPack v1.3 dlpack.h.
+cdef extern from *:
+    """
+    #include <dlpack/dlpack.h>
+    #if DLPACK_MAJOR_VERSION != 1 || DLPACK_MINOR_VERSION < 3
+    #error "cuda.compute device copy requires DLPack v1.3 or a newer compatible 1.x dlpack.h"
+    #endif
+    """
+
+cdef extern from "dlpack/dlpack.h":
+    cdef enum:
+        DLPACK_MAJOR_VERSION
+        DLPACK_MINOR_VERSION
+        DLPACK_FLAG_BITMASK_READ_ONLY
+
+    ctypedef enum DLDeviceType:
+        kDLCUDA
+        kDLCUDAManaged
+
+cdef const char* DLPACK_CAPSULE_NAME = "dltensor"
+cdef const char* USED_DLPACK_CAPSULE_NAME = "used_dltensor"
+cdef const char* DLPACK_VERSIONED_CAPSULE_NAME = "dltensor_versioned"
+cdef const char* USED_DLPACK_VERSIONED_CAPSULE_NAME = "used_dltensor_versioned"
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLPackVersion:
+        uint32_t major
+        uint32_t minor
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLDevice:
+        DLDeviceType device_type
+        int32_t device_id
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLDataType:
+        uint8_t code
+        uint8_t bits
+        uint16_t lanes
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLTensor:
+        void* data
+        DLDevice device
+        int32_t ndim
+        DLDataType dtype
+        int64_t* shape
+        int64_t* strides
+        uint64_t byte_offset
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLManagedTensor:
+        DLTensor dl_tensor
+        void* manager_ctx
+        void (*deleter)(DLManagedTensor* self)
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLManagedTensorVersioned:
+        DLPackVersion version
+        void* manager_ctx
+        void (*deleter)(DLManagedTensorVersioned* self)
+        uint64_t flags
+        DLTensor dl_tensor
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef void (*DLPackSetError)(
+        void* error_ctx,
+        const char* kind,
+        const char* message,
+    )
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef int (*DLPackManagedTensorAllocator)(
+        DLTensor* prototype,
+        DLManagedTensorVersioned** out,
+        void* error_ctx,
+        DLPackSetError set_error,
+    )
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef int (*DLPackManagedTensorFromPyObjectNoSync)(
+        void* py_object,
+        DLManagedTensorVersioned** out,
+    )
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef int (*DLPackDLTensorFromPyObjectNoSync)(
+        void* py_object,
+        DLTensor* out,
+    )
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef int (*DLPackManagedTensorToPyObjectNoSync)(
+        DLManagedTensorVersioned* tensor,
+        void** out_py_object,
+    )
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef int (*DLPackCurrentWorkStream)(
+        DLDeviceType device_type,
+        int32_t device_id,
+        void** out_current_stream,
+    )
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLPackExchangeAPIHeader:
+        DLPackVersion version
+        DLPackExchangeAPIHeader* prev_api
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct DLPackExchangeAPI:
+        DLPackExchangeAPIHeader header
+        DLPackManagedTensorAllocator managed_tensor_allocator
+        DLPackManagedTensorFromPyObjectNoSync managed_tensor_from_py_object_no_sync
+        DLPackManagedTensorToPyObjectNoSync managed_tensor_to_py_object_no_sync
+        DLPackDLTensorFromPyObjectNoSync dltensor_from_py_object_no_sync
+        DLPackCurrentWorkStream current_work_stream
+
+
+cdef extern from "cccl/c/device_copy.h":
+    ctypedef enum cccl_device_copy_axis_metadata_kind_t:
+        CCCL_DEVICE_COPY_AXIS_RUNTIME
+        CCCL_DEVICE_COPY_AXIS_STATIC
+
+    ctypedef enum cccl_device_copy_layout_kind_t:
+        CCCL_DEVICE_COPY_LAYOUT_RIGHT
+        CCCL_DEVICE_COPY_LAYOUT_LEFT
+        CCCL_DEVICE_COPY_LAYOUT_STRIDE
+        CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+
+    cdef struct cccl_device_copy_axis_metadata_t:
+        cccl_device_copy_axis_metadata_kind_t kind
+        int64_t value
+
+    cdef struct cccl_device_copy_source_view_t:
+        const void* data
+        uint64_t byte_offset
+        const int64_t* shape
+        const int64_t* strides
+
+    cdef struct cccl_device_copy_destination_view_t:
+        void* data
+        uint64_t byte_offset
+        const int64_t* shape
+        const int64_t* strides
+
+
+cdef object _as_index(object value, str name):
+    try:
+        return operator.index(value)
+    except TypeError:
+        raise TypeError(f"{name} must be an integer, got {type(value)}") from None
+
+
+cdef uint64_t _as_uint64(object value, str name) except *:
+    cdef object index = _as_index(value, name)
+    if index < 0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    if index > 0xFFFFFFFFFFFFFFFF:
+        raise OverflowError(f"{name} does not fit in uint64_t")
+    return <uint64_t>index
+
+
+cdef int32_t _as_nonnegative_int32(object value, str name) except *:
+    cdef object index = _as_index(value, name)
+    if index < 0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    if index > 0x7FFFFFFF:
+        raise OverflowError(f"{name} does not fit in int32_t")
+    return <int32_t>index
+
+
+cdef uintptr_t _as_uintptr(object value, str name) except *:
+    cdef object index = _as_index(value, name)
+    if index < 0:
+        raise ValueError(f"{name} must be non-negative, got {value}")
+    return <uintptr_t>index
+
+
+cdef size_t _validate_rank(object values, str name) except *:
+    cdef Py_ssize_t rank
+    try:
+        rank = len(values)
+    except TypeError:
+        raise TypeError(f"{name} must be a sequence") from None
+    if rank == 0:
+        return 1
+    return <size_t>rank
+
+
+cdef void* _alloc_array(size_t count, size_t item_size) except NULL:
+    cdef void* result
+    cdef size_t size_t_max = <size_t>(-1)
+    if item_size != 0 and count > size_t_max // item_size:
+        raise MemoryError()
+    result = PyMem_Malloc(count * item_size)
+    if result == NULL:
+        raise MemoryError()
+    return result
+
+
+cdef int64_t* _copy_int64_sequence(
+    object values,
+    size_t rank,
+    str name,
+    bint require_non_negative,
+) except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(rank, sizeof(int64_t))
+    cdef Py_ssize_t i
+    cdef int64_t item
+
+    try:
+        for i in range(<Py_ssize_t>rank):
+            item = <int64_t>_as_index(values[i], f"{name}[{i}]")
+            if require_non_negative and item < 0:
+                raise ValueError(f"{name}[{i}] must be non-negative, got {item}")
+            result[i] = item
+    except Exception:
+        PyMem_Free(result)
+        raise
+
+    return result
+
+
+cdef tuple _int64_tuple(const int64_t* values, size_t count):
+    cdef object item
+    cdef size_t i
+    cdef tuple result = PyTuple_New(count)
+
+    for i in range(count):
+        item = PyLong_FromLongLong(<long long>values[i])
+        # PyTuple_SET_ITEM steals a reference. item is a managed Cython
+        # object local, so give the tuple its own reference first.
+        Py_INCREF(item)
+        PyTuple_SET_ITEM(result, <Py_ssize_t>i, <object>item)
+    return result
+
+
+cdef class _DLPackManagedTensorOwner:
+    cdef object _producer
+    cdef DLManagedTensor* _legacy
+    cdef DLManagedTensorVersioned* _versioned
+    cdef void (*_legacy_deleter)(DLManagedTensor* self)
+    cdef void (*_versioned_deleter)(DLManagedTensorVersioned* self)
+
+    def __cinit__(self):
+        self._legacy = NULL
+        self._versioned = NULL
+        self._legacy_deleter = NULL
+        self._versioned_deleter = NULL
+
+    def __dealloc__(self):
+        if self._versioned != NULL:
+            if self._versioned_deleter != NULL:
+                self._versioned_deleter(self._versioned)
+            self._versioned = NULL
+        if self._legacy != NULL:
+            if self._legacy_deleter != NULL:
+                self._legacy_deleter(self._legacy)
+            self._legacy = NULL
+
+    cdef DLTensor* _tensor(self) noexcept:
+        if self._versioned != NULL:
+            return &self._versioned.dl_tensor
+        if self._legacy != NULL:
+            return &self._legacy.dl_tensor
+        return NULL
+
+    @property
+    def device_type(self):
+        cdef DLTensor* tensor = self._tensor()
+        if tensor == NULL:
+            return None
+        return tensor.device.device_type
+
+    @property
+    def device_id(self):
+        cdef DLTensor* tensor = self._tensor()
+        if tensor == NULL:
+            return None
+        return tensor.device.device_id
+
+    @property
+    def dtype(self):
+        cdef DLTensor* tensor = self._tensor()
+        if tensor == NULL:
+            return None
+        return (tensor.dtype.code, tensor.dtype.bits, tensor.dtype.lanes)
+
+    @property
+    def flags(self):
+        if self._versioned == NULL:
+            return 0
+        return self._versioned.flags
+
+    def _tensor_pointer(self):
+        return <uintptr_t>self._tensor()
+
+
+cdef class _RuntimeAxisMetadata:
+    cdef size_t _rank
+    cdef cccl_device_copy_axis_metadata_t* _metadata
+
+    def __cinit__(self):
+        self._rank = 0
+        self._metadata = NULL
+
+    def __init__(self, object rank):
+        cdef uint64_t rank_value = _as_uint64(rank, "rank")
+        cdef size_t i
+
+        if rank_value == 0:
+            rank_value = 1
+        if rank_value > <uint64_t>(<size_t>-1):
+            raise OverflowError("rank does not fit in size_t")
+
+        self._rank = <size_t>rank_value
+        self._metadata = <cccl_device_copy_axis_metadata_t*>_alloc_array(
+            self._rank, sizeof(cccl_device_copy_axis_metadata_t)
+        )
+
+        for i in range(self._rank):
+            self._metadata[i].kind = CCCL_DEVICE_COPY_AXIS_RUNTIME
+            self._metadata[i].value = 0
+
+    def __dealloc__(self):
+        if self._metadata != NULL:
+            PyMem_Free(self._metadata)
+            self._metadata = NULL
+
+    cdef const cccl_device_copy_axis_metadata_t* _ptr(self) noexcept:
+        return self._metadata
+
+    @property
+    def rank(self):
+        return self._rank
+
+    def _metadata_pointer(self):
+        return <uintptr_t>self._metadata
+
+    def _as_tuple(self):
+        cdef tuple result = PyTuple_New(<Py_ssize_t>self._rank)
+        cdef object item
+        cdef size_t i
+
+        for i in range(self._rank):
+            item = (<int>self._metadata[i].kind, self._metadata[i].value)
+            # PyTuple_SET_ITEM steals a reference; see _int64_tuple for details.
+            Py_INCREF(item)
+            PyTuple_SET_ITEM(result, <Py_ssize_t>i, item)
+        return result
+
+
+cdef int64_t* _device_copy_unit_axis_array() except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(1, sizeof(int64_t))
+    result[0] = 1
+    return result
+
+
+cdef int64_t* _device_copy_copy_native_shape(
+    const int64_t* shape,
+    size_t rank,
+) except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(rank, sizeof(int64_t))
+    cdef size_t axis
+
+    try:
+        for axis in range(rank):
+            if shape[axis] < 0:
+                raise BufferError("DLPack tensor shape entries must be non-negative")
+            result[axis] = shape[axis]
+    except Exception:
+        PyMem_Free(result)
+        raise
+
+    return result
+
+
+cdef int64_t* _device_copy_copy_native_strides(
+    const int64_t* shape,
+    const int64_t* strides,
+    size_t rank,
+) except NULL:
+    cdef int64_t* result = <int64_t*>_alloc_array(rank, sizeof(int64_t))
+    cdef uint64_t running
+    cdef size_t axis
+
+    try:
+        if strides != NULL:
+            for axis in range(rank):
+                result[axis] = strides[axis]
+            return result
+
+        running = 1
+        axis = rank
+        while axis > 0:
+            axis -= 1
+            if running > <uint64_t>INT64_MAX:
+                raise BufferError("DLPack tensor strides are too large")
+            result[axis] = <int64_t>running
+            if (
+                shape[axis] != 0
+                and running > (<uint64_t>INT64_MAX) // <uint64_t>shape[axis]
+            ):
+                raise BufferError("DLPack tensor strides are too large")
+            running *= <uint64_t>shape[axis]
+    except Exception:
+        PyMem_Free(result)
+        raise
+
+    return result
+
+
+cdef class _PreparedDeviceCopyView:
+    cdef object _owner
+    cdef object _dtype_key
+    cdef DLDeviceType _device_type
+    cdef int32_t _device_id
+    cdef uint64_t _flags
+    cdef bint _flags_known
+    cdef bint _read_only
+    cdef size_t _rank
+    cdef size_t _itemsize
+    cdef size_t _alignment
+    cdef uintptr_t _data_ptr
+    cdef uint64_t _byte_offset
+    cdef int64_t* _shape
+    cdef int64_t* _strides
+
+    def __cinit__(self):
+        self._owner = None
+        self._dtype_key = None
+        self._device_type = kDLCUDA
+        self._device_id = 0
+        self._flags = 0
+        self._flags_known = False
+        self._read_only = False
+        self._rank = 0
+        self._itemsize = 0
+        self._alignment = 0
+        self._data_ptr = 0
+        self._byte_offset = 0
+        self._shape = NULL
+        self._strides = NULL
+
+    def __init__(
+        self,
+        object owner,
+        object data_ptr,
+        object byte_offset,
+        object shape,
+        object strides=None,
+        *,
+        object device_type=kDLCUDA,
+        object device_id=0,
+        object flags=0,
+        object flags_known=False,
+        object read_only=False,
+    ):
+        self._rank = _validate_rank(shape, "shape")
+        if len(shape) == 0:
+            if strides is not None and len(strides) != 0:
+                raise ValueError("0-rank scalar strides must be empty when provided")
+            shape = (1,)
+            strides = (1,)
+        elif strides is not None and len(strides) != self._rank:
+            raise ValueError(
+                f"strides rank must match shape rank {self._rank}, got {len(strides)}"
+            )
+
+        self._owner = owner
+        self._device_type = <DLDeviceType>_as_nonnegative_int32(device_type, "device_type")
+        if self._device_type != kDLCUDA and self._device_type != kDLCUDAManaged:
+            raise ValueError(f"expected a CUDA device type, got {<int>self._device_type}")
+        self._device_id = _as_nonnegative_int32(device_id, "device_id")
+        self._flags = _as_uint64(flags, "flags")
+        self._flags_known = bool(flags_known)
+        self._read_only = bool(read_only) or (
+            self._flags_known and bool(self._flags & DLPACK_FLAG_BITMASK_READ_ONLY)
+        )
+        self._data_ptr = _as_uintptr(data_ptr, "data_ptr")
+        self._byte_offset = _as_uint64(byte_offset, "byte_offset")
+        self._shape = _copy_int64_sequence(shape, self._rank, "shape", True)
+        if strides is not None:
+            self._strides = _copy_int64_sequence(strides, self._rank, "strides", False)
+
+    cdef void _init_from_native(
+        self,
+        object owner,
+        uintptr_t data_ptr,
+        uint64_t byte_offset,
+        size_t rank,
+        const int64_t* shape,
+        const int64_t* strides,
+        DLDeviceType device_type,
+        int32_t device_id,
+        uint64_t flags,
+        bint flags_known,
+    ) except *:
+        cdef int64_t* copied_shape = NULL
+        cdef int64_t* copied_strides = NULL
+        cdef size_t native_rank
+
+        if rank == 0:
+            native_rank = 1
+            copied_shape = _device_copy_unit_axis_array()
+            try:
+                copied_strides = _device_copy_unit_axis_array()
+            except Exception:
+                PyMem_Free(copied_shape)
+                copied_shape = NULL
+                raise
+        else:
+            native_rank = rank
+            if shape == NULL:
+                raise BufferError(
+                    "DLPack tensor shape must not be null for non-scalar tensors"
+                )
+
+            copied_shape = _device_copy_copy_native_shape(shape, native_rank)
+            try:
+                copied_strides = _device_copy_copy_native_strides(
+                    shape,
+                    strides,
+                    native_rank,
+                )
+            except Exception:
+                PyMem_Free(copied_shape)
+                copied_shape = NULL
+                raise
+
+        if copied_strides == NULL:
+            raise BufferError(
+                "DLPack tensor strides must not be null after native preparation"
+            )
+
+        try:
+            self._owner = owner
+            self._device_type = device_type
+            self._device_id = device_id
+            self._flags = flags
+            self._flags_known = flags_known
+            self._read_only = flags_known and bool(flags & DLPACK_FLAG_BITMASK_READ_ONLY)
+            self._rank = native_rank
+            self._data_ptr = data_ptr
+            self._byte_offset = byte_offset
+            self._shape = copied_shape
+            self._strides = copied_strides
+            copied_shape = NULL
+            copied_strides = NULL
+        finally:
+            if copied_shape != NULL:
+                PyMem_Free(copied_shape)
+            if copied_strides != NULL:
+                PyMem_Free(copied_strides)
+
+    cdef void _set_dtype_metadata(self, size_t itemsize, size_t alignment, object dtype_key) except *:
+        self._itemsize = itemsize
+        self._alignment = alignment
+        self._dtype_key = tuple(dtype_key)
+
+    def __dealloc__(self):
+        if self._shape != NULL:
+            PyMem_Free(self._shape)
+            self._shape = NULL
+        if self._strides != NULL:
+            PyMem_Free(self._strides)
+            self._strides = NULL
+
+    cdef cccl_device_copy_source_view_t _as_source_view(self) noexcept:
+        cdef cccl_device_copy_source_view_t view
+        view.data = <const void*>self._data_ptr
+        view.byte_offset = self._byte_offset
+        view.shape = self._shape
+        view.strides = self._strides
+        return view
+
+    cdef cccl_device_copy_destination_view_t _as_destination_view(self) noexcept:
+        cdef cccl_device_copy_destination_view_t view
+        view.data = <void*>self._data_ptr
+        view.byte_offset = self._byte_offset
+        view.shape = self._shape
+        view.strides = self._strides
+        return view
+
+    @property
+    def data_ptr(self):
+        return self._data_ptr
+
+    @property
+    def byte_offset(self):
+        return self._byte_offset
+
+    @property
+    def rank(self):
+        return self._rank
+
+    @property
+    def itemsize(self):
+        return self._itemsize
+
+    @property
+    def alignment(self):
+        return self._alignment
+
+    @property
+    def dtype_key(self):
+        return self._dtype_key
+
+    @property
+    def device_type(self):
+        return <int>self._device_type
+
+    @property
+    def device_id(self):
+        return self._device_id
+
+    @property
+    def flags(self):
+        return self._flags
+
+    @property
+    def flags_known(self):
+        return bool(self._flags_known)
+
+    @property
+    def read_only(self):
+        return bool(self._read_only)
+
+    @property
+    def shape(self):
+        return _int64_tuple(self._shape, self._rank)
+
+    @property
+    def strides(self):
+        if self._strides == NULL:
+            return None
+        return _int64_tuple(self._strides, self._rank)
+
+    def _descriptor_pointers(self):
+        return {
+            "data": self._data_ptr,
+            "shape": <uintptr_t>self._shape,
+            "strides": <uintptr_t>self._strides,
+        }
+
+    def __repr__(self):
+        return (
+            f"{type(self).__name__}("
+            f"data_ptr=0x{self._data_ptr:x}, "
+            f"byte_offset={self._byte_offset}, "
+            f"device=({<int>self._device_type}, {self._device_id}), "
+            f"read_only={bool(self._read_only)!r}, "
+            f"shape={self.shape!r}, "
+            f"strides={self.strides!r})"
+        )
+
+
+cdef const char* DLPACK_EXCHANGE_API_CAPSULE_NAME = "dlpack_exchange_api"
+
+
+def _layout_right():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_RIGHT
+
+
+def _layout_left():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_LEFT
+
+
+def _layout_stride():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE
+
+
+def _layout_stride_relaxed():
+    return <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+
+
+cdef _cccl_device_copy_layout_kind_t _device_copy_select_strided_layout(const int64_t* strides, size_t rank) noexcept:
+    cdef size_t axis
+    if strides == NULL:
+        return _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+    for axis in range(rank):
+        if strides[axis] <= 0:
+            return _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+    return _CCCL_DEVICE_COPY_LAYOUT_STRIDE
+
+
+cdef tuple _device_copy_normalize_static_extent_axes(object axes):
+    cdef list result = []
+    cdef object seen = set()
+    cdef object iterator
+    cdef object axis_obj
+    cdef Py_ssize_t axis
+
+    if axes is None:
+        return ()
+
+    if isinstance(axes, (str, bytes)):
+        raise TypeError("static_extents must be an integer axis or an iterable of integer axes")
+
+    try:
+        iterator = iter(axes)
+    except TypeError:
+        iterator = iter((axes,))
+
+    for axis_obj in iterator:
+        axis = operator.index(axis_obj)
+        if axis < 0:
+            raise ValueError("static extent axes must be non-negative")
+        if axis in seen:
+            raise ValueError("static extent axes must be unique")
+        seen.add(axis)
+        result.append(axis)
+
+    return tuple(result)
+
+
+cdef tuple _device_copy_static_extent_axes_from_extent_spec(object extents):
+    cdef list result = []
+    cdef object kind
+    cdef Py_ssize_t axis = 0
+
+    for kind in extents:
+        if kind is None or kind == "runtime" or kind == "dynamic":
+            axis += 1
+            continue
+        if kind == "static":
+            result.append(axis)
+            axis += 1
+            continue
+        raise ValueError("extent entries must be 'runtime', 'dynamic', 'static', or None")
+
+    return tuple(result)
+
+
+cdef class _DeviceCopyCompileSpec:
+    cdef bint _all_static_extents
+    cdef tuple _static_extent_axes
+
+    def __init__(self, object extents=None, object static_extents=None):
+        self._all_static_extents = False
+        self._static_extent_axes = ()
+
+        if extents is not None and static_extents is not None:
+            raise TypeError("specify either extents or static_extents, not both")
+
+        if extents is None:
+            self._static_extent_axes = _device_copy_normalize_static_extent_axes(static_extents)
+        elif extents == "runtime" or extents == "dynamic":
+            self._static_extent_axes = ()
+        elif extents == "static":
+            self._all_static_extents = True
+        else:
+            self._static_extent_axes = _device_copy_static_extent_axes_from_extent_spec(extents)
+
+    @property
+    def all_static_extents(self):
+        return bool(self._all_static_extents)
+
+    @property
+    def static_extent_axes(self):
+        return self._static_extent_axes
+
+
+def _device_copy_compile_spec(*, extents=None, static_extents=None):
+    return _DeviceCopyCompileSpec(extents=extents, static_extents=static_extents)
+
+
+cdef _DeviceCopyCompileSpec _device_copy_compile_spec_from_object(object spec):
+    if spec is None:
+        return _DeviceCopyCompileSpec()
+    if isinstance(spec, _DeviceCopyCompileSpec):
+        return <_DeviceCopyCompileSpec>spec
+    raise TypeError("device copy compile spec must be created by _device_copy_compile_spec")
+
+
+cdef void _device_copy_compile_spec_validate_rank(_DeviceCopyCompileSpec spec, size_t rank) except *:
+    cdef Py_ssize_t i
+    cdef Py_ssize_t axis
+
+    if spec._all_static_extents:
+        return
+
+    for i in range(len(spec._static_extent_axes)):
+        axis = spec._static_extent_axes[i]
+        if <size_t>axis >= rank:
+            raise ValueError("static extent axis is out of range for simplified rank")
+
+
+cdef bint _device_copy_compile_spec_axis_is_static(_DeviceCopyCompileSpec spec, size_t axis) except *:
+    cdef Py_ssize_t i
+    cdef Py_ssize_t static_axis
+
+    if spec._all_static_extents:
+        return True
+
+    for i in range(len(spec._static_extent_axes)):
+        static_axis = spec._static_extent_axes[i]
+        if <size_t>static_axis == axis:
+            return True
+
+    return False
+
+
+cdef int64_t _copy_plan_extent(object value) except? -1:
+    cdef int64_t result = <int64_t>value
+    if result < 0:
+        raise ValueError("copy plan shape extents must be non-negative")
+    return result
+
+
+cdef int64_t _copy_plan_checked_i64(object value, str message) except? -1:
+    try:
+        return <int64_t>value
+    except OverflowError:
+        raise OverflowError(message)
+
+
+cdef int64_t _copy_plan_checked_add(int64_t lhs, int64_t rhs, str message) except? -1:
+    cdef object lhs_obj = lhs
+    cdef object rhs_obj = rhs
+    return _copy_plan_checked_i64(lhs_obj + rhs_obj, message)
+
+
+cdef int64_t _copy_plan_checked_mul(int64_t lhs, int64_t rhs, str message) except? -1:
+    cdef object lhs_obj = lhs
+    cdef object rhs_obj = rhs
+    return _copy_plan_checked_i64(lhs_obj * rhs_obj, message)
+
+
+cdef int64_t _copy_plan_axis_delta(int64_t extent, int64_t stride, str message) except? -1:
+    if extent == 0:
+        return 0
+    return _copy_plan_checked_mul(extent - 1, stride, message)
+
+
+cdef int64_t _copy_plan_abs_stride(int64_t stride) except? -1:
+    if stride == -INT64_MAX - 1:
+        raise OverflowError("copy plan stride magnitude is too large")
+    if stride < 0:
+        return -stride
+    return stride
+
+
+cdef bint _copy_plan_abs_stride_noexcept(int64_t stride, int64_t* result) noexcept:
+    if stride == -INT64_MAX - 1:
+        return False
+    if stride < 0:
+        result[0] = -stride
+    else:
+        result[0] = stride
+    return True
+
+
+cdef bint _copy_plan_checked_nonnegative_add_noexcept(
+    int64_t lhs,
+    int64_t rhs,
+    int64_t* result,
+) noexcept:
+    if lhs < 0 or rhs < 0:
+        return False
+    if lhs > INT64_MAX - rhs:
+        return False
+    result[0] = lhs + rhs
+    return True
+
+
+cdef bint _copy_plan_checked_nonnegative_mul_noexcept(
+    int64_t lhs,
+    int64_t rhs,
+    int64_t* result,
+) noexcept:
+    if lhs < 0 or rhs < 0:
+        return False
+    if rhs != 0 and lhs > INT64_MAX // rhs:
+        return False
+    result[0] = lhs * rhs
+    return True
+
+
+cdef bint _copy_plan_is_unique_mapping(
+    size_t rank,
+    const int64_t* shape,
+    const int64_t* strides,
+    int64_t* axis_scratch,
+) noexcept:
+    cdef size_t axis_count = 0
+    cdef size_t i
+    cdef size_t j
+    cdef size_t axis
+    cdef size_t previous_axis
+    cdef int64_t axis_stride
+    cdef int64_t previous_stride
+    cdef int64_t extent
+    cdef int64_t covered = 1
+    cdef int64_t delta
+
+    if axis_scratch == NULL:
+        return False
+
+    for i in range(rank):
+        extent = shape[i]
+        if extent < 0:
+            return False
+        if extent <= 1:
+            continue
+
+        if not _copy_plan_abs_stride_noexcept(strides[i], &axis_stride):
+            return False
+        if axis_stride == 0:
+            return False
+
+        if i > <size_t>INT64_MAX:
+            return False
+        axis_scratch[axis_count] = <int64_t>i
+        axis_count += 1
+
+    for i in range(1, axis_count):
+        axis = <size_t>axis_scratch[i]
+        if not _copy_plan_abs_stride_noexcept(strides[axis], &axis_stride):
+            return False
+        j = i
+        while j > 0:
+            previous_axis = <size_t>axis_scratch[j - 1]
+            if not _copy_plan_abs_stride_noexcept(strides[previous_axis], &previous_stride):
+                return False
+            if previous_stride < axis_stride:
+                break
+            if previous_stride == axis_stride and shape[previous_axis] <= shape[axis]:
+                break
+            axis_scratch[j] = axis_scratch[j - 1]
+            j -= 1
+        axis_scratch[j] = <int64_t>axis
+
+    for i in range(axis_count):
+        axis = <size_t>axis_scratch[i]
+        if not _copy_plan_abs_stride_noexcept(strides[axis], &axis_stride):
+            return False
+        if axis_stride < covered:
+            return False
+
+        if not _copy_plan_checked_nonnegative_mul_noexcept(
+            shape[axis] - 1,
+            axis_stride,
+            &delta,
+        ):
+            return False
+        if not _copy_plan_checked_nonnegative_add_noexcept(covered, delta, &covered):
+            return False
+
+    return True
+
+
+cdef void _copy_plan_require_unique_mapping(
+    size_t rank,
+    const int64_t* shape,
+    const int64_t* strides,
+    int64_t* axis_scratch,
+    str label,
+) except *:
+    if not _copy_plan_is_unique_mapping(rank, shape, strides, axis_scratch):
+        raise ValueError(label + " mapping is not unique or uniqueness could not be proven")
+
+
+cdef int64_t* _copy_plan_alloc_int64(size_t count) except NULL:
+    cdef int64_t* result
+    if count == 0:
+        count = 1
+    result = <int64_t*>PyMem_Malloc(count * sizeof(int64_t))
+    if result == NULL:
+        raise MemoryError()
+    return result
+
+
+cdef class _DeviceCopyPlan:
+    cdef size_t _original_rank
+    cdef size_t _rank
+    cdef int64_t _elements
+    cdef int64_t _source_element_offset
+    cdef int64_t _destination_element_offset
+    cdef bint _empty
+    cdef bint _contiguous_1d
+    cdef int64_t* _original_shape
+    cdef int64_t* _original_source_strides
+    cdef int64_t* _original_destination_strides
+    cdef int64_t* _axis_order
+    cdef int64_t* _axis_scratch
+    cdef int64_t* _shape
+    cdef int64_t* _source_strides
+    cdef int64_t* _destination_strides
+
+    def __cinit__(self):
+        self._original_rank = 0
+        self._rank = 0
+        self._elements = 0
+        self._source_element_offset = 0
+        self._destination_element_offset = 0
+        self._empty = False
+        self._contiguous_1d = False
+        self._original_shape = NULL
+        self._original_source_strides = NULL
+        self._original_destination_strides = NULL
+        self._axis_order = NULL
+        self._axis_scratch = NULL
+        self._shape = NULL
+        self._source_strides = NULL
+        self._destination_strides = NULL
+
+    def __dealloc__(self):
+        if self._original_shape != NULL:
+            PyMem_Free(self._original_shape)
+        if self._original_source_strides != NULL:
+            PyMem_Free(self._original_source_strides)
+        if self._original_destination_strides != NULL:
+            PyMem_Free(self._original_destination_strides)
+        if self._axis_order != NULL:
+            PyMem_Free(self._axis_order)
+        if self._axis_scratch != NULL:
+            PyMem_Free(self._axis_scratch)
+        if self._shape != NULL:
+            PyMem_Free(self._shape)
+        if self._source_strides != NULL:
+            PyMem_Free(self._source_strides)
+        if self._destination_strides != NULL:
+            PyMem_Free(self._destination_strides)
+
+    def __init__(
+        self,
+        object shape,
+        object source_strides,
+        object destination_strides,
+        object source_element_offset=0,
+        object destination_element_offset=0,
+    ):
+        cdef Py_ssize_t shape_rank = len(shape)
+        if len(source_strides) != shape_rank:
+            raise ValueError("source strides rank must match shape rank")
+        if len(destination_strides) != shape_rank:
+            raise ValueError("destination strides rank must match shape rank")
+
+        self._original_rank = <size_t>shape_rank
+        self._source_element_offset = <int64_t>source_element_offset
+        self._destination_element_offset = <int64_t>destination_element_offset
+        self._allocate(<size_t>shape_rank)
+        self._load_original(shape, source_strides, destination_strides)
+        self._elements = self._compute_elements()
+        self._empty = self._elements == 0
+
+        self._validate_destination_unique()
+        self._validate_element_interval(
+            self._source_element_offset,
+            self._original_source_strides,
+            "source array view refers to elements before its allocation base",
+        )
+        self._validate_element_interval(
+            self._destination_element_offset,
+            self._original_destination_strides,
+            "destination array view refers to elements before its allocation base",
+        )
+        self._build_normalized()
+
+    cdef void _init_from_native(
+        self,
+        size_t rank,
+        const int64_t* shape,
+        const int64_t* source_strides,
+        const int64_t* destination_strides,
+        int64_t source_element_offset,
+        int64_t destination_element_offset,
+    ) except *:
+        if rank != 0 and shape == NULL:
+            raise ValueError("copy plan shape must not be null")
+        if rank != 0 and source_strides == NULL:
+            raise ValueError("copy plan source strides must not be null")
+        if rank != 0 and destination_strides == NULL:
+            raise ValueError("copy plan destination strides must not be null")
+
+        self._original_rank = rank
+        self._source_element_offset = source_element_offset
+        self._destination_element_offset = destination_element_offset
+        self._allocate(rank)
+        self._load_original_native(shape, source_strides, destination_strides)
+        self._elements = self._compute_elements()
+        self._empty = self._elements == 0
+
+        self._validate_destination_unique()
+        self._validate_element_interval(
+            self._source_element_offset,
+            self._original_source_strides,
+            "source array view refers to elements before its allocation base",
+        )
+        self._validate_element_interval(
+            self._destination_element_offset,
+            self._original_destination_strides,
+            "destination array view refers to elements before its allocation base",
+        )
+        self._build_normalized()
+
+    cdef void _allocate(self, size_t rank) except *:
+        self._original_shape = _copy_plan_alloc_int64(rank)
+        self._original_source_strides = _copy_plan_alloc_int64(rank)
+        self._original_destination_strides = _copy_plan_alloc_int64(rank)
+        self._axis_order = _copy_plan_alloc_int64(rank)
+        self._axis_scratch = _copy_plan_alloc_int64(rank)
+        self._shape = _copy_plan_alloc_int64(rank)
+        self._source_strides = _copy_plan_alloc_int64(rank)
+        self._destination_strides = _copy_plan_alloc_int64(rank)
+
+    cdef void _load_original(self, object shape, object source_strides, object destination_strides) except *:
+        cdef size_t i
+        for i in range(self._original_rank):
+            self._original_shape[i] = _copy_plan_extent(shape[i])
+            self._original_source_strides[i] = <int64_t>source_strides[i]
+            self._original_destination_strides[i] = <int64_t>destination_strides[i]
+
+    cdef void _load_original_native(
+        self,
+        const int64_t* shape,
+        const int64_t* source_strides,
+        const int64_t* destination_strides,
+    ) except *:
+        cdef size_t i
+        for i in range(self._original_rank):
+            if shape[i] < 0:
+                raise ValueError("copy plan shape extents must be non-negative")
+            self._original_shape[i] = shape[i]
+            self._original_source_strides[i] = source_strides[i]
+            self._original_destination_strides[i] = destination_strides[i]
+
+    cdef int64_t _compute_elements(self) except? -1:
+        cdef int64_t elements = 1
+        cdef size_t i
+        cdef int64_t extent
+        for i in range(self._original_rank):
+            extent = self._original_shape[i]
+            if extent == 0:
+                return 0
+            elements = _copy_plan_checked_mul(elements, extent, "copy plan element count is too large")
+        return elements
+
+    cdef void _validate_destination_unique(self) except *:
+        _copy_plan_require_unique_mapping(
+            self._original_rank,
+            self._original_shape,
+            self._original_destination_strides,
+            self._axis_scratch,
+            "destination",
+        )
+
+    cdef bint _is_unique_mapping(self, size_t rank, const int64_t* shape, const int64_t* strides) noexcept:
+        return _copy_plan_is_unique_mapping(rank, shape, strides, self._axis_scratch)
+
+    cdef void _validate_element_interval(
+        self,
+        int64_t element_offset,
+        const int64_t* strides,
+        str message,
+    ) except *:
+        cdef int64_t minimum = element_offset
+        cdef int64_t delta
+        cdef size_t i
+        if self._empty:
+            return
+        for i in range(self._original_rank):
+            delta = _copy_plan_axis_delta(
+                self._original_shape[i],
+                strides[i],
+                "array offset span is too large",
+            )
+            if delta < 0:
+                minimum = _copy_plan_checked_add(minimum, delta, "array offset span is too large")
+        if minimum < 0:
+            raise ValueError(message)
+
+    cdef void _build_normalized(self) except *:
+        cdef size_t i
+        cdef size_t write = 0
+        cdef int64_t extent
+        cdef int64_t source_stride
+        cdef int64_t destination_stride
+
+        if self._empty:
+            self._rank = 0
+            self._contiguous_1d = True
+            return
+
+        for i in range(self._original_rank):
+            extent = self._original_shape[i]
+            if extent == 1:
+                continue
+
+            source_stride = self._original_source_strides[i]
+            destination_stride = self._original_destination_strides[i]
+            if destination_stride < 0:
+                self._source_element_offset = _copy_plan_checked_add(
+                    self._source_element_offset,
+                    _copy_plan_axis_delta(extent, source_stride, "normalized source offset is too large"),
+                    "normalized source offset is too large",
+                )
+                self._destination_element_offset = _copy_plan_checked_add(
+                    self._destination_element_offset,
+                    _copy_plan_axis_delta(extent, destination_stride, "normalized destination offset is too large"),
+                    "normalized destination offset is too large",
+                )
+                source_stride = _copy_plan_checked_mul(source_stride, -1, "normalized source stride magnitude is too large")
+                destination_stride = _copy_plan_checked_mul(
+                    destination_stride,
+                    -1,
+                    "normalized destination stride magnitude is too large",
+                )
+
+            self._axis_order[write] = <int64_t>i
+            self._shape[write] = extent
+            self._source_strides[write] = source_stride
+            self._destination_strides[write] = destination_stride
+            write += 1
+
+        self._rank = write
+        self._sort_axes()
+        self._collapse_axes()
+        self._contiguous_1d = self._rank <= 1 and (
+            self._rank == 0
+            or (self._source_strides[0] == 1 and self._destination_strides[0] == 1)
+        )
+
+    cdef int64_t _axis_sort_key_destination(self, size_t axis) except? -1:
+        return _copy_plan_abs_stride(self._destination_strides[axis])
+
+    cdef int64_t _axis_sort_key_source(self, size_t axis) except? -1:
+        return _copy_plan_abs_stride(self._source_strides[axis])
+
+    cdef bint _axis_should_move_left(self, size_t lhs, size_t rhs) except *:
+        cdef int64_t lhs_destination = self._axis_sort_key_destination(lhs)
+        cdef int64_t rhs_destination = self._axis_sort_key_destination(rhs)
+        if lhs_destination != rhs_destination:
+            return lhs_destination < rhs_destination
+
+        cdef int64_t lhs_source = self._axis_sort_key_source(lhs)
+        cdef int64_t rhs_source = self._axis_sort_key_source(rhs)
+        if lhs_source != rhs_source:
+            return lhs_source < rhs_source
+
+        return self._axis_order[lhs] > self._axis_order[rhs]
+
+    cdef void _swap_axes(self, size_t lhs, size_t rhs) noexcept:
+        cdef int64_t temporary
+        temporary = self._axis_order[lhs]
+        self._axis_order[lhs] = self._axis_order[rhs]
+        self._axis_order[rhs] = temporary
+
+        temporary = self._shape[lhs]
+        self._shape[lhs] = self._shape[rhs]
+        self._shape[rhs] = temporary
+
+        temporary = self._source_strides[lhs]
+        self._source_strides[lhs] = self._source_strides[rhs]
+        self._source_strides[rhs] = temporary
+
+        temporary = self._destination_strides[lhs]
+        self._destination_strides[lhs] = self._destination_strides[rhs]
+        self._destination_strides[rhs] = temporary
+
+    cdef void _sort_axes(self) except *:
+        cdef size_t i
+        cdef size_t j
+        for i in range(1, self._rank):
+            j = i
+            while j > 0 and self._axis_should_move_left(j - 1, j):
+                self._swap_axes(j - 1, j)
+                j -= 1
+
+    cdef bint _can_collapse(self, size_t outer, size_t inner) except *:
+        if self._shape[outer] == 0 or self._shape[inner] == 0:
+            return True
+        return (
+            self._source_strides[outer]
+            == _copy_plan_checked_mul(
+                self._source_strides[inner],
+                self._shape[inner],
+                "source stride span is too large",
+            )
+            and self._destination_strides[outer]
+            == _copy_plan_checked_mul(
+                self._destination_strides[inner],
+                self._shape[inner],
+                "destination stride span is too large",
+            )
+        )
+
+    cdef void _collapse_axes(self) except *:
+        cdef size_t read
+        cdef size_t write = 0
+
+        for read in range(self._rank):
+            if write != 0 and self._can_collapse(write - 1, read):
+                self._shape[write - 1] = _copy_plan_checked_mul(
+                    self._shape[write - 1],
+                    self._shape[read],
+                    "collapsed extent is too large",
+                )
+                if self._axis_order[read] < self._axis_order[write - 1]:
+                    self._axis_order[write - 1] = self._axis_order[read]
+                self._source_strides[write - 1] = self._source_strides[read]
+                self._destination_strides[write - 1] = self._destination_strides[read]
+                continue
+
+            if write != read:
+                self._axis_order[write] = self._axis_order[read]
+                self._shape[write] = self._shape[read]
+                self._source_strides[write] = self._source_strides[read]
+                self._destination_strides[write] = self._destination_strides[read]
+            write += 1
+
+        self._rank = write
+
+    cdef size_t _native_rank(self) noexcept:
+        return self._rank
+
+    cdef const int64_t* _native_shape(self) noexcept:
+        return self._shape
+
+    cdef const int64_t* _native_source_strides(self) noexcept:
+        return self._source_strides
+
+    cdef const int64_t* _native_destination_strides(self) noexcept:
+        return self._destination_strides
+
+    cdef int64_t _native_source_element_offset(self) noexcept:
+        return self._source_element_offset
+
+    cdef int64_t _native_destination_element_offset(self) noexcept:
+        return self._destination_element_offset
+
+    @property
+    def original_rank(self):
+        return self._original_rank
+
+    @property
+    def rank(self):
+        return self._rank
+
+    @property
+    def elements(self):
+        return self._elements
+
+    @property
+    def source_element_offset(self):
+        return self._source_element_offset
+
+    @property
+    def destination_element_offset(self):
+        return self._destination_element_offset
+
+    @property
+    def empty(self):
+        return bool(self._empty)
+
+    @property
+    def contiguous_1d(self):
+        return bool(self._contiguous_1d)
+
+    @property
+    def original_shape(self):
+        return _int64_tuple(self._original_shape, self._original_rank)
+
+    @property
+    def original_source_strides(self):
+        return _int64_tuple(self._original_source_strides, self._original_rank)
+
+    @property
+    def original_destination_strides(self):
+        return _int64_tuple(self._original_destination_strides, self._original_rank)
+
+    @property
+    def axis_order(self):
+        return _int64_tuple(self._axis_order, self._rank)
+
+    @property
+    def shape(self):
+        return _int64_tuple(self._shape, self._rank)
+
+    @property
+    def source_strides(self):
+        return _int64_tuple(self._source_strides, self._rank)
+
+    @property
+    def destination_strides(self):
+        return _int64_tuple(self._destination_strides, self._rank)
+
+    @property
+    def original_source_unique(self):
+        return bool(self._is_unique_mapping(
+            self._original_rank,
+            self._original_shape,
+            self._original_source_strides,
+        ))
+
+    @property
+    def source_unique(self):
+        return bool(self._is_unique_mapping(
+            self._rank,
+            self._shape,
+            self._source_strides,
+        ))
+
+    @property
+    def destination_unique(self):
+        return bool(self._is_unique_mapping(
+            self._rank,
+            self._shape,
+            self._destination_strides,
+        ))
+
+
+def _make_device_copy_plan(
+    object shape,
+    object source_strides,
+    object destination_strides,
+    object source_element_offset=0,
+    object destination_element_offset=0,
+):
+    return _DeviceCopyPlan(
+        shape,
+        source_strides,
+        destination_strides,
+        source_element_offset,
+        destination_element_offset,
+    )
+
+
+cdef int64_t _device_copy_plan_call_extent(_DeviceCopyPlan plan, size_t axis) noexcept:
+    if plan._rank == 0:
+        return 1
+    if plan._contiguous_1d:
+        return plan._elements
+    return plan._shape[axis]
+
+
+cdef extern from "dlpack/dlpack.h":
+    ctypedef struct _DeviceCopyDLDataType "DLDataType":
+        uint8_t code
+        uint8_t bits
+        uint16_t lanes
+
+    ctypedef struct _DeviceCopyDLDevice "DLDevice":
+        int device_type
+        int device_id
+
+    ctypedef enum _DeviceCopyDLDataTypeCode "DLDataTypeCode":
+        _DEVICE_COPY_KDLINT "kDLInt"
+        _DEVICE_COPY_KDLUINT "kDLUInt"
+        _DEVICE_COPY_KDLFLOAT "kDLFloat"
+        _DEVICE_COPY_KDLCOMPLEX "kDLComplex"
+        _DEVICE_COPY_KDLBOOL "kDLBool"
+
+    ctypedef struct _DeviceCopyDLTensor "DLTensor":
+        void* data
+        _DeviceCopyDLDevice device
+        int32_t ndim
+        _DeviceCopyDLDataType dtype
+
+    ctypedef struct _DeviceCopyDLManagedTensor "DLManagedTensor":
+        _DeviceCopyDLTensor dl_tensor
+
+    ctypedef struct _DeviceCopyDLManagedTensorVersioned "DLManagedTensorVersioned":
+        _DeviceCopyDLTensor dl_tensor
+
+
+cdef extern from "cuda.h":
+    ctypedef enum _CUresult "CUresult":
+        _CUDA_SUCCESS "CUDA_SUCCESS"
+
+    ctypedef int _CUdevice "CUdevice"
+    ctypedef uintptr_t _CUdeviceptr "CUdeviceptr"
+
+    ctypedef struct _CUctx_st "CUctx_st":
+        pass
+
+    ctypedef _CUctx_st* _CUcontext "CUcontext"
+
+    ctypedef enum _CUstreamCaptureStatus "CUstreamCaptureStatus":
+        _CU_STREAM_CAPTURE_STATUS_NONE "CU_STREAM_CAPTURE_STATUS_NONE"
+
+    ctypedef enum _CUpointer_attribute "CUpointer_attribute":
+        _CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL "CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL"
+        _CU_POINTER_ATTRIBUTE_IS_MANAGED "CU_POINTER_ATTRIBUTE_IS_MANAGED"
+
+    ctypedef struct _CUstream_st "CUstream_st":
+        pass
+
+    ctypedef _CUstream_st* _CUstream "CUstream"
+
+    _CUresult cuStreamIsCapturing(
+        _CUstream stream,
+        _CUstreamCaptureStatus* capture_status,
+    )
+
+    _CUresult cuCtxGetCurrent(_CUcontext* context)
+
+    _CUresult cuCtxGetDevice(_CUdevice* device)
+
+    _CUresult cuStreamGetCtx(_CUstream stream, _CUcontext* context)
+
+    _CUresult cuPointerGetAttribute(
+        void* data,
+        _CUpointer_attribute attribute,
+        _CUdeviceptr pointer,
+    )
+
+    _CUresult cuStreamSynchronize(_CUstream stream) noexcept nogil
+
+
+cdef extern from "_device_copy_owner_retention.h":
+    ctypedef struct _DeviceCopyOwnerRetention "cccl_device_copy_owner_retention":
+        pass
+
+    _DeviceCopyOwnerRetention* _device_copy_create_owner_retention "cccl_device_copy_create_owner_retention"(
+        PyObject* source,
+        PyObject* destination,
+    ) except NULL
+
+    void _device_copy_release_owner_retention "cccl_device_copy_release_owner_retention"(
+        _DeviceCopyOwnerRetention* owners,
+    ) noexcept
+
+    _CUresult _device_copy_schedule_owner_release "cccl_device_copy_schedule_owner_release"(
+        _CUstream stream,
+        _DeviceCopyOwnerRetention* owners,
+    ) noexcept nogil
+
+    Py_ssize_t _device_copy_drain_completed_owners_impl "cccl_device_copy_drain_completed_owners_impl"() noexcept
+
+
+cdef extern from "cccl/c/types.h":
+    ctypedef enum _cccl_type_enum "cccl_type_enum":
+        _CCCL_STORAGE "CCCL_STORAGE"
+
+    ctypedef struct _cccl_type_info "cccl_type_info":
+        size_t size
+        size_t alignment
+        _cccl_type_enum type
+
+
+cdef extern from "cccl/c/device_copy.h":
+    ctypedef enum _cccl_device_copy_axis_metadata_kind_t "cccl_device_copy_axis_metadata_kind_t":
+        _CCCL_DEVICE_COPY_AXIS_RUNTIME "CCCL_DEVICE_COPY_AXIS_RUNTIME"
+        _CCCL_DEVICE_COPY_AXIS_STATIC "CCCL_DEVICE_COPY_AXIS_STATIC"
+
+    ctypedef enum _cccl_device_copy_layout_kind_t "cccl_device_copy_layout_kind_t":
+        _CCCL_DEVICE_COPY_LAYOUT_RIGHT "CCCL_DEVICE_COPY_LAYOUT_RIGHT"
+        _CCCL_DEVICE_COPY_LAYOUT_LEFT "CCCL_DEVICE_COPY_LAYOUT_LEFT"
+        _CCCL_DEVICE_COPY_LAYOUT_STRIDE "CCCL_DEVICE_COPY_LAYOUT_STRIDE"
+        _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED "CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED"
+
+    ctypedef struct _cccl_device_copy_axis_metadata_t "cccl_device_copy_axis_metadata_t":
+        _cccl_device_copy_axis_metadata_kind_t kind
+        int64_t value
+
+    ctypedef struct _cccl_device_copy_view_build_t "cccl_device_copy_view_build_t":
+        _cccl_device_copy_layout_kind_t layout
+        const _cccl_device_copy_axis_metadata_t* strides
+
+    ctypedef struct _cccl_device_copy_build_spec_t "cccl_device_copy_build_spec_t":
+        _cccl_type_info value_type
+        size_t rank
+        const _cccl_device_copy_axis_metadata_t* shape
+        _cccl_device_copy_view_build_t source
+        _cccl_device_copy_view_build_t destination
+
+    ctypedef struct _cccl_device_copy_source_view_t "cccl_device_copy_source_view_t":
+        const void* data
+        uint64_t byte_offset
+        const int64_t* shape
+        const int64_t* strides
+
+    ctypedef struct _cccl_device_copy_destination_view_t "cccl_device_copy_destination_view_t":
+        void* data
+        uint64_t byte_offset
+        const int64_t* shape
+        const int64_t* strides
+
+    ctypedef struct _cccl_device_copy_build_result_t "cccl_device_copy_build_result_t":
+        int cc
+        void* payload
+        size_t payload_size
+        char* source
+        size_t source_size
+        void* jit_compiler
+        void* copy_fn
+        _cccl_type_info value_type
+        size_t rank
+        _cccl_device_copy_axis_metadata_t* shape
+        _cccl_device_copy_axis_metadata_t* source_strides
+        _cccl_device_copy_axis_metadata_t* destination_strides
+        _cccl_device_copy_layout_kind_t source_layout
+        _cccl_device_copy_layout_kind_t destination_layout
+
+    _CUresult _cccl_device_copy_build_ex "cccl_device_copy_build_ex"(
+        _cccl_device_copy_build_result_t* build_ptr,
+        _cccl_device_copy_build_spec_t spec,
+        int cc_major,
+        int cc_minor,
+        const char* cub_path,
+        const char* thrust_path,
+        const char* libcudacxx_path,
+        const char* ctk_path,
+        void* build_config,
+    )
+
+    _CUresult _cccl_device_copy "cccl_device_copy"(
+        _cccl_device_copy_build_result_t build,
+        _cccl_device_copy_source_view_t source,
+        _cccl_device_copy_destination_view_t destination,
+        _CUstream stream,
+    )
+
+    _CUresult _cccl_device_copy_cleanup "cccl_device_copy_cleanup"(
+        _cccl_device_copy_build_result_t* build_ptr,
+    )
+
+
+cdef void _device_copy_check_cuda(_CUresult status, str where) except *:
+    if status != _CUDA_SUCCESS:
+        raise RuntimeError(f"{where} failed with CUresult {<int>status}")
+
+
+cdef bytes _device_copy_include_option(object path):
+    import os
+
+    if path is None:
+        return b""
+    return os.fsencode("-I" + str(path))
+
+
+cdef tuple _device_copy_include_options():
+    cdef object include_paths
+    cdef object thrust_path
+    cdef object cub_path
+    cdef object libcudacxx_path
+    cdef object cuda_include_path
+
+    from cuda.cccl.headers import get_include_paths
+
+    include_paths = get_include_paths()
+    thrust_path, cub_path, libcudacxx_path, cuda_include_path = include_paths.as_tuple()
+    return (
+        _device_copy_include_option(cub_path),
+        _device_copy_include_option(thrust_path),
+        _device_copy_include_option(libcudacxx_path),
+        _device_copy_include_option(cuda_include_path),
+    )
+
+
+cdef tuple _device_copy_compute_capability(object compute_capability):
+    cdef object capability
+    cdef object major
+    cdef object minor
+
+    if compute_capability is None:
+        from cuda.core import Device
+
+        major, minor = Device().compute_capability
+        return int(major), int(minor)
+
+    try:
+        major, minor = compute_capability
+    except (TypeError, ValueError):
+        raise TypeError("compute_capability must be a (major, minor) pair") from None
+
+    return int(major), int(minor)
+
+
+cdef object _device_copy_stream_handle(object stream):
+    from cuda.compute._utils.protocols import validate_and_get_stream
+
+    return validate_and_get_stream(stream)
+
+
+cdef _CUstream _device_copy_stream(object stream_handle) except *:
+    if stream_handle is None:
+        return NULL
+    return <_CUstream><uintptr_t>stream_handle
+
+
+cdef int32_t _device_copy_execution_device(_CUstream stream) except? -1:
+    cdef _CUcontext current_context = NULL
+    cdef _CUcontext stream_context = NULL
+    cdef _CUdevice device
+    cdef _CUresult status
+
+    status = cuCtxGetCurrent(&current_context)
+    _device_copy_check_cuda(status, "cuCtxGetCurrent")
+    if current_context == NULL:
+        raise RuntimeError("device copy requires a current CUDA context")
+
+    status = cuStreamGetCtx(stream, &stream_context)
+    _device_copy_check_cuda(status, "cuStreamGetCtx")
+    if stream_context != current_context:
+        raise ValueError("device copy stream must belong to the current CUDA context")
+
+    status = cuCtxGetDevice(&device)
+    _device_copy_check_cuda(status, "cuCtxGetDevice")
+    return <int32_t>device
+
+
+cdef void _device_copy_validate_execution_location(
+    object source,
+    object destination,
+    _CUstream stream,
+) except *:
+    cdef int32_t execution_device = _device_copy_execution_device(stream)
+
+    if (
+        _device_copy_view_device_type(source) == kDLCUDA
+        and _device_copy_view_device_id(source) != execution_device
+    ):
+        raise ValueError("device copy source is not on the execution device")
+    if (
+        _device_copy_view_device_type(destination) == kDLCUDA
+        and _device_copy_view_device_id(destination) != execution_device
+    ):
+        raise ValueError("device copy destination is not on the execution device")
+
+
+def _drain_device_copy_owner_releases():
+    return _device_copy_drain_completed_owners_impl()
+
+
+cdef _cccl_type_info _device_copy_type_info(object view) except *:
+    cdef _cccl_type_info result
+    result.size = <size_t>view.itemsize
+    result.alignment = <size_t>view.alignment
+    result.type = _CCCL_STORAGE
+    return result
+
+
+cdef object _device_copy_dtype_key(object view):
+    cdef object dtype_key = getattr(view, "dtype_key", None)
+    cdef object dtype
+    if dtype_key is not None:
+        return tuple(dtype_key)
+
+    dtype = getattr(view, "dtype", None)
+    if dtype is None:
+        raise TypeError("device copy could not infer dtype metadata")
+    return ("dlpack",) + tuple(dtype)
+
+
+cdef object _device_copy_array_dtype_key(object array):
+    cdef object dtype
+
+    import numpy as np
+    from cuda.compute._utils.protocols import get_dtype
+
+    dtype = np.dtype(get_dtype(array))
+    if dtype.fields is not None:
+        return ("numpy-descr", tuple(dtype.descr), bool(dtype.isalignedstruct))
+    return ("numpy", dtype.str)
+
+
+ctypedef struct _DeviceCopyByteOffsetSplit:
+    int64_t element_offset
+    uint64_t byte_offset
+
+
+cdef _DeviceCopyByteOffsetSplit _device_copy_split_byte_offset(uint64_t byte_offset, size_t itemsize) except *:
+    cdef _DeviceCopyByteOffsetSplit result
+    cdef uint64_t item_bytes
+    cdef uint64_t element_offset
+
+    if itemsize == 0:
+        raise ValueError("device copy item size must be non-zero")
+
+    item_bytes = <uint64_t>itemsize
+    element_offset = byte_offset // item_bytes
+    if element_offset > <uint64_t>INT64_MAX:
+        raise OverflowError("device copy byte offset element quotient is too large")
+
+    result.element_offset = <int64_t>element_offset
+    result.byte_offset = byte_offset % item_bytes
+    return result
+
+
+cdef int64_t _device_copy_initial_element_offset(uint64_t byte_offset, size_t itemsize) except? -1:
+    cdef _DeviceCopyByteOffsetSplit split
+    split = _device_copy_split_byte_offset(byte_offset, itemsize)
+    return split.element_offset
+
+
+cdef uint64_t _device_copy_residual_byte_offset(uint64_t byte_offset, size_t itemsize) except? -1:
+    cdef _DeviceCopyByteOffsetSplit split
+    split = _device_copy_split_byte_offset(byte_offset, itemsize)
+    return split.byte_offset
+
+
+cdef uint64_t _device_copy_checked_byte_offset(
+    uint64_t byte_offset_base,
+    int64_t element_offset,
+    size_t itemsize,
+) except? 0:
+    cdef object total = byte_offset_base
+    cdef object element_offset_obj = element_offset
+    cdef object itemsize_obj = itemsize
+
+    total = total + element_offset_obj * itemsize_obj
+    try:
+        return <uint64_t>total
+    except OverflowError:
+        raise OverflowError("normalized device copy byte offset is outside uint64 range") from None
+
+
+cdef _PreparedDeviceCopyView _device_copy_prepared_view(object view):
+    if isinstance(view, _PreparedDeviceCopyView):
+        return <_PreparedDeviceCopyView>view
+    return None
+
+
+cdef DLDeviceType _device_copy_view_device_type(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._device_type
+    return <DLDeviceType><int>view.device_type
+
+
+cdef int32_t _device_copy_view_device_id(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._device_id
+    return <int32_t>view.device_id
+
+
+cdef bint _device_copy_view_read_only(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._read_only
+    return bool(view.read_only)
+
+
+cdef size_t _device_copy_view_rank(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._rank
+    return <size_t>len(view.shape)
+
+
+cdef bint _device_copy_prepared_shapes_equal(
+    _PreparedDeviceCopyView source,
+    _PreparedDeviceCopyView destination,
+) noexcept:
+    cdef size_t axis
+    if source._rank != destination._rank:
+        return False
+    for axis in range(source._rank):
+        if source._shape[axis] != destination._shape[axis]:
+            return False
+    return True
+
+
+cdef _DeviceCopyPlan _device_copy_make_plan_from_native_views(
+    _PreparedDeviceCopyView source,
+    _PreparedDeviceCopyView destination,
+    size_t itemsize,
+):
+    cdef uint64_t source_byte_offset = source._byte_offset
+    cdef uint64_t destination_byte_offset = destination._byte_offset
+    cdef int64_t source_element_offset = _device_copy_initial_element_offset(source_byte_offset, itemsize)
+    cdef int64_t destination_element_offset = _device_copy_initial_element_offset(destination_byte_offset, itemsize)
+    cdef _DeviceCopyPlan plan = _DeviceCopyPlan.__new__(_DeviceCopyPlan)
+
+    plan._init_from_native(
+        source._rank,
+        source._shape,
+        source._strides,
+        destination._strides,
+        source_element_offset,
+        destination_element_offset,
+    )
+    return plan
+
+
+cdef _DeviceCopyPlan _device_copy_make_plan_from_views(object source, object destination, size_t itemsize):
+    cdef _PreparedDeviceCopyView prepared_source = _device_copy_prepared_view(source)
+    cdef _PreparedDeviceCopyView prepared_destination = _device_copy_prepared_view(destination)
+    cdef uint64_t source_byte_offset = <uint64_t>source.byte_offset
+    cdef uint64_t destination_byte_offset = <uint64_t>destination.byte_offset
+    cdef int64_t source_element_offset = _device_copy_initial_element_offset(source_byte_offset, itemsize)
+    cdef int64_t destination_element_offset = _device_copy_initial_element_offset(destination_byte_offset, itemsize)
+
+    if prepared_source is not None and prepared_destination is not None:
+        return _device_copy_make_plan_from_native_views(prepared_source, prepared_destination, itemsize)
+
+    return _DeviceCopyPlan(
+        source.shape,
+        source.strides,
+        destination.strides,
+        source_element_offset,
+        destination_element_offset,
+    )
+
+
+cdef size_t _device_copy_call_rank(_DeviceCopyPlan plan) noexcept:
+    if plan._rank == 0 and not plan._empty:
+        return 1
+    return plan._rank
+
+
+cdef void _device_copy_check_views_compatible(
+    object source,
+    object destination,
+    object source_dtype_key,
+    object destination_dtype_key,
+) except *:
+    cdef _PreparedDeviceCopyView prepared_source = _device_copy_prepared_view(source)
+    cdef _PreparedDeviceCopyView prepared_destination = _device_copy_prepared_view(destination)
+    cdef DLDeviceType source_device_type
+    cdef DLDeviceType destination_device_type
+
+    if source_dtype_key != destination_dtype_key:
+        raise TypeError("source and destination dtypes must match")
+    if <size_t>source.itemsize != <size_t>destination.itemsize:
+        raise TypeError("source and destination item sizes must match")
+    if <size_t>source.alignment != <size_t>destination.alignment:
+        raise TypeError("source and destination alignments must match")
+    if _device_copy_view_read_only(destination):
+        raise ValueError("device copy destination is read-only")
+
+    source_device_type = _device_copy_view_device_type(source)
+    destination_device_type = _device_copy_view_device_type(destination)
+    if (
+        source_device_type == kDLCUDA
+        and destination_device_type == kDLCUDA
+        and _device_copy_view_device_id(source) != _device_copy_view_device_id(destination)
+    ):
+        raise ValueError("source and destination CUDA arrays must be on the same device")
+
+    if prepared_source is not None and prepared_destination is not None:
+        if not _device_copy_prepared_shapes_equal(prepared_source, prepared_destination):
+            raise ValueError("source and destination shapes must match")
+        return
+    if tuple(source.shape) != tuple(destination.shape):
+        raise ValueError("source and destination shapes must match")
+
+
+cdef void _device_copy_check_runtime_contract(
+    object source,
+    object destination,
+    object source_dtype_key,
+    object destination_dtype_key,
+    object dtype_key,
+    size_t itemsize,
+    size_t alignment,
+) except *:
+    _device_copy_check_views_compatible(source, destination, source_dtype_key, destination_dtype_key)
+    if source_dtype_key != dtype_key:
+        raise TypeError("device copy was built for a different dtype")
+    if <size_t>source.itemsize != itemsize:
+        raise TypeError("device copy was built for a different item size")
+    if <size_t>source.alignment != alignment:
+        raise TypeError("device copy was built for a different alignment")
+
+
+cdef uintptr_t _device_copy_view_data_ptr(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._data_ptr
+    return <uintptr_t>view.data_ptr
+
+
+cdef uint64_t _device_copy_view_byte_offset(object view) except *:
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+    if prepared_view is not None:
+        return prepared_view._byte_offset
+    return <uint64_t>view.byte_offset
+
+
+cdef void _device_copy_plan_element_interval(
+    _DeviceCopyPlan plan,
+    bint source,
+    int64_t* minimum,
+    int64_t* maximum,
+) except *:
+    cdef const int64_t* strides
+    cdef int64_t delta
+    cdef size_t axis
+
+    if source:
+        minimum[0] = plan._source_element_offset
+        strides = plan._source_strides
+    else:
+        minimum[0] = plan._destination_element_offset
+        strides = plan._destination_strides
+    maximum[0] = minimum[0]
+
+    for axis in range(plan._rank):
+        delta = _copy_plan_axis_delta(
+            plan._shape[axis],
+            strides[axis],
+            "device copy memory span is too large",
+        )
+        if delta < 0:
+            minimum[0] = _copy_plan_checked_add(
+                minimum[0],
+                delta,
+                "device copy memory span is too large",
+            )
+        else:
+            maximum[0] = _copy_plan_checked_add(
+                maximum[0],
+                delta,
+                "device copy memory span is too large",
+            )
+
+
+cdef uintptr_t _device_copy_interval_address(
+    uintptr_t data_ptr,
+    uint64_t residual_byte_offset,
+    int64_t element_offset,
+    size_t itemsize,
+    bint end,
+) except? 0:
+    cdef uintptr_t uintptr_max = <uintptr_t>-1
+    cdef uintptr_t element_bytes
+    cdef uintptr_t relative_address
+    cdef uintptr_t result
+
+    if element_offset < 0:
+        raise ValueError("device copy memory span begins before its allocation base")
+    if residual_byte_offset > uintptr_max:
+        raise OverflowError("device copy memory span address is too large")
+    if element_offset != 0 and itemsize > uintptr_max // <uintptr_t>element_offset:
+        raise OverflowError("device copy memory span address is too large")
+
+    element_bytes = <uintptr_t>element_offset * itemsize
+    if residual_byte_offset > uintptr_max - element_bytes:
+        raise OverflowError("device copy memory span address is too large")
+    relative_address = element_bytes + <uintptr_t>residual_byte_offset
+    if data_ptr > uintptr_max - relative_address:
+        raise OverflowError("device copy memory span address is too large")
+    result = data_ptr + relative_address
+
+    if end:
+        if itemsize > uintptr_max - result:
+            raise OverflowError("device copy memory span address is too large")
+        result += itemsize
+    return result
+
+
+cdef void _device_copy_validate_no_overlap(
+    object source,
+    object destination,
+    _DeviceCopyPlan plan,
+    size_t itemsize,
+) except *:
+    cdef int64_t source_minimum
+    cdef int64_t source_maximum
+    cdef int64_t destination_minimum
+    cdef int64_t destination_maximum
+    cdef uint64_t source_residual
+    cdef uint64_t destination_residual
+    cdef uintptr_t source_start
+    cdef uintptr_t source_end
+    cdef uintptr_t destination_start
+    cdef uintptr_t destination_end
+
+    if plan._empty:
+        return
+
+    _device_copy_plan_element_interval(plan, True, &source_minimum, &source_maximum)
+    _device_copy_plan_element_interval(plan, False, &destination_minimum, &destination_maximum)
+    source_residual = _device_copy_residual_byte_offset(
+        _device_copy_view_byte_offset(source),
+        itemsize,
+    )
+    destination_residual = _device_copy_residual_byte_offset(
+        _device_copy_view_byte_offset(destination),
+        itemsize,
+    )
+    source_start = _device_copy_interval_address(
+        _device_copy_view_data_ptr(source),
+        source_residual,
+        source_minimum,
+        itemsize,
+        False,
+    )
+    source_end = _device_copy_interval_address(
+        _device_copy_view_data_ptr(source),
+        source_residual,
+        source_maximum,
+        itemsize,
+        True,
+    )
+    destination_start = _device_copy_interval_address(
+        _device_copy_view_data_ptr(destination),
+        destination_residual,
+        destination_minimum,
+        itemsize,
+        False,
+    )
+    destination_end = _device_copy_interval_address(
+        _device_copy_view_data_ptr(destination),
+        destination_residual,
+        destination_maximum,
+        itemsize,
+        True,
+    )
+
+    if source_start < destination_end and destination_start < source_end:
+        raise ValueError(
+            "source and destination bounding memory spans overlap; "
+            "set assume_non_overlapping=True only when the accessed elements are disjoint"
+        )
+
+
+cdef tuple _device_copy_protocol_location(object array, uintptr_t data_ptr):
+    cdef object device
+    cdef object device_type_obj
+    cdef object device_id_obj
+    cdef int32_t device_type
+    cdef int32_t device_id
+    cdef int is_managed = 0
+    cdef _CUresult status
+
+    try:
+        device = array.__dlpack_device__()
+    except AttributeError:
+        if data_ptr == 0:
+            return (<int>kDLCUDA, cccl.current_device_id())
+
+        status = cuPointerGetAttribute(
+            &device_id,
+            _CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+            <_CUdeviceptr>data_ptr,
+        )
+        _device_copy_check_cuda(status, "cuPointerGetAttribute(CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL)")
+        status = cuPointerGetAttribute(
+            &is_managed,
+            _CU_POINTER_ATTRIBUTE_IS_MANAGED,
+            <_CUdeviceptr>data_ptr,
+        )
+        _device_copy_check_cuda(status, "cuPointerGetAttribute(CU_POINTER_ATTRIBUTE_IS_MANAGED)")
+        return (<int>(kDLCUDAManaged if is_managed else kDLCUDA), device_id)
+
+    try:
+        device_type_obj, device_id_obj = device
+    except (TypeError, ValueError):
+        raise TypeError("__dlpack_device__ must return a (device_type, device_id) pair") from None
+
+    device_type = _as_nonnegative_int32(device_type_obj, "DLPack device type")
+    device_id = _as_nonnegative_int32(device_id_obj, "DLPack device id")
+    if device_type != <int32_t>kDLCUDA and device_type != <int32_t>kDLCUDAManaged:
+        raise BufferError(f"expected a CUDA device, got DLPack device type {device_type}")
+    return (device_type, device_id)
+
+
+class _DeviceCopyProtocolView:
+    __slots__ = (
+        "owner",
+        "data",
+        "data_ptr",
+        "byte_offset",
+        "device_type",
+        "device_id",
+        "flags",
+        "flags_known",
+        "read_only",
+        "shape",
+        "strides",
+        "itemsize",
+        "alignment",
+        "num_items",
+        "dtype_key",
+    )
+
+    def __init__(
+        self,
+        owner,
+        data_ptr,
+        byte_offset,
+        device_type,
+        device_id,
+        read_only,
+        shape,
+        strides,
+        itemsize,
+        alignment,
+        dtype_key=None,
+    ):
+        self.owner = owner
+        self.data = data_ptr
+        self.data_ptr = data_ptr
+        self.byte_offset = byte_offset
+        self.device_type = device_type
+        self.device_id = device_id
+        self.flags = DLPACK_FLAG_BITMASK_READ_ONLY if read_only else 0
+        self.flags_known = False
+        self.read_only = read_only
+        self.shape = shape
+        self.strides = strides
+        self.itemsize = itemsize
+        self.alignment = alignment
+        self.num_items = _device_copy_shape_size(shape)
+        self.dtype_key = dtype_key
+
+
+cdef object _device_copy_numpy_dtype_key(object dtype):
+    if dtype.fields is not None:
+        return ("numpy-descr", tuple(dtype.descr), bool(dtype.isalignedstruct))
+    return ("numpy", dtype.str)
+
+
+cdef object _device_copy_dlpack_dtype_key_from_fields(int code, int bits, int lanes):
+    import numpy as np
+
+    cdef int bytes_per_item
+
+    if lanes != 1:
+        return ("dlpack", code, bits, lanes)
+
+    if code == _DEVICE_COPY_KDLBOOL:
+        if bits == 1 or bits == 8:
+            return _device_copy_numpy_dtype_key(np.dtype("?"))
+        return ("dlpack", code, bits, lanes)
+
+    if bits % 8 != 0:
+        return ("dlpack", code, bits, lanes)
+
+    bytes_per_item = bits // 8
+    if bytes_per_item == 0:
+        return ("dlpack", code, bits, lanes)
+
+    try:
+        if code == _DEVICE_COPY_KDLINT:
+            return _device_copy_numpy_dtype_key(np.dtype(f"i{bytes_per_item}"))
+        if code == _DEVICE_COPY_KDLUINT:
+            return _device_copy_numpy_dtype_key(np.dtype(f"u{bytes_per_item}"))
+        if code == _DEVICE_COPY_KDLFLOAT:
+            return _device_copy_numpy_dtype_key(np.dtype(f"f{bytes_per_item}"))
+        if code == _DEVICE_COPY_KDLCOMPLEX:
+            return _device_copy_numpy_dtype_key(np.dtype(f"c{bytes_per_item}"))
+    except (TypeError, ValueError):
+        return ("dlpack", code, bits, lanes)
+
+    return ("dlpack", code, bits, lanes)
+
+
+cdef size_t _device_copy_dtype_key_itemsize(object dtype_key) except? 0:
+    import numpy as np
+
+    cdef int bits
+    cdef int lanes
+
+    if dtype_key[0] == "numpy":
+        return <size_t>np.dtype(dtype_key[1]).itemsize
+    if dtype_key[0] == "numpy-descr":
+        return <size_t>np.dtype(dtype_key[1]).itemsize
+
+    bits = <int>dtype_key[2]
+    lanes = <int>dtype_key[3]
+    if bits <= 0 or lanes <= 0 or (bits * lanes) % 8 != 0:
+        raise TypeError("DLPack dtype does not describe a byte-sized element")
+    return <size_t>((bits * lanes) // 8)
+
+
+cdef size_t _device_copy_dtype_key_alignment(object dtype_key) except? 0:
+    import numpy as np
+
+    cdef size_t itemsize
+
+    if dtype_key[0] == "numpy":
+        return <size_t>max(1, np.dtype(dtype_key[1]).alignment)
+    if dtype_key[0] == "numpy-descr":
+        return <size_t>max(1, np.dtype(dtype_key[1]).alignment)
+
+    itemsize = _device_copy_dtype_key_itemsize(dtype_key)
+    if itemsize < 1:
+        return 1
+    return itemsize
+
+
+cdef object _device_copy_dlpack_dtype_key(object array, object stream_handle):
+    cdef object capsule
+    cdef _DeviceCopyDLManagedTensor* managed
+    cdef _DeviceCopyDLManagedTensorVersioned* versioned
+
+    try:
+        capsule = array.__dlpack__(stream=stream_handle)
+    except TypeError:
+        if stream_handle is not None:
+            raise
+        capsule = array.__dlpack__()
+
+    if PyCapsule_IsValid(capsule, "dltensor"):
+        managed = <_DeviceCopyDLManagedTensor*>PyCapsule_GetPointer(capsule, "dltensor")
+        if managed == NULL:
+            raise BufferError("could not access DLPack tensor capsule")
+        return _device_copy_dlpack_dtype_key_from_fields(
+            <int>managed.dl_tensor.dtype.code,
+            <int>managed.dl_tensor.dtype.bits,
+            <int>managed.dl_tensor.dtype.lanes,
+        )
+
+    if PyCapsule_IsValid(capsule, "dltensor_versioned"):
+        versioned = <_DeviceCopyDLManagedTensorVersioned*>PyCapsule_GetPointer(capsule, "dltensor_versioned")
+        if versioned == NULL:
+            raise BufferError("could not access DLPack tensor capsule")
+        return _device_copy_dlpack_dtype_key_from_fields(
+            <int>versioned.dl_tensor.dtype.code,
+            <int>versioned.dl_tensor.dtype.bits,
+            <int>versioned.dl_tensor.dtype.lanes,
+        )
+
+    raise BufferError("could not access DLPack tensor capsule")
+
+
+cdef int64_t _device_copy_protocol_stride_elements(object stride, size_t itemsize) except? -1:
+    cdef int64_t stride_bytes = <int64_t>stride
+    cdef int64_t item_bytes = <int64_t>itemsize
+
+    if item_bytes <= 0:
+        raise ValueError("array item size must be positive")
+    if stride_bytes % item_bytes != 0:
+        raise ValueError("array strides must be whole element multiples")
+    return stride_bytes // item_bytes
+
+
+def _device_copy_protocol_c_strides(shape):
+    cdef Py_ssize_t count = len(shape)
+    cdef Py_ssize_t i
+    cdef int64_t running = 1
+    cdef tuple result = <tuple>PyTuple_New(count)
+    cdef object item
+
+    if result is None:
+        raise MemoryError()
+
+    for i in range(count - 1, -1, -1):
+        item = running
+        # PyTuple_SET_ITEM steals a reference; mirror the tuple helpers above.
+        Py_INCREF(item)
+        PyTuple_SET_ITEM(result, i, item)
+        running = _copy_plan_checked_mul(
+            running,
+            <int64_t>shape[i],
+            "C-contiguous stride is too large",
+        )
+    return result
+
+
+def _device_copy_shape_size(shape):
+    result = 1
+    for extent in shape:
+        result *= int(extent)
+    return result
+
+
+cdef tuple _device_copy_protocol_view_and_dtype_key(object array):
+    import numpy as np
+    from cuda.compute._utils.protocols import get_dtype, get_shape
+
+    cdef object dtype = np.dtype(get_dtype(array))
+    cdef object shape = tuple(int(extent) for extent in get_shape(array))
+    cdef object cai = getattr(array, "__cuda_array_interface__", None)
+    cdef object data
+    cdef uintptr_t data_ptr
+    cdef bint read_only
+    cdef tuple location
+    cdef object raw_strides
+    cdef object strides
+    cdef object dtype_key
+
+    if cai is None:
+        raise TypeError("object does not provide DLPack or __cuda_array_interface__")
+
+    try:
+        data = cai["data"]
+        data_ptr = _as_uintptr(data[0], "__cuda_array_interface__ data pointer")
+        read_only = bool(data[1])
+    except (KeyError, IndexError, TypeError):
+        raise TypeError("__cuda_array_interface__ data must be a (pointer, read_only) pair") from None
+
+    location = _device_copy_protocol_location(array, data_ptr)
+
+    raw_strides = cai.get("strides")
+    if raw_strides is None:
+        strides = _device_copy_protocol_c_strides(shape)
+    else:
+        strides = tuple(
+            _device_copy_protocol_stride_elements(stride, dtype.itemsize)
+            for stride in raw_strides
+        )
+
+    dtype_key = _device_copy_numpy_dtype_key(dtype)
+    return (
+        _DeviceCopyProtocolView(
+            array,
+            data_ptr,
+            0,
+            location[0],
+            location[1],
+            read_only,
+            shape,
+            strides,
+            dtype.itemsize,
+            dtype.alignment,
+            dtype_key,
+        ),
+        dtype_key,
+    )
+
+
+cdef tuple _device_copy_prepare_view_and_dtype_key(
+    object array,
+    object stream_handle,
+    bint destination=False,
+):
+    cdef object dtype_key
+    cdef _PreparedDeviceCopyView view = _device_copy_prepared_view(array)
+
+    if view is not None:
+        if view._dtype_key is None:
+            raise TypeError("prepared device array view does not have dtype metadata")
+        return (view, view._dtype_key)
+
+    try:
+        dtype_key = _device_copy_dlpack_dtype_key(array, stream_handle)
+    except (AttributeError, TypeError, BufferError):
+        return _device_copy_protocol_view_and_dtype_key(array)
+
+    view = _prepare_dlpack_view(
+        array,
+        stream=stream_handle,
+        require_flags=destination,
+    )
+    view._set_dtype_metadata(
+        _device_copy_dtype_key_itemsize(dtype_key),
+        _device_copy_dtype_key_alignment(dtype_key),
+        dtype_key,
+    )
+    return (
+        view,
+        dtype_key,
+    )
+
+
+cdef _PreparedDeviceCopyView _device_copy_materialize_prepared_view(
+    object view,
+    object dtype_key,
+):
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(view)
+
+    if prepared_view is not None:
+        return prepared_view
+
+    prepared_view = _PreparedDeviceCopyView(
+        view.owner,
+        view.data_ptr,
+        view.byte_offset,
+        view.shape,
+        view.strides,
+        device_type=view.device_type,
+        device_id=view.device_id,
+        flags=view.flags,
+        flags_known=view.flags_known,
+        read_only=view.read_only,
+    )
+    prepared_view._set_dtype_metadata(
+        <size_t>view.itemsize,
+        <size_t>view.alignment,
+        dtype_key,
+    )
+    return prepared_view
+
+
+def _as_device_array_view(object array, *, object stream=None):
+    cdef object stream_handle
+    cdef object view
+    cdef object dtype_key
+    cdef _PreparedDeviceCopyView prepared_view = _device_copy_prepared_view(array)
+
+    if prepared_view is not None:
+        if prepared_view._dtype_key is None:
+            raise TypeError("prepared device array view does not have dtype metadata")
+        return prepared_view
+
+    stream_handle = _device_copy_stream_handle(stream)
+    view, dtype_key = _device_copy_prepare_view_and_dtype_key(
+        array,
+        stream_handle,
+        True,
+    )
+    return _device_copy_materialize_prepared_view(view, dtype_key)
+
+
+cdef tuple _device_copy_type_info_key(object view):
+    cdef _cccl_type_info value_type = _device_copy_type_info(view)
+    return (
+        <size_t>value_type.size,
+        <size_t>value_type.alignment,
+        <int>value_type.type,
+    )
+
+
+cdef _cccl_type_info _device_copy_type_info_from_key(tuple key) except *:
+    cdef _cccl_type_info value_type
+
+    value_type.size = <size_t>key[0]
+    value_type.alignment = <size_t>key[1]
+    # DeviceCopy uses opaque element storage; keep the type tag in the key so
+    # this can be widened later without changing the cache-key shape.
+    value_type.type = _CCCL_STORAGE
+    return value_type
+
+
+cdef class _DeviceCopyBuild:
+    cdef _cccl_device_copy_build_result_t _build
+    # `public` makes `_loaded` gettable/settable from Python to enable the Python cache protocol.
+    cdef public bint _loaded
+    cdef bint _closed
+    cdef int64_t _scalar_shape
+    cdef int64_t _scalar_stride
+
+    def __cinit__(self, *args, **kwargs):
+        self._build.cc = 0
+        self._build.payload = NULL
+        self._build.payload_size = 0
+        self._build.source = NULL
+        self._build.source_size = 0
+        self._build.jit_compiler = NULL
+        self._build.copy_fn = NULL
+        self._build.shape = NULL
+        self._build.source_strides = NULL
+        self._build.destination_strides = NULL
+        self._build.value_type.size = 0
+        self._build.value_type.alignment = 0
+        self._build.value_type.type = _CCCL_STORAGE
+        self._build.rank = 0
+        self._build.source_layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+        self._build.destination_layout = _CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED
+        self._loaded = False
+        self._closed = True
+        self._scalar_shape = 1
+        self._scalar_stride = 1
+
+    def __init__(
+        self,
+        tuple type_info_key=None,
+        object rank=None,
+        object source_layout=None,
+        object destination_layout=None,
+        object common_data=None,
+    ):
+        cdef tuple capability
+        cdef _cccl_type_info value_type
+
+        # Direct plan-specialized builds initialize an empty owner and call
+        # _build_for_plan themselves.
+        if type_info_key is None and rank is None:
+            return
+        if type_info_key is None or rank is None:
+            raise TypeError(
+                "device copy type_info_key and rank must either both be provided or both be None"
+            )
+
+        capability = tuple(common_data.compute_capability)
+        value_type = _device_copy_type_info_from_key(type_info_key)
+        self._build_for_rank(
+            value_type,
+            <size_t>rank,
+            <int>capability[0],
+            <int>capability[1],
+            <_cccl_device_copy_layout_kind_t>source_layout,
+            <_cccl_device_copy_layout_kind_t>destination_layout,
+        )
+
+    cdef void _build_for_rank(
+        self,
+        _cccl_type_info value_type,
+        size_t rank,
+        int cc_major,
+        int cc_minor,
+        _cccl_device_copy_layout_kind_t source_layout,
+        _cccl_device_copy_layout_kind_t destination_layout,
+    ) except *:
+        cdef _cccl_device_copy_axis_metadata_t* shape_metadata = NULL
+        cdef _cccl_device_copy_axis_metadata_t* source_stride_metadata = NULL
+        cdef _cccl_device_copy_axis_metadata_t* destination_stride_metadata = NULL
+        cdef _cccl_device_copy_build_spec_t spec
+        cdef tuple include_options
+        cdef bytes cub_path
+        cdef bytes thrust_path
+        cdef bytes libcudacxx_path
+        cdef bytes cuda_include_path
+        cdef size_t i
+        cdef _CUresult status
+
+        if rank == 0:
+            return
+
+        shape_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        source_stride_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        destination_stride_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        if shape_metadata == NULL or source_stride_metadata == NULL or destination_stride_metadata == NULL:
+            if shape_metadata != NULL:
+                PyMem_Free(shape_metadata)
+            if source_stride_metadata != NULL:
+                PyMem_Free(source_stride_metadata)
+            if destination_stride_metadata != NULL:
+                PyMem_Free(destination_stride_metadata)
+            raise MemoryError()
+
+        try:
+            for i in range(rank):
+                shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                shape_metadata[i].value = 0
+                source_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                source_stride_metadata[i].value = 0
+                destination_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                destination_stride_metadata[i].value = 0
+
+            spec.value_type = value_type
+            spec.rank = rank
+            spec.shape = shape_metadata
+            spec.source.layout = source_layout
+            spec.source.strides = source_stride_metadata
+            spec.destination.layout = destination_layout
+            spec.destination.strides = destination_stride_metadata
+
+            include_options = _device_copy_include_options()
+            cub_path, thrust_path, libcudacxx_path, cuda_include_path = include_options
+            status = _cccl_device_copy_build_ex(
+                &self._build,
+                spec,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                cuda_include_path,
+                NULL,
+            )
+            _device_copy_check_cuda(status, "cccl_device_copy_build_ex")
+            self._loaded = True
+            self._closed = False
+        finally:
+            PyMem_Free(shape_metadata)
+            PyMem_Free(source_stride_metadata)
+            PyMem_Free(destination_stride_metadata)
+
+    cdef void _build_for_plan(
+        self,
+        _cccl_type_info value_type,
+        _DeviceCopyPlan plan,
+        int cc_major,
+        int cc_minor,
+        _DeviceCopyCompileSpec compile_spec=None,
+    ) except *:
+        cdef size_t rank = _device_copy_call_rank(plan)
+        cdef _cccl_device_copy_axis_metadata_t* shape_metadata = NULL
+        cdef _cccl_device_copy_axis_metadata_t* source_stride_metadata = NULL
+        cdef _cccl_device_copy_axis_metadata_t* destination_stride_metadata = NULL
+        cdef _cccl_device_copy_build_spec_t spec
+        cdef tuple include_options
+        cdef bytes cub_path
+        cdef bytes thrust_path
+        cdef bytes libcudacxx_path
+        cdef bytes cuda_include_path
+        cdef size_t i
+        cdef _CUresult status
+
+        if rank == 0:
+            return
+
+        if compile_spec is None:
+            compile_spec = _DeviceCopyCompileSpec()
+        _device_copy_compile_spec_validate_rank(compile_spec, rank)
+
+        shape_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        source_stride_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        destination_stride_metadata = <_cccl_device_copy_axis_metadata_t*>PyMem_Malloc(
+            rank * sizeof(_cccl_device_copy_axis_metadata_t)
+        )
+        if shape_metadata == NULL or source_stride_metadata == NULL or destination_stride_metadata == NULL:
+            if shape_metadata != NULL:
+                PyMem_Free(shape_metadata)
+            if source_stride_metadata != NULL:
+                PyMem_Free(source_stride_metadata)
+            if destination_stride_metadata != NULL:
+                PyMem_Free(destination_stride_metadata)
+            raise MemoryError()
+
+        try:
+            for i in range(rank):
+                if _device_copy_compile_spec_axis_is_static(compile_spec, i):
+                    shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_STATIC
+                    shape_metadata[i].value = _device_copy_plan_call_extent(plan, i)
+                else:
+                    shape_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                    shape_metadata[i].value = 0
+                source_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                source_stride_metadata[i].value = 0
+                destination_stride_metadata[i].kind = _CCCL_DEVICE_COPY_AXIS_RUNTIME
+                destination_stride_metadata[i].value = 0
+
+            spec.value_type = value_type
+            spec.rank = rank
+            spec.shape = shape_metadata
+            spec.source.layout = _device_copy_select_strided_layout(plan._native_source_strides(), rank)
+            spec.source.strides = source_stride_metadata
+            spec.destination.layout = _device_copy_select_strided_layout(plan._native_destination_strides(), rank)
+            spec.destination.strides = destination_stride_metadata
+
+            include_options = _device_copy_include_options()
+            cub_path, thrust_path, libcudacxx_path, cuda_include_path = include_options
+            status = _cccl_device_copy_build_ex(
+                &self._build,
+                spec,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                cuda_include_path,
+                NULL,
+            )
+            _device_copy_check_cuda(status, "cccl_device_copy_build_ex")
+            self._loaded = True
+            self._closed = False
+        finally:
+            PyMem_Free(shape_metadata)
+            PyMem_Free(source_stride_metadata)
+            PyMem_Free(destination_stride_metadata)
+
+    def _get_cubin(self):
+        cdef uintptr_t payload
+        cdef Py_ssize_t payload_size
+
+        if self._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+
+        payload = <uintptr_t>self._build.payload
+        payload_size = <Py_ssize_t>self._build.payload_size
+        if payload == 0 or payload_size == 0:
+            return b""
+        return PyBytes_FromStringAndSize(
+            <const char*>payload,
+            payload_size,
+        )
+
+    def _get_source(self):
+        if self._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+        if self._build.source == NULL or self._build.source_size == 0:
+            return ""
+        return (<char*>self._build.source)[:self._build.source_size].decode("utf-8")
+
+    def serialize(self):
+        raise NotImplementedError(
+            "DeviceCopy HostJIT build-result serialization is not implemented"
+        )
+
+    @staticmethod
+    def deserialize(blob, load=True, check_cc=True):
+        raise NotImplementedError(
+            "DeviceCopy HostJIT build-result deserialization is not implemented"
+        )
+
+    @staticmethod
+    def compile(*args):
+        # HostJIT currently exposes a fused build-and-load operation. Keep the
+        # generic cache protocol intact until the C API gains serialization.
+        return _DeviceCopyBuild(*args)
+
+    def load(self):
+        if self._loaded:
+            return
+        raise RuntimeError("DeviceCopy HostJIT build result is not loaded")
+
+    cdef void _copy(
+        self,
+        object source,
+        object destination,
+        _DeviceCopyPlan plan,
+        object stream_handle,
+    ) except *:
+        cdef _cccl_device_copy_source_view_t source_view
+        cdef _cccl_device_copy_destination_view_t destination_view
+        cdef size_t rank = _device_copy_call_rank(plan)
+        cdef const int64_t* shape
+        cdef const int64_t* source_strides
+        cdef const int64_t* destination_strides
+        cdef uint64_t source_byte_offset
+        cdef uint64_t destination_byte_offset
+        cdef _CUresult status
+        cdef _CUresult retention_status
+        cdef _CUresult synchronize_status
+        cdef _CUstream cuda_stream
+        cdef _CUstreamCaptureStatus capture_status
+        cdef _DeviceCopyOwnerRetention* owner_retention = NULL
+
+        if plan._empty:
+            return
+        if self._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+        if rank == 0:
+            raise RuntimeError("DeviceCopy build result has no callable rank")
+
+        if plan._rank == 0:
+            shape = &self._scalar_shape
+            source_strides = &self._scalar_stride
+            destination_strides = &self._scalar_stride
+        else:
+            shape = plan._native_shape()
+            source_strides = plan._native_source_strides()
+            destination_strides = plan._native_destination_strides()
+
+        source_byte_offset = _device_copy_checked_byte_offset(
+            _device_copy_residual_byte_offset(
+                _device_copy_view_byte_offset(source),
+                <size_t>source.itemsize,
+            ),
+            plan._native_source_element_offset(),
+            <size_t>source.itemsize,
+        )
+        destination_byte_offset = _device_copy_checked_byte_offset(
+            _device_copy_residual_byte_offset(
+                _device_copy_view_byte_offset(destination),
+                <size_t>destination.itemsize,
+            ),
+            plan._native_destination_element_offset(),
+            <size_t>destination.itemsize,
+        )
+
+        source_view.data = <const void*><uintptr_t><uint64_t>source.data_ptr
+        source_view.byte_offset = source_byte_offset
+        source_view.shape = shape
+        source_view.strides = source_strides
+
+        destination_view.data = <void*><uintptr_t><uint64_t>destination.data_ptr
+        destination_view.byte_offset = destination_byte_offset
+        destination_view.shape = shape
+        destination_view.strides = destination_strides
+
+        cuda_stream = _device_copy_stream(stream_handle)
+        _device_copy_drain_completed_owners_impl()
+        status = cuStreamIsCapturing(cuda_stream, &capture_status)
+        _device_copy_check_cuda(status, "cuStreamIsCapturing")
+        if capture_status != _CU_STREAM_CAPTURE_STATUS_NONE:
+            raise RuntimeError("DeviceCopy does not yet support CUDA stream capture")
+
+        owner_retention = _device_copy_create_owner_retention(
+            <PyObject*>source,
+            <PyObject*>destination,
+        )
+        status = _cccl_device_copy(
+            self._build,
+            source_view,
+            destination_view,
+            cuda_stream,
+        )
+
+        with nogil:
+            retention_status = _device_copy_schedule_owner_release(
+                cuda_stream,
+                owner_retention,
+            )
+        if retention_status == _CUDA_SUCCESS:
+            owner_retention = NULL
+        else:
+            # Match array_copy's failure contract: do not release views until
+            # all work issued to the stream has completed.
+            with nogil:
+                synchronize_status = cuStreamSynchronize(cuda_stream)
+            if synchronize_status == _CUDA_SUCCESS:
+                _device_copy_release_owner_retention(owner_retention)
+            # If synchronization itself fails, leak the two references rather
+            # than risk releasing storage still in use by the device.
+            owner_retention = NULL
+
+            if status != _CUDA_SUCCESS:
+                _device_copy_check_cuda(status, "cccl_device_copy")
+            _device_copy_check_cuda(synchronize_status, "cuStreamSynchronize")
+            _device_copy_check_cuda(retention_status, "cuLaunchHostFunc")
+
+        _device_copy_check_cuda(status, "cccl_device_copy")
+
+    cdef void _close(self) except *:
+        cdef _CUresult status
+        if self._closed:
+            return
+        status = _cccl_device_copy_cleanup(&self._build)
+        self._closed = True
+        self._loaded = False
+        _device_copy_check_cuda(status, "cccl_device_copy_cleanup")
+
+    def __dealloc__(self):
+        if not self._closed:
+            _cccl_device_copy_cleanup(&self._build)
+            self._closed = True
+            self._loaded = False
+
+
+cdef class _DeviceCopyExecutable:
+    cdef object _build_results
+    cdef object _bound_build_result
+    cdef tuple _type_info_key
+    cdef size_t _rank
+
+    def __init__(self, tuple type_info_key, object rank, *, object compute_capability=None):
+        cdef object rank_key
+
+        self._type_info_key = tuple(type_info_key)
+        self._rank = <size_t>rank
+
+        if self._rank == 0:
+            raise ValueError("device copy executable rank must be positive")
+
+        rank_key = int(self._rank)
+        self._build_results, self._bound_build_result = cache_build_results(
+            _DeviceCopyBuild,
+            self._type_info_key,
+            rank_key,
+            <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED,
+            <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE,
+            compute_capability=compute_capability,
+            builder=lambda: cccl.build_for_ccs(
+                _DeviceCopyBuild,
+                self._type_info_key,
+                rank_key,
+                <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE_RELAXED,
+                <int>_CCCL_DEVICE_COPY_LAYOUT_STRIDE,
+                compute_capability=compute_capability,
+            ),
+        )
+
+    cdef _DeviceCopyBuild _resolve_build(self):
+        return <_DeviceCopyBuild>cccl.resolve_build_result(
+            self._build_results,
+            self._bound_build_result,
+        )
+
+    cdef void _copy(
+        self,
+        object source,
+        object destination,
+        _DeviceCopyPlan plan,
+        object stream_handle,
+    ) except *:
+        cdef _DeviceCopyBuild build = self._resolve_build()
+        build._copy(source, destination, plan, stream_handle)
+
+    def _get_cubin(self):
+        return self._resolve_build()._get_cubin()
+
+    def _get_source(self):
+        return self._resolve_build()._get_source()
+
+
+@cache_with_registered_key_functions
+def _make_device_copy_executable(tuple type_info_key, object rank, *, object compute_capability=None):
+    return _DeviceCopyExecutable(type_info_key, rank, compute_capability=compute_capability)
+
+
+def _clear_device_copy_cache():
+    _make_device_copy_executable.cache_clear()
+
+
+cdef class _DeviceCopy:
+    cdef tuple _type_info_key
+    cdef object _builds_by_rank
+    cdef object _compute_capability
+    cdef size_t _max_rank
+    cdef bint _use_cached_builds
+    cdef bint _assume_non_overlapping
+    cdef bint _closed
+
+    cdef _DeviceCopyBuild _build
+    cdef _DeviceCopyPlan _plan
+    cdef tuple _dtype_key
+    cdef size_t _itemsize
+    cdef size_t _alignment
+    cdef bint _empty
+
+    def __init__(
+        self,
+        object source,
+        object destination,
+        *,
+        object stream=None,
+        object compute_capability=None,
+        object compile_spec=None,
+        object precompile=None,
+        bint assume_non_overlapping=False,
+    ):
+        cdef object stream_handle
+        cdef object source_view
+        cdef object destination_view
+        cdef object source_dtype_key
+        cdef object destination_dtype_key
+        cdef tuple capability
+        cdef _cccl_type_info value_type
+        cdef _DeviceCopyCompileSpec compile_options
+
+        stream_handle = _device_copy_stream_handle(stream)
+        self._use_cached_builds = compile_spec is None
+        if self._use_cached_builds:
+            compile_options = None
+        else:
+            compile_options = _device_copy_compile_spec_from_object(compile_spec)
+        if precompile is None:
+            precompile = "max"
+        if precompile not in ("max", "all"):
+            raise ValueError("device copy precompile must be None, 'max', or 'all'")
+        if not self._use_cached_builds and precompile != "max":
+            raise ValueError("device copy precompile is only supported for default dynamic builds")
+        source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
+        destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(
+            destination,
+            stream_handle,
+            True,
+        )
+
+        _device_copy_check_views_compatible(
+            source_view,
+            destination_view,
+            source_dtype_key,
+            destination_dtype_key,
+        )
+
+        self._dtype_key = source_dtype_key
+        self._itemsize = <size_t>source_view.itemsize
+        self._alignment = <size_t>source_view.alignment
+        self._plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
+        self._empty = self._plan._empty
+        self._assume_non_overlapping = assume_non_overlapping
+        if not self._assume_non_overlapping:
+            _device_copy_validate_no_overlap(source_view, destination_view, self._plan, self._itemsize)
+        if not self._empty:
+            _device_copy_validate_execution_location(
+                source_view,
+                destination_view,
+                _device_copy_stream(stream_handle),
+            )
+
+        self._build = _DeviceCopyBuild()
+        self._closed = False
+        self._compute_capability = compute_capability
+        self._type_info_key = _device_copy_type_info_key(source_view)
+        self._max_rank = _device_copy_view_rank(source_view)
+        if self._max_rank == 0:
+            self._max_rank = 1
+        self._builds_by_rank = [None] * (self._max_rank + 1)
+        if not self._empty:
+            if self._use_cached_builds:
+                if precompile == "all":
+                    for precompiled_rank in range(1, self._max_rank + 1):
+                        self._builds_by_rank[precompiled_rank] = _make_device_copy_executable(
+                            self._type_info_key,
+                            precompiled_rank,
+                            compute_capability=self._compute_capability,
+                        )
+                else:
+                    self._builds_by_rank[self._max_rank] = _make_device_copy_executable(
+                        self._type_info_key,
+                        self._max_rank,
+                        compute_capability=self._compute_capability,
+                    )
+            else:
+                capability = _device_copy_compute_capability(compute_capability)
+                value_type = _device_copy_type_info(source_view)
+                self._build._build_for_plan(
+                    value_type,
+                    self._plan,
+                    <int>capability[0],
+                    <int>capability[1],
+                    compile_options,
+                )
+
+    def __call__(self, object source, object destination, *, object stream=None):
+        cdef object stream_handle
+        cdef object source_view
+        cdef object destination_view
+        cdef object source_dtype_key
+        cdef object destination_dtype_key
+        cdef _DeviceCopyPlan plan
+
+        stream_handle = _device_copy_stream_handle(stream)
+        source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
+        destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(
+            destination,
+            stream_handle,
+            True,
+        )
+
+        _device_copy_check_runtime_contract(
+            source_view,
+            destination_view,
+            source_dtype_key,
+            destination_dtype_key,
+            self._dtype_key,
+            self._itemsize,
+            self._alignment,
+        )
+        plan = _device_copy_make_plan_from_views(source_view, destination_view, self._itemsize)
+        if not self._assume_non_overlapping:
+            _device_copy_validate_no_overlap(source_view, destination_view, plan, self._itemsize)
+        if not plan._empty:
+            _device_copy_validate_execution_location(
+                source_view,
+                destination_view,
+                _device_copy_stream(stream_handle),
+            )
+        if self._use_cached_builds:
+            if self._closed:
+                raise RuntimeError("DeviceCopy object is closed")
+            if _device_copy_view_rank(source_view) > self._max_rank:
+                raise ValueError("device copy runtime rank exceeds prepared rank")
+            if _device_copy_call_rank(plan) > self._max_rank:
+                raise ValueError("device copy simplified rank exceeds prepared rank")
+            if not plan._empty:
+                if self._builds_by_rank[_device_copy_call_rank(plan)] is None:
+                    self._builds_by_rank[_device_copy_call_rank(plan)] = _make_device_copy_executable(
+                        self._type_info_key,
+                        _device_copy_call_rank(plan),
+                        compute_capability=self._compute_capability,
+                    )
+                (<_DeviceCopyExecutable>self._builds_by_rank[_device_copy_call_rank(plan)])._copy(
+                    source_view,
+                    destination_view,
+                    plan,
+                    stream_handle,
+                )
+                return
+        elif _device_copy_call_rank(plan) != _device_copy_call_rank(self._plan):
+            raise ValueError("device copy was built for a different simplified rank")
+
+        self._build._copy(
+            source_view,
+            destination_view,
+            plan,
+            stream_handle,
+        )
+
+    def _get_cubin(self):
+        if self._use_cached_builds and self._closed:
+            raise RuntimeError("DeviceCopy object is closed")
+        if self._use_cached_builds:
+            return (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._get_cubin()
+        return self._build._get_cubin()
+
+    def _get_source(self):
+        cdef _cccl_device_copy_build_result_t build_res
+        if self._use_cached_builds and self._closed:
+            raise RuntimeError("DeviceCopy object is closed")
+        if self._use_cached_builds:
+            return (<_DeviceCopyExecutable>self._builds_by_rank[self._max_rank])._get_source()
+        if self._build._closed:
+            raise RuntimeError("DeviceCopy build result is closed")
+        build_res = self._build._build
+        if build_res.source == NULL or build_res.source_size == 0:
+            return ""
+        return (<char*>build_res.source)[:build_res.source_size].decode("utf-8")
+
+    def close(self):
+        if self._use_cached_builds:
+            self._builds_by_rank = ()
+            self._closed = True
+            return
+        self._build._close()
+        self._closed = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+
+def _make_device_copy(
+    object source,
+    object destination,
+    *,
+    object stream=None,
+    object compute_capability=None,
+    object compile_spec=None,
+    object precompile=None,
+    bint assume_non_overlapping=False,
+):
+    return _DeviceCopy(
+        source,
+        destination,
+        stream=stream,
+        compute_capability=compute_capability,
+        compile_spec=compile_spec,
+        precompile=precompile,
+        assume_non_overlapping=assume_non_overlapping,
+    )
+
+
+cdef void _device_copy_cached_copy_into(
+    object source,
+    object destination,
+    object stream,
+    object compute_capability,
+    bint assume_non_overlapping,
+) except *:
+    cdef object stream_handle
+    cdef object source_view
+    cdef object destination_view
+    cdef object source_dtype_key
+    cdef object destination_dtype_key
+    cdef _DeviceCopyPlan plan
+    cdef size_t rank
+    cdef object executable
+
+    stream_handle = _device_copy_stream_handle(stream)
+    source_view, source_dtype_key = _device_copy_prepare_view_and_dtype_key(source, stream_handle)
+    destination_view, destination_dtype_key = _device_copy_prepare_view_and_dtype_key(
+        destination,
+        stream_handle,
+        True,
+    )
+
+    _device_copy_check_views_compatible(
+        source_view,
+        destination_view,
+        source_dtype_key,
+        destination_dtype_key,
+    )
+
+    plan = _device_copy_make_plan_from_views(source_view, destination_view, <size_t>source_view.itemsize)
+    if not assume_non_overlapping:
+        _device_copy_validate_no_overlap(
+            source_view,
+            destination_view,
+            plan,
+            <size_t>source_view.itemsize,
+        )
+    if plan._empty:
+        return
+    _device_copy_validate_execution_location(
+        source_view,
+        destination_view,
+        _device_copy_stream(stream_handle),
+    )
+
+    rank = _device_copy_call_rank(plan)
+    executable = _make_device_copy_executable(
+        _device_copy_type_info_key(source_view),
+        rank,
+        compute_capability=compute_capability,
+    )
+    (<_DeviceCopyExecutable>executable)._copy(source_view, destination_view, plan, stream_handle)
+
+
+def _copy_into(
+    object source,
+    object destination,
+    *,
+    object stream=None,
+    object compute_capability=None,
+    object compile_spec=None,
+    bint assume_non_overlapping=False,
+):
+    cdef object device_copy
+
+    if compile_spec is None:
+        _device_copy_cached_copy_into(
+            source,
+            destination,
+            stream,
+            compute_capability,
+            assume_non_overlapping,
+        )
+        return
+
+    device_copy = _DeviceCopy(
+        source,
+        destination,
+        stream=stream,
+        compute_capability=compute_capability,
+        compile_spec=compile_spec,
+        assume_non_overlapping=assume_non_overlapping,
+    )
+    try:
+        device_copy(source, destination, stream=stream)
+    finally:
+        device_copy.close()
+
+
+cdef DLPackExchangeAPI* _dlpack_exchange_api(object obj) except? NULL:
+    cdef object capsule
+    cdef DLPackExchangeAPI* api
+    cdef DLPackExchangeAPIHeader* header
+
+    try:
+        capsule = getattr(type(obj), "__dlpack_c_exchange_api__")
+    except AttributeError:
+        return NULL
+
+    api = <DLPackExchangeAPI*>PyCapsule_GetPointer(capsule, DLPACK_EXCHANGE_API_CAPSULE_NAME)
+    if api == NULL:
+        raise BufferError("DLPack C exchange API capsule is invalid")
+
+    header = &api.header
+    while header != NULL:
+        if header.version.major == <uint32_t>DLPACK_MAJOR_VERSION:
+            return <DLPackExchangeAPI*>header
+        header = header.prev_api
+    raise BufferError("DLPack C exchange API has no compatible major version")
+
+
+cdef object _dlpack_capsule_from_object(object obj, object stream):
+    cdef object dlpack
+
+    if (
+        PyCapsule_IsValid(obj, DLPACK_VERSIONED_CAPSULE_NAME)
+        or PyCapsule_IsValid(obj, DLPACK_CAPSULE_NAME)
+    ):
+        return obj
+
+    try:
+        dlpack = obj.__dlpack__
+    except AttributeError:
+        raise TypeError("object does not support DLPack") from None
+
+    try:
+        if stream is None:
+            return dlpack(max_version=(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION))
+        return dlpack(stream=stream, max_version=(DLPACK_MAJOR_VERSION, DLPACK_MINOR_VERSION))
+    except TypeError:
+        if stream is None:
+            return dlpack()
+        return dlpack(stream=stream)
+
+
+cdef _DLPackManagedTensorOwner _consume_versioned_dlpack_capsule(object capsule):
+    cdef DLManagedTensorVersioned* tensor
+    cdef _DLPackManagedTensorOwner owner = _DLPackManagedTensorOwner()
+
+    if not PyCapsule_IsValid(capsule, DLPACK_VERSIONED_CAPSULE_NAME):
+        raise BufferError("object is not a valid versioned DLPack capsule")
+
+    tensor = <DLManagedTensorVersioned*>PyCapsule_GetPointer(capsule, DLPACK_VERSIONED_CAPSULE_NAME)
+    PyCapsule_SetName(capsule, USED_DLPACK_VERSIONED_CAPSULE_NAME)
+
+    owner._producer = capsule
+    owner._versioned = tensor
+    owner._versioned_deleter = tensor.deleter
+    if tensor.version.major != <uint32_t>DLPACK_MAJOR_VERSION:
+        raise BufferError(f"unsupported DLPack major version {tensor.version.major}")
+    return owner
+
+
+cdef _DLPackManagedTensorOwner _consume_legacy_dlpack_capsule(object capsule):
+    cdef DLManagedTensor* tensor
+    cdef _DLPackManagedTensorOwner owner = _DLPackManagedTensorOwner()
+
+    if not PyCapsule_IsValid(capsule, DLPACK_CAPSULE_NAME):
+        raise BufferError("object is not a valid DLPack capsule")
+
+    tensor = <DLManagedTensor*>PyCapsule_GetPointer(capsule, DLPACK_CAPSULE_NAME)
+    PyCapsule_SetName(capsule, USED_DLPACK_CAPSULE_NAME)
+
+    owner._producer = capsule
+    owner._legacy = tensor
+    owner._legacy_deleter = tensor.deleter
+    return owner
+
+
+cdef _DLPackManagedTensorOwner _consume_dlpack_capsule(object capsule):
+    if PyCapsule_IsValid(capsule, DLPACK_VERSIONED_CAPSULE_NAME):
+        return _consume_versioned_dlpack_capsule(capsule)
+    if PyCapsule_IsValid(capsule, DLPACK_CAPSULE_NAME):
+        return _consume_legacy_dlpack_capsule(capsule)
+    raise BufferError("object is not a valid DLPack capsule")
+
+
+cdef void _validate_dlpack_tensor(DLTensor* tensor) except *:
+    cdef int32_t axis
+    cdef int64_t extent
+    cdef bint is_empty = False
+
+    if tensor == NULL:
+        raise BufferError("DLPack tensor pointer must not be null")
+    if tensor.device.device_type != kDLCUDA and tensor.device.device_type != kDLCUDAManaged:
+        raise BufferError(f"expected a CUDA DLPack tensor, got device type {tensor.device.device_type}")
+    if tensor.device.device_id < 0:
+        raise BufferError("DLPack tensor device id must be non-negative")
+    if tensor.ndim < 0:
+        raise BufferError("DLPack tensor rank must be non-negative")
+    if tensor.ndim != 0 and tensor.shape == NULL:
+        raise BufferError("DLPack tensor shape must not be null for non-scalar tensors")
+    if tensor.ndim == 0:
+        if tensor.data == NULL:
+            raise BufferError("non-empty DLPack tensor must have a data pointer")
+        return
+
+    for axis in range(tensor.ndim):
+        extent = tensor.shape[axis]
+        if extent < 0:
+            raise BufferError("DLPack tensor shape entries must be non-negative")
+        if extent == 0:
+            is_empty = True
+
+    if not is_empty and tensor.data == NULL:
+        raise BufferError("non-empty DLPack tensor must have a data pointer")
+
+
+cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_tensor(
+    object owner,
+    DLTensor* tensor,
+    uint64_t flags,
+    bint flags_known,
+):
+    cdef _PreparedDeviceCopyView view
+
+    _validate_dlpack_tensor(tensor)
+    view = _PreparedDeviceCopyView.__new__(_PreparedDeviceCopyView)
+    view._init_from_native(
+        owner,
+        <uintptr_t>tensor.data,
+        <uint64_t>tensor.byte_offset,
+        <size_t>tensor.ndim,
+        tensor.shape,
+        tensor.strides,
+        tensor.device.device_type,
+        tensor.device.device_id,
+        flags,
+        flags_known,
+    )
+    return view
+
+
+cdef _PreparedDeviceCopyView _prepare_view_from_dlpack_owner(_DLPackManagedTensorOwner owner):
+    if owner._versioned != NULL:
+        return _prepare_view_from_dlpack_tensor(
+            owner,
+            owner._tensor(),
+            owner._versioned.flags,
+            True,
+        )
+    return _prepare_view_from_dlpack_tensor(owner, owner._tensor(), 0, False)
+
+
+cdef _PreparedDeviceCopyView _prepare_dlpack_view_from_c_exchange(
+    object obj,
+    DLPackExchangeAPI* api,
+    bint require_flags,
+):
+    cdef DLTensor tensor
+    cdef DLManagedTensorVersioned* managed_tensor
+    cdef _DLPackManagedTensorOwner owner
+
+    if not require_flags and api.dltensor_from_py_object_no_sync != NULL:
+        if api.dltensor_from_py_object_no_sync(<void*><PyObject*>obj, &tensor) != 0:
+            raise BufferError("DLPack C exchange dltensor_from_py_object_no_sync failed")
+        return _prepare_view_from_dlpack_tensor(obj, &tensor, 0, False)
+
+    if api.managed_tensor_from_py_object_no_sync != NULL:
+        managed_tensor = NULL
+        if api.managed_tensor_from_py_object_no_sync(<void*><PyObject*>obj, &managed_tensor) != 0:
+            raise BufferError("DLPack C exchange managed_tensor_from_py_object_no_sync failed")
+        owner = _DLPackManagedTensorOwner()
+        owner._producer = obj
+        owner._versioned = managed_tensor
+        owner._versioned_deleter = managed_tensor.deleter
+        if managed_tensor.version.major != <uint32_t>DLPACK_MAJOR_VERSION:
+            raise BufferError(f"unsupported DLPack major version {managed_tensor.version.major}")
+        return _prepare_view_from_dlpack_owner(owner)
+
+    if require_flags:
+        raise BufferError("DLPack C exchange API cannot expose destination access flags")
+    raise BufferError("DLPack C exchange API does not provide tensor export")
+
+
+cdef bint _device_copy_c_exchange_stream_matches(
+    DLPackExchangeAPI* api,
+    _PreparedDeviceCopyView view,
+    object stream,
+) except *:
+    cdef void* producer_stream = NULL
+    cdef uintptr_t requested_stream = 0
+
+    if api.current_work_stream == NULL:
+        return False
+    if api.current_work_stream(
+        view._device_type,
+        view._device_id,
+        &producer_stream,
+    ) != 0:
+        raise BufferError("DLPack C exchange current_work_stream failed")
+    if stream is not None:
+        requested_stream = _as_uintptr(stream, "stream")
+    return <uintptr_t>producer_stream == requested_stream
+
+
+def _prepare_dlpack_view(
+    object obj,
+    object stream=None,
+    bint require_flags=False,
+):
+    cdef DLPackExchangeAPI* api
+    cdef object capsule
+    cdef _DLPackManagedTensorOwner owner
+    cdef _PreparedDeviceCopyView view
+    cdef uint64_t exchange_flags = 0
+    cdef bint exchange_flags_known = False
+
+    api = _dlpack_exchange_api(obj)
+    if api != NULL:
+        view = _prepare_dlpack_view_from_c_exchange(obj, api, require_flags)
+        if _device_copy_c_exchange_stream_matches(api, view, stream):
+            return view
+        exchange_flags = view._flags
+        exchange_flags_known = view._flags_known
+        view = None
+
+    capsule = _dlpack_capsule_from_object(obj, stream)
+    owner = _consume_dlpack_capsule(capsule)
+    view = _prepare_view_from_dlpack_owner(owner)
+    if exchange_flags_known:
+        view._flags = exchange_flags
+        view._flags_known = True
+        view._read_only = bool(exchange_flags & DLPACK_FLAG_BITMASK_READ_ONLY)
+    return view
+
+
+def _make_runtime_axis_metadata(object rank):
+    return _RuntimeAxisMetadata(rank)
+
+
+def _prepare_runtime_strided_view(
+    object owner,
+    object data_ptr,
+    object byte_offset,
+    object shape,
+    object strides=None,
+    *,
+    object device_type=kDLCUDA,
+    object device_id=0,
+    object flags=0,
+    object flags_known=False,
+    object read_only=False,
+):
+    return _PreparedDeviceCopyView(
+        owner,
+        data_ptr,
+        byte_offset,
+        shape,
+        strides,
+        device_type=device_type,
+        device_id=device_id,
+        flags=flags,
+        flags_known=flags_known,
+        read_only=read_only,
+    )
