@@ -605,11 +605,10 @@ template <typename Tag>
 class tagged_reference<void const, Tag>
 {};
 
-/*! Exchanges the values of two objects referred to by \p reference.
- *
- *  \param x The first \p reference of interest.
- *  \param y The second \p reference of interest.
- */
+//! Exchanges the values of two objects referred to by \p reference.
+//!
+//! \param x The first \p reference of interest.
+//! \param y The second \p reference of interest.
 // note: this is not a hidden friend, because we have template specializations of reference
 template <typename Element, typename Pointer>
 _CCCL_HOST_DEVICE void swap(reference<Element, Pointer, use_default> x,
