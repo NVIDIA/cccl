@@ -105,10 +105,11 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
 
     info = _type_info_from_dtype(dtype)
     state_info = _type_info_from_dtype(np.intp)
-    # A ProxyArray has no GPU allocation: leave the pointer NULL for build-time
-    # (ahead-of-time) compilation. The real pointer is bound at __call__ via
-    # set_cccl_iterator_state().
-    state = None if isinstance(array, ProxyArray) else get_data_pointer(array)
+    # A ProxyArray has no GPU allocation, but NULL denotes an omitted argument
+    # in the C API (for example, merge sort's optional values). Use a non-NULL
+    # placeholder for compilation; it is never dereferenced. The real pointer
+    # is bound at __call__ via set_cccl_iterator_state().
+    state = 1 if isinstance(array, ProxyArray) else get_data_pointer(array)
     return Iterator(
         state_info.alignment,
         IteratorKind.POINTER,
