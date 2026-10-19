@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__container/empty_like.h>
 #include <cuda/__memory_resource/shared_resource.h>
 #include <cuda/buffer>
 #include <cuda/devices>
@@ -20,6 +21,8 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
+
+#include <test_resources.h>
 
 #include "helper.h"
 #include "types.h"
@@ -148,6 +151,80 @@ C2H_CCCLRT_TEST("cuda::buffer make_buffer", "[container][buffer]", test_types)
       CCCLRT_CHECK(!buf.empty());
       CCCLRT_CHECK(equal_range(buf));
     }
+  }
+}
+
+C2H_CCCLRT_TEST("cuda::buffer __empty_like", "[container][buffer]", test_types)
+{
+  using Buffer   = c2h::get<0, TestType>;
+  using Resource = typename extract_properties<Buffer>::resource;
+  using T        = typename Buffer::value_type;
+
+  if (!extract_properties<Buffer>::is_resource_supported())
+  {
+    return;
+  }
+
+  const cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream other_stream{cuda::device_ref{0}};
+  const cuda::stream_ref stream_ref{stream};
+  const cuda::stream_ref other_stream_ref{other_stream};
+  const Resource resource = extract_properties<Buffer>::get_resource();
+
+  { // matching size
+    const Buffer input{stream_ref, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+    const auto buf = cuda::__empty_like(other_stream_ref, input);
+
+    static_assert(cuda::std::is_same_v<cuda::std::remove_cv_t<decltype(buf)>, Buffer>);
+    CCCLRT_CHECK(buf.size() == input.size());
+    CCCLRT_CHECK(buf.stream() == other_stream_ref);
+    CCCLRT_CHECK(buf.memory_resource() == input.memory_resource());
+    CCCLRT_CHECK(buf.alignment() == input.alignment());
+    CCCLRT_CHECK(cuda::allocation_alignment(buf) == cuda::allocation_alignment(input));
+    CCCLRT_CHECK(buf.data() != nullptr);
+    CCCLRT_CHECK(buf.data() != input.data());
+    CCCLRT_CHECK(is_pointer_aligned(buf.data(), input.alignment()));
+  }
+
+  { // explicit size
+    const Buffer input{stream_ref, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+    const auto buf = cuda::__empty_like(other_stream_ref, input, 3);
+
+    static_assert(cuda::std::is_same_v<cuda::std::remove_cv_t<decltype(buf)>, Buffer>);
+    CCCLRT_CHECK(buf.size() == 3);
+    CCCLRT_CHECK(buf.stream() == other_stream_ref);
+    CCCLRT_CHECK(buf.memory_resource() == input.memory_resource());
+    CCCLRT_CHECK(buf.alignment() == input.alignment());
+    CCCLRT_CHECK(buf.data() != nullptr);
+    CCCLRT_CHECK(buf.data() != input.data());
+    CCCLRT_CHECK(is_pointer_aligned(buf.data(), input.alignment()));
+  }
+
+  { // explicit zero size
+    const Buffer input{stream_ref, resource, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+    const auto buf = cuda::__empty_like(other_stream_ref, input, 0);
+
+    static_assert(cuda::std::is_same_v<cuda::std::remove_cv_t<decltype(buf)>, Buffer>);
+    CCCLRT_CHECK(buf.empty());
+    CCCLRT_CHECK(buf.data() == nullptr);
+    CCCLRT_CHECK(buf.stream() == other_stream_ref);
+    CCCLRT_CHECK(buf.memory_resource() == input.memory_resource());
+    CCCLRT_CHECK(buf.alignment() == input.alignment());
+  }
+
+  { // custom allocation alignment
+    const ::cuda::std::size_t alignment = ::cuda::mr::default_cuda_malloc_alignment / 2;
+    const auto env                      = ::cuda::std::execution::prop{::cuda::allocation_alignment, alignment};
+    const Buffer input{stream_ref, resource, 5, cuda::no_init, env};
+    const auto buf = cuda::__empty_like(other_stream_ref, input, 7);
+
+    static_assert(cuda::std::is_same_v<cuda::std::remove_cv_t<decltype(buf)>, Buffer>);
+    CCCLRT_CHECK(buf.size() == 7);
+    CCCLRT_CHECK(buf.stream() == other_stream_ref);
+    CCCLRT_CHECK(buf.memory_resource() == input.memory_resource());
+    CCCLRT_CHECK(buf.alignment() == alignment);
+    CCCLRT_CHECK(cuda::allocation_alignment(buf) == alignment);
+    CCCLRT_CHECK(is_pointer_aligned(buf.data(), alignment));
   }
 }
 
