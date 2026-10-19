@@ -74,19 +74,18 @@ template <int Horizontal, int Vertical>
 void check_layout(cuda::std::uint32_t hash)
 {
   const auto expected = reference_pattern(hash);
-  policy12 policy;
   constexpr int loops = 8 / (Horizontal * Vertical);
   // Instantiate both iterations for layouts requiring an outer loop.
   for (int lane = 0; lane < Horizontal; ++lane)
   {
-    const auto first = policy.template array_pattern<0, Horizontal, Vertical>(hash, lane);
+    const auto first = policy12{}.array_pattern<0, Horizontal, Vertical>(hash, lane);
     for (int word = 0; word < Vertical; ++word)
     {
       REQUIRE(first[word] == expected[lane * Vertical + word]);
     }
     if constexpr (loops == 2)
     {
-      const auto second = policy.template array_pattern<1, Horizontal, Vertical>(hash, lane);
+      const auto second = policy12{}.array_pattern<1, Horizontal, Vertical>(hash, lane);
       for (int word = 0; word < Vertical; ++word)
       {
         REQUIRE(second[word] == expected[(Horizontal + lane) * Vertical + word]);

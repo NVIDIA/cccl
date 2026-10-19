@@ -118,7 +118,7 @@ C2H_TEST("bloom_filter Arrow-compatible bitset", "[bloom_filter]", c2h::type_lis
 {
   using key_type                    = c2h::get<0, TestType>;
   const auto [num_blocks, num_keys] = get_arrow_filter_test_settings<key_type>();
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
   cuda::experimental::cuco::bloom_filter<key_type> filter{stream, mr, num_blocks};
   std::vector<key_type> host_keys(num_keys);

@@ -52,7 +52,7 @@ C2H_TEST("bloom_filter: bitset is invariant under (AddH, AddV) layout permutatio
 {
   using cfg       = c2h::get<0, TestType>;
   using AltPolicy = typename cfg::altpolicy_type;
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using Key            = int32_t;
@@ -103,7 +103,7 @@ C2H_TEST("bloom_filter: contains results are invariant under (ContainsH, Contain
 {
   using cfg       = c2h::get<0, TestType>;
   using AltPolicy = typename cfg::altpolicy_type;
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using Key            = int32_t;
@@ -138,7 +138,7 @@ C2H_TEST("bloom_filter: contains results are invariant under (ContainsH, Contain
 
 C2H_TEST("bloom_filter: bitset is invariant under dynamic vs static block count", "[bloom_filter]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using Key                              = int32_t;
@@ -167,7 +167,7 @@ C2H_TEST("bloom_filter: bitset is invariant under dynamic vs static block count"
 
 C2H_TEST("bloom_filter: bitset is invariant under ConditionalAdd", "[bloom_filter]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using Key = int32_t;
@@ -211,7 +211,7 @@ C2H_TEST("bloom_filter: bitset is invariant under ConditionalAdd", "[bloom_filte
 
 C2H_TEST("bloom_filter: contains results are invariant under EarlyExitContains", "[bloom_filter]")
 {
-  cuda::stream stream{cuda::device_ref{0}};
+  const cuda::stream stream{cuda::device_ref{0}};
   auto mr = cuda::device_default_memory_pool(cuda::device_ref{0});
 
   using Key = int32_t;
