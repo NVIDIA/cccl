@@ -1,7 +1,7 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! Checked per-thread payloads for Rust `cuda.coop`.
+//! Per-thread payloads and CUDA hierarchy queries for Rust `cuda.coop`.
 //!
 //! This unpublished, feature-free `no_std` crate provides [`ThreadData`] and
 //! its sealed [`ThreadDataLike`] interface. Each slot starts unwritten.
@@ -26,15 +26,24 @@
 //! assert_eq!(items[0], 9);
 //! ```
 //!
-//! The crate requires Rust 1.85 or newer and has no host compiler or CUDA
-//! dependencies. Oxide is the intended device compiler integration. This
-//! payload API supplies no collective operations, group descriptors, scratch
-//! storage, or synchronization guarantees.
+//! Device queries use Oxide and the pinned `nightly-2026-10-11` toolchain.
+//! [`this_block`] and the other dimension-free group constructors describe
+//! the executing thread's current launch. Queries grant no collective
+//! participation or synchronization guarantee. This crate supplies no
+//! collective operations or scratch storage. Host payload tests need no GPU;
+//! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
 #![no_std]
 
 mod alignment;
+mod group;
 mod thread_data;
 
 pub use alignment::{Alignment, SupportedAlignment};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
+
+pub use group::{
+    Block, Cluster, Grid, GroupScope, Hierarchy, Level, QueryAt, QueryInteger, Thread, ThreadGroup,
+    ThreadHierarchy, ThreadsWithinWarp, Warp, WarpsWithinBlock, this_block, this_cluster,
+    this_grid, this_thread, this_warp,
+};

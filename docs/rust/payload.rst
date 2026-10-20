@@ -5,10 +5,10 @@ Per-thread payloads
 ===================
 
 The unpublished ``cuda-coop`` crate provides ``ThreadData`` and its sealed
-``ThreadDataLike`` interface. It is a feature-free ``no_std`` crate with no
-dependencies, and supports Rust 1.85 or newer. Oxide is the intended device
-compiler integration. This crate currently supplies the payload vocabulary;
-collectives, groups and scratch storage are still under development.
+``ThreadDataLike`` interface. It is a feature-free ``no_std`` crate using the
+pinned Oxide device dependency and ``nightly-2026-10-11`` toolchain. See
+:doc:`groups` for physical and mapped group queries. Collective operations and
+scratch storage are still under development.
 
 Construct and access a payload
 ------------------------------
