@@ -13,3 +13,4 @@ coop-marker-fixture-api = { path = "../api" }
 
 [features]
 checked = ["coop-marker-fixture-api/checked"]
+storage = ["coop-marker-fixture-api/storage"]

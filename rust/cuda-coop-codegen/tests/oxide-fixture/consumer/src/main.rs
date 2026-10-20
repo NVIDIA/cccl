@@ -1,9 +1,12 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#[cfg(not(feature = "storage"))]
 use cuda_device::{kernel, launch_bounds, launch_contract};
+#[cfg(not(feature = "storage"))]
 use cuda_host::cuda_module;
 
+#[cfg(not(feature = "storage"))]
 #[cuda_module]
 mod kernels {
     use super::*;
@@ -109,6 +112,7 @@ mod kernels {
     }
 }
 
+#[cfg(not(feature = "storage"))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use cuda_core::{CudaContext, DeviceBuffer};
     use cuda_core::{LaunchConfig3D, LaunchContractError};
@@ -339,4 +343,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cubin.len()
     );
     Ok(())
+}
+
+#[cfg(feature = "storage")]
+mod storage;
+#[cfg(feature = "storage")]
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    storage::run()
 }

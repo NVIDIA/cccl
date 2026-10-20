@@ -28,6 +28,12 @@ parser.add_argument(
 parser.add_argument(
     "--carrier", action="store_true", help="exercise private collective-only carriers"
 )
+parser.add_argument(
+    "--storage", action="store_true", help="exercise planned full-block storage"
+)
+parser.add_argument(
+    "--compile-only", action="store_true", help="compile without executing the fixture"
+)
 args = parser.parse_args()
 source = Path(__file__).resolve().parent
 checkout = source.parents[2]
@@ -69,12 +75,14 @@ env.update(
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",
-    "run",
+    "build" if args.compile_only else "run",
     "--arch",
     args.arch,
     "--materialize-cubin",
 ]
-if args.root_context:
+if args.storage:
+    command.extend(["--features", "storage"])
+elif args.root_context:
     command.extend(["--features", "root-context"])
 elif args.checked:
     command.extend(["--features", "checked"])

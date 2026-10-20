@@ -105,3 +105,17 @@ controls, descriptor/reference mutation, ambiguous origins and mixed markers,
 with positive cases for independent allocations and barriers in helpers. The
 native carrier binary also accepts `overlap` or `bounds`; each invocation must
 fail through a device trap, before an invalid native access.
+
+The `--storage` runner route exercises the internal full-block storage boundary
+with the unchanged numeric provider: shared/manual/automatic and exclusive
+policies, distinct helper-created descriptors, typed raw reservations, and
+Direct/Transpose operations at one and four items per thread. It checks three
+blocks, boundary valid counts and inferred launch bytes through owned async
+completion. The wrapper remains private and unsafe for its stated memory and
+initialization obligations.
+
+Add `--compile-only` to prepare an isolated fixture without GPU execution.
+`check_storage_rejections.py OUTPUT` uses that copy for paired positive and
+negative layout/reuse/output-epoch cases and restores its source afterward.
+It checks intended diagnostics, including whole-plan capacity, live views,
+release versus completion and scratch-free output conflicts.

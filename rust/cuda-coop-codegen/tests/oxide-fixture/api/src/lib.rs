@@ -184,3 +184,6 @@ mod checked {
 }
 #[cfg(feature = "checked")]
 pub use checked::{checked_load, checked_store};
+
+#[cfg(feature = "storage")]
+pub mod storage;
