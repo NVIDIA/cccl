@@ -49,7 +49,6 @@ Direct and Striped Load/Store and includes the planned shared storage for Transp
 
 The reusable helper preserves the source element type. Its algorithm-generic
 form borrows the payload mutably because Transpose Store permutes it.
-Direct and Striped code may pass a shared payload borrow:
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
    :language: rust
@@ -88,7 +87,7 @@ those slots to be initialized.
 Direct and Striped Store accept ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
 or a scalar numeric value. A scalar contributes one item per thread. Both preserve every payload value
 and validity bit, including
-initialized slots outside its write domain.
+initialized slots outside their write domain.
 
 Selecting an algorithm
 ----------------------
@@ -107,6 +106,13 @@ Striped uses CUB's direct striped accesses without shared scratch. Select
 ``.algorithm(coop::Striped)`` on both operations to load and store a striped
 payload. Its Store accepts a shared payload borrow and preserves the complete
 payload, including a zero-count Store and initialized slots outside its prefix.
+
+.. code-block:: rust
+
+   coop::load(block, input, &mut values,
+       coop::LoadOptions::default().algorithm(coop::Striped));
+   coop::store(block, output, &values,
+       coop::StoreOptions::default().algorithm(coop::Striped));
 
 Transpose uses CUB's coalesced accesses and shared block exchange. Its Store
 requires a mutable payload borrow and permutes every value and initialized bit

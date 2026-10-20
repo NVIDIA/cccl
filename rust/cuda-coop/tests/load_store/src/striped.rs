@@ -225,7 +225,7 @@ mod kernels {
 
     #[kernel]
     #[launch_contract(domain = 1, block = (33, 1, 1), dynamic_shared = inferred)]
-    pub fn scalar(mut output: DisjointSlice<i32, CollectiveTiles<1>>, valid: usize) {
+    pub fn striped_scalar(mut output: DisjointSlice<i32, CollectiveTiles<1>>, valid: usize) {
         let offset = thread::blockIdx_x() as usize * 33;
         coop::store(
             coop::this_block(),
@@ -256,7 +256,7 @@ pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
         module
             .partial_33_async_owned::<i32, 4, _, _>(&plan, source, target, 34, 0, -7, mode)
             .sync()?;
-        return Err("invalid Striped Store unexpectedly completed".into());
+        panic!("invalid Striped Store unexpectedly completed");
     }
     let input: Vec<i32> = (0..2 * 33 * 4).map(|i| i * 7 + 3).collect();
     let source = DeviceBuffer::from_host(&stream, &input)?;
@@ -396,10 +396,12 @@ pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
         true
     );
     for valid in [0, 1, 32, 33] {
-        let plan = module.prepare_scalar(LaunchConfig1D::auto_shared(2, 33))?;
+        let plan = module.prepare_striped_scalar(LaunchConfig1D::auto_shared(2, 33))?;
         assert_eq!(plan.__raw_config().shared_mem_bytes, 0);
         let target = DeviceBuffer::from_host(&stream, &vec![-1_i32; 33 + valid])?;
-        let target = module.scalar_async_owned(&plan, target, valid).sync()?;
+        let target = module
+            .striped_scalar_async_owned(&plan, target, valid)
+            .sync()?;
         let mut output = vec![0_i32; 33 + valid];
         target.copy_to_host(&stream, &mut output)?;
         stream.synchronize()?;
