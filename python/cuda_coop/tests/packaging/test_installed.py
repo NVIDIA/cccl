@@ -11,6 +11,7 @@ compiler backend in ordinary host code.
 """
 
 import importlib.metadata
+import json
 import os
 import subprocess
 import sys
@@ -24,12 +25,15 @@ def test_isolated_cutlass_backend_uses_installed_modules(tmp_path):
     """Probe installed imports in isolated mode from a temporary directory."""
 
     try:
-        importlib.metadata.distribution("cuda-coop")
+        distribution = importlib.metadata.distribution("cuda-coop")
         importlib.metadata.distribution("nvidia-cutlass-dsl")
     except importlib.metadata.PackageNotFoundError:
         pytest.skip(
             "requires installed cuda-coop and CUTLASS DSL distributions"
         )
+    direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
+    if direct_url.get("dir_info", {}).get("editable"):
+        pytest.skip("requires a non-editable cuda-coop installation")
 
     probe = textwrap.dedent(
         """
