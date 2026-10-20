@@ -726,8 +726,8 @@ synchronization, and allocation sharing. The active compiler backend must
 recognize the descriptor.
 
 An explicit descriptor lets several supported block calls reuse an
-allocation. Its contents are opaque; keep application values in
-``ThreadData`` or your own arrays.
+allocation. Its contents are opaque during cooperative use. After the last
+such use, ``release()`` hands the region to application code as a shared array.
 
 .. list-table::
    :header-rows: 1
@@ -860,6 +860,37 @@ See the :download:`example instructions
 <../../../python/cuda_coop/examples/numba_mlir/README.md>` for dependencies and
 launch commands. These libraries receive ordinary arrays or pointers into the
 reserved regions; they do not need to understand ``TempStorage``.
+
+Handing scratch to application code
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``storage.release(dtype=None)`` consumes the descriptor and returns a native
+one-dimensional shared array spanning its complete planned region. The default
+dtype is unsigned bytes. A compile-time numeric dtype, such as ``types.int32``
+in Numba-CUDA-MLIR, must divide the byte capacity. The region's alignment must
+be at least the dtype's element size.
+An uninferred empty descriptor cannot be released; an explicit positive
+``size_in_bytes`` can supply its capacity.
+
+The returned region includes all exclusive slices and their padding. Release
+creates no new allocation and keeps independent descriptors disjoint. Release
+does not initialize the returned memory. Automatic trailing barriers on
+preceding primitive calls remain in place; release adds no barrier. Finish
+prior accesses and any
+asynchronous operations before using the returned array, then synchronize
+application reads and writes as for any shared array.
+
+Every alias of the descriptor is consumed. Later primitive, reservation, or
+release calls are compile errors if a path from an earlier release reaches
+them. Releasing in one runtime branch prevents later use after the branches
+join. Separate terminal releases in mutually exclusive branches are valid.
+Releasing a selection that merges distinct constructor sites is rejected;
+construct one descriptor before selecting its uses instead. A constructor or
+bound release method must exist on every path reaching the call.
+A descriptor created before a loop cannot be released repeatedly through its
+backedge. Constructing inside the loop gives each iteration a fresh descriptor,
+but reuses physical storage: finish accessing the previous returned array and
+synchronize before that reuse.
 
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in

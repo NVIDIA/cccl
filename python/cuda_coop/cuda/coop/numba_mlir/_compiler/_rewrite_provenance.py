@@ -74,6 +74,7 @@ from ._scalar_provenance import (
 if TYPE_CHECKING:
     from .._types import Algorithm
     from ._rewrite import CoopSinglePhaseRewrite
+    from ._rewrite_release import _TempStorageRelease
     from ._rewrite_reserve import _TempStorageReservation
 
 
@@ -114,6 +115,8 @@ class _ProvenanceRewrite(Rewrite):
         self._temp_storage_reserve_methods: set[ir.Assign] = set()
         self._temp_storage_assigns: set[ir.Assign] = set()
         self._temp_storage_func_vars: set[str] = set()
+        self._temp_storage_releases: dict[ir.Assign, _TempStorageRelease] = {}
+        self._temp_storage_release_methods: set[ir.Assign] = set()
         self._temp_storage_ctor_specifications: dict[
             str, _TempStorageCtorSpecification
         ] = {}
@@ -1571,7 +1574,15 @@ class _ProvenanceRewrite(Rewrite):
             if ctor_specification.auto_sync is None
             else ctor_specification.auto_sync
         )
-        if not uses and (ctor_specification.sharing != "shared" or auto_sync):
+        released = any(
+            self._canonical_temp_storage_ctor_key(release.ctor_key) == var_name
+            for release in getattr(self, "_temp_storage_releases", {}).values()
+        )
+        if (
+            not uses
+            and not released
+            and (ctor_specification.sharing != "shared" or auto_sync)
+        ):
             raise CoopSinglePhaseRewriteError(
                 "TempStorage non-default sharing or auto_sync requires a "
                 "cooperative primitive to consume the storage descriptor."

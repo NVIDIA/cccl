@@ -27,8 +27,9 @@ class TempStorage:
     Supported block algorithms accept the descriptor as ``temp_storage``.
     :meth:`reserve` obtains typed shared arrays for application or library
     data. The planner includes both uses when determining capacity and
-    alignment. See :ref:`temporary storage <coop-temp-storage>` for shared
-    versus exclusive slices and manual reuse synchronization.
+    alignment. ``release()`` hands the complete region to user code after its
+    final cooperative use. See :ref:`temporary storage <coop-temp-storage>`
+    for shared versus exclusive slices and manual reuse synchronization.
     """
 
     def __init__(
@@ -117,6 +118,26 @@ class TempStorage:
         """
         raise CoopCompilerContextRequiredError(
             "TempStorage.reserve must be called from a supported GPU kernel."
+        )
+
+    def release(self, dtype=None):
+        """Consume this descriptor and return its complete shared-memory region.
+
+        ``dtype=None`` returns a one-dimensional byte array. A supplied
+        compile-time numeric dtype must divide the region's byte capacity and
+        satisfy its existing alignment. Release does not initialize the returned
+        memory, allocate memory, or synchronize.
+        Finish previous accesses and required asynchronous operations before
+        using it. Automatic barriers on preceding primitive calls are retained.
+
+        Every alias of this descriptor is consumed. A subsequent primitive,
+        reservation, or release on any reachable control-flow path is a compile
+        error, including reuse through a loop backedge. A new construction in
+        a loop creates a new instance but reuses the same physical region, so
+        the caller must finish accesses and synchronize before that reuse.
+        """
+        raise CoopCompilerContextRequiredError(
+            "TempStorage.release must be called from a supported GPU kernel."
         )
 
 

@@ -1637,8 +1637,8 @@ class _StorageRewrite:
         ``reserve()`` methods are validated separately; the arrays they
         return may be used at runtime. Subscripted-provider syntax and other
         call arguments are not accepted descriptor uses. Every canonical
-        constructor must have a primitive or reservation consumer, so an otherwise
-        unused ``storage = coop.TempStorage()`` is also rejected.
+        constructor must have a primitive or reservation consumer, so an
+        otherwise unused ``storage = coop.TempStorage()`` is also rejected.
 
         Validation runs after device-helper inlining. Passing a descriptor
         to a helper is supported when inlining exposes its uses in the
@@ -1699,9 +1699,12 @@ class _StorageRewrite:
                     )
             return
 
-        consumed_ctor_keys = {
+        consumed_ctor_keys: set[str] = {
             rewrite._canonical_temp_storage_ctor_key(reservation.ctor_key)
             for reservation in rewrite._temp_storage_reservations.values()
+        } | {
+            release.ctor_key
+            for release in rewrite._temp_storage_releases.values()
         }
         for label in sorted(func_ir.blocks):
             scan_block = func_ir.blocks[label]
@@ -1712,7 +1715,10 @@ class _StorageRewrite:
                 if isinstance(inst, ir.Assign)
             }
             for inst in scan_block.body:
-                if inst in rewrite._temp_storage_reserve_methods:
+                if (
+                    inst in rewrite._temp_storage_reserve_methods
+                    or inst in rewrite._temp_storage_release_methods
+                ):
                     continue
                 used_vars = list(inst.list_vars())
                 if isinstance(inst, ir.Assign):

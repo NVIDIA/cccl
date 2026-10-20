@@ -29,4 +29,7 @@ class TempStorage:
     ) -> Any:
         """Return a compiler shared array; requires manual synchronization."""
 
+    def release(self, dtype: object | None = None) -> Any:
+        """Consume the descriptor and return its complete shared array."""
+
 __all__ = ["TempStorage"]
