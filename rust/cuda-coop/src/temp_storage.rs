@@ -51,6 +51,9 @@ impl Default for TempStorage {
 }
 
 impl<const C: usize, const A: usize, const S: bool, const E: bool> TempStorage<C, A, S, E> {
+    const VALID_CAPACITY: () = assert!(C > 0 && C <= u32::MAX as usize);
+    const VALID_ALIGNMENT: () = assert!(A.is_power_of_two() && A <= u32::MAX as usize);
+
     /// Set a positive byte capacity for the complete descriptor plan.
     ///
     /// Undersized capacity, including exclusive-site padding, is a compilation
@@ -58,7 +61,7 @@ impl<const C: usize, const A: usize, const S: bool, const E: bool> TempStorage<C
     /// capacity when it is sufficient. Scratch-free uses allocate nothing.
     #[inline(always)]
     pub fn with_capacity<const BYTES: usize>(self) -> TempStorage<BYTES, A, S, E> {
-        const { assert!(BYTES > 0 && BYTES <= u32::MAX as usize) };
+        let () = TempStorage::<BYTES, A, S, E>::VALID_CAPACITY;
         // SAFETY: both types are genuine descriptors; the compiler preserves
         // this origin and rejects policy changes after use.
         TempStorage {
@@ -72,7 +75,7 @@ impl<const C: usize, const A: usize, const S: bool, const E: bool> TempStorage<C
     /// alignment. This base request does not change every slice's alignment.
     #[inline(always)]
     pub fn with_alignment<const ALIGN: usize>(self) -> TempStorage<C, ALIGN, S, E> {
-        const { assert!(ALIGN.is_power_of_two() && ALIGN <= u32::MAX as usize) };
+        let () = TempStorage::<C, ALIGN, S, E>::VALID_ALIGNMENT;
         // SAFETY: consuming genuine descriptors retains the compiler origin.
         TempStorage {
             raw: unsafe { library::storage_reconfigure_v1(self.raw) },
@@ -112,7 +115,7 @@ impl<const C: usize, const A: usize, const E: bool> TempStorage<C, A, false, E> 
     /// Reservations follow this descriptor's shared/exclusive allocation policy.
     #[inline(always)]
     pub fn reserve<T: Numeric, const N: usize>(&mut self) -> StorageReservation<T, N> {
-        const { assert!(N > 0) };
+        let () = StorageReservation::<T, N>::VALID_EXTENT;
         // SAFETY: the compiler checks participation, origin, live overlap and
         // layout. Returning a raw token performs no access to an element.
         StorageReservation {
@@ -128,10 +131,8 @@ impl<const C: usize, const A: usize, const E: bool> TempStorage<C, A, false, E> 
     pub fn reserve_aligned<T: Numeric, const N: usize, const ALIGN: usize>(
         &mut self,
     ) -> StorageReservation<T, N> {
-        const {
-            assert!(N > 0);
-            assert!(ALIGN.is_power_of_two() && ALIGN <= u32::MAX as usize);
-        }
+        let () = StorageReservation::<T, N>::VALID_EXTENT;
+        let () = TempStorage::<C, ALIGN, false, E>::VALID_ALIGNMENT;
         // SAFETY: the compiler validates the genuine descriptor and typed
         // layout. Actual raw memory accesses retain their unsafe obligations.
         StorageReservation {
@@ -162,6 +163,8 @@ pub struct StorageReservation<T: Numeric, const N: usize> {
 }
 
 impl<T: Numeric, const N: usize> StorageReservation<T, N> {
+    const VALID_EXTENT: () = assert!(N > 0);
+
     /// Obtain the raw pointer without creating a reference or reading an element.
     ///
     /// Dereferencing it requires the obligations in [`StorageReservation`].
