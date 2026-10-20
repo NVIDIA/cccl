@@ -53,5 +53,14 @@ python3 rust/cuda-coop-codegen/tests/check_collective_rejections.py \
 
 The cases cover varying controls/carriers, different contexts of one helper,
 participation and unsupported bounds-elision modes. Sources are restored after
-each run. The initial checker diagnoses a shared helper site reached under two
-different exact block shapes; separate sites remain supported.
+each run. Shared helper sites support different exact root shapes; the compiler
+checks each root and argument context independently. Fixed external helper symbols
+without a root binding remain diagnosed.
+
+Add `--root-context` instead of `--checked` for 672 native cases. Two additional
+64-thread roots call the same item-count 1/4 helpers and marker sites used by
+128-thread roots. An intermediate helper retains a second call boundary, and
+all copies read one device static. The fixture checks each root's exact shape
+and scratch, including 272/1,040 bytes at 64 threads versus 528/2,064 at 128
+threads. Two equal-shape roots also share the original helper Instance. This
+route requires the coordinated contextual-helper compiler support.

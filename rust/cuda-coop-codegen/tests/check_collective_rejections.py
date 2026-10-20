@@ -28,7 +28,9 @@ paths = {
 }
 original = {key: path.read_text() for key, path in paths.items()}
 command = record["argv"].copy()
-assert "checked" in command, "first run the fixture with --checked"
+assert any(feature in command for feature in ["checked", "root-context"]), (
+    "first run the fixture with --checked or --root-context"
+)
 command[command.index("run")] = "build"
 env = os.environ.copy()
 env.update(
@@ -141,7 +143,23 @@ cases = {
                 original["root"].rsplit("block = (128, 1, 1)", 1)
             )
         },
-        "conflicting exact block shapes",
+        None,
+    ),
+    "fixed_export": (
+        {
+            "root": original["root"].replace(
+                "coop_marker_fixture_helper::roundtrip::<1, false>(input, output, post, valid, mode);",
+                "exported_helper(input, output, post, valid, mode);",
+                1,
+            )
+            + """
+#[unsafe(no_mangle)]
+unsafe fn exported_helper(input: *const i32, output: *mut i32, post: *mut i32, valid: i32, mode: u32) {
+    unsafe { coop_marker_fixture_helper::roundtrip::<1, false>(input, output, post, valid, mode); }
+}
+"""
+        },
+        "fixed external symbol",
     ),
     "mode": (in_helper("    let mode = mode + (lane & 1) as u32;"), "lane-varying"),
     "borrow_mutation": (

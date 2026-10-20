@@ -16,3 +16,4 @@ coop-marker-fixture-helper = { path = "../helper" }
 
 [features]
 checked = ["coop-marker-fixture-helper/checked"]
+root-context = ["checked"]

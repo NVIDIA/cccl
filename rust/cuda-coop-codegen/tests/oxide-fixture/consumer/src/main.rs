@@ -77,6 +77,36 @@ mod kernels {
             coop_marker_fixture_helper::roundtrip::<4, true>(input, output, post, valid, mode);
         }
     }
+    #[cfg(feature = "root-context")]
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(block = (64, 1, 1), domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn smaller_1(
+        input: *const i32,
+        output: *mut i32,
+        post: *mut i32,
+        valid: i32,
+        mode: u32,
+    ) {
+        unsafe {
+            coop_marker_fixture_helper::roundtrip::<1, true>(input, output, post, valid, mode);
+        }
+    }
+    #[cfg(feature = "root-context")]
+    #[kernel]
+    #[launch_bounds(256)]
+    #[launch_contract(block = (64, 1, 1), domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn smaller_4(
+        input: *const i32,
+        output: *mut i32,
+        post: *mut i32,
+        valid: i32,
+        mode: u32,
+    ) {
+        unsafe {
+            coop_marker_fixture_helper::roundtrip::<4, true>(input, output, post, valid, mode);
+        }
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -96,15 +126,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // SAFETY: the embedded artifact is generated from these kernel declarations.
     let module = unsafe { kernels::load(&context)? };
     macro_rules! check_plan {
-        ($prepare:ident, $bytes:expr, $alignment:expr) => {{
-            let prepared = module.$prepare(LaunchConfig3D::auto_shared((1, 1, 1), (128, 1, 1)))?;
+        ($prepare:ident, $bytes:expr, $alignment:expr, $threads:expr) => {{
+            let prepared =
+                module.$prepare(LaunchConfig3D::auto_shared((1, 1, 1), ($threads, 1, 1)))?;
             let facts = prepared.function().launch_facts().unwrap();
-            assert_eq!(facts.exact_block, Some((128, 1, 1)));
+            assert_eq!(facts.exact_block, Some(($threads, 1, 1)));
             assert_eq!(facts.dynamic_shared_bytes, $bytes);
             assert_eq!(facts.dynamic_shared_alignment, $alignment);
             assert_eq!(prepared.__raw_config().shared_mem_bytes, $bytes);
             // Equal thread products do not imply the required exact shape.
-            for shape in [(64, 2, 1), (64, 1, 1)] {
+            for shape in [($threads / 2, 2, 1), ($threads * 2, 1, 1)] {
                 assert!(matches!(
                     module.$prepare(LaunchConfig3D::auto_shared((1, 1, 1), shape)),
                     Err(LaunchContractError::BlockShapeMismatch { .. })
@@ -114,27 +145,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for bytes in [required.saturating_sub(1), required + 1] {
                 if bytes != required {
                     assert!(matches!(
-                        module.$prepare(LaunchConfig3D::new((1, 1, 1), (128, 1, 1), bytes)),
+                        module.$prepare(LaunchConfig3D::new((1, 1, 1), ($threads, 1, 1), bytes)),
                         Err(LaunchContractError::DynamicSharedMemoryExactMismatch { .. })
                     ));
                 }
             }
         }};
     }
-    check_plan!(prepare_direct_1, 0, 1);
-    check_plan!(prepare_direct_4, 0, 1);
-    check_plan!(prepare_transpose_1, 528, 16);
-    check_plan!(prepare_transpose_4, 2064, 16);
-    check_plan!(prepare_shared_helper_root, 2064, 16);
+    check_plan!(prepare_direct_1, 0, 1, 128);
+    check_plan!(prepare_direct_4, 0, 1, 128);
+    check_plan!(prepare_transpose_1, 528, 16, 128);
+    check_plan!(prepare_transpose_4, 2064, 16, 128);
+    check_plan!(prepare_shared_helper_root, 2064, 16, 128);
+    #[cfg(feature = "root-context")]
+    {
+        check_plan!(prepare_smaller_1, 272, 16, 64);
+        check_plan!(prepare_smaller_4, 1040, 16, 64);
+    }
     let mut cases = 0;
-    for (kernel, items, transpose) in [
-        (0, 1, false),
-        (1, 4, false),
-        (2, 1, true),
-        (3, 4, true),
-        (4, 4, true),
+    for (kernel, items, transpose, threads) in [
+        (0, 1, false, 128),
+        (1, 4, false, 128),
+        (2, 1, true, 128),
+        (3, 4, true, 128),
+        (4, 4, true, 128),
+        #[cfg(feature = "root-context")]
+        (5, 1, true, 64),
+        #[cfg(feature = "root-context")]
+        (6, 4, true, 64),
     ] {
-        let tile = 128 * items;
+        let tile = threads * items;
         for blocks in [1, 3] {
             let extent = tile * blocks;
             let input: Vec<i32> = (0..extent).map(|i| i as i32 * 3 - 11).collect();
@@ -143,7 +183,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for mode in 0..8_u32 {
                     let output = DeviceBuffer::from_host(&stream, &vec![-99_i32; extent])?;
                     let post = DeviceBuffer::from_host(&stream, &vec![-99_i32; extent])?;
-                    let config = LaunchConfig3D::auto_shared((blocks as u32, 1, 1), (128, 1, 1));
+                    let config =
+                        LaunchConfig3D::auto_shared((blocks as u32, 1, 1), (threads as u32, 1, 1));
                     let input_ptr = device_input.cu_deviceptr() as *const i32;
                     let output_ptr = output.cu_deviceptr() as *mut i32;
                     let post_ptr = post.cu_deviceptr() as *mut i32;
@@ -185,7 +226,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 valid as i32,
                                 mode,
                             )?,
-                            _ => module.shared_helper_root(
+                            4 => module.shared_helper_root(
                                 &stream,
                                 &module.prepare_shared_helper_root(config)?,
                                 input_ptr,
@@ -194,6 +235,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 valid as i32,
                                 mode,
                             )?,
+                            #[cfg(feature = "root-context")]
+                            5 => module.smaller_1(
+                                &stream,
+                                &module.prepare_smaller_1(config)?,
+                                input_ptr,
+                                output_ptr,
+                                post_ptr,
+                                valid as i32,
+                                mode,
+                            )?,
+                            #[cfg(feature = "root-context")]
+                            6 => module.smaller_4(
+                                &stream,
+                                &module.prepare_smaller_4(config)?,
+                                input_ptr,
+                                output_ptr,
+                                post_ptr,
+                                valid as i32,
+                                mode,
+                            )?,
+                            _ => unreachable!(),
                         }
                     }
                     let loaded: Vec<i32> = input
@@ -227,7 +289,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             let lane = (index - origin) / items;
                             let item = index % items;
                             loaded[if transpose {
-                                origin + item * 128 + lane
+                                origin + item * threads + lane
                             } else {
                                 index
                             }]
@@ -248,9 +310,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    assert_eq!(cases, 480);
+    assert_eq!(
+        cases,
+        if cfg!(feature = "root-context") {
+            672
+        } else {
+            480
+        }
+    );
     println!(
-        "PASS {cases} native marker GPU cases with inferred scratch through five roots and sixteen provider specializations; {} CUBIN bytes",
+        "PASS {cases} native marker GPU cases with inferred scratch through shared generic helpers; {} CUBIN bytes",
         cubin.len()
     );
     Ok(())

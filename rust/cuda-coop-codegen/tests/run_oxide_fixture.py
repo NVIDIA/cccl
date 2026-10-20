@@ -20,6 +20,11 @@ parser.add_argument("--arch", default="sm_120")
 parser.add_argument(
     "--checked", action="store_true", help="exercise the checked full-block marker"
 )
+parser.add_argument(
+    "--root-context",
+    action="store_true",
+    help="exercise shared helpers at 64 and 128 threads",
+)
 args = parser.parse_args()
 source = Path(__file__).resolve().parent
 checkout = source.parents[2]
@@ -66,7 +71,9 @@ command = [
     args.arch,
     "--materialize-cubin",
 ]
-if args.checked:
+if args.root_context:
+    command.extend(["--features", "root-context"])
+elif args.checked:
     command.extend(["--features", "checked"])
 with (output / "build-run.log").open("w") as log:
     result = subprocess.run(

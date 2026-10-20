@@ -4,7 +4,7 @@
 /// Roundtrip through one shared generic helper reached from several kernels.
 ///
 /// # Safety
-/// Each block owns a disjoint tile. Launch exact 128-thread one-dimensional
+/// Each block owns a disjoint tile. Launch exact root-declared one-dimensional
 /// blocks with sufficient scratch. Input/output cover every full tile; partial
 /// counts are a global prefix within their combined extent. Every thread in
 /// a block receives equal input/output origins, valid count and mode. The fixed
@@ -17,11 +17,28 @@ pub unsafe fn roundtrip<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
     valid: i32,
     mode: u32,
 ) {
+    unsafe {
+        roundtrip_body::<ITEMS_PER_THREAD, TRANSPOSE>(input, output, post_store, valid, mode);
+    }
+}
+
+// One original static identity must survive emission of this helper per root.
+static mut CONTEXT_INCREMENT: i32 = 1;
+
+#[inline(never)]
+unsafe fn roundtrip_body<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
+    input: *const i32,
+    output: *mut i32,
+    post_store: *mut i32,
+    valid: i32,
+    mode: u32,
+) {
+    let block_threads = cuda_device::thread::blockDim_x() as usize;
     let lane = cuda_device::thread::threadIdx_x() as usize;
-    let origin = cuda_device::thread::blockIdx_x() as usize * 128 * ITEMS_PER_THREAD;
+    let origin = cuda_device::thread::blockIdx_x() as usize * block_threads * ITEMS_PER_THREAD;
     let valid = (valid - origin as i32)
         .max(0)
-        .min((128 * ITEMS_PER_THREAD) as i32);
+        .min((block_threads * ITEMS_PER_THREAD) as i32);
     let mut first = [0_i32; ITEMS_PER_THREAD];
     let mut second = [0_i32; ITEMS_PER_THREAD];
     // Lane-local choice reconverges before every collective.
@@ -46,7 +63,7 @@ pub unsafe fn roundtrip<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
         }
         let mut i = 0;
         while i < ITEMS_PER_THREAD {
-            payload[i] += 1;
+            payload[i] += CONTEXT_INCREMENT;
             i += 1;
         }
         coop_marker_fixture_api::checked_store::<ITEMS_PER_THREAD, TRANSPOSE>(
