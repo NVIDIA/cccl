@@ -5,10 +5,11 @@
 """Check histogram geometry and independent counter-result contracts.
 
 The core specialization builder, which shared planning calls, must reject
-invalid dtypes, bin capacity, 32-bit size limits, algorithm names, and
-multidimensional blocks. Planning must also reject warp groups. A supported
-plan keeps the counter dtype and bins_per_thread even when both differ from
-the sample payload.
+Boolean, noninteger, and nonpositive counts, unsupported dtypes, too few
+output slots for the bins, sizes beyond signed 32-bit limits, unknown
+algorithms, and multidimensional blocks. Planning must also reject warp
+groups. A supported plan keeps the counter dtype and bins_per_thread even
+when both differ from the sample payload.
 """
 
 import numpy as np
@@ -66,6 +67,32 @@ def test_invalid_static_contracts(name, value):
 def test_unsupported_dtype(name, dtype):
     with pytest.raises(TypeError, match="dtype"):
         _specialization(**{name: dtype})
+
+
+@pytest.mark.parametrize("name", ["Int32", "Uint32", "Int64", "Uint64"])
+def test_structural_compiler_dtype_names(name):
+    """Recognize compiler dtype names without importing a compiler package.
+
+    Named stand-ins exercise the shared specializer's case-insensitive name
+    check. The original type objects must remain in its template arguments so
+    a backend can resolve them later.
+    """
+
+    dtype = type(name, (), {})
+    specialization = _specialization(sample_dtype=dtype, counter_dtype=dtype)
+    assert specialization.specialization.template_arguments["SampleT"] is dtype
+    assert specialization.specialization.template_arguments["CounterT"] is dtype
+
+
+@pytest.mark.parametrize(
+    "name", ["Bool", "Boolean", "Float32", "Float64", "Int16"]
+)
+@pytest.mark.parametrize("parameter", ["sample_dtype", "counter_dtype"])
+def test_unsupported_structural_compiler_dtype_names(name, parameter):
+    """Keep named compiler types within each supported sample/counter set."""
+
+    with pytest.raises(TypeError, match="dtype"):
+        _specialization(**{parameter: type(name, (), {})})
 
 
 def test_result_extent_and_dtype_are_independent_of_samples():

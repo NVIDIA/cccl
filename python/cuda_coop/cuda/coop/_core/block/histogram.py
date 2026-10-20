@@ -36,17 +36,20 @@ HISTOGRAM_COUNTER_DTYPES = frozenset({"int32", "uint32", "int64", "uint64"})
 
 
 def validate_histogram_dtype(dtype: Any, *, counter: bool = False) -> Any:
-    """Accept a supported sample or counter dtype without importing a compiler.
+    """Check sample or counter dtypes without importing a compiler.
 
-    Inspect the dtype name and return its original representation, except that
-    Python int maps to the core int32 type. Samples and counters have separate
-    allowed sets: a uint8 sample is a bin index, but counters need at least 32
-    bits to hold the bounded number of samples in a block tile.
+    Compare names without case distinctions so NumPy and CuTe spellings share
+    the same supported set. Python int maps to the core int32 descriptor;
+    other accepted selectors remain unchanged for specialization. Samples
+    and counters have separate allowed sets: a uint8 sample is a bin index,
+    but counters need at least 32 bits for the bounded block sample count.
     """
 
     if dtype is int:
         dtype = INT32
     name = getattr(dtype, "name", getattr(dtype, "__name__", dtype))
+    if isinstance(name, str):
+        name = name.lower()
     allowed = HISTOGRAM_COUNTER_DTYPES if counter else HISTOGRAM_SAMPLE_DTYPES
     if name not in allowed:
         parameter = "counter_dtype" if counter else "samples"

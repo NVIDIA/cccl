@@ -78,7 +78,7 @@ _COMMON_ROOT_OPERATION_FAMILIES = {
 
 
 def _normalize_index_int(value: Any) -> int | None:
-    """Require a static integer index and reject booleans."""
+    """Return a static integer, or None for booleans and dynamic values."""
 
     if isinstance(value, bool):
         return None
@@ -943,8 +943,8 @@ class ThreadData:
         Those hooks call this helper because IR uses separate typed scalar
         operands, rather than a Python ThreadData object.
 
-        Convert host literals to scalar expressions and retain explicit
-        signedness metadata when reconciling raw IR values.
+        Convert host literals to scalar expressions. A declared dtype supplies
+        the signedness for raw integer IR values of matching width.
 
         Returns
         -------
@@ -1237,9 +1237,10 @@ def _make_rmem_tensor(
 ) -> Any:
     """Emit register-storage allocation with a minimum byte alignment.
 
-    Use the standard allocator through 32-byte alignment. Larger requests need
-    an explicit aligned pointer type and memref allocation. The compiler may
-    still spill register values to local memory.
+    The standard CuTe allocator already aligns register storage to 32 bytes,
+    so use it for requests up to 32. Larger requests build an aligned pointer
+    type and allocate the memref directly. The compiler may still spill
+    register values to local memory.
     """
 
     from cutlass import cute
