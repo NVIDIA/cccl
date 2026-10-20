@@ -29,8 +29,9 @@ and Store → explicit block synchronization → Load of the same region. Every
 block uses uniform origins, count, default and mode; per-thread payload arrays
 are initialized before use. There is no no-default partial-validity claim.
 
-The current fixture uses explicit oversized scratch while O02 launch-facts
-integration is pending. Its helpers deliberately retain function boundaries to
+The fixture checks compiler-derived scratch sizes and exact block geometry,
+rejects wrong shapes, thread counts and explicit byte counts, and runs with
+`auto_shared`. Its helpers deliberately retain function boundaries to
 exercise discovery; register/stack results are not an inlining baseline. The
 materialized path uses `cargo oxide run --materialize-cubin` and the ordinary
 embedded module loader. Convergent declarations require the coordinated O03a

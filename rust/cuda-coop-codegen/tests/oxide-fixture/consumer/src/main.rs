@@ -1,38 +1,72 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use cuda_device::kernel;
+use cuda_device::{kernel, launch_bounds, launch_contract};
 use cuda_host::cuda_module;
 
 #[cuda_module]
 mod kernels {
     use super::*;
     #[kernel]
-    pub fn direct_1(input: *const i32, output: *mut i32, post: *mut i32, valid: i32, mode: u32) {
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn direct_1(
+        input: *const i32,
+        output: *mut i32,
+        post: *mut i32,
+        valid: i32,
+        mode: u32,
+    ) {
         unsafe {
             coop_marker_fixture_helper::roundtrip::<1, false>(input, output, post, valid, mode);
         }
     }
     #[kernel]
-    pub fn direct_4(input: *const i32, output: *mut i32, post: *mut i32, valid: i32, mode: u32) {
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn direct_4(
+        input: *const i32,
+        output: *mut i32,
+        post: *mut i32,
+        valid: i32,
+        mode: u32,
+    ) {
         unsafe {
             coop_marker_fixture_helper::roundtrip::<4, false>(input, output, post, valid, mode);
         }
     }
     #[kernel]
-    pub fn transpose_1(input: *const i32, output: *mut i32, post: *mut i32, valid: i32, mode: u32) {
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn transpose_1(
+        input: *const i32,
+        output: *mut i32,
+        post: *mut i32,
+        valid: i32,
+        mode: u32,
+    ) {
         unsafe {
             coop_marker_fixture_helper::roundtrip::<1, true>(input, output, post, valid, mode);
         }
     }
     #[kernel]
-    pub fn transpose_4(input: *const i32, output: *mut i32, post: *mut i32, valid: i32, mode: u32) {
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn transpose_4(
+        input: *const i32,
+        output: *mut i32,
+        post: *mut i32,
+        valid: i32,
+        mode: u32,
+    ) {
         unsafe {
             coop_marker_fixture_helper::roundtrip::<4, true>(input, output, post, valid, mode);
         }
     }
     #[kernel]
-    pub fn shared_helper_root(
+    #[launch_bounds(256)]
+    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    pub unsafe fn shared_helper_root(
         input: *const i32,
         output: *mut i32,
         post: *mut i32,
@@ -46,8 +80,8 @@ mod kernels {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use cuda_core::simt::LaunchConfig;
     use cuda_core::{CudaContext, DeviceBuffer};
+    use cuda_core::{LaunchConfig3D, LaunchContractError};
     use oxide_artifacts::{ArtifactPayloadKind, read_artifact_bundles_from_object_bytes};
     let executable = std::fs::read(std::env::current_exe()?)?;
     let bundles = read_artifact_bundles_from_object_bytes(&executable)?;
@@ -59,7 +93,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write("fixture.cubin", cubin)?;
     let context = CudaContext::new(0)?;
     let stream = context.default_stream();
-    let module = kernels::load(&context)?;
+    // SAFETY: the embedded artifact is generated from these kernel declarations.
+    let module = unsafe { kernels::load(&context)? };
+    macro_rules! check_plan {
+        ($prepare:ident, $bytes:expr, $alignment:expr) => {{
+            let prepared = module.$prepare(LaunchConfig3D::auto_shared((1, 1, 1), (128, 1, 1)))?;
+            let facts = prepared.function().launch_facts().unwrap();
+            assert_eq!(facts.exact_block, Some((128, 1, 1)));
+            assert_eq!(facts.dynamic_shared_bytes, $bytes);
+            assert_eq!(facts.dynamic_shared_alignment, $alignment);
+            assert_eq!(prepared.__raw_config().shared_mem_bytes, $bytes);
+            // Equal thread products do not imply the required exact shape.
+            for shape in [(64, 2, 1), (64, 1, 1)] {
+                assert!(matches!(
+                    module.$prepare(LaunchConfig3D::auto_shared((1, 1, 1), shape)),
+                    Err(LaunchContractError::BlockShapeMismatch { .. })
+                ));
+            }
+            let required: u32 = $bytes;
+            for bytes in [required.saturating_sub(1), required + 1] {
+                if bytes != required {
+                    assert!(matches!(
+                        module.$prepare(LaunchConfig3D::new((1, 1, 1), (128, 1, 1), bytes)),
+                        Err(LaunchContractError::DynamicSharedMemoryExactMismatch { .. })
+                    ));
+                }
+            }
+        }};
+    }
+    check_plan!(prepare_direct_1, 0, 1);
+    check_plan!(prepare_direct_4, 0, 1);
+    check_plan!(prepare_transpose_1, 528, 16);
+    check_plan!(prepare_transpose_4, 2064, 16);
+    check_plan!(prepare_shared_helper_root, 2064, 16);
     let mut cases = 0;
     for (kernel, items, transpose) in [
         (0, 1, false),
@@ -77,13 +143,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for mode in 0..8_u32 {
                     let output = DeviceBuffer::from_host(&stream, &vec![-99_i32; extent])?;
                     let post = DeviceBuffer::from_host(&stream, &vec![-99_i32; extent])?;
-                    // Internal ABI qualification only. O02 integration replaces
-                    // this fixed oversized allocation with finalized root facts.
-                    let config = LaunchConfig {
-                        grid_dim: (blocks as u32, 1, 1),
-                        block_dim: (128, 1, 1),
-                        shared_mem_bytes: 4096,
-                    };
+                    let config = LaunchConfig3D::auto_shared((blocks as u32, 1, 1), (128, 1, 1));
                     let input_ptr = device_input.cu_deviceptr() as *const i32;
                     let output_ptr = output.cu_deviceptr() as *mut i32;
                     let post_ptr = post.cu_deviceptr() as *mut i32;
@@ -91,7 +151,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         match kernel {
                             0 => module.direct_1(
                                 &stream,
-                                config,
+                                &module.prepare_direct_1(config)?,
                                 input_ptr,
                                 output_ptr,
                                 post_ptr,
@@ -100,7 +160,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             )?,
                             1 => module.direct_4(
                                 &stream,
-                                config,
+                                &module.prepare_direct_4(config)?,
                                 input_ptr,
                                 output_ptr,
                                 post_ptr,
@@ -109,7 +169,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             )?,
                             2 => module.transpose_1(
                                 &stream,
-                                config,
+                                &module.prepare_transpose_1(config)?,
                                 input_ptr,
                                 output_ptr,
                                 post_ptr,
@@ -118,7 +178,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             )?,
                             3 => module.transpose_4(
                                 &stream,
-                                config,
+                                &module.prepare_transpose_4(config)?,
                                 input_ptr,
                                 output_ptr,
                                 post_ptr,
@@ -127,7 +187,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             )?,
                             _ => module.shared_helper_root(
                                 &stream,
-                                config,
+                                &module.prepare_shared_helper_root(config)?,
                                 input_ptr,
                                 output_ptr,
                                 post_ptr,
@@ -190,7 +250,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     assert_eq!(cases, 480);
     println!(
-        "PASS {cases} native marker GPU cases through five roots and sixteen provider specializations; {} CUBIN bytes",
+        "PASS {cases} native marker GPU cases with inferred scratch through five roots and sixteen provider specializations; {} CUBIN bytes",
         cubin.len()
     );
     Ok(())
