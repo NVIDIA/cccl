@@ -60,7 +60,7 @@ except ImportError:
 # These tests assert that op device code differs per target arch (v1 compiles
 # user ops to arch-specific LTO-IR). v2 compiles ops to arch-independent source
 # text, so the same bytes for every target is correct there.
-requires_v1_arch_ltoir = pytest.mark.skipif(
+v1_only = pytest.mark.skipif(
     USING_V2,
     reason="v2 compiles user ops to arch-independent source, not per-arch LTO-IR",
 )
@@ -540,7 +540,7 @@ def _transform_case():
     return make, arch_bytes
 
 
-@requires_v1_arch_ltoir
+@v1_only
 @pytest.mark.parametrize(
     "case", [_counting_case(), _transform_case()], ids=["counting", "transform"]
 )
@@ -585,7 +585,7 @@ def test_iterator_op_ltoir_tracks_target_cc_across_instance_reuse(case):
         assert arch_bytes(it) == ref[lo]
 
 
-@requires_v1_arch_ltoir
+@v1_only
 def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     ccs = _compilable_ccs(2)
     if len(ccs) < 2:
@@ -628,7 +628,7 @@ def test_default_build_keys_device_code_on_resolved_device_cc(monkeypatch):
     assert set(it._input_deref_op.keys()) == {hi_cc, lo_cc}
 
 
-@requires_v1_arch_ltoir
+@v1_only
 def test_select_always_false_op_recompiles_per_target_cc():
     """``_always_false_op`` is a module-global cache whose LTO-IR is linked into
     every ``make_select`` build (as the three-way-partition's second predicate).
