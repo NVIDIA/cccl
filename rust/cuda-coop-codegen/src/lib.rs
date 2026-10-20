@@ -3,7 +3,7 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles i32 block Load/Store providers with
+//! This private development crate compiles block Load/Store providers with
 //! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -12,11 +12,13 @@
 //!
 //! [`Request`] describes a one-dimensional complete block, positive fixed
 //! items per thread, and [`Algorithm::Direct`] or [`Algorithm::Transpose`].
-//! Loads either fill the full tile or take an explicit default for the masked
-//! suffix. Stores require all payload slots initialized, even for partial
-//! stores. Transpose Store replaces each lane's blocked payload with striped
-//! items from across the block. No-default masked loads are
-//! intentionally absent from this provider surface.
+//! The raw i32 recipes support Direct and Transpose. Their Store payloads must
+//! be fully initialized. The validity-aware Direct recipes support all ten
+//! [`Dtype`] variants with separate value storage and per-slot validity bytes.
+//! Masked Load resets validity outside its prefix; Direct Store preserves both
+//! arrays and checks initialization only in its write domain. Transpose Store
+//! replaces each lane's blocked payload with striped items across the block;
+//! validity-aware Transpose recipes are not yet supported.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -101,7 +103,48 @@ impl Algorithm {
     }
 }
 
-/// Device operation and its validity controls, all with i32 elements.
+/// Exact scalar type used in a native specialization.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Dtype {
+    /// Rust `i8`, C++ `signed char`.
+    I8,
+    /// Rust `u8`, C++ `unsigned char`.
+    U8,
+    /// Rust `i16`, C++ `short`.
+    I16,
+    /// Rust `u16`, C++ `unsigned short`.
+    U16,
+    /// Rust `i32`, C++ `int`.
+    I32,
+    /// Rust `u32`, C++ `unsigned int`.
+    U32,
+    /// Rust `i64`, C++ `long long`.
+    I64,
+    /// Rust `u64`, C++ `unsigned long long`.
+    U64,
+    /// Rust `f32`, C++ `float`.
+    F32,
+    /// Rust `f64`, C++ `double`.
+    F64,
+}
+impl Dtype {
+    fn native(self) -> (&'static str, usize) {
+        match self {
+            Self::I8 => ("signed char", 1),
+            Self::U8 => ("unsigned char", 1),
+            Self::I16 => ("short", 2),
+            Self::U16 => ("unsigned short", 2),
+            Self::I32 => ("int", 4),
+            Self::U32 => ("unsigned int", 4),
+            Self::I64 => ("long long", 8),
+            Self::U64 => ("unsigned long long", 8),
+            Self::F32 => ("float", 4),
+            Self::F64 => ("double", 8),
+        }
+    }
+}
+
+/// Device operation and its validity controls.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Operation {
     /// Load every slot. ABI: `(const int* memory, int* payload, unsigned char* scratch)`.
@@ -112,10 +155,50 @@ pub enum Operation {
     StoreFull,
     /// Store a prefix only. ABI adds `(int valid)`; other destination elements remain unchanged.
     StorePartial,
+    /// Full Load with separate value storage and u8 flags; marks every slot initialized.
+    LoadFullValidity,
+    /// Counted Load without a default; resets flags outside the loaded prefix to zero.
+    LoadMaskedValidity,
+    /// Counted Load with an exact typed default; marks every slot initialized.
+    LoadFilledValidity,
+    /// Full Store after checking all flags equal one; preserves values and flags.
+    StoreFullValidity,
+    /// Counted Store after checking its write domain; preserves all values and flags.
+    StorePartialValidity,
 }
 impl Operation {
     fn is_load(self) -> bool {
-        matches!(self, Self::LoadFull | Self::LoadFilled)
+        matches!(
+            self,
+            Self::LoadFull
+                | Self::LoadFilled
+                | Self::LoadFullValidity
+                | Self::LoadMaskedValidity
+                | Self::LoadFilledValidity
+        )
+    }
+    fn validity(self) -> bool {
+        matches!(
+            self,
+            Self::LoadFullValidity
+                | Self::LoadMaskedValidity
+                | Self::LoadFilledValidity
+                | Self::StoreFullValidity
+                | Self::StorePartialValidity
+        )
+    }
+    fn counted(self) -> bool {
+        matches!(
+            self,
+            Self::LoadFilled
+                | Self::StorePartial
+                | Self::LoadMaskedValidity
+                | Self::LoadFilledValidity
+                | Self::StorePartialValidity
+        )
+    }
+    fn filled(self) -> bool {
+        matches!(self, Self::LoadFilled | Self::LoadFilledValidity)
     }
     fn token(self) -> &'static str {
         match self {
@@ -123,11 +206,16 @@ impl Operation {
             Self::LoadFilled => "load_filled",
             Self::StoreFull => "store_full",
             Self::StorePartial => "store_partial",
+            Self::LoadFullValidity => "load_full_validity_v1",
+            Self::LoadMaskedValidity => "load_masked_validity_v1",
+            Self::LoadFilledValidity => "load_filled_validity_v1",
+            Self::StoreFullValidity => "store_full_validity_v1",
+            Self::StorePartialValidity => "store_partial_validity_v1",
         }
     }
 }
 
-/// A validated i32, one-dimensional block specialization.
+/// A validated, one-dimensional block specialization.
 ///
 /// This is an in-process implementation interface, not a serialized compiler
 /// protocol. All fields are static specialization inputs. The generated ABI
@@ -136,6 +224,7 @@ impl Operation {
 pub struct Request {
     operation: Operation,
     algorithm: Algorithm,
+    dtype: Dtype,
     block_threads: u32,
     items_per_thread: u32,
 }
@@ -156,6 +245,41 @@ impl Request {
         block_threads: u32,
         items_per_thread: u32,
     ) -> Result<Self> {
+        Self::new_typed(
+            Dtype::I32,
+            operation,
+            algorithm,
+            block_threads,
+            items_per_thread,
+        )
+    }
+
+    /// Validate an exact typed block specialization.
+    ///
+    /// The five validity-aware recipes support every [`Dtype`] with Direct.
+    /// Legacy raw recipes retain their i32 ABI and algorithm support.
+    ///
+    /// # Errors
+    ///
+    /// Rejects the invalid shapes documented by [`Self::new`], a non-i32 raw
+    /// recipe, or a validity-aware Transpose recipe.
+    pub fn new_typed(
+        dtype: Dtype,
+        operation: Operation,
+        algorithm: Algorithm,
+        block_threads: u32,
+        items_per_thread: u32,
+    ) -> Result<Self> {
+        if !operation.validity() && dtype != Dtype::I32 {
+            return Err(Error::message(
+                "legacy raw recipes require signed i32 elements",
+            ));
+        }
+        if operation.validity() && algorithm != Algorithm::Direct {
+            return Err(Error::message(
+                "validity-aware recipes currently require Direct",
+            ));
+        }
         if !(1..=1024).contains(&block_threads)
             || items_per_thread == 0
             || u64::from(block_threads) * u64::from(items_per_thread) > i32::MAX as u64
@@ -167,6 +291,7 @@ impl Request {
         Ok(Self {
             operation,
             algorithm,
+            dtype,
             block_threads,
             items_per_thread,
         })
@@ -179,11 +304,15 @@ impl Request {
     pub fn algorithm(self) -> Algorithm {
         self.algorithm
     }
+    /// Exact numeric element type.
+    pub fn dtype(self) -> Dtype {
+        self.dtype
+    }
     /// Exact number of threads in the one-dimensional block.
     pub fn block_threads(self) -> u32 {
         self.block_threads
     }
-    /// Number of i32 payload elements per thread.
+    /// Number of payload elements per thread.
     pub fn items_per_thread(self) -> u32 {
         self.items_per_thread
     }
@@ -205,7 +334,8 @@ pub struct Layout {
 /// Every thread in the exact block executes the provider in converged control
 /// flow. Memory is device-accessible and properly aligned; input/output spans
 /// cover the full tile or selected valid prefix. Payloads contain the requested
-/// number of i32 slots. Store payloads are fully initialized and may be mutated.
+/// number of slots of the requested type. Raw Store payloads are fully
+/// initialized and may be mutated.
 /// `memory` is the same block tile base pointer in every lane; the provider
 /// applies no block-origin offset for the caller.
 /// Load output and Store input must not overlap the memory tile or scratch.
@@ -218,6 +348,18 @@ pub struct Layout {
 /// the provider does not add a trailing reuse barrier. Direct ignores scratch,
 /// so a null pointer is permitted for that argument only. All providers return
 /// unit; loads fill payloads in place and stores write memory.
+///
+/// Validity-aware Direct ABIs add `unsigned char* flags` immediately after
+/// scratch. `payload` addresses aligned storage for the requested number of
+/// elements; it need not contain initialized values. Flags occupy a separate,
+/// initialized byte array of the same slot count. Only exactly one denotes an
+/// initialized value. Both arrays are private to the lane, disjoint from
+/// memory/scratch and one another, and remain exclusively borrowed for the
+/// call. Native code accesses payload bytes without evaluating invalid values.
+/// Masked Load writes zero flags outside its prefix; filled/full Load write
+/// every value before setting its flag. Store checks its entire lane-local
+/// write domain before numeric conversion and preserves both arrays. Failure
+/// traps; it does not promise rollback of stores by other lanes.
 #[derive(Debug)]
 pub struct Specialization {
     /// SHA-256 of request/source, target/options, captured headers and native toolchain inputs.
@@ -232,7 +374,8 @@ pub struct Specialization {
     /// Whether this specialization accesses no shared scratch or scratch-reuse barrier.
     pub scratch_free: bool,
     /// Whether Store redistributes payloads across lanes into striped order.
-    /// True only for Transpose stores; every slot remains initialized.
+    /// True only for raw Transpose stores; every slot remains initialized.
+    /// This describes Store rearrangement, not whether Load writes its payload.
     pub mutates_payload: bool,
 }
 
@@ -347,6 +490,7 @@ impl Provider {
             include_bytes!("lib.rs"),
             include_bytes!("headers.rs"),
             include_bytes!("nvrtc.rs"),
+            include_bytes!("block_io.cuh"),
         ] {
             hash_field(&mut inputs, bytes);
         }
@@ -354,9 +498,8 @@ impl Provider {
             hash_field(&mut inputs, option.as_bytes());
         }
         let mut batch_identity = inputs.clone();
-        let mut source = String::from(
-            "template <unsigned long long Size, unsigned long long Alignment>\nextern __device__ unsigned char layout_probe;\n",
-        );
+        let mut source = String::from(include_str!("block_io.cuh"));
+        source.push_str("\ntemplate <unsigned long long Size, unsigned long long Alignment>\nextern __device__ unsigned char layout_probe;\n");
         let mut expressions = Vec::with_capacity(requests.len());
         let mut specializations = Vec::with_capacity(requests.len());
         for &request in requests {
@@ -408,56 +551,111 @@ impl Provider {
 }
 
 fn source(request: Request, symbol: &str) -> String {
-    let (header, primitive, algorithm, pointer) = if request.operation.is_load() {
-        ("load", "BlockLoad", "BLOCK_LOAD", "const int*")
+    let op = request.operation;
+    let (header, primitive, algorithm, qualifier, method) = if op.is_load() {
+        ("load", "BlockLoad", "BLOCK_LOAD", "const ", "Load")
     } else {
-        ("store", "BlockStore", "BLOCK_STORE", "int*")
+        ("store", "BlockStore", "BLOCK_STORE", "", "Store")
     };
-    let (controls, operands, check) = match request.operation {
-        Operation::LoadFull | Operation::StoreFull => ("", "", String::new()),
-        Operation::LoadFilled => (
-            ", int valid, int default_value",
-            ", valid, default_value",
-            format!(
-                "if (valid < 0 || valid > {}) __trap();",
-                request.block_threads * request.items_per_thread
-            ),
-        ),
-        Operation::StorePartial => (
-            ", int valid",
-            ", valid",
-            format!(
-                "if (valid < 0 || valid > {}) __trap();",
-                request.block_threads * request.items_per_thread
-            ),
-        ),
+    let (dtype, size) = request.dtype.native();
+    let items = request.items_per_thread;
+    let tile = request.block_threads * items;
+    let mut controls = String::new();
+    let mut operands = String::new();
+    let check = if op.counted() {
+        controls.push_str(", int valid");
+        operands.push_str(", valid");
+        format!("if (valid < 0 || valid > {tile}) __trap();")
+    } else {
+        String::new()
     };
+    if op.filled() {
+        controls.push_str(&format!(", {dtype} default_value"));
+        operands.push_str(", default_value");
+    }
     let constructor = if request.algorithm == Algorithm::Direct {
         "primitive operation;"
     } else {
         "primitive operation{*reinterpret_cast<primitive::TempStorage*>(scratch)};"
     };
-    let method = if request.operation.is_load() {
-        "Load"
+    let memory = if matches!(
+        op,
+        Operation::StorePartial | Operation::StorePartialValidity
+    ) {
+        "cuda_coop_detail::guarded_output<value_type>{memory, 0}"
     } else {
-        "Store"
+        "memory"
+    };
+    let (cell, flags, body) = if op.validity() {
+        let domain = if matches!(
+            op,
+            Operation::LoadMaskedValidity | Operation::StorePartialValidity
+        ) {
+            format!("int(threadIdx.x) * {items} + i < valid")
+        } else {
+            "true".to_owned()
+        };
+        let body = if op.is_load() {
+            format!(
+                r#"cell values[{items}];
+  operation.Load(memory, values{operands});
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    if ({domain}) {{
+      cuda::std::memcpy(bytes + sizeof(value_type) * i, values[i].bytes, sizeof(value_type));
+      flags[i] = 1;
+    }} else {{
+      flags[i] = 0;
+    }}
+  }}"#
+            )
+        } else {
+            format!(
+                r#"// Complete this lane's preflight before any numeric conversion or store.
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    if (({domain}) && flags[i] != 1) __trap();
+  }}
+  cell values[{items}];
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    if ({domain}) cuda::std::memcpy(values[i].bytes, bytes + sizeof(value_type) * i, sizeof(value_type));
+  }}
+  operation.Store({memory}, values{operands});"#
+            )
+        };
+        (
+            "cuda_coop_detail::opaque_cell<value_type>",
+            ", unsigned char* flags",
+            format!("auto* const bytes = reinterpret_cast<unsigned char*>(payload);\n  {body}"),
+        )
+    } else {
+        (
+            "value_type",
+            "",
+            format!(
+                "operation.{method}({memory}, *reinterpret_cast<value_type (*)[{items}]>(payload){operands});"
+            ),
+        )
     };
     format!(
         r#"// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <cub/block/block_{header}.cuh>
 namespace {symbol}_detail {{
-using primitive = cub::{primitive}<int, {threads}, {items}, cub::{algorithm}_{choice}>;
-static_assert(sizeof(int) == 4 && alignof(int) == 4);
-extern "C" __device__ void {symbol}({pointer} memory, int* payload, unsigned char* scratch{controls}) {{
+using value_type = {dtype};
+using cell = {cell};
+using primitive = cub::{primitive}<cell, {threads}, {items}, cub::{algorithm}_{choice}>;
+static_assert(sizeof(value_type) == {size} && alignof(value_type) == {size});
+static_assert(sizeof(cell) == sizeof(value_type) && alignof(cell) == alignof(value_type));
+extern "C" __device__ void {symbol}({qualifier}value_type* memory, value_type* payload, unsigned char* scratch{flags}{controls}) {{
   {check}
   {constructor}
-  operation.{method}(memory, *reinterpret_cast<int (*)[{items}]>(payload){operands});
+  {body}
 }}
 }}
 "#,
         threads = request.block_threads,
-        items = request.items_per_thread,
         choice = request.algorithm.token()
     )
 }

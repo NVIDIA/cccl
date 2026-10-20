@@ -23,8 +23,9 @@ libraries does not require Rust, and the provider does not depend on Python.
 Supported provider forms
 ------------------------
 
-Each request describes a complete, one-dimensional block, an ``i32`` payload,
-a positive compile-time item count per thread, and one of these forms:
+Each request describes a complete, one-dimensional block and a positive
+compile-time item count per thread. The original raw ``i32`` recipes support
+these forms:
 
 .. list-table::
    :header-rows: 1
@@ -50,9 +51,22 @@ Both Direct and Transpose algorithms are supported. Direct accesses no shared
 scratch. Transpose Store redistributes blocked payloads across lanes into striped
 order, retaining initialized values in every slot, and uses the exact CUB storage
 layout. Compiler integrations must enforce collective participation, memory
-ownership, valid bounds, and synchronization before scratch reuse. Full and
-masked Load produce fully initialized payloads; no-default masked Load is outside
-this provider's current scope.
+ownership, valid bounds, and synchronization before scratch reuse.
+
+The separate validity-aware Direct recipes support all ten numeric payload
+types: ``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``, ``i64``, ``u64``,
+``f32`` and ``f64``. ``Request::new_typed`` selects the exact type. These recipes
+take opaque value storage and separate per-slot ``u8`` flags. Full and
+default-filled Load initialize every slot. Masked Load without a default copies
+only the loaded prefix and resets all other flags to zero. Full and partial
+Store require flags equal to exactly one in their write domain and preserve
+all payload bytes and flags. A failing Store traps; it is not transactional
+across lanes. Partial Store forms destination pointers only within its valid
+prefix, including when the allocation is shorter than a complete tile.
+
+Validity-aware Transpose and the public collective API remain under development.
+The private integration fixture uses the actual ``ThreadData`` implementation
+without exposing an initialized slice or a public native layout.
 
 Compile a provider
 ------------------

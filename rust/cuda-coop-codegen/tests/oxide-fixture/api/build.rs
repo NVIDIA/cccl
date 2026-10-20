@@ -38,4 +38,14 @@ fn main() {
             println!("cargo::rustc-env=COOP_{tag}_{name}={registration}");
         }
     }
+    for (operation, name) in [
+        (Operation::LoadFullValidity, "LOAD_FULL"),
+        (Operation::LoadMaskedValidity, "LOAD_MASKED"),
+        (Operation::LoadFilledValidity, "LOAD_FILLED"),
+        (Operation::StoreFullValidity, "STORE_FULL"),
+        (Operation::StorePartialValidity, "STORE_PARTIAL"),
+    ] {
+        let registration = oxide::registration(&executable, operation, Algorithm::Direct).unwrap();
+        println!("cargo::rustc-env=COOP_VALIDITY_{name}={registration}");
+    }
 }

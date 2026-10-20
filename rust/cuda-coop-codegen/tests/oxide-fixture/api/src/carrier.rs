@@ -6,8 +6,8 @@
 //! epochs, while this trusted boundary checks the unchanged offset and extent.
 use cuda_device::{CollectiveTiles, DisjointSlice, library, thread};
 
-#[inline(never)]
-fn extent<const ITEMS: usize>(len: usize, offset: usize, valid: usize) {
+#[inline(always)]
+pub(crate) fn extent<const ITEMS: usize>(len: usize, offset: usize, valid: usize) {
     let threads = thread::blockDim_x() as usize
         * thread::blockDim_y() as usize
         * thread::blockDim_z() as usize;
@@ -16,8 +16,8 @@ fn extent<const ITEMS: usize>(len: usize, offset: usize, valid: usize) {
     assert!(offset <= len && valid <= len - offset);
 }
 
-#[inline(never)]
-fn containment<const CAPACITY: usize>(offset: usize, valid: usize) {
+#[inline(always)]
+pub(crate) fn containment<const CAPACITY: usize>(offset: usize, valid: usize) {
     let threads = thread::blockDim_x() as usize
         * thread::blockDim_y() as usize
         * thread::blockDim_z() as usize;

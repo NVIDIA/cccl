@@ -3,7 +3,7 @@
 
 //! Real native compiler coverage; ordinary host tests need no CUDA installation.
 
-use cuda_coop_codegen::{Algorithm, Layout, Operation, Provider, Request};
+use cuda_coop_codegen::{Algorithm, Dtype, Layout, Operation, Provider, Request};
 use std::{env, path::Path, time::Instant};
 
 #[test]
@@ -11,6 +11,76 @@ fn rejects_invalid_shapes() {
     for (threads, items) in [(0, 1), (1025, 1), (128, 0), (1024, u32::MAX)] {
         assert!(Request::new(Operation::LoadFull, Algorithm::Direct, threads, items).is_err());
     }
+    assert!(
+        Request::new_typed(Dtype::U64, Operation::LoadFull, Algorithm::Direct, 128, 4).is_err()
+    );
+    assert!(Request::new(Operation::LoadMaskedValidity, Algorithm::Transpose, 128, 4).is_err());
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    for dtype in [
+        Dtype::I8,
+        Dtype::U8,
+        Dtype::I16,
+        Dtype::U16,
+        Dtype::I32,
+        Dtype::U32,
+        Dtype::I64,
+        Dtype::U64,
+        Dtype::F32,
+        Dtype::F64,
+    ] {
+        for items in [1, 4] {
+            for operation in [
+                Operation::LoadFullValidity,
+                Operation::LoadMaskedValidity,
+                Operation::LoadFilledValidity,
+                Operation::StoreFullValidity,
+                Operation::StorePartialValidity,
+            ] {
+                requests.push(Request::new_typed(
+                    dtype,
+                    operation,
+                    Algorithm::Direct,
+                    128,
+                    items,
+                )?);
+            }
+        }
+    }
+    let first = provider.compile(&requests, &target)?;
+    let repeated = provider.compile(&requests, &target)?;
+    assert_eq!(first.ltoir, repeated.ltoir);
+    assert_eq!(first.identity, repeated.identity);
+    assert_eq!(first.specializations.len(), requests.len());
+    let mut identities = std::collections::HashSet::new();
+    for entry in first.specializations {
+        assert!(identities.insert(entry.identity));
+        assert_eq!(
+            entry.cub_layout,
+            Layout {
+                size: 1,
+                alignment: 1
+            }
+        );
+        assert_eq!(
+            entry.scratch,
+            Layout {
+                size: 0,
+                alignment: 1
+            }
+        );
+        assert!(entry.scratch_free);
+        assert!(!entry.mutates_payload);
+    }
+    Ok(())
 }
 
 #[test]

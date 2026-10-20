@@ -126,7 +126,8 @@ where
     #[inline]
     pub fn get(&self, index: usize) -> Option<T> {
         if index < ITEMS && self.initialized[index] == 1 {
-            // SAFETY: Only write sets this flag, after initializing the value.
+            // SAFETY: write and the private native boundary set this flag only
+            // after initializing the value.
             // Copies preserve both arrays. Numeric types are Copy.
             Some(unsafe { self.values[index].assume_init() })
         } else {

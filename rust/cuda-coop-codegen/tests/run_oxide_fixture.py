@@ -28,6 +28,11 @@ parser.add_argument(
 parser.add_argument(
     "--carrier", action="store_true", help="exercise private collective-only carriers"
 )
+parser.add_argument(
+    "--validity",
+    action="store_true",
+    help="exercise private typed Direct payload validity",
+)
 args = parser.parse_args()
 source = Path(__file__).resolve().parent
 checkout = source.parents[2]
@@ -74,11 +79,13 @@ command = [
     args.arch,
     "--materialize-cubin",
 ]
-if args.root_context:
+if args.validity:
+    command.extend(["--features", "validity", "--bin", "coop-validity-fixture"])
+elif args.root_context:
     command.extend(["--features", "root-context"])
 elif args.checked:
     command.extend(["--features", "checked"])
-consumer = fixture / ("carrier" if args.carrier else "consumer")
+consumer = fixture / ("carrier" if args.carrier or args.validity else "consumer")
 with (output / "build-run.log").open("w") as log:
     result = subprocess.run(
         command, cwd=consumer, env=env, stdout=log, stderr=subprocess.STDOUT
@@ -89,6 +96,7 @@ with (output / "build-run.log").open("w") as log:
             "argv": command,
             "cwd": str(consumer),
             "oxide_root": str(oxide),
+            "cccl_source": str(checkout),
             "backend": env["CUDA_OXIDE_BACKEND"],
             "cuda_root": env["CUDA_HOME"],
             "returncode": result.returncode,

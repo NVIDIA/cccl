@@ -105,3 +105,18 @@ controls, descriptor/reference mutation, ambiguous origins and mixed markers,
 with positive cases for independent allocations and barriers in helpers. The
 native carrier binary also accepts `overlap` or `bounds`; each invocation must
 fail through a device trap, before an invalid native access.
+
+Add `--validity` to exercise the five typed Direct recipes with the actual
+`ThreadData` source, through a test-only facade. The private bridge passes
+separate addresses for opaque cells and exact-one flags; it exposes no
+initialized slice. This route uses the checked resource marker, canonical
+full-block carrier and ordinary owned async completion. It requires compiler
+support for the `MaybeUninit` intrinsics reached by safe payload access.
+
+The cases cover all ten numeric types, items 1/4, exact typed defaults,
+full and no-default masked Load, arbitrary flags outside a partial Store's
+write domain, preservation after Store, genuinely short allocations and
+Store/barrier/Load. A full Load followed by masked Load checks that old
+initialization is reset. The binary accepts `hole0`, `hole2`, `hole255`,
+`count` and `bounds`; each must fail in a separate process. The facade is
+private test infrastructure, not a published safe collective API.

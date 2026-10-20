@@ -7,6 +7,53 @@
 #[cfg(feature = "carrier")]
 pub mod carrier;
 
+// Test-source facade: compile the exact payload/group implementation without
+// introducing a public operation or a second representation of ThreadData.
+#[cfg(feature = "validity")]
+mod alignment {
+    include!(concat!(
+        env!("CCCL_SOURCE"),
+        "/rust/cuda-coop/src/alignment.rs"
+    ));
+}
+#[cfg(feature = "validity")]
+pub use alignment::{Alignment, SupportedAlignment};
+#[cfg(feature = "validity")]
+pub mod thread_data {
+    include!(concat!(
+        env!("CCCL_SOURCE"),
+        "/rust/cuda-coop/src/thread_data.rs"
+    ));
+    mod block_io {
+        include!(concat!(
+            env!("CCCL_SOURCE"),
+            "/rust/cuda-coop/src/thread_data/block_io.rs"
+        ));
+    }
+
+    // Fault injection and flag observation belong only to this private fixture.
+    pub fn flag<T: Numeric, const N: usize>(values: &ThreadData<T, N>, index: usize) -> u8 {
+        values.initialized[index]
+    }
+    pub fn corrupt_flag<T: Numeric, const N: usize>(
+        values: &mut ThreadData<T, N>,
+        index: usize,
+        flag: u8,
+    ) {
+        values.initialized[index] = flag;
+    }
+}
+#[cfg(feature = "validity")]
+pub use thread_data::{Numeric, ThreadData};
+#[cfg(feature = "validity")]
+mod group {
+    include!(concat!(env!("CCCL_SOURCE"), "/rust/cuda-coop/src/group.rs"));
+}
+#[cfg(feature = "validity")]
+pub use group::*;
+#[cfg(feature = "validity")]
+pub mod validity;
+
 macro_rules! registration {
     ($name:ident, $variable:literal) => {
         fn $name() -> &'static str {
@@ -22,6 +69,16 @@ registration!(transpose_load_full, "COOP_TRANSPOSE_LOAD_FULL");
 registration!(transpose_load_filled, "COOP_TRANSPOSE_LOAD_FILLED");
 registration!(transpose_store_full, "COOP_TRANSPOSE_STORE_FULL");
 registration!(transpose_store_partial, "COOP_TRANSPOSE_STORE_PARTIAL");
+#[cfg(feature = "validity")]
+registration!(validity_load_full, "COOP_VALIDITY_LOAD_FULL");
+#[cfg(feature = "validity")]
+registration!(validity_load_masked, "COOP_VALIDITY_LOAD_MASKED");
+#[cfg(feature = "validity")]
+registration!(validity_load_filled, "COOP_VALIDITY_LOAD_FILLED");
+#[cfg(feature = "validity")]
+registration!(validity_store_full, "COOP_VALIDITY_STORE_FULL");
+#[cfg(feature = "validity")]
+registration!(validity_store_partial, "COOP_VALIDITY_STORE_PARTIAL");
 
 /// # Safety
 /// All threads participate with one block-wide input origin, valid count and

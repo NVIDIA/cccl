@@ -6,6 +6,7 @@ name = "coop-carrier-fixture"
 version = "0.0.0"
 edition = "2024"
 publish = false
+default-run = "coop-carrier-fixture"
 
 [dependencies]
 cuda-device.workspace = true
@@ -13,3 +14,11 @@ cuda-host = { workspace = true, features = ["async"] }
 cuda-core.workspace = true
 cuda-async.workspace = true
 coop-marker-fixture-api = { path = "../api", features = ["carrier"] }
+
+[features]
+validity = ["coop-marker-fixture-api/validity"]
+
+[[bin]]
+name = "coop-validity-fixture"
+path = "src/validity.rs"
+required-features = ["validity"]

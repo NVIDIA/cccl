@@ -10,11 +10,12 @@
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
-//! The protocol supports the four i32 Load/Store forms documented by [`Operation`].
+//! The protocol supports the raw i32 and typed Direct validity recipes
+//! documented by [`Operation`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
-use crate::{Algorithm, Artifact, Error, Layout, Operation, Provider, Request, Result};
+use crate::{Algorithm, Artifact, Dtype, Error, Layout, Operation, Provider, Request, Result};
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -33,7 +34,7 @@ struct Registration<'a> {
     algorithm: &'a str,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(
     tag = "kind",
     content = "bits",
@@ -44,6 +45,40 @@ enum Scalar {
     Signed(u16),
     Unsigned(u16),
     Float(u16),
+}
+
+impl Scalar {
+    fn dtype(self) -> Result<Dtype> {
+        match self {
+            Self::Signed(8) => Ok(Dtype::I8),
+            Self::Unsigned(8) => Ok(Dtype::U8),
+            Self::Signed(16) => Ok(Dtype::I16),
+            Self::Unsigned(16) => Ok(Dtype::U16),
+            Self::Signed(32) => Ok(Dtype::I32),
+            Self::Unsigned(32) => Ok(Dtype::U32),
+            Self::Signed(64) => Ok(Dtype::I64),
+            Self::Unsigned(64) => Ok(Dtype::U64),
+            Self::Float(32) => Ok(Dtype::F32),
+            Self::Float(64) => Ok(Dtype::F64),
+            _ => Err(Error::message("unsupported scalar kind or width")),
+        }
+    }
+}
+impl From<Dtype> for Scalar {
+    fn from(dtype: Dtype) -> Self {
+        match dtype {
+            Dtype::I8 => Self::Signed(8),
+            Dtype::U8 => Self::Unsigned(8),
+            Dtype::I16 => Self::Signed(16),
+            Dtype::U16 => Self::Unsigned(16),
+            Dtype::I32 => Self::Signed(32),
+            Dtype::U32 => Self::Unsigned(32),
+            Dtype::I64 => Self::Signed(64),
+            Dtype::U64 => Self::Unsigned(64),
+            Dtype::F32 => Self::Float(32),
+            Dtype::F64 => Self::Float(64),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -80,11 +115,6 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<Request> {
-        if self.dtype != Scalar::Signed(32) {
-            return Err(Error::message(
-                "this provider supports signed i32 elements only",
-            ));
-        }
         if self.block[1..] != [1, 1] {
             return Err(Error::message(
                 "this provider requires the exact block shape [B,1,1]",
@@ -95,6 +125,11 @@ impl SpecializationRequest {
             "load_filled" => Operation::LoadFilled,
             "store_full" => Operation::StoreFull,
             "store_partial" => Operation::StorePartial,
+            "load_full_validity_v1" => Operation::LoadFullValidity,
+            "load_masked_validity_v1" => Operation::LoadMaskedValidity,
+            "load_filled_validity_v1" => Operation::LoadFilledValidity,
+            "store_full_validity_v1" => Operation::StoreFullValidity,
+            "store_partial_validity_v1" => Operation::StorePartialValidity,
             _ => {
                 return Err(Error::message(format!(
                     "unsupported operation {:?}",
@@ -112,7 +147,13 @@ impl SpecializationRequest {
                 )));
             }
         };
-        Request::new(operation, algorithm, self.block[0], self.items_per_thread)
+        Request::new_typed(
+            self.dtype.dtype()?,
+            operation,
+            algorithm,
+            self.block[0],
+            self.items_per_thread,
+        )
     }
 }
 
@@ -153,20 +194,25 @@ struct BatchResponse {
     specializations: Vec<SpecializationResponse>,
 }
 
-fn arguments(operation: Operation) -> Vec<Argument> {
+fn arguments(request: Request) -> Vec<Argument> {
+    let operation = request.operation();
+    let dtype = Scalar::from(request.dtype());
     let mut arguments = vec![
         if operation.is_load() {
-            Argument::ConstPointer(Scalar::Signed(32))
+            Argument::ConstPointer(dtype)
         } else {
-            Argument::MutPointer(Scalar::Signed(32))
+            Argument::MutPointer(dtype)
         },
-        Argument::MutPointer(Scalar::Signed(32)),
+        Argument::MutPointer(dtype),
     ];
-    if matches!(operation, Operation::LoadFilled | Operation::StorePartial) {
+    if operation.validity() {
+        arguments.push(Argument::MutPointer(Scalar::Unsigned(8)));
+    }
+    if operation.counted() {
         arguments.push(Argument::Value(Scalar::Signed(32)));
     }
-    if operation == Operation::LoadFilled {
-        arguments.push(Argument::Value(Scalar::Signed(32)));
+    if operation.filled() {
+        arguments.push(Argument::Value(dtype));
     }
     arguments
 }
@@ -334,7 +380,7 @@ fn write_response(requests: &[Request], artifact: Artifact, output: &mut impl Wr
                     .map_err(|_| Error::message("request index exceeds u32"))?,
                 identity: entry.identity,
                 symbol: entry.symbol,
-                arguments: arguments(request.operation()),
+                arguments: arguments(*request),
                 cub_layout: entry.cub_layout.try_into()?,
                 scratch: entry.scratch.try_into()?,
                 scratch_free: entry.scratch_free,
@@ -362,6 +408,47 @@ fn write_response(requests: &[Request], artifact: Artifact, output: &mut impl Wr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn typed_validity_abi_preserves_width_and_separate_flags() {
+        for dtype in [
+            Dtype::I8,
+            Dtype::U8,
+            Dtype::I16,
+            Dtype::U16,
+            Dtype::I32,
+            Dtype::U32,
+            Dtype::I64,
+            Dtype::U64,
+            Dtype::F32,
+            Dtype::F64,
+        ] {
+            let scalar = Scalar::from(dtype);
+            assert_eq!(scalar.dtype().unwrap(), dtype);
+            let request = SpecializationRequest {
+                operation: "load_filled_validity_v1".into(),
+                algorithm: "direct".into(),
+                dtype: scalar,
+                block: [128, 1, 1],
+                items_per_thread: 4,
+            }
+            .native()
+            .unwrap();
+            assert_eq!(
+                arguments(request),
+                vec![
+                    Argument::ConstPointer(scalar),
+                    Argument::MutPointer(scalar),
+                    Argument::MutPointer(Scalar::Unsigned(8)),
+                    Argument::Value(Scalar::Signed(32)),
+                    Argument::Value(scalar),
+                ]
+            );
+        }
+        for scalar in [Scalar::Signed(1), Scalar::Unsigned(128), Scalar::Float(16)] {
+            assert!(scalar.dtype().is_err());
+        }
+    }
 
     #[test]
     fn input_query_needs_no_installed_toolkit() {
