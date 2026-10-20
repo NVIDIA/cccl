@@ -139,7 +139,7 @@ def shuffle(
         ):
             raise ValueError(
                 "cuda.coop.shuffle distance must be exactly 1 in the common "
-                "API; use cuda.coop.numba_mlir for scalar Shuffle"
+                "API; use a backend-qualified import for scalar Shuffle"
             )
         distance = 1
     return _group_primitive_marker(
