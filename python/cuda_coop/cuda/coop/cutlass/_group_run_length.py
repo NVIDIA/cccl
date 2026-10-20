@@ -56,17 +56,15 @@ def _decode(
     before selecting the shared window or bulk specialization.
     """
 
+    primitive = "run_length_decode_into" if bulk else "run_length_decode"
     if not isinstance(group, ThreadGroup):
-        raise TypeError("run_length_decode group must be a ThreadGroup")
+        raise TypeError(f"{primitive} group must be a ThreadGroup")
     if group.kind != "block":
         raise NotImplementedError(
-            "run_length_decode requires a complete this_block() group"
+            f"{primitive} requires a complete this_block() group"
         )
     if temp_storage is not None and not isinstance(temp_storage, TempStorage):
-        raise TypeError(
-            "run_length_decode temp_storage must be CUTLASS TempStorage"
-        )
-    primitive = "run_length_decode_into" if bulk else "run_length_decode"
+        raise TypeError(f"{primitive} temp_storage must be CUTLASS TempStorage")
     values = _snapshot_readable_payload(
         run_values, name="run_values", primitive=primitive
     )
@@ -75,7 +73,7 @@ def _decode(
     )
     if values.items_per_thread != lengths.items_per_thread:
         raise ValueError(
-            "run_length_decode run inputs must have matching items_per_thread"
+            f"{primitive} run inputs must have matching items_per_thread"
         )
 
     from ._compiler._launch import current_kernel_launch_facts
