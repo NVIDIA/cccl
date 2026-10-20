@@ -9,9 +9,7 @@
 #include <cuda/__algorithm/copy.h>
 #include <cuda/buffer>
 #include <cuda/devices>
-#include <cuda/std/initializer_list>
 #include <cuda/std/span>
-#include <cuda/std/utility>
 #include <cuda/stream>
 
 #include <cstddef>
@@ -23,7 +21,7 @@
 #include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
-#include <catch2_test_cuda_utils.cuh>
+#include <c2h/device_and_stream.h>
 
 template <typename InputT, typename OutputT = InputT>
 struct type_pair
@@ -66,11 +64,7 @@ inline void synchronize_device(cuda::device_ref device)
   REQUIRE(restore_status == cudaSuccess);
 }
 
-template <typename T, typename... Args>
-[[nodiscard]] auto make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, Args&&... args)
-{
-  return c2h::make_host_buffer<T>(stream, device, cuda::std::forward<Args>(args)...);
-}
+using c2h::make_host_buffer;
 
 template <typename T>
 [[nodiscard]] auto
@@ -80,21 +74,6 @@ make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, std::size_t n
   for (std::size_t i = 0; i < result.size(); ++i)
   {
     result[i] = value;
-  }
-
-  return result;
-}
-
-template <typename T>
-[[nodiscard]] auto
-make_host_buffer(cuda::stream_ref stream, cuda::device_ref device, cuda::std::initializer_list<T> values)
-{
-  auto result = c2h::make_host_buffer<T>(stream, device, values.size(), cuda::no_init);
-  auto out    = result.begin();
-  for (const auto& value : values)
-  {
-    *out = value;
-    ++out;
   }
 
   return result;
@@ -155,30 +134,6 @@ void enqueue_copy_to_device(cuda::stream_ref stream, const HostItems& host_items
 }
 
 template <typename T>
-void enqueue_copy_to_device(
-  cuda::stream_ref stream, cuda::std::span<const T> host_items, cuda::device_buffer<T>& device_items)
-{
-  REQUIRE(host_items.size() == device_items.size());
-  if (device_items.size() == 0)
-  {
-    return;
-  }
-
-  if (is_default_stream(stream))
-  {
-    const auto device = pointer_device(device_items.data());
-    synchronize_device(device);
-    auto copy_stream = cuda::stream{device};
-    cuda::copy_bytes(copy_stream, host_items, device_items);
-    copy_stream.sync();
-  }
-  else
-  {
-    cuda::copy_bytes(stream, host_items, device_items);
-  }
-}
-
-template <typename T>
 struct device_buffer_equals_matcher : Catch::Matchers::MatcherGenericBase
 {
   device_buffer_equals_matcher(cuda::stream_ref stream, const cuda::host_buffer<T>& expected)
@@ -188,7 +143,7 @@ struct device_buffer_equals_matcher : Catch::Matchers::MatcherGenericBase
 
   bool match(const cuda::device_buffer<T>& actual) const
   {
-    const auto device = actual.size() != 0 ? pointer_device(actual.data()) : ::cub_test::current_device();
+    const auto device = actual.size() != 0 ? pointer_device(actual.data()) : ::c2h::current_device();
     auto actual_host  = make_host_buffer<T>(stream, device, actual.size(), cuda::no_init);
     copy_to_host(stream, actual, actual_host);
 

@@ -21,6 +21,7 @@
 
 #include <c2h/catch2_test_macros.h>
 #include <c2h/checked_memory_resource.cuh>
+#include <c2h/device_and_stream.h>
 #include <catch2/generators/catch_generators_all.hpp>
 #include <catch2_test_cuda_utils.cuh>
 #include <catch2_test_memory_resources.h>
@@ -112,7 +113,7 @@ inline cuda::device_ref device_for_stream(cuda::stream_ref stream)
 {
   if (stream == ::cudaStream_t{})
   {
-    return ::cub_test::current_device();
+    return ::c2h::current_device();
   }
 
   return stream.device();
