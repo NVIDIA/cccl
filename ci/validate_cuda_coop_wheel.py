@@ -23,6 +23,7 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/__init__.py",
     "cuda/coop/__init__.pyi",
     "cuda/coop/_registration.py",
+    "cuda/coop/_scan_typing.pyi",
     "cuda/coop/_typing.pyi",
     "cuda/coop/py.typed",
     "cuda/coop/_core/_auto_registration.py",
