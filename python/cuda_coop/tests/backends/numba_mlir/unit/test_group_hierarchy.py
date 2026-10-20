@@ -512,7 +512,7 @@ def test_mapped_lane_sync_guards_only_non_exhaustive_groups(
 ):
     lowering, _ = _capture_group_method_provider(monkeypatch)
     group = _resolved_provider_group(
-        coop.this_warp().group_by(width, exhaustive=exhaustive),
+        numba_coop.this_warp().group_by(width, exhaustive=exhaustive),
         block=(96, 1, 1),
     )
 
