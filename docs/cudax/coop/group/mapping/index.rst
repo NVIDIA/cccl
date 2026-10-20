@@ -1,5 +1,8 @@
 .. _cudax-coop-group-mapping:
 
+Group Mappings
+==============
+
 .. toctree::
   :hidden:
 
@@ -9,9 +12,6 @@
   take
   binary_partition
   composite_mapping
-
-Group Mappings
-==============
 
 Group mappings define how a parent group's units are assigned to subgroups, independently of the synchronization mechanism. To communicate this information, they are required to accept and return types that satisfy the *group mapping result* concept.
 
