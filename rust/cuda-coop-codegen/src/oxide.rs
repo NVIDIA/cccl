@@ -115,11 +115,6 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<Request> {
-        if self.block[1..] != [1, 1] {
-            return Err(Error::message(
-                "this provider requires the exact block shape [B,1,1]",
-            ));
-        }
         let operation = match self.operation.as_str() {
             "load_full" => Operation::LoadFull,
             "load_filled" => Operation::LoadFilled,
@@ -147,11 +142,11 @@ impl SpecializationRequest {
                 )));
             }
         };
-        Request::new_typed(
+        Request::new_typed_with_shape(
             self.dtype.dtype()?,
             operation,
             algorithm,
-            self.block[0],
+            self.block,
             self.items_per_thread,
         )
     }
@@ -594,6 +589,26 @@ mod tests {
     }
 
     #[test]
+    fn preserves_multidimensional_raw_and_typed_requests() {
+        for (operation, dtype) in [
+            ("load_full", Scalar::Signed(32)),
+            ("store_partial_validity_bits_v1", Scalar::Unsigned(64)),
+        ] {
+            let request = SpecializationRequest {
+                operation: operation.into(),
+                algorithm: "transpose".into(),
+                dtype,
+                block: [8, 4, 4],
+                items_per_thread: 4,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(native.block_shape(), [8, 4, 4]);
+            assert_eq!(native.block_threads(), 128);
+            assert_eq!(native.dtype(), request.dtype.dtype().unwrap());
+        }
+    }
+
+    #[test]
     fn rejects_request_before_opening_toolkit() {
         let base = serde_json::json!({"version":1,"target":"compute_120","cuda_root":"/absent", "requests":[{
             "operation":"load_full","algorithm":"direct","dtype":{"kind":"signed","bits":32},"block":[128,1,1],"items_per_thread":4
@@ -609,11 +624,7 @@ mod tests {
                 serde_json::json!(64),
                 "signed i32",
             ),
-            (
-                "/requests/0/block/1",
-                serde_json::json!(2),
-                "exact block shape",
-            ),
+            ("/requests/0/block/1", serde_json::json!(0), "block threads"),
             (
                 "/requests/0/operation",
                 serde_json::json!("unknown"),

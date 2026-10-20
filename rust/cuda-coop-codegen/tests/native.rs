@@ -11,8 +11,47 @@ fn rejects_invalid_shapes() {
     for (threads, items) in [(0, 1), (1025, 1), (128, 0), (1024, u32::MAX)] {
         assert!(Request::new(Operation::LoadFull, Algorithm::Direct, threads, items).is_err());
     }
+    for block in [[0, 4, 4], [8, 0, 4], [8, 4, 0], [8, 4, 33], [u32::MAX; 3]] {
+        assert!(Request::new_with_shape(Operation::LoadFull, Algorithm::Direct, block, 4).is_err());
+    }
     assert!(
         Request::new_typed(Dtype::U64, Operation::LoadFull, Algorithm::Direct, 128, 4).is_err()
+    );
+}
+
+#[test]
+fn preserves_exact_shape_and_legacy_constructors() {
+    let old = Request::new_typed(
+        Dtype::U8,
+        Operation::LoadFullValidity,
+        Algorithm::Direct,
+        128,
+        4,
+    )
+    .unwrap();
+    let shaped = Request::new_typed_with_shape(
+        Dtype::U8,
+        Operation::LoadFullValidity,
+        Algorithm::Direct,
+        [128, 1, 1],
+        4,
+    )
+    .unwrap();
+    assert_eq!(old, shaped);
+    assert_eq!(shaped.block_shape(), [128, 1, 1]);
+    let three = Request::new_typed_with_shape(
+        Dtype::U8,
+        Operation::LoadFullValidity,
+        Algorithm::Direct,
+        [8, 4, 4],
+        4,
+    )
+    .unwrap();
+    assert_eq!(three.block_threads(), old.block_threads());
+    assert_ne!(three, old);
+    assert_eq!(
+        Request::new(Operation::LoadFull, Algorithm::Direct, 128, 4).unwrap(),
+        Request::new_with_shape(Operation::LoadFull, Algorithm::Direct, [128, 1, 1], 4).unwrap(),
     );
 }
 
@@ -77,6 +116,23 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
             )?);
         }
     }
+    // The first shape has a partial physical warp crossing rows; the second
+    // also crosses Z planes and shares its total with existing 1D requests.
+    for block in [[11, 3, 1], [8, 4, 4]] {
+        for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+            for items in [1, 4] {
+                for operation in [
+                    Operation::LoadFullValidity,
+                    Operation::LoadMaskedValidity,
+                    Operation::LoadFilledValidity,
+                    Operation::StoreFullValidity,
+                    Operation::StorePartialValidity,
+                ] {
+                    requests.push(Request::new_with_shape(operation, algorithm, block, items)?);
+                }
+            }
+        }
+    }
     let first = provider.compile(&requests, &target)?;
     let repeated = provider.compile(&requests, &target)?;
     assert_eq!(first.ltoir, repeated.ltoir);
@@ -127,7 +183,7 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
                     * entry.cub_layout.alignment;
                 assert_eq!(entry.scratch.size, aligned_total);
                 assert!(entry.scratch.size > entry.cub_layout.size);
-                if request.block_threads() == 128 {
+                if request.block_threads() == 128 && request.items_per_thread() == 4 {
                     assert_eq!(entry.cub_layout.size, 2064);
                     assert_eq!(entry.scratch.size, 2128);
                 }
@@ -161,10 +217,21 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
             }
         }
     }
+    for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+        for operation in [
+            Operation::LoadFull,
+            Operation::LoadFilled,
+            Operation::StoreFull,
+            Operation::StorePartial,
+        ] {
+            requests.push(Request::new_with_shape(operation, algorithm, [8, 4, 4], 4)?);
+        }
+    }
     let start = Instant::now();
     let first = provider.compile(&requests, &target)?;
     eprintln!(
-        "16-specialization batch: {:?}, {} bytes",
+        "{}-specialization batch: {:?}, {} bytes",
+        requests.len(),
         start.elapsed(),
         first.ltoir.len()
     );

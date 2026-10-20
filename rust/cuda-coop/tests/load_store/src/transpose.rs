@@ -54,9 +54,16 @@ mod kernels {
         mode: u32,
     ) {
         let block = coop::this_block();
-        let threads = thread::blockDim_x() as usize;
-        let lane = thread::threadIdx_x() as usize;
-        let offset = thread::blockIdx_x() as usize * threads * CAPACITY;
+        let x = thread::blockDim_x() as usize;
+        let y = thread::blockDim_y() as usize;
+        let threads = x * y * thread::blockDim_z() as usize;
+        let lane = thread::threadIdx_x() as usize
+            + x * (thread::threadIdx_y() as usize + y * thread::threadIdx_z() as usize);
+        let group = thread::blockIdx_x() as usize
+            + thread::gridDim_x() as usize
+                * (thread::blockIdx_y() as usize
+                    + thread::gridDim_y() as usize * thread::blockIdx_z() as usize);
+        let offset = group * threads * CAPACITY;
         let mut values = coop::ThreadData::<_, ITEMS>::new();
         if mode != 9 {
             coop::load(
@@ -351,6 +358,28 @@ mod kernels {
         exercise::<_, ITEMS_PER_THREAD, 9>(input, &mut output, valid, default, mode);
     }
     #[kernel]
+    #[launch_contract(domain=2,block=(11,3,1),dynamic_shared=inferred)]
+    pub fn copy_i32_2d<const ITEMS_PER_THREAD: usize>(
+        input: &[i32],
+        mut output: DisjointSlice<i32, CollectiveTiles<4>>,
+        valid: usize,
+        default: i32,
+        mode: u32,
+    ) {
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, default, mode);
+    }
+    #[kernel]
+    #[launch_contract(domain=3,block=(8,4,4),dynamic_shared=inferred)]
+    pub fn copy_i32_3d<const ITEMS_PER_THREAD: usize>(
+        input: &[i32],
+        mut output: DisjointSlice<i32, CollectiveTiles<4>>,
+        valid: usize,
+        default: i32,
+        mode: u32,
+    ) {
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, default, mode);
+    }
+    #[kernel]
     #[launch_contract(domain=1,block=(33,1,1),dynamic_shared=inferred)]
     pub fn transpose_scalar(mut output: DisjointSlice<i16, CollectiveTiles<1>>) {
         coop::store(
@@ -365,7 +394,7 @@ mod kernels {
 pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
     use cuda_async::simt::device_context::{init_device_contexts, with_cuda_context};
     use cuda_async::simt::device_operation::DeviceOperation;
-    use cuda_core::{DeviceBuffer, LaunchConfig1D};
+    use cuda_core::{DeviceBuffer, LaunchConfig1D, LaunchConfig2D, LaunchConfig3D};
     init_device_contexts(0, 1)?;
     let context = with_cuda_context(0, |context| context.clone())?;
     let stream = context.default_stream();
@@ -388,17 +417,32 @@ pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut cases = 0;
     macro_rules! run {
-        ($t:ty,$prepare:ident,$launch:ident,$block:literal,$capacity:literal,$items:literal,$default:expr) => {{
+        ($t:ty,$prepare:ident,$launch:ident,$block:literal,$capacity:literal,$items:literal,$default:expr) => {
+            run!(
+                $t,
+                $prepare,
+                $launch,
+                $block,
+                $capacity,
+                $items,
+                $default,
+                |groups| LaunchConfig1D::auto_shared(groups, $block),
+                |groups| LaunchConfig1D::auto_shared(groups, $block + 1)
+            );
+        };
+        ($t:ty,$prepare:ident,$launch:ident,$block:literal,$capacity:literal,$items:literal,$default:expr,
+         $config:expr,$wrong_shape:expr) => {{
             let default: $t = $default;
             for groups in [1_u32, 3] {
-                let plan =
-                    module.$prepare::<$items>(LaunchConfig1D::auto_shared(groups, $block))?;
+                let plan = module.$prepare::<$items>(($config)(groups))?;
                 assert!(plan.__raw_config().shared_mem_bytes > 0);
-                assert!(
-                    module
-                        .$prepare::<$items>(LaunchConfig1D::auto_shared(groups, $block + 1))
-                        .is_err()
-                );
+                let error = module
+                    .$prepare::<$items>(($wrong_shape)(groups))
+                    .err()
+                    .expect("a different exact block shape must reject");
+                assert!(error.to_string().contains("does not match required block"));
+                let (gx, gy, gz) = plan.__raw_config().grid_dim;
+                let groups = gx * gy * gz;
                 for mode in [0, 1, 2, 3, 4, 6] {
                     for valid in [0, 1, $block * $items - 1, $block * $items] {
                         if mode == 0 && valid != $block * $items {
@@ -692,6 +736,50 @@ pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
         9,
         9,
         i32::MIN
+    );
+    run!(
+        i32,
+        prepare_copy_i32_2d,
+        copy_i32_2d_async_owned,
+        33,
+        4,
+        1,
+        -7,
+        |groups| LaunchConfig2D::auto_shared((groups, 2), (11, 3)),
+        |groups| LaunchConfig2D::auto_shared((groups, 2), (3, 11))
+    );
+    run!(
+        i32,
+        prepare_copy_i32_3d,
+        copy_i32_3d_async_owned,
+        128,
+        4,
+        1,
+        -7,
+        |groups| LaunchConfig3D::auto_shared((groups, 2, 2), (8, 4, 4)),
+        |groups| LaunchConfig3D::auto_shared((groups, 2, 2), (16, 2, 4))
+    );
+    run!(
+        i32,
+        prepare_copy_i32_2d,
+        copy_i32_2d_async_owned,
+        33,
+        4,
+        4,
+        -7,
+        |groups| LaunchConfig2D::auto_shared((groups, 2), (11, 3)),
+        |groups| LaunchConfig2D::auto_shared((groups, 2), (3, 11))
+    );
+    run!(
+        i32,
+        prepare_copy_i32_3d,
+        copy_i32_3d_async_owned,
+        128,
+        4,
+        4,
+        -7,
+        |groups| LaunchConfig3D::auto_shared((groups, 2, 2), (8, 4, 4)),
+        |groups| LaunchConfig3D::auto_shared((groups, 2, 2), (16, 2, 4))
     );
     let plan = module.prepare_transpose_scalar(LaunchConfig1D::auto_shared(1, 33))?;
     let target = DeviceBuffer::from_host(&stream, &[0_i16; 33])?;

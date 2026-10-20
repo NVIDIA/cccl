@@ -171,7 +171,9 @@ impl<A: Algorithm> StoreOptions<A> {
 /// The operation returns unit. [`Direct`] uses no shared scratch; [`Transpose`]
 /// uses compiler-planned shared storage and returns the same blocked layout.
 ///
-/// Complete one-dimensional blocks support [`Direct`] and [`Transpose`].
+/// Complete one-, two- and three-dimensional blocks support [`Direct`] and
+/// [`Transpose`]. Thread rank is x-fastest: `x + X * (y + Y * z)` for shape
+/// `[X, Y, Z]`. Each ranked thread receives `ITEMS` consecutive elements.
 /// Compile with the supported Oxide backend and an exact block launch contract.
 /// Every block thread must reach matching calls with uniform source, controls
 /// and participation. The compiler checks these requirements and resource

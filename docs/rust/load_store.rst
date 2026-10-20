@@ -6,8 +6,8 @@ Block Load and Store
 
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
-first. This initial implementation supports complete, one-dimensional blocks
-with Direct and Transpose algorithms. Both Load algorithms produce blocked
+first. Complete one-, two- and three-dimensional blocks support Direct and
+Transpose algorithms. Both Load algorithms produce blocked
 payloads, where each thread owns consecutive elements. Other algorithms, warp
 groups, and public temporary storage remain under development.
 
@@ -63,6 +63,14 @@ default, and an offset. The count describes the whole block's prefix, not a
 per-thread count. It must fit the tile and ``i32::MAX``. Offsets are element
 indices from the start of the allocation; supply each block's origin explicitly.
 Counts, defaults, offsets, and their presence must be uniform across the block.
+
+For block shape ``[X,Y,Z]``, thread rank is x-fastest:
+``t = x + X * (y + Y * z)``. A blocked payload slot ``i`` addresses
+``offset + t * ITEMS_PER_THREAD + i``. The exact shape is part of the kernel
+launch contract; another shape with the same thread count is rejected.
+Use ``LaunchConfig2D`` or ``LaunchConfig3D`` for the corresponding launch domain.
+The block origin in a multidimensional grid uses x-fastest block rank as well;
+include that rank times the block tile extent in the element offset.
 
 A masked Load without ``oob_default`` resets every out-of-prefix slot to
 unwritten, even if initialized before the Load. ``get`` returns ``None`` for an

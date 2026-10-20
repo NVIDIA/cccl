@@ -23,8 +23,11 @@ libraries does not require Rust, and the provider does not depend on Python.
 Supported provider forms
 ------------------------
 
-Each request describes a complete, one-dimensional block and a positive
-compile-time item count per thread. The original raw ``i32`` recipes support
+Each request describes a complete block with exact ``[X,Y,Z]`` dimensions and a
+positive compile-time item count per thread. ``Request::new`` and
+``Request::new_typed`` retain their one-dimensional ``[B,1,1]`` shape;
+``new_with_shape`` and ``new_typed_with_shape`` accept all three dimensions.
+Thread rank is x-fastest. The original raw ``i32`` recipes support
 these forms:
 
 .. list-table::

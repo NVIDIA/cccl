@@ -179,14 +179,6 @@ fn initialized_value<T: Copy>(value: T) -> T {
         {"root": original["root"].replace("block = (128, 1, 1), ", "")},
         "requires #[launch_contract(block",
     ),
-    "two_dimensional_shape": (
-        {
-            "root": original["root"].replace(
-                "block = (128, 1, 1)", "block = (64, 2, 1)", 1
-            )
-        },
-        "exact block shape [B,1,1]",
-    ),
     "shared_shape": (
         {
             "root": "block = (64, 1, 1)".join(

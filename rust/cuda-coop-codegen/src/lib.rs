@@ -10,7 +10,7 @@
 //!
 //! # Supported specializations
 //!
-//! [`Request`] describes a one-dimensional complete block, positive fixed
+//! [`Request`] describes an exact complete block shape, positive fixed
 //! items per thread, and [`Algorithm::Direct`] or [`Algorithm::Transpose`].
 //! The raw i32 recipes support Direct and Transpose. Their Store payloads must
 //! be fully initialized. The validity-aware recipes support all ten
@@ -217,7 +217,7 @@ impl Operation {
     }
 }
 
-/// A validated, one-dimensional block specialization.
+/// A validated specialization for an exact one-, two- or three-dimensional block.
 ///
 /// This is an in-process implementation interface, not a serialized compiler
 /// protocol. All fields are static specialization inputs. The generated ABI
@@ -227,11 +227,11 @@ pub struct Request {
     operation: Operation,
     algorithm: Algorithm,
     dtype: Dtype,
-    block_threads: u32,
+    block: [u32; 3],
     items_per_thread: u32,
 }
 impl Request {
-    /// Validate an exact block shape and payload extent.
+    /// Validate a one-dimensional block shape and payload extent.
     ///
     /// `block_threads` must be 1..=1024 and `items_per_thread` positive. Their
     /// product must fit i32, matching CUB's valid-prefix count. Target-specific
@@ -272,14 +272,63 @@ impl Request {
         block_threads: u32,
         items_per_thread: u32,
     ) -> Result<Self> {
+        Self::new_typed_with_shape(
+            dtype,
+            operation,
+            algorithm,
+            [block_threads, 1, 1],
+            items_per_thread,
+        )
+    }
+
+    /// Validate an exact `[X, Y, Z]` block shape with i32 elements.
+    ///
+    /// Each axis must be positive, their product at most 1024, and the positive
+    /// per-thread item count times that product must fit i32. Threads are ranked
+    /// x-fastest: `x + X * (y + Y * z)`. Device-specific axis and launch limits
+    /// must also be checked by the caller when preparing a launch.
+    ///
+    /// # Errors
+    ///
+    /// Rejects zero axes, an oversized or overflowing block product, zero items,
+    /// or a tile extent that cannot be represented by CUB's signed prefix count.
+    pub fn new_with_shape(
+        operation: Operation,
+        algorithm: Algorithm,
+        block: [u32; 3],
+        items_per_thread: u32,
+    ) -> Result<Self> {
+        Self::new_typed_with_shape(Dtype::I32, operation, algorithm, block, items_per_thread)
+    }
+
+    /// Validate an exact typed `[X, Y, Z]` block specialization.
+    ///
+    /// Shape and launch requirements match [`Self::new_with_shape`]. The five
+    /// validity-aware recipes support every [`Dtype`]; raw recipes require i32.
+    ///
+    /// # Errors
+    ///
+    /// Rejects the shapes documented by [`Self::new_with_shape`] and a non-i32
+    /// raw recipe.
+    pub fn new_typed_with_shape(
+        dtype: Dtype,
+        operation: Operation,
+        algorithm: Algorithm,
+        block: [u32; 3],
+        items_per_thread: u32,
+    ) -> Result<Self> {
         if !operation.validity() && dtype != Dtype::I32 {
             return Err(Error::message(
                 "legacy raw recipes require signed i32 elements",
             ));
         }
-        if !(1..=1024).contains(&block_threads)
+        let block_threads = block
+            .into_iter()
+            .try_fold(1_u32, u32::checked_mul)
+            .filter(|threads| (1..=1024).contains(threads));
+        if block_threads.is_none()
             || items_per_thread == 0
-            || u64::from(block_threads) * u64::from(items_per_thread) > i32::MAX as u64
+            || u64::from(block_threads.unwrap_or(0)) * u64::from(items_per_thread) > i32::MAX as u64
         {
             return Err(Error::message(
                 "require 1..=1024 block threads, positive items per thread and tile extent <= i32::MAX",
@@ -289,7 +338,7 @@ impl Request {
             operation,
             algorithm,
             dtype,
-            block_threads,
+            block,
             items_per_thread,
         })
     }
@@ -305,9 +354,13 @@ impl Request {
     pub fn dtype(self) -> Dtype {
         self.dtype
     }
-    /// Exact number of threads in the one-dimensional block.
+    /// Exact block shape `[X, Y, Z]`, with x-fastest thread rank.
+    pub fn block_shape(self) -> [u32; 3] {
+        self.block
+    }
+    /// Total number of threads in the validated block.
     pub fn block_threads(self) -> u32 {
-        self.block_threads
+        self.block[0] * self.block[1] * self.block[2]
     }
     /// Number of payload elements per thread.
     pub fn items_per_thread(self) -> u32 {
@@ -570,11 +623,13 @@ fn source(request: Request, symbol: &str) -> String {
     };
     let (dtype, size) = request.dtype.native();
     let items = request.items_per_thread;
+    let [block_x, block_y, block_z] = request.block;
+    let threads = request.block_threads();
     let bitmap_bytes = items.div_ceil(8);
-    let tile = request.block_threads * items;
+    let tile = threads * items;
     let mask_plane = op == Operation::StorePartialValidity && transpose && items > 1;
     let storage = if mask_plane {
-        let plane_bytes = u64::from(request.block_threads.div_ceil(32)) * u64::from(items) * 4;
+        let plane_bytes = u64::from(threads.div_ceil(32)) * u64::from(items) * 4;
         format!(
             r#"struct scratch_storage {{
   alignas(alignof(primitive::TempStorage)) unsigned char cub[sizeof(primitive::TempStorage)];
@@ -623,7 +678,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
             op,
             Operation::LoadMaskedValidity | Operation::StorePartialValidity
         ) {
-            format!("int(threadIdx.x) * {items} + i < valid")
+            format!("tid * {items} + i < valid")
         } else {
             "true".to_owned()
         };
@@ -653,7 +708,6 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
             let prepare = if mask_plane {
                 format!(
                     r#"unsigned char* const mask_plane = scratch + offsetof(scratch_storage, masks);
-  const int tid = int(threadIdx.x);
   const int warp = tid / 32;
   const int remaining = {threads} - warp * 32;
   const unsigned int active = remaining >= 32 ? 0xffffffffu : (1u << remaining) - 1;
@@ -664,8 +718,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
       void* const address = mask_plane + sizeof(unsigned int) * (warp * {items} + i);
       ::new (address) unsigned int(bits);
     }}
-  }}"#,
-                    threads = request.block_threads
+  }}"#
                 )
             } else {
                 String::new()
@@ -704,8 +757,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
       }}
     }}
     flags[byte] = static_cast<unsigned char>(bits);
-  }}"#,
-                        threads = request.block_threads
+  }}"#
                     )
                 } else {
                     // With one item per lane, BlockedToStriped is identity.
@@ -761,23 +813,24 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
         r#"// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #include <cub/block/block_{header}.cuh>
+#include <cub/util_ptx.cuh>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstddef>
 namespace {symbol}_detail {{
 using value_type = {dtype};
 using cell = {cell};
-using primitive = cub::{primitive}<cell, {threads}, {items}, cub::{algorithm}_{choice}>;
+using primitive = cub::{primitive}<cell, {block_x}, {items}, cub::{algorithm}_{choice}, {block_y}, {block_z}>;
 {storage}
 static_assert(sizeof(value_type) == {size} && alignof(value_type) == {size});
 static_assert(sizeof(cell) == sizeof(value_type) && alignof(cell) == alignof(value_type));
 extern "C" __device__ void {symbol}({qualifier}value_type* memory, {payload_const}value_type* payload, unsigned char* scratch{flags}{controls}) {{
+  const int tid = cub::RowMajorTid({block_x}, {block_y}, {block_z});
   {check}
   {constructor}
   {body}
 }}
 }}
 "#,
-        threads = request.block_threads,
         choice = request.algorithm.token()
     )
 }
