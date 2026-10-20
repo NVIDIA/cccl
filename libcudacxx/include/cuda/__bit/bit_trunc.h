@@ -72,11 +72,12 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
   _CCCL_ASSERT(__n >= 0, "__n must be nonnegative");
   const auto __un = static_cast<unsigned>(__n);
 
-#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
-#  if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (!_CCCL_BUILTIN_CONSTANT_P(__v) || !_CCCL_BUILTIN_CONSTANT_P(__n))
-#  endif // _CCCL_BUILTIN_CONSTANT_P
+  // When __n is a constant, use the fallback path.
+#if defined(_CCCL_BUILTIN_CONSTANT_P)
+  if (!_CCCL_BUILTIN_CONSTANT_P(__n))
+#endif // _CCCL_BUILTIN_CONSTANT_P
   {
+#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
       using ::cuda::std::uint32_t;
@@ -99,7 +100,7 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
         NV_IF_TARGET(NV_IS_HOST, (return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_DI(__v, __width));))
 #  endif // _CCCL_BUILTIN_IA32_BZHI_DI
         NV_IF_TARGET(NV_PROVIDES_SM_70, ({
-                       const auto __lo = ::cuda::__szext_clamp(static_cast<uint32_t>(__v), __n);
+                       const auto __lo = ::cuda::__szext_clamp(static_cast<uint32_t>(__v), __un);
                        const auto __hi = ::cuda::__szext_clamp(
                          static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
                        return _Tp{__lo} | (_Tp{__hi} << 32);
@@ -118,7 +119,7 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
 #    endif // _CCCL_BUILTIN_IA32_BZHI_SI && _CCCL_BUILTIN_IA32_BZHI_DI
 
         NV_IF_TARGET(NV_PROVIDES_SM_70, ({
-                       const auto __w0 = ::cuda::__szext_clamp(static_cast<uint32_t>(__v), __n);
+                       const auto __w0 = ::cuda::__szext_clamp(static_cast<uint32_t>(__v), __un);
                        const auto __w1 = ::cuda::__szext_clamp(
                          static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
                        const auto __w2 = ::cuda::__szext_clamp(
@@ -130,8 +131,8 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
       }
 #  endif // _CCCL_HAS_INT128()
     }
-  }
 #endif // !_CCCL_TILE_COMPILATION()
+  }
   return static_cast<_Tp>(__v & (::cuda::std::shl(_Tp{1}, static_cast<unsigned>(__un)) - 1));
 }
 
