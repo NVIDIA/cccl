@@ -138,7 +138,7 @@ impl<S: GroupScope> ThreadGroup<S> {
     /// An inner level selects a constituent's rank in this group; an outer
     /// level selects this group's rank in that parent. Same-level rank is
     /// zero. The result is `u64` if Grid is involved, otherwise `u32`.
-    /// Panics (traps on device) for an excluded mapped-group member.
+    /// Panics (traps on device) for a thread excluded from a mapped group.
     ///
     /// ```no_run
     /// use cuda_coop as coop;
