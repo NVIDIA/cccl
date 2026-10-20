@@ -15,8 +15,9 @@ use cuda_device::library;
 /// `CAPACITY` and `ALIGN` default to zero, meaning inferred. Consuming builders
 /// select positive explicit values and synchronization/sharing policies before
 /// use. Capacity covers the entire plan, including exclusive slices and padding.
-/// Different descriptors have independent storage. Exclusive mode distinguishes
-/// static call sites, not repeated executions of one site in a loop.
+/// Each static constructor site denotes one descriptor, including in a loop.
+/// Different sites have independent storage. Exclusive mode distinguishes
+/// static use sites, not repeated executions of one site in a loop.
 ///
 /// This is neither a shared-memory reference nor a runtime allocation. All block
 /// lanes must agree on the descriptor and reach matching operations; the compiler

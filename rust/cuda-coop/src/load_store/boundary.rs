@@ -97,7 +97,8 @@ pub(super) unsafe fn load<
     let payload = output.block_io_parts();
     let storage = options.storage.into_raw();
     // Each static algorithm keeps its registration function-item identity. The
-    // storage marker plans the complete provider layout and synchronizes reuse.
+    // storage marker plans the complete provider layout and either synchronizes
+    // managed reuse or requires the caller's explicit completion.
     macro_rules! call {
         ($direct:ident, $transpose:ident, $controls:expr) => {
             if A::TRANSPOSE {
@@ -114,7 +115,7 @@ pub(super) unsafe fn load<
     // SAFETY: the checked marker enforces participation, uniform controls and
     // resource epochs. The exact typed provider initializes values before flags
     // and transports masked invalid cells without reading them as T. The
-    // compiler allocates Transpose scratch and completes its previous use.
+    // compiler allocates Transpose scratch and checks the required completion.
     unsafe {
         match (options.valid_items, options.oob_default) {
             (None, None) => call!(load_full, transpose_load_full, (pointer,)),

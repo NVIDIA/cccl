@@ -22,8 +22,8 @@ A complete program
 The example is an independent Cargo workspace with a separate generic helper
 crate. It copies three block tiles with Direct and Transpose at item counts 1
 and 4, including a short last tile. It also uses explicit automatic scratch in
-a repeated helper call. The
-consumer has no build script, native shim, provider, or scratch-size argument.
+a repeated helper call. The consumer has no build script, native shim, provider,
+or scratch-size argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
 Oxide build.
 
@@ -140,8 +140,9 @@ consumed by the operation; construct fresh options with an ordinary reborrow
 for each call, including inside loops.
 
 ``exclusive()`` gives separate static primitive and reservation sites separate
-slices. Repeated execution of one site still reuses its slice. Different
-descriptors always receive independent storage. Independent scratch does not
+slices. Repeated execution of one site still reuses its slice. Each static
+constructor site denotes one descriptor, including in a loop; different
+constructor sites receive independent storage. Independent scratch does not
 complete conflicting accesses to the same global-memory carrier.
 
 ``with_capacity::<BYTES>()`` specifies a positive capacity for the complete
