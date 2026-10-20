@@ -62,6 +62,7 @@ CCCL_C_API CUresult cccl_device_unary_transform_build_ex(
   const char* ctk_path,
   const cccl_build_config* config);
 
+// compile / load / serialize / deserialize: see the AoT contract in serialization.h.
 CCCL_C_API CUresult cccl_device_unary_transform_compile(
   cccl_device_transform_build_result_t* build_ptr,
   cccl_iterator_t d_in,
@@ -78,9 +79,6 @@ CCCL_C_API CUresult cccl_device_unary_transform_compile(
 CCCL_C_API CUresult
 cccl_device_unary_transform_load(cccl_device_transform_build_result_t* build_ptr, const char* ctk_path);
 
-// Serializes a populated build_result into a byte buffer. On success *out_buf
-// points to a heap allocation the caller must free with
-// cccl_serialization_v2_buffer_free, and *out_size holds its length.
 CCCL_C_API CUresult cccl_device_unary_transform_serialize(
   const cccl_device_transform_build_result_t* build_ptr, void** out_buf, size_t* out_size);
 
@@ -140,9 +138,6 @@ CCCL_C_API CUresult cccl_device_binary_transform_compile(
 CCCL_C_API CUresult
 cccl_device_binary_transform_load(cccl_device_transform_build_result_t* build_ptr, const char* ctk_path);
 
-// Serializes a populated build_result into a byte buffer. On success *out_buf
-// points to a heap allocation the caller must free with
-// cccl_serialization_v2_buffer_free, and *out_size holds its length.
 CCCL_C_API CUresult cccl_device_binary_transform_serialize(
   const cccl_device_transform_build_result_t* build_ptr, void** out_buf, size_t* out_size);
 
