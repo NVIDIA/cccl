@@ -52,13 +52,14 @@ template <class _Tp>
   return static_cast<_Tp>(__v & (::cuda::std::shl(_Tp{1}, static_cast<unsigned>(__n)) - 1));
 }
 
+#if _CCCL_HOST_COMPILATION()
 template <class _Tp>
 [[nodiscard]] _CCCL_HOST_API _Tp __bit_trunc_impl_host(const _Tp __v, const int __n) noexcept
 {
   using ::cuda::std::uint32_t;
   using ::cuda::std::uint64_t;
 
-#if defined(_CCCL_BUILTIN_IA32_BZHI_SI) && defined(_CCCL_BUILTIN_IA32_BZHI_DI)
+#  if defined(_CCCL_BUILTIN_IA32_BZHI_SI) && defined(_CCCL_BUILTIN_IA32_BZHI_DI)
   const auto __un = static_cast<unsigned>(__n);
 
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
@@ -73,7 +74,7 @@ template <class _Tp>
     const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
     NV_IF_TARGET(NV_IS_HOST, (return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_DI(__v, __width));))
   }
-#  if _CCCL_HAS_INT128()
+#    if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
     NV_IF_TARGET(NV_IS_HOST, {
@@ -84,13 +85,14 @@ template <class _Tp>
       return _Tp{__lo} | (_Tp{__hi} << 64);
     })
   }
-#  endif // _CCCL_HAS_INT128()
+#    endif // _CCCL_HAS_INT128()
   else
-#endif // _CCCL_BUILTIN_IA32_BZHI_SI && _CCCL_BUILTIN_IA32_BZHI_DI
+#  endif // _CCCL_BUILTIN_IA32_BZHI_SI && _CCCL_BUILTIN_IA32_BZHI_DI
   {
     return ::cuda::__bit_trunc_impl_generic(__v, __n);
   }
 }
+#endif // _CCCL_HOST_COMPILATION()
 
 #if _CCCL_DEVICE_COMPILATION()
 template <class = void>
