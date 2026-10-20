@@ -41,8 +41,8 @@ The result has the same type as ``value``.
 
 The function uses the following instructions for runtime inputs:
 
-- Device (SM70 and newer): ``SGXT.U32`` per 32-bit word, with width clamping for 64- and 128-bit types.
-- Host (x86-64 with BMI2): ``BZHI``; two for 128-bit types, with width clamping.
+- Device (SM70 and newer): ``SGXT.U32`` per 32-bit word. 64- and 128-bit types require additional operations for width clamping.
+- Host (x86-64 with BMI2): ``BZHI``; two for 128-bit types and some additional operations for width clamping.
 - Other cases: shift and bitwise AND.
 
 Example
