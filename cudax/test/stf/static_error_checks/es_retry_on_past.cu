@@ -23,6 +23,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(retry) << cudaErrorInvalidValue;
+  retry << cudaErrorInvalidValue;
   return EXIT_FAILURE;
 }

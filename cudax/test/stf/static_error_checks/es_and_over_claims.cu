@@ -25,7 +25,7 @@ void may_throw();
 
 int main()
 {
-  errsink(if_equal(cudaErrorNotReady)(noop) & thrown(noop)) << [&] {
+  (if_equal(cudaErrorNotReady)(noop) & thrown(noop)) << [&] {
     may_throw();
     return cudaErrorNotReady;
   };
