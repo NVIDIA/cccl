@@ -10,9 +10,9 @@
 
 /**
  * @file
- * @brief Static error check: `notify .
+ * @brief Static error check: `notify | fwd` is rejected like any `notify | s`.
  *
- *  fwd` is rejected like any `notify 
+ * `notify` never forwards, so the right arm can never run; the identity does not bypass the check.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -22,6 +22,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-   s`|`notify` never forwards, so the right arm can never run; the identity does not bypass the check.|errsink(notify | fwd) ->* [] {};
+  errsink(notify | fwd) ->* [] {};
   return EXIT_FAILURE;
 }

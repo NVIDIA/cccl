@@ -10,9 +10,9 @@
 
 /**
  * @file
- * @brief Static error check: nothing may follow `unwind` in a `.
+ * @brief Static error check: nothing may follow `unwind` in a `|` alternation.
  *
- * ` alternation
+ * `unwind` always diverges, so the right arm can never run.
  */
 
 #include <cuda/experimental/stf.cuh>
@@ -22,6 +22,6 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  `unwind` always diverges, so the right arm can never run.|errsink(unwind | subst(0)) ->* [] { return 0; };
+  errsink(unwind | subst(0)) ->* [] { return 0; };
   return EXIT_FAILURE;
 }
