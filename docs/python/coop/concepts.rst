@@ -56,7 +56,7 @@ in the programming guides.
      - Available
    * - Adjacent Difference and Discontinuity
      - Available
-     - Not implemented
+     - Available
    * - Histogram
      - Available
      - Not implemented
@@ -70,9 +70,9 @@ in the programming guides.
 .. _block-prefix-callbacks:
 
 Numba-CUDA-MLIR additionally supports qualified device operators and
-:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. CUTLASS Reduce and Scan
-accept built-in operators; custom operators and Scan prefix callbacks are
-unsupported. CUTLASS support targets Linux with CUDA 13. No public CUTLASS
+:ref:`Scan prefix callbacks <coop-prefix-callbacks>`. CUTLASS accepts only
+built-in operators and rejects custom device callbacks, including Scan prefix
+callbacks. CUTLASS support targets Linux with CUDA 13. No public CUTLASS
 package version has been qualified yet; see the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` before choosing a runtime.
 
