@@ -222,7 +222,7 @@ pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
         module
             .partial_33_async_owned::<i32, 4, _, _>(&plan, source, target, 34, 0, -7, mode)
             .sync()?;
-        return Err("invalid Vectorize Store unexpectedly completed".into());
+        panic!("invalid Vectorize Store unexpectedly completed");
     }
     let mut cases = 0;
     macro_rules! run {
