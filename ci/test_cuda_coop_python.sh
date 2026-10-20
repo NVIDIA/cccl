@@ -227,6 +227,11 @@ PY
     fi
     for example in "${examples[@]}"; do
       case "${example##*/}" in
+        nvmath_fft.py | nvmath_fft_shared.py | \
+          nvmath_nvshmem.py | nvmath_nvshmem_shared.py)
+          # The examples README documents their nvmath/NVSHMEM environments.
+          echo "Skipping optional device-library example: ${example##*/}"
+          ;;
         source_dumps.py)
           for source_dump_mode in direct transpose scan; do
             python -I "$example" "$source_dump_mode"
