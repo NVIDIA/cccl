@@ -10,9 +10,9 @@ Developer Overview
 
 .. important::
 
-   **Thrust is in maintenance mode. New development happens in libcu++.**
+   **APIs in the `thrust::` namespace are considered in maintenance mode. New development happens in the `cuda::` namespace.**
 
-   Thrust is not deprecated: we will continue to provide and support it.
+   Thrust is not deprecated: we will continue to provide updates and support for it.
 
    Thrust has accumulated a number of design issues that we cannot fix without breaking existing users,
    and we know how to build these facilities better.
@@ -21,9 +21,9 @@ Developer Overview
    (see :ref:`fancy iterators <libcudacxx-extended-api-iterators>`,
    :ref:`memory resources <libcudacxx-extended-api-memory-resources>`, and
    :ref:`CUDA buffers <cccl-runtime-buffer>`),
-   and we encourage users to migrate from Thrust to the corresponding libcu++ facilities.
+   and we encourage users to migrate to the corresponding `cuda::` facilities.
 
-   Consequently, the Thrust project **no longer accepts new features or extensions**,
+   Consequently, we **no longer accept new features or extensions** in the `thrust::` namespace,
    such as new algorithms, iterators, containers, execution policies, or backends.
    We continue to accept:
 
@@ -31,7 +31,7 @@ Developer Overview
    - performance improvements to existing functionality, and
    - maintenance work required to keep Thrust building and working with supported compilers and CUDA Toolkits.
 
-   Please direct new contributions and proposals for new functionality to libcu++ instead.
+   Please direct new contributions and proposals for new functionality to features in the `cuda::` namespace.
    If you are unsure whether a change fits, open an issue on `GitHub <https://github.com/NVIDIA/cccl/issues>`__ before starting work.
 
 This living document serves as a guide to the design of the internal structure of Thrust.
