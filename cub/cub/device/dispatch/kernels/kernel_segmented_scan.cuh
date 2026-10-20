@@ -142,6 +142,12 @@ private:
   using logical_offset_t            = ::cuda::std::make_unsigned_t<OffsetT>;
   using block_logical_offset_scan_t = BlockScan<logical_offset_t, threads_per_block, scan_algorithm>;
 
+  // A head's flag holds its segment plus one, so it must hold max_segments.
+  using head_flag_t =
+    ::cuda::std::conditional_t<(max_segments <= 0xFF),
+                               unsigned char,
+                               ::cuda::std::conditional_t<(max_segments <= 0xFFFF), unsigned short, unsigned int>>;
+
   union _multiple_segment_algorithms_storage_t
   {
     typename block_load_t::TempStorage load;
@@ -185,7 +191,7 @@ private:
     bool tile_begins_at_head;
     // Whether the tile holds a segment start after its first item.
     bool tile_has_heads;
-    unsigned char head_flags[tile_items];
+    head_flag_t head_flags[tile_items];
     _marked_heads_algorithms_storage_t reused;
   };
 
@@ -552,14 +558,18 @@ public:
       const bool block_io        = !has_heads || temp_storage.contiguous_mask != 0u;
 
       bool heads[items_per_thread];
+      // The segment each item lies in, for item-by-item access; -1 where not yet known.
+      int segments[items_per_thread];
       if (has_heads)
       {
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < items_per_thread; ++item)
         {
-          const int local_index = tid * items_per_thread + item;
+          const int local_index  = tid * items_per_thread + item;
+          const head_flag_t flag = temp_storage.head_flags[local_index];
           // A head at the tile's first item is never flagged.
-          heads[item] = local_index == 0 ? begins_at_head : temp_storage.head_flags[local_index] != 0;
+          heads[item]                          = local_index == 0 ? begins_at_head : flag != 0;
+          segments[item]                       = static_cast<int>(flag) - 1;
           temp_storage.head_flags[local_index] = 0;
         }
       }
@@ -579,8 +589,9 @@ public:
       }
       else
       {
+        item_segments_from_heads(n_segments, tile_begin, heads, segments);
         OffsetT indices[items_per_thread];
-        item_indices_from_heads(input_begin_idx_it, n_segments, tile_begin, heads, indices);
+        item_indices_from_segments(input_begin_idx_it, n_segments, tile_begin, heads, segments, indices);
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < items_per_thread; ++item)
         {
@@ -656,7 +667,7 @@ public:
       else
       {
         OffsetT indices[items_per_thread];
-        item_indices_from_heads(output_begin_idx_it, n_segments, tile_begin, heads, indices);
+        item_indices_from_segments(output_begin_idx_it, n_segments, tile_begin, heads, segments, indices);
         _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < items_per_thread; ++item)
         {
@@ -709,19 +720,58 @@ private:
       }
       else if (tile_begin < segment_begin && segment_begin < tile_end && segment_begin < segment_end)
       {
-        temp_storage.head_flags[static_cast<int>(segment_begin - tile_begin)] = 1;
+        temp_storage.head_flags[static_cast<int>(segment_begin - tile_begin)] = static_cast<head_flag_t>(segment + 1);
       }
     }
   }
 
-  // Where each of the thread's items lies through begin_idx_it, searching the block's segments only for the
-  // thread's first item and for a head.
+  // The segment each of the thread's items lies in. A flagged head's segment is already in segments; the block's
+  // segments are searched only for a first item that is not one. Items past the block's end are left unknown.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void item_segments_from_heads(
+    int n_segments,
+    logical_offset_t tile_begin,
+    const bool (&heads)[items_per_thread],
+    int (&segments)[items_per_thread])
+  {
+    const logical_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
+    const logical_offset_t thread_begin =
+      tile_begin + static_cast<logical_offset_t>(static_cast<int>(threadIdx.x) * items_per_thread);
+
+    if (segments[0] < 0 && thread_begin < items_per_block)
+    {
+      // Count the segments that end at or before the first item; empty segments are passed over.
+      int segment = 0;
+      for (int step = static_cast<int>(::cuda::std::bit_ceil(static_cast<unsigned int>(n_segments)) >> 1); step > 0;
+           step >>= 1)
+      {
+        const int probe = segment + step - 1;
+        if (probe < n_segments && temp_storage.logical_segment_offsets[probe] <= thread_begin)
+        {
+          segment += step;
+        }
+      }
+      segments[0] = segment;
+    }
+
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int item = 1; item < items_per_thread; ++item)
+    {
+      if (!heads[item])
+      {
+        segments[item] = segments[item - 1];
+      }
+    }
+  }
+
+  // Where each of the thread's items lies through begin_idx_it, reading a begin only for the thread's first item and
+  // for a head.
   template <typename BeginOffsetIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void item_indices_from_heads(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void item_indices_from_segments(
     BeginOffsetIteratorT begin_idx_it,
     int n_segments,
     logical_offset_t tile_begin,
     const bool (&heads)[items_per_thread],
+    const int (&segments)[items_per_thread],
     OffsetT (&indices)[items_per_thread])
   {
     const logical_offset_t items_per_block = temp_storage.logical_segment_offsets[n_segments - 1];
@@ -736,17 +786,7 @@ private:
       const logical_offset_t position = thread_begin + static_cast<logical_offset_t>(item);
       if (position < items_per_block && (item == 0 || heads[item]))
       {
-        // Count the segments that end at or before position; empty segments are passed over.
-        int segment = 0;
-        for (int step = static_cast<int>(::cuda::std::bit_ceil(static_cast<unsigned int>(n_segments)) >> 1); step > 0;
-             step >>= 1)
-        {
-          const int probe = segment + step - 1;
-          if (probe < n_segments && temp_storage.logical_segment_offsets[probe] <= position)
-          {
-            segment += step;
-          }
-        }
+        const int segment = segments[item];
         const logical_offset_t segment_begin =
           segment == 0 ? logical_offset_t{0} : temp_storage.logical_segment_offsets[segment - 1];
         index = static_cast<logical_offset_t>(static_cast<OffsetT>(begin_idx_it[segment])) + (position - segment_begin);
