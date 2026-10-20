@@ -172,6 +172,27 @@ cases.update(
     ),
 )
 
+
+vectorize_load = load.replace(
+    ".oob_default(0)", ".oob_default(0).algorithm(coop::Vectorize)"
+)
+vectorize_store = store.replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Vectorize)"
+)
+cases.update(
+    vectorize_shared=(vectorize_load + vectorize_store, None),
+    vectorize_varying_offset=(
+        vectorize_load.replace(
+            ".offset(offset)", ".offset(offset+thread::threadIdx_x() as usize)"
+        ),
+        "not proved block-uniform",
+    ),
+    vectorize_missing_completion=(
+        vectorize_load + vectorize_store + reload,
+        "requires a full-block barrier",
+    ),
+)
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",

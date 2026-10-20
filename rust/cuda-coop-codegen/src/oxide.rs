@@ -10,7 +10,7 @@
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
-//! The protocol supports the raw i32 and typed Direct/Striped/Transpose validity recipes
+//! The protocol supports the raw i32 and typed Direct/Striped/Vectorize/Transpose validity recipes
 //! documented by [`Operation`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
@@ -135,6 +135,7 @@ impl SpecializationRequest {
         let algorithm = match self.algorithm.as_str() {
             "direct" => Algorithm::Direct,
             "striped" => Algorithm::Striped,
+            "vectorize" => Algorithm::Vectorize,
             "transpose" => Algorithm::Transpose,
             _ => {
                 return Err(Error::message(format!(
@@ -291,6 +292,7 @@ pub fn registration(
         algorithm: match algorithm {
             Algorithm::Direct => "direct",
             Algorithm::Striped => "striped",
+            Algorithm::Vectorize => "vectorize",
             Algorithm::Transpose => "transpose",
         },
     })
@@ -486,7 +488,7 @@ mod tests {
         ] {
             let scalar = Scalar::from(dtype);
             assert_eq!(scalar.dtype().unwrap(), dtype);
-            for algorithm in ["direct", "striped", "transpose"] {
+            for algorithm in ["direct", "striped", "vectorize", "transpose"] {
                 let request = SpecializationRequest {
                     operation: "load_filled_validity_bits_v1".into(),
                     algorithm: algorithm.into(),
@@ -512,7 +514,12 @@ mod tests {
             Operation::StoreFullValidity,
             Operation::StorePartialValidity,
         ] {
-            for algorithm in [Algorithm::Direct, Algorithm::Striped, Algorithm::Transpose] {
+            for algorithm in [
+                Algorithm::Direct,
+                Algorithm::Striped,
+                Algorithm::Vectorize,
+                Algorithm::Transpose,
+            ] {
                 let request = Request::new_typed(Dtype::I16, operation, algorithm, 128, 4).unwrap();
                 let mut expected = vec![
                     Argument::MutPointer(Scalar::Signed(16)),

@@ -3,7 +3,7 @@
 
 use super::{
     Algorithm, LoadOptions, StoreOptions, Transpose,
-    sealed::{DIRECT, STRIPED, TRANSPOSE},
+    sealed::{DIRECT, STRIPED, TRANSPOSE, VECTORIZE},
 };
 use crate::{Alignment, Numeric, SupportedAlignment, ThreadData};
 use cuda_device::{CollectiveTiles, DisjointSlice, library, thread};
@@ -26,6 +26,15 @@ registration!(striped_load_masked, "COOP_STRIPED_VALIDITY_LOAD_MASKED");
 registration!(striped_load_filled, "COOP_STRIPED_VALIDITY_LOAD_FILLED");
 registration!(striped_store_full, "COOP_STRIPED_VALIDITY_STORE_FULL");
 registration!(striped_store_partial, "COOP_STRIPED_VALIDITY_STORE_PARTIAL");
+
+registration!(vectorize_load_full, "COOP_VECTORIZE_VALIDITY_LOAD_FULL");
+registration!(vectorize_load_masked, "COOP_VECTORIZE_VALIDITY_LOAD_MASKED");
+registration!(vectorize_load_filled, "COOP_VECTORIZE_VALIDITY_LOAD_FILLED");
+registration!(vectorize_store_full, "COOP_VECTORIZE_VALIDITY_STORE_FULL");
+registration!(
+    vectorize_store_partial,
+    "COOP_VECTORIZE_VALIDITY_STORE_PARTIAL"
+);
 
 registration!(transpose_load_full, "COOP_TRANSPOSE_VALIDITY_LOAD_FULL");
 registration!(transpose_load_masked, "COOP_TRANSPOSE_VALIDITY_LOAD_MASKED");
@@ -106,7 +115,7 @@ pub(super) unsafe fn load<
     // Each static algorithm keeps its registration function-item identity. The
     // storage marker plans the complete provider layout and synchronizes reuse.
     macro_rules! call {
-        ($direct:ident, $striped:ident, $transpose:ident, $controls:expr) => {
+        ($direct:ident, $striped:ident, $vectorize:ident, $transpose:ident, $controls:expr) => {
             match A::KIND {
                 DIRECT => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
                     $direct, memory, $controls, payload,
@@ -114,6 +123,11 @@ pub(super) unsafe fn load<
                 STRIPED => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
                     $striped, memory, $controls, payload,
                 ),
+                VECTORIZE => {
+                    library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
+                        $vectorize, memory, $controls, payload,
+                    )
+                }
                 TRANSPOSE => {
                     library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
                         $transpose,
@@ -136,6 +150,7 @@ pub(super) unsafe fn load<
             (None, None) => call!(
                 load_full,
                 striped_load_full,
+                vectorize_load_full,
                 transpose_load_full,
                 (pointer,)
             ),
@@ -143,6 +158,7 @@ pub(super) unsafe fn load<
                 call!(
                     load_masked,
                     striped_load_masked,
+                    vectorize_load_masked,
                     transpose_load_masked,
                     (pointer, count as i32)
                 )
@@ -150,6 +166,7 @@ pub(super) unsafe fn load<
             (Some(count), Some(default)) => call!(
                 load_filled,
                 striped_load_filled,
+                vectorize_load_filled,
                 transpose_load_filled,
                 (pointer, count as i32, default)
             ),
@@ -187,7 +204,7 @@ pub(super) fn store<
     unsafe {
         let pointer = pointer.add(options.offset);
         macro_rules! call {
-            ($direct:ident, $striped:ident, $controls:expr) => {
+            ($direct:ident, $striped:ident, $vectorize:ident, $controls:expr) => {
                 match A::KIND {
                     DIRECT => {
                         library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
@@ -205,16 +222,30 @@ pub(super) fn store<
                             payload,
                         )
                     }
+                    VECTORIZE => {
+                        library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
+                            $vectorize,
+                            destination,
+                            $controls,
+                            payload,
+                        )
+                    }
                     // Only the shared-preserving Store implementations call this boundary.
                     _ => panic!(),
                 }
             };
         }
         match options.valid_items {
-            None => call!(store_full, striped_store_full, (pointer,)),
+            None => call!(
+                store_full,
+                striped_store_full,
+                vectorize_store_full,
+                (pointer,)
+            ),
             Some(count) => call!(
                 store_partial,
                 striped_store_partial,
+                vectorize_store_partial,
                 (pointer, count as i32)
             ),
         }

@@ -22,6 +22,7 @@ fn main() {
     ] {
         for (algorithm, prefix) in [
             (Algorithm::Striped, "STRIPED"),
+            (Algorithm::Vectorize, "VECTORIZE"),
             (Algorithm::Transpose, "TRANSPOSE"),
         ] {
             let value = oxide::registration(&executable, operation, algorithm)

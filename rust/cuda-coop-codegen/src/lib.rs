@@ -11,15 +11,17 @@
 //! # Supported specializations
 //!
 //! [`Request`] describes an exact complete block shape, positive fixed
-//! items per thread, and [`Algorithm::Direct`], [`Algorithm::Striped`] or
-//! [`Algorithm::Transpose`].
-//! The raw i32 recipes support all three algorithms. Their Store payloads must
+//! items per thread, and [`Algorithm::Direct`], [`Algorithm::Striped`],
+//! [`Algorithm::Vectorize`] or [`Algorithm::Transpose`].
+//! The raw i32 recipes support all four algorithms. Their Store payloads must
 //! be fully initialized. The validity-aware recipes support all ten
 //! [`Dtype`] variants with separate value storage and packed per-slot validity bits.
-//! Masked Load resets validity outside its prefix; Direct/Striped Store preserves both
+//! Masked Load resets validity outside its prefix; Direct/Striped/Vectorize Store preserves both
 //! arrays and checks initialization only in its write domain. Transpose Store
 //! replaces each lane's blocked payload and validity with striped items across
-//! the block, including when its write count is zero.
+//! the block, including when its write count is zero. Full Vectorize operations
+//! use numeric local arrays after full initialization or complete Store preflight;
+//! counted Vectorize overloads retain the opaque Direct path.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -94,18 +96,22 @@ pub enum Algorithm {
     Direct,
     /// Thread `t` accesses item `i` at `t + block_threads * i`, without scratch.
     Striped,
+    /// Blocked access with aligned vector operations for full tiles.
+    /// Misaligned pointers and counted overloads use Direct accesses.
+    Vectorize,
     /// Coalesced access with shared-memory transposition to/from blocked layout.
     Transpose,
 }
 impl Algorithm {
     fn scratch_free(self) -> bool {
-        matches!(self, Self::Direct | Self::Striped)
+        matches!(self, Self::Direct | Self::Striped | Self::Vectorize)
     }
 
     fn token(self) -> &'static str {
         match self {
             Self::Direct => "DIRECT",
             Self::Striped => "STRIPED",
+            Self::Vectorize => "VECTORIZE",
             Self::Transpose => "TRANSPOSE",
         }
     }
@@ -404,7 +410,7 @@ pub struct Layout {
 /// code traps on invalid counts. A filled Load's default is also block-uniform.
 /// Transpose scratch satisfies [`Self::scratch`] and cannot alias another live
 /// region. The caller synchronizes before reuse, including loop iterations;
-/// the provider does not add a trailing reuse barrier. Direct and Striped ignore scratch,
+/// the provider does not add a trailing reuse barrier. Direct, Striped and Vectorize ignore scratch,
 /// so a null pointer is permitted for that argument only. All providers return
 /// unit; loads fill payloads in place and stores write memory.
 ///
@@ -414,7 +420,7 @@ pub struct Layout {
 /// initialized array of `items_per_thread.div_ceil(8)` bytes. Bit `i % 8` of
 /// byte `i / 8` denotes whether slot `i` is initialized. Both arrays are private
 /// to the lane, disjoint from memory/scratch and one another. Load exclusively
-/// borrows both arrays; Direct/Striped Store receives const pointers and borrows them
+/// borrows both arrays; Direct/Striped/Vectorize Store receives const pointers and borrows them
 /// read-only. Transpose Store exclusively borrows both arrays and returns their
 /// permutation: destination `(lane, item)` receives source
 /// `((block_threads * item + lane) / items_per_thread,
@@ -437,7 +443,7 @@ pub struct Specialization {
     /// Actual CUB TempStorage sizeof/alignof from the same NVRTC program.
     pub cub_layout: Layout,
     /// Complete shared region, including any validity plane and padding.
-    /// Direct and Striped use zero bytes despite their empty C++ types' sizeof=1.
+    /// Direct, Striped and Vectorize use zero bytes despite their empty C++ types' sizeof=1.
     pub scratch: Layout,
     /// Whether this specialization accesses no shared scratch or scratch-reuse barrier.
     pub scratch_free: bool,
@@ -625,6 +631,13 @@ impl Provider {
 fn source(request: Request, symbol: &str) -> String {
     let op = request.operation;
     let transpose = request.algorithm == Algorithm::Transpose;
+    // CUB's full vectorized overload requires the same numeric T for the
+    // global pointer and local array. Counted overloads keep opaque cells.
+    let numeric_full = request.algorithm == Algorithm::Vectorize
+        && matches!(
+            op,
+            Operation::LoadFullValidity | Operation::StoreFullValidity
+        );
     let (header, primitive, algorithm, qualifier, method) = if op.is_load() {
         ("load", "BlockLoad", "BLOCK_LOAD", "const ", "Load")
     } else {
@@ -683,6 +696,11 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
         ""
     };
     let (cell, flags, body) = if op.validity() {
+        let cell_bytes = if numeric_full {
+            "&values[i]"
+        } else {
+            "values[i].bytes"
+        };
         let domain = if matches!(
             op,
             Operation::LoadMaskedValidity | Operation::StorePartialValidity
@@ -701,7 +719,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
   operation.Load(memory, values{operands});
 #pragma unroll
   for (int i = 0; i < {items}; ++i) {{
-    if ({domain}) cuda::std::memcpy(bytes + sizeof(value_type) * i, values[i].bytes, sizeof(value_type));
+    if ({domain}) cuda::std::memcpy(bytes + sizeof(value_type) * i, {cell_bytes}, sizeof(value_type));
   }}
 #pragma unroll
   for (int byte = 0; byte < {bitmap_bytes}; ++byte) {{
@@ -716,7 +734,8 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
             )
         } else {
             // The general Store permutes all source slots, including initialized
-            // slots outside its write domain. Direct/Striped only need their write domain.
+            // slots outside its write domain. Nonmutating algorithms only
+            // need their write domain, checked before any numeric copy below.
             let copy_domain = if transpose { "true" } else { &domain };
             let prepare = if mask_plane {
                 format!(
@@ -797,13 +816,17 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
   cell values[{items}];
 #pragma unroll
   for (int i = 0; i < {items}; ++i) {{
-    if ({copy_domain}) cuda::std::memcpy(values[i].bytes, bytes + sizeof(value_type) * i, sizeof(value_type));
+    if ({copy_domain}) cuda::std::memcpy({cell_bytes}, bytes + sizeof(value_type) * i, sizeof(value_type));
   }}
   operation.Store({memory}, values{operands});{restore}"#
             )
         };
         (
-            "cuda_coop_detail::opaque_cell<value_type>",
+            if numeric_full {
+                "value_type"
+            } else {
+                "cuda_coop_detail::opaque_cell<value_type>"
+            },
             if op.is_load() || transpose {
                 ", unsigned char* flags"
             } else {

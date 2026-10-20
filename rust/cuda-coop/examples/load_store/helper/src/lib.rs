@@ -36,23 +36,44 @@ pub fn copy_with_algorithm<T: coop::Numeric, const ITEMS_PER_THREAD: usize, A: c
     algorithm: A,
 ) {
     let mut values = coop::ThreadData::<_, ITEMS_PER_THREAD>::new();
-    coop::load(
-        block,
-        input,
-        &mut values,
-        coop::LoadOptions::default()
-            .valid_items(valid)
-            .oob_default(default)
-            .offset(offset)
-            .algorithm(algorithm),
-    );
-    coop::store(
-        block,
-        output,
-        &mut values,
-        coop::StoreOptions::default()
-            .valid_items(valid)
-            .offset(offset)
-            .algorithm(algorithm),
-    );
+    // Full calls let Vectorize use wide accesses for complete tiles. Its counted
+    // calls retain CUB's guarded Direct path for the final partial tile.
+    if valid == block.count() as usize * ITEMS_PER_THREAD {
+        coop::load(
+            block,
+            input,
+            &mut values,
+            coop::LoadOptions::default()
+                .offset(offset)
+                .algorithm(algorithm),
+        );
+        coop::store(
+            block,
+            output,
+            &mut values,
+            coop::StoreOptions::default()
+                .offset(offset)
+                .algorithm(algorithm),
+        );
+    } else {
+        coop::load(
+            block,
+            input,
+            &mut values,
+            coop::LoadOptions::default()
+                .valid_items(valid)
+                .oob_default(default)
+                .offset(offset)
+                .algorithm(algorithm),
+        );
+        coop::store(
+            block,
+            output,
+            &mut values,
+            coop::StoreOptions::default()
+                .valid_items(valid)
+                .offset(offset)
+                .algorithm(algorithm),
+        );
+    }
 }

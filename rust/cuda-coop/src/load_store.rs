@@ -18,6 +18,15 @@ pub struct Direct;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Striped;
 
+/// Blocked access using aligned vector operations for full tiles.
+///
+/// CUB checks the actual pointer after the element offset and falls back to
+/// Direct access when it is not sufficiently aligned. Counts, including a
+/// full-tile count, select Direct accesses. No extra alignment precondition or
+/// shared scratch is required. Store preserves every payload value and bit.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Vectorize;
+
 /// Coalesced access through CUB's shared-memory block exchange.
 ///
 /// Load produces blocked payloads. Store permutes payload values and validity
@@ -44,12 +53,16 @@ pub struct Transpose;
 pub trait Algorithm: sealed::Algorithm + Copy {}
 impl Algorithm for Direct {}
 impl Algorithm for Striped {}
+impl Algorithm for Vectorize {}
 impl Algorithm for Transpose {}
 impl sealed::Algorithm for Direct {
     const KIND: u8 = sealed::DIRECT;
 }
 impl sealed::Algorithm for Striped {
     const KIND: u8 = sealed::STRIPED;
+}
+impl sealed::Algorithm for Vectorize {
+    const KIND: u8 = sealed::VECTORIZE;
 }
 impl sealed::Algorithm for Transpose {
     const KIND: u8 = sealed::TRANSPOSE;
@@ -176,16 +189,16 @@ impl<A: Algorithm> StoreOptions<A> {
 ///
 /// `T` is inferred from `source`; `ITEMS` is the positive per-thread extent and
 /// `ALIGN` is the payload's minimum alignment. The tile has
-/// `group.count() * ITEMS` elements. Direct and Transpose give each thread
+/// `group.count() * ITEMS` elements. Direct, Vectorize and Transpose give each thread
 /// consecutive items; Striped gives it items separated by the block size.
 /// [`LoadSource`] accepts an immutable slice or a mutable borrow of a collective
 /// carrier. [`LoadOptions`] supplies the count, typed default and element offset.
-/// The operation returns unit. [`Direct`] and [`Striped`] use no shared scratch; [`Transpose`]
+/// The operation returns unit. [`Direct`], [`Striped`] and [`Vectorize`] use no shared scratch; [`Transpose`]
 /// uses compiler-planned shared storage and returns the same blocked layout.
 ///
-/// Complete one-, two- and three-dimensional blocks support all three algorithms.
+/// Complete one-, two- and three-dimensional blocks support all four algorithms.
 /// Thread rank is x-fastest: `t = x + X * (y + Y * z)` for shape `[X, Y, Z]`.
-/// Slot `i` addresses `t * ITEMS + i` for Direct/Transpose Load and
+/// Slot `i` addresses `t * ITEMS + i` for Direct/Vectorize/Transpose Load and
 /// `t + group.count() * i` for Striped Load, relative to the selected offset.
 /// Compile with the supported Oxide backend and an exact block launch contract.
 /// Every block thread must reach matching calls with uniform source, controls
@@ -226,12 +239,12 @@ pub fn load<T: Numeric, S: LoadSource<T>, const ITEMS: usize, const ALIGN: usize
 /// Store a block tile from a per-thread payload.
 ///
 /// `T` is inferred from the destination and value. [`StoreValue`] accepts a
-/// shared or mutable borrow of [`ThreadData`] for [`Direct`] and [`Striped`], a
+/// shared or mutable borrow of [`ThreadData`] for [`Direct`], [`Striped`] and [`Vectorize`], a
 /// mutable borrow for [`Transpose`], or a numeric scalar (one item per thread)
 /// for any algorithm.
 /// `CAPACITY` describes the carrier's ownership grain; it need not equal the
-/// payload extent. Direct consumes blocked items; Striped consumes striped items.
-/// Both preserve every value and initialized bit and use no shared scratch.
+/// payload extent. Direct and Vectorize consume blocked items; Striped consumes striped items.
+/// These algorithms preserve every value and initialized bit and use no shared scratch.
 /// Transpose uses compiler-planned shared storage and permutes all payload slots
 /// into striped order, including a zero-count Store. Destination lane/item
 /// `(t, i)` receives the prior blocked slot at linear index `group.count()*i+t`.
@@ -336,8 +349,8 @@ impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, Col
 /// A sealed per-thread value accepted by [`store`] for type `T` and algorithm `A`.
 ///
 /// Numeric scalars and mutable [`ThreadData`] borrows support all algorithms.
-/// Shared payload borrows support [`Direct`] and [`Striped`]. A scalar contributes
-/// one item per thread. Direct and Striped preserve every value and bit;
+/// Shared payload borrows support [`Direct`], [`Striped`] and [`Vectorize`]. A scalar contributes
+/// one item per thread. These algorithms preserve every value and bit;
 /// [`Transpose`] mutates their
 /// positions as described by [`store`].
 pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A> {
@@ -377,6 +390,7 @@ macro_rules! shared_store_value {
 }
 shared_store_value!(Direct);
 shared_store_value!(Striped);
+shared_store_value!(Vectorize);
 impl<T: Numeric, const I: usize, const ALIGN: usize, A: Algorithm> sealed::StoreValue<T, A>
     for &mut ThreadData<T, I, ALIGN>
 where
@@ -402,6 +416,9 @@ where
             }
             sealed::STRIPED => {
                 boundary::store(destination, self, options.algorithm(Striped));
+            }
+            sealed::VECTORIZE => {
+                boundary::store(destination, self, options.algorithm(Vectorize));
             }
             sealed::TRANSPOSE => {
                 boundary::store_transpose(destination, self, options.algorithm(Transpose));
@@ -433,6 +450,7 @@ mod sealed {
     pub const DIRECT: u8 = 0;
     pub const STRIPED: u8 = 1;
     pub const TRANSPOSE: u8 = 2;
+    pub const VECTORIZE: u8 = 3;
     pub trait Algorithm {
         const KIND: u8;
     }

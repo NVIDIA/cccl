@@ -6,8 +6,8 @@ Block Load and Store
 
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
-first. Complete one-, two- and three-dimensional blocks support Direct, Striped
-and Transpose algorithms. Direct and Transpose Load produce blocked payloads,
+first. Complete one-, two- and three-dimensional blocks support Direct, Striped,
+Vectorize and Transpose algorithms. Direct, Vectorize and Transpose Load produce blocked payloads,
 where each thread owns consecutive elements. Striped Load gives each thread
 elements separated by the block size. Other algorithms, warp
 groups, and public temporary storage remain under development.
@@ -21,7 +21,7 @@ A complete program
 ------------------
 
 The example is an independent Cargo workspace with a separate generic helper
-crate. It copies three block tiles with Direct, Striped and Transpose at item counts 1
+crate. It copies three block tiles with Direct, Striped, Vectorize and Transpose at item counts 1
 and 4, including a short last tile. The consumer has no build script, native
 shim, provider, or scratch argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
@@ -41,7 +41,7 @@ Choose the architecture for your GPU. Materialization produces the native device
 artifact during the Cargo build. No separate compilation or linking step is
 required. The exact block launch contract is checked when preparing the launch;
 ``auto_shared`` uses the compiler's inferred requirement, which is zero for
-Direct and Striped Load/Store and includes the planned shared storage for Transpose.
+Direct, Striped and Vectorize Load/Store and includes the planned shared storage for Transpose.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/src/main.rs
    :language: rust
@@ -84,8 +84,8 @@ the source's numeric type. Filled Load initializes every slot, including the
 missing tail. Partial Store writes only its selected prefix and requires only
 those slots to be initialized.
 
-Direct and Striped Store accept ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
-or a scalar numeric value. A scalar contributes one item per thread. Both preserve every payload value
+Direct, Striped and Vectorize Store accept ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
+or a scalar numeric value. A scalar contributes one item per thread. All three preserve every payload value
 and validity bit, including
 initialized slots outside their write domain.
 
@@ -113,6 +113,15 @@ payload, including a zero-count Store and initialized slots outside its prefix.
        coop::LoadOptions::default().algorithm(coop::Striped));
    coop::store(block, output, &values,
        coop::StoreOptions::default().algorithm(coop::Striped));
+
+Vectorize preserves blocked payload order and uses no shared scratch. Full
+Load and Store can use wide accesses when the numeric type, item count and
+actual offset-adjusted pointer permit them. CUB falls back to Direct access
+when the pointer is not sufficiently aligned; ordinary scalar alignment is
+enough to call the operation. A counted overload uses Direct access even when
+its count equals the tile size. Filled Load is also counted. The example helper
+uses full calls for complete tiles and counted calls for its final short tile.
+Its Store accepts a shared payload borrow and preserves values and validity.
 
 Transpose uses CUB's coalesced accesses and shared block exchange. Its Store
 requires a mutable payload borrow and permutes every value and initialized bit
@@ -179,7 +188,7 @@ replacing them with unchanged or older timestamps may require an explicit
 rebuild. Crate publication is not supported yet.
 
 The rustdoc entries for ``load``, ``store``, ``LoadOptions``, ``StoreOptions``,
-``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct``, ``Striped`` and ``Transpose`` specify their full generic signatures and
+``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct``, ``Striped``, ``Vectorize`` and ``Transpose`` specify their full generic signatures and
 supported argument forms. Native correctness and artifact checks are separate
 from host compilation. Performance qualification for masked payload access is
 ongoing; the current implementation makes no negligible-overhead claim.

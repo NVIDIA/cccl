@@ -4,6 +4,7 @@
 use coop::{Numeric, ThreadData, this_block};
 mod striped;
 mod transpose;
+mod vectorize;
 
 use cuda_coop as coop;
 use cuda_device::{CollectiveTiles, DisjointSlice, kernel, launch_contract, thread};
@@ -366,6 +367,12 @@ mod kernels {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(argument) = std::env::args().nth(1) {
+        if argument == "vectorize" {
+            return vectorize::run(None);
+        }
+        if argument.starts_with("vectorize-") {
+            return vectorize::run(Some(&argument));
+        }
         if argument == "striped" {
             return striped::run(None);
         }
