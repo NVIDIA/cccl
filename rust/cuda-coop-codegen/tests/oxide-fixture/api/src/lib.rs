@@ -4,6 +4,9 @@
 //! Private unsafe fixture wrappers, with no public collective API contract.
 #![no_std]
 
+#[cfg(feature = "carrier")]
+pub mod carrier;
+
 macro_rules! registration {
     ($name:ident, $variable:literal) => {
         fn $name() -> &'static str {

@@ -77,3 +77,31 @@ before the first Load or between that Load and its scratch-reuse barrier.
 Both runs must terminate with a CUDA execution error, without the success
 message. These negative modes check the compiler's bounds-failure abort path;
 the normal numerical run uses neither mode.
+
+Add `--carrier` to run the separate private scratch-free carrier slice. Its safe
+fixture wrappers use `DisjointSlice<i32, CollectiveTiles<4>>` and initialized
+lane-local arrays. The compiler tracks the original kernel allocations through
+direct helpers, joins and explicit `while` loops, and requires a full-block
+barrier before conflicting reuse. The wrapper checks the supplied offset and
+extent against a fixed per-block ownership tile; changing an operation's item
+count never repartitions that allocation. The carrier exposes no safe lane
+reference or conversion to an ordinary slice.
+
+This bounded route covers only canonical full-block Direct Load/Store. Arbitrary
+offsets retain their meaning and must fit the owning tile. The raw unsafe marker
+remains available for other ownership mappings. Warp groups, reservations,
+explicit scratch, public payload validity, descriptor mutation through references
+and unresolved allocation identities are outside this fixture's supported slice.
+The numerical checks include shifted offsets, zero/tail/full counts, item counts
+1 and 4 in one kernel, Store/barrier/Load cycles and owned async completion.
+
+```sh
+python3 rust/cuda-coop-codegen/tests/check_carrier_rejections.py \
+  /path/to/carrier-evidence-directory
+```
+
+This command checks missing and conditional barriers, loop backedges, divergent
+controls, descriptor/reference mutation, ambiguous origins and mixed markers,
+with positive cases for independent allocations and barriers in helpers. The
+native carrier binary also accepts `overlap` or `bounds`; each invocation must
+fail through a device trap, before an invalid native access.

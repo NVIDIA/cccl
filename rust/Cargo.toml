@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [workspace]
-members = ["cuda-coop-codegen"]
+members = ["cuda-coop", "cuda-coop-codegen"]
 resolver = "3"
 
 [workspace.package]

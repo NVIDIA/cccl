@@ -37,6 +37,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "cuda-coop"
+version = "0.0.0"
+dependencies = [
+ "cuda-device",
+]
+
+[[package]]
 name = "cuda-coop-codegen"
 version = "0.0.0"
 dependencies = [
@@ -44,6 +51,26 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+]
+
+[[package]]
+name = "cuda-device"
+version = "0.2.1"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6#8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6"
+dependencies = [
+ "cuda-macros",
+]
+
+[[package]]
+name = "cuda-macros"
+version = "0.2.1"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6#8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6"
+dependencies = [
+ "oxide-tile-export",
+ "proc-macro2",
+ "quote",
+ "reserved-oxide-symbols",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -95,6 +122,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
+name = "oxide-tile-export"
+version = "0.2.1"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6#8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -111,6 +148,11 @@ checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "reserved-oxide-symbols"
+version = "0.2.1"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6#8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6"
 
 [[package]]
 name = "serde"
@@ -139,7 +181,7 @@ checksum = "e7a5d71263a5a7d47b41f6b3f06ba276f10cc18b0931f1799f710578e2309348"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 3.0.9",
 ]
 
 [[package]]
@@ -168,6 +210,17 @@ dependencies = [
 
 [[package]]
 name = "syn"
+version = "2.0.119"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "syn"
 version = "3.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b"
@@ -175,6 +228,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "thiserror"
+version = "2.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.9",
 ]
 
 [[package]]

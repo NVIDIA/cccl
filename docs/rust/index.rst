@@ -4,11 +4,18 @@
 Rust development
 ================
 
-The Rust workspace contains the native host compiler foundation for ``cuda.coop``.
-Its private ``cuda-coop-codegen`` crate specializes CUB block operations and returns
+The Rust workspace contains per-thread payloads, CUDA group queries, and the
+native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
+``ThreadData`` values and physical/mapped hierarchy queries; see :doc:`payload`
+and :doc:`groups`. Its private ``cuda-coop-codegen`` crate
+specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
 compiler integration development; an application-facing Rust device API is still
 under development. The crate is unpublished and its interface can change.
+
+Device code uses the pinned Oxide dependency and ``nightly-2026-10-11``.
+The host provider supports Rust 1.85 independently; validate it with
+``cargo +1.85.0 test -p cuda-coop-codegen --locked`` from ``rust/``.
 
 The workspace is separate from CCCL's CMake build. Building the existing C++
 libraries does not require Rust, and the provider does not depend on Python.
@@ -107,3 +114,9 @@ mutation, and collective requirements. Open ``rust/target/doc/cuda_coop_codegen/
 after the documentation command above, or run ``cargo doc --no-deps --open`` from
 ``rust/``. Device discovery, lowering, linking, launch enforcement, and Cargo
 invalidation of external compiler inputs belong to the compiler integration.
+
+.. toctree::
+   :maxdepth: 1
+
+   payload
+   groups
