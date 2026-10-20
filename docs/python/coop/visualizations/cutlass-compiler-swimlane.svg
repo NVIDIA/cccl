@@ -1,0 +1,117 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-handoffs-overview-title cutlass-handoffs-overview-desc" viewBox="0 0 1024 1973">
+  <title id="cutlass-handoffs-overview-title">Compilation handoffs: overview</title>
+  <desc id="cutlass-handoffs-overview-desc">Read from top to bottom. Provider symbols and link inputs are available before the final cubin and kernel handle.</desc>
+  <defs>
+    <marker id="cutlass-handoffs-overview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
+    </marker>
+  </defs>
+  <rect width="1024" height="1973" fill="#ffffff"/>
+  <rect x="4" y="0" width="254" height="1972.0000000000002" fill="#e9f2fb" fill-opacity="0.34"/>
+  <text x="131" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">CuTe compiler</text>
+  <rect x="258" y="0" width="254" height="1972.0000000000002" fill="#e5f1d7" fill-opacity="0.34"/>
+  <line x1="258" x2="258" y1="0" y2="1972.0000000000002" stroke="#d2dbe5" stroke-width="1"/>
+  <text x="385" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">cuda.coop</text>
+  <rect x="512" y="0" width="254" height="1972.0000000000002" fill="#fff0c9" fill-opacity="0.34"/>
+  <line x1="512" x2="512" y1="0" y2="1972.0000000000002" stroke="#d2dbe5" stroke-width="1"/>
+  <text x="639" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">NVRTC</text>
+  <rect x="766" y="0" width="254" height="1972.0000000000002" fill="#e7dff4" fill-opacity="0.34"/>
+  <line x1="766" x2="766" y1="0" y2="1972.0000000000002" stroke="#d2dbe5" stroke-width="1"/>
+  <text x="893" y="22" text-anchor="middle" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">nvJitLink</text>
+  <g data-node="Trace the kernel" role="group" aria-label="CuTe compiler. Trace the kernel. Build typed IR with symbolic values.">
+    <rect x="12" y="76" width="238" height="108.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="112.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Trace the kernel</text>
+    <text x="24" y="141.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Build typed IR with</text>
+    <text x="24" y="170.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbolic values.</text>
+  </g>
+  <path d="M131 187.4V236.4H385V248.4" marker-end="url(#cutlass-handoffs-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="160.58131408691406" y="209.4" width="194.83737182617188" height="27" fill="#ffffff"/>
+  <text x="258" y="227.4" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Values + exact launch facts</text>
+  <g data-node="Plan calls and collect provider requests" role="group" aria-label="cuda.coop. Plan calls and collect provider requests. Select each provider's symbol and ABI.. Record any deferred scratch uses.">
+    <rect x="266" y="251.4" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="288.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Plan calls and collect</text>
+    <text x="278" y="317" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">provider requests</text>
+    <text x="278" y="345.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Select each provider's</text>
+    <text x="278" y="374.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbol and ABI.</text>
+    <text x="278" y="403.40000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Record any deferred</text>
+    <text x="278" y="432.20000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">scratch uses.</text>
+  </g>
+  <path d="M385 449.20000000000005V498.20000000000005H131V510.20000000000005" marker-end="url(#cutlass-handoffs-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="160.22348022460938" y="471.20000000000005" width="195.55303955078125" height="27" fill="#ffffff"/>
+  <text x="258" y="489.20000000000005" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Symbol + types + operands</text>
+  <g data-node="Emit the external calls" role="group" aria-label="CuTe compiler. Emit the external calls. Continue tracing the rest of the kernel.">
+    <rect x="12" y="513.2" width="238" height="108.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="550" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Emit the external calls</text>
+    <text x="24" y="578.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Continue tracing the rest</text>
+    <text x="24" y="607.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">of the kernel.</text>
+  </g>
+  <path d="M131 624.6V673.6H385V685.6" marker-end="url(#cutlass-handoffs-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="197.4828338623047" y="646.6" width="121.03433227539062" height="27" fill="#ffffff"/>
+  <text x="258" y="664.6" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Completed trace</text>
+  <g data-node="Finalize one provider session" role="group" aria-label="cuda.coop. Finalize one provider session. Deduplicate requests. Render one C++ unit.. Add scratch-layout queries where needed.">
+    <rect x="266" y="688.6" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="725.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Finalize one provider</text>
+    <text x="278" y="754.1999999999999" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">session</text>
+    <text x="278" y="782.9999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Deduplicate requests.</text>
+    <text x="278" y="811.7999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Render one C++ unit.</text>
+    <text x="278" y="840.5999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Add scratch-layout queries</text>
+    <text x="278" y="869.3999999999997" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">where needed.</text>
+  </g>
+  <path d="M385 886.4000000000001V935.4000000000001H639V947.4000000000001" marker-end="url(#cutlass-handoffs-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="436.7009582519531" y="908.4000000000001" width="150.59808349609375" height="27" fill="#ffffff"/>
+  <text x="512" y="926.4000000000001" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">C++ + layout queries</text>
+  <g data-node="Compile the bundle" role="group" aria-label="NVRTC. Compile the bundle. One NVRTC program on a cache miss.">
+    <rect x="520" y="950.4000000000001" width="238" height="108.4" rx="7" fill="#fff0c9" stroke="#68798b" stroke-width="1"/>
+    <text x="532" y="987.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Compile the bundle</text>
+    <text x="532" y="1016" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">One NVRTC program on a</text>
+    <text x="532" y="1044.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">cache miss.</text>
+  </g>
+  <path d="M639 1061.8000000000002V1110.8000000000002H385V1122.8000000000002" marker-end="url(#cutlass-handoffs-overview-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="419.45230865478516" y="1083.8000000000002" width="185.0953826904297" height="27" fill="#ffffff"/>
+  <text x="512" y="1101.8000000000002" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Provider LTO-IR + layouts</text>
+  <g data-node="Finish scratch and link inputs" role="group" aria-label="cuda.coop. Finish scratch and link inputs. Allocate scratch. Replace temporary operands.. Attach the retained LTO-IR path.">
+    <rect x="266" y="1125.8000000000002" width="238" height="194.8" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="278" y="1162.6000000000001" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Finish scratch and link</text>
+    <text x="278" y="1191.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">inputs</text>
+    <text x="278" y="1220.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Allocate scratch. Replace</text>
+    <text x="278" y="1249" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">temporary operands.</text>
+    <text x="278" y="1277.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Attach the retained LTO-IR</text>
+    <text x="278" y="1306.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">path.</text>
+  </g>
+  <path d="M385 1323.6000000000001V1372.6000000000001H131V1384.6000000000001" marker-end="url(#cutlass-handoffs-overview-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="184.4273910522461" y="1345.6000000000001" width="147.1452178955078" height="27" fill="#ffffff"/>
+  <text x="258" y="1363.6000000000001" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Final IR + link inputs</text>
+  <g data-node="Compile the kernel" role="group" aria-label="CuTe compiler. Compile the kernel. Hash and build the finalized module.. Lower and optimize the completed IR.">
+    <rect x="12" y="1387.6000000000001" width="238" height="166" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="1424.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Compile the kernel</text>
+    <text x="24" y="1453.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Hash and build the</text>
+    <text x="24" y="1482" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">finalized module.</text>
+    <text x="24" y="1510.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Lower and optimize the</text>
+    <text x="24" y="1539.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">completed IR.</text>
+  </g>
+  <path d="M131 1556.6000000000001V1605.6000000000001H893V1617.6000000000001" marker-end="url(#cutlass-handoffs-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="422.44629669189453" y="1578.6000000000001" width="179.10740661621094" height="27" fill="#ffffff"/>
+  <text x="512" y="1596.6000000000001" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Kernel + provider LTO-IR</text>
+  <g data-node="Link and optimize" role="group" aria-label="nvJitLink. Link and optimize. Resolve or inline provider symbols.. Produce a cubin.">
+    <rect x="774" y="1620.6000000000001" width="238" height="137.2" rx="7" fill="#e7dff4" stroke="#68798b" stroke-width="1"/>
+    <text x="786" y="1657.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Link and optimize</text>
+    <text x="786" y="1686.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Resolve or inline provider</text>
+    <text x="786" y="1715" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">symbols.</text>
+    <text x="786" y="1743.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Produce a cubin.</text>
+  </g>
+  <path d="M893 1760.8000000000002V1809.8000000000002H131V1821.8000000000002" marker-end="url(#cutlass-handoffs-overview-arrow)" stroke-dasharray="5 4" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <rect x="464.7451477050781" y="1782.8000000000002" width="94.50970458984375" height="27" fill="#ffffff"/>
+  <text x="512" y="1800.8000000000002" text-anchor="middle" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#172b3a">Linked cubin</text>
+  <g data-node="Load and launch" role="group" aria-label="CuTe compiler. Load and launch. Obtain the kernel entry.. Reuse the compiled kernel on later calls.">
+    <rect x="12" y="1824.8000000000002" width="238" height="137.2" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="24" y="1861.6000000000001" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Load and launch</text>
+    <text x="24" y="1890.4" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Obtain the kernel entry.</text>
+    <text x="24" y="1919.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Reuse the compiled kernel</text>
+    <text x="24" y="1948" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">on later calls.</text>
+  </g>
+</svg>

@@ -4,16 +4,18 @@
 
 """Describe explicit scratch storage for compiler-supported block operations.
 
-The constructor marks a request inside a GPU kernel. A compiler that supports
-explicit scratch collects the descriptor's uses to choose shared-memory space
-and any requested reuse barriers. The Python body raises an error outside a
-supported kernel; it never allocates storage.
+The constructor describes a scratch request inside a GPU kernel. A tracing
+compiler, such as CUTLASS, runs this body, which returns the active backend's
+descriptor. Other compilers recognize the call directly. Without an active
+compiler environment, the call raises. It never allocates storage; the
+compiler chooses shared-memory space and any requested reuse barriers from
+the descriptor's uses.
 """
 
 from __future__ import annotations
 
-from ..thread_group import CoopCompilerContextRequiredError
-from ._payload import TempStorageLike
+from ._dispatch import _backend_member
+from ._payload import TempStorageLike, _normalize_alignment
 
 
 def TempStorage(
@@ -28,8 +30,8 @@ def TempStorage(
     Construct the descriptor inside the kernel and pass it as
     ``temp_storage`` to operations that accept explicit block scratch.
     ``descriptor.reserve(num_elems, dtype, alignment=...)`` also obtains typed
-    shared arrays for application or library data in supported backends.
-    See :ref:`temporary storage <coop-temp-storage>` for supported operations,
+    shared arrays or tensors for application or library data.
+    See :ref:`temporary storage <coop-common-storage>` for supported operations,
     allocation lifetime, and launch-time shared-memory requirements.
 
     Parameters
@@ -65,7 +67,7 @@ def TempStorage(
     -------
     cuda.coop.TempStorageLike
         Compiler-recognized scratch descriptor. Primitive scratch is opaque;
-        ``reserve()`` returns typed shared arrays that follow the descriptor's
+        ``reserve()`` returns typed shared views that follow the descriptor's
         sharing policy. Use separate descriptors or ``sharing="exclusive"``
         for buffers whose contents must remain live simultaneously. The caller
         synchronizes their accesses and completes asynchronous operations
@@ -83,10 +85,19 @@ def TempStorage(
         :start-after: # temp-storage-example-begin
         :end-before: # temp-storage-example-end
         :dedent: 4
+
+    The :ref:`CUTLASS storage example <coop-cutlass-storage>` demonstrates
+    the same shared/exclusive policies and automatic or explicit reuse
+    synchronization in a CuTe kernel.
     """
 
-    raise CoopCompilerContextRequiredError(
-        "cuda.coop.TempStorage must be called from a supported GPU kernel."
+    alignment = _normalize_alignment(alignment)
+
+    return _backend_member("TempStorage")(
+        size_in_bytes=size_in_bytes,
+        alignment=alignment,
+        auto_sync=auto_sync,
+        sharing=sharing,
     )
 
 

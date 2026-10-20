@@ -65,20 +65,20 @@ it does not serialize the global-memory loads.
 Using Load in a kernel
 ----------------------
 
-This fragment uses the common API inside a Numba-CUDA-MLIR kernel that
-accepts ``items_per_thread``. Import ``cuda`` from ``numba_cuda_mlir``,
-``numpy as np``, and ``cuda.coop as coop``. Launch with 128 threads and
-provide at least ``128 * items_per_thread`` source elements for each block.
+This common-API fragment works in either DSL with the :ref:`kernel-fragment
+setup <coop-visualization-kernels>`. Launch with 128 threads and provide at
+least ``128 * items_per_thread`` source elements for each block.
 
 .. code-block:: python
 
    block = coop.this_block()
    items = coop.ThreadData(items_per_thread)
-   offset = cuda.blockIdx.x * 128 * items_per_thread
+   offset = block_index * 128 * items_per_thread
    coop.load(block, source, items, algorithm="transpose", offset=offset)
    # Each thread owns items_per_thread consecutive values. Load returns None.
 
 For a partial final tile, supply ``valid_items`` and, when needed,
 ``oob_default``. See :func:`cuda.coop.load` for the full parameter contract
-and a complete example, and the :doc:`../programming_guide` for backend
-activation and thread groups.
+and complete :doc:`Numba <../programming_guide>` and
+:ref:`CUTLASS <coop-cutlass-load-store>` examples. Both programming guides
+explain activation and thread groups.

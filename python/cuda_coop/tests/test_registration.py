@@ -17,11 +17,14 @@ def test_register_rejects_unsupported_backend_without_importing(monkeypatch):
     )
 
     with pytest.raises(ValueError, match="Unsupported cuda.coop backend"):
-        coop.register("cutlass")
+        coop.register("unknown-backend")
 
 
-@pytest.mark.parametrize("backend", ["numba-cuda-mlir", "numba_cuda_mlir"])
-def test_register_reports_an_unavailable_adapter(monkeypatch, backend):
+@pytest.mark.parametrize(
+    ("backend", "label"),
+    [("numba-cuda-mlir", "Numba-CUDA-MLIR"), ("cutlass", "CUTLASS")],
+)
+def test_register_reports_an_unavailable_adapter(monkeypatch, backend, label):
     def missing_adapter(name):
         raise ModuleNotFoundError("missing adapter", name=name)
 
@@ -30,12 +33,13 @@ def test_register_reports_an_unavailable_adapter(monkeypatch, backend):
     )
 
     with pytest.raises(
-        ImportError, match="does not include the Numba-CUDA-MLIR adapter"
+        ImportError, match=f"does not include the {label} adapter"
     ):
         coop.register(backend)
 
 
-def test_register_preserves_missing_backend_dependency(monkeypatch):
+@pytest.mark.parametrize("backend", ["numba-cuda-mlir", "cutlass"])
+def test_register_preserves_missing_backend_dependency(monkeypatch, backend):
     error = ModuleNotFoundError("missing dependency", name="backend_dependency")
 
     def broken_adapter(name):
@@ -46,6 +50,25 @@ def test_register_preserves_missing_backend_dependency(monkeypatch):
     )
 
     with pytest.raises(ModuleNotFoundError) as exc_info:
-        coop.register("numba-cuda-mlir")
+        coop.register(backend)
 
     assert exc_info.value is error
+
+
+@pytest.mark.parametrize(
+    ("backend", "module"),
+    [
+        ("numba-cuda-mlir", "cuda.coop.numba_mlir"),
+        ("numba_cuda_mlir", "cuda.coop.numba_mlir"),
+        ("cutlass", "cuda.coop.cutlass"),
+    ],
+)
+def test_register_selects_adapter(monkeypatch, backend, module):
+    imports = []
+    monkeypatch.setattr(
+        _registration.importlib, "import_module", imports.append
+    )
+
+    coop.register(backend)
+
+    assert imports == [module]

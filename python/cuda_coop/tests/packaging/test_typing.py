@@ -5,8 +5,8 @@
 """Check public stubs through isolated valid and invalid consumer programs.
 
 Copy only the imported package's ``.pyi`` stubs and ``py.typed`` marker to a
-temporary root. Then implementation modules and an unrelated installed wheel
-cannot satisfy missing public declarations.
+temporary root. Implementation modules and a separately installed cuda-coop
+then cannot supply missing public declarations.
 """
 
 from __future__ import annotations
@@ -24,7 +24,10 @@ import pytest
 from cuda import coop
 
 _CONSUMER_ROOT = Path(__file__).with_name("typing")
-_VALID_CONSUMERS = ("common_consumer.py", "numba_consumer.py")
+_VALID_CONSUMERS = (
+    "common_consumer.py",
+    "numba_consumer.py",
+)
 
 
 def _mypy_args(cache_dir: Path) -> list[str]:
@@ -75,9 +78,27 @@ def _expected_diagnostics(consumer: Path) -> set[tuple[int, str]]:
     }
 
 
-def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
+@pytest.mark.parametrize("consumer_family", ("common-numba", "cutlass"))
+def test_public_stubs_pass_strict_consumer_type_checks(
+    tmp_path: Path, consumer_family: str
+) -> None:
+    """Check accepted calls and exact expected errors against copied stubs.
+
+    The CUTLASS consumers import real CuTe numeric types, so that case skips
+    when CUTLASS DSL is absent. When CUTLASS is installed, both families use a
+    mypy config that reads its types quietly and skips generated experimental
+    bindings. Copying the stubs and consumers isolates this check from
+    checkout import paths. Negative cases confirm that unsupported call forms
+    are rejected.
+    """
+
     if importlib.util.find_spec("mypy") is None:
         pytest.skip("mypy is not installed")
+    if (
+        consumer_family == "cutlass"
+        and importlib.util.find_spec("cutlass") is None
+    ):
+        pytest.skip("qualified CUTLASS scalar typing requires CUTLASS DSL")
 
     package_root = Path(coop.__file__).parent
     stub_root = tmp_path / "stubs" / "cuda" / "coop"
@@ -86,19 +107,30 @@ def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, destination)
     shutil.copyfile(package_root / "py.typed", stub_root / "py.typed")
-    # Package markers keep an installed wheel from winning namespace lookup.
+    # Prefer the copied stubs even when another cuda.coop wheel is installed.
     (stub_root.parent / "__init__.pyi").touch()
     (stub_root / "_core" / "__init__.pyi").touch()
 
     consumer_root = tmp_path / "consumers"
     consumer_root.mkdir()
     valid_consumers = []
-    for name in _VALID_CONSUMERS:
+    consumer_names = (
+        ("cutlass_consumer.py",)
+        if consumer_family == "cutlass"
+        else _VALID_CONSUMERS
+    )
+    for name in consumer_names:
         destination = consumer_root / name
         shutil.copyfile(_CONSUMER_ROOT / name, destination)
         valid_consumers.append(destination)
 
     mypy_args = _mypy_args(tmp_path / "mypy-cache")
+    # Common Scan also consumes CUTLASS scalar annotations when available.
+    # Keep generated experimental bindings outside these public API checks.
+    if importlib.util.find_spec("cutlass") is not None:
+        mypy_args.extend(
+            ["--config-file", str(_CONSUMER_ROOT / "cutlass_mypy.ini")]
+        )
     result = _run_mypy(
         mypy_args,
         valid_consumers,
@@ -106,8 +138,13 @@ def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
-    invalid_consumer = consumer_root / "invalid_consumer.py"
-    shutil.copyfile(_CONSUMER_ROOT / "invalid_consumer.py", invalid_consumer)
+    invalid_name = (
+        "invalid_cutlass_consumer.py"
+        if consumer_family == "cutlass"
+        else "invalid_consumer.py"
+    )
+    invalid_consumer = consumer_root / invalid_name
+    shutil.copyfile(_CONSUMER_ROOT / invalid_name, invalid_consumer)
     invalid_result = _run_mypy(
         mypy_args,
         [invalid_consumer],
@@ -119,7 +156,7 @@ def test_public_stubs_pass_strict_consumer_type_checks(tmp_path: Path) -> None:
     diagnostics = {
         (int(line), code)
         for line, code in re.findall(
-            r"invalid_consumer\.py:(\d+): error: .* (\[[a-z-]+\])$",
+            rf"{re.escape(invalid_name)}:(\d+): error: .* (\[[a-z-]+\])$",
             invalid_output,
             flags=re.MULTILINE,
         )

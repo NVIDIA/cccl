@@ -52,6 +52,9 @@ def run_length_decode(
 ) -> ThreadDataLike[_ItemT]:
     """Return a fresh blocked window of the decoded run stream.
 
+    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
+    support this operation.
+
     Parameters
     ----------
     group : ThreadGroup
@@ -78,7 +81,7 @@ def run_length_decode(
     temp_storage : TempStorageLike, optional
         Explicit block scratch descriptor. Omit it to allocate scratch
         automatically. With ``auto_sync=False``, synchronize the block before
-        reusing that descriptor in a later collective.
+        reusing that descriptor in a later primitive.
 
     Returns
     -------
@@ -97,8 +100,9 @@ def run_length_decode(
 
     Each call prepares its own CUB run table. Use
     :func:`cuda.coop.run_length_decode_into` to write a full stream while
-    preparing that table once, or the qualified operation for total-size and
-    relative run-offset outputs.
+    preparing that table once, or :func:`cuda.coop.numba_mlir.run_length_decode`
+    for total-size and relative run-offset outputs. The qualified Numba
+    operation also accepts local-array run inputs.
 
     Examples
     --------
@@ -133,6 +137,9 @@ def run_length_decode_into(
     temp_storage: TempStorageLike | None = None,
 ) -> numpy.uint32 | CompilerIntegerLike:
     """Decode a complete run stream into an array and return its total size.
+
+    Implemented by Numba-CUDA-MLIR. The CUTLASS backend does not currently
+    support this operation.
 
     Parameters
     ----------
@@ -176,6 +183,9 @@ def run_length_decode_into(
     items is written; the remaining destination elements are preserved. The
     last internal window is masked when the stream is not a whole number of
     windows. Both run inputs are preserved.
+
+    :func:`cuda.coop.numba_mlir.run_length_decode_into` also accepts local-array
+    run inputs and can write relative run offsets to a separate output array.
 
     Examples
     --------

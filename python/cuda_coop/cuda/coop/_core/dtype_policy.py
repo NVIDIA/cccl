@@ -4,9 +4,10 @@
 
 """Keep the common API's numeric type choices consistent across backends.
 
-A backend first converts its dtype object to a standard name such as
-``int32``. These checks then enforce the common operation's supported set.
-Names keep this policy independent of each compiler's type objects.
+Callers first convert a dtype object to a standard name such as ``int32``.
+Common payload checks and backends both do this. These checks then enforce
+the common operation's supported set. Names keep this policy independent
+of each compiler's type objects.
 """
 
 from __future__ import annotations
@@ -22,6 +23,17 @@ _COMMON_NUMERIC_DTYPE_NAMES = (
     "uint64",
     "float32",
     "float64",
+)
+
+_COMMON_INTEGER_VALUE_DTYPE_NAMES = (
+    "int8",
+    "uint8",
+    "int16",
+    "uint16",
+    "int32",
+    "uint32",
+    "int64",
+    "uint64",
 )
 
 
@@ -75,8 +87,9 @@ def validate_common_numeric_dtype_name(
     common API's numeric contract consistent even when backends have
     different type representations.
 
-    The backend must normalize aliases before calling this function. Its
-    qualified API may support additional types outside this common set.
+    Callers must normalize aliases before calling this function.
+    Backend-qualified APIs may support additional types outside this
+    common set.
 
     Parameters
     ----------
@@ -95,4 +108,26 @@ def validate_common_numeric_dtype_name(
         operation=operation,
         parameter=parameter,
         supported_dtype_names=_COMMON_NUMERIC_DTYPE_NAMES,
+    )
+
+
+def validate_common_integer_value_dtype_name(
+    dtype_name: str,
+    *,
+    operation: str,
+    parameter: str = "value",
+) -> str:
+    """Validate a normalized dtype name for a common integer control.
+
+    Counts and offsets accept signed or unsigned 8-, 16-, 32- and 64-bit
+    integers. Value ranges depend on the operation and are checked by its
+    caller; this helper returns the dtype name unchanged or reports an
+    unsupported kind.
+    """
+
+    return _validate_common_dtype_name(
+        dtype_name,
+        operation=operation,
+        parameter=parameter,
+        supported_dtype_names=_COMMON_INTEGER_VALUE_DTYPE_NAMES,
     )
