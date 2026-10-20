@@ -20,6 +20,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include "catch2_test_scan_reference.cuh"
 #include "cub_test_macros.h"
 #include <c2h/checked_memory_resource.cuh>
 #include <catch2_test_cuda_utils.cuh>
@@ -30,35 +31,6 @@ struct type_pair
   using input_t  = InputT;
   using output_t = OutputT;
 };
-
-template <typename InputIt, typename OutputIt, typename InitValueT, typename BinaryOp>
-void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitValueT init, BinaryOp op)
-{
-  using value_t  = cub::detail::it_value_t<InputIt>;
-  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitValueT>;
-  using output_t = cub::detail::it_value_t<OutputIt>;
-  accum_t acc    = static_cast<accum_t>(init);
-  for (; first != last; ++first)
-  {
-    const auto v = *first;
-    *result++    = static_cast<output_t>(acc);
-    acc          = op(acc, v);
-  }
-}
-
-template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitValueT>
-void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt result, BinaryOp op, InitValueT init)
-{
-  using value_t  = cub::detail::it_value_t<InputIt>;
-  using accum_t  = ::cuda::std::__accumulator_t<BinaryOp, value_t, InitValueT>;
-  using output_t = cub::detail::it_value_t<OutputIt>;
-  accum_t acc    = static_cast<accum_t>(init);
-  for (; first != last; ++first)
-  {
-    acc       = op(acc, *first);
-    *result++ = static_cast<output_t>(acc);
-  }
-}
 
 namespace segmented_scan_test
 {
