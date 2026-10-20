@@ -42,11 +42,11 @@ _LEVEL_ORDER = {
     "cluster": 3,
     "grid": 4,
 }
-_INCLUDE_LINES = (
-    "#include <cuda_runtime.h>",
-    "#include <cuda/hierarchy>",
-    "#include <cuda/std/cstdint>",
-    "#include <nv/target>",
+_INCLUDES = (
+    "cuda_runtime.h",
+    "cuda/hierarchy",
+    "cuda/std/cstdint",
+    "nv/target",
 )
 
 
@@ -136,10 +136,17 @@ def _sync_lines(group: ThreadGroup, operation: str) -> list[str]:
         assert group.mapping is not None
         width = group.mapping.count
         lane = _native_query_expr(group, "rank", "thread", "warp")
+        guard = (
+            []
+            if group.mapping.exhaustive
+            else [
+                f"  if (!({_membership_expr(group)})) {{",
+                "    return;",
+                "  }",
+            ]
+        )
         return [
-            f"  if (!({_membership_expr(group)})) {{",
-            "    return;",
-            "  }",
+            *guard,
             f"  const auto group_first_lane = ({lane} / {width}) * {width};",
             f"  ::__syncwarp({(1 << width) - 1}u << group_first_lane);",
         ]
@@ -329,9 +336,12 @@ def make_group_method_invocable(
         ]
         return_type = numba_types.void
 
-    source = "\n".join((*_INCLUDE_LINES, "", *lines, ""))
+    source = "\n".join(
+        (*(f"#include <{include}>" for include in _INCLUDES), "", *lines, "")
+    )
     return RawCAbiInvocable(
         source=source,
+        includes=_INCLUDES,
         symbol=symbol,
         return_type=return_type,
         parameters=(),
