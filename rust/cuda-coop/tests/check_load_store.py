@@ -131,6 +131,10 @@ cases.update(
         ),
         "not proved block-uniform",
     ),
+    transpose_varying_participation=(
+        "if thread::threadIdx_x()&1==0 {" + transpose_load + "}",
+        "lane-varying",
+    ),
     transpose_loop=(
         transpose_load
         + "let mut iteration=0;while iteration<2 {"

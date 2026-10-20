@@ -15,6 +15,21 @@ pub struct Direct;
 ///
 /// Load produces blocked payloads. Store permutes payload values and validity
 /// into striped order, including slots outside its selected write prefix.
+///
+/// ```no_run
+/// use cuda_coop as coop;
+/// fn copy_tile<const ITEMS_PER_THREAD: usize>(
+///     input: &[i16],
+///     output: &mut coop::DisjointSlice<'_, i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+/// ) {
+///     let block = coop::this_block();
+///     let mut values = coop::ThreadData::<_, ITEMS_PER_THREAD>::new();
+///     coop::load(block, input, &mut values,
+///         coop::LoadOptions::default().algorithm(coop::Transpose));
+///     coop::store(block, output, &mut values,
+///         coop::StoreOptions::default().algorithm(coop::Transpose));
+/// }
+/// ```
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Transpose;
 

@@ -20,8 +20,9 @@ A complete program
 ------------------
 
 The example is an independent Cargo workspace with a separate generic helper
-crate. It copies three block tiles at item counts 1 and 4, including a short last
-tile. The consumer has no build script, native shim, provider, or scratch argument.
+crate. It copies three block tiles with Direct and Transpose at item counts 1
+and 4, including a short last tile. The consumer has no build script, native
+shim, provider, or scratch argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
 Oxide build.
 
@@ -39,14 +40,15 @@ Choose the architecture for your GPU. Materialization produces the native device
 artifact during the Cargo build. No separate compilation or linking step is
 required. The exact block launch contract is checked when preparing the launch;
 ``auto_shared`` uses the compiler's inferred requirement, which is zero for
-Direct Load/Store.
+Direct Load/Store and includes the planned shared storage for Transpose.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/src/main.rs
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-The reusable helper preserves the source element type and borrows its payload
-read-only for Direct Store:
+The reusable helper preserves the source element type. Its algorithm-generic
+form borrows the payload mutably because Transpose Store permutes it.
+Direct-only code may pass a shared payload borrow:
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
    :language: rust

@@ -263,7 +263,7 @@ impl Request {
     ///
     /// # Errors
     ///
-    /// Rejects the invalid shapes documented by [`Self::new`], a non-i32 raw
+    /// Rejects the invalid shapes documented by [`Self::new`], or a non-i32 raw
     /// recipe.
     pub fn new_typed(
         dtype: Dtype,
