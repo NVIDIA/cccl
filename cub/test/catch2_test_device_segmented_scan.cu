@@ -170,10 +170,9 @@ CUB_TEST("Device segmented_scan works with all device interfaces",
   auto [device, stream] = cub_test::make_current_device_and_owning_stream();
 
   // Generate input segments
-  auto segment_offsets = c2h::gen_uniform_offsets_device_buffer<offset_t>(
+  auto segment_offsets = c2h::gen_uniform_offsets_buffers<offset_t>(
     stream, C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
-  auto h_segment_offsets = make_host_buffer<offset_t>(stream, device, segment_offsets.size, cuda::no_init);
-  copy_to_host(stream, segment_offsets.d_items.first(segment_offsets.size), h_segment_offsets);
+  const auto& h_segment_offsets = segment_offsets.h_items;
 
   const auto* h_segment_offsets_ptr = h_segment_offsets.data();
   const offset_t num_segments       = static_cast<offset_t>(h_segment_offsets.size() - 1);

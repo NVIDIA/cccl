@@ -171,16 +171,4 @@ template <typename T>
 
   return {::cuda::std::move(d_segment_offsets.d_items), ::cuda::std::move(h_segment_offsets)};
 }
-
-//! @brief Generates uniform segment offsets with the existing c2h device generator and returns them in host memory.
-//!
-//! @pre @c stream must not be the legacy default stream.
-template <typename T>
-[[nodiscard]] cuda::host_buffer<T> gen_uniform_offsets_host_buffer(
-  cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
-{
-  auto buffers =
-    ::c2h::gen_uniform_offsets_buffers<T>(stream, seed, total_elements, min_segment_size, max_segment_size);
-  return ::cuda::std::move(buffers.h_items);
-}
 } // namespace c2h
