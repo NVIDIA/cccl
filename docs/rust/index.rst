@@ -115,6 +115,16 @@ after the documentation command above, or run ``cargo doc --no-deps --open`` fro
 ``rust/``. Device discovery, lowering, linking, launch enforcement, and Cargo
 invalidation of external compiler inputs belong to the compiler integration.
 
+The Oxide adapter's ``oxide::serve_inputs`` answers
+``--oxide-library-inputs-v1`` with the selected header roots and NVRTC library
+paths, without loading CUDA. A provider build script dispatches this query
+alongside ``--oxide-library-request-v1``. Device registration getters use
+``cuda_device::library::registration!("REGISTRATION_ENV_NAME")`` so the frontend
+tracks those files, directory contents and selected toolkit before emitting
+Cargo dependency information. Host checks and rustdoc do not query CUDA inputs.
+Cargo's timestamp freshness rules apply; replacements with unchanged or older
+timestamps may require an explicit rebuild.
+
 .. toctree::
    :maxdepth: 1
 

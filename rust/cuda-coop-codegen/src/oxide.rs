@@ -5,7 +5,9 @@
 //!
 //! A dependency build script can serve as its already-built provider executable:
 //! normal Cargo execution embeds [`registration`] in a device crate constant;
-//! `--oxide-library-request-v1` execution passes stdin/stdout to [`serve`].
+//! `--oxide-library-request-v1` execution passes stdin/stdout to [`serve`];
+//! `--oxide-library-inputs-v1` passes them to [`serve_inputs`] during macro expansion.
+//! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
 //! The protocol supports the four i32 Load/Store forms documented by [`Operation`].
@@ -200,6 +202,79 @@ pub fn registration(
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct InputRequest {
+    version: u32,
+    cuda_root: PathBuf,
+    target: String,
+}
+
+#[derive(Serialize)]
+struct InputResponse {
+    version: u32,
+    paths: Vec<PathBuf>,
+    environment: Vec<String>,
+}
+
+/// Declare native inputs for Oxide's registration macro without loading CUDA.
+///
+/// `checkout` selects the same CCCL tree as [`serve`]. The bounded version-one
+/// JSON request contains `cuda_root` and `target`; the response lists header
+/// directories and NVRTC libraries. The macro tracks files and directories
+/// recursively before rustc emits dep-info, including new header files.
+/// No GPU, native compiler invocation or library loading occurs here.
+/// Cargo's timestamp freshness rules apply; replacements with unchanged or older
+/// timestamps can remain undetected. Rebuild after restoring or replacing inputs
+/// this way, including a symlink switched to an older installation.
+///
+/// # Errors
+///
+/// Rejects malformed, oversized or unsupported requests, nonabsolute toolkit
+/// paths, invalid targets, and inaccessible checkout paths.
+pub fn serve_inputs(checkout: &Path, input: impl Read, mut output: impl Write) -> Result<()> {
+    let mut bytes = Vec::new();
+    input
+        .take((MAX_HEADER + 1) as u64)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() > MAX_HEADER {
+        return Err(Error::message("provider input request exceeds 1 MiB"));
+    }
+    let request: InputRequest = serde_json::from_slice(&bytes)
+        .map_err(|error| Error::message(format!("invalid provider input request: {error}")))?;
+    if request.version != VERSION
+        || !request.cuda_root.is_absolute()
+        || !request.target.starts_with("compute_")
+        || request.target.len() <= 8
+        || !request.target[8..]
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric())
+    {
+        return Err(Error::message(
+            "provider inputs require version 1, an absolute toolkit path and compute_XX target",
+        ));
+    }
+    let checkout = checkout
+        .canonicalize()
+        .map_err(|error| Error::input(checkout, error))?;
+    let paths = crate::headers::Headers::roots(&checkout, &request.cuda_root)
+        .into_iter()
+        .map(|(path, _)| path)
+        .chain(crate::nvrtc::Compiler::input_paths(&request.cuda_root))
+        .collect();
+    let response = serde_json::to_vec(&InputResponse {
+        version: VERSION,
+        paths,
+        environment: Vec::new(),
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider inputs: {error}")))?;
+    if response.len() > MAX_HEADER {
+        return Err(Error::message("provider input response exceeds 1 MiB"));
+    }
+    output.write_all(&response)?;
+    Ok(())
+}
+
 /// Compile one versioned stdin request and write its framed native response.
 ///
 /// `checkout` selects the CCCL checkout whose headers the provider captures.
@@ -287,6 +362,34 @@ fn write_response(requests: &[Request], artifact: Artifact, output: &mut impl Wr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn input_query_needs_no_installed_toolkit() {
+        let checkout = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let toolkit = std::env::temp_dir().join("cuda-coop-input-query-no-toolkit");
+        let request = serde_json::json!({"version":1,"cuda_root":toolkit,"target":"compute_120"});
+        let mut bytes = Vec::new();
+        serve_inputs(checkout, request.to_string().as_bytes(), &mut bytes).unwrap();
+        let response: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(response["version"], 1);
+        assert_eq!(response["paths"].as_array().unwrap().len(), 6);
+        assert!(
+            response["paths"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|path| Path::new(path.as_str().unwrap()).is_absolute())
+        );
+        assert!(response["environment"].as_array().unwrap().is_empty());
+        for request in [
+            serde_json::json!({"version":2,"cuda_root":toolkit,"target":"compute_120"}),
+            serde_json::json!({"version":1,"cuda_root":"relative","target":"compute_120"}),
+            serde_json::json!({"version":1,"cuda_root":toolkit,"target":"invalid"}),
+        ] {
+            assert!(serve_inputs(checkout, request.to_string().as_bytes(), Vec::new()).is_err());
+        }
+        assert!(serve_inputs(checkout, vec![b' '; MAX_HEADER + 1].as_slice(), Vec::new()).is_err());
+    }
 
     #[test]
     fn registration_binds_native_recipe() {

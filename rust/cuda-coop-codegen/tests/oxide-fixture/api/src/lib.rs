@@ -10,7 +10,7 @@ pub mod carrier;
 macro_rules! registration {
     ($name:ident, $variable:literal) => {
         fn $name() -> &'static str {
-            env!($variable)
+            cuda_device::library::registration!($variable)
         }
     };
 }
