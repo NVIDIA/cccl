@@ -48,6 +48,8 @@ name = "cuda-coop-codegen"
 version = "0.0.0"
 dependencies = [
  "libloading",
+ "serde",
+ "serde_json",
  "sha2",
 ]
 
