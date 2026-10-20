@@ -25,6 +25,7 @@
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/popcount.h>
+#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -265,7 +266,7 @@ private:
 
   template <int ItemsPerThread>
   using SortNetworkT = WarpBitonicSortNetwork<KeyT, ItemsPerThread, LogicalWarpThreads, ValueT>;
-  using MaxKSortT     = SortNetworkT<max_k_per_thread>;
+  using MaxKSortT    = SortNetworkT<max_k_per_thread>;
 
   using _TempStorage = cub::NullType;
 
@@ -290,6 +291,7 @@ public:
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k) const
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK, "k must be in [1, MaxK]");
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
     TopK(keys, values, compare_op, k);
@@ -312,6 +314,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items, KeyT oob_default) const
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
     TopK(keys, values, compare_op, k, valid_items, oob_default);
@@ -331,6 +334,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items) const
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
     TopK(keys, values, compare_op, k, valid_items);
@@ -351,6 +355,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(
     KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, [[maybe_unused]] int k) const
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK, "k must be in [1, MaxK]");
     constexpr int valid_items = ItemsPerThread * LogicalWarpThreads;
     static_assert(valid_items >= MaxK);
 
@@ -366,8 +371,8 @@ public:
     }
     else
     {
-      // For non-power-of-two MaxK, WarpBitonicSortNetwork::merge requires the retained set to remain reverse-sorted while
-      // merging incoming data.
+      // For non-power-of-two MaxK, WarpBitonicSortNetwork::merge requires the retained set to remain reverse-sorted
+      // while merging incoming data.
       constexpr bool reverse = !::cuda::is_power_of_two(MaxK);
       MaxKSortT{}.template sort<CompareOp, reverse>(keys, values, compare_op);
 
@@ -433,6 +438,7 @@ public:
        int valid_items,
        KeyT oob_default) const
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ItemsPerThread; ++i)
     {
@@ -465,6 +471,7 @@ public:
        [[maybe_unused]] int k,
        int valid_items) const
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
     static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
 
     if (valid_items <= MaxK)
@@ -575,6 +582,7 @@ public:
   template <int ItemsPerThread, typename CompareOp>
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k)
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK, "k must be in [1, MaxK]");
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
     TopK(keys, values, compare_op, k);
@@ -594,6 +602,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], CompareOp compare_op, int k, int valid_items)
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
     static_assert(keys_only);
     ValueT values[ItemsPerThread];
     TopK(keys, values, compare_op, k, valid_items);
@@ -614,6 +623,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int k)
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK, "k must be in [1, MaxK]");
     constexpr int valid_items = ItemsPerThread * LogicalWarpThreads;
     static_assert(valid_items >= MaxK);
 
@@ -654,6 +664,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void
   TopK(KeyT (&keys)[ItemsPerThread], ValueT (&values)[ItemsPerThread], CompareOp compare_op, int k, int valid_items)
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= valid_items, "k must be in [1, min(MaxK, valid_items)]");
     static_assert(ItemsPerThread * LogicalWarpThreads >= MaxK);
 
     if (valid_items <= MaxK)
@@ -699,6 +710,7 @@ public:
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void TopK(
     KeyInputIteratorT keys_in, CompareOp compare_op, int k, int num_items, KeyT (&keys_out)[MaxK / LogicalWarpThreads])
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= num_items, "k must be in [1, min(MaxK, num_items)]");
     static_assert(keys_only);
     ValueT values_out[max_k_per_thread];
     TopK<LoadItemsPerThread>(keys_in, nullptr, compare_op, k, num_items, keys_out, values_out);
@@ -731,6 +743,7 @@ public:
        KeyT (&keys_out)[MaxK / LogicalWarpThreads],
        ValueT (&values_out)[MaxK / LogicalWarpThreads])
   {
+    _CCCL_ASSERT(k >= 1 && k <= MaxK && k <= num_items, "k must be in [1, min(MaxK, num_items)]");
     // When LoadItemsPerThread > 1, WarpLoad with WARP_LOAD_VECTORIZE is used to load data.
     // Also, the striped arrangement makes WARP_LOAD_DIRECT and WARP_LOAD_TRANSPOSE unsuitable.
     static_assert(LoadItemsPerThread > 0, "LoadItemsPerThread must be positive");
@@ -949,9 +962,9 @@ private:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE KeyT
   get_key_threshold(const KeyT* keys_out, int k_th_item, int k_th_lane) const
   {
-    KeyT k_th;
+    KeyT k_th = keys_out[0];
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < max_k_per_thread; ++i)
+    for (int i = 1; i < max_k_per_thread; ++i)
     {
       if (i == k_th_item)
       {
