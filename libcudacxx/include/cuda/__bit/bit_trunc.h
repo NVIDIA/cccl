@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/shl.h>
@@ -65,25 +66,23 @@ template <class _Tp>
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
     // BZHI only uses the low eight bits of the width.
-    const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
+    const auto __width = ::cuda::std::min(__un, unsigned{::cuda::std::__num_bits_v<_Tp>});
     return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_SI(uint32_t{__v}, __width));
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
     // BZHI only uses the low eight bits of the width.
-    const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_DI(__v, __width));))
+    const auto __width = ::cuda::std::min(__un, unsigned{::cuda::std::__num_bits_v<_Tp>});
+    return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_DI(__v, __width));
   }
 #    if _CCCL_HAS_INT128()
   else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
   {
-    NV_IF_TARGET(NV_IS_HOST, {
-      const auto __lo_width = ::cuda::std::min(__un, 64u);
-      const auto __hi_width = static_cast<unsigned>(::cuda::std::min(::cuda::std::max(__n - 64, 0), 64));
-      const auto __lo       = _CCCL_BUILTIN_IA32_BZHI_DI(static_cast<uint64_t>(__v), __lo_width);
-      const auto __hi       = _CCCL_BUILTIN_IA32_BZHI_DI(static_cast<uint64_t>(__v >> 64), __hi_width);
-      return _Tp{__lo} | (_Tp{__hi} << 64);
-    })
+    const auto __lo_width = ::cuda::std::min(__un, 64u);
+    const auto __hi_width = static_cast<unsigned>(::cuda::std::clamp(__n - 64, 0, 64));
+    const auto __lo       = _CCCL_BUILTIN_IA32_BZHI_DI(static_cast<uint64_t>(__v), __lo_width);
+    const auto __hi       = _CCCL_BUILTIN_IA32_BZHI_DI(static_cast<uint64_t>(__v >> 64), __hi_width);
+    return _Tp{__lo} | (_Tp{__hi} << 64);
   }
 #    endif // _CCCL_HAS_INT128()
   else
@@ -97,7 +96,8 @@ template <class _Tp>
 #if _CCCL_DEVICE_COMPILATION()
 template <class = void>
 [[nodiscard]]
-_CCCL_DEVICE_API ::cuda::std::uint32_t __szext_clamp_sm70(::cuda::std::uint32_t __v, ::cuda::std::uint32_t __n) noexcept
+_CCCL_DEVICE_API ::cuda::std::uint32_t
+__szext_clamp_sm70(const ::cuda::std::uint32_t __v, const ::cuda::std::uint32_t __n) noexcept
 {
   ::cuda::std::uint32_t __ret;
   asm("szext.clamp.u32 %0, %1, %2;" : "=r"(__ret) : "r"(__v), "r"(__n));
