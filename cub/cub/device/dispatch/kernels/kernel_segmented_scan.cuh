@@ -240,10 +240,10 @@ public:
     for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
     {
       const OffsetT chunk_begin = input_begin_idx + chunk_id * tile_items;
-      const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, input_end_idx);
 
       // chunk_size <= TILE_ITEMS, casting to int is safe
-      const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
+      const int chunk_size =
+        static_cast<int>((::cuda::std::min) (input_end_idx - chunk_begin, static_cast<OffsetT>(tile_items)));
 
       AccumT thread_values[items_per_thread];
       {

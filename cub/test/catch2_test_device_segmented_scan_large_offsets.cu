@@ -234,3 +234,48 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
   SUCCEED("exceeding memory is not a failure");
 }
+
+// One segment of 64 items ends at the uint32_t maximum, so any tile of more than 64 items extends past it.
+// The output is followed by a guard region that must stay untouched.
+CUB_TEST("Device segmented scan handles a segment ending at the offset maximum", "[segmented][scan][device]", CUB_SMALL)
+{
+  using unsigned_offset_t                               = cuda::std::uint32_t;
+  constexpr cuda::std::int64_t segment_items            = 64;
+  constexpr cuda::std::int64_t guard_items              = 2048;
+  constexpr int guard_value                             = -1;
+  constexpr unsigned_offset_t segment_end               = cuda::std::numeric_limits<unsigned_offset_t>::max();
+  constexpr unsigned_offset_t segment_begin             = segment_end - static_cast<unsigned_offset_t>(segment_items);
+  const c2h::device_vector<unsigned_offset_t> begins    = {segment_begin};
+  const c2h::device_vector<unsigned_offset_t> ends      = {segment_end};
+  const c2h::device_vector<unsigned_offset_t> out_begin = {0};
+  const unsigned_offset_t* d_begins                     = thrust::raw_pointer_cast(begins.data());
+  const unsigned_offset_t* d_ends                       = thrust::raw_pointer_cast(ends.data());
+  const unsigned_offset_t* d_out_begin                  = thrust::raw_pointer_cast(out_begin.data());
+  const auto d_in                                       = cuda::constant_iterator<int>(int{1});
+  constexpr cuda::std::int64_t num_segments             = 1;
+
+  c2h::device_vector<int> d_out(static_cast<size_t>(segment_items + guard_items), guard_value);
+  int* d_out_ptr = thrust::raw_pointer_cast(d_out.data());
+
+  const auto run = [&](const auto& schedule_env) {
+    thrust::fill(c2h::device_policy, d_out.begin(), d_out.end(), guard_value);
+    const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env, d_in, d_out_ptr, num_segments, d_begins, d_ends, d_out_begin, cuda::std::plus<>{}, cub::NullType{});
+    device_segmented_inclusive_sum(
+      d_in,
+      d_out_ptr,
+      d_begins,
+      d_ends,
+      d_out_begin,
+      num_segments,
+      cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+
+    const auto expected = cuda::counting_iterator(int{1});
+    REQUIRE(thrust::equal(d_out.cbegin(), d_out.cbegin() + segment_items, expected));
+    const auto guard = cuda::constant_iterator<int>(guard_value);
+    REQUIRE(thrust::equal(d_out.cbegin() + segment_items, d_out.cend(), guard));
+  };
+
+  run(cuda::std::execution::env{});
+  run(cuda::std::execution::env{cub::segmented_scan_num_items(segment_items)});
+}
