@@ -48,6 +48,7 @@
 mod headers;
 #[allow(unsafe_code)]
 mod nvrtc;
+pub mod oxide;
 
 use headers::{Headers, hash_field};
 use sha2::{Digest, Sha256};
