@@ -44,8 +44,15 @@ _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& 
   requires(resource<::cuda::std::remove_cvref_t<decltype(__t.get_memory_resource())>>));
 
 template <class _Env>
+_CCCL_CONCEPT __has_usable_advertised_resource_query = _CCCL_REQUIRES_EXPR((_Env))(
+  requires(::cuda::std::execution::__detail::__advertises_query_v<_Env, get_memory_resource_t>),
+  requires(::cuda::std::execution::__queryable_with<const _Env&, get_memory_resource_t>),
+  requires(
+    resource<::cuda::std::remove_cvref_t<::cuda::std::execution::__query_result_t<const _Env&, get_memory_resource_t>>>));
+
+template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
-  requires(!__is_synchronous_resource_env<_Env>),
+  requires(!__is_synchronous_resource_env<_Env> || __has_usable_advertised_resource_query<_Env>),
   requires(!__has_member_get_resource<_Env>),
   requires(::cuda::std::execution::__queryable_with<const _Env&, get_memory_resource_t>));
 

@@ -68,7 +68,7 @@ static void reduce_by_key(nvbench::state& state, nvbench::type_list<KeyT, ValueT
     d_num_runs_out,
     reduction_op_t{},
     static_cast<OffsetT>(elements),
-    alloc);
+    cuda::mr::resource_ref<>{alloc});
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 
