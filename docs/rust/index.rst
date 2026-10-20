@@ -6,7 +6,7 @@ Rust development
 
 The Rust workspace contains per-thread payloads, CUDA group queries, and the
 native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
-``ThreadData`` values, physical/mapped hierarchy queries, and Direct block
+``ThreadData`` values, physical/mapped hierarchy queries, and Direct/Transpose block
 Load/Store; see :doc:`payload`, :doc:`groups`, and :doc:`load_store`. Its private ``cuda-coop-codegen`` crate
 specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
@@ -56,18 +56,19 @@ order, retaining initialized values in every slot, and uses the exact CUB storag
 layout. Compiler integrations must enforce collective participation, memory
 ownership, valid bounds, and synchronization before scratch reuse.
 
-The separate validity-aware Direct recipes support all ten numeric payload
+The separate validity-aware Direct and Transpose recipes support all ten numeric payload
 types: ``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``, ``i64``, ``u64``,
 ``f32`` and ``f64``. ``Request::new_typed`` selects the exact type. These recipes
-take opaque value storage and separate per-slot ``u8`` flags. Full and
+take opaque value storage and a packed validity bitmap. Full and
 default-filled Load initialize every slot. Masked Load without a default copies
 only the loaded prefix and resets all other flags to zero. Full and partial
-Store require flags equal to exactly one in their write domain and preserve
-all payload bytes and flags. A failing Store traps; it is not transactional
+Store require initialized slots in their write domain. Direct preserves all
+payload bytes and validity bits; Transpose permutes both into striped order,
+including slots outside its write prefix. A failing Store traps; it is not transactional
 across lanes. Partial Store forms destination pointers only within its valid
 prefix, including when the allocation is shorter than a complete tile.
 
-Validity-aware Transpose remains under development. The public Direct API uses
+The public Direct and Transpose API uses
 the same ``ThreadData`` representation without exposing an initialized slice or
 a public native layout.
 
