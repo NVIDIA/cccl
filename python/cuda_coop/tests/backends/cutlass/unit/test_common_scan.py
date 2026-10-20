@@ -43,6 +43,9 @@ class _TempStorage:
     auto_sync = True
     sharing = "shared"
 
+    def reserve(self, num_elems, dtype, *, alignment=None):
+        raise AssertionError("common validation must not reserve storage")
+
 
 class _StringSelector(str, Enum):
     INCLUSIVE = "inclusive"
