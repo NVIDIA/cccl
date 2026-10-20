@@ -11,6 +11,13 @@ mod boundary;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Direct;
 
+/// Direct striped access without shared scratch.
+///
+/// Thread rank `t` and item `i` address `t + group.count() * i`. Load produces
+/// this striped arrangement; Store consumes it and preserves the payload.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Striped;
+
 /// Coalesced access through CUB's shared-memory block exchange.
 ///
 /// Load produces blocked payloads. Store permutes payload values and validity
@@ -36,12 +43,16 @@ pub struct Transpose;
 /// A sealed, compile-time algorithm selected through Load/Store options.
 pub trait Algorithm: sealed::Algorithm + Copy {}
 impl Algorithm for Direct {}
+impl Algorithm for Striped {}
 impl Algorithm for Transpose {}
 impl sealed::Algorithm for Direct {
-    const TRANSPOSE: bool = false;
+    const KIND: u8 = sealed::DIRECT;
+}
+impl sealed::Algorithm for Striped {
+    const KIND: u8 = sealed::STRIPED;
 }
 impl sealed::Algorithm for Transpose {
-    const TRANSPOSE: bool = true;
+    const KIND: u8 = sealed::TRANSPOSE;
 }
 
 /// Controls for a [`load`], using [`Direct`] by default.
@@ -161,19 +172,21 @@ impl<A: Algorithm> StoreOptions<A> {
     }
 }
 
-/// Load a block tile in blocked order into an existing per-thread payload.
+/// Load a block tile into an existing per-thread payload.
 ///
 /// `T` is inferred from `source`; `ITEMS` is the positive per-thread extent and
 /// `ALIGN` is the payload's minimum alignment. The tile has
-/// `group.count() * ITEMS` elements. Each thread receives consecutive items.
+/// `group.count() * ITEMS` elements. Direct and Transpose give each thread
+/// consecutive items; Striped gives it items separated by the block size.
 /// [`LoadSource`] accepts an immutable slice or a mutable borrow of a collective
 /// carrier. [`LoadOptions`] supplies the count, typed default and element offset.
-/// The operation returns unit. [`Direct`] uses no shared scratch; [`Transpose`]
+/// The operation returns unit. [`Direct`] and [`Striped`] use no shared scratch; [`Transpose`]
 /// uses compiler-planned shared storage and returns the same blocked layout.
 ///
-/// Complete one-, two- and three-dimensional blocks support [`Direct`] and
-/// [`Transpose`]. Thread rank is x-fastest: `x + X * (y + Y * z)` for shape
-/// `[X, Y, Z]`. Each ranked thread receives `ITEMS` consecutive elements.
+/// Complete one-, two- and three-dimensional blocks support all three algorithms.
+/// Thread rank is x-fastest: `t = x + X * (y + Y * z)` for shape `[X, Y, Z]`.
+/// Slot `i` addresses `t * ITEMS + i` for Direct/Transpose Load and
+/// `t + group.count() * i` for Striped Load, relative to the selected offset.
 /// Compile with the supported Oxide backend and an exact block launch contract.
 /// Every block thread must reach matching calls with uniform source, controls
 /// and participation. The compiler checks these requirements and resource
@@ -210,13 +223,15 @@ pub fn load<T: Numeric, S: LoadSource<T>, const ITEMS: usize, const ALIGN: usize
     source.load(group, output, options);
 }
 
-/// Store a block tile from a blocked per-thread payload.
+/// Store a block tile from a per-thread payload.
 ///
 /// `T` is inferred from the destination and value. [`StoreValue`] accepts a
-/// shared or mutable borrow of [`ThreadData`] for [`Direct`], a mutable borrow
-/// for [`Transpose`], or a numeric scalar (one item per thread) for either.
+/// shared or mutable borrow of [`ThreadData`] for [`Direct`] and [`Striped`], a
+/// mutable borrow for [`Transpose`], or a numeric scalar (one item per thread)
+/// for any algorithm.
 /// `CAPACITY` describes the carrier's ownership grain; it need not equal the
-/// payload extent. Direct preserves values and flags and uses no shared scratch.
+/// payload extent. Direct consumes blocked items; Striped consumes striped items.
+/// Both preserve every value and initialized bit and use no shared scratch.
 /// Transpose uses compiler-planned shared storage and permutes all payload slots
 /// into striped order, including a zero-count Store. Destination lane/item
 /// `(t, i)` receives the prior blocked slot at linear index `group.count()*i+t`.
@@ -320,9 +335,10 @@ impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, Col
 
 /// A sealed per-thread value accepted by [`store`] for type `T` and algorithm `A`.
 ///
-/// Numeric scalars and mutable [`ThreadData`] borrows support both algorithms.
-/// Shared payload borrows support only [`Direct`]. A scalar contributes one item
-/// per thread. Direct preserves every value and bit; [`Transpose`] mutates their
+/// Numeric scalars and mutable [`ThreadData`] borrows support all algorithms.
+/// Shared payload borrows support [`Direct`] and [`Striped`]. A scalar contributes
+/// one item per thread. Direct and Striped preserve every value and bit;
+/// [`Transpose`] mutates their
 /// positions as described by [`store`].
 pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A> {
     #[doc(hidden)]
@@ -334,26 +350,33 @@ pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A
     );
 }
 
-impl<T: Numeric, const I: usize, const A: usize> sealed::StoreValue<T, Direct>
-    for &ThreadData<T, I, A>
-where
-    Alignment<A>: SupportedAlignment,
-{
+macro_rules! shared_store_value {
+    ($algorithm:ty) => {
+        impl<T: Numeric, const I: usize, const ALIGN: usize> sealed::StoreValue<T, $algorithm>
+            for &ThreadData<T, I, ALIGN>
+        where
+            Alignment<ALIGN>: SupportedAlignment,
+        {
+        }
+        impl<T: Numeric, const I: usize, const ALIGN: usize> StoreValue<T, $algorithm>
+            for &ThreadData<T, I, ALIGN>
+        where
+            Alignment<ALIGN>: SupportedAlignment,
+        {
+            #[inline(always)]
+            fn store<const C: usize>(
+                self,
+                _group: ThreadGroup<Block>,
+                destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
+                options: StoreOptions<$algorithm>,
+            ) {
+                boundary::store(destination, self, options);
+            }
+        }
+    };
 }
-impl<T: Numeric, const I: usize, const A: usize> StoreValue<T> for &ThreadData<T, I, A>
-where
-    Alignment<A>: SupportedAlignment,
-{
-    #[inline(always)]
-    fn store<const C: usize>(
-        self,
-        _group: ThreadGroup<Block>,
-        destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
-        options: StoreOptions,
-    ) {
-        boundary::store(destination, self, options);
-    }
-}
+shared_store_value!(Direct);
+shared_store_value!(Striped);
 impl<T: Numeric, const I: usize, const ALIGN: usize, A: Algorithm> sealed::StoreValue<T, A>
     for &mut ThreadData<T, I, ALIGN>
 where
@@ -373,10 +396,17 @@ where
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
         options: StoreOptions<A>,
     ) {
-        if A::TRANSPOSE {
-            boundary::store_transpose(destination, self, options.algorithm(Transpose));
-        } else {
-            boundary::store(destination, self, options.algorithm(Direct));
+        match A::KIND {
+            sealed::DIRECT => {
+                boundary::store(destination, self, options.algorithm(Direct));
+            }
+            sealed::STRIPED => {
+                boundary::store(destination, self, options.algorithm(Striped));
+            }
+            sealed::TRANSPOSE => {
+                boundary::store_transpose(destination, self, options.algorithm(Transpose));
+            }
+            _ => panic!(),
         }
     }
 }
@@ -398,7 +428,12 @@ impl<T: Numeric, A: Algorithm> StoreValue<T, A> for T {
 mod sealed {
     pub trait LoadSource {}
     pub trait StoreValue<T, A> {}
+    // Scalar tags let the compiler prune unused native operation arms before
+    // planning scratch. Only the sealed selector implementations assign them.
+    pub const DIRECT: u8 = 0;
+    pub const STRIPED: u8 = 1;
+    pub const TRANSPOSE: u8 = 2;
     pub trait Algorithm {
-        const TRANSPOSE: bool;
+        const KIND: u8;
     }
 }

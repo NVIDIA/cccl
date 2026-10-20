@@ -11,11 +11,12 @@
 //! # Supported specializations
 //!
 //! [`Request`] describes an exact complete block shape, positive fixed
-//! items per thread, and [`Algorithm::Direct`] or [`Algorithm::Transpose`].
-//! The raw i32 recipes support Direct and Transpose. Their Store payloads must
+//! items per thread, and [`Algorithm::Direct`], [`Algorithm::Striped`] or
+//! [`Algorithm::Transpose`].
+//! The raw i32 recipes support all three algorithms. Their Store payloads must
 //! be fully initialized. The validity-aware recipes support all ten
 //! [`Dtype`] variants with separate value storage and packed per-slot validity bits.
-//! Masked Load resets validity outside its prefix; Direct Store preserves both
+//! Masked Load resets validity outside its prefix; Direct/Striped Store preserves both
 //! arrays and checks initialization only in its write domain. Transpose Store
 //! replaces each lane's blocked payload and validity with striped items across
 //! the block, including when its write count is zero.
@@ -86,18 +87,25 @@ impl From<std::ffi::NulError> for Error {
 /// Result returned by native provider operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// CUB block layout algorithm; both variants produce/consume blocked payloads.
+/// CUB block layout algorithm and per-thread item arrangement.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Algorithm {
     /// Consecutive items per thread, without shared scratch or a reuse barrier.
     Direct,
+    /// Thread `t` accesses item `i` at `t + block_threads * i`, without scratch.
+    Striped,
     /// Coalesced access with shared-memory transposition to/from blocked layout.
     Transpose,
 }
 impl Algorithm {
+    fn scratch_free(self) -> bool {
+        matches!(self, Self::Direct | Self::Striped)
+    }
+
     fn token(self) -> &'static str {
         match self {
             Self::Direct => "DIRECT",
+            Self::Striped => "STRIPED",
             Self::Transpose => "TRANSPOSE",
         }
     }
@@ -258,7 +266,7 @@ impl Request {
 
     /// Validate an exact typed block specialization.
     ///
-    /// The five validity-aware recipes support every [`Dtype`] with either algorithm.
+    /// The five validity-aware recipes support every [`Dtype`] with every algorithm.
     /// Legacy raw recipes retain their i32 ABI and algorithm support.
     ///
     /// # Errors
@@ -396,7 +404,7 @@ pub struct Layout {
 /// code traps on invalid counts. A filled Load's default is also block-uniform.
 /// Transpose scratch satisfies [`Self::scratch`] and cannot alias another live
 /// region. The caller synchronizes before reuse, including loop iterations;
-/// the provider does not add a trailing reuse barrier. Direct ignores scratch,
+/// the provider does not add a trailing reuse barrier. Direct and Striped ignore scratch,
 /// so a null pointer is permitted for that argument only. All providers return
 /// unit; loads fill payloads in place and stores write memory.
 ///
@@ -406,7 +414,7 @@ pub struct Layout {
 /// initialized array of `items_per_thread.div_ceil(8)` bytes. Bit `i % 8` of
 /// byte `i / 8` denotes whether slot `i` is initialized. Both arrays are private
 /// to the lane, disjoint from memory/scratch and one another. Load exclusively
-/// borrows both arrays; Direct Store receives const pointers and borrows them
+/// borrows both arrays; Direct/Striped Store receives const pointers and borrows them
 /// read-only. Transpose Store exclusively borrows both arrays and returns their
 /// permutation: destination `(lane, item)` receives source
 /// `((block_threads * item + lane) / items_per_thread,
@@ -429,7 +437,7 @@ pub struct Specialization {
     /// Actual CUB TempStorage sizeof/alignof from the same NVRTC program.
     pub cub_layout: Layout,
     /// Complete shared region, including any validity plane and padding.
-    /// Direct uses zero bytes despite its empty C++ type's sizeof=1.
+    /// Direct and Striped use zero bytes despite their empty C++ types' sizeof=1.
     pub scratch: Layout,
     /// Whether this specialization accesses no shared scratch or scratch-reuse barrier.
     pub scratch_free: bool,
@@ -586,7 +594,7 @@ impl Provider {
                     size: 0,
                     alignment: 1,
                 },
-                scratch_free: request.algorithm == Algorithm::Direct,
+                scratch_free: request.algorithm.scratch_free(),
                 mutates_payload: !request.operation.is_load()
                     && request.algorithm == Algorithm::Transpose,
             });
@@ -656,7 +664,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
         controls.push_str(&format!(", {dtype} default_value"));
         operands.push_str(", default_value");
     }
-    let constructor = if request.algorithm == Algorithm::Direct {
+    let constructor = if request.algorithm.scratch_free() {
         "primitive operation;"
     } else {
         "primitive operation{*reinterpret_cast<primitive::TempStorage*>(scratch)};"
@@ -679,7 +687,11 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
             op,
             Operation::LoadMaskedValidity | Operation::StorePartialValidity
         ) {
-            format!("tid * {items} + i < valid")
+            if request.algorithm == Algorithm::Striped {
+                format!("tid + {threads} * i < valid")
+            } else {
+                format!("tid * {items} + i < valid")
+            }
         } else {
             "true".to_owned()
         };
@@ -704,7 +716,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
             )
         } else {
             // The general Store permutes all source slots, including initialized
-            // slots outside its write domain. Direct only needs its write domain.
+            // slots outside its write domain. Direct/Striped only need their write domain.
             let copy_domain = if transpose { "true" } else { &domain };
             let prepare = if mask_plane {
                 format!(

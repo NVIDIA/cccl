@@ -115,7 +115,7 @@ transpose_store = store.replace("&values", "&mut values").replace(
 cases.update(
     shared_transpose=(
         load + transpose_store.replace("&mut values", "&values"),
-        "expected `Direct`, found `Transpose`",
+        "StoreValue<i32, Transpose>",
     ),
     transpose_managed_reuse=(
         transpose_load + transpose_store + transpose_store,
@@ -149,6 +149,26 @@ cases.update(
         "coop::store(block,output,&mut values,coop::StoreOptions::default().algorithm(algorithm));}"
         "forward(block,input,&mut output,coop::Transpose);",
         None,
+    ),
+)
+
+striped_load = load.replace(
+    ".oob_default(0)", ".oob_default(0).algorithm(coop::Striped)"
+)
+striped_store = store.replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Striped)"
+)
+cases.update(
+    striped_shared=(striped_load + striped_store, None),
+    striped_varying_count=(
+        striped_load.replace(
+            ".valid_items(valid)", ".valid_items(thread::threadIdx_x() as usize)"
+        ),
+        "not proved block-uniform",
+    ),
+    striped_missing_completion=(
+        striped_load + striped_store + reload,
+        "requires a full-block barrier",
     ),
 )
 

@@ -20,8 +20,13 @@ fn main() {
         (Operation::StoreFullValidity, "STORE_FULL"),
         (Operation::StorePartialValidity, "STORE_PARTIAL"),
     ] {
-        let value = oxide::registration(&executable, operation, Algorithm::Transpose)
-            .expect("cuda.coop Transpose registration");
-        println!("cargo::rustc-env=COOP_TRANSPOSE_VALIDITY_{name}={value}");
+        for (algorithm, prefix) in [
+            (Algorithm::Striped, "STRIPED"),
+            (Algorithm::Transpose, "TRANSPOSE"),
+        ] {
+            let value = oxide::registration(&executable, operation, algorithm)
+                .expect("cuda.coop algorithm registration");
+            println!("cargo::rustc-env=COOP_{prefix}_VALIDITY_{name}={value}");
+        }
     }
 }

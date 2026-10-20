@@ -6,9 +6,10 @@ Block Load and Store
 
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
-first. Complete one-, two- and three-dimensional blocks support Direct and
-Transpose algorithms. Both Load algorithms produce blocked
-payloads, where each thread owns consecutive elements. Other algorithms, warp
+first. Complete one-, two- and three-dimensional blocks support Direct, Striped
+and Transpose algorithms. Direct and Transpose Load produce blocked payloads,
+where each thread owns consecutive elements. Striped Load gives each thread
+elements separated by the block size. Other algorithms, warp
 groups, and public temporary storage remain under development.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
@@ -20,7 +21,7 @@ A complete program
 ------------------
 
 The example is an independent Cargo workspace with a separate generic helper
-crate. It copies three block tiles with Direct and Transpose at item counts 1
+crate. It copies three block tiles with Direct, Striped and Transpose at item counts 1
 and 4, including a short last tile. The consumer has no build script, native
 shim, provider, or scratch argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
@@ -40,7 +41,7 @@ Choose the architecture for your GPU. Materialization produces the native device
 artifact during the Cargo build. No separate compilation or linking step is
 required. The exact block launch contract is checked when preparing the launch;
 ``auto_shared`` uses the compiler's inferred requirement, which is zero for
-Direct Load/Store and includes the planned shared storage for Transpose.
+Direct and Striped Load/Store and includes the planned shared storage for Transpose.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/src/main.rs
    :language: rust
@@ -48,7 +49,7 @@ Direct Load/Store and includes the planned shared storage for Transpose.
 
 The reusable helper preserves the source element type. Its algorithm-generic
 form borrows the payload mutably because Transpose Store permutes it.
-Direct-only code may pass a shared payload borrow:
+Direct and Striped code may pass a shared payload borrow:
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
    :language: rust
@@ -66,7 +67,8 @@ Counts, defaults, offsets, and their presence must be uniform across the block.
 
 For block shape ``[X,Y,Z]``, thread rank is x-fastest:
 ``t = x + X * (y + Y * z)``. A blocked payload slot ``i`` addresses
-``offset + t * ITEMS_PER_THREAD + i``. The exact shape is part of the kernel
+``offset + t * ITEMS_PER_THREAD + i``; a Striped slot addresses
+``offset + t + X*Y*Z * i``. The exact shape is part of the kernel
 launch contract; another shape with the same thread count is rejected.
 Use ``LaunchConfig2D`` or ``LaunchConfig3D`` for the corresponding launch domain.
 Declare the matching kernel contract, for example
@@ -83,12 +85,13 @@ the source's numeric type. Filled Load initializes every slot, including the
 missing tail. Partial Store writes only its selected prefix and requires only
 those slots to be initialized.
 
-Direct Store accepts ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
-or a scalar numeric value. A scalar contributes one item per thread. Direct Store preserves every payload value and validity flag, including
+Direct and Striped Store accept ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
+or a scalar numeric value. A scalar contributes one item per thread. Both preserve every payload value
+and validity bit, including
 initialized slots outside its write domain.
 
-Selecting Transpose
--------------------
+Selecting an algorithm
+----------------------
 
 Select the algorithm through the trailing options. Selection is a Rust type,
 so each call compiles one algorithm; ordinary defaults continue to select Direct.
@@ -100,6 +103,11 @@ so each call compiles one algorithm; ordinary defaults continue to select Direct
    coop::store(block, output, &mut values,
        coop::StoreOptions::default().valid_items(count).algorithm(coop::Transpose));
 
+Striped uses CUB's direct striped accesses without shared scratch. Select
+``.algorithm(coop::Striped)`` on both operations to load and store a striped
+payload. Its Store accepts a shared payload borrow and preserves the complete
+payload, including a zero-count Store and initialized slots outside its prefix.
+
 Transpose uses CUB's coalesced accesses and shared block exchange. Its Store
 requires a mutable payload borrow and permutes every value and initialized bit
 from blocked into striped order. For a block of ``B`` threads and ``I`` items
@@ -107,7 +115,7 @@ per thread, destination lane/item ``(t, i)`` receives the old blocked slot at
 linear index ``B*i+t``. This mutation occurs even for a zero-count Store; a
 partial count only controls the global writes. Initialized slots outside the
 written prefix remain initialized at their permuted positions. Scalar Store
-uses a one-item temporary and accepts either algorithm.
+uses a one-item temporary and accepts every algorithm.
 
 The compiler allocates the provider's complete shared storage, including the
 validity plane when needed, and inserts completion before reusing managed
@@ -165,7 +173,7 @@ replacing them with unchanged or older timestamps may require an explicit
 rebuild. Crate publication is not supported yet.
 
 The rustdoc entries for ``load``, ``store``, ``LoadOptions``, ``StoreOptions``,
-``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct`` and ``Transpose`` specify their full generic signatures and
+``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct``, ``Striped`` and ``Transpose`` specify their full generic signatures and
 supported argument forms. Native correctness and artifact checks are separate
 from host compilation. Performance qualification for masked payload access is
 ongoing; the current implementation makes no negligible-overhead claim.

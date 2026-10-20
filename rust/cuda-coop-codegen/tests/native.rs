@@ -81,7 +81,11 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
         Dtype::F32,
         Dtype::F64,
     ] {
-        for (algorithm, threads) in [(Algorithm::Direct, 128), (Algorithm::Transpose, 33)] {
+        for (algorithm, threads) in [
+            (Algorithm::Direct, 128),
+            (Algorithm::Striped, 33),
+            (Algorithm::Transpose, 33),
+        ] {
             for items in [1, 4] {
                 for operation in [
                     Operation::LoadFullValidity,
@@ -125,7 +129,7 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
     // The first shape has a partial physical warp crossing rows; the second
     // spans four Z planes, one warp each, and matches an existing 1D total.
     for block in [[11, 3, 1], [8, 4, 4]] {
-        for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+        for algorithm in [Algorithm::Direct, Algorithm::Striped, Algorithm::Transpose] {
             for items in [1, 4] {
                 for operation in [
                     Operation::LoadFullValidity,
@@ -151,7 +155,7 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
             "{request:?}: CUB {:?}, scratch {:?}",
             entry.cub_layout, entry.scratch
         );
-        if request.algorithm() == Algorithm::Direct {
+        if request.algorithm() != Algorithm::Transpose {
             assert_eq!(
                 entry.cub_layout,
                 Layout {
@@ -211,7 +215,7 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
     let provider = Provider::from_checkout(&checkout, &toolkit)?;
     eprintln!("provider initialization: {:?}", start.elapsed());
     let mut requests = Vec::new();
-    for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+    for algorithm in [Algorithm::Direct, Algorithm::Striped, Algorithm::Transpose] {
         for items in [1, 4] {
             for operation in [
                 Operation::LoadFull,
@@ -223,7 +227,7 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
             }
         }
     }
-    for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+    for algorithm in [Algorithm::Direct, Algorithm::Striped, Algorithm::Transpose] {
         for operation in [
             Operation::LoadFull,
             Operation::LoadFilled,
@@ -267,7 +271,7 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
             "{request:?}: CUB {:?}, scratch {:?}",
             entry.cub_layout, entry.scratch
         );
-        if request.algorithm() == Algorithm::Direct {
+        if request.algorithm() != Algorithm::Transpose {
             assert!(entry.scratch_free);
             assert_eq!(
                 entry.scratch,

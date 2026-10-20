@@ -30,7 +30,7 @@
 //! [`this_block`] and the other dimension-free group constructors describe
 //! the executing thread's current launch. Queries grant no collective
 //! participation or synchronization guarantee. [`load`] and [`store`] support
-//! Direct and Transpose on complete blocks with compiler-checked participation
+//! Direct, Striped and Transpose on complete blocks with compiler-checked participation
 //! and collective memory ownership. Transpose uses compiler-planned shared
 //! scratch. Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
@@ -45,7 +45,8 @@ mod thread_data;
 pub use alignment::{Alignment, SupportedAlignment};
 pub use cuda_device::{CollectiveTiles, DisjointSlice};
 pub use load_store::{
-    Algorithm, Direct, LoadOptions, LoadSource, StoreOptions, StoreValue, Transpose, load, store,
+    Algorithm, Direct, LoadOptions, LoadSource, StoreOptions, StoreValue, Striped, Transpose, load,
+    store,
 };
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
 

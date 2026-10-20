@@ -1,7 +1,10 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{Algorithm, LoadOptions, StoreOptions, Transpose};
+use super::{
+    Algorithm, LoadOptions, StoreOptions, Transpose,
+    sealed::{DIRECT, STRIPED, TRANSPOSE},
+};
 use crate::{Alignment, Numeric, SupportedAlignment, ThreadData};
 use cuda_device::{CollectiveTiles, DisjointSlice, library, thread};
 
@@ -17,6 +20,12 @@ registration!(load_masked, "COOP_VALIDITY_LOAD_MASKED");
 registration!(load_filled, "COOP_VALIDITY_LOAD_FILLED");
 registration!(store_full, "COOP_VALIDITY_STORE_FULL");
 registration!(store_partial, "COOP_VALIDITY_STORE_PARTIAL");
+
+registration!(striped_load_full, "COOP_STRIPED_VALIDITY_LOAD_FULL");
+registration!(striped_load_masked, "COOP_STRIPED_VALIDITY_LOAD_MASKED");
+registration!(striped_load_filled, "COOP_STRIPED_VALIDITY_LOAD_FILLED");
+registration!(striped_store_full, "COOP_STRIPED_VALIDITY_STORE_FULL");
+registration!(striped_store_partial, "COOP_STRIPED_VALIDITY_STORE_PARTIAL");
 
 registration!(transpose_load_full, "COOP_TRANSPOSE_VALIDITY_LOAD_FULL");
 registration!(transpose_load_masked, "COOP_TRANSPOSE_VALIDITY_LOAD_MASKED");
@@ -97,19 +106,24 @@ pub(super) unsafe fn load<
     // Each static algorithm keeps its registration function-item identity. The
     // storage marker plans the complete provider layout and synchronizes reuse.
     macro_rules! call {
-        ($direct:ident, $transpose:ident, $controls:expr) => {
-            if A::TRANSPOSE {
-                library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                    $transpose,
-                    memory,
-                    (),
-                    $controls,
-                    payload,
-                )
-            } else {
-                library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
+        ($direct:ident, $striped:ident, $transpose:ident, $controls:expr) => {
+            match A::KIND {
+                DIRECT => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
                     $direct, memory, $controls, payload,
-                )
+                ),
+                STRIPED => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
+                    $striped, memory, $controls, payload,
+                ),
+                TRANSPOSE => {
+                    library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                        $transpose,
+                        memory,
+                        (),
+                        $controls,
+                        payload,
+                    )
+                }
+                _ => panic!(),
             }
         };
     }
@@ -119,12 +133,23 @@ pub(super) unsafe fn load<
     // compiler allocates Transpose scratch and completes its previous use.
     unsafe {
         match (options.valid_items, options.oob_default) {
-            (None, None) => call!(load_full, transpose_load_full, (pointer,)),
+            (None, None) => call!(
+                load_full,
+                striped_load_full,
+                transpose_load_full,
+                (pointer,)
+            ),
             (Some(count), None) => {
-                call!(load_masked, transpose_load_masked, (pointer, count as i32))
+                call!(
+                    load_masked,
+                    striped_load_masked,
+                    transpose_load_masked,
+                    (pointer, count as i32)
+                )
             }
             (Some(count), Some(default)) => call!(
                 load_filled,
+                striped_load_filled,
                 transpose_load_filled,
                 (pointer, count as i32, default)
             ),
@@ -134,10 +159,16 @@ pub(super) unsafe fn load<
 }
 
 #[inline(always)]
-pub(super) fn store<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CAPACITY: usize>(
+pub(super) fn store<
+    T: Numeric,
+    const ITEMS: usize,
+    const ALIGN: usize,
+    const CAPACITY: usize,
+    A: Algorithm,
+>(
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: &ThreadData<T, ITEMS, ALIGN>,
-    options: StoreOptions,
+    options: StoreOptions<A>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -155,18 +186,36 @@ pub(super) fn store<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CA
     // ones. The compiler checks uniform controls, participation and epochs.
     unsafe {
         let pointer = pointer.add(options.offset);
+        macro_rules! call {
+            ($direct:ident, $striped:ident, $controls:expr) => {
+                match A::KIND {
+                    DIRECT => {
+                        library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
+                            $direct,
+                            destination,
+                            $controls,
+                            payload,
+                        )
+                    }
+                    STRIPED => {
+                        library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
+                            $striped,
+                            destination,
+                            $controls,
+                            payload,
+                        )
+                    }
+                    // Only the shared-preserving Store implementations call this boundary.
+                    _ => panic!(),
+                }
+            };
+        }
         match options.valid_items {
-            None => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
-                store_full,
-                destination,
-                (pointer,),
-                payload,
-            ),
-            Some(count) => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
+            None => call!(store_full, striped_store_full, (pointer,)),
+            Some(count) => call!(
                 store_partial,
-                destination,
-                (pointer, count as i32),
-                payload,
+                striped_store_partial,
+                (pointer, count as i32)
             ),
         }
     }
