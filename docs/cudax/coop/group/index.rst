@@ -25,7 +25,7 @@ This section describes the fundamental ideas and features of CCCL Cooperative Gr
 Concerning Groups
 ^^^^^^^^^^^^^^^^^
 
-Let's start with a quick introduction to groups regarding the CUDA programming model. A group could be simply defined as a collection of threads that can synchronize and thus can cooperate on solving algorithmic problems. However, such a generic group isn't too suitable for the CUDA programming model, because the definition doesn't allow an efficient implementation of synchronization in hardware.
+Let's start with a quick introduction to groups regarding the CUDA programming model. A group could be simply defined as a collection of threads that must be able to synchronize, so they cooperate on solving algorithmic problems. However, such a generic group isn't too suitable for the CUDA programming model, because the definition doesn't allow an efficient implementation of synchronization in hardware.
 
 CTK's Cooperative Groups solve this issue by adding an upper boundary within which the threads are grouped to the definition. It means that you can't simply group arbitrary threads, but you can only group threads within a given CUDA hierarchy level. This information is used by the implementation to select the right synchronization mechanism for a given group.
 
