@@ -204,11 +204,13 @@ try:
             continue
         source.write_text(prefix + body + suffix)
         log_path = output / f"storage-{name}.log"
+        case_env = env.copy()
+        case_env["CARGO_TARGET_DIR"] = str(output / "storage-targets" / name)
         with log_path.open("w") as log:
             result = subprocess.run(
                 command,
                 cwd=record["cwd"],
-                env=env,
+                env=case_env,
                 stdout=log,
                 stderr=subprocess.STDOUT,
             )
@@ -226,7 +228,6 @@ try:
         print(f"{name}: {'PASS' if passed else 'FAIL'}", flush=True)
         if not passed:
             print(text[-5000:], flush=True)
-            break
 finally:
     source.write_text(original)
     (output / "storage-compile-results.json").write_text(

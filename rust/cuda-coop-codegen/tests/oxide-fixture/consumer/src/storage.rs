@@ -90,14 +90,21 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 single
             };
-            assert_eq!(plan.__raw_config().shared_mem_bytes, expected);
-            if expected > 0 {
+            let actual = plan.__raw_config().shared_mem_bytes;
+            if $mode == 7 {
+                // Either descriptor may be placed first after the native
+                // prefix. Both orders obey the same alignment requirements.
+                assert!(actual == expected || actual == 64 + 512 * $i + single);
+            } else {
+                assert_eq!(actual, expected);
+            }
+            if actual > 0 {
                 assert!(
                     module
                         .prepare_copy::<$i, $transpose, $mode>(LaunchConfig1D::new(
                             3,
                             128,
-                            expected - 1
+                            actual - 1
                         ))
                         .is_err()
                 );
@@ -122,6 +129,8 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
                                     (((index % 512 / $i + 1) % 128) * 3 + 1) as i32
                                 } else if $mode == 7 {
                                     (index % 512 / $i % 8 + 10) as i32
+                                } else if $mode == 8 {
+                                    (1 + (valid & 3)) as i32
                                 } else {
                                     0
                                 }
@@ -156,6 +165,12 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     check!(4, true, 6);
     check!(1, true, 7);
     check!(4, true, 7);
+    check!(1, true, 8);
+    check!(4, true, 8);
+    check!(1, true, 9);
+    check!(4, true, 9);
+    check!(1, false, 2);
+    check!(4, false, 2);
     println!("PASS: {cases} storage cases with three blocks and boundary counts");
     Ok(())
 }

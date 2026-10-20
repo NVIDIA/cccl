@@ -95,7 +95,7 @@ pub unsafe fn roundtrip<const ITEMS: usize, const TRANSPOSE: bool, const MODE: u
                 }
                 store::<ITEMS, TRANSPOSE, _>(output, offset, valid, &mut values, &mut scratch);
             }
-            _ => {
+            7 => {
                 let prefix =
                     cuda_device::DynamicSharedArray::<[u64; 8], 32>::get_fixed().cast::<u64>();
                 let lane = thread::threadIdx_x() as usize;
@@ -115,6 +115,28 @@ pub unsafe fn roundtrip<const ITEMS: usize, const TRANSPOSE: bool, const MODE: u
                 }
                 thread::sync_threads();
                 store::<ITEMS, TRANSPOSE, _>(output, offset, valid, &mut values, &mut first);
+            }
+            8 => {
+                // Runtime trip count keeps reuse of these same static sites
+                // observable, including the planned barrier on the backedge.
+                let mut iteration = 0;
+                while iteration < 2 + (valid & 3) {
+                    load::<ITEMS, TRANSPOSE, _>(input, offset, valid, &mut values, ());
+                    let mut item = 0;
+                    while item < ITEMS {
+                        values[item] += iteration as i32;
+                        item += 1;
+                    }
+                    store::<ITEMS, TRANSPOSE, _>(output, offset, valid, &mut values, ());
+                    iteration += 1;
+                }
+            }
+            _ => {
+                let original = descriptor();
+                let mut scratch: library::StorageDescriptor<0, 64, true, false> =
+                    library::storage_reconfigure_v1(original);
+                load::<ITEMS, TRANSPOSE, _>(input, offset, valid, &mut values, &mut scratch);
+                store::<ITEMS, TRANSPOSE, _>(output, offset, valid, &mut values, &mut scratch);
             }
         }
     }
