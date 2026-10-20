@@ -1114,6 +1114,16 @@ def check_cutlass_histogram() -> None:
     )
     assert_type(
         cutlass_coop.histogram(
+            block,
+            samples,
+            bins=65,
+            bins_per_thread=2,
+            counter_dtype=np.dtype(np.uint64),
+        ),
+        cutlass_coop.ThreadData[np.uint64],
+    )
+    assert_type(
+        cutlass_coop.histogram(
             block, samples, bins=65, bins_per_thread=2, counter_dtype=Uint64
         ),
         cutlass_coop.ThreadData[Uint64],

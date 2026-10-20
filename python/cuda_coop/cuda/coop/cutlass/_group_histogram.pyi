@@ -38,6 +38,9 @@ _Counter = TypeVar(
     Int64,
     Uint64,
 )
+_NumpyCounter = TypeVar(
+    "_NumpyCounter", np.int32, np.uint32, np.int64, np.uint64
+)
 
 @overload
 def histogram(
@@ -51,6 +54,18 @@ def histogram(
     algorithm: Literal["atomic", "sort"] = "atomic",
     temp_storage: TempStorageLike | None = None,
 ) -> ThreadData[Int32]: ...
+@overload
+def histogram(
+    group: BlockGroup,
+    samples: _Samples,
+    /,
+    *,
+    bins: int,
+    bins_per_thread: int = 1,
+    counter_dtype: np.dtype[_NumpyCounter],
+    algorithm: Literal["atomic", "sort"] = "atomic",
+    temp_storage: TempStorageLike | None = None,
+) -> ThreadData[_NumpyCounter]: ...
 @overload
 def histogram(
     group: BlockGroup,
