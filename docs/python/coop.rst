@@ -26,6 +26,7 @@
 
    coop/programming_guide
    coop/developer_overview
+   coop/debugger_walkthrough_temp_storage
 
 ``cuda.coop`` brings CCCL's optimized cooperative algorithms to Python GPU
 kernels. Use it when threads need to work together, such as summing a tile
