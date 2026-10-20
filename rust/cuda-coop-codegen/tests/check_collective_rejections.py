@@ -100,6 +100,48 @@ cases = {
         in_helper("    let input = unsafe { input.add(lane) };"),
         "not proved block-uniform",
     ),
+    "maybe_uninit_value": (
+        {
+            "helper": in_helper(
+                "    let initialized = initialized_value((valid, 0_u8));"
+            )["helper"].replace(
+                "payload[i] += CONTEXT_INCREMENT;",
+                "payload[i] += CONTEXT_INCREMENT + initialized.0;",
+            )
+            + """
+#[inline(never)]
+fn initialized_value<T: Copy>(value: T) -> T {
+    unsafe { core::mem::MaybeUninit::new(value).assume_init() }
+}
+"""
+        },
+        None,
+    ),
+    "maybe_uninit_uninhabited": (
+        in_helper(
+            "    if mode & 8 != 0 {\n"
+            "        #[allow(invalid_value)]\n"
+            "        let _ = unsafe {\n"
+            "            core::mem::MaybeUninit::<core::convert::Infallible>::uninit().assume_init()\n"
+            "        };\n"
+            "    }"
+        ),
+        "assert_inhabited requires a proved inhabited concrete type",
+    ),
+    "maybe_uninit_count": (
+        in_helper(
+            "    let initialized = core::mem::MaybeUninit::new(lane as i32);\n"
+            "    let valid = unsafe { initialized.assume_init() };"
+        ),
+        "not proved block-uniform",
+    ),
+    "maybe_uninit_pointer": (
+        in_helper(
+            "    let initialized = unsafe { core::mem::MaybeUninit::new(input.add(lane)) };\n"
+            "    let input = unsafe { initialized.assume_init() };"
+        ),
+        "not proved block-uniform",
+    ),
     "early_return": (in_helper("    if lane & 1 == 0 { return; }"), "lane-varying"),
     "cycle": (
         in_helper(
@@ -276,6 +318,101 @@ cases["reborrow_uniform"] = (
     },
     None,
 )
+cases["maybe_uninit_dead"] = (
+    in_helper(
+        "    match ITEMS_PER_THREAD {\n"
+        "        0 => {\n"
+        "            #[allow(invalid_value)]\n"
+        "            let _ = unsafe {\n"
+        "                core::mem::MaybeUninit::<core::convert::Infallible>::uninit().assume_init()\n"
+        "            };\n"
+        "        }\n"
+        "        _ => {}\n"
+        "    }"
+    ),
+    None,
+)
+cases.update(
+    {
+        "enum_uniform": (
+            {
+                "helper": in_helper(
+                    "    let choice = enum_choice(mode & 1 == 0, valid);\n"
+                    "    let moved = choice;\n"
+                    "    let valid = match moved { Some(count) => count, None => valid };"
+                )["helper"]
+                + """
+#[inline(never)]
+fn enum_choice(present: bool, count: i32) -> Option<i32> {
+    if present { Some(count) } else { None }
+}
+"""
+            },
+            None,
+        ),
+        "enum_uniform_tag": (
+            in_helper(
+                "    let choice = Some(lane);\n"
+                "    match choice { Some(_) => cuda_device::thread::sync_threads(), None => {} }"
+            ),
+            None,
+        ),
+        "enum_presence": (
+            in_helper(
+                "    let choice = if lane & 1 == 0 { Some(valid) } else { None };\n"
+                "    match choice { Some(_) => cuda_device::thread::sync_threads(), None => {} }"
+            ),
+            "lane-varying",
+        ),
+        "enum_fieldless": (
+            in_helper(
+                "    enum Choice { Present, Absent }\n"
+                "    let choice = if lane & 1 == 0 { Choice::Present } else { Choice::Absent };\n"
+                "    match choice { Choice::Present => cuda_device::thread::sync_threads(), Choice::Absent => {} }"
+            ),
+            "lane-varying",
+        ),
+        "enum_count": (
+            in_helper(
+                "    let choice = Some(lane as i32);\n"
+                "    let valid = match choice { Some(count) => count, None => valid };"
+            ),
+            "not proved block-uniform",
+        ),
+        "enum_pointer": (
+            in_helper(
+                "    let choice = Some(unsafe { input.add(lane) });\n"
+                "    let input = match choice { Some(pointer) => pointer, None => input };"
+            ),
+            "not proved block-uniform",
+        ),
+        "enum_default": (
+            {
+                "api": original["api"].replace(
+                    "(input, valid, -7_i32),",
+                    "(input, valid, match Some(cuda_device::thread::threadIdx_x() as i32) { Some(value) => value, None => -7_i32 }),",
+                )
+            },
+            "not proved block-uniform",
+        ),
+        "enum_mutation": (
+            {
+                "helper": in_helper(
+                    "    let mut choice = Some(valid);\n"
+                    "    replace_choice(&mut choice, lane as i32);\n"
+                    "    let valid = match choice { Some(count) => count, None => valid };"
+                )["helper"]
+                + """
+#[inline(never)]
+fn replace_choice(choice: &mut Option<i32>, count: i32) {
+    *choice = Some(count);
+}
+"""
+            },
+            "not proved block-uniform",
+        ),
+    }
+)
 unknown = set(args.case) - cases.keys()
 if unknown:
     parser.error(f"unknown cases: {', '.join(sorted(unknown))}")
@@ -307,7 +444,7 @@ try:
         case_env = env.copy()
         if name == "unchecked_bounds":
             case_env["CUDA_OXIDE_UNCHECKED_INDEXING"] = "1"
-        if name in [
+        if name.startswith("enum_") or name in [
             "aggregate_reference",
             "projected_reborrow",
             "reborrow_uniform",

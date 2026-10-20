@@ -94,6 +94,8 @@ explicit scratch, public payload validity, descriptor mutation through reference
 and unresolved allocation identities are outside this fixture's supported slice.
 The numerical checks include shifted offsets, zero/tail/full counts, item counts
 1 and 4 in one kernel, Store/barrier/Load cycles and owned async completion.
+The shifted four-item tails reach the fixed capacity boundary. A 2-by-2 grid
+also exercises the x-fastest block rank used by canonical containment.
 
 ```sh
 python3 rust/cuda-coop-codegen/tests/check_carrier_rejections.py \
@@ -101,10 +103,14 @@ python3 rust/cuda-coop-codegen/tests/check_carrier_rejections.py \
 ```
 
 This command checks missing and conditional barriers, loop backedges, divergent
-controls, descriptor/reference mutation, ambiguous origins and mixed markers,
-with positive cases for independent allocations and barriers in helpers. The
-native carrier binary also accepts `overlap` or `bounds`; each invocation must
-fail through a device trap, before an invalid native access.
+controls, descriptor/reference mutation (including enclosing aggregates),
+ambiguous origins, wrong witnesses and mixed markers, with positive cases for
+independent allocations, moved aggregates and barriers in helpers. Warp sync
+remains outside this full-block subset and cannot substitute for a block
+barrier. The native carrier binary also accepts `overlap`, `bounds` or
+`repartition`; each invocation must fail through a device trap. `repartition`
+uses an in-bounds offset computed from the smaller operation item count, which
+would incorrectly change ownership if the fixed carrier capacity were ignored.
 
 Add `--validity` to exercise the five typed Direct recipes with the actual
 `ThreadData` source, through a test-only facade. The private bridge passes
