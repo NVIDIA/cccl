@@ -93,3 +93,91 @@ pub unsafe fn store<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
         }
     }
 }
+
+#[cfg(feature = "checked")]
+mod checked {
+    use super::*;
+    /// # Safety
+    /// All threads participate with one block-wide input origin, valid count and
+    /// fill selection. The caller satisfies the exact CUB ABI and collective requirements.
+    #[inline(never)]
+    pub unsafe fn checked_load<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
+        input: *const i32,
+        values: *mut i32,
+        valid: i32,
+        filled: bool,
+    ) {
+        unsafe {
+            if filled {
+                if TRANSPOSE {
+                    cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                        transpose_load_filled,
+                        (input, valid, -7_i32),
+                        (values,),
+                    );
+                } else {
+                    cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                        direct_load_filled,
+                        (input, valid, -7_i32),
+                        (values,),
+                    );
+                }
+            } else if TRANSPOSE {
+                cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                    transpose_load_full,
+                    (input,),
+                    (values,),
+                );
+            } else {
+                cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                    direct_load_full,
+                    (input,),
+                    (values,),
+                );
+            }
+        }
+    }
+
+    /// # Safety
+    /// The payload is initialized. All threads participate with one block-wide
+    /// output origin, valid count and partial selection, satisfying the exact CUB ABI.
+    #[inline(never)]
+    pub unsafe fn checked_store<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
+        output: *mut i32,
+        values: *mut i32,
+        valid: i32,
+        partial: bool,
+    ) {
+        unsafe {
+            if partial {
+                if TRANSPOSE {
+                    cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                        transpose_store_partial,
+                        (output, valid),
+                        (values,),
+                    );
+                } else {
+                    cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                        direct_store_partial,
+                        (output, valid),
+                        (values,),
+                    );
+                }
+            } else if TRANSPOSE {
+                cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                    transpose_store_full,
+                    (output,),
+                    (values,),
+                );
+            } else {
+                cuda_device::library::checked_block_call_v1::<i32, _, _, _, ITEMS_PER_THREAD>(
+                    direct_store_full,
+                    (output,),
+                    (values,),
+                );
+            }
+        }
+    }
+}
+#[cfg(feature = "checked")]
+pub use checked::{checked_load, checked_store};

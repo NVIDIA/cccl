@@ -12,3 +12,6 @@ cuda-device.workspace = true
 
 [build-dependencies]
 cuda-coop-codegen = { path = "../../.." }
+
+[features]
+checked = []

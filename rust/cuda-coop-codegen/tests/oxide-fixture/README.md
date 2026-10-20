@@ -36,3 +36,22 @@ exercise discovery; register/stack results are not an inlining baseline. The
 materialized path uses `cargo oxide run --materialize-cubin` and the ordinary
 embedded module loader. Convergent declarations require the coordinated O03a
 compiler change.
+
+Add `--checked` to exercise the internal checked full-block marker. This route
+gets block geometry from each root contract, separates common controls from
+lane-local payload pointers, selects either of two payload arrays per lane after
+reconvergence, and repeats Load in a uniform loop with explicit synchronization.
+The raw unsafe route remains the default. Both routes retain caller obligations
+for bounds, initialized values, unique output ownership and scratch reuse.
+
+After a checked run, exercise rejected source programs in the generated copy:
+
+```sh
+python3 rust/cuda-coop-codegen/tests/check_collective_rejections.py \
+  /path/to/new-evidence-directory
+```
+
+The cases cover varying controls/carriers, different contexts of one helper,
+participation and unsupported bounds-elision modes. Sources are restored after
+each run. The initial checker diagnoses a shared helper site reached under two
+different exact block shapes; separate sites remain supported.

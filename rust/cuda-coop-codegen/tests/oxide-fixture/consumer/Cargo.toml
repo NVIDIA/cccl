@@ -13,3 +13,6 @@ cuda-host.workspace = true
 cuda-core.workspace = true
 oxide-artifacts.workspace = true
 coop-marker-fixture-helper = { path = "../helper" }
+
+[features]
+checked = ["coop-marker-fixture-helper/checked"]

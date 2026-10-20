@@ -9,7 +9,7 @@ mod kernels {
     use super::*;
     #[kernel]
     #[launch_bounds(256)]
-    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    #[launch_contract(block = (128, 1, 1), domain = 3, dynamic_shared = inferred)]
     pub unsafe fn direct_1(
         input: *const i32,
         output: *mut i32,
@@ -23,7 +23,7 @@ mod kernels {
     }
     #[kernel]
     #[launch_bounds(256)]
-    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    #[launch_contract(block = (128, 1, 1), domain = 3, dynamic_shared = inferred)]
     pub unsafe fn direct_4(
         input: *const i32,
         output: *mut i32,
@@ -37,7 +37,7 @@ mod kernels {
     }
     #[kernel]
     #[launch_bounds(256)]
-    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    #[launch_contract(block = (128, 1, 1), domain = 3, dynamic_shared = inferred)]
     pub unsafe fn transpose_1(
         input: *const i32,
         output: *mut i32,
@@ -51,7 +51,7 @@ mod kernels {
     }
     #[kernel]
     #[launch_bounds(256)]
-    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    #[launch_contract(block = (128, 1, 1), domain = 3, dynamic_shared = inferred)]
     pub unsafe fn transpose_4(
         input: *const i32,
         output: *mut i32,
@@ -65,7 +65,7 @@ mod kernels {
     }
     #[kernel]
     #[launch_bounds(256)]
-    #[launch_contract(domain = 3, dynamic_shared = inferred)]
+    #[launch_contract(block = (128, 1, 1), domain = 3, dynamic_shared = inferred)]
     pub unsafe fn shared_helper_root(
         input: *const i32,
         output: *mut i32,

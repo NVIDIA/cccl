@@ -17,6 +17,9 @@ parser.add_argument("--backend", required=True, type=Path)
 parser.add_argument("--output", required=True, type=Path)
 parser.add_argument("--cuda-root", type=Path, default=Path("/usr/local/cuda"))
 parser.add_argument("--arch", default="sm_120")
+parser.add_argument(
+    "--checked", action="store_true", help="exercise the checked full-block marker"
+)
 args = parser.parse_args()
 source = Path(__file__).resolve().parent
 checkout = source.parents[2]
@@ -63,6 +66,8 @@ command = [
     args.arch,
     "--materialize-cubin",
 ]
+if args.checked:
+    command.extend(["--features", "checked"])
 with (output / "build-run.log").open("w") as log:
     result = subprocess.run(
         command, cwd=fixture / "consumer", env=env, stdout=log, stderr=subprocess.STDOUT
@@ -74,6 +79,7 @@ with (output / "build-run.log").open("w") as log:
             "cwd": str(fixture / "consumer"),
             "oxide_root": str(oxide),
             "backend": env["CUDA_OXIDE_BACKEND"],
+            "cuda_root": env["CUDA_HOME"],
             "returncode": result.returncode,
         },
         indent=2,

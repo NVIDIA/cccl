@@ -10,3 +10,6 @@ publish = false
 [dependencies]
 cuda-device.workspace = true
 coop-marker-fixture-api = { path = "../api" }
+
+[features]
+checked = ["coop-marker-fixture-api/checked"]

@@ -11,6 +11,7 @@
 /// counts are a global prefix within their combined extent. Every thread in
 /// a block receives equal input/output origins, valid count and mode. The fixed
 /// fill value is uniform, and each thread owns its separate initialized payload.
+#[cfg(not(feature = "checked"))]
 #[inline(never)]
 pub unsafe fn roundtrip<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
     input: *const i32,
@@ -63,3 +64,8 @@ pub unsafe fn roundtrip<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
         }
     }
 }
+
+#[cfg(feature = "checked")]
+mod checked;
+#[cfg(feature = "checked")]
+pub use checked::roundtrip;
