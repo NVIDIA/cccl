@@ -197,6 +197,13 @@ def test_group_queries_share_provider_compilation(
     assert result.metadata["cubin"]
     assert len(recorded.nvrtc) == (14 if bundle_failure else 1)
     sources = "\n".join(request["cpp"] for request in recorded.nvrtc)
+    if not bundle_failure:
+        includes = [
+            line
+            for line in sources.splitlines()
+            if line.startswith("#include ")
+        ]
+        assert len(includes) == len(set(includes))
     assert "cuda_coop_numba_mlir_group_" in sources
     assert ("cub::BlockLoad" in sources) == with_primitives
     assert ("cub::BlockStore" in sources) == with_primitives
