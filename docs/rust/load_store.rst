@@ -8,8 +8,8 @@ Block Load and Store
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
 first. Complete one-, two- and three-dimensional blocks support Direct and
 Transpose algorithms. Both Load algorithms produce blocked
-payloads, where each thread owns consecutive elements. Other algorithms, warp
-groups, and public temporary storage remain under development.
+payloads, where each thread owns consecutive elements. Other algorithms and
+warp groups remain under development.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
 named ``ITEMS_PER_THREAD``. The payload element type is inferred from its source.
@@ -21,8 +21,9 @@ A complete program
 
 The example is an independent Cargo workspace with a separate generic helper
 crate. It copies three block tiles with Direct and Transpose at item counts 1
-and 4, including a short last tile. The consumer has no build script, native
-shim, provider, or scratch argument.
+and 4, including a short last tile. It also uses explicit automatic scratch in
+a repeated helper call. The
+consumer has no build script, native shim, provider, or scratch-size argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
 Oxide build.
 
@@ -112,8 +113,71 @@ uses a one-item temporary and accepts either algorithm.
 The compiler allocates the provider's complete shared storage, including the
 validity plane when needed, and inserts completion before reusing managed
 scratch. This does not add an unconditional trailing barrier. ``auto_shared``
-uses the inferred total for the kernel. Explicit temporary storage controls
-remain under development.
+uses the inferred total for the kernel.
+
+Explicit temporary storage
+--------------------------
+
+Construct ``TempStorage`` inside the kernel and pass a mutable borrow through
+the options. Default storage shares one slice between its uses and requires
+an explicit full-block barrier before reuse. Omitting ``temp_storage`` requests
+compiler-managed reuse synchronization instead.
+
+.. code-block:: rust
+
+   let mut scratch = coop::TempStorage::new().auto_sync();
+   coop::load(block, input, &mut values,
+       coop::LoadOptions::default().algorithm(coop::Transpose)
+           .temp_storage(&mut scratch));
+   coop::store(block, output, &mut values,
+       coop::StoreOptions::default().algorithm(coop::Transpose)
+           .temp_storage(&mut scratch));
+
+The consuming ``auto_sync()`` builder inserts a trailing block barrier after
+each operation that actually uses scratch. Direct Load/Store receives no barrier
+or allocation from this policy. Options carrying a mutable storage borrow are
+consumed by the operation; construct fresh options with an ordinary reborrow
+for each call, including inside loops.
+
+``exclusive()`` gives separate static primitive and reservation sites separate
+slices. Repeated execution of one site still reuses its slice. Different
+descriptors always receive independent storage. Independent scratch does not
+complete conflicting accesses to the same global-memory carrier.
+
+``with_capacity::<BYTES>()`` specifies a positive capacity for the complete
+descriptor plan, including exclusive slices and padding. An undersized request
+is a compilation error. ``with_alignment::<ALIGN>()`` selects a positive
+power-of-two minimum alignment for the allocation base; each exclusive slice
+also satisfies its own operation or reservation requirement. Omitted capacity
+and alignment are inferred. Consuming builders retain the original descriptor
+identity and must not change its policy after use. No destructor synchronizes.
+
+Typed reservations
+------------------
+
+Descriptors without auto-sync support ``reserve::<T, N>()`` and
+``reserve_aligned::<T, N, ALIGN>()``. ``N`` is a positive element count, and the
+aligned form requests a positive power-of-two minimum for that view. Only the
+ten numeric types listed above are supported. Select the element type in the reservation, for example
+``scratch.reserve::<i32, 128>()``.
+
+Reservations return non-Copy tokens with ``as_mut_ptr()`` and consuming
+``release()`` methods. They expose no initialized Rust value, reference, slice,
+or safe indexing operation. The token does not hold a descriptor-long mutable
+borrow, allowing simultaneous exclusive reservations.
+
+All element access is unsafe. The caller must establish bounds, initialization
+before reads, aliasing, non-conflicting accesses, and phase synchronization.
+Saved pointers must not be accessed after release, during overlapping reuse,
+or after kernel exit. Complete asynchronous accesses before ending their view.
+The compiler checks planned origins and live overlap; it does not prove arbitrary
+unsafe pointer code.
+
+To reuse a shared region, release its reservation, then synchronize the full
+block before the next overlapping operation. Release does not emit a barrier or
+complete global-memory accesses. A barrier before release is insufficient, and
+dropping or forgetting the token does not release it. Typed reservations cannot
+be combined with automatic synchronization on their descriptor.
 
 Collective ownership and completion
 -----------------------------------

@@ -32,7 +32,9 @@
 //! participation or synchronization guarantee. [`load`] and [`store`] support
 //! Direct and Transpose on complete blocks with compiler-checked participation
 //! and collective memory ownership. Transpose uses compiler-planned shared
-//! scratch. Host payload tests need no GPU;
+//! scratch. [`TempStorage`] selects explicit reuse and completion policies;
+//! [`StorageReservation`] exposes typed scratch through raw pointers only.
+//! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
 #![no_std]
@@ -40,6 +42,7 @@
 mod alignment;
 mod group;
 mod load_store;
+mod temp_storage;
 mod thread_data;
 
 pub use alignment::{Alignment, SupportedAlignment};
@@ -47,6 +50,7 @@ pub use cuda_device::{CollectiveTiles, DisjointSlice};
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, StoreOptions, StoreValue, Transpose, load, store,
 };
+pub use temp_storage::{StorageReservation, TempStorage, TempStorageLike};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
 
 pub use group::{

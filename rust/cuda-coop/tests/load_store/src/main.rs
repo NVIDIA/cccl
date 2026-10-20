@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 use coop::{Numeric, ThreadData, this_block};
+mod storage;
 mod transpose;
 
 use cuda_coop as coop;
@@ -365,6 +366,9 @@ mod kernels {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(argument) = std::env::args().nth(1) {
+        if argument == "storage" {
+            return storage::run();
+        }
         if argument == "transpose" {
             return transpose::run(None);
         }

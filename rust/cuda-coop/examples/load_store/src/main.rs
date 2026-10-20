@@ -58,6 +58,36 @@ mod kernels {
             coop::Transpose,
         );
     }
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn explicit_storage<const ITEMS_PER_THREAD: usize>(
+        input: &[i16],
+        mut output: coop::DisjointSlice<i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+    ) {
+        let block = coop::this_block();
+        let tile = block.count() as usize * ITEMS_PER_THREAD;
+        let offset = block.rank_at::<coop::Grid>() as usize * tile;
+        let remaining = if offset <= input.len() {
+            input.len() - offset
+        } else {
+            0
+        };
+        let valid = remaining.min(tile);
+        let mut scratch = coop::TempStorage::new().auto_sync();
+        let mut iteration = 0;
+        while iteration < 2 {
+            coop_load_store_helper::copy_with_storage(
+                block,
+                input,
+                &mut output,
+                offset,
+                valid,
+                -7_i16,
+                &mut scratch,
+            );
+            iteration += 1;
+        }
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -92,5 +122,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     run!(4, prepare_copy, copy_async_owned);
     run!(1, prepare_transpose, transpose_async_owned);
     run!(4, prepare_transpose, transpose_async_owned);
+    run!(1, prepare_explicit_storage, explicit_storage_async_owned);
+    run!(4, prepare_explicit_storage, explicit_storage_async_owned);
     Ok(())
 }

@@ -1,7 +1,10 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use crate::{Alignment, Block, Numeric, SupportedAlignment, ThreadData, ThreadGroup};
+use crate::{
+    Alignment, Block, Numeric, SupportedAlignment, TempStorage, TempStorageLike, ThreadData,
+    ThreadGroup,
+};
 use core::marker::PhantomData;
 use cuda_device::{CollectiveTiles, DisjointSlice};
 
@@ -51,10 +54,13 @@ impl sealed::Algorithm for Transpose {
 /// load without an out-of-bounds default makes every slot outside its prefix
 /// unwritten, including slots initialized before the call.
 ///
+/// Omitted storage uses compiler-managed reuse synchronization.
+/// [`temp_storage`](Self::temp_storage) borrows an explicit descriptor.
 /// Controls, including whether a count/default is present, must be uniform
 /// across the block. They are checked when the operation executes.
 #[derive(Clone, Copy)]
-pub struct LoadOptions<T, A = Direct> {
+pub struct LoadOptions<T, A = Direct, S = ()> {
+    storage: S,
     algorithm: PhantomData<A>,
     valid_items: Option<usize>,
     oob_default: Option<T>,
@@ -64,6 +70,7 @@ pub struct LoadOptions<T, A = Direct> {
 impl<T> Default for LoadOptions<T, Direct> {
     fn default() -> Self {
         Self {
+            storage: (),
             algorithm: PhantomData,
             valid_items: None,
             oob_default: None,
@@ -72,10 +79,33 @@ impl<T> Default for LoadOptions<T, Direct> {
     }
 }
 
-impl<T, A: Algorithm> LoadOptions<T, A> {
-    /// Select the compile-time algorithm while preserving the other controls.
-    pub fn algorithm<B: Algorithm>(self, _algorithm: B) -> LoadOptions<T, B> {
+impl<T, A: Algorithm, S: TempStorageLike> LoadOptions<T, A, S> {
+    /// Use this explicit descriptor instead of compiler-managed scratch.
+    ///
+    /// The options hold a mutable borrow until consumed by the operation.
+    /// Construct fresh options with an ordinary reborrow for each call in a loop.
+    pub fn temp_storage<
+        const C: usize,
+        const ALIGN: usize,
+        const AUTO_SYNC: bool,
+        const EXCLUSIVE: bool,
+    >(
+        self,
+        storage: &mut TempStorage<C, ALIGN, AUTO_SYNC, EXCLUSIVE>,
+    ) -> LoadOptions<T, A, &mut TempStorage<C, ALIGN, AUTO_SYNC, EXCLUSIVE>> {
         LoadOptions {
+            storage,
+            algorithm: PhantomData,
+            valid_items: self.valid_items,
+            oob_default: self.oob_default,
+            offset: self.offset,
+        }
+    }
+
+    /// Select the compile-time algorithm while preserving the other controls.
+    pub fn algorithm<B: Algorithm>(self, _algorithm: B) -> LoadOptions<T, B, S> {
+        LoadOptions {
+            storage: self.storage,
             algorithm: PhantomData,
             valid_items: self.valid_items,
             oob_default: self.oob_default,
@@ -115,8 +145,11 @@ impl<T, A: Algorithm> LoadOptions<T, A> {
 /// Defaults write the entire group tile at element offset zero. A partial
 /// store leaves destination elements outside its prefix unchanged. Controls,
 /// including whether a count is present, must be uniform across the block.
+/// Omitted storage uses compiler-managed reuse synchronization;
+/// [`temp_storage`](Self::temp_storage) selects explicit storage.
 #[derive(Clone, Copy)]
-pub struct StoreOptions<A = Direct> {
+pub struct StoreOptions<A = Direct, S = ()> {
+    storage: S,
     algorithm: PhantomData<A>,
     valid_items: Option<usize>,
     offset: usize,
@@ -125,6 +158,7 @@ pub struct StoreOptions<A = Direct> {
 impl Default for StoreOptions<Direct> {
     fn default() -> Self {
         Self {
+            storage: (),
             algorithm: PhantomData,
             valid_items: None,
             offset: 0,
@@ -132,10 +166,32 @@ impl Default for StoreOptions<Direct> {
     }
 }
 
-impl<A: Algorithm> StoreOptions<A> {
-    /// Select the compile-time algorithm while preserving the other controls.
-    pub fn algorithm<B: Algorithm>(self, _algorithm: B) -> StoreOptions<B> {
+impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
+    /// Use this explicit descriptor instead of compiler-managed scratch.
+    ///
+    /// The options hold a mutable borrow until consumed by the operation.
+    /// Construct fresh options with an ordinary reborrow for each call in a loop.
+    pub fn temp_storage<
+        const C: usize,
+        const ALIGN: usize,
+        const AUTO_SYNC: bool,
+        const EXCLUSIVE: bool,
+    >(
+        self,
+        storage: &mut TempStorage<C, ALIGN, AUTO_SYNC, EXCLUSIVE>,
+    ) -> StoreOptions<A, &mut TempStorage<C, ALIGN, AUTO_SYNC, EXCLUSIVE>> {
         StoreOptions {
+            storage,
+            algorithm: PhantomData,
+            valid_items: self.valid_items,
+            offset: self.offset,
+        }
+    }
+
+    /// Select the compile-time algorithm while preserving the other controls.
+    pub fn algorithm<B: Algorithm>(self, _algorithm: B) -> StoreOptions<B, S> {
+        StoreOptions {
+            storage: self.storage,
             algorithm: PhantomData,
             valid_items: self.valid_items,
             offset: self.offset,
@@ -179,7 +235,7 @@ impl<A: Algorithm> StoreOptions<A> {
 /// and participation. The compiler checks these requirements and resource
 /// conflicts; a group value or Rust borrow alone does not prove them.
 ///
-/// Loading a carrier after Store requires explicit block completion, such as
+/// Loading a carrier after Store requires block completion, such as
 /// `cuda_device::thread::sync_threads()`. Ending a borrow is not completion.
 /// Full/filled Load initializes every output slot. Masked Load without a default
 /// resets every out-of-prefix slot to unwritten; access through [`ThreadData`]
@@ -199,11 +255,18 @@ impl<A: Algorithm> StoreOptions<A> {
 /// }
 /// ```
 #[inline(always)]
-pub fn load<T: Numeric, S: LoadSource<T>, const ITEMS: usize, const ALIGN: usize, A: Algorithm>(
+pub fn load<
+    T: Numeric,
+    Source: LoadSource<T>,
+    const ITEMS: usize,
+    const ALIGN: usize,
+    A: Algorithm,
+    S: TempStorageLike,
+>(
     group: ThreadGroup<Block>,
-    source: S,
+    source: Source,
     output: &mut ThreadData<T, ITEMS, ALIGN>,
-    options: LoadOptions<T, A>,
+    options: LoadOptions<T, A, S>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -245,11 +308,17 @@ pub fn load<T: Numeric, S: LoadSource<T>, const ITEMS: usize, const ALIGN: usize
 /// }
 /// ```
 #[inline(always)]
-pub fn store<T: Numeric, V: StoreValue<T, A>, const CAPACITY: usize, A: Algorithm>(
+pub fn store<
+    T: Numeric,
+    V: StoreValue<T, A>,
+    const CAPACITY: usize,
+    A: Algorithm,
+    S: TempStorageLike,
+>(
     group: ThreadGroup<Block>,
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: V,
-    options: StoreOptions<A>,
+    options: StoreOptions<A, S>,
 ) {
     value.store(group, destination, options);
 }
@@ -262,11 +331,11 @@ pub fn store<T: Numeric, V: StoreValue<T, A>, const CAPACITY: usize, A: Algorith
 /// this trait does not expose pointers or grant lane references.
 pub trait LoadSource<T: Numeric>: sealed::LoadSource {
     #[doc(hidden)]
-    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm>(
+    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm, S: TempStorageLike>(
         self,
         group: ThreadGroup<Block>,
         output: &mut ThreadData<T, ITEMS, ALIGN>,
-        options: LoadOptions<T, A>,
+        options: LoadOptions<T, A, S>,
     ) where
         Alignment<ALIGN>: SupportedAlignment;
 }
@@ -274,11 +343,11 @@ pub trait LoadSource<T: Numeric>: sealed::LoadSource {
 impl<T: Numeric> sealed::LoadSource for &[T] {}
 impl<T: Numeric> LoadSource<T> for &[T] {
     #[inline(always)]
-    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm>(
+    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm, S: TempStorageLike>(
         self,
         _group: ThreadGroup<Block>,
         output: &mut ThreadData<T, ITEMS, ALIGN>,
-        options: LoadOptions<T, A>,
+        options: LoadOptions<T, A, S>,
     ) where
         Alignment<ALIGN>: SupportedAlignment,
     {
@@ -295,11 +364,11 @@ impl<T: Numeric, const C: usize> sealed::LoadSource
 }
 impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, CollectiveTiles<C>> {
     #[inline(always)]
-    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm>(
+    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm, S: TempStorageLike>(
         self,
         _group: ThreadGroup<Block>,
         output: &mut ThreadData<T, ITEMS, ALIGN>,
-        options: LoadOptions<T, A>,
+        options: LoadOptions<T, A, S>,
     ) where
         Alignment<ALIGN>: SupportedAlignment,
     {
@@ -326,11 +395,11 @@ impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, Col
 /// positions as described by [`store`].
 pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A> {
     #[doc(hidden)]
-    fn store<const CAPACITY: usize>(
+    fn store<const CAPACITY: usize, S: TempStorageLike>(
         self,
         group: ThreadGroup<Block>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
-        options: StoreOptions<A>,
+        options: StoreOptions<A, S>,
     );
 }
 
@@ -345,11 +414,11 @@ where
     Alignment<A>: SupportedAlignment,
 {
     #[inline(always)]
-    fn store<const C: usize>(
+    fn store<const C: usize, S: TempStorageLike>(
         self,
         _group: ThreadGroup<Block>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
-        options: StoreOptions,
+        options: StoreOptions<Direct, S>,
     ) {
         boundary::store(destination, self, options);
     }
@@ -367,11 +436,11 @@ where
     Alignment<ALIGN>: SupportedAlignment,
 {
     #[inline(always)]
-    fn store<const C: usize>(
+    fn store<const C: usize, S: TempStorageLike>(
         self,
         _group: ThreadGroup<Block>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
-        options: StoreOptions<A>,
+        options: StoreOptions<A, S>,
     ) {
         if A::TRANSPOSE {
             boundary::store_transpose(destination, self, options.algorithm(Transpose));
@@ -383,11 +452,11 @@ where
 impl<T: Numeric, A: Algorithm> sealed::StoreValue<T, A> for T {}
 impl<T: Numeric, A: Algorithm> StoreValue<T, A> for T {
     #[inline(always)]
-    fn store<const C: usize>(
+    fn store<const C: usize, S: TempStorageLike>(
         self,
         group: ThreadGroup<Block>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
-        options: StoreOptions<A>,
+        options: StoreOptions<A, S>,
     ) {
         let mut value = ThreadData::<_, 1>::new();
         value.write(0, self);

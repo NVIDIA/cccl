@@ -1,8 +1,8 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{Algorithm, LoadOptions, StoreOptions, Transpose};
-use crate::{Alignment, Numeric, SupportedAlignment, ThreadData};
+use super::{Algorithm, Direct, LoadOptions, StoreOptions, Transpose};
+use crate::{Alignment, Numeric, SupportedAlignment, TempStorageLike, ThreadData};
 use cuda_device::{CollectiveTiles, DisjointSlice, library, thread};
 
 macro_rules! registration {
@@ -76,12 +76,13 @@ pub(super) unsafe fn load<
     const ITEMS: usize,
     const ALIGN: usize,
     A: Algorithm,
+    S: TempStorageLike,
 >(
     memory: Memory,
     pointer: *const T,
     len: usize,
     output: &mut ThreadData<T, ITEMS, ALIGN>,
-    options: LoadOptions<T, A>,
+    options: LoadOptions<T, A, S>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -94,21 +95,18 @@ pub(super) unsafe fn load<
     // are checked before forming the pointer, including an empty prefix.
     let pointer = unsafe { pointer.add(options.offset) };
     let payload = output.block_io_parts();
+    let storage = options.storage.into_raw();
     // Each static algorithm keeps its registration function-item identity. The
     // storage marker plans the complete provider layout and synchronizes reuse.
     macro_rules! call {
         ($direct:ident, $transpose:ident, $controls:expr) => {
             if A::TRANSPOSE {
                 library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                    $transpose,
-                    memory,
-                    (),
-                    $controls,
-                    payload,
+                    $transpose, memory, storage, $controls, payload,
                 )
             } else {
-                library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
-                    $direct, memory, $controls, payload,
+                library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                    $direct, memory, storage, $controls, payload,
                 )
             }
         };
@@ -134,10 +132,16 @@ pub(super) unsafe fn load<
 }
 
 #[inline(always)]
-pub(super) fn store<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CAPACITY: usize>(
+pub(super) fn store<
+    T: Numeric,
+    const ITEMS: usize,
+    const ALIGN: usize,
+    const CAPACITY: usize,
+    S: TempStorageLike,
+>(
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: &ThreadData<T, ITEMS, ALIGN>,
-    options: StoreOptions,
+    options: StoreOptions<Direct, S>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -149,6 +153,7 @@ pub(super) fn store<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CA
     containment::<CAPACITY>(options.offset, valid);
     let pointer = destination.as_mut_ptr();
     let payload = value.block_io_read_parts();
+    let storage = options.storage.into_raw();
     // SAFETY: this carrier owns the checked write range. The provider checks
     // the entire lane-local write domain before reading numeric bytes and takes
     // const payload/flag pointers. It preserves all slots, including invalid
@@ -156,15 +161,17 @@ pub(super) fn store<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CA
     unsafe {
         let pointer = pointer.add(options.offset);
         match options.valid_items {
-            None => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
+            None => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
                 store_full,
                 destination,
+                storage,
                 (pointer,),
                 payload,
             ),
-            Some(count) => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
+            Some(count) => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
                 store_partial,
                 destination,
+                storage,
                 (pointer, count as i32),
                 payload,
             ),
@@ -178,10 +185,11 @@ pub(super) fn store_transpose<
     const ITEMS: usize,
     const ALIGN: usize,
     const CAPACITY: usize,
+    S: TempStorageLike,
 >(
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: &mut ThreadData<T, ITEMS, ALIGN>,
-    options: StoreOptions<Transpose>,
+    options: StoreOptions<Transpose, S>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -193,6 +201,7 @@ pub(super) fn store_transpose<
     containment::<CAPACITY>(options.offset, valid);
     let pointer = destination.as_mut_ptr();
     let payload = value.block_io_parts();
+    let storage = options.storage.into_raw();
     // SAFETY: this carrier owns the checked range. The provider checks the
     // source write domain before numeric reads, then permutes every opaque cell
     // together with its initialized bit. The exclusive payload borrow permits
@@ -203,14 +212,14 @@ pub(super) fn store_transpose<
             None => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
                 transpose_store_full,
                 destination,
-                (),
+                storage,
                 (pointer,),
                 payload,
             ),
             Some(count) => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
                 transpose_store_partial,
                 destination,
-                (),
+                storage,
                 (pointer, count as i32),
                 payload,
             ),

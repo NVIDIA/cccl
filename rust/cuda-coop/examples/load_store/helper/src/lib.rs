@@ -56,3 +56,44 @@ pub fn copy_with_algorithm<T: coop::Numeric, const ITEMS_PER_THREAD: usize, A: c
             .algorithm(algorithm),
     );
 }
+
+/// Copy a tile using caller-selected explicit storage and synchronization policy.
+pub fn copy_with_storage<
+    T: coop::Numeric,
+    const ITEMS_PER_THREAD: usize,
+    const C: usize,
+    const ALIGN: usize,
+    const AUTO_SYNC: bool,
+    const EXCLUSIVE: bool,
+>(
+    block: coop::ThreadGroup<coop::Block>,
+    input: &[T],
+    output: &mut coop::DisjointSlice<'_, T, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+    offset: usize,
+    valid: usize,
+    default: T,
+    scratch: &mut coop::TempStorage<C, ALIGN, AUTO_SYNC, EXCLUSIVE>,
+) {
+    let mut values = coop::ThreadData::<_, ITEMS_PER_THREAD>::new();
+    coop::load(
+        block,
+        input,
+        &mut values,
+        coop::LoadOptions::default()
+            .valid_items(valid)
+            .oob_default(default)
+            .offset(offset)
+            .algorithm(coop::Transpose)
+            .temp_storage(scratch),
+    );
+    coop::store(
+        block,
+        output,
+        &mut values,
+        coop::StoreOptions::default()
+            .valid_items(valid)
+            .offset(offset)
+            .algorithm(coop::Transpose)
+            .temp_storage(scratch),
+    );
+}

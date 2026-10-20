@@ -152,6 +152,139 @@ cases.update(
     ),
 )
 
+# Public descriptors preserve the existing static-site and completion rules.
+new_storage = "let mut scratch=coop::TempStorage::new();"
+sync = "thread::sync_threads();"
+explicit_load = transpose_load.replace(
+    ".algorithm(coop::Transpose)",
+    ".algorithm(coop::Transpose).temp_storage(&mut scratch)",
+)
+explicit_store = transpose_store.replace(
+    ".algorithm(coop::Transpose)",
+    ".algorithm(coop::Transpose).temp_storage(&mut scratch)",
+)
+reserve = "let view=scratch.reserve::<i32,3>();"
+release = "view.release();"
+cases.update(
+    storage_manual=(new_storage + explicit_load + sync + explicit_store, None),
+    storage_manual_missing_barrier=(
+        new_storage + explicit_load + explicit_store,
+        "requires a full-block barrier",
+    ),
+    storage_auto_loop=(
+        new_storage.replace("new()", "new().auto_sync()")
+        + "let mut iteration=0;while iteration<2 {"
+        + explicit_load
+        + explicit_store
+        + "iteration+=1;}",
+        None,
+    ),
+    storage_direct_auto_no_completion=(
+        new_storage.replace("new()", "new().auto_sync()")
+        + load
+        + store.replace(
+            ".valid_items(valid)", ".valid_items(valid).temp_storage(&mut scratch)"
+        )
+        + reload,
+        "requires a full-block barrier",
+    ),
+    storage_exclusive_sites=(
+        new_storage.replace("new()", "new().exclusive()")
+        + explicit_load
+        + explicit_load
+        + explicit_store,
+        None,
+    ),
+    storage_exclusive_loop=(
+        new_storage.replace("new()", "new().exclusive()")
+        + "let mut iteration=0;while iteration<2 {"
+        + explicit_load
+        + "iteration+=1;}",
+        "requires a full-block barrier",
+    ),
+    storage_reserve_auto=(
+        new_storage.replace("new()", "new().auto_sync()") + reserve + release,
+        "no method named `reserve`",
+    ),
+    storage_reserve_live=(
+        new_storage + reserve + sync + explicit_load + release,
+        "overlaps a live reservation",
+    ),
+    storage_release_no_barrier=(
+        new_storage + reserve + release + explicit_load,
+        "requires a full-block barrier",
+    ),
+    storage_barrier_before_release=(
+        new_storage + reserve + sync + release + explicit_load,
+        "requires a full-block barrier",
+    ),
+    storage_release_then_barrier=(
+        new_storage + reserve + release + sync + explicit_load,
+        None,
+    ),
+    storage_reserve_exclusive=(
+        new_storage.replace("new()", "new().exclusive()")
+        + reserve
+        + "let other=scratch.reserve_aligned::<u64,3,32>();"
+        + release
+        + "other.release();",
+        None,
+    ),
+    storage_extent_zero=(
+        new_storage + reserve.replace("i32,3", "i32,0") + release,
+        "assertion failed: N > 0",
+    ),
+    storage_numeric_only=(
+        new_storage + reserve.replace("i32,3", "bool,3") + release,
+        "Numeric",
+    ),
+    storage_alignment_invalid=(
+        "let _scratch=coop::TempStorage::new().with_alignment::<3>();",
+        "assertion failed",
+    ),
+    storage_capacity_zero=(
+        "let _scratch=coop::TempStorage::new().with_capacity::<0>();",
+        "assertion failed",
+    ),
+    storage_options_consumed=(
+        new_storage
+        + "let options=coop::LoadOptions::default().temp_storage(&mut scratch);coop::load(block,input,&mut values,options);coop::load(block,input,&mut values,options);",
+        "use of moved value: `options`",
+    ),
+    storage_policy_after_direct=(
+        new_storage
+        + load.replace(".oob_default(0)", ".oob_default(0).temp_storage(&mut scratch)")
+        + "let _changed=scratch.exclusive();",
+        "storage policy cannot change after use",
+    ),
+    storage_descriptor_mutation=(
+        "#[inline(never)] fn replace(old:&mut coop::TempStorage,new:coop::TempStorage){*old=new;}"
+        + new_storage
+        + "let other=coop::TempStorage::new();replace(&mut scratch,other);",
+        "mutation through a reference to a resource descriptor",
+    ),
+    storage_reservation_mutation=(
+        "#[inline(never)] fn replace(old:&mut coop::StorageReservation<i32,3>,new:coop::StorageReservation<i32,3>){*old=new;}"
+        + new_storage
+        + "let mut view=scratch.reserve::<i32,3>();let mut other=coop::TempStorage::new();let replacement=other.reserve::<i32,3>();replace(&mut view,replacement);view.release();",
+        "mutation through a reference to a resource descriptor",
+    ),
+)
+for capacity in (55, 56):
+    cases[f"storage_complete_capacity_{capacity}"] = (
+        f"let mut scratch=coop::TempStorage::new().with_capacity::<{capacity}>().exclusive();"
+        + reserve
+        + "let other=scratch.reserve_aligned::<u64,3,32>();"
+        + release
+        + "other.release();",
+        "smaller than complete plan" if capacity == 55 else None,
+    )
+
+# Storage-only cases still infer the payload type from a typed producer.
+for name, (body, diagnostic) in list(cases.items()):
+    if name.startswith("storage_"):
+        cases[name] = ("values.write(0, 0_i32);" + body, diagnostic)
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",
