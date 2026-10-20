@@ -100,6 +100,48 @@ cases = {
         in_helper("    let input = unsafe { input.add(lane) };"),
         "not proved block-uniform",
     ),
+    "maybe_uninit_value": (
+        {
+            "helper": in_helper(
+                "    let initialized = initialized_value((valid, 0_u8));"
+            )["helper"].replace(
+                "payload[i] += CONTEXT_INCREMENT;",
+                "payload[i] += CONTEXT_INCREMENT + initialized.0;",
+            )
+            + """
+#[inline(never)]
+fn initialized_value<T: Copy>(value: T) -> T {
+    unsafe { core::mem::MaybeUninit::new(value).assume_init() }
+}
+"""
+        },
+        None,
+    ),
+    "maybe_uninit_uninhabited": (
+        in_helper(
+            "    if mode & 8 != 0 {\n"
+            "        #[allow(invalid_value)]\n"
+            "        let _ = unsafe {\n"
+            "            core::mem::MaybeUninit::<core::convert::Infallible>::uninit().assume_init()\n"
+            "        };\n"
+            "    }"
+        ),
+        "assert_inhabited requires a proved inhabited concrete type",
+    ),
+    "maybe_uninit_count": (
+        in_helper(
+            "    let initialized = core::mem::MaybeUninit::new(lane as i32);\n"
+            "    let valid = unsafe { initialized.assume_init() };"
+        ),
+        "not proved block-uniform",
+    ),
+    "maybe_uninit_pointer": (
+        in_helper(
+            "    let initialized = unsafe { core::mem::MaybeUninit::new(input.add(lane)) };\n"
+            "    let input = unsafe { initialized.assume_init() };"
+        ),
+        "not proved block-uniform",
+    ),
     "early_return": (in_helper("    if lane & 1 == 0 { return; }"), "lane-varying"),
     "cycle": (
         in_helper(
@@ -274,6 +316,20 @@ cases["reborrow_uniform"] = (
             "let valid = pair.0;", "let valid = pair.1;"
         )
     },
+    None,
+)
+cases["maybe_uninit_dead"] = (
+    in_helper(
+        "    match ITEMS_PER_THREAD {\n"
+        "        0 => {\n"
+        "            #[allow(invalid_value)]\n"
+        "            let _ = unsafe {\n"
+        "                core::mem::MaybeUninit::<core::convert::Infallible>::uninit().assume_init()\n"
+        "            };\n"
+        "        }\n"
+        "        _ => {}\n"
+        "    }"
+    ),
     None,
 )
 unknown = set(args.case) - cases.keys()
