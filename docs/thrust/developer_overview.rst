@@ -12,7 +12,7 @@ Developer Overview
 
    **APIs in the ``thrust::`` namespace are considered in maintenance mode. New development happens in the ``cuda::`` namespace.**
 
-   Thrust is not deprecated: we will continue to provide updates and support for it.
+   Thrust is not deprecated: we will continue to provide updates and support for it, including performance updates.
 
    Thrust has accumulated a number of design issues that we cannot fix without breaking existing users,
    and we know how to build these facilities better.
