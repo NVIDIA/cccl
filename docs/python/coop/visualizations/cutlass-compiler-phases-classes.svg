@@ -29,7 +29,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
     <text x="166" y="247.4" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">plan_group_primitive() → GroupLoweringPlan</text>
     <text x="166" y="284.2" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">LaunchFacts</text>
     <text x="166" y="313" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Carry exact block, grid, cluster, and launch-mode facts.</text>
-    <text x="166" y="349.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">_CubLoadStoreRequest</text>
+    <text x="166" y="349.8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18px" font-weight="500" fill="#172b3a">_CubLoadStoreRequest / _CubScanRequest</text>
     <text x="166" y="378.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Bind the plan to CuTe value types.</text>
     <text x="166" y="407.40000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Derive a stable symbol and its argument types.</text>
   </g>

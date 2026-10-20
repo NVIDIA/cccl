@@ -50,24 +50,27 @@ _ALGORITHMS = frozenset(
 )
 
 
-def _classify_valid_items(value):
-    """Separate omitted, static, and runtime prefix counts.
+def _classify_valid_items(value, *, primitive="reduce"):
+    """Separate omitted, static, and runtime counts for Reduce and Scan.
 
-    Reject booleans before integer classification. The shared plan checks
-    static bounds and whether the operand form can use a valid prefix.
+    Python and NumPy integral values bind a static count; CuTe integer values
+    supply runtime operands. Booleans are rejected. ``primitive`` selects the
+    diagnostic name. Group planning checks static bounds, and generated
+    wrappers check runtime bounds; classification alone does not establish a
+    valid count.
     """
 
     if value is None:
         return ArgumentBinding.omitted()
     if _is_boolean(value):
-        raise TypeError(f"{_SCOPE}.reduce valid_items must be an integer")
+        raise TypeError(f"{_SCOPE}.{primitive} valid_items must be an integer")
     if isinstance(value, Integral):
         return ArgumentBinding.static(int(value))
     from cutlass.base_dsl.typing import Integer
 
     if isinstance(value, Integer):
         return ArgumentBinding.runtime()
-    raise TypeError(f"{_SCOPE}.reduce valid_items must be an integer")
+    raise TypeError(f"{_SCOPE}.{primitive} valid_items must be an integer")
 
 
 def _normalize_algorithm(algorithm):

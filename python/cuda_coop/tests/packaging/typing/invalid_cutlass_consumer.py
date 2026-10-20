@@ -7,15 +7,16 @@
 The runner compares each marked line and error code with mypy output. These
 calls are static inputs, not kernels to execute. They cover query levels and
 dtypes, synchronization, Load/Store groups and controls, payload forms, and
-reduction controls.
+Reduce and Scan controls.
 """
 
 from __future__ import annotations
 
 import numpy as np
-from cutlass import Float32, Int32
+from cutlass import Float32, Float64, Int32, Int64, Uint32
 
 import cuda.coop.cutlass as cutlass_coop
+from cuda import coop as common
 
 block = cutlass_coop.this_block()
 warp = cutlass_coop.this_warp()
@@ -31,7 +32,7 @@ cutlass_coop.this_grid().sync_aligned()  # expected-error: [misc]
 
 
 def callback(left: Int32, right: Int32) -> Int32:
-    """Supply a typed callback that CUTLASS Reduce must still reject."""
+    """Supply a typed callback that CUTLASS Reduce and Scan must reject."""
 
     del right
     return left
@@ -104,4 +105,87 @@ cutlass_coop.sum(
     warp,  # expected-error: [arg-type]
     scalar,
     temp_storage=cutlass_coop.TempStorage(),
+)
+
+cutlass_coop.inclusive_sum(warp, values)  # expected-error: [arg-type]
+cutlass_coop.exclusive_sum(
+    block,  # expected-error: [arg-type]
+    scalar,
+    valid_items=7,
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, scan_op="max"
+)
+cutlass_coop.exclusive_scan(
+    block,
+    scalar,
+    scan_op=np.multiply,  # expected-error: [arg-type]
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, mode="inclusive", initial_value=0
+)
+cutlass_coop.inclusive_scan(
+    block,
+    scalar,
+    scan_op=callback,  # expected-error: [arg-type]
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, prefix_op=callback
+)
+cutlass_coop.exclusive_sum(  # expected-error: [call-overload]
+    block, scalar, values
+)
+cutlass_coop.scan(
+    warp,  # expected-error: [arg-type]
+    scalar,
+    temp_storage=cutlass_coop.TempStorage(),
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    warp, scalar, algorithm="raking"
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, aggregate_output=scalar
+)
+cutlass_coop.inclusive_sum(
+    cutlass_coop.this_cluster(),  # expected-error: [arg-type]
+    scalar,
+)
+common.exclusive_sum(  # expected-error: [call-overload]
+    warp, scalar, valid_items=7
+)
+common.scan(  # expected-error: [call-overload]
+    block,
+    scalar,
+    aggregate_output=cutlass_coop.ThreadData(items_per_thread=1, dtype=Int32),
+)
+
+# Discard results so an assignment cannot constrain the initial-value type.
+cutlass_coop.exclusive_scan(  # expected-error: [misc]
+    block, scalar, initial_value=Float32(0)
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    block, scalar, mode="exclusive", initial_value=Int64(0)
+)
+cutlass_coop.exclusive_scan(  # expected-error: [misc]
+    block, values, initial_value=Uint32(0)
+)
+cutlass_coop.scan(  # expected-error: [call-overload]
+    warp, Float32(1), mode="exclusive", initial_value=np.float64(0)
+)
+common.exclusive_scan(  # expected-error: [misc]
+    block, scalar, initial_value=Int64(0)
+)
+common.scan(  # expected-error: [call-overload]
+    block,
+    cutlass_coop.ThreadData(items_per_thread=2, dtype=Float32),
+    mode="exclusive",
+    initial_value=Float64(0),
+)
+common.exclusive_scan(  # expected-error: [misc]
+    block,
+    Float32(1),
+    initial_value=np.float64(0),
+)
+common.scan(  # expected-error: [call-overload]
+    warp, scalar, mode="exclusive", initial_value=np.uint32(0)
 )

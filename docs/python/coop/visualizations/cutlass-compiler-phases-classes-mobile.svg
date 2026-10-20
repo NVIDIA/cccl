@@ -32,7 +32,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
     <text x="20" y="364.59999999999997" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Carry exact block, grid, cluster, and</text>
     <text x="20" y="386.99999999999994" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">launch-mode facts.</text>
     <text x="20" y="417.3999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_CubLoadStoreRequest /</text>
-    <text x="20" y="439.7999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_CubLoadStoreRequest</text>
+    <text x="20" y="439.7999999999999" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="14px" font-weight="500" fill="#172b3a">_CubScanRequest</text>
     <text x="20" y="462.1999999999999" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Bind the plan to CuTe value types.</text>
     <text x="20" y="484.59999999999985" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">Derive a stable symbol and its</text>
     <text x="20" y="506.99999999999983" font-family="sans-serif" font-size="14px" font-weight="400" fill="#172b3a">argument types.</text>

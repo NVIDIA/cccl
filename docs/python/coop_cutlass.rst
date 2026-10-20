@@ -66,6 +66,11 @@ qualified imports perform that registration directly.
      - Built-in operator names such as ``"sum"`` and ``"max"``.
      - Also accepts recognized ``operator`` and NumPy aliases. Arbitrary
        Python callbacks remain unsupported.
+   * - Scan
+     - Block and scalar Warp Scan with the shared initial-value and
+       algorithm controls.
+     - Adds Warp ``valid_items`` and writable ``aggregate_output`` to all
+       five Scan spellings; see :ref:`coop-cutlass-scan`.
 
 .. _coop-cutlass-differences:
 
@@ -95,8 +100,8 @@ All threads in the group must call the primitive, even when ``valid_items``
 selects a short tile or only rank zero uses the result. The sections below
 describe the requirements for block, warp, and mapped groups.
 
-Reduce supports the built-in operators listed below and rejects custom
-operators. CUTLASS does not implement Scan. See the :doc:`API reference
+Reduce and Scan support the built-in operators listed below. Custom operators
+and Scan prefix callbacks are not yet supported. See the :doc:`API reference
 <coop_api>` for operation signatures and return values.
 
 .. _coop-cutlass-mixed-backends:
@@ -163,18 +168,24 @@ disabled. Importing ``cuda.coop.cutlass`` also registers the backend.
 After registration, call the primitives inside ``@cute.kernel`` or a
 ``@cute.jit`` function called by that kernel.
 
-This example takes ``items_per_thread`` as a kernel argument; its host entry
-point defaults to two adjacent items per thread. It stores a partial tile in
-the same blocked layout. ``module`` selects the common or qualified API. The
-full example defines the tile dimensions and checks the output against a CPU
-reference. :download:`Download the example
-<../../python/cuda_coop/examples/cutlass/block_load_store.py>` to run it with a
-compatible compiler:
+This example computes exclusive prefix sums across a block: each output is
+seven plus the sum of all preceding input values. For input
+``[0, 1, 2, 3, ...]``, it produces ``[7, 7, 8, 10, ...]``. Load fills the
+per-thread payload, Scan returns a new payload, and Store writes the result.
+All three operations reuse one ``TempStorage`` with automatic synchronization.
 
-.. literalinclude:: ../../python/cuda_coop/examples/cutlass/block_load_store.py
+The kernel takes ``items_per_thread`` as a compile-time argument. The full
+example launches one ``(8, 4, 2)`` block and defaults to two adjacent items
+per thread, giving 128 input values. Its host entry point selects the common
+or qualified API as ``coop`` and checks the output against NumPy.
+:download:`Download the example
+<../../python/cuda_coop/examples/cutlass/scan.py>` to run it with a compatible
+compiler:
+
+.. literalinclude:: ../../python/cuda_coop/examples/cutlass/scan.py
    :language: python
-   :start-after: docs: start cutlass-block-load-store
-   :end-before: docs: end cutlass-block-load-store
+   :start-after: docs: start cutlass-scan
+   :end-before: docs: end cutlass-scan
 
 Block Load and Store support one-, two-, and three-dimensional blocks.
 ``offset`` selects the beginning of the block's tile and ``valid_items``
@@ -563,6 +574,66 @@ and a scalar valid-prefix sum whose result is read only at block rank zero.
    :language: python
    :start-after: docs: start cutlass-reduce
    :end-before: docs: end cutlass-reduce
+
+.. _coop-cutlass-scan:
+
+Built-in Scan
+-------------
+
+``scan``, ``exclusive_scan``, ``inclusive_scan``, ``exclusive_sum``, and
+``inclusive_sum`` support block, physical warp, and logical warp groups. Block
+primitives accept scalars and fixed multi-item payloads; warp primitives
+accept one scalar per lane. A ``ThreadData(1)`` remains an array payload and
+is not accepted by Warp Scan. Input values are preserved. A scalar input
+returns a scalar; a block payload returns a fresh ``ThreadData`` with the same
+dtype and extent in blocked order.
+
+Scan supports the same seven built-in operators as Reduce. Values may be
+signed or unsigned 8-, 16-, 32-, or 64-bit integers, or 32- or 64-bit floats;
+bitwise operators require integers. ``scan`` defaults to exclusive Sum.
+Exclusive Sum starts from typed zero unless ``scan`` or ``exclusive_scan``
+supplies ``initial_value``. Other exclusive operators require that initial
+value. Inclusive scans do not accept an initial value.
+
+The initial value must be uniform within the group. A typed value must match
+the input dtype exactly. Python numeric literals must be finite and
+representable in that dtype; integer input requires an integer literal.
+Custom operators, prefix callbacks, and callback state are unsupported.
+
+The block algorithms are ``raking`` (the default), ``raking_memoize``, and
+``warp_scans``. The last requires a block size divisible by 32. All block Scan
+algorithms use scratch and accept ``temp_storage`` with the size, alignment,
+sharing, and synchronization rules described above. One descriptor can be
+reused between Scan and Load/Store. Warp Scan manages independent scratch per
+group and rejects algorithm selectors and explicit storage. Every member of
+each participating group must call the primitive, including on repeated
+calls and loop iterations.
+
+The qualified CUTLASS API adds two controls to all five Scan spellings:
+
+.. list-table:: Qualified Scan controls
+   :header-rows: 1
+
+   * - Keyword
+     - Contract
+   * - ``valid_items``
+     - Warp-only valid prefix of one through the group width, uniform within
+       the group. Every lane participates; only lanes below the count have
+       defined scan results.
+   * - ``aggregate_output``
+     - Writable one-element ``ThreadData`` in the input dtype, inferred if
+       omitted from the descriptor. Receives the aggregate of input values,
+       excluding the initial value, at every group member.
+
+For a partial warp scan, the aggregate includes only the valid prefix and is
+available even on lanes outside that prefix. A zero count is invalid. The
+common API does not expose these two keywords. The qualified backend also
+accepts CuTe register tensors for block Scan and returns ``ThreadData``; use
+its conversion methods when a register-tensor result is needed.
+
+The :ref:`introductory prefix-sum example <coop-cutlass-load-store>` uses
+``exclusive_scan`` with an initial value of seven and shares scratch with
+Load and Store.
 
 .. _coop-cutlass-register-payloads:
 

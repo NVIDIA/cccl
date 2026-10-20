@@ -47,7 +47,7 @@ trace.
 The :doc:`shared overview <../coop>` introduces groups, per-thread items, and
 the common API. The :doc:`CUTLASS Programming Guide <../coop_cutlass>` covers
 writing kernels and choosing CUTLASS-specific controls. Here, an executable
-tile-copy example shows how a call becomes a compiled device function and
+prefix-sum example shows how a call becomes a compiled device function and
 where to look when changing the implementation. Numba-CUDA-MLIR has its own
 :doc:`Developer Guide <developer_overview>` and
 :doc:`Programming Guide <programming_guide>`.
@@ -57,34 +57,35 @@ The Numba and CUTLASS debugger walkthroughs both use a 128-thread tile copy,
 so their registration, planning, code generation, and linking stops can be
 compared directly.
 
-Following a tile copy
----------------------
+Following a prefix sum
+-----------------------
 
-The executable Load/Store example launches one ``(8, 4, 1)`` block. Each of
-its 32 threads owns two items, for a tile of 64 integers. ``module`` selects
-the common or qualified API; both use this kernel:
+The executable Scan example launches one ``(8, 4, 2)`` block. By default,
+each of its 64 threads owns two items, for a tile of 128 integers. The host
+entry point selects the common or qualified API as ``coop``; both use this
+kernel:
 
-.. literalinclude:: ../../../python/cuda_coop/examples/cutlass/block_load_store.py
+.. literalinclude:: ../../../python/cuda_coop/examples/cutlass/scan.py
    :language: python
-   :start-after: docs: start cutlass-block-load-store
-   :end-before: docs: end cutlass-block-load-store
+   :start-after: docs: start cutlass-scan
+   :end-before: docs: end cutlass-scan
 
-Load reads 45 items beginning at source offset 3 and fills the other payload
-items with ``-7``. Store writes the first 53 items beginning at destination
-offset 5. Each thread calls both primitives, including threads whose
-items are outside the valid prefix. Load mutates ``payload`` and returns
-``None``. Store also returns ``None``; transpose algorithms may rearrange
-the payload, so this example does not use it after Store.
+Load fills ``payload`` with consecutive input values. Scan returns a new
+payload whose item at position ``i`` is seven plus the sum of all inputs
+before ``i`` in blocked order. Input ``[0, 1, 2, 3, ...]`` therefore produces
+``[7, 7, 8, 10, ...]``. Store writes those prefixes to the destination.
+Every thread calls all three primitives. They reuse one ``TempStorage``
+descriptor, with ``auto_sync=True`` synchronizing scratch reuse.
 
 The :download:`complete example
-<../../../python/cuda_coop/examples/cutlass/block_load_store.py>` includes
+<../../../python/cuda_coop/examples/cutlass/scan.py>` includes
 allocation, launch, cleanup, and an independent NumPy result check. From the
 repository root, run it in the compatible environment described in the
 programming guide:
 
 .. code-block:: bash
 
-   python python/cuda_coop/examples/cutlass/block_load_store.py
+   python python/cuda_coop/examples/cutlass/scan.py
 
 CuTe owns the ``@cute.kernel`` and ``@cute.jit`` functions, their Python
 control flow, and the launch. Each primitive is a device call inside the
@@ -248,7 +249,7 @@ What to inspect at each boundary
    * - ``GroupLoweringPlan``
      - Selected implementation, participation, result, storage, and
        synchronization requirements for one cooperative call.
-   * - Provider request, such as ``_CubLoadStoreRequest``
+   * - Provider request, such as ``_CubScanRequest``
      - Shared plan plus the CuTe types and ABI choices needed to render a
        wrapper and emit its matching call.
    * - ``BundleSession``
@@ -291,10 +292,13 @@ The common API is exposed through ``cuda.coop`` and implemented in
 ``_core/api/``. The private ``_core/`` package also holds the planners and
 other implementation shared by both backends.
 
-A :term:`family` groups related primitives and their implementation.
-Load and Store share planning under ``_core/group/load_store.py``.
-CUTLASS validates their CuTe operands in ``cutlass/_group_load_store.py``
-and emits provider calls in ``cutlass/_lowering/_load_store.py``.
+A :term:`family` groups related primitives and their implementation. The
+Scan family includes ``scan``, ``inclusive_scan``, ``exclusive_scan``,
+``inclusive_sum``, and ``exclusive_sum``. Its shared declarations live in
+``_core/api/scan.py`` and ``scan.pyi``, with planning in
+``_core/group/scan.py``. CUTLASS adds its entry points and type declarations
+in ``cutlass/_group_scan.py`` and ``_group_scan.pyi``, and adapts the plan to
+CuTe in ``cutlass/_lowering/_scan.py``.
 
 .. _from-a-call-to-a-typed-provider-request:
 
@@ -313,11 +317,11 @@ and what scratch storage and barriers the call needs. Both backends use this
 planner. The CUTLASS lowering puts the plan and CuTe scalar type into a
 provider request, which the renderer uses to generate the wrapper.
 
-In the example, the default ``direct`` algorithm selects CUB Block Load and
-Store for a 32-thread block with two integers per thread. Thread rank
-``t`` owns tile items ``2 * t`` and ``2 * t + 1``. The provider source embeds
-the static offsets, valid counts, and fill value. A runtime control instead
-becomes a typed wrapper argument.
+In the example, ``algorithm="transpose"`` selects CUB Block Load and Store
+for a 64-thread block with two integers per thread. Thread rank ``t`` owns
+tile items ``2 * t`` and ``2 * t + 1``. Block Scan computes exclusive sums
+in that blocked order. The generated wrappers and scratch plans reflect
+each primitive's algorithm, element type, and items per thread.
 
 The renderer generates a device wrapper with an ordinary callable symbol.
 CuTe's ``cute.ffi`` emits the call to that symbol. Load uses a result buffer
@@ -344,7 +348,7 @@ adapter records their origin in the shared ``LaunchFacts`` object. If a
 dimension or flag is unavailable, it stays unknown in that object. Planning
 fails if the primitive needs the missing value.
 
-For the tile copy, block dimensions determine both the CUB specialization
+For the prefix sum, block dimensions determine both the CUB specialization
 and linear rank: ``x + block_x * (y + block_y * z)``. Warp primitives also
 need the exact block size to establish complete physical warps and allocate
 one scratch slice per group. Cluster primitives need consistent cluster
@@ -359,8 +363,8 @@ One provider bundle per trace
 
 Each trace has a provider session keyed by its compile options and MLIR
 module. The session deduplicates equivalent requests and records deferred
-scratch uses. Load and Store in the example contribute to the same bundle;
-finalization compiles the two providers together.
+scratch uses. Load, Scan, and Store in the example contribute to the same
+bundle; finalization compiles the three providers together.
 
 ``cuda.coop`` registers one persistent trace-finalization hook with CuTe.
 The hook runs for every trace on that DSL. It finds the session belonging
@@ -404,7 +408,9 @@ not add a reuse barrier or change the storage-free provider's identity.
 Calls with deferred scratch record its use while tracing. The finalizer
 adds ``sizeof`` and ``alignof`` probes to the same NVRTC program as the
 provider bundle. The resulting C++ layouts determine the allocation; the
-adapter does not estimate storage sizes from the element count.
+adapter does not estimate storage sizes from the element count. Other
+providers, including Warp Scan, declare their shared storage inside the
+generated C++ wrapper and do not need this placeholder-replacement step.
 
 Deferred events let one explicit descriptor serve several calls. Shared
 storage uses enough capacity for the largest requirement, while exclusive
@@ -451,8 +457,8 @@ provider emission belong under ``cutlass``.
        ``cutlass/_temp_storage.py``, and their ``.pyi`` files
    * - Family validation and lowering
      - ``cutlass/_group_load_store.py`` and
-       ``cutlass/_lowering/_load_store.py``; the Reduce
-       files follow the same organization
+       ``cutlass/_lowering/_load_store.py``; Reduce and Scan
+       follow the same organization
    * - Launch facts and provider sessions
      - ``cutlass/_compiler/_launch.py``, ``cutlass/_compiler/_state.py``,
        ``cutlass/_compiler/_finalize.py``
@@ -853,12 +859,13 @@ and storage requirements. Add a shared declaration under ``_core/api``
 only when the common API needs it; keep CUTLASS-specific controls in the
 qualified entry point and its ``.pyi`` file.
 
-Adapt the shared plan in ``cutlass/_lowering``. The lowering must agree with
-its provider wrapper about argument types, result buffers, and scratch
-operands. Register the typed request with the current session and preserve
-rollback if emission fails. Load/Store illustrates in-place payloads and typed
-memory controls. Reuse the existing renderer registration, bundle finalizer,
-and storage planner when their contracts express the operation.
+Adapt the shared plan in ``cutlass/_lowering``. The lowering must agree
+with its provider wrapper about argument types, result buffers, and
+scratch operands. Register the typed request with the current session
+and preserve rollback if emission fails. Load/Store illustrates in-place
+payloads; Scan and Reduce show result contracts and additional controls.
+Reuse the existing renderer registration, bundle finalizer, and storage
+planner when their contracts express the operation.
 
 Checking a change
 -----------------
@@ -904,6 +911,9 @@ checks in ``runtime/test_warp_load_store.py`` and
 barriers for physical and logical Warp operations. The final-cubin check in
 ``runtime/test_reduce.py`` confirms that the CUB Reduce routes leave
 no provider calls. It does not check shared memory, registers, or barriers.
+The final-cubin check in ``runtime/test_scan.py`` rejects provider calls for
+block and logical-Warp Scan, and block barriers for the logical-Warp path.
+It saves resource reports but does not check them.
 
 Provider source or intermediate PTX alone cannot prove the final result. Use
 Compute Sanitizer race checks for changes to scratch allocation or
