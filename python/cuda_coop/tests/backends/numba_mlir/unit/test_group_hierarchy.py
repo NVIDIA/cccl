@@ -504,6 +504,39 @@ def test_mapped_warp_queries_and_membership_do_not_construct_barrier_group(
 
 
 @pytest.mark.parametrize("operation", ("sync", "sync_aligned"))
+@pytest.mark.parametrize(
+    "width,exhaustive", ((8, True), (8, False), (3, False))
+)
+def test_mapped_lane_sync_guards_only_non_exhaustive_groups(
+    monkeypatch, operation, width, exhaustive
+):
+    lowering, _ = _capture_group_method_provider(monkeypatch)
+    group = _resolved_provider_group(
+        coop.this_warp().group_by(width, exhaustive=exhaustive),
+        block=(96, 1, 1),
+    )
+
+    result = lowering.make_group_method_invocable(
+        group=group,
+        operation=operation,
+        compile_context=_compile_context(),
+    )
+
+    assert f"::__syncwarp({(1 << width) - 1}u << group_first_lane);" in (
+        result.source
+    )
+    if exhaustive:
+        assert "if (" not in result.source
+        assert "return;" not in result.source
+    else:
+        assert "if (!(" in result.source
+        assert f" / {width}) * {width}" in result.source
+        assert result.source.index("return;") < result.source.index(
+            "::__syncwarp("
+        )
+
+
+@pytest.mark.parametrize("operation", ("sync", "sync_aligned"))
 def test_mapped_warp_provider_rejects_synchronization(monkeypatch, operation):
     lowering, created = _capture_group_method_provider(monkeypatch)
     group = _resolved_provider_group(coop.this_block().group_by(2))

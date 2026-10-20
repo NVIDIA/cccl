@@ -3241,7 +3241,9 @@ def prepare_ltoir_bundle(
     rep_src = {}
     rep_storage_types = {}
     rep_udf_decls = {}
-    includes = OrderedDict()
+    includes: OrderedDict[str, None] = OrderedDict.fromkeys(
+        ("cuda/std/cstdint",)
+    )
     type_defs = OrderedDict()
     udf_decls = OrderedDict()
 
@@ -3262,9 +3264,19 @@ def prepare_ltoir_bundle(
         for decl in udf.values():
             udf_decls.setdefault(decl, None)
 
+    raw_bodies = []
+    for raw in raw_helpers:
+        preamble = "".join(
+            f"#include <{include}>\n" for include in raw.includes
+        )
+        if not raw.source.startswith(preamble):
+            raise ValueError("raw C-ABI includes must form the source prefix")
+        for include in raw.includes:
+            includes.setdefault(include, None)
+        raw_bodies.append(raw.source[len(preamble) :].lstrip())
+
     buf = StringIO()
     w = buf.write
-    w("#include <cuda/std/cstdint>\n")
     for include in includes:
         w(f"#include <{include}>\n")
     for code in type_defs:
@@ -3284,9 +3296,7 @@ def prepare_ltoir_bundle(
         )
         bodies.append(body.rstrip() + "\n")
 
-    src = buf.getvalue() + "\n".join(
-        [*bodies, *(raw.source for raw in raw_helpers)]
-    )
+    src = buf.getvalue() + "\n".join([*bodies, *raw_bodies])
 
     # Query CUB TempStorage types, not kernel argument types. For example, a
     # transpose Load -> Store contributes two types, even when both calls share
@@ -3532,6 +3542,10 @@ class RawCAbiInvocable:
     ----------
     source : str
         Complete non-empty CUDA C++ translation unit.
+    includes : sequence of str, optional
+        Unconditional headers forming the exact leading source prefix, in
+        order. Bundles emit these headers once and retain the remaining source.
+        Defaults to no shared prefix; standalone compilation uses ``source``.
     symbol : str
         Valid C identifier naming its device entry point.
     return_type : numba_types.Type
@@ -3568,6 +3582,7 @@ class RawCAbiInvocable:
         storage_abi: StorageABI,
         execution_scope: SynchronizationScope,
         synchronization_scope: SynchronizationScope,
+        includes: Sequence[str] = (),
     ) -> None:
         if not isinstance(source, str) or not source:
             raise ValueError("raw C-ABI source must be a non-empty string")
@@ -3626,6 +3641,7 @@ class RawCAbiInvocable:
             for parameter, transform in zip(parameters, abi_transforms)
         )
         self.source = source
+        self.includes = tuple(includes)
         self.symbol = symbol
         self.return_type = return_type
         self.parameters = parameters
