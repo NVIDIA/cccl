@@ -1637,8 +1637,8 @@ class _StorageRewrite:
         ``reserve()`` methods are validated separately; the arrays they
         return may be used at runtime. Subscripted-provider syntax and other
         call arguments are not accepted descriptor uses. Every canonical
-        constructor must have a primitive or reservation consumer, so an otherwise
-        unused ``storage = coop.TempStorage()`` is also rejected.
+        constructor must have a primitive or reservation consumer, so an
+        otherwise unused ``storage = coop.TempStorage()`` is also rejected.
 
         Validation runs after device-helper inlining. Passing a descriptor
         to a helper is supported when inlining exposes its uses in the
