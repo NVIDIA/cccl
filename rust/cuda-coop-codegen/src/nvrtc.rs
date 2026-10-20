@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 use std::{
     ffi::{CStr, CString, c_char, c_int, c_void},
     fs,
-    path::Path,
+    path::{Path, PathBuf},
     ptr,
 };
 
@@ -56,6 +56,10 @@ pub(crate) struct Output {
 }
 
 impl Compiler {
+    pub(crate) fn input_paths(toolkit: &Path) -> [PathBuf; 2] {
+        ["libnvrtc-builtins.so", "libnvrtc.so"].map(|name| toolkit.join("lib64").join(name))
+    }
+
     pub(crate) fn load(toolkit: &Path) -> Result<Self> {
         if !cfg!(target_os = "linux") {
             return Err(Error::message(
@@ -63,12 +67,12 @@ impl Compiler {
             ));
         }
         let mut hash = Sha256::new();
-        let mut load = |name: &str| -> Result<Library> {
-            let path = toolkit
-                .join("lib64")
-                .join(name)
-                .canonicalize()
-                .map_err(|e| Error::input(&toolkit.join("lib64").join(name), e))?;
+        let mut load = |input: &Path| -> Result<Library> {
+            let path = input.canonicalize().map_err(|e| Error::input(input, e))?;
+            let name = input
+                .file_name()
+                .and_then(|name| name.to_str())
+                .expect("fixed library name");
             hash_field(&mut hash, name.as_bytes());
             hash_field(
                 &mut hash,
@@ -79,8 +83,9 @@ impl Compiler {
             unsafe { Library::new(&path) }
                 .map_err(|e| Error::message(format!("cannot load {}: {e}", path.display())))
         };
-        let builtins = load("libnvrtc-builtins.so")?;
-        let library = load("libnvrtc.so")?;
+        let [builtins_path, library_path] = Self::input_paths(toolkit);
+        let builtins = load(&builtins_path)?;
+        let library = load(&library_path)?;
         // SAFETY: symbols use signatures from nvrtc.h. Missing entry points
         // return errors before a program is created; handles remain owned.
         unsafe {

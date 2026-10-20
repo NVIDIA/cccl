@@ -4,12 +4,18 @@
 use cuda_coop_codegen::{Algorithm, Operation, oxide};
 
 fn main() {
-    if std::env::args().nth(1).as_deref() == Some("--oxide-library-request-v1") {
-        if let Err(error) = oxide::serve(
-            std::path::Path::new(env!("CCCL_SOURCE")),
-            std::io::stdin().lock(),
-            std::io::stdout().lock(),
-        ) {
+    let argument = std::env::args().nth(1);
+    if matches!(
+        argument.as_deref(),
+        Some("--oxide-library-request-v1" | "--oxide-library-inputs-v1")
+    ) {
+        let checkout = std::path::Path::new(env!("CCCL_SOURCE"));
+        let result = if argument.as_deref() == Some("--oxide-library-inputs-v1") {
+            oxide::serve_inputs(checkout, std::io::stdin().lock(), std::io::stdout().lock())
+        } else {
+            oxide::serve(checkout, std::io::stdin().lock(), std::io::stdout().lock())
+        };
+        if let Err(error) = result {
             eprintln!("{error}");
             std::process::exit(1);
         }

@@ -5,7 +5,12 @@
 
 use crate::{Error, Result};
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, ffi::CString, fs, path::Path};
+use std::{
+    collections::BTreeMap,
+    ffi::CString,
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub(crate) struct Headers {
     pub(crate) entries: Vec<(CString, CString)>,
@@ -13,16 +18,20 @@ pub(crate) struct Headers {
 }
 
 impl Headers {
-    pub(crate) fn read(checkout: &Path, toolkit: &Path) -> Result<Self> {
-        let mut files = BTreeMap::new();
-        // First entry wins: the selected checkout always owns CCCL headers,
-        // including when the toolkit also bundles an older CCCL installation.
-        for (root, prefix) in [
+    pub(crate) fn roots(checkout: &Path, toolkit: &Path) -> [(PathBuf, &'static str); 4] {
+        [
             (checkout.join("cub/cub"), "cub/"),
             (checkout.join("libcudacxx/include"), ""),
             (checkout.join("thrust/thrust"), "thrust/"),
             (toolkit.join("include"), ""),
-        ] {
+        ]
+    }
+
+    pub(crate) fn read(checkout: &Path, toolkit: &Path) -> Result<Self> {
+        let mut files = BTreeMap::new();
+        // First entry wins: the selected checkout always owns CCCL headers,
+        // including when the toolkit also bundles an older CCCL installation.
+        for (root, prefix) in Self::roots(checkout, toolkit) {
             visit(&root, &root, prefix, &mut files)?;
         }
         let mut hash = Sha256::new();
