@@ -35,7 +35,6 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_pointer.h>
@@ -180,13 +179,18 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
   tile_state.InitializeStatus(num_tiles);
 }
 
-// A work-index value that also records whether some segment in its range is not followed by a segment beginning
-// at its end.
+// Output segments start where their input segments start.
+struct reuse_input_begin
+{};
+
+// A work-index value that also records, for the input and for the output, whether some segment in its range is not
+// followed by a segment beginning at its end.
 template <typename OffsetT>
 struct contiguity_work_index_value
 {
   load_balanced_work_t<OffsetT> value;
-  bool noncontiguous;
+  bool noncontiguous_input;
+  bool noncontiguous_output;
 };
 
 template <typename OffsetT>
@@ -195,9 +199,15 @@ struct contiguity_work_index_plus
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE contiguity_work_index_value<OffsetT>
   operator()(contiguity_work_index_value<OffsetT> lhs, contiguity_work_index_value<OffsetT> rhs) const
   {
-    return {static_cast<load_balanced_work_t<OffsetT>>(lhs.value + rhs.value), lhs.noncontiguous || rhs.noncontiguous};
+    return {static_cast<load_balanced_work_t<OffsetT>>(lhs.value + rhs.value),
+            lhs.noncontiguous_input || rhs.noncontiguous_input,
+            lhs.noncontiguous_output || rhs.noncontiguous_output};
   }
 };
+
+// Bits of work_index[num_segments + 1].
+inline constexpr unsigned int contiguous_input_flag  = 1;
+inline constexpr unsigned int contiguous_output_flag = 2;
 
 template <typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE load_balanced_work_t<OffsetT> make_work_index_value(OffsetT begin, OffsetT end)
@@ -212,15 +222,21 @@ _CCCL_DEVICE _CCCL_FORCEINLINE load_balanced_work_t<OffsetT> make_work_index_val
        - static_cast<work_t>(static_cast<unsigned_offset_t>(begin));
 }
 
-// Type the work-index kernel scans.
-template <typename OffsetT, bool PublishContiguity>
-using work_index_value_t =
-  ::cuda::std::conditional_t<PublishContiguity, contiguity_work_index_value<OffsetT>, load_balanced_work_t<OffsetT>>;
+// Whether a segment of size items at begin is followed by a segment beginning at next, modulo 2^n for n-bit offsets,
+// as the main kernel adds address deltas.
+template <typename OffsetT>
+_CCCL_DEVICE _CCCL_FORCEINLINE bool is_followed_by(OffsetT begin, load_balanced_work_t<OffsetT> size, OffsetT next)
+{
+  using unsigned_offset_t = ::cuda::std::make_unsigned_t<OffsetT>;
+  return static_cast<unsigned_offset_t>(static_cast<unsigned_offset_t>(next) - static_cast<unsigned_offset_t>(begin))
+      == static_cast<unsigned_offset_t>(size);
+}
 
 //! @brief Scans segment sizes with a decoupled look-back into the work index, where work_index[i] is the number of
-//!        items in the segments before segment i, for i in [0, num_segments]. The grid also initializes the
-//!        main kernel's tile state. scan_state is initialized by a previous launch when scan_tiles is greater
-//!        than one.
+//!        items in the segments before segment i, for i in [0, num_segments], and stores in
+//!        work_index[num_segments + 1] contiguous_input_flag if every input segment is followed by a segment beginning
+//!        at its end and contiguous_output_flag if every output segment is. The grid also initializes the main
+//!        kernel's tile state. scan_state is initialized by a previous launch when scan_tiles is greater than one.
 //!
 //! @tparam BeginOffsetIteratorT
 //!   Random-access input iterator type for the segment beginning offsets
@@ -228,38 +244,38 @@ using work_index_value_t =
 //! @tparam EndOffsetIteratorT
 //!   Random-access input iterator type for the segment ending offsets
 //!
+//! @tparam OutputBeginOffsetIteratorT
+//!   Random-access input iterator type for the beginning offsets of the output segments, or reuse_input_begin
+//!
 //! @tparam OffsetT
 //!   Integer type for global offsets
 //!
 //! @tparam MainTileStateT
 //!   Tile status interface type of the main kernel
 //!
-//! @tparam PublishContiguity
-//!   Also store in work_index[num_segments + 1] whether every segment is followed by a segment beginning at its end
-//!
 template <typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
+          typename OutputBeginOffsetIteratorT,
           typename OffsetT,
-          typename MainTileStateT,
-          bool PublishContiguity>
+          typename MainTileStateT>
 _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmented_scan_work_index_kernel(
   BeginOffsetIteratorT begin_offsets,
   EndOffsetIteratorT end_offsets,
+  [[maybe_unused]] OutputBeginOffsetIteratorT output_begin_offsets,
   OffsetT num_segments,
   load_balanced_work_t<OffsetT>* work_index,
-  ScanTileState<work_index_value_t<OffsetT, PublishContiguity>> scan_state,
+  ScanTileState<contiguity_work_index_value<OffsetT>> scan_state,
   int scan_tiles,
   MainTileStateT main_state,
   int main_tiles)
 {
-  using work_t                               = load_balanced_work_t<OffsetT>;
-  static constexpr bool publishes_contiguity = PublishContiguity;
-  using value_t                              = work_index_value_t<OffsetT, PublishContiguity>;
-  using scan_op_t =
-    ::cuda::std::conditional_t<publishes_contiguity, contiguity_work_index_plus<OffsetT>, ::cuda::std::plus<work_t>>;
-  using exchange_t   = BlockExchange<value_t, work_index_threads, work_index_items_per_thread>;
-  using block_scan_t = BlockScan<value_t, work_index_threads, BLOCK_SCAN_WARP_SCANS>;
-  using prefix_op_t  = TilePrefixCallbackOp<value_t, scan_op_t, ScanTileState<value_t>>;
+  using work_t                            = load_balanced_work_t<OffsetT>;
+  static constexpr bool has_output_begins = !::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>;
+  using value_t                           = contiguity_work_index_value<OffsetT>;
+  using scan_op_t                         = contiguity_work_index_plus<OffsetT>;
+  using exchange_t                        = BlockExchange<value_t, work_index_threads, work_index_items_per_thread>;
+  using block_scan_t                      = BlockScan<value_t, work_index_threads, BLOCK_SCAN_WARP_SCANS>;
+  using prefix_op_t                       = TilePrefixCallbackOp<value_t, scan_op_t, ScanTileState<value_t>>;
   struct storage_t
   {
     typename prefix_op_t::TempStorage prefix;
@@ -289,34 +305,44 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
   for (int item = 0; item < work_index_items_per_thread; ++item)
   {
     const auto segment = tile_begin + item * work_index_threads + static_cast<int>(threadIdx.x);
-    if constexpr (publishes_contiguity)
+    const auto index   = static_cast<OffsetT>(segment);
+    OffsetT begin{};
+    OffsetT end{};
+    [[maybe_unused]] OffsetT output_begin{};
+    if (segment < segments)
     {
-      const auto index = static_cast<OffsetT>(segment);
-      OffsetT begin{};
-      OffsetT end{};
-      if (segment < segments)
+      begin = static_cast<OffsetT>(begin_offsets[index]);
+      end   = static_cast<OffsetT>(end_offsets[index]);
+      if constexpr (has_output_begins)
       {
-        begin = static_cast<OffsetT>(begin_offsets[index]);
-        end   = static_cast<OffsetT>(end_offsets[index]);
+        output_begin = static_cast<OffsetT>(output_begin_offsets[index]);
       }
-      OffsetT next_begin  = __shfl_down_sync(0xffffffffu, begin, 1);
-      const bool has_next = segment + 1 < segments;
-      if (has_next && static_cast<int>(threadIdx.x) % detail::warp_threads == detail::warp_threads - 1)
-      {
-        next_begin = static_cast<OffsetT>(begin_offsets[index + OffsetT{1}]);
-      }
-      sizes[item] = {make_work_index_value(begin, end), has_next && next_begin != (::cuda::std::max) (end, begin)};
     }
-    else if (segment < segments)
+    OffsetT next_begin = __shfl_down_sync(0xffffffffu, begin, 1);
+    [[maybe_unused]] OffsetT next_output_begin{};
+    if constexpr (has_output_begins)
     {
-      const auto index    = static_cast<OffsetT>(segment);
-      const OffsetT begin = static_cast<OffsetT>(begin_offsets[index]);
-      const OffsetT end   = static_cast<OffsetT>(end_offsets[index]);
-      sizes[item]         = make_work_index_value(begin, end);
+      next_output_begin = __shfl_down_sync(0xffffffffu, output_begin, 1);
+    }
+    const bool has_next = segment + 1 < segments;
+    if (has_next && static_cast<int>(threadIdx.x) % detail::warp_threads == detail::warp_threads - 1)
+    {
+      next_begin = static_cast<OffsetT>(begin_offsets[index + OffsetT{1}]);
+      if constexpr (has_output_begins)
+      {
+        next_output_begin = static_cast<OffsetT>(output_begin_offsets[index + OffsetT{1}]);
+      }
+    }
+    const work_t size               = make_work_index_value(begin, end);
+    sizes[item].value               = size;
+    sizes[item].noncontiguous_input = has_next && !is_followed_by(begin, size, next_begin);
+    if constexpr (has_output_begins)
+    {
+      sizes[item].noncontiguous_output = has_next && !is_followed_by(output_begin, size, next_output_begin);
     }
     else
     {
-      sizes[item] = value_t{};
+      sizes[item].noncontiguous_output = false;
     }
   }
   exchange_t(storage.tile.exchange).StripedToBlocked(sizes, sizes);
@@ -345,25 +371,18 @@ _CCCL_KERNEL_ATTRIBUTES __launch_bounds__(work_index_threads) void device_segmen
     const auto segment = tile_begin + item * work_index_threads + static_cast<int>(threadIdx.x);
     if (segment < segments)
     {
-      if constexpr (publishes_contiguity)
+      work_index[segment + 1] = sizes[item].value;
+      if (segment + 1 == segments)
       {
-        work_index[segment + 1] = sizes[item].value;
-        if (segment + 1 == segments)
-        {
-          work_index[segment + 2] = static_cast<work_t>(!sizes[item].noncontiguous);
-        }
-      }
-      else
-      {
-        work_index[segment + 1] = sizes[item];
+        const bool noncontiguous_output =
+          has_output_begins ? sizes[item].noncontiguous_output : sizes[item].noncontiguous_input;
+        work_index[segment + 2] = static_cast<work_t>(
+          (sizes[item].noncontiguous_input ? 0u : contiguous_input_flag)
+          | (noncontiguous_output ? 0u : contiguous_output_flag));
       }
     }
   }
 }
-
-// Output segments start where their input segments start.
-struct reuse_input_begin
-{};
 
 //! @brief Addresses of the load-balanced scan's work items: work item w, in segment i, lies at
 //!        input_begin[i] + (w - work_index[i]) and output_begin[i] + (w - work_index[i]).
@@ -426,14 +445,13 @@ struct agent_segmented_scan_load_balanced
 private:
   using output_begin_iterator_t = decltype(AddressingT::output_begin);
 
-  static constexpr auto policy                = PolicyGetter{}();
-  static constexpr int threads_per_block      = policy.threads_per_block;
-  static constexpr int items_per_thread       = policy.items_per_thread;
-  static constexpr int items_per_tile         = threads_per_block * items_per_thread;
-  static constexpr bool has_init              = !::cuda::std::is_same_v<InitValueT, NullType>;
-  static constexpr bool is_inclusive          = ForceInclusive || !has_init;
-  static constexpr bool has_output_deltas     = !::cuda::std::is_same_v<output_begin_iterator_t, reuse_input_begin>;
-  static constexpr bool reads_contiguity_flag = !has_output_deltas;
+  static constexpr auto policy            = PolicyGetter{}();
+  static constexpr int threads_per_block  = policy.threads_per_block;
+  static constexpr int items_per_thread   = policy.items_per_thread;
+  static constexpr int items_per_tile     = threads_per_block * items_per_thread;
+  static constexpr bool has_init          = !::cuda::std::is_same_v<InitValueT, NullType>;
+  static constexpr bool is_inclusive      = ForceInclusive || !has_init;
+  static constexpr bool has_output_deltas = !::cuda::std::is_same_v<output_begin_iterator_t, reuse_input_begin>;
   // Entry 0 of a tile's delta table is the segment carried into the tile; entry k > 0 is its k-th head.
   static constexpr int delta_table_size = items_per_tile + 1;
 
@@ -476,6 +494,7 @@ private:
     bool input_is_uniform;
     bool output_is_uniform;
     bool input_is_contiguous;
+    bool output_is_contiguous;
   };
 
   struct local_storage_t
@@ -574,47 +593,64 @@ private:
     }
     if (threadIdx.x == 0)
     {
-      // NOLINTNEXTLINE(misc-const-correctness)
-      bool input_is_contiguous = false;
-      if constexpr (reads_contiguity_flag)
-      {
-        auto& deltas               = temp_storage.local.deltas;
-        input_is_contiguous        = offsets[num_segments + OffsetT{1}] != work_t{0};
-        deltas.input_is_contiguous = input_is_contiguous;
-        if (input_is_contiguous)
-        {
-          deltas.uniform_input    = make_delta(static_cast<OffsetT>(addressing.input_begin[0]), work_t{0});
-          deltas.input_is_uniform = true;
-        }
-      }
       _CCCL_ASSERT(first_segment < num_segments, "the first segment of a range exists");
-      const work_t head = offsets[first_segment];
+      // Reads every begin it may need before testing the flags.
+      const work_t contiguity         = offsets[num_segments + OffsetT{1}];
+      const work_t head               = offsets[first_segment];
+      const OffsetT input_origin      = static_cast<OffsetT>(addressing.input_begin[0]);
+      const OffsetT first_input_begin = static_cast<OffsetT>(addressing.input_begin[first_segment]);
+      const bool input_is_contiguous  = (contiguity & contiguous_input_flag) != 0;
+      const bool output_is_contiguous = (contiguity & contiguous_output_flag) != 0;
       _CCCL_ASSERT(head <= range_begin, "a range begins in its first segment");
+
+      auto& deltas                      = temp_storage.local.deltas;
+      deltas.input_is_contiguous        = input_is_contiguous;
+      deltas.output_is_contiguous       = output_is_contiguous;
       temp_storage.local.segment_cursor = first_segment;
       temp_storage.local.next_head      = head;
-      if (!input_is_contiguous)
+      if (input_is_contiguous)
       {
-        temp_storage.local.deltas.carried_input =
-          make_delta(static_cast<OffsetT>(addressing.input_begin[first_segment]), head);
-        if constexpr (has_output_deltas)
+        deltas.uniform_input    = make_delta(input_origin, work_t{0});
+        deltas.input_is_uniform = true;
+      }
+      else
+      {
+        deltas.carried_input = make_delta(first_input_begin, head);
+      }
+      if constexpr (has_output_deltas)
+      {
+        const OffsetT output_origin      = static_cast<OffsetT>(addressing.output_begin[0]);
+        const OffsetT first_output_begin = static_cast<OffsetT>(addressing.output_begin[first_segment]);
+        if (output_is_contiguous)
         {
-          temp_storage.local.deltas.carried_output =
-            make_delta(static_cast<OffsetT>(addressing.output_begin[first_segment]), head);
+          deltas.uniform_output    = make_delta(output_origin, work_t{0});
+          deltas.output_is_uniform = true;
+        }
+        else
+        {
+          deltas.carried_output = make_delta(first_output_begin, head);
         }
       }
     }
     __syncthreads();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void record_head(OffsetT segment, work_t head, work_t tile_begin, int entry)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  record_head(OffsetT segment, work_t head, work_t tile_begin, int entry, bool records_input, bool records_output)
   {
     temp_storage.local.head_flags.Alias()[static_cast<int>(head - tile_begin)] = 1;
-    temp_storage.local.deltas.input.Alias()[entry] =
-      make_delta(static_cast<OffsetT>(addressing.input_begin[segment]), head);
+    if (records_input)
+    {
+      temp_storage.local.deltas.input.Alias()[entry] =
+        make_delta(static_cast<OffsetT>(addressing.input_begin[segment]), head);
+    }
     if constexpr (has_output_deltas)
     {
-      temp_storage.local.deltas.output.Alias()[entry] =
-        make_delta(static_cast<OffsetT>(addressing.output_begin[segment]), head);
+      if (records_output)
+      {
+        temp_storage.local.deltas.output.Alias()[entry] =
+          make_delta(static_cast<OffsetT>(addressing.output_begin[segment]), head);
+      }
     }
   }
 
@@ -640,10 +676,16 @@ private:
         carried       = table[entry_count];
       }
     };
-    check(deltas.input.Alias(), deltas.uniform_input, deltas.input_is_uniform, deltas.carried_input);
+    if (!deltas.input_is_contiguous)
+    {
+      check(deltas.input.Alias(), deltas.uniform_input, deltas.input_is_uniform, deltas.carried_input);
+    }
     if constexpr (has_output_deltas)
     {
-      check(deltas.output.Alias(), deltas.uniform_output, deltas.output_is_uniform, deltas.carried_output);
+      if (!deltas.output_is_contiguous)
+      {
+        check(deltas.output.Alias(), deltas.uniform_output, deltas.output_is_uniform, deltas.carried_output);
+      }
     }
   }
 
@@ -657,10 +699,18 @@ private:
     auto& deltas = temp_storage.local.deltas;
     if (threadIdx.x == 0)
     {
-      deltas.input.Alias()[0] = deltas.carried_input;
+      const bool records_input  = !deltas.input_is_contiguous;
+      const bool records_output = has_output_deltas && !deltas.output_is_contiguous;
+      if (records_input)
+      {
+        deltas.input.Alias()[0] = deltas.carried_input;
+      }
       if constexpr (has_output_deltas)
       {
-        deltas.output.Alias()[0] = deltas.carried_output;
+        if (records_output)
+        {
+          deltas.output.Alias()[0] = deltas.carried_output;
+        }
       }
 
       OffsetT segment = temp_storage.local.segment_cursor;
@@ -680,7 +730,7 @@ private:
         const work_t next = offsets[segment + OffsetT{1}];
         if (next != head)
         {
-          record_head(segment, head, tile_begin, ++entry_count);
+          record_head(segment, head, tile_begin, ++entry_count, records_input, records_output);
         }
         else
         {
@@ -817,13 +867,11 @@ private:
     flag_value_t (&items)[items_per_thread],
     int (&entries)[items_per_thread])
   {
-    if constexpr (reads_contiguity_flag)
+    const auto& deltas = temp_storage.local.deltas;
+    if (deltas.input_is_contiguous && (!has_output_deltas || deltas.output_is_contiguous))
     {
-      if (temp_storage.local.deltas.input_is_contiguous)
-      {
-        load_contiguous_tile(tile_begin, tile_end, num_segments, items, temp_storage.local.deltas.uniform_input);
-        return;
-      }
+      load_contiguous_tile(tile_begin, tile_end, num_segments, items, deltas.uniform_input);
+      return;
     }
     load_noncontiguous_tile(tile_begin, tile_end, num_segments, items, entries);
   }

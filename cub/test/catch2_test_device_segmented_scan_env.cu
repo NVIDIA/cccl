@@ -12,6 +12,7 @@ struct stream_registry_factory_t;
 #include <thrust/device_vector.h>
 #include <thrust/fill.h>
 #include <thrust/host_vector.h>
+#include <thrust/iterator/discard_iterator.h>
 
 #include <cuda/iterator>
 #include <cuda/std/limits>
@@ -924,6 +925,161 @@ CUB_TEST("Device segmented scan with schedule properties skips runs of empty seg
     run(load_balanced_env);
     run(both_env);
   }
+
+  SECTION("inclusive sum with gaps between input segments")
+  {
+    const auto num_input = static_cast<size_t>(num_items) + static_cast<size_t>(num_segments);
+    c2h::host_vector<offset_t> h_in_begins(num_segments);
+    c2h::host_vector<offset_t> h_in_ends(num_segments);
+    c2h::host_vector<int> h_gapped_in(num_input, canary);
+    c2h::host_vector<int> expected(num_items);
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      h_in_begins[segment] = h_offsets[segment] + static_cast<offset_t>(segment);
+      h_in_ends[segment]   = h_in_begins[segment] + (h_offsets[segment + 1] - h_offsets[segment]);
+      int sum              = 0;
+      for (offset_t item = h_offsets[segment]; item < h_offsets[segment + 1]; ++item)
+      {
+        h_gapped_in[h_in_begins[segment] + (item - h_offsets[segment])] = h_in[item];
+        sum += h_in[item];
+        expected[item] = sum;
+      }
+    }
+    const c2h::device_vector<offset_t> d_in_begins = h_in_begins;
+    const c2h::device_vector<offset_t> d_in_ends   = h_in_ends;
+    const c2h::device_vector<int> d_gapped_in      = h_gapped_in;
+    const offset_t* d_in_begins_it                 = thrust::raw_pointer_cast(d_in_begins.data());
+    const offset_t* d_in_ends_it                   = thrust::raw_pointer_cast(d_in_ends.data());
+    c2h::device_vector<int> d_out(num_items);
+
+    const auto run = [&](const auto& schedule_env) {
+      const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+        schedule_env,
+        d_gapped_in.begin(),
+        d_out.begin(),
+        num_segments,
+        d_in_begins_it,
+        d_in_ends_it,
+        d_offsets_it,
+        ::cuda::std::plus<>{},
+        cub::NullType{});
+      thrust::fill(c2h::device_policy, d_out.begin(), d_out.end(), canary);
+      device_segmented_inclusive_sum(
+        d_gapped_in.begin(),
+        d_out.begin(),
+        d_in_begins_it,
+        d_in_ends_it,
+        d_offsets_it,
+        num_segments,
+        stdexec::env{expected_allocation_size(bytes), schedule_env});
+      REQUIRE(c2h::host_vector<int>(d_out) == expected);
+    };
+    run(num_items_env);
+    run(load_balanced_env);
+    run(both_env);
+  }
+}
+
+// A three-offset call whose output begin pointer is its input begin pointer allocates what the two-offset call does.
+CUB_TEST("Device segmented scan with load balancing treats output begins equal to input begins as the two-offset form",
+         "[segmented_scan][device]",
+         CUB_SMALL)
+{
+  constexpr int canary    = -1;
+  constexpr int num_items = 1500;
+
+  // Six segments, one empty and one longer than any tile.
+  const c2h::host_vector<int> h_offsets{0, 3, 3, 10, 600, 601, 1500};
+  const auto num_segments                      = static_cast<::cuda::std::int64_t>(h_offsets.size() - 1);
+  c2h::device_vector<int> d_offsets            = h_offsets;
+  const c2h::device_vector<int> d_offsets_copy = h_offsets;
+  int* d_begins_mut                            = thrust::raw_pointer_cast(d_offsets.data());
+  const int* d_begins                          = d_begins_mut;
+  const int* d_distinct                        = thrust::raw_pointer_cast(d_offsets_copy.data());
+
+  c2h::host_vector<int> h_in(num_items);
+  c2h::host_vector<int> expected(num_items);
+  for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+  {
+    int sum = 0;
+    for (int item = h_offsets[segment]; item < h_offsets[segment + 1]; ++item)
+    {
+      h_in[item] = item % 7 + 1;
+      sum += h_in[item];
+      expected[item] = sum;
+    }
+  }
+  const c2h::device_vector<int> d_in = h_in;
+  c2h::device_vector<int> d_out(num_items);
+
+  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  const auto run = [&, num_segments](const auto& schedule_env) {
+    const size_t bytes_two = schedule_allocation_size<cub::ForceInclusive::No, true>(
+      schedule_env,
+      d_in.begin(),
+      d_out.begin(),
+      num_segments,
+      d_begins,
+      d_begins + 1,
+      d_begins,
+      ::cuda::std::plus<>{},
+      cub::NullType{});
+    const size_t bytes_same = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env,
+      d_in.begin(),
+      d_out.begin(),
+      num_segments,
+      d_begins,
+      d_begins + 1,
+      d_begins_mut,
+      ::cuda::std::plus<>{},
+      cub::NullType{});
+    const size_t bytes_distinct = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env,
+      d_in.begin(),
+      d_out.begin(),
+      num_segments,
+      d_begins,
+      d_begins + 1,
+      d_distinct,
+      ::cuda::std::plus<>{},
+      cub::NullType{});
+    REQUIRE(bytes_same == bytes_two);
+
+    thrust::fill(c2h::device_policy, d_out.begin(), d_out.end(), canary);
+    device_segmented_inclusive_sum(
+      d_in.begin(),
+      d_out.begin(),
+      d_begins,
+      d_begins + 1,
+      num_segments,
+      stdexec::env{expected_allocation_size(bytes_two), schedule_env});
+    REQUIRE(c2h::host_vector<int>(d_out) == expected);
+
+    thrust::fill(c2h::device_policy, d_out.begin(), d_out.end(), canary);
+    device_segmented_inclusive_sum(
+      d_in.begin(),
+      d_out.begin(),
+      d_begins,
+      d_begins + 1,
+      d_begins_mut,
+      num_segments,
+      stdexec::env{expected_allocation_size(bytes_same), schedule_env});
+    REQUIRE(c2h::host_vector<int>(d_out) == expected);
+
+    thrust::fill(c2h::device_policy, d_out.begin(), d_out.end(), canary);
+    device_segmented_inclusive_sum(
+      d_in.begin(),
+      d_out.begin(),
+      d_begins,
+      d_begins + 1,
+      d_distinct,
+      num_segments,
+      stdexec::env{expected_allocation_size(bytes_distinct), schedule_env});
+    REQUIRE(c2h::host_vector<int>(d_out) == expected);
+  };
+  run(stdexec::env{cub::segmented_scan_load_balancing});
+  run(stdexec::env{cub::segmented_scan_num_items(num_items), cub::segmented_scan_load_balancing});
 }
 
 CUB_TEST("Device segmented scan with schedule properties handles zero segments", "[segmented_scan][device]", CUB_SMALL)
@@ -948,6 +1104,192 @@ CUB_TEST("Device segmented scan with schedule properties handles zero segments",
   run(stdexec::env{cub::segmented_scan_num_items(0)});
   run(stdexec::env{cub::segmented_scan_load_balancing});
   run(stdexec::env{cub::segmented_scan_num_items(0), cub::segmented_scan_load_balancing});
+}
+
+// Counts its calls in *count, so an input iterator built on it records every dereference.
+struct dereference_counting_op
+{
+  unsigned int* count;
+
+  template <typename IndexT>
+  _CCCL_DEVICE_API int operator()(IndexT) const
+  {
+    atomicAdd(count, 1u);
+    return 1;
+  }
+};
+
+CUB_TEST("Device segmented scan with schedule properties handles segments that are all empty",
+         "[segmented_scan][device]",
+         CUB_SMALL,
+         offset_types)
+{
+  using offset_t = c2h::get<0, TestType>;
+
+  constexpr int canary     = -1;
+  constexpr int init       = 7;
+  constexpr int num_output = 64;
+
+  // One segment, and enough segments to span several blocks of every kernel.
+  const auto num_segments = static_cast<::cuda::std::int64_t>(GENERATE(values({1, 3000})));
+  const bool reversed     = GENERATE(false, true);
+
+  // Segment s begins at 3 + (s * 7) % 40 in the input and at (s * 11) % 60 in the output. Its end equals its begin, or
+  // precedes it by one to three items.
+  c2h::host_vector<offset_t> h_begins(num_segments);
+  c2h::host_vector<offset_t> h_ends(num_segments);
+  c2h::host_vector<offset_t> h_out_begins(num_segments);
+  for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+  {
+    h_begins[segment]     = static_cast<offset_t>(3 + (segment * 7) % 40);
+    h_ends[segment]       = reversed ? static_cast<offset_t>(h_begins[segment] - 1 - segment % 3) : h_begins[segment];
+    h_out_begins[segment] = static_cast<offset_t>((segment * 11) % 60);
+  }
+  const c2h::device_vector<offset_t> d_begins     = h_begins;
+  const c2h::device_vector<offset_t> d_ends       = h_ends;
+  const c2h::device_vector<offset_t> d_out_begins = h_out_begins;
+  const offset_t* d_begins_it                     = thrust::raw_pointer_cast(d_begins.data());
+  const offset_t* d_ends_it                       = thrust::raw_pointer_cast(d_ends.data());
+  const offset_t* d_out_begins_it                 = thrust::raw_pointer_cast(d_out_begins.data());
+
+  c2h::device_vector<unsigned int> d_dereferences(1, 0u);
+  const auto d_in = cuda::transform_iterator(
+    cuda::counting_iterator(offset_t{0}), dereference_counting_op{thrust::raw_pointer_cast(d_dereferences.data())});
+  c2h::device_vector<int> d_out(num_output, canary);
+  const c2h::host_vector<int> expected(num_output, canary);
+
+  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  const auto run = [&, num_segments](const auto& schedule_env) {
+    const size_t sum_bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env,
+      d_in,
+      d_out.begin(),
+      num_segments,
+      d_begins_it,
+      d_ends_it,
+      d_out_begins_it,
+      ::cuda::std::plus<>{},
+      cub::NullType{});
+    device_segmented_inclusive_sum(
+      d_in,
+      d_out.begin(),
+      d_begins_it,
+      d_ends_it,
+      d_out_begins_it,
+      num_segments,
+      stdexec::env{expected_allocation_size(sum_bytes), schedule_env});
+    REQUIRE(c2h::host_vector<int>(d_out) == expected);
+
+    const size_t scan_bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
+      schedule_env,
+      d_in,
+      d_out.begin(),
+      num_segments,
+      d_begins_it,
+      d_ends_it,
+      d_begins_it,
+      ::cuda::std::plus<>{},
+      cub::detail::InputValue<int>{init});
+    device_segmented_exclusive_scan(
+      d_in,
+      d_out.begin(),
+      d_begins_it,
+      d_ends_it,
+      num_segments,
+      ::cuda::std::plus<>{},
+      init,
+      stdexec::env{expected_allocation_size(scan_bytes), schedule_env});
+    REQUIRE(c2h::host_vector<int>(d_out) == expected);
+    REQUIRE(d_dereferences[0] == 0u);
+  };
+  run(stdexec::env{});
+  run(stdexec::env{cub::segmented_scan_num_items(0)});
+  run(stdexec::env{cub::segmented_scan_load_balancing});
+  run(stdexec::env{cub::segmented_scan_num_items(0), cub::segmented_scan_load_balancing});
+}
+
+CUB_TEST("Device segmented scan with schedule properties writes to a discard iterator",
+         "[segmented_scan][device]",
+         CUB_SMALL)
+{
+  using offset_t = int;
+
+  constexpr int init = 7;
+
+  // Segments longer and shorter than a tile, and empty ones, back to back or with gaps between them in the input.
+  const offset_t input_gap = GENERATE(values({0, 3}));
+  const std::vector<offset_t> sizes{3, 0, 1500, 7, 0, 129, 512, 1, 2100, 5, 64, 0, 511, 513, 2};
+  const auto num_segments = static_cast<::cuda::std::int64_t>(sizes.size());
+
+  c2h::host_vector<offset_t> h_begins(num_segments);
+  c2h::host_vector<offset_t> h_ends(num_segments);
+  c2h::host_vector<offset_t> h_out_begins(num_segments);
+  offset_t num_input = 0;
+  offset_t num_items = 0;
+  for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+  {
+    h_begins[segment]     = num_input;
+    h_ends[segment]       = num_input + sizes[segment];
+    h_out_begins[segment] = num_items;
+    num_input += sizes[segment] + input_gap;
+    num_items += sizes[segment];
+  }
+  const c2h::device_vector<offset_t> d_begins     = h_begins;
+  const c2h::device_vector<offset_t> d_ends       = h_ends;
+  const c2h::device_vector<offset_t> d_out_begins = h_out_begins;
+  const offset_t* d_begins_it                     = thrust::raw_pointer_cast(d_begins.data());
+  const offset_t* d_ends_it                       = thrust::raw_pointer_cast(d_ends.data());
+  const offset_t* d_out_begins_it                 = thrust::raw_pointer_cast(d_out_begins.data());
+
+  c2h::device_vector<int> d_in(num_input);
+  c2h::gen(C2H_SEED(1), d_in, -100, 100);
+  const auto d_out = thrust::make_discard_iterator();
+
+  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  const auto run = [&, num_segments](const auto& schedule_env) {
+    const size_t sum_bytes = schedule_allocation_size<cub::ForceInclusive::No, true>(
+      schedule_env,
+      d_in.begin(),
+      d_out,
+      num_segments,
+      d_begins_it,
+      d_ends_it,
+      d_begins_it,
+      ::cuda::std::plus<>{},
+      cub::NullType{});
+    device_segmented_inclusive_sum(
+      d_in.begin(),
+      d_out,
+      d_begins_it,
+      d_ends_it,
+      num_segments,
+      stdexec::env{expected_allocation_size(sum_bytes), schedule_env});
+
+    const size_t scan_bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env,
+      d_in.begin(),
+      d_out,
+      num_segments,
+      d_begins_it,
+      d_ends_it,
+      d_out_begins_it,
+      ::cuda::std::plus<>{},
+      cub::detail::InputValue<int>{init});
+    device_segmented_exclusive_scan(
+      d_in.begin(),
+      d_out,
+      d_begins_it,
+      d_ends_it,
+      d_out_begins_it,
+      num_segments,
+      ::cuda::std::plus<>{},
+      init,
+      stdexec::env{expected_allocation_size(scan_bytes), schedule_env});
+  };
+  run(stdexec::env{});
+  run(stdexec::env{cub::segmented_scan_num_items(num_items)});
+  run(stdexec::env{cub::segmented_scan_load_balancing});
+  run(stdexec::env{cub::segmented_scan_num_items(num_items), cub::segmented_scan_load_balancing});
 }
 
 #if TEST_LAUNCH != 1

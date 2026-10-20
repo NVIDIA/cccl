@@ -137,10 +137,9 @@ struct device_segmented_scan_load_balanced_kernel_source
 {
   static_assert(::cuda::std::is_empty_v<LoadBalancedPolicySelector>);
 
-  static constexpr bool publishes_contiguity = ::cuda::std::is_same_v<OutputBeginOffsetIteratorT, reuse_input_begin>;
-  using work_index_scan_state_t              = ScanTileState<work_index_value_t<OffsetT, publishes_contiguity>>;
-  using scan_tile_state_t                    = ReduceByKeyScanTileState<AccumT, int>;
-  using addressing_t = noncontiguous_addressing<BeginOffsetIteratorT, OutputBeginOffsetIteratorT>;
+  using work_index_scan_state_t = ScanTileState<contiguity_work_index_value<OffsetT>>;
+  using scan_tile_state_t       = ReduceByKeyScanTileState<AccumT, int>;
+  using addressing_t            = noncontiguous_addressing<BeginOffsetIteratorT, OutputBeginOffsetIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(segmented_scan_load_balanced_init_kernel,
                            device_segmented_scan_load_balanced_init_kernel<work_index_scan_state_t>);
@@ -149,9 +148,9 @@ struct device_segmented_scan_load_balanced_kernel_source
     segmented_scan_work_index_kernel,
     device_segmented_scan_work_index_kernel<BeginOffsetIteratorT,
                                             EndOffsetIteratorT,
+                                            OutputBeginOffsetIteratorT,
                                             OffsetT,
-                                            scan_tile_state_t,
-                                            publishes_contiguity>);
+                                            scan_tile_state_t>);
 
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_load_balanced_kernel,
@@ -220,7 +219,7 @@ CUB_RUNTIME_FUNCTION cudaError_t plan_work_index(::cuda::std::int64_t num_segmen
   {
     return CubDebug(cudaErrorInvalidValue);
   }
-  // num_segments + 1 prefix sums of the segment sizes, then the contiguity flag
+  // num_segments + 1 prefix sums of the segment sizes, then the contiguity flags
   plan.index_bytes = static_cast<size_t>(num_segments + 2) * sizeof(work_t);
   if (plan.scan_tiles > 1)
   {
@@ -269,6 +268,7 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_work_index(
           .doit(kernel_source.segmented_scan_work_index_kernel(),
                 segments.begin,
                 segments.end,
+                segments.output_begin,
                 static_cast<OffsetT>(num_segments),
                 static_cast<load_balanced_work_t<OffsetT>*>(index_storage),
                 scan_state,

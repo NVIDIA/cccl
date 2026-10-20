@@ -31,6 +31,10 @@
 #include <cuda/__execution/tune.h>
 #include <cuda/__functional/call_or.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/optional>
 
@@ -74,6 +78,13 @@ struct get_segmented_scan_load_balancing_t
 
 struct load_balancing_t
 {};
+
+// Whether equal begin-offset iterators of these types read the same offsets: pointers to one offset type.
+template <typename BeginOffsetIteratorInputT, typename BeginOffsetIteratorOutputT>
+inline constexpr bool begin_offsets_comparable =
+  ::cuda::std::is_pointer_v<BeginOffsetIteratorInputT> && ::cuda::std::is_pointer_v<BeginOffsetIteratorOutputT>
+  && ::cuda::std::is_same_v<::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<BeginOffsetIteratorInputT>>,
+                            ::cuda::std::remove_cv_t<::cuda::std::remove_pointer_t<BeginOffsetIteratorOutputT>>>;
 
 template <ForceInclusive EnforceInclusive,
           bool ReuseInputBegin,
@@ -136,6 +147,27 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
     }
     else
     {
+      // Output begin offsets that are the input begin offsets take the route that reads each begin offset once.
+      if constexpr (begin_offsets_comparable<BeginOffsetIteratorInputT, BeginOffsetIteratorOutputT>)
+      {
+        if (input_begin_offsets == output_begin_offsets)
+        {
+          return dispatch_from_env<EnforceInclusive, true>(
+            env,
+            d_temp_storage,
+            temp_storage_bytes,
+            d_in,
+            d_out,
+            num_segments,
+            input_begin_offsets,
+            input_end_offsets,
+            input_begin_offsets,
+            scan_op,
+            init_value,
+            stream,
+            policy_selector);
+        }
+      }
       return dispatch_load_balanced<EnforceInclusive>(
         d_temp_storage,
         temp_storage_bytes,
