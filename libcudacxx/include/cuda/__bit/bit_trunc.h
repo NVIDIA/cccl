@@ -46,17 +46,97 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA
 
+template <class _Tp>
+[[nodiscard]] _CCCL_API constexpr _Tp __bit_trunc_impl_generic(const _Tp __v, const int __n) noexcept
+{
+  return static_cast<_Tp>(__v & (::cuda::std::shl(_Tp{1}, static_cast<unsigned>(__n)) - 1));
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_HOST_API _Tp __bit_trunc_impl_host(const _Tp __v, const int __n) noexcept
+{
+  using ::cuda::std::uint32_t;
+  using ::cuda::std::uint64_t;
+
+#if defined(_CCCL_BUILTIN_IA32_BZHI_SI) && defined(_CCCL_BUILTIN_IA32_BZHI_DI)
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    // BZHI only uses the low eight bits of the width.
+    const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
+    return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_SI(uint32_t{__v}, __width));
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    // BZHI only uses the low eight bits of the width.
+    const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_DI(__v, __width));))
+  }
+#  if _CCCL_HAS_INT128()
+  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+  {
+    NV_IF_TARGET(NV_IS_HOST, {
+      const auto __lo_width = ::cuda::std::min(__un, 64u);
+      const auto __hi_width = static_cast<unsigned>(::cuda::std::min(::cuda::std::max(__n - 64, 0), 64));
+      const auto __lo       = _CCCL_BUILTIN_IA32_BZHI_DI(static_cast<uint64_t>(__v), __lo_width);
+      const auto __hi       = _CCCL_BUILTIN_IA32_BZHI_DI(static_cast<uint64_t>(__v >> 64), __hi_width);
+      return _Tp{__lo} | (_Tp{__hi} << 64);
+    })
+  }
+#  endif // _CCCL_HAS_INT128()
+  else
+#endif // _CCCL_BUILTIN_IA32_BZHI_SI && _CCCL_BUILTIN_IA32_BZHI_DI
+  {
+    return ::cuda::__bit_trunc_impl_generic(__v, __n);
+  }
+}
+
 #if _CCCL_DEVICE_COMPILATION()
 template <class = void>
 [[nodiscard]]
-_CCCL_DEVICE_API ::cuda::std::uint32_t __szext_clamp(::cuda::std::uint32_t __v, ::cuda::std::uint32_t __n) noexcept {
-  NV_IF_TARGET(NV_PROVIDES_SM_70,
-               ({
-                 ::cuda::std::uint32_t __ret;
-                 asm("szext.clamp.u32 %0, %1, %2;" : "=r"(__ret) : "r"(__v), "r"(__n));
-                 return __ret;
-               }),
-               ({ _CCCL_ASSERT(false, "This function is sm70+ only"); }))}
+_CCCL_DEVICE_API ::cuda::std::uint32_t __szext_clamp_sm70(::cuda::std::uint32_t __v, ::cuda::std::uint32_t __n) noexcept
+{
+  ::cuda::std::uint32_t __ret;
+  asm("szext.clamp.u32 %0, %1, %2;" : "=r"(__ret) : "r"(__v), "r"(__n));
+  return __ret;
+}
+
+template <class _Tp>
+[[nodiscard]] _CCCL_DEVICE_API _Tp __bit_trunc_impl_sm70(const _Tp __v, const int __n) noexcept
+{
+  using ::cuda::std::uint32_t;
+  using ::cuda::std::uint64_t;
+
+  const auto __un = static_cast<unsigned>(__n);
+
+  if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    return static_cast<_Tp>(::cuda::__szext_clamp_sm70(uint32_t{__v}, __un));
+  }
+  else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
+  {
+    const auto __lo = ::cuda::__szext_clamp_sm70(static_cast<uint32_t>(__v), __un);
+    const auto __hi = ::cuda::__szext_clamp_sm70(
+      static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
+    return _Tp{__lo} | (_Tp{__hi} << 32);
+  }
+#  if _CCCL_HAS_INT128()
+  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
+  {
+    const auto __w0 = ::cuda::__szext_clamp_sm70(static_cast<uint32_t>(__v), __un);
+    const auto __w1 = ::cuda::__szext_clamp_sm70(
+      static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
+    const auto __w2 = ::cuda::__szext_clamp_sm70(
+      static_cast<uint32_t>(__v >> 64), static_cast<uint32_t>(::cuda::std::max(__n - 64, 0)));
+    const auto __w3 = ::cuda::__szext_clamp_sm70(
+      static_cast<uint32_t>(__v >> 96), static_cast<uint32_t>(::cuda::std::max(__n - 96, 0)));
+    return _Tp{__w0} | (_Tp{__w1} << 32) | (_Tp{__w2} << 64) | (_Tp{__w3} << 96);
+  }
+#  endif // _CCCL_HAS_INT128()
+  else
+  {
+    return ::cuda::__bit_trunc_impl_generic(__v, __n);
+  }
+}
 #endif // _CCCL_DEVICE_COMPILATION()
 
 //! @brief Retains the least significant \p __n bits of an unsigned integer and clears the remaining bits.
@@ -66,11 +146,12 @@ _CCCL_DEVICE_API ::cuda::std::uint32_t __szext_clamp(::cuda::std::uint32_t __v, 
 //! @pre \p __n is nonnegative.
 //! @return The truncated value. Returns zero if \p __n is zero, or \p __v if \p __n is at least the bit width of
 //! \p _Tp.
-_CCCL_TEMPLATE(class _Tp) _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>) [[nodiscard]]
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
+[[nodiscard]]
 _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
 {
   _CCCL_ASSERT(__n >= 0, "__n must be nonnegative");
-  const auto __un = static_cast<unsigned>(__n);
 
   // When __n is a constant, use the fallback path.
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
@@ -80,60 +161,12 @@ _CCCL_API constexpr _Tp bit_trunc(const _Tp __v, const int __n) noexcept
 #if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
     _CCCL_IF_NOT_CONSTEVAL_DEFAULT
     {
-      using ::cuda::std::uint32_t;
-      using ::cuda::std::uint64_t;
-
-      if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
-      {
-#  if defined(_CCCL_BUILTIN_IA32_BZHI_SI)
-        // BZHI only uses the low eight bits of the width.
-        const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
-        NV_IF_TARGET(NV_IS_HOST, (return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_SI(uint32_t{__v}, __width));))
-#  endif // _CCCL_BUILTIN_IA32_BZHI_SI
-        NV_IF_TARGET(NV_PROVIDES_SM_70, (return static_cast<_Tp>(::cuda::__szext_clamp(uint32_t{__v}, __un));))
-      }
-      else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
-      {
-#  if defined(_CCCL_BUILTIN_IA32_BZHI_DI)
-        // BZHI only uses the low eight bits of the width.
-        const auto __width = ::cuda::std::min(__un, static_cast<unsigned>(::cuda::std::__num_bits_v<_Tp>));
-        NV_IF_TARGET(NV_IS_HOST, (return static_cast<_Tp>(_CCCL_BUILTIN_IA32_BZHI_DI(__v, __width));))
-#  endif // _CCCL_BUILTIN_IA32_BZHI_DI
-        NV_IF_TARGET(NV_PROVIDES_SM_70, ({
-                       const auto __lo = ::cuda::__szext_clamp(static_cast<uint32_t>(__v), __un);
-                       const auto __hi = ::cuda::__szext_clamp(
-                         static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
-                       return _Tp{__lo} | (_Tp{__hi} << 32);
-                     }))
-      }
-#  if _CCCL_HAS_INT128()
-      else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
-      {
-#    if defined(_CCCL_BUILTIN_IA32_BZHI_SI) && defined(_CCCL_BUILTIN_IA32_BZHI_DI)
-        NV_IF_TARGET(NV_IS_HOST, {
-          const auto __lo = ::cuda::bit_trunc(static_cast<::cuda::std::uint64_t>(__v), __n);
-          const auto __hi =
-            ::cuda::bit_trunc(static_cast<::cuda::std::uint64_t>(__v >> 64), ::cuda::std::max(__n - 64, 0));
-          return _Tp{__lo} | (_Tp{__hi} << 64);
-        })
-#    endif // _CCCL_BUILTIN_IA32_BZHI_SI && _CCCL_BUILTIN_IA32_BZHI_DI
-
-        NV_IF_TARGET(NV_PROVIDES_SM_70, ({
-                       const auto __w0 = ::cuda::__szext_clamp(static_cast<uint32_t>(__v), __un);
-                       const auto __w1 = ::cuda::__szext_clamp(
-                         static_cast<uint32_t>(__v >> 32), static_cast<uint32_t>(::cuda::std::max(__n - 32, 0)));
-                       const auto __w2 = ::cuda::__szext_clamp(
-                         static_cast<uint32_t>(__v >> 64), static_cast<uint32_t>(::cuda::std::max(__n - 64, 0)));
-                       const auto __w3 = ::cuda::__szext_clamp(
-                         static_cast<uint32_t>(__v >> 96), static_cast<uint32_t>(::cuda::std::max(__n - 96, 0)));
-                       return _Tp{__w0} | (_Tp{__w1} << 32) | (_Tp{__w2} << 64) | (_Tp{__w3} << 96);
-                     }))
-      }
-#  endif // _CCCL_HAS_INT128()
+      NV_IF_TARGET(NV_IS_HOST, (return ::cuda::__bit_trunc_impl_host(__v, __n);))
+      NV_IF_TARGET(NV_PROVIDES_SM_70, (return ::cuda::__bit_trunc_impl_sm70(__v, __n);))
     }
 #endif // !_CCCL_TILE_COMPILATION()
   }
-  return static_cast<_Tp>(__v & (::cuda::std::shl(_Tp{1}, static_cast<unsigned>(__un)) - 1));
+  return ::cuda::__bit_trunc_impl_generic(__v, __n);
 }
 
 _CCCL_END_NAMESPACE_CUDA
