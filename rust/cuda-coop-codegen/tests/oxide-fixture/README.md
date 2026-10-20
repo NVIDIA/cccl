@@ -4,7 +4,7 @@ This private unsafe fixture qualifies the compiler/provider boundary. It is not
 an end-user collective API. The API crate embeds constant registrations from its
 Cargo build script; the compiler invokes that same built executable for one
 native request batch. A separate generic helper crate is reached from five
-concrete kernel roots. No consumer supplies an LTO artifact list.
+concrete kernel roots (seven with `--root-context`). No consumer supplies an LTO artifact list.
 
 From the CCCL checkout, with the agreed Oxide source and backend already built:
 
@@ -52,15 +52,28 @@ python3 rust/cuda-coop-codegen/tests/check_collective_rejections.py \
 ```
 
 The cases cover varying controls/carriers, different contexts of one helper,
-participation and unsupported bounds-elision modes. Sources are restored after
+projected references, atomic results, participation, and unsupported
+bounds-elision modes. Positive contrasts retain reconvergent lane work in a
+uniform loop and an exhaustive enum match. Sources are restored after
 each run. Shared helper sites support different exact root shapes; the compiler
 checks each root and argument context independently. Fixed external helper symbols
-without a root binding remain diagnosed.
+(`#[no_mangle]` or `#[export_name]`) are unsupported on checked paths, including
+single-root paths. Remove those attributes to permit root-specific naming.
 
 Add `--root-context` instead of `--checked` for 672 native cases. Two additional
 64-thread roots call the same item-count 1/4 helpers and marker sites used by
-128-thread roots. An intermediate helper retains a second call boundary, and
+128-thread roots. The outer generic helper uses `#[device]`; a nongeneric
+dependency bridge also reaches it at both block sizes. Checked helpers defer
+device emission until a kernel supplies its context. An intermediate
+helper retains another call boundary, and
 all copies read one device static. The fixture checks each root's exact shape
 and scratch, including 272/1,040 bytes at 64 threads versus 528/2,064 at 128
 threads. Two equal-shape roots also share the original helper Instance. This
 route requires the coordinated contextual-helper compiler support.
+
+The checked executable also accepts `--trap-before` and `--trap-after-load`.
+Run each in a separate process: lane zero deliberately indexes past its payload,
+before the first Load or between that Load and its scratch-reuse barrier.
+Both runs must terminate with a CUDA execution error, without the success
+message. These negative modes check the compiler's bounds-failure abort path;
+the normal numerical run uses neither mode.

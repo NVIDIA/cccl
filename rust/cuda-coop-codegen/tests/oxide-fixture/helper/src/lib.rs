@@ -3,6 +3,21 @@
 
 #![no_std]
 
+/// Preserve a nongeneric dependency boundary above the marked generic helper.
+///
+/// # Safety
+/// The caller must meet `roundtrip::<4, true>`'s complete safety contract.
+#[inline(never)]
+pub unsafe fn shared_roundtrip(
+    input: *const i32,
+    output: *mut i32,
+    post_store: *mut i32,
+    valid: i32,
+    mode: u32,
+) {
+    unsafe { roundtrip::<4, true>(input, output, post_store, valid, mode) }
+}
+
 /// Roundtrip through one shared generic helper reached from several kernels.
 ///
 /// # Safety

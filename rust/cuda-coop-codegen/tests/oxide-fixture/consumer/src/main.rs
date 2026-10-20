@@ -74,7 +74,7 @@ mod kernels {
         mode: u32,
     ) {
         unsafe {
-            coop_marker_fixture_helper::roundtrip::<4, true>(input, output, post, valid, mode);
+            coop_marker_fixture_helper::shared_roundtrip(input, output, post, valid, mode);
         }
     }
     #[cfg(feature = "root-context")]
@@ -104,7 +104,7 @@ mod kernels {
         mode: u32,
     ) {
         unsafe {
-            coop_marker_fixture_helper::roundtrip::<4, true>(input, output, post, valid, mode);
+            coop_marker_fixture_helper::shared_roundtrip(input, output, post, valid, mode);
         }
     }
 }
@@ -117,10 +117,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bundles = read_artifact_bundles_from_object_bytes(&executable)?;
     let bundle = bundles
         .iter()
-        .find(|b| b.payload(ArtifactPayloadKind::Cubin).is_some())
+        .find(|b| {
+            b.entry("transpose_4").is_some() && b.payload(ArtifactPayloadKind::Cubin).is_some()
+        })
         .ok_or("missing embedded native artifact")?;
     let cubin = bundle.payload(ArtifactPayloadKind::Cubin).unwrap();
     std::fs::write("fixture.cubin", cubin)?;
+    let trap_mode = match std::env::args().nth(1).as_deref() {
+        None => 0,
+        Some("--trap-before") => 8,
+        Some("--trap-after-load") => 16,
+        Some(_) => return Err("expected --trap-before or --trap-after-load".into()),
+    };
+    if trap_mode != 0 && !cfg!(feature = "checked") {
+        return Err("trap modes require the checked fixture".into());
+    }
     let context = CudaContext::new(0)?;
     let stream = context.default_stream();
     // SAFETY: the embedded artifact is generated from these kernel declarations.
@@ -135,7 +146,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert_eq!(facts.dynamic_shared_alignment, $alignment);
             assert_eq!(prepared.__raw_config().shared_mem_bytes, $bytes);
             // Equal thread products do not imply the required exact shape.
-            for shape in [($threads / 2, 2, 1), ($threads * 2, 1, 1)] {
+            for shape in [
+                ($threads / 2, 1, 1),
+                ($threads / 2, 2, 1),
+                ($threads * 2, 1, 1),
+            ] {
                 assert!(matches!(
                     module.$prepare(LaunchConfig3D::auto_shared((1, 1, 1), shape)),
                     Err(LaunchContractError::BlockShapeMismatch { .. })
@@ -181,6 +196,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let device_input = DeviceBuffer::from_host(&stream, &input)?;
             for valid in [0, 1, tile - 1, tile, extent - 1, extent] {
                 for mode in 0..8_u32 {
+                    let mode = mode | trap_mode;
                     let output = DeviceBuffer::from_host(&stream, &vec![-99_i32; extent])?;
                     let post = DeviceBuffer::from_host(&stream, &vec![-99_i32; extent])?;
                     let config =

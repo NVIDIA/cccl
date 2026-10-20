@@ -137,6 +137,14 @@ cases = {
         {"root": original["root"].replace("block = (128, 1, 1), ", "")},
         "requires #[launch_contract(block",
     ),
+    "two_dimensional_shape": (
+        {
+            "root": original["root"].replace(
+                "block = (128, 1, 1)", "block = (64, 2, 1)", 1
+            )
+        },
+        "exact block shape [B,1,1]",
+    ),
     "shared_shape": (
         {
             "root": "block = (64, 1, 1)".join(
@@ -173,6 +181,48 @@ unsafe fn exported_helper(input: *const i32, output: *mut i32, post: *mut i32, v
         },
         "not proved block-uniform",
     ),
+    "aggregate_reference": (
+        in_helper(
+            "    let mut changed = valid;\n"
+            "    let holder = (&mut changed,);\n"
+            "    *holder.0 = lane as i32;\n"
+            "    let valid = changed;"
+        ),
+        "not proved block-uniform",
+    ),
+    "projected_reborrow": (
+        in_helper(
+            "    let mut pair = (lane as i32, valid);\n"
+            "    let mut pointer = &mut pair;\n"
+            "    if mode & 8 != 0 { pointer = &mut pair; }\n"
+            "    let other = &mut pointer.1;\n"
+            "    *other = 0;\n"
+            "    let valid = pair.0;"
+        ),
+        "not proved block-uniform",
+    ),
+    "reconvergent_loop": (
+        {
+            "helper": original["helper"].replace(
+                "payload[i] += CONTEXT_INCREMENT;",
+                "if lane & 1 == 0 { payload[i] += CONTEXT_INCREMENT; }"
+                " else { payload[i] += 2; }",
+            )
+        },
+        None,
+    ),
+    "exhaustive_match": (
+        {
+            "helper": in_helper(
+                "    let choice = if mode & 8 == 0 { Some(1) } else { None };\n"
+                "    let adjustment = match choice { Some(value) => value, None => 0 };"
+            )["helper"].replace(
+                "payload[i] += CONTEXT_INCREMENT;",
+                "payload[i] += CONTEXT_INCREMENT + adjustment;",
+            )
+        },
+        None,
+    ),
     "destructor": (
         {
             "helper": original["helper"].replace(
@@ -207,7 +257,7 @@ unsafe fn exported_helper(input: *const i32, output: *mut i32, post: *mut i32, v
     "unchecked_bounds": ({}, "unchecked indexing"),
 }
 probe_api = original["api"].replace("fn $name()", "pub fn $name()")
-for name in ["native_mutation", "nested_reference", "nested_uniform"]:
+for name in ["native_mutation", "nested_reference", "nested_uniform", "atomic_control"]:
     source_name = "nested_reference" if name == "nested_uniform" else name
     probe = (
         Path(__file__).parent / "oxide-fixture/compile_cases" / f"{source_name}.rs"
@@ -218,6 +268,14 @@ for name in ["native_mutation", "nested_reference", "nested_uniform"]:
         {"root": probe, "api": probe_api},
         None if name == "nested_uniform" else "not proved block-uniform",
     )
+cases["reborrow_uniform"] = (
+    {
+        "helper": cases["projected_reborrow"][0]["helper"].replace(
+            "let valid = pair.0;", "let valid = pair.1;"
+        )
+    },
+    None,
+)
 unknown = set(args.case) - cases.keys()
 if unknown:
     parser.error(f"unknown cases: {', '.join(sorted(unknown))}")
@@ -236,7 +294,12 @@ try:
                 else ""
             )
         )
-        if name in ["native_mutation", "nested_reference", "nested_uniform"]:
+        if name in [
+            "native_mutation",
+            "nested_reference",
+            "nested_uniform",
+            "atomic_control",
+        ]:
             helper_lib.write_text(
                 helper_lib_original
                 + "\npub use coop_marker_fixture_api::{direct_load_full, direct_load_filled};\n"
@@ -244,6 +307,17 @@ try:
         case_env = env.copy()
         if name == "unchecked_bounds":
             case_env["CUDA_OXIDE_UNCHECKED_INDEXING"] = "1"
+        if name in [
+            "aggregate_reference",
+            "projected_reborrow",
+            "reborrow_uniform",
+            "exhaustive_match",
+        ]:
+            # Preserve reference projections and exhaustive-match branches
+            # before the checker sees them.
+            case_env["RUSTFLAGS"] = (
+                case_env.get("RUSTFLAGS", "") + " -Zmir-opt-level=0"
+            ).strip()
         log_path = output / f"reject-{name}.log"
         with log_path.open("w") as log:
             result = subprocess.run(

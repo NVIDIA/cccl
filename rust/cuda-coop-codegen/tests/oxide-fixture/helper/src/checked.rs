@@ -9,7 +9,7 @@
 /// counts are a global prefix within their combined extent. Every thread in
 /// a block receives equal input/output origins, valid count and mode. The fixed
 /// fill value is uniform, and each thread owns its separate initialized payload.
-#[inline(never)]
+#[cuda_device::device]
 pub unsafe fn roundtrip<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
     input: *const i32,
     output: *mut i32,
@@ -41,6 +41,12 @@ unsafe fn roundtrip_body<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
         .min((block_threads * ITEMS_PER_THREAD) as i32);
     let mut first = [0_i32; ITEMS_PER_THREAD];
     let mut second = [0_i32; ITEMS_PER_THREAD];
+    // Negative native modes: exactly lane zero fails a checked index, before
+    // the collective sequence or between its first Load and reuse barrier.
+    let trap_index = if lane == 0 { ITEMS_PER_THREAD } else { 0 };
+    if mode & 8 != 0 {
+        first[trap_index] = 0;
+    }
     // Lane-local choice reconverges before every collective.
     let payload = if lane & 1 == 0 {
         &mut first
@@ -58,6 +64,9 @@ unsafe fn roundtrip_body<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
                 valid,
                 mode & 1 != 0,
             );
+            if mode & 16 != 0 {
+                payload[trap_index] = 0;
+            }
             cuda_device::thread::sync_threads();
             iteration += 1;
         }
