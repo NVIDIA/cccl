@@ -138,12 +138,16 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
         )
 
     # Exclude high-memory types on GB10's shared CPU/GPU memory. See NVBug 6683746
-    if algname in [
-        "cub.bench.scan.exclusive.sum",
-        "cub.bench.scan.exclusive.custom",
-        "cub.bench.scan.exclusive.deterministic",
-        "cub.bench.transform.babelstream",
-    ] and device_json(algname)["name"] == "NVIDIA GB10":
+    if (
+        algname
+        in [
+            "cub.bench.scan.exclusive.sum",
+            "cub.bench.scan.exclusive.custom",
+            "cub.bench.scan.exclusive.deterministic",
+            "cub.bench.transform.babelstream",
+        ]
+        and device_json(algname)["name"] == "NVIDIA GB10"
+    ):
         ct_space = list(filter(lambda variant: "T{ct}=I128" not in variant, ct_space))
 
     if algname == "cub.bench.merge_sort.pairs":
