@@ -18,9 +18,53 @@ from cutlass import cute
 from cutlass.base_dsl.compiler import GPUArch
 from cutlass.cute.runtime import make_ptr
 
+from cuda import coop
 from cuda.coop import cutlass as cutlass_coop
 
 pytestmark = [pytest.mark.backend_cutlass, pytest.mark.compile]
+
+
+@pytest.mark.parametrize(
+    "api", (coop, cutlass_coop), ids=("common", "qualified")
+)
+@pytest.mark.parametrize(
+    "algorithm",
+    (
+        " DIRECT ",
+        " STRIPED ",
+        " VECTORIZE ",
+        " TRANSPOSE ",
+        " WARP-TRANSPOSE ",
+        " WARP-TRANSPOSE-TIMESLICED ",
+    ),
+)
+@pytest.mark.parametrize("items_per_thread", (1, 4))
+def test_algorithm_selector_spellings(api, algorithm, items_per_thread):
+    """Normalize movement selector spelling through both frontends.
+
+    Uppercase names, surrounding spaces, and hyphenated names must be accepted
+    as supported algorithm names. Typed null pointers and an SM80 target check
+    compilation only; the test never launches a kernel.
+    """
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        group = api.this_block()
+        payload = api.ThreadData(items_per_thread, dtype=cutlass.Int32)
+        api.load(group, memory, payload, algorithm=algorithm)
+        api.store(group, memory, payload, algorithm=algorithm)
+
+    @cute.jit
+    def launch(memory: cute.Pointer, items_per_thread: cutlass.Constexpr):
+        kernel(memory, items_per_thread).launch(grid=1, block=32)
+
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer, items_per_thread)
+        is not None
+    )
 
 
 @pytest.mark.parametrize(
