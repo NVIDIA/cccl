@@ -575,6 +575,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan API with three offset
   REQUIRE_THAT_QUIET(output, Equals(stream, expected));
 }
 
+// Omit the stream argument in these storage queries to test overload resolution with the default stream.
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
          "[segmented_scan][device]",
          CUB_SMALL)
@@ -587,7 +588,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::ExclusiveSegmentedSum(
-    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1, stream.get());
+    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
@@ -610,8 +611,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedSum non-env overload is no
     in_offsets.begin(),
     in_offsets.begin() + 1,
     out_offsets.begin(),
-    1,
-    stream.get());
+    1);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
@@ -634,8 +634,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
     offsets.begin() + 1,
     1,
     cuda::std::plus<>{},
-    5,
-    stream.get());
+    5);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
@@ -660,8 +659,7 @@ CUB_TEST("cub::DeviceSegmentedScan::ExclusiveSegmentedScan non-env overload is n
     out_offsets.begin(),
     1,
     cuda::std::plus<>{},
-    5,
-    stream.get());
+    5);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (2 offsets)",
@@ -676,7 +674,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedSum(
-    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1, stream.get());
+    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is not ambiguous (3 offsets)",
@@ -699,8 +697,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedSum non-env overload is no
     in_offsets.begin(),
     in_offsets.begin() + 1,
     out_offsets.begin(),
-    1,
-    stream.get());
+    1);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (2 offsets)",
@@ -715,15 +712,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
 
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedScan::InclusiveSegmentedScan(
-    nullptr,
-    temp_storage_bytes,
-    in.begin(),
-    out.begin(),
-    offsets.begin(),
-    offsets.begin() + 1,
-    1,
-    cuda::std::plus<>{},
-    stream.get());
+    nullptr, temp_storage_bytes, in.begin(), out.begin(), offsets.begin(), offsets.begin() + 1, 1, cuda::std::plus<>{});
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is not ambiguous (3 offsets)",
@@ -747,8 +736,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScan non-env overload is n
     in_offsets.begin() + 1,
     out_offsets.begin(),
     1,
-    cuda::std::plus<>{},
-    stream.get());
+    cuda::std::plus<>{});
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (2 offsets)",
@@ -771,8 +759,7 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
     offsets.begin() + 1,
     1,
     cuda::std::plus<>{},
-    5,
-    stream.get());
+    5);
 }
 
 CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload is not ambiguous (3 offsets)",
@@ -797,6 +784,5 @@ CUB_TEST("cub::DeviceSegmentedScan::InclusiveSegmentedScanInit non-env overload 
     out_offsets.begin(),
     1,
     cuda::std::plus<>{},
-    5,
-    stream.get());
+    5);
 }
