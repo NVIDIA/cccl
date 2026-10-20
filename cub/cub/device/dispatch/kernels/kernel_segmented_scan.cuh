@@ -67,7 +67,7 @@ namespace detail::segmented_scan
 //!   The type of intermediate accumulator (according to P2322R6)
 //!
 //! @tparam MarkSegmentHeads
-//!   Give the several-segments temporary storage the per-tile head state `scan_segments_marked_heads` needs
+//!   Give the several-segments temporary storage the per-tile head state `scan_segments` needs
 //!
 template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
@@ -138,7 +138,7 @@ private:
   using block_offset_scan_t = BlockScan<OffsetT, threads_per_block, scan_algorithm>;
   using block_reduce_t      = BlockReduce<unsigned int, threads_per_block>;
 
-  // In-block positions of scan_segments_marked_heads. A block's summed sizes can reach the offset maximum plus one.
+  // In-block positions of scan_segments. A block's summed sizes can reach the offset maximum plus one.
   using logical_offset_t            = ::cuda::std::make_unsigned_t<OffsetT>;
   using block_logical_offset_scan_t = BlockScan<logical_offset_t, threads_per_block, scan_algorithm>;
 
@@ -161,7 +161,7 @@ private:
     _multiple_segment_algorithms_storage_t reused;
   };
 
-  // scan_segments_marked_heads loads and stores plain values, so it needs no augmented load or store storage.
+  // scan_segments loads and stores plain values, so it needs no augmented load or store storage.
   union _marked_heads_algorithms_storage_t
   {
     typename block_load_t::TempStorage load;
@@ -300,7 +300,7 @@ public:
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments                  = max_segments,
             ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_by_search(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
@@ -443,13 +443,13 @@ public:
             typename OutputBeginOffsetIteratorT,
             ::cuda::std::size_t NumSegments                  = max_segments,
             ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_marked_heads(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments(
     InputBeginOffsetIteratorT input_begin_idx_it,
     InputEndOffsetIteratorT input_end_idx_it,
     OutputBeginOffsetIteratorT output_begin_idx_it,
     int n_segments)
   {
-    static_assert(MarkSegmentHeads, "scan_segments_marked_heads needs the marked-heads temporary storage");
+    static_assert(MarkSegmentHeads, "scan_segments needs the marked-heads temporary storage");
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputEndOffsetIteratorT>, OffsetT>,
@@ -513,9 +513,8 @@ public:
           const bool input_is_contiguous    = static_cast<logical_offset_t>(input_segment_begin) - work_begin
                                            == static_cast<logical_offset_t>(temp_storage.block_input_begin);
           const bool output_is_contiguous =
-            input_is_contiguous
-            && static_cast<logical_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
-                 == static_cast<logical_offset_t>(temp_storage.block_output_begin);
+            static_cast<logical_offset_t>(static_cast<OffsetT>(output_begin_idx_it[work_id])) - work_begin
+            == static_cast<logical_offset_t>(temp_storage.block_output_begin);
           if (!input_is_contiguous || !output_is_contiguous)
           {
             ::cuda::atomic_ref<unsigned int, ::cuda::thread_scope_block>{temp_storage.contiguous_mask}.store(
@@ -1035,12 +1034,12 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     {
       if constexpr (MarkSegmentHeads)
       {
-        agent.scan_segments_marked_heads(
-          worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
+        agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
       }
       else
       {
-        agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
+        agent.scan_segments_by_search(
+          worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
       }
     }
   }

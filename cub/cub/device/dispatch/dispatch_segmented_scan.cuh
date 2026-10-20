@@ -69,7 +69,7 @@ struct device_segmented_scan_kernel_source
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
 
-  // MarkSegmentHeads selects the several-segments path of scan_segments_marked_heads.
+  // MarkSegmentHeads selects the several-segments path of scan_segments.
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_kernel,
     device_segmented_scan_kernel<
