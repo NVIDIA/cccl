@@ -227,8 +227,9 @@ CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size"
   const auto stream         = c2h::make_current_device_stream();
   const auto total_elements = GENERATE(std::int32_t{0}, 8);
   const std::array<std::int32_t, 5> expected{0, 2, 4, 6, 8};
-  const auto expected_size     = static_cast<std::size_t>(total_elements / 2 + 1);
-  const auto expected_capacity = static_cast<std::size_t>(total_elements + 2);
+  const auto num_elements      = static_cast<std::size_t>(total_elements);
+  const auto expected_size     = num_elements / 2 + 1;
+  const auto expected_capacity = num_elements + 2;
 
   REQUIRE(1 <= expected_size);
   REQUIRE(expected_size <= expected.size());
