@@ -76,8 +76,7 @@ CCCL_C_API CUresult cccl_device_histogram_build_ex(
   const char* ctk_path,
   const cccl_build_config* config);
 
-// Compiles and links the build result, without loading it. build->jit_compiler
-// and build->histogram_fn remain null until cccl_device_histogram_load is called.
+// compile / load / serialize / deserialize: see the AoT contract in serialization.h.
 CCCL_C_API CUresult cccl_device_histogram_compile(
   cccl_device_histogram_build_result_t* build,
   int num_channels,
@@ -97,26 +96,11 @@ CCCL_C_API CUresult cccl_device_histogram_compile(
   const char* ctk_path,
   const cccl_build_config* config);
 
-// Loads a build_result populated by cccl_device_histogram_compile or
-// cccl_device_histogram_deserialize, populating build->jit_compiler and
-// build->histogram_fn. ctk_path locates the CUDA Toolkit on this machine;
-// pass NULL to auto-detect. Call at most once per build_result.
 CCCL_C_API CUresult cccl_device_histogram_load(cccl_device_histogram_build_result_t* build, const char* ctk_path);
 
-// Serializes a populated build_result into a self-describing byte buffer.
-// On success *out_buf points to a heap allocation the caller must free
-// with cccl_serialization_v2_buffer_free, and *out_size holds its length.
-// Requires build->payload to be populated.
 CCCL_C_API CUresult
 cccl_device_histogram_serialize(const cccl_device_histogram_build_result_t* build, void** out_buf, size_t* out_size);
 
-// Reconstructs a build_result from a buffer produced by
-// cccl_device_histogram_serialize. On success, build->jit_compiler and
-// build->histogram_fn remain null until cccl_device_histogram_load is
-// called; on failure build is left unchanged. Rejects a blob built for a
-// different OS/architecture than this machine; does not check compute
-// capability against a live device (a mismatch instead surfaces later, at
-// cccl_device_histogram_even).
 CCCL_C_API CUresult
 cccl_device_histogram_deserialize(cccl_device_histogram_build_result_t* build, const void* buf, size_t size);
 

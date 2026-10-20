@@ -45,6 +45,24 @@ typedef enum cccl_serialization_algo_v2_t
   CCCL_SERIALIZATION_V2_ALGO_HISTOGRAM           = 11,
 } cccl_serialization_algo_v2_t;
 
+// AoT contract shared by every algorithm's
+// cccl_device_<algo>_{compile,load,serialize,deserialize}:
+//
+// - _compile compiles and links but does not load: the build_result's payload
+//   is populated while jit_compiler and the algorithm's function pointer stay
+//   null.
+// - _load makes a build_result produced by _compile or _deserialize runnable.
+//   ctk_path locates the CUDA Toolkit on this machine; pass NULL to
+//   auto-detect. Call it at most once per build_result.
+// - _serialize writes a self-describing byte buffer. On success *out_buf is a
+//   heap allocation the caller must free with cccl_serialization_v2_buffer_free,
+//   and *out_size is its length. It requires the payload to be populated.
+// - _deserialize reconstructs a build_result from such a buffer; it must still
+//   be loaded before use. On failure the build_result is left unchanged. It
+//   rejects a blob built for a different OS or CPU architecture, and does not
+//   check compute capability against a live device: a mismatch surfaces at
+//   execution time.
+//
 // Frees a buffer returned by any cccl_device_<algo>_serialize call.
 // Required because allocations cross the cccl.c.parallel.v2 shared-library
 // boundary; callers must not free returned buffers themselves.
