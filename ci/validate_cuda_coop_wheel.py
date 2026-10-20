@@ -96,6 +96,7 @@ _REQUIRED_PACKAGE_FILES = {
     "cuda/coop/cutlass/_lowering/_load_store.py",
     "cuda/coop/cutlass/_lowering/_reduce.py",
     "cuda/coop/cutlass/_lowering/_thread_group.py",
+    "cuda/coop/cutlass/_operators.py",
     "cuda/coop/cutlass/_temp_storage.py",
     "cuda/coop/cutlass/_temp_storage.pyi",
     "cuda/coop/cutlass/_thread_data.py",

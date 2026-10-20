@@ -9,8 +9,8 @@ API recognize the active CuTe DSL compiler environment. Calls inside that
 environment use these implementations. The namespace provides Load/Store,
 built-in Reduce and Sum, and supported group queries and synchronization.
 Qualified calls also accept the CuTe payload forms documented by each
-operation. TempStorage descriptors control scratch for block transpose
-Load/Store.
+operation. TempStorage descriptors control scratch for supported block
+operations.
 """
 
 from .._core.api import TempStorageLike, ThreadDataLike

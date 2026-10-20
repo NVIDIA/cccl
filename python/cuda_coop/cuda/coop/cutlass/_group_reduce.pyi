@@ -10,7 +10,7 @@ tracing checks their identities and rejects custom callbacks.
 """
 
 from collections.abc import Callable
-from typing import Literal, Protocol, TypeAlias, overload
+from typing import Any, Literal, Protocol, TypeAlias, overload
 
 from typing_extensions import TypeVar
 
@@ -24,8 +24,10 @@ from cuda.coop._typing import (
 )
 
 from .._core.api.thread_group import BlockGroup, WarpGroup
+from ._thread_data import CutlassTensorSample, CutlassTensorSSASample
 
 _ItemT = TypeVar("_ItemT", bound=CommonNumericScalar)
+_RegisterPayload: TypeAlias = CutlassTensorSample | CutlassTensorSSASample
 
 _NumpyReduceUfuncName: TypeAlias = Literal[
     "add",
@@ -107,6 +109,32 @@ def reduce(
     """Return a reduced scalar defined only at group rank zero."""
 
 @overload
+def reduce(
+    group: BlockGroup,
+    value: _RegisterPayload,
+    /,
+    *,
+    binary_op: _BuiltinReduceOperator | None = None,
+    valid_items: None = None,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> Any:
+    """Return a reduced scalar whose dtype is known during tracing."""
+
+@overload
+def reduce(
+    group: WarpGroup,
+    value: _RegisterPayload,
+    /,
+    *,
+    binary_op: _BuiltinReduceOperator | None = None,
+    valid_items: None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+) -> Any:
+    """Return a reduced scalar whose dtype is known during tracing."""
+
+@overload
 def sum(
     group: BlockGroup,
     value: CommonThreadDataLike[_ItemT],
@@ -153,3 +181,27 @@ def sum(
     temp_storage: None = None,
 ) -> _ItemT:
     """Return a reduced scalar defined only at group rank zero."""
+
+@overload
+def sum(
+    group: BlockGroup,
+    value: _RegisterPayload,
+    /,
+    *,
+    valid_items: None = None,
+    algorithm: ReduceAlgorithm | None = None,
+    temp_storage: TempStorageLike | None = None,
+) -> Any:
+    """Return a reduced scalar whose dtype is known during tracing."""
+
+@overload
+def sum(
+    group: WarpGroup,
+    value: _RegisterPayload,
+    /,
+    *,
+    valid_items: None = None,
+    algorithm: None = None,
+    temp_storage: None = None,
+) -> Any:
+    """Return a reduced scalar whose dtype is known during tracing."""

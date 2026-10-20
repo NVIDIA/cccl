@@ -16,7 +16,7 @@ The test neither imports this file nor traces or launches a kernel.
 from __future__ import annotations
 
 import operator
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from cutlass import (
@@ -274,6 +274,12 @@ def check_cutlass_reduce_surface(scalar: Uint32) -> None:
     assert_type(cutlass_coop.reduce(logical_warp, values), np.int32)
     assert_type(common_coop.sum(warp, values), np.int32)
     assert_type(common_coop.reduce(logical_warp, values), np.int32)
+    fragment = values.to_register_tensor()
+    vector = values.to_tensor_ssa()
+    assert_type(cutlass_coop.sum(block, fragment), Any)
+    assert_type(cutlass_coop.reduce(block, vector), Any)
+    assert_type(cutlass_coop.sum(warp, vector), Any)
+    assert_type(cutlass_coop.reduce(logical_warp, fragment), Any)
     assert_type(cutlass_coop.reduce(block, scalar, binary_op="max"), Uint32)
     assert_type(cutlass_coop.sum(block, scalar), Uint32)
     assert_type(common_coop.sum(block, scalar), Uint32)

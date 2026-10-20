@@ -191,7 +191,8 @@ synchronization.
 
 Explicit descriptors control scratch for Numba's supported block primitives;
 see :ref:`Numba storage rules <coop-temp-storage>` for the complete list.
-CUTLASS uses explicit descriptors for block transpose-family Load/Store.
+CUTLASS uses explicit descriptors for block transpose-family Load/Store
+and BlockReduce.
 Storage-free block Load/Store accept and validate a descriptor but do not use
 it. See the :ref:`shared storage model <coop-common-storage>` and the
 :doc:`CUTLASS Programming Guide <../coop_cutlass>` for reuse rules.
