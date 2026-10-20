@@ -47,7 +47,7 @@ struct cub_api_example_t
     int num_items,
     cudaStream_t stream = nullptr)
   {
-    constexpr bool should_be_invoked_on_device = TEST_LAUNCH == 1;
+    constexpr bool should_be_invoked_on_device = (TEST_LAUNCH == 1);
 
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (if (should_be_invoked_on_device) { return cudaErrorLaunchFailure; }),
@@ -128,8 +128,8 @@ CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]", CUB
   c2h::device_vector<int> in(n, 21);
   c2h::device_vector<int> out(n);
 
-  int* d_in  = thrust::raw_pointer_cast(in.data());
-  int* d_out = thrust::raw_pointer_cast(out.data());
+  const int* d_in = thrust::raw_pointer_cast(in.data());
+  int* d_out      = thrust::raw_pointer_cast(out.data());
 
   {
     x2_0(d_in, d_out, n);
@@ -159,8 +159,8 @@ CUB_TEST("Launch wrapper accepts stream-like arguments", "[test][utils]", CUB_SM
   c2h::device_vector<int> in(num_items, 21);
   c2h::device_vector<int> out(num_items);
 
-  int* const d_in  = thrust::raw_pointer_cast(in.data());
-  int* const d_out = thrust::raw_pointer_cast(out.data());
+  const int* d_in = thrust::raw_pointer_cast(in.data());
+  int* d_out      = thrust::raw_pointer_cast(out.data());
 
   SECTION("cuda::stream")
   {
@@ -234,8 +234,8 @@ CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]", CUB_SMA
   c2h::device_vector<int> in(n, 21);
   c2h::device_vector<int> out(n);
 
-  int* d_in  = thrust::raw_pointer_cast(in.data());
-  int* d_out = thrust::raw_pointer_cast(out.data());
+  const int* d_in = thrust::raw_pointer_cast(in.data());
+  int* d_out      = thrust::raw_pointer_cast(out.data());
 
   {
     launch(custom_x2_0_invocable{}, d_in, d_out, n);
