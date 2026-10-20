@@ -115,5 +115,5 @@ alongside ``--oxide-library-request-v1``. Device registration getters use
 ``cuda_device::library::registration!("REGISTRATION_ENV_NAME")`` so the frontend
 tracks those files, directory contents and selected toolkit before emitting
 Cargo dependency information. Host checks and rustdoc do not query CUDA inputs.
-Cargo's timestamp freshness rules apply; changes that preserve timestamps may
-require an explicit rebuild.
+Cargo's timestamp freshness rules apply; replacements with unchanged or older
+timestamps may require an explicit rebuild.

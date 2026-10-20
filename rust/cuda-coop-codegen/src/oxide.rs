@@ -224,8 +224,9 @@ struct InputResponse {
 /// directories and NVRTC libraries. The macro tracks files and directories
 /// recursively before rustc emits dep-info, including new header files.
 /// No GPU, native compiler invocation or library loading occurs here.
-/// Cargo's timestamp freshness rules apply; preserving file timestamps can
-/// prevent it from detecting a content change.
+/// Cargo's timestamp freshness rules apply; replacements with unchanged or older
+/// timestamps can remain undetected. Rebuild after restoring or replacing inputs
+/// this way, including a symlink switched to an older installation.
 ///
 /// # Errors
 ///
