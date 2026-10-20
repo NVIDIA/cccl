@@ -2349,7 +2349,8 @@ struct __policy_pow : __forwards_success<_P>
   static_assert(!__never_passes_through_v<_P>,
                 "the repeated policy never passes through; repetitions after the first are unreachable");
   static_assert(!__diverges_v<_P>,
-                "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are unreachable");
+                "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are "
+                "unreachable");
 
   template <class _Fn>
   // An explicit result type, so that presence probes (which call with a `void (&)()` stand-in)
@@ -3487,7 +3488,8 @@ auto if_monomorphic(_P&& __p)
  * same type. On the exception channel there is nothing to match and the exception passes
  * through, so the selector can head a `|`:
  * @code
- * errsink(if_equal(cudaErrorNotReady)(noop) | unwind) << cudaStreamQuery(s); // not-ready is fine; anything else unwinds
+ * errsink(if_equal(cudaErrorNotReady)(noop) | unwind) << cudaStreamQuery(s); // not-ready is fine; anything else
+ * unwinds
  * @endcode
  *
  * @param[in] __first The first status value to match.
@@ -4363,7 +4365,7 @@ public:
   //! (EDG/nvcc: "cannot deduce the return type ... it has not been defined").
   template <class _P,
             ::cuda::std::enable_if_t<!::cuda::std::is_same_v<::cuda::std::remove_cvref_t<_P>, dynamic>, int> = 0,
-            ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_P>, int>                       = 0>
+            ::cuda::std::enable_if_t<detail::__normalizes_to_exception_sink_v<_P>, int>                      = 0>
   dynamic(_P&& __p)
       : __p_(new __model<detail::__normalized_t<_P>>(detail::__normalize(::cuda::std::forward<_P>(__p))))
   {}
@@ -4524,9 +4526,9 @@ inline void __check_dynamic_repeated(const dynamic& __p)
 {
   if (__p.diverges())
   {
-    _CCCL_THROW(
-      ::std::logic_error,
-      "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are unreachable");
+    _CCCL_THROW(::std::logic_error,
+                "the repeated policy always diverges (unwind, abort, terminate); repetitions after the first are "
+                "unreachable");
   }
   if (!__p.may_passthrough())
   {
@@ -5356,8 +5358,7 @@ UNITTEST("policy algebra")
   // Identity elimination is type-level: composing with a neutral element adds no wrapper.
   static_assert(::cuda::std::is_same_v<decltype(noop & subst(1)), decltype(subst(1))>,
                 "noop is eliminated on the left");
-  static_assert(::cuda::std::is_same_v<decltype(notify & noop), notify_t>,
-                "noop is eliminated on the right");
+  static_assert(::cuda::std::is_same_v<decltype(notify & noop), notify_t>, "noop is eliminated on the right");
   static_assert(::cuda::std::is_same_v<decltype(fwd | subst(1)), decltype(subst(1))>, "fwd is eliminated on the left");
   static_assert(::cuda::std::is_same_v<decltype(retry | fwd), retry_t>,
                 "fwd is eliminated on the right (the left must be able to forward)");
@@ -6271,16 +6272,17 @@ UNITTEST("effect")
     EXPECT(v == 7);
     EXPECT(what == "seen");
   }
-#  ifdef _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
+#    ifdef _CUDAX_STF_CUDA_STATUS_TRAITS_AVAILABLE
   // on a status: sees the code; the status is left unchanged
   {
     cudaError_t seen = cudaSuccess;
     errsink(effect([&](cudaError_t s) {
       seen = s;
-    })) << cudaErrorInvalidValue;
+    }))
+      << cudaErrorInvalidValue;
     EXPECT(seen == cudaErrorInvalidValue);
   }
-#  endif
+#    endif
   // an effect may not stand after a value-chooser: subst(1) & effect is rejected (static); the
   // legal order runs the effect first
   {
@@ -7212,7 +7214,7 @@ UNITTEST("error sinks: & stops at the first fwd on both channels")
                     },
                     notify(log))
                   | fwd)
-            << cudaErrorInvalidValue)
+          << cudaErrorInvalidValue)
            .status<cudaError_t>()
          == cudaErrorInvalidValue);
   EXPECT(log.str().empty());
@@ -7536,9 +7538,9 @@ UNITTEST("error sinks: composites and the bridge on a code")
   // A hook-only user policy sees the status's exception through the bridge; one that passes
   // through hands the status on unchanged.
   errsink(error_sinks_test::succeed_on<cuda_exception>{}) << cudaErrorInvalidValue;
-  EXPECT((errsink(error_sinks_test::succeed_on<::std::bad_alloc>{} | fwd) << cudaErrorInvalidValue)
-           .status<cudaError_t>()
-         == cudaErrorInvalidValue);
+  EXPECT(
+    (errsink(error_sinks_test::succeed_on<::std::bad_alloc>{} | fwd) << cudaErrorInvalidValue).status<cudaError_t>()
+    == cudaErrorInvalidValue);
   // `*` offers the status again while it passes through, then the next arm answers.
   ::std::ostringstream log;
   errsink((notify(log) & fwd) * 3 | subst(cudaSuccess)) << cudaErrorNotReady;

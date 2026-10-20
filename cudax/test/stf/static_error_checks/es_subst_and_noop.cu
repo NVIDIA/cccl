@@ -22,6 +22,8 @@ using namespace cuda::experimental::stf::sump;
 
 int main()
 {
-  errsink(subst(1) & noop) ->* [] { return 0; };
+  errsink(subst(1) & noop)->*[] {
+    return 0;
+  };
   return EXIT_FAILURE;
 }
