@@ -1,0 +1,455 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="560" viewBox="0 0 1440 560" role="img" aria-labelledby="title description">
+<title id="title">Three definitions of a cooperative group</title>
+<desc id="description">Each panel shows two CUDA thread blocks with 64 threads each. Green dots indicate group members. A generic group selects arbitrary threads across both blocks. A CTK group selects threads within one block boundary. A CCCL group selects a complete 32-thread warp as its unit within one block boundary.</desc>
+<style>
+  text { font-family: Arial, Helvetica, sans-serif; fill: #172b3a; }
+  .heading { font-size: 24px; font-weight: 700; }
+  .subtitle { font-size: 18px; fill: #526373; }
+  .label { font-size: 17px; }
+  .note { font-size: 18px; }
+  .thread { fill: #e3e9ef; stroke: #9eacb9; stroke-width: 1.2; }
+  .member { fill: #76b900; stroke: #3e6500; stroke-width: 1.5; }
+  .block { fill: #f8fafc; stroke: #a8b5c1; stroke-width: 1.5; }
+  .boundary { fill: none; stroke: #266a9e; stroke-width: 2.5; stroke-dasharray: 7 5; }
+</style>
+<rect width="1440" height="560" fill="white"/>
+<text x="24" y="52" class="heading" text-anchor="start">1  Generic group</text>
+<text x="24" y="84" class="subtitle" text-anchor="start">Arbitrary threads</text>
+<g id="panel-1">
+<text x="120" y="138" class="label" text-anchor="middle">Block 0</text>
+<g id="panel-1-block-0">
+<rect x="30" y="156" width="180" height="208" rx="12" class="block"/>
+<circle cx="50" cy="178" r="6" class="thread"/>
+<circle cx="70" cy="178" r="6" class="member"/>
+<circle cx="90" cy="178" r="6" class="thread"/>
+<circle cx="110" cy="178" r="6" class="thread"/>
+<circle cx="130" cy="178" r="6" class="thread"/>
+<circle cx="150" cy="178" r="6" class="thread"/>
+<circle cx="170" cy="178" r="6" class="member"/>
+<circle cx="190" cy="178" r="6" class="thread"/>
+<circle cx="50" cy="201" r="6" class="thread"/>
+<circle cx="70" cy="201" r="6" class="thread"/>
+<circle cx="90" cy="201" r="6" class="thread"/>
+<circle cx="110" cy="201" r="6" class="member"/>
+<circle cx="130" cy="201" r="6" class="thread"/>
+<circle cx="150" cy="201" r="6" class="thread"/>
+<circle cx="170" cy="201" r="6" class="thread"/>
+<circle cx="190" cy="201" r="6" class="thread"/>
+<circle cx="50" cy="224" r="6" class="thread"/>
+<circle cx="70" cy="224" r="6" class="thread"/>
+<circle cx="90" cy="224" r="6" class="thread"/>
+<circle cx="110" cy="224" r="6" class="thread"/>
+<circle cx="130" cy="224" r="6" class="member"/>
+<circle cx="150" cy="224" r="6" class="thread"/>
+<circle cx="170" cy="224" r="6" class="thread"/>
+<circle cx="190" cy="224" r="6" class="thread"/>
+<circle cx="50" cy="247" r="6" class="thread"/>
+<circle cx="70" cy="247" r="6" class="thread"/>
+<circle cx="90" cy="247" r="6" class="thread"/>
+<circle cx="110" cy="247" r="6" class="thread"/>
+<circle cx="130" cy="247" r="6" class="member"/>
+<circle cx="150" cy="247" r="6" class="thread"/>
+<circle cx="170" cy="247" r="6" class="thread"/>
+<circle cx="190" cy="247" r="6" class="thread"/>
+<circle cx="50" cy="270" r="6" class="thread"/>
+<circle cx="70" cy="270" r="6" class="thread"/>
+<circle cx="90" cy="270" r="6" class="thread"/>
+<circle cx="110" cy="270" r="6" class="thread"/>
+<circle cx="130" cy="270" r="6" class="thread"/>
+<circle cx="150" cy="270" r="6" class="thread"/>
+<circle cx="170" cy="270" r="6" class="thread"/>
+<circle cx="190" cy="270" r="6" class="member"/>
+<circle cx="50" cy="293" r="6" class="thread"/>
+<circle cx="70" cy="293" r="6" class="thread"/>
+<circle cx="90" cy="293" r="6" class="member"/>
+<circle cx="110" cy="293" r="6" class="thread"/>
+<circle cx="130" cy="293" r="6" class="thread"/>
+<circle cx="150" cy="293" r="6" class="thread"/>
+<circle cx="170" cy="293" r="6" class="thread"/>
+<circle cx="190" cy="293" r="6" class="thread"/>
+<circle cx="50" cy="316" r="6" class="thread"/>
+<circle cx="70" cy="316" r="6" class="thread"/>
+<circle cx="90" cy="316" r="6" class="thread"/>
+<circle cx="110" cy="316" r="6" class="thread"/>
+<circle cx="130" cy="316" r="6" class="thread"/>
+<circle cx="150" cy="316" r="6" class="member"/>
+<circle cx="170" cy="316" r="6" class="thread"/>
+<circle cx="190" cy="316" r="6" class="thread"/>
+<circle cx="50" cy="339" r="6" class="thread"/>
+<circle cx="70" cy="339" r="6" class="thread"/>
+<circle cx="90" cy="339" r="6" class="thread"/>
+<circle cx="110" cy="339" r="6" class="thread"/>
+<circle cx="130" cy="339" r="6" class="member"/>
+<circle cx="150" cy="339" r="6" class="thread"/>
+<circle cx="170" cy="339" r="6" class="thread"/>
+<circle cx="190" cy="339" r="6" class="thread"/>
+</g>
+<text x="340" y="138" class="label" text-anchor="middle">Block 1</text>
+<g id="panel-1-block-1">
+<rect x="250" y="156" width="180" height="208" rx="12" class="block"/>
+<circle cx="270" cy="178" r="6" class="thread"/>
+<circle cx="290" cy="178" r="6" class="thread"/>
+<circle cx="310" cy="178" r="6" class="thread"/>
+<circle cx="330" cy="178" r="6" class="member"/>
+<circle cx="350" cy="178" r="6" class="thread"/>
+<circle cx="370" cy="178" r="6" class="thread"/>
+<circle cx="390" cy="178" r="6" class="thread"/>
+<circle cx="410" cy="178" r="6" class="thread"/>
+<circle cx="270" cy="201" r="6" class="member"/>
+<circle cx="290" cy="201" r="6" class="thread"/>
+<circle cx="310" cy="201" r="6" class="thread"/>
+<circle cx="330" cy="201" r="6" class="thread"/>
+<circle cx="350" cy="201" r="6" class="thread"/>
+<circle cx="370" cy="201" r="6" class="thread"/>
+<circle cx="390" cy="201" r="6" class="thread"/>
+<circle cx="410" cy="201" r="6" class="thread"/>
+<circle cx="270" cy="224" r="6" class="thread"/>
+<circle cx="290" cy="224" r="6" class="thread"/>
+<circle cx="310" cy="224" r="6" class="thread"/>
+<circle cx="330" cy="224" r="6" class="member"/>
+<circle cx="350" cy="224" r="6" class="thread"/>
+<circle cx="370" cy="224" r="6" class="thread"/>
+<circle cx="390" cy="224" r="6" class="member"/>
+<circle cx="410" cy="224" r="6" class="thread"/>
+<circle cx="270" cy="247" r="6" class="thread"/>
+<circle cx="290" cy="247" r="6" class="thread"/>
+<circle cx="310" cy="247" r="6" class="thread"/>
+<circle cx="330" cy="247" r="6" class="thread"/>
+<circle cx="350" cy="247" r="6" class="thread"/>
+<circle cx="370" cy="247" r="6" class="thread"/>
+<circle cx="390" cy="247" r="6" class="thread"/>
+<circle cx="410" cy="247" r="6" class="thread"/>
+<circle cx="270" cy="270" r="6" class="thread"/>
+<circle cx="290" cy="270" r="6" class="member"/>
+<circle cx="310" cy="270" r="6" class="thread"/>
+<circle cx="330" cy="270" r="6" class="thread"/>
+<circle cx="350" cy="270" r="6" class="thread"/>
+<circle cx="370" cy="270" r="6" class="thread"/>
+<circle cx="390" cy="270" r="6" class="member"/>
+<circle cx="410" cy="270" r="6" class="thread"/>
+<circle cx="270" cy="293" r="6" class="thread"/>
+<circle cx="290" cy="293" r="6" class="thread"/>
+<circle cx="310" cy="293" r="6" class="thread"/>
+<circle cx="330" cy="293" r="6" class="thread"/>
+<circle cx="350" cy="293" r="6" class="thread"/>
+<circle cx="370" cy="293" r="6" class="thread"/>
+<circle cx="390" cy="293" r="6" class="member"/>
+<circle cx="410" cy="293" r="6" class="thread"/>
+<circle cx="270" cy="316" r="6" class="thread"/>
+<circle cx="290" cy="316" r="6" class="thread"/>
+<circle cx="310" cy="316" r="6" class="thread"/>
+<circle cx="330" cy="316" r="6" class="thread"/>
+<circle cx="350" cy="316" r="6" class="thread"/>
+<circle cx="370" cy="316" r="6" class="thread"/>
+<circle cx="390" cy="316" r="6" class="thread"/>
+<circle cx="410" cy="316" r="6" class="thread"/>
+<circle cx="270" cy="339" r="6" class="thread"/>
+<circle cx="290" cy="339" r="6" class="member"/>
+<circle cx="310" cy="339" r="6" class="thread"/>
+<circle cx="330" cy="339" r="6" class="thread"/>
+<circle cx="350" cy="339" r="6" class="thread"/>
+<circle cx="370" cy="339" r="6" class="thread"/>
+<circle cx="390" cy="339" r="6" class="thread"/>
+<circle cx="410" cy="339" r="6" class="thread"/>
+</g>
+<text x="240" y="407" class="note" text-anchor="middle">No upper boundary specified</text>
+<text x="240" y="437" class="subtitle" text-anchor="middle">Membership alone is known</text>
+</g>
+<path d="M 480 32 V 468" stroke="#dce3e9"/>
+<text x="504" y="52" class="heading" text-anchor="start">2  CTK Cooperative Groups</text>
+<text x="504" y="84" class="subtitle" text-anchor="start">Threads within an upper boundary</text>
+<g id="panel-2">
+<text x="600" y="138" class="label" text-anchor="middle">Block 0</text>
+<g id="panel-2-block-0">
+<rect x="510" y="156" width="180" height="208" rx="12" class="block"/>
+<rect x="503" y="149" width="194" height="222" rx="16" class="boundary"/>
+<circle cx="530" cy="178" r="6" class="thread"/>
+<circle cx="550" cy="178" r="6" class="member"/>
+<circle cx="570" cy="178" r="6" class="thread"/>
+<circle cx="590" cy="178" r="6" class="thread"/>
+<circle cx="610" cy="178" r="6" class="thread"/>
+<circle cx="630" cy="178" r="6" class="thread"/>
+<circle cx="650" cy="178" r="6" class="member"/>
+<circle cx="670" cy="178" r="6" class="thread"/>
+<circle cx="530" cy="201" r="6" class="thread"/>
+<circle cx="550" cy="201" r="6" class="thread"/>
+<circle cx="570" cy="201" r="6" class="thread"/>
+<circle cx="590" cy="201" r="6" class="member"/>
+<circle cx="610" cy="201" r="6" class="thread"/>
+<circle cx="630" cy="201" r="6" class="thread"/>
+<circle cx="650" cy="201" r="6" class="thread"/>
+<circle cx="670" cy="201" r="6" class="thread"/>
+<circle cx="530" cy="224" r="6" class="thread"/>
+<circle cx="550" cy="224" r="6" class="thread"/>
+<circle cx="570" cy="224" r="6" class="thread"/>
+<circle cx="590" cy="224" r="6" class="thread"/>
+<circle cx="610" cy="224" r="6" class="member"/>
+<circle cx="630" cy="224" r="6" class="thread"/>
+<circle cx="650" cy="224" r="6" class="thread"/>
+<circle cx="670" cy="224" r="6" class="thread"/>
+<circle cx="530" cy="247" r="6" class="thread"/>
+<circle cx="550" cy="247" r="6" class="thread"/>
+<circle cx="570" cy="247" r="6" class="thread"/>
+<circle cx="590" cy="247" r="6" class="thread"/>
+<circle cx="610" cy="247" r="6" class="member"/>
+<circle cx="630" cy="247" r="6" class="thread"/>
+<circle cx="650" cy="247" r="6" class="thread"/>
+<circle cx="670" cy="247" r="6" class="thread"/>
+<circle cx="530" cy="270" r="6" class="thread"/>
+<circle cx="550" cy="270" r="6" class="thread"/>
+<circle cx="570" cy="270" r="6" class="thread"/>
+<circle cx="590" cy="270" r="6" class="thread"/>
+<circle cx="610" cy="270" r="6" class="thread"/>
+<circle cx="630" cy="270" r="6" class="thread"/>
+<circle cx="650" cy="270" r="6" class="thread"/>
+<circle cx="670" cy="270" r="6" class="member"/>
+<circle cx="530" cy="293" r="6" class="thread"/>
+<circle cx="550" cy="293" r="6" class="thread"/>
+<circle cx="570" cy="293" r="6" class="member"/>
+<circle cx="590" cy="293" r="6" class="thread"/>
+<circle cx="610" cy="293" r="6" class="thread"/>
+<circle cx="630" cy="293" r="6" class="thread"/>
+<circle cx="650" cy="293" r="6" class="thread"/>
+<circle cx="670" cy="293" r="6" class="thread"/>
+<circle cx="530" cy="316" r="6" class="thread"/>
+<circle cx="550" cy="316" r="6" class="thread"/>
+<circle cx="570" cy="316" r="6" class="thread"/>
+<circle cx="590" cy="316" r="6" class="thread"/>
+<circle cx="610" cy="316" r="6" class="thread"/>
+<circle cx="630" cy="316" r="6" class="member"/>
+<circle cx="650" cy="316" r="6" class="thread"/>
+<circle cx="670" cy="316" r="6" class="thread"/>
+<circle cx="530" cy="339" r="6" class="thread"/>
+<circle cx="550" cy="339" r="6" class="thread"/>
+<circle cx="570" cy="339" r="6" class="thread"/>
+<circle cx="590" cy="339" r="6" class="thread"/>
+<circle cx="610" cy="339" r="6" class="member"/>
+<circle cx="630" cy="339" r="6" class="thread"/>
+<circle cx="650" cy="339" r="6" class="thread"/>
+<circle cx="670" cy="339" r="6" class="thread"/>
+</g>
+<text x="820" y="138" class="label" text-anchor="middle">Block 1</text>
+<g id="panel-2-block-1">
+<rect x="730" y="156" width="180" height="208" rx="12" class="block"/>
+<circle cx="750" cy="178" r="6" class="thread"/>
+<circle cx="770" cy="178" r="6" class="thread"/>
+<circle cx="790" cy="178" r="6" class="thread"/>
+<circle cx="810" cy="178" r="6" class="thread"/>
+<circle cx="830" cy="178" r="6" class="thread"/>
+<circle cx="850" cy="178" r="6" class="thread"/>
+<circle cx="870" cy="178" r="6" class="thread"/>
+<circle cx="890" cy="178" r="6" class="thread"/>
+<circle cx="750" cy="201" r="6" class="thread"/>
+<circle cx="770" cy="201" r="6" class="thread"/>
+<circle cx="790" cy="201" r="6" class="thread"/>
+<circle cx="810" cy="201" r="6" class="thread"/>
+<circle cx="830" cy="201" r="6" class="thread"/>
+<circle cx="850" cy="201" r="6" class="thread"/>
+<circle cx="870" cy="201" r="6" class="thread"/>
+<circle cx="890" cy="201" r="6" class="thread"/>
+<circle cx="750" cy="224" r="6" class="thread"/>
+<circle cx="770" cy="224" r="6" class="thread"/>
+<circle cx="790" cy="224" r="6" class="thread"/>
+<circle cx="810" cy="224" r="6" class="thread"/>
+<circle cx="830" cy="224" r="6" class="thread"/>
+<circle cx="850" cy="224" r="6" class="thread"/>
+<circle cx="870" cy="224" r="6" class="thread"/>
+<circle cx="890" cy="224" r="6" class="thread"/>
+<circle cx="750" cy="247" r="6" class="thread"/>
+<circle cx="770" cy="247" r="6" class="thread"/>
+<circle cx="790" cy="247" r="6" class="thread"/>
+<circle cx="810" cy="247" r="6" class="thread"/>
+<circle cx="830" cy="247" r="6" class="thread"/>
+<circle cx="850" cy="247" r="6" class="thread"/>
+<circle cx="870" cy="247" r="6" class="thread"/>
+<circle cx="890" cy="247" r="6" class="thread"/>
+<circle cx="750" cy="270" r="6" class="thread"/>
+<circle cx="770" cy="270" r="6" class="thread"/>
+<circle cx="790" cy="270" r="6" class="thread"/>
+<circle cx="810" cy="270" r="6" class="thread"/>
+<circle cx="830" cy="270" r="6" class="thread"/>
+<circle cx="850" cy="270" r="6" class="thread"/>
+<circle cx="870" cy="270" r="6" class="thread"/>
+<circle cx="890" cy="270" r="6" class="thread"/>
+<circle cx="750" cy="293" r="6" class="thread"/>
+<circle cx="770" cy="293" r="6" class="thread"/>
+<circle cx="790" cy="293" r="6" class="thread"/>
+<circle cx="810" cy="293" r="6" class="thread"/>
+<circle cx="830" cy="293" r="6" class="thread"/>
+<circle cx="850" cy="293" r="6" class="thread"/>
+<circle cx="870" cy="293" r="6" class="thread"/>
+<circle cx="890" cy="293" r="6" class="thread"/>
+<circle cx="750" cy="316" r="6" class="thread"/>
+<circle cx="770" cy="316" r="6" class="thread"/>
+<circle cx="790" cy="316" r="6" class="thread"/>
+<circle cx="810" cy="316" r="6" class="thread"/>
+<circle cx="830" cy="316" r="6" class="thread"/>
+<circle cx="850" cy="316" r="6" class="thread"/>
+<circle cx="870" cy="316" r="6" class="thread"/>
+<circle cx="890" cy="316" r="6" class="thread"/>
+<circle cx="750" cy="339" r="6" class="thread"/>
+<circle cx="770" cy="339" r="6" class="thread"/>
+<circle cx="790" cy="339" r="6" class="thread"/>
+<circle cx="810" cy="339" r="6" class="thread"/>
+<circle cx="830" cy="339" r="6" class="thread"/>
+<circle cx="850" cy="339" r="6" class="thread"/>
+<circle cx="870" cy="339" r="6" class="thread"/>
+<circle cx="890" cy="339" r="6" class="thread"/>
+</g>
+<text x="720" y="407" class="note" text-anchor="middle">Upper boundary: block</text>
+<text x="720" y="437" class="subtitle" text-anchor="middle">Thread arrangement is unspecified</text>
+</g>
+<path d="M 960 32 V 468" stroke="#dce3e9"/>
+<text x="984" y="52" class="heading" text-anchor="start">3  CCCL Cooperative Groups</text>
+<text x="984" y="84" class="subtitle" text-anchor="start">Hierarchy units within an upper boundary</text>
+<g id="panel-3">
+<text x="1080" y="138" class="label" text-anchor="middle">Block 0</text>
+<g id="panel-3-block-0">
+<rect x="990" y="156" width="180" height="208" rx="12" class="block"/>
+<rect x="983" y="149" width="194" height="222" rx="16" class="boundary"/>
+<rect x="997" y="163" width="166" height="97" rx="9" fill="#edf7da" stroke="#3e6500" stroke-width="2"/>
+<circle cx="1010" cy="178" r="6" class="member"/>
+<circle cx="1030" cy="178" r="6" class="member"/>
+<circle cx="1050" cy="178" r="6" class="member"/>
+<circle cx="1070" cy="178" r="6" class="member"/>
+<circle cx="1090" cy="178" r="6" class="member"/>
+<circle cx="1110" cy="178" r="6" class="member"/>
+<circle cx="1130" cy="178" r="6" class="member"/>
+<circle cx="1150" cy="178" r="6" class="member"/>
+<circle cx="1010" cy="201" r="6" class="member"/>
+<circle cx="1030" cy="201" r="6" class="member"/>
+<circle cx="1050" cy="201" r="6" class="member"/>
+<circle cx="1070" cy="201" r="6" class="member"/>
+<circle cx="1090" cy="201" r="6" class="member"/>
+<circle cx="1110" cy="201" r="6" class="member"/>
+<circle cx="1130" cy="201" r="6" class="member"/>
+<circle cx="1150" cy="201" r="6" class="member"/>
+<circle cx="1010" cy="224" r="6" class="member"/>
+<circle cx="1030" cy="224" r="6" class="member"/>
+<circle cx="1050" cy="224" r="6" class="member"/>
+<circle cx="1070" cy="224" r="6" class="member"/>
+<circle cx="1090" cy="224" r="6" class="member"/>
+<circle cx="1110" cy="224" r="6" class="member"/>
+<circle cx="1130" cy="224" r="6" class="member"/>
+<circle cx="1150" cy="224" r="6" class="member"/>
+<circle cx="1010" cy="247" r="6" class="member"/>
+<circle cx="1030" cy="247" r="6" class="member"/>
+<circle cx="1050" cy="247" r="6" class="member"/>
+<circle cx="1070" cy="247" r="6" class="member"/>
+<circle cx="1090" cy="247" r="6" class="member"/>
+<circle cx="1110" cy="247" r="6" class="member"/>
+<circle cx="1130" cy="247" r="6" class="member"/>
+<circle cx="1150" cy="247" r="6" class="member"/>
+<circle cx="1010" cy="270" r="6" class="thread"/>
+<circle cx="1030" cy="270" r="6" class="thread"/>
+<circle cx="1050" cy="270" r="6" class="thread"/>
+<circle cx="1070" cy="270" r="6" class="thread"/>
+<circle cx="1090" cy="270" r="6" class="thread"/>
+<circle cx="1110" cy="270" r="6" class="thread"/>
+<circle cx="1130" cy="270" r="6" class="thread"/>
+<circle cx="1150" cy="270" r="6" class="thread"/>
+<circle cx="1010" cy="293" r="6" class="thread"/>
+<circle cx="1030" cy="293" r="6" class="thread"/>
+<circle cx="1050" cy="293" r="6" class="thread"/>
+<circle cx="1070" cy="293" r="6" class="thread"/>
+<circle cx="1090" cy="293" r="6" class="thread"/>
+<circle cx="1110" cy="293" r="6" class="thread"/>
+<circle cx="1130" cy="293" r="6" class="thread"/>
+<circle cx="1150" cy="293" r="6" class="thread"/>
+<circle cx="1010" cy="316" r="6" class="thread"/>
+<circle cx="1030" cy="316" r="6" class="thread"/>
+<circle cx="1050" cy="316" r="6" class="thread"/>
+<circle cx="1070" cy="316" r="6" class="thread"/>
+<circle cx="1090" cy="316" r="6" class="thread"/>
+<circle cx="1110" cy="316" r="6" class="thread"/>
+<circle cx="1130" cy="316" r="6" class="thread"/>
+<circle cx="1150" cy="316" r="6" class="thread"/>
+<circle cx="1010" cy="339" r="6" class="thread"/>
+<circle cx="1030" cy="339" r="6" class="thread"/>
+<circle cx="1050" cy="339" r="6" class="thread"/>
+<circle cx="1070" cy="339" r="6" class="thread"/>
+<circle cx="1090" cy="339" r="6" class="thread"/>
+<circle cx="1110" cy="339" r="6" class="thread"/>
+<circle cx="1130" cy="339" r="6" class="thread"/>
+<circle cx="1150" cy="339" r="6" class="thread"/>
+</g>
+<text x="1300" y="138" class="label" text-anchor="middle">Block 1</text>
+<g id="panel-3-block-1">
+<rect x="1210" y="156" width="180" height="208" rx="12" class="block"/>
+<circle cx="1230" cy="178" r="6" class="thread"/>
+<circle cx="1250" cy="178" r="6" class="thread"/>
+<circle cx="1270" cy="178" r="6" class="thread"/>
+<circle cx="1290" cy="178" r="6" class="thread"/>
+<circle cx="1310" cy="178" r="6" class="thread"/>
+<circle cx="1330" cy="178" r="6" class="thread"/>
+<circle cx="1350" cy="178" r="6" class="thread"/>
+<circle cx="1370" cy="178" r="6" class="thread"/>
+<circle cx="1230" cy="201" r="6" class="thread"/>
+<circle cx="1250" cy="201" r="6" class="thread"/>
+<circle cx="1270" cy="201" r="6" class="thread"/>
+<circle cx="1290" cy="201" r="6" class="thread"/>
+<circle cx="1310" cy="201" r="6" class="thread"/>
+<circle cx="1330" cy="201" r="6" class="thread"/>
+<circle cx="1350" cy="201" r="6" class="thread"/>
+<circle cx="1370" cy="201" r="6" class="thread"/>
+<circle cx="1230" cy="224" r="6" class="thread"/>
+<circle cx="1250" cy="224" r="6" class="thread"/>
+<circle cx="1270" cy="224" r="6" class="thread"/>
+<circle cx="1290" cy="224" r="6" class="thread"/>
+<circle cx="1310" cy="224" r="6" class="thread"/>
+<circle cx="1330" cy="224" r="6" class="thread"/>
+<circle cx="1350" cy="224" r="6" class="thread"/>
+<circle cx="1370" cy="224" r="6" class="thread"/>
+<circle cx="1230" cy="247" r="6" class="thread"/>
+<circle cx="1250" cy="247" r="6" class="thread"/>
+<circle cx="1270" cy="247" r="6" class="thread"/>
+<circle cx="1290" cy="247" r="6" class="thread"/>
+<circle cx="1310" cy="247" r="6" class="thread"/>
+<circle cx="1330" cy="247" r="6" class="thread"/>
+<circle cx="1350" cy="247" r="6" class="thread"/>
+<circle cx="1370" cy="247" r="6" class="thread"/>
+<circle cx="1230" cy="270" r="6" class="thread"/>
+<circle cx="1250" cy="270" r="6" class="thread"/>
+<circle cx="1270" cy="270" r="6" class="thread"/>
+<circle cx="1290" cy="270" r="6" class="thread"/>
+<circle cx="1310" cy="270" r="6" class="thread"/>
+<circle cx="1330" cy="270" r="6" class="thread"/>
+<circle cx="1350" cy="270" r="6" class="thread"/>
+<circle cx="1370" cy="270" r="6" class="thread"/>
+<circle cx="1230" cy="293" r="6" class="thread"/>
+<circle cx="1250" cy="293" r="6" class="thread"/>
+<circle cx="1270" cy="293" r="6" class="thread"/>
+<circle cx="1290" cy="293" r="6" class="thread"/>
+<circle cx="1310" cy="293" r="6" class="thread"/>
+<circle cx="1330" cy="293" r="6" class="thread"/>
+<circle cx="1350" cy="293" r="6" class="thread"/>
+<circle cx="1370" cy="293" r="6" class="thread"/>
+<circle cx="1230" cy="316" r="6" class="thread"/>
+<circle cx="1250" cy="316" r="6" class="thread"/>
+<circle cx="1270" cy="316" r="6" class="thread"/>
+<circle cx="1290" cy="316" r="6" class="thread"/>
+<circle cx="1310" cy="316" r="6" class="thread"/>
+<circle cx="1330" cy="316" r="6" class="thread"/>
+<circle cx="1350" cy="316" r="6" class="thread"/>
+<circle cx="1370" cy="316" r="6" class="thread"/>
+<circle cx="1230" cy="339" r="6" class="thread"/>
+<circle cx="1250" cy="339" r="6" class="thread"/>
+<circle cx="1270" cy="339" r="6" class="thread"/>
+<circle cx="1290" cy="339" r="6" class="thread"/>
+<circle cx="1310" cy="339" r="6" class="thread"/>
+<circle cx="1330" cy="339" r="6" class="thread"/>
+<circle cx="1350" cy="339" r="6" class="thread"/>
+<circle cx="1370" cy="339" r="6" class="thread"/>
+</g>
+<text x="1200" y="407" class="note" text-anchor="middle">Upper boundary: block · Unit: warp</text>
+<text x="1200" y="437" class="subtitle" text-anchor="middle">One complete warp (32 threads)</text>
+</g>
+<path d="M 24 478 H 1416" stroke="#dce3e9"/>
+<circle cx="48" cy="513" r="6" class="member"/>
+<text x="64" y="519" class="label" text-anchor="start">Thread in the group</text>
+<circle cx="290" cy="513" r="6" class="thread"/>
+<text x="306" y="519" class="label" text-anchor="start">Other thread</text>
+<rect x="484" y="503" width="28" height="20" rx="4" class="boundary"/>
+<text x="525" y="519" class="label" text-anchor="start">Upper boundary</text>
+<text x="1414" y="519" class="subtitle" text-anchor="end">Each block shows 64 threads; layout is schematic.</text>
+</svg>
