@@ -52,7 +52,7 @@ struct ExtendedFloatSum
 };
 
 template <class It>
-inline It unwrap_it(It it)
+It unwrap_it(It it)
 {
   return it;
 }
@@ -64,7 +64,7 @@ inline __half* unwrap_it(half_t* it)
 }
 
 template <class OffsetT>
-inline cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
+cuda::constant_iterator<__half, OffsetT> unwrap_it(cuda::constant_iterator<half_t, OffsetT> it)
 {
   half_t wrapped_val = *it;
   __half val         = wrapped_val.operator __half();
@@ -79,7 +79,7 @@ inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
 }
 
 template <class OffsetT>
-cuda::constant_iterator<__nv_bfloat16, OffsetT> inline unwrap_it(cuda::constant_iterator<bfloat16_t, OffsetT> it)
+cuda::constant_iterator<__nv_bfloat16, OffsetT> unwrap_it(cuda::constant_iterator<bfloat16_t, OffsetT> it)
 {
   bfloat16_t wrapped_val = *it;
   __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
