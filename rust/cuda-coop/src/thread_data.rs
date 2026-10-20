@@ -71,6 +71,8 @@ where
     // without moving it away from offset zero.
     alignment: [<Alignment<ALIGN> as crate::alignment::sealed::Alignment>::Marker; 0],
     values: [MaybeUninit<T>; ITEMS],
+    // Packed low bits in the first ITEMS.div_ceil(8) bytes. The backing extent
+    // avoids generic const expressions and preserves this private layout size.
     initialized: [u8; ITEMS],
 }
 
@@ -119,14 +121,17 @@ where
     #[inline]
     pub fn write(&mut self, index: usize, value: T) {
         self.values[index].write(value);
-        self.initialized[index] = 1;
+        self.initialized[index / 8] |= 1 << (index % 8);
     }
 
     /// Copy an initialized value, or return `None` if unwritten or out of bounds.
-    #[inline]
+    #[inline(always)]
     pub fn get(&self, index: usize) -> Option<T> {
-        if index < ITEMS && self.initialized[index] == 1 {
-            // SAFETY: write and the private native boundary set this flag only
+        if index >= ITEMS {
+            return None;
+        }
+        if (self.initialized[index / 8] & (1 << (index % 8))) != 0 {
+            // SAFETY: write and the private native boundary set this bit only
             // after initializing the value.
             // Copies preserve both arrays. Numeric types are Copy.
             Some(unsafe { self.values[index].assume_init() })
@@ -139,8 +144,8 @@ where
     /// out of bounds. The exclusive borrow prevents simultaneous payload access.
     #[inline]
     pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
-        if index < ITEMS && self.initialized[index] == 1 {
-            // SAFETY: The flag proves initialization, and &mut self is exclusive.
+        if index < ITEMS && (self.initialized[index / 8] & (1 << (index % 8))) != 0 {
+            // SAFETY: The bit proves initialization, and &mut self is exclusive.
             Some(unsafe { self.values[index].assume_init_mut() })
         } else {
             None
@@ -166,9 +171,9 @@ where
 
     #[inline]
     fn index(&self, index: usize) -> &T {
-        assert!(index < ITEMS, "ThreadData index out of bounds");
-        assert!(self.initialized[index] == 1, "ThreadData slot is unwritten");
-        // SAFETY: The bounds and exact initialization flag were checked above.
+        assert!(index < ITEMS);
+        assert!((self.initialized[index / 8] & (1 << (index % 8))) != 0);
+        // SAFETY: The bounds and initialization bit were checked above.
         unsafe { self.values[index].assume_init_ref() }
     }
 }
@@ -180,8 +185,8 @@ where
 {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut T {
-        assert!(index < ITEMS, "ThreadData index out of bounds");
-        assert!(self.initialized[index] == 1, "ThreadData slot is unwritten");
+        assert!(index < ITEMS);
+        assert!((self.initialized[index / 8] & (1 << (index % 8))) != 0);
         // SAFETY: The checks prove initialization; &mut self is exclusive.
         unsafe { self.values[index].assume_init_mut() }
     }
@@ -276,27 +281,4 @@ impl<T: Numeric, const ITEMS: usize, const ALIGN: usize> sealed::ThreadDataLike
 where
     Alignment<ALIGN>: SupportedAlignment,
 {
-}
-
-#[cfg(test)]
-mod tests {
-    extern crate std;
-
-    use super::ThreadData;
-    use std::panic::{AssertUnwindSafe, catch_unwind};
-
-    #[test]
-    fn only_exactly_one_marks_a_slot_initialized() {
-        let mut items = ThreadData::<_, 1>::new();
-        items.write(0, 42_i32);
-        for flag in [0, 2, 255] {
-            items.initialized[0] = flag;
-            assert_eq!(items.get(0), None);
-            assert!(items.get_mut(0).is_none());
-            assert!(catch_unwind(|| items[0]).is_err());
-            assert!(catch_unwind(AssertUnwindSafe(|| items[0] = 9)).is_err());
-        }
-        items.write(0, 7);
-        assert_eq!(items.get(0), Some(7));
-    }
 }

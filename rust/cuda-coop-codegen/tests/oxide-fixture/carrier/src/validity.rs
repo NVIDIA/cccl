@@ -10,19 +10,19 @@ mod kernels {
     use super::*;
 
     #[inline(never)]
-    fn exercise<T: Numeric + PartialEq, const ITEMS_PER_THREAD: usize>(
+    fn exercise<T: Numeric + PartialEq, const ITEMS_PER_THREAD: usize, const CAPACITY: usize>(
         input: &[T],
-        output: &mut DisjointSlice<T, CollectiveTiles<4>>,
+        output: &mut DisjointSlice<T, CollectiveTiles<CAPACITY>>,
         valid: usize,
         shift: usize,
         default: T,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
         let block = this_block();
         let threads = thread::blockDim_x() as usize;
         let lane = thread::threadIdx_x() as usize;
-        let offset = thread::blockIdx_x() as usize * threads * 4 + shift;
+        let offset = thread::blockIdx_x() as usize * threads * CAPACITY + shift;
         let mut values = ThreadData::<_, ITEMS_PER_THREAD>::new();
         match mode {
             0 => validity::load_full(block, input, offset, &mut values),
@@ -33,24 +33,23 @@ mod kernels {
             2 | 4 => validity::load_filled(block, input, offset, valid, default, &mut values),
             _ => {
                 // Arbitrary masks and a lane-divergent move/selection. Only the
-                // written prefix is initialized; flags outside it are noncanonical.
+                // written prefix and selected slots outside it are initialized.
                 let mut other = ThreadData::<_, ITEMS_PER_THREAD>::new();
                 let mut item = 0;
                 while item < ITEMS_PER_THREAD {
-                    if lane * ITEMS_PER_THREAD + item < valid {
+                    if lane * ITEMS_PER_THREAD + item < valid
+                        || (mode == 7 && (lane + item) % 3 == 1)
+                    {
                         values.write(item, default);
                         other.write(item, default);
-                    } else {
-                        thread_data::corrupt_flag(&mut values, item, 2);
-                        thread_data::corrupt_flag(&mut other, item, 255);
                     }
                     item += 1;
                 }
                 values = if lane % 2 == 0 { values } else { other };
             }
         }
-        if bad_flag != 1 {
-            thread_data::corrupt_flag(&mut values, 0, bad_flag);
+        if flag != 1 {
+            thread_data::clear_slot(&mut values, 0);
         }
         let before = values;
         if mode == 0 || mode == 2 {
@@ -90,6 +89,21 @@ mod kernels {
         // Final writes complete through the owned async host operation.
     }
 
+    // Cross a bitmap-byte boundary without expanding the ten-type matrix.
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn copy_i32_boundary_128<const ITEMS_PER_THREAD: usize>(
+        input: &[i32],
+        mut output: DisjointSlice<i32, CollectiveTiles<16>>,
+        valid: usize,
+        shift: usize,
+        default: i32,
+        mode: u32,
+        flag: u8,
+    ) {
+        exercise::<_, ITEMS_PER_THREAD, 16>(input, &mut output, valid, shift, default, mode, flag);
+    }
+
     #[kernel]
     #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
     pub fn copy_i8_128<const ITEMS_PER_THREAD: usize>(
@@ -99,9 +113,9 @@ mod kernels {
         shift: usize,
         default: i8,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -113,9 +127,9 @@ mod kernels {
         shift: usize,
         default: u8,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -127,9 +141,9 @@ mod kernels {
         shift: usize,
         default: i16,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -141,9 +155,9 @@ mod kernels {
         shift: usize,
         default: u16,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -155,9 +169,9 @@ mod kernels {
         shift: usize,
         default: i32,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -169,9 +183,9 @@ mod kernels {
         shift: usize,
         default: u32,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -183,9 +197,9 @@ mod kernels {
         shift: usize,
         default: i64,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -197,9 +211,9 @@ mod kernels {
         shift: usize,
         default: u64,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -211,9 +225,9 @@ mod kernels {
         shift: usize,
         default: f32,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -225,9 +239,9 @@ mod kernels {
         shift: usize,
         default: f64,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 
     #[kernel]
@@ -239,9 +253,9 @@ mod kernels {
         shift: usize,
         default: i32,
         mode: u32,
-        bad_flag: u8,
+        flag: u8,
     ) {
-        exercise::<_, ITEMS_PER_THREAD>(input, &mut output, valid, shift, default, mode, bad_flag);
+        exercise::<_, ITEMS_PER_THREAD, 4>(input, &mut output, valid, shift, default, mode, flag);
     }
 }
 
@@ -257,19 +271,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let trap = std::env::args().nth(1);
     let mut cases = 0;
     macro_rules! run {
-        ($t:ty, $prepare:ident, $launch:ident, $block:literal, $items:literal, $default:expr) => {{
+        ($t:ty, $prepare:ident, $launch:ident, $block:literal, $items:literal, $default:expr) => {
+            run!($t, $prepare, $launch, $block, $items, $default, 4)
+        };
+        ($t:ty, $prepare:ident, $launch:ident, $block:literal, $items:literal, $default:expr, $capacity:literal) => {{
             let default: $t = $default;
             for groups in [1_u32, 3] {
                 let prepared =
                     module.$prepare::<$items>(LaunchConfig1D::auto_shared(groups, $block))?;
                 assert_eq!(prepared.__raw_config().shared_mem_bytes, 0);
-                for mode in [0, 1, 2, 3, 4, 6] {
+                for mode in [0, 1, 2, 3, 4, 6, 7] {
+                    if mode == 7 && $items != 9 {
+                        continue;
+                    }
                     for valid in [0, 1, $block * $items - 1, $block * $items] {
                         if (mode == 0) && valid != $block * $items {
                             continue;
                         }
                         let shift = if $items == 1 { 7 } else { 0 };
-                        let end = (groups as usize - 1) * $block * 4 + shift;
+                        let end = (groups as usize - 1) * $block * $capacity + shift;
                         let source_len = end
                             + if mode <= 1 || mode == 6 {
                                 $block * $items
@@ -289,7 +309,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         target.copy_to_host(&stream, &mut result)?;
                         stream.synchronize()?;
                         for (index, &value) in result.iter().enumerate() {
-                            let within = index % ($block * 4);
+                            let within = index % ($block * $capacity);
                             let written = if mode == 0 || mode == 2 {
                                 $block * $items
                             } else if mode == 6 {
@@ -298,7 +318,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 valid
                             };
                             let expected = if within >= shift && within - shift < written {
-                                if mode == 3 || (mode == 2 && within - shift >= valid) {
+                                if mode == 3 || mode == 7 || (mode == 2 && within - shift >= valid)
+                                {
                                     default
                                 } else {
                                     input[index]
@@ -329,9 +350,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let source = DeviceBuffer::from_host(&stream, &vec![11_i32; len])?;
         let target = DeviceBuffer::from_host(&stream, &vec![0_i32; len])?;
         let (valid, shift, mode, flag) = match trap.as_str() {
-            "hole0" => (512, 0, 0, 0),
-            "hole2" => (512, 0, 0, 2),
-            "hole255" => (512, 0, 0, 255),
+            "hole" => (512, 0, 0, 0),
             "count" => (513, 0, 1, 1),
             "bounds" => (512, 1, 1, 1),
             "ownership" => (512, 1, 0, 1),
@@ -520,6 +539,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         64,
         4,
         -1234567
+    );
+    run!(
+        i32,
+        prepare_copy_i32_boundary_128,
+        copy_i32_boundary_128_async_owned,
+        128,
+        9,
+        -17,
+        16
     );
     println!(
         "PASS: {cases} Direct validity cases, ten numeric types, exact flags, short tails, owned async"

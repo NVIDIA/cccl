@@ -14,7 +14,7 @@
 //! items per thread, and [`Algorithm::Direct`] or [`Algorithm::Transpose`].
 //! The raw i32 recipes support Direct and Transpose. Their Store payloads must
 //! be fully initialized. The validity-aware Direct recipes support all ten
-//! [`Dtype`] variants with separate value storage and per-slot validity bytes.
+//! [`Dtype`] variants with separate value storage and packed per-slot validity bits.
 //! Masked Load resets validity outside its prefix; Direct Store preserves both
 //! arrays and checks initialization only in its write domain. Transpose Store
 //! replaces each lane's blocked payload with striped items across the block;
@@ -155,13 +155,13 @@ pub enum Operation {
     StoreFull,
     /// Store a prefix only. ABI adds `(int valid)`; other destination elements remain unchanged.
     StorePartial,
-    /// Full Load with separate value storage and u8 flags; marks every slot initialized.
+    /// Full Load with separate value storage and packed validity bits; marks every slot initialized.
     LoadFullValidity,
-    /// Counted Load without a default; resets flags outside the loaded prefix to zero.
+    /// Counted Load without a default; clears validity bits outside the loaded prefix.
     LoadMaskedValidity,
     /// Counted Load with an exact typed default; marks every slot initialized.
     LoadFilledValidity,
-    /// Full Store after checking all flags equal one; preserves values and flags.
+    /// Full Store after checking every validity bit is set; preserves values and bits.
     StoreFullValidity,
     /// Counted Store after checking its write domain; preserves all values and flags.
     StorePartialValidity,
@@ -206,11 +206,11 @@ impl Operation {
             Self::LoadFilled => "load_filled",
             Self::StoreFull => "store_full",
             Self::StorePartial => "store_partial",
-            Self::LoadFullValidity => "load_full_validity_v1",
-            Self::LoadMaskedValidity => "load_masked_validity_v1",
-            Self::LoadFilledValidity => "load_filled_validity_v1",
-            Self::StoreFullValidity => "store_full_validity_v1",
-            Self::StorePartialValidity => "store_partial_validity_v1",
+            Self::LoadFullValidity => "load_full_validity_bits_v1",
+            Self::LoadMaskedValidity => "load_masked_validity_bits_v1",
+            Self::LoadFilledValidity => "load_filled_validity_bits_v1",
+            Self::StoreFullValidity => "store_full_validity_bits_v1",
+            Self::StorePartialValidity => "store_partial_validity_bits_v1",
         }
     }
 }
@@ -352,14 +352,15 @@ pub struct Layout {
 /// Validity-aware Direct ABIs add `unsigned char* flags` immediately after
 /// scratch. `payload` addresses aligned storage for the requested number of
 /// elements; it need not contain initialized values. Flags occupy a separate,
-/// initialized byte array of the same slot count. Only exactly one denotes an
-/// initialized value. Both arrays are private to the lane, disjoint from
-/// memory/scratch and one another, and remain exclusively borrowed for the
-/// call. Native code accesses payload bytes without evaluating invalid values.
-/// Masked Load writes zero flags outside its prefix; filled/full Load write
-/// every value before setting its flag. Store checks its entire lane-local
-/// write domain before numeric conversion and preserves both arrays. Failure
-/// traps; it does not promise rollback of stores by other lanes.
+/// initialized array of `items_per_thread.div_ceil(8)` bytes. Bit `i % 8` of
+/// byte `i / 8` denotes whether slot `i` is initialized. Both arrays are private
+/// to the lane, disjoint from memory/scratch and one another, and remain
+/// exclusively borrowed for the call. Native code accesses payload bytes
+/// without evaluating invalid values. Masked Load clears bits outside its
+/// prefix; filled/full Load write every value before setting its bit.
+/// Store checks its entire lane-local write domain before numeric conversion
+/// and preserves both arrays. Failure traps; it does not promise rollback of
+/// stores by other lanes.
 #[derive(Debug)]
 pub struct Specialization {
     /// SHA-256 of request/source, target/options, captured headers and native toolchain inputs.
@@ -559,6 +560,7 @@ fn source(request: Request, symbol: &str) -> String {
     };
     let (dtype, size) = request.dtype.native();
     let items = request.items_per_thread;
+    let bitmap_bytes = items.div_ceil(8);
     let tile = request.block_threads * items;
     let mut controls = String::new();
     let mut operands = String::new();
@@ -601,12 +603,17 @@ fn source(request: Request, symbol: &str) -> String {
   operation.Load(memory, values{operands});
 #pragma unroll
   for (int i = 0; i < {items}; ++i) {{
-    if ({domain}) {{
-      cuda::std::memcpy(bytes + sizeof(value_type) * i, values[i].bytes, sizeof(value_type));
-      flags[i] = 1;
-    }} else {{
-      flags[i] = 0;
+    if ({domain}) cuda::std::memcpy(bytes + sizeof(value_type) * i, values[i].bytes, sizeof(value_type));
+  }}
+#pragma unroll
+  for (int byte = 0; byte < {bitmap_bytes}; ++byte) {{
+    unsigned int bits = 0;
+#pragma unroll
+    for (int bit = 0; bit < 8; ++bit) {{
+      const int i = byte * 8 + bit;
+      if (i < {items} && ({domain})) bits |= 1u << bit;
     }}
+    flags[byte] = static_cast<unsigned char>(bits);
   }}"#
             )
         } else {
@@ -614,7 +621,7 @@ fn source(request: Request, symbol: &str) -> String {
                 r#"// Complete this lane's preflight before any numeric conversion or store.
 #pragma unroll
   for (int i = 0; i < {items}; ++i) {{
-    if (({domain}) && flags[i] != 1) __trap();
+    if (({domain}) && (flags[i / 8] & (1u << (i % 8))) == 0) __trap();
   }}
   cell values[{items}];
 #pragma unroll

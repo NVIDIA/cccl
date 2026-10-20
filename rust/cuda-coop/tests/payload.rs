@@ -62,6 +62,36 @@ fn arbitrary_writes_and_checked_mutation_preserve_unwritten_slots() {
 }
 
 #[test]
+fn sparse_writes_across_byte_boundaries_preserve_neighbors_and_copies() {
+    let mut items = coop::ThreadData::<_, 33>::new();
+    for index in [0, 7, 8, 16, 31, 32] {
+        items.write(index, index as u16 + 1);
+    }
+    let copy = items;
+    *items.get_mut(8).unwrap() += 10;
+    items[31] += 20;
+    for index in 0..33 {
+        let expected = [0, 7, 8, 16, 31, 32]
+            .contains(&index)
+            .then_some(index as u16 + 1);
+        assert_eq!(copy.get(index), expected);
+        assert_eq!(
+            items.get(index),
+            expected.map(|value| value
+                + match index {
+                    8 => 10,
+                    31 => 20,
+                    _ => 0,
+                })
+        );
+    }
+    for index in [33, usize::MAX] {
+        assert_eq!(items.get(index), None);
+        assert!(items.get_mut(index).is_none());
+    }
+}
+
+#[test]
 fn invalid_indexing_and_writes_panic_without_initializing_other_slots() {
     let mut items = coop::ThreadData::<_, 4>::new();
     items.write(2, 9_i32);

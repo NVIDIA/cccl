@@ -3,7 +3,7 @@
 
 // Private native-boundary bridge, compiled only by the coordinated fixture
 // until the complete collective API is qualified. These addresses describe
-// opaque MaybeUninit cells and separate exact-one flags, never a T slice.
+// opaque MaybeUninit cells and a separate packed validity bitmap, never a T slice.
 use super::{Alignment, Numeric, SupportedAlignment, ThreadData};
 
 impl<T: Numeric, const ITEMS: usize, const ALIGN: usize> ThreadData<T, ITEMS, ALIGN>

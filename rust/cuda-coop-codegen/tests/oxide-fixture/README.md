@@ -108,15 +108,17 @@ fail through a device trap, before an invalid native access.
 
 Add `--validity` to exercise the five typed Direct recipes with the actual
 `ThreadData` source, through a test-only facade. The private bridge passes
-separate addresses for opaque cells and exact-one flags; it exposes no
+separate addresses for opaque cells and packed validity bits; it exposes no
 initialized slice. This route uses the checked resource marker, canonical
 full-block carrier and ordinary owned async completion. It requires compiler
 support for the `MaybeUninit` intrinsics reached by safe payload access.
 
 The cases cover all ten numeric types, items 1/4, exact typed defaults,
-full and no-default masked Load, arbitrary flags outside a partial Store's
-write domain, preservation after Store, genuinely short allocations and
+full and no-default masked Load, arbitrary initialized slots outside a partial
+Store's write domain, preservation after Store, genuinely short allocations and
 Store/barrier/Load. A full Load followed by masked Load checks that old
-initialization is reset. The binary accepts `hole0`, `hole2`, `hole255`,
-`count` and `bounds`; each must fail in a separate process. The facade is
-private test infrastructure, not a published safe collective API.
+initialization is reset. A focused i32/items9 case crosses a bitmap-byte boundary
+and preserves scattered initialized slots outside the Store prefix. The binary
+accepts `hole`, `count`, `bounds`, `ownership` and `different-count`; each must
+fail in a separate process. The facade is private test infrastructure, not a
+published safe collective API.

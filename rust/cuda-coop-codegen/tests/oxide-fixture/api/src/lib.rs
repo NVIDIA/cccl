@@ -33,14 +33,10 @@ pub mod thread_data {
 
     // Fault injection and flag observation belong only to this private fixture.
     pub fn flag<T: Numeric, const N: usize>(values: &ThreadData<T, N>, index: usize) -> u8 {
-        values.initialized[index]
+        (values.initialized[index / 8] >> (index % 8)) & 1
     }
-    pub fn corrupt_flag<T: Numeric, const N: usize>(
-        values: &mut ThreadData<T, N>,
-        index: usize,
-        flag: u8,
-    ) {
-        values.initialized[index] = flag;
+    pub fn clear_slot<T: Numeric, const N: usize>(values: &mut ThreadData<T, N>, index: usize) {
+        values.initialized[index / 8] &= !(1 << (index % 8));
     }
 }
 #[cfg(feature = "validity")]

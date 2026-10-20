@@ -125,11 +125,11 @@ impl SpecializationRequest {
             "load_filled" => Operation::LoadFilled,
             "store_full" => Operation::StoreFull,
             "store_partial" => Operation::StorePartial,
-            "load_full_validity_v1" => Operation::LoadFullValidity,
-            "load_masked_validity_v1" => Operation::LoadMaskedValidity,
-            "load_filled_validity_v1" => Operation::LoadFilledValidity,
-            "store_full_validity_v1" => Operation::StoreFullValidity,
-            "store_partial_validity_v1" => Operation::StorePartialValidity,
+            "load_full_validity_bits_v1" => Operation::LoadFullValidity,
+            "load_masked_validity_bits_v1" => Operation::LoadMaskedValidity,
+            "load_filled_validity_bits_v1" => Operation::LoadFilledValidity,
+            "store_full_validity_bits_v1" => Operation::StoreFullValidity,
+            "store_partial_validity_bits_v1" => Operation::StorePartialValidity,
             _ => {
                 return Err(Error::message(format!(
                     "unsupported operation {:?}",
@@ -411,6 +411,18 @@ mod tests {
 
     #[test]
     fn typed_validity_abi_preserves_width_and_separate_flags() {
+        // Old byte-per-slot registrations must not bind to the packed format.
+        assert!(
+            SpecializationRequest {
+                operation: "load_filled_validity_v1".into(),
+                algorithm: "direct".into(),
+                dtype: Scalar::Signed(32),
+                block: [128, 1, 1],
+                items_per_thread: 4,
+            }
+            .native()
+            .is_err()
+        );
         for dtype in [
             Dtype::I8,
             Dtype::U8,
@@ -426,7 +438,7 @@ mod tests {
             let scalar = Scalar::from(dtype);
             assert_eq!(scalar.dtype().unwrap(), dtype);
             let request = SpecializationRequest {
-                operation: "load_filled_validity_v1".into(),
+                operation: "load_filled_validity_bits_v1".into(),
                 algorithm: "direct".into(),
                 dtype: scalar,
                 block: [128, 1, 1],

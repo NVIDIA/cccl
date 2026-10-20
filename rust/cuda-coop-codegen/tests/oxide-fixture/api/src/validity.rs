@@ -109,7 +109,7 @@ pub fn store_full<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CAPA
     let pointer = target.as_mut_ptr();
     let payload = values.block_io_parts();
     // SAFETY: this carrier owns the checked range. The provider checks every
-    // written slot's exact-one flag before interpreting its bytes as T.
+    // written slot's validity bit before interpreting its bytes as T.
     unsafe {
         library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
             crate::validity_store_full,
