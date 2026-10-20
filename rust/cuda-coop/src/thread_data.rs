@@ -165,8 +165,8 @@ where
 
     #[inline]
     fn index(&self, index: usize) -> &T {
-        assert!(index < ITEMS, "ThreadData index out of bounds");
-        assert!(self.initialized[index] == 1, "ThreadData slot is unwritten");
+        assert!(index < ITEMS);
+        assert!(self.initialized[index] == 1);
         // SAFETY: The bounds and exact initialization flag were checked above.
         unsafe { self.values[index].assume_init_ref() }
     }
@@ -179,8 +179,8 @@ where
 {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut T {
-        assert!(index < ITEMS, "ThreadData index out of bounds");
-        assert!(self.initialized[index] == 1, "ThreadData slot is unwritten");
+        assert!(index < ITEMS);
+        assert!(self.initialized[index] == 1);
         // SAFETY: The checks prove initialization; &mut self is exclusive.
         unsafe { self.values[index].assume_init_mut() }
     }
