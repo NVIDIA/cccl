@@ -128,3 +128,20 @@ and preserves scattered initialized slots outside the Store prefix. The binary
 accepts `hole`, `count`, `bounds`, `ownership` and `different-count`; each must
 fail in a separate process. The facade is private test infrastructure, not a
 published safe collective API.
+
+The `--storage` runner route exercises the internal full-block storage boundary
+with the unchanged numeric provider: shared/manual/automatic and exclusive
+policies, distinct helper-created descriptors, typed raw reservations, and
+Direct/Transpose operations at one and four items per thread. Runtime loops
+exercise reuse across iterations; reconfiguration before use checks alignment,
+and automatic Direct operations remain scratch-free. It checks three
+blocks, boundary valid counts and inferred launch bytes through owned async
+completion. The wrapper remains private and unsafe for its stated memory and
+initialization obligations.
+
+Add `--compile-only` to prepare an isolated fixture without GPU execution.
+`check_storage_rejections.py OUTPUT` uses that copy for paired positive and
+negative layout/reuse/output-epoch cases and restores its source afterward.
+Each case uses its own Cargo target directory.
+It checks intended diagnostics, including whole-plan capacity, live views,
+release versus completion and scratch-free output conflicts.

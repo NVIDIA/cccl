@@ -84,3 +84,6 @@ pub unsafe fn roundtrip<const ITEMS_PER_THREAD: usize, const TRANSPOSE: bool>(
 mod checked;
 #[cfg(feature = "checked")]
 pub use checked::roundtrip;
+
+#[cfg(feature = "storage")]
+pub mod storage;

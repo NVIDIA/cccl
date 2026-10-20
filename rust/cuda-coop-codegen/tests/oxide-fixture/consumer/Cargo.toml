@@ -11,9 +11,11 @@ publish = false
 cuda-device.workspace = true
 cuda-host.workspace = true
 cuda-core.workspace = true
+cuda-async.workspace = true
 oxide-artifacts.workspace = true
 coop-marker-fixture-helper = { path = "../helper" }
 
 [features]
 checked = ["coop-marker-fixture-helper/checked"]
 root-context = ["checked"]
+storage = ["coop-marker-fixture-helper/storage", "cuda-host/async"]

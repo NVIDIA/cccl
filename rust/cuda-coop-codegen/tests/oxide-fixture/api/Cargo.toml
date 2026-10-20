@@ -16,4 +16,5 @@ cuda-coop-codegen = { path = "../../.." }
 [features]
 checked = []
 carrier = []
+storage = []
 validity = ["carrier"]
