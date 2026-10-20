@@ -1,7 +1,7 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{LoadOptions, StoreOptions};
+use super::{Algorithm, LoadOptions, StoreOptions, Transpose};
 use crate::{Alignment, Numeric, SupportedAlignment, ThreadData};
 use cuda_device::{CollectiveTiles, DisjointSlice, library, thread};
 
@@ -17,6 +17,15 @@ registration!(load_masked, "COOP_VALIDITY_LOAD_MASKED");
 registration!(load_filled, "COOP_VALIDITY_LOAD_FILLED");
 registration!(store_full, "COOP_VALIDITY_STORE_FULL");
 registration!(store_partial, "COOP_VALIDITY_STORE_PARTIAL");
+
+registration!(transpose_load_full, "COOP_TRANSPOSE_VALIDITY_LOAD_FULL");
+registration!(transpose_load_masked, "COOP_TRANSPOSE_VALIDITY_LOAD_MASKED");
+registration!(transpose_load_filled, "COOP_TRANSPOSE_VALIDITY_LOAD_FILLED");
+registration!(transpose_store_full, "COOP_TRANSPOSE_VALIDITY_STORE_FULL");
+registration!(
+    transpose_store_partial,
+    "COOP_TRANSPOSE_VALIDITY_STORE_PARTIAL"
+);
 
 #[inline(always)]
 pub(super) fn tile<const ITEMS: usize>() -> usize {
@@ -61,12 +70,18 @@ pub(super) fn containment<const CAPACITY: usize>(offset: usize, valid: usize) {
 // The caller binds pointer/length to this immutable allocation witness and
 // checks collective containment when the source is a writable carrier.
 #[inline(always)]
-pub(super) unsafe fn load<T: Numeric, Memory, const ITEMS: usize, const ALIGN: usize>(
+pub(super) unsafe fn load<
+    T: Numeric,
+    Memory,
+    const ITEMS: usize,
+    const ALIGN: usize,
+    A: Algorithm,
+>(
     memory: Memory,
     pointer: *const T,
     len: usize,
     output: &mut ThreadData<T, ITEMS, ALIGN>,
-    options: LoadOptions<T>,
+    options: LoadOptions<T, A>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -79,34 +94,40 @@ pub(super) unsafe fn load<T: Numeric, Memory, const ITEMS: usize, const ALIGN: u
     // are checked before forming the pointer, including an empty prefix.
     let pointer = unsafe { pointer.add(options.offset) };
     let payload = output.block_io_parts();
+    // Each static algorithm keeps its registration function-item identity. The
+    // storage marker plans the complete provider layout and synchronizes reuse.
+    macro_rules! call {
+        ($direct:ident, $transpose:ident, $controls:expr) => {
+            if A::TRANSPOSE {
+                library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                    $transpose,
+                    memory,
+                    (),
+                    $controls,
+                    payload,
+                )
+            } else {
+                library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
+                    $direct, memory, $controls, payload,
+                )
+            }
+        };
+    }
     // SAFETY: the checked marker enforces participation, uniform controls and
     // resource epochs. The exact typed provider initializes values before flags
-    // and never interprets a masked invalid slot as T. No initialized slice is
-    // exposed. Each branch consumes the same source witness.
+    // and transports masked invalid cells without reading them as T. The
+    // compiler allocates Transpose scratch and completes its previous use.
     unsafe {
         match (options.valid_items, options.oob_default) {
-            (None, None) => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
-                load_full,
-                memory,
-                (pointer,),
-                payload,
-            ),
+            (None, None) => call!(load_full, transpose_load_full, (pointer,)),
             (Some(count), None) => {
-                library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
-                    load_masked,
-                    memory,
-                    (pointer, count as i32),
-                    payload,
-                )
+                call!(load_masked, transpose_load_masked, (pointer, count as i32))
             }
-            (Some(count), Some(default)) => {
-                library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, false>(
-                    load_filled,
-                    memory,
-                    (pointer, count as i32, default),
-                    payload,
-                )
-            }
+            (Some(count), Some(default)) => call!(
+                load_filled,
+                transpose_load_filled,
+                (pointer, count as i32, default)
+            ),
             (None, Some(_)) => panic!(),
         }
     }
@@ -144,6 +165,52 @@ pub(super) fn store<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CA
             Some(count) => library::checked_block_resource_call_v1::<T, _, _, _, _, ITEMS, true>(
                 store_partial,
                 destination,
+                (pointer, count as i32),
+                payload,
+            ),
+        }
+    }
+}
+
+#[inline(always)]
+pub(super) fn store_transpose<
+    T: Numeric,
+    const ITEMS: usize,
+    const ALIGN: usize,
+    const CAPACITY: usize,
+>(
+    destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
+    value: &mut ThreadData<T, ITEMS, ALIGN>,
+    options: StoreOptions<Transpose>,
+) where
+    Alignment<ALIGN>: SupportedAlignment,
+{
+    let valid = match options.valid_items {
+        Some(count) => count,
+        None => tile::<ITEMS>(),
+    };
+    extent::<T, ITEMS>(destination.len(), options.offset, valid);
+    containment::<CAPACITY>(options.offset, valid);
+    let pointer = destination.as_mut_ptr();
+    let payload = value.block_io_parts();
+    // SAFETY: this carrier owns the checked range. The provider checks the
+    // source write domain before numeric reads, then permutes every opaque cell
+    // together with its initialized bit. The exclusive payload borrow permits
+    // that mutation. The compiler plans total scratch and completion before reuse.
+    unsafe {
+        let pointer = pointer.add(options.offset);
+        match options.valid_items {
+            None => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                transpose_store_full,
+                destination,
+                (),
+                (pointer,),
+                payload,
+            ),
+            Some(count) => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                transpose_store_partial,
+                destination,
+                (),
                 (pointer, count as i32),
                 payload,
             ),

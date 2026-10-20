@@ -1,15 +1,15 @@
 .. Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-Direct Load and Store
-=====================
+Block Load and Store
+====================
 
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
 first. This initial implementation supports complete, one-dimensional blocks
-and the Direct algorithm: each thread owns consecutive elements in blocked
-order. Other algorithms, warp groups, and public temporary storage remain
-under development.
+with Direct and Transpose algorithms. Both Load algorithms produce blocked
+payloads, where each thread owns consecutive elements. Other algorithms, warp
+groups, and public temporary storage remain under development.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
 named ``ITEMS_PER_THREAD``. The payload element type is inferred from its source.
@@ -70,10 +70,36 @@ missing tail. Partial Store writes only its selected prefix and requires only
 those slots to be initialized.
 
 Direct Store accepts ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
-or a scalar numeric value. A scalar contributes one item per thread. Store
-preserves every payload value and validity flag, including initialized slots
-outside its write domain. Algorithms that mutate payloads will require mutable
-borrows when those algorithms are supported.
+or a scalar numeric value. A scalar contributes one item per thread. Direct Store preserves every payload value and validity flag, including
+initialized slots outside its write domain.
+
+Selecting Transpose
+-------------------
+
+Select the algorithm through the trailing options. Selection is a Rust type,
+so each call compiles one algorithm; ordinary defaults continue to select Direct.
+
+.. code-block:: rust
+
+   coop::load(block, input, &mut values,
+       coop::LoadOptions::default().algorithm(coop::Transpose));
+   coop::store(block, output, &mut values,
+       coop::StoreOptions::default().valid_items(count).algorithm(coop::Transpose));
+
+Transpose uses CUB's coalesced accesses and shared block exchange. Its Store
+requires a mutable payload borrow and permutes every value and initialized bit
+from blocked into striped order. For a block of ``B`` threads and ``I`` items
+per thread, destination lane/item ``(t, i)`` receives the old blocked slot at
+linear index ``B*i+t``. This mutation occurs even for a zero-count Store; a
+partial count only controls the global writes. Initialized slots outside the
+written prefix remain initialized at their permuted positions. Scalar Store
+uses a one-item temporary and accepts either algorithm.
+
+The compiler allocates the provider's complete shared storage, including the
+validity plane when needed, and inserts completion before reusing managed
+scratch. This does not add an unconditional trailing barrier. ``auto_shared``
+uses the inferred total for the kernel. Explicit temporary storage controls
+remain under development.
 
 Collective ownership and completion
 -----------------------------------
@@ -100,8 +126,9 @@ Failures are not transactional across lanes.
 
 Use ``cuda_device::thread::sync_threads()`` between conflicting accesses to a
 carrier: Store followed by Load or Store, or Load followed by Store. Pass
-``&mut carrier`` as the Load source. The compiler requires this completion,
-including reuse in loops. Ending a Rust borrow or dropping a value is not
+``&mut carrier`` as the Load source. The compiler requires completion, including reuse in loops. A genuine planned
+scratch-reuse barrier can complete earlier accesses; code should not rely on an
+algorithm merely being named Transpose to provide a trailing barrier. Ending a Rust borrow or dropping a value is not
 completion. The host example calls ``sync()`` before inspecting its output.
 
 Host development
@@ -124,7 +151,7 @@ replacing them with unchanged or older timestamps may require an explicit
 rebuild. Crate publication is not supported yet.
 
 The rustdoc entries for ``load``, ``store``, ``LoadOptions``, ``StoreOptions``,
-``LoadSource`` and ``StoreValue`` specify their full generic signatures and
+``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct`` and ``Transpose`` specify their full generic signatures and
 supported argument forms. Native correctness and artifact checks are separate
 from host compilation. Performance qualification for masked payload access is
 ongoing; the current implementation makes no negligible-overhead claim.

@@ -20,6 +20,9 @@ parser.add_argument("--cargo-oxide", required=True, type=Path)
 parser.add_argument("--backend", required=True, type=Path)
 parser.add_argument("--output", required=True, type=Path)
 parser.add_argument("--cargo-config", type=Path)
+parser.add_argument(
+    "--cargo-lock", type=Path, help="Compatible lockfile for local source patches"
+)
 parser.add_argument("--cuda-root", type=Path, default=Path("/usr/local/cuda"))
 parser.add_argument("--arch", default="sm_120")
 args = parser.parse_args()
@@ -30,7 +33,9 @@ package = Path(__file__).resolve().parents[1]
 manifest = (package / "tests/load_store/Cargo.toml").read_text()
 manifest = manifest.replace('path = "../.."', f"path = {json.dumps(str(package))}")
 (output / "Cargo.toml").write_text(manifest)
-shutil.copyfile(package / "tests/load_store/Cargo.lock", output / "Cargo.lock")
+shutil.copyfile(
+    args.cargo_lock or package / "tests/load_store/Cargo.lock", output / "Cargo.lock"
+)
 source = output / "src/main.rs"
 prefix = """// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -101,6 +106,48 @@ cases = {
         None,
     ),
 }
+transpose_load = load.replace(
+    ".oob_default(0)", ".oob_default(0).algorithm(coop::Transpose)"
+)
+transpose_store = store.replace("&values", "&mut values").replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Transpose)"
+)
+cases.update(
+    shared_transpose=(
+        load + transpose_store.replace("&mut values", "&values"),
+        "expected `Direct`, found `Transpose`",
+    ),
+    transpose_managed_reuse=(
+        transpose_load + transpose_store + transpose_store,
+        None,
+    ),
+    transpose_no_trailing_completion=(
+        transpose_load + transpose_store + reload,
+        "requires a full-block barrier",
+    ),
+    transpose_varying_count=(
+        transpose_load.replace(
+            ".valid_items(valid)", ".valid_items(thread::threadIdx_x() as usize)"
+        ),
+        "not proved block-uniform",
+    ),
+    transpose_loop=(
+        transpose_load
+        + "let mut iteration=0;while iteration<2 {"
+        + transpose_store
+        + "iteration+=1;}",
+        None,
+    ),
+    generic_algorithm=(
+        "values.write(0,0_i32);fn forward<A:coop::Algorithm>(block:coop::ThreadGroup<coop::Block>,input:&[i32],output:&mut DisjointSlice<i32,CollectiveTiles<4>>,algorithm:A) {"
+        "let mut values=coop::ThreadData::<_,4>::new();"
+        "coop::load(block,input,&mut values,coop::LoadOptions::default().algorithm(algorithm));"
+        "coop::store(block,output,&mut values,coop::StoreOptions::default().algorithm(algorithm));}"
+        "forward(block,input,&mut output,coop::Transpose);",
+        None,
+    ),
+)
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",

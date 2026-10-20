@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 use coop::{Numeric, ThreadData, this_block};
+mod transpose;
+
 use cuda_coop as coop;
 use cuda_device::{CollectiveTiles, DisjointSlice, kernel, launch_contract, thread};
 use cuda_host::cuda_module;
@@ -331,6 +333,15 @@ mod kernels {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(argument) = std::env::args().nth(1) {
+        if argument == "transpose" {
+            return transpose::run(None);
+        }
+        if argument.starts_with("transpose-") {
+            return transpose::run(Some(&argument));
+        }
+    }
+
     use cuda_async::simt::device_context::{init_device_contexts, with_cuda_context};
     use cuda_async::simt::device_operation::DeviceOperation;
     use cuda_core::{DeviceBuffer, LaunchConfig1D};
