@@ -411,6 +411,14 @@ fn replace_choice(choice: &mut Option<i32>, count: i32) {
             },
             "not proved block-uniform",
         ),
+        "enum_projection": (
+            in_helper(
+                "    let choice = Some(lane as u32);\n"
+                "    let raw = &choice as *const Option<u32> as *const (u32, u32);\n"
+                "    let valid = unsafe { (*raw).1 } as i32;"
+            ),
+            "not proved block-uniform",
+        ),
     }
 )
 unknown = set(args.case) - cases.keys()
@@ -444,7 +452,7 @@ try:
         case_env = env.copy()
         if name == "unchecked_bounds":
             case_env["CUDA_OXIDE_UNCHECKED_INDEXING"] = "1"
-        if name.startswith("enum_") or name in [
+        if name in [
             "aggregate_reference",
             "projected_reborrow",
             "reborrow_uniform",
