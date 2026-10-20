@@ -10,8 +10,8 @@ native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate suppl
 and :doc:`groups`. Its private ``cuda-coop-codegen`` crate
 specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
-compiler integration development; an application-facing Rust device API is still
-under development. The crate is unpublished and its interface can change.
+compiler integration development; collective operations and scratch storage are
+still under development. The crate is unpublished and its interface can change.
 
 Device code uses the pinned Oxide dependency and ``nightly-2026-10-11``.
 The host provider supports Rust 1.85 independently; validate it with
