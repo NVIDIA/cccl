@@ -187,7 +187,7 @@ mod kernels {
 
     #[kernel]
     #[launch_contract(domain = 1, block = (33, 1, 1), dynamic_shared = inferred)]
-    pub fn scalar(mut output: DisjointSlice<i32, CollectiveTiles<1>>, valid: usize) {
+    pub fn vectorize_scalar(mut output: DisjointSlice<i32, CollectiveTiles<1>>, valid: usize) {
         let offset = thread::blockIdx_x() as usize * 33;
         coop::store(
             coop::this_block(),
@@ -361,10 +361,12 @@ pub fn run(trap: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
         false
     );
     for valid in [0, 1, 32, 33] {
-        let plan = module.prepare_scalar(LaunchConfig1D::auto_shared(2, 33))?;
+        let plan = module.prepare_vectorize_scalar(LaunchConfig1D::auto_shared(2, 33))?;
         assert_eq!(plan.__raw_config().shared_mem_bytes, 0);
         let target = DeviceBuffer::from_host(&stream, &vec![-1_i32; 33 + valid])?;
-        let target = module.scalar_async_owned(&plan, target, valid).sync()?;
+        let target = module
+            .vectorize_scalar_async_owned(&plan, target, valid)
+            .sync()?;
         let mut output = vec![0_i32; 33 + valid];
         target.copy_to_host(&stream, &mut output)?;
         stream.synchronize()?;
