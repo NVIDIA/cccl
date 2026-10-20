@@ -13,7 +13,7 @@ members = ["helper"]
 [dependencies]
 cuda-coop = { path = "../.." }
 coop-load-store-helper = { path = "helper" }
-cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }
-cuda-host = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e", features = ["async"] }
-cuda-core = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }
-cuda-async = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "344d4c683ab4e4d9a8802aac636060d6b627a38b" }
+cuda-host = { git = "https://github.com/tpn/cuda-rust.git", rev = "344d4c683ab4e4d9a8802aac636060d6b627a38b", features = ["async"] }
+cuda-core = { git = "https://github.com/tpn/cuda-rust.git", rev = "344d4c683ab4e4d9a8802aac636060d6b627a38b" }
+cuda-async = { git = "https://github.com/tpn/cuda-rust.git", rev = "344d4c683ab4e4d9a8802aac636060d6b627a38b" }
