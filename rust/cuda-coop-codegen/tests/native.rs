@@ -11,7 +11,13 @@ fn rejects_invalid_shapes() {
     for (threads, items) in [(0, 1), (1025, 1), (128, 0), (1024, u32::MAX)] {
         assert!(Request::new(Operation::LoadFull, Algorithm::Direct, threads, items).is_err());
     }
-    for block in [[0, 4, 4], [8, 0, 4], [8, 4, 0], [8, 4, 33], [u32::MAX; 3]] {
+    for block in [
+        [0, 4, 4],
+        [8, 0, 4],
+        [8, 4, 0],
+        [8, 4, 33],
+        [u32::MAX, u32::MAX, 1],
+    ] {
         assert!(Request::new_with_shape(Operation::LoadFull, Algorithm::Direct, block, 4).is_err());
     }
     assert!(
@@ -117,7 +123,7 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
         }
     }
     // The first shape has a partial physical warp crossing rows; the second
-    // also crosses Z planes and shares its total with existing 1D requests.
+    // spans four Z planes, one warp each, and matches an existing 1D total.
     for block in [[11, 3, 1], [8, 4, 4]] {
         for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
             for items in [1, 4] {

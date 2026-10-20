@@ -390,6 +390,7 @@ pub struct Layout {
 /// applies no block-origin offset for the caller.
 /// Load output and Store input must not overlap the memory tile or scratch.
 /// The caller supplies disjoint collective ownership of the memory tile.
+/// A lane is the x-fastest linear thread rank, `cub::RowMajorTid(X, Y, Z)`.
 ///
 /// Partial controls are block-uniform, with `0 <= valid <= tile_size`; generated
 /// code traps on invalid counts. A filled Load's default is also block-uniform.

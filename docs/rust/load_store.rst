@@ -69,8 +69,12 @@ For block shape ``[X,Y,Z]``, thread rank is x-fastest:
 ``offset + t * ITEMS_PER_THREAD + i``. The exact shape is part of the kernel
 launch contract; another shape with the same thread count is rejected.
 Use ``LaunchConfig2D`` or ``LaunchConfig3D`` for the corresponding launch domain.
+Declare the matching kernel contract, for example
+``#[launch_contract(domain = 3, block = (8, 4, 4), dynamic_shared = inferred)]``.
 The block origin in a multidimensional grid uses x-fastest block rank as well;
-include that rank times the block tile extent in the element offset.
+for a collective carrier, include that rank times its ownership grain
+``block_size * CAPACITY`` in the element offset (see `Collective ownership and
+completion`_). Read-only slice loads have no ownership grain.
 
 A masked Load without ``oob_default`` resets every out-of-prefix slot to
 unwritten, even if initialized before the Load. ``get`` returns ``None`` for an
