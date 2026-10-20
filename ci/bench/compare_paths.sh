@@ -22,7 +22,8 @@ Usage: $0 <base-path> <test-path> \
 Compare benchmark performance between two checked-out CCCL trees.
 
 At least one --cpp-filter or --python-filter must be provided.
-C++ filters are regex patterns matched against CUB benchmark Ninja target names.
+C++ filters are regex patterns matched against CUB, Thrust, and libcu++ benchmark
+Ninja target names.
 Matching targets are built; only matching runnable binaries are launched.
 Python filters are regex patterns matched against benchmark script paths
 under python/cuda_cccl/benchmarks/ (e.g. compute/reduce/sum.py).
