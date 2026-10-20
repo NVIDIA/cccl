@@ -44,7 +44,7 @@ struct key_prefix_storage_t<KeyT, true>
 template <typename T>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_num_passes(int bits_per_pass)
 {
-  return ::cuda::ceil_div<int>(sizeof(T) * 8, bits_per_pass);
+  return ::cuda::ceil_div<int>(sizeof(T) * CHAR_BIT, bits_per_pass);
 }
 
 template <int BitsPerPass>
@@ -58,7 +58,7 @@ template <int BitsPerPass>
 template <typename T, int BitsPerPass>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int calc_start_bit(const int pass)
 {
-  int start_bit = int{sizeof(T)} * 8 - (pass + 1) * BitsPerPass;
+  int start_bit = int{sizeof(T)} * CHAR_BIT - (pass + 1) * BitsPerPass;
   if (start_bit < 0)
   {
     start_bit = 0;
@@ -83,7 +83,7 @@ template <int BitsPerPass>
 template <typename KeyT>
 struct key_prefix_storage_t<KeyT, false>
 {
-  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * 8 + 31, 32);
+  static constexpr int num_words = ::cuda::ceil_div<int>(sizeof(KeyT) * CHAR_BIT + 31, 32);
   unsigned int words[num_words];
 
   // Funnel-shifts the entire bit-vector left by `shift` positions and inserts `value` into the
