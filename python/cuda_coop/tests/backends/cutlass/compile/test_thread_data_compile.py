@@ -4,9 +4,11 @@
 
 """Compile payload reconstruction across dynamic loops and nested CuTe calls.
 
-A typed null pointer and explicit SM80 target permit compilation without a
-launch. Each provider dtype must survive repeated extraction and rebuilding of
-ThreadData values while retaining its declared alignment and item type.
+A typed null pointer and an explicit SM80 target let the kernels compile
+without a launch. For each supported element dtype, tracing must rebuild
+ThreadData from the compiler's MLIR values after a runtime loop and a nested
+JIT call, while preserving its declared alignment and item type. The tests
+also convert one TensorSSA vector both inside and after a loop.
 """
 
 import pytest
@@ -75,3 +77,38 @@ def test_dynamic_payload(dtype, api):
 
     pointer = make_ptr(dtype, 0, cute.AddressSpace.gmem, assumed_align=16)
     assert cute.compile[(GPUArch("sm_80"),)](launch, pointer, 3, 2) is not None
+
+
+def test_tensor_ssa_conversion_across_regions():
+    """Convert one SSA vector inside and after a runtime loop.
+
+    The outer vector remains in use after both conversions. This exposes a
+    conversion that incorrectly reuses values defined only inside the loop.
+    An SM80 target and null pointer check compilation without execution.
+    """
+
+    @cute.kernel
+    def kernel(memory: cute.Pointer, iterations: cutlass.Int32):
+        payload = cutlass_coop.ThreadData.from_values(
+            cutlass.Int32(1), cutlass.Int32(3), dtype=cutlass.Int32
+        )
+        vector = payload.to_tensor_ssa()
+        output = cute.make_tensor(memory, cute.make_layout(6))
+        for _ in range(iterations):
+            inside = cutlass_coop.ThreadData.from_vector(vector)
+            output[0], output[1] = inside[0], inside[1]
+        outside = cutlass_coop.ThreadData.from_vector(vector)
+        output[2], output[3] = outside[0], outside[1]
+        output[4], output[5] = vector[0], vector[1]
+
+    @cute.jit
+    def launch(memory: cute.Pointer, iterations: cutlass.Int32):
+        kernel(memory, iterations).launch(grid=1, block=1)
+
+    pointer = make_ptr(
+        cutlass.Int32, 0, cute.AddressSpace.gmem, assumed_align=16
+    )
+    assert (
+        cute.compile[(GPUArch("sm_80"),)](launch, pointer, cutlass.Int32(3))
+        is not None
+    )
