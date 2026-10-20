@@ -238,8 +238,8 @@ output prefix without promising their order. Only the first
 ``min(k, valid_items)`` positions are defined. When keys tie at the selection
 boundary, any of the tied keys may fill the remaining positions. Pair variants
 keep each selected key attached to its value. Use a sorting primitive when
-you need ordered output. See the :ref:`Numba TopK example <coop-topk>` and
-current :ref:`backend operation support <coop-backend-operation-support>`.
+you need ordered output. See the :ref:`Numba <coop-topk>` and
+:ref:`CUTLASS <coop-cutlass-topk>` TopK examples.
 
 .. _coop-faq-global-sort:
 

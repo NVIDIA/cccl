@@ -139,7 +139,8 @@ See the :ref:`Numba <coop-radix>` and
 Top-k selection
 ^^^^^^^^^^^^^^^
 
-See the :ref:`Numba TopK examples <coop-topk>`.
+See the :ref:`Numba <coop-topk>` and :ref:`CUTLASS <coop-cutlass-topk>`
+TopK examples.
 
 .. autofunction:: topk_min_keys
 .. autofunction:: topk_max_keys
@@ -299,9 +300,10 @@ or to get a register tensor after Load.
 Qualified Reduce and Sum accept register tensors and ``TensorSSA`` values
 directly. Inside the kernel they return CuTe scalars, even when a NumPy dtype
 selects the payload type; the stubs report that NumPy type for static checks.
-Qualified block Scan, Exchange, array Shuffle, Merge Sort, Radix Sort, and
-Radix Rank also accept both forms and return ``ThreadData`` payloads. Rank
-results have signed Int32 dtype. Scalar Shuffle returns a CuTe scalar.
+Qualified Exchange, Merge Sort, Radix Sort, Radix Rank, TopK, array Shuffle,
+and block Scan also accept both forms and return ``ThreadData`` payloads.
+Warp Scan accepts only one scalar per lane. Rank results have signed Int32
+dtype. Scalar Shuffle returns a CuTe scalar.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
 between common and qualified calls. Qualified Reduce and Scan also accept
@@ -368,3 +370,11 @@ Radix sorting and ranking
 .. autofunction:: radix_sort_keys
 .. autofunction:: radix_sort_pairs
 .. autofunction:: radix_rank_keys
+
+Top-k selection
+^^^^^^^^^^^^^^^
+
+.. autofunction:: topk_min_keys
+.. autofunction:: topk_max_keys
+.. autofunction:: topk_min_pairs
+.. autofunction:: topk_max_pairs
