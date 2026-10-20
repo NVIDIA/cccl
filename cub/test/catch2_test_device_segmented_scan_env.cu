@@ -114,6 +114,18 @@ CUB_TEST_CASE("Device segmented scan rejects a negative num_items", "[segmented_
       stdexec::env{cub::segmented_scan_num_items(-1)}));
 }
 
+CUB_TEST_CASE("Device segmented scan selects segments per block from num_items", "[segmented_scan][device]", CUB_SMALL)
+{
+  using cub::detail::segmented_scan::segments_per_block_for_mean;
+  constexpr auto int64_max = cuda::std::numeric_limits<cuda::std::int64_t>::max();
+
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 11, 3072) == 1);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 12, 3072) == 4);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 16, 3072) == 5);
+  STATIC_REQUIRE(segments_per_block_for_mean(512, 16, 1024, 2048) == 16);
+  STATIC_REQUIRE(segments_per_block_for_mean(2, 512, int64_max, int64_max) == 4);
+}
+
 CUB_TEST_CASE("Device segmented inclusive scan works with default environment", "[segmented_scan][device]", CUB_SMALL)
 {
   ::cuda::std::int64_t num_segments    = 3;
@@ -1481,6 +1493,80 @@ CUB_TEST(
       d_in.begin(), d_out.begin(), d_offsets_it, d_offsets_it + 1, num_segments, scan_op, 100, env);
     REQUIRE(d_out == expected);
     REQUIRE(d_block_size[0] == target_block_size);
+  }
+}
+
+CUB_TEST("Device segmented scan with num_items scans several segments per block through transform iterators",
+         "[segmented_scan][device]",
+         CUB_SMALL)
+{
+  constexpr int segment_size                  = 25;
+  constexpr ::cuda::std::int64_t num_segments = 40;
+  constexpr ::cuda::std::int64_t num_items    = num_segments * segment_size;
+  constexpr int init                          = 3;
+
+  // The tuned tile is 128 threads of one item each, with at most 512 segments per block.
+  REQUIRE(cub::detail::segmented_scan::segments_per_block_for_mean(128, 512, num_segments, num_items) == 10);
+
+  c2h::host_vector<int> h_offsets(num_segments + 1);
+  for (int segment = 0; segment <= num_segments; ++segment)
+  {
+    h_offsets[segment] = segment * segment_size;
+  }
+  const c2h::device_vector<int> d_offsets = h_offsets;
+  const int* d_offsets_it                 = thrust::raw_pointer_cast(d_offsets.data());
+
+  // Input item j is -j, and the output iterator negates each scanned value.
+  const auto d_in = cuda::make_transform_iterator(cuda::counting_iterator<int>{0}, ::cuda::std::negate<>{});
+  const auto env =
+    stdexec::env{cub::segmented_scan_num_items(num_items), cuda::execution::tune(segmented_scan_tuning<128>{})};
+
+  // Writes segment s of the expected output at h_out_offsets[s].
+  const auto scan_expected = [&](c2h::host_vector<int>& expected, const c2h::host_vector<int>& h_out_offsets) {
+    for (int segment = 0; segment < num_segments; ++segment)
+    {
+      int sum = init;
+      for (int item = 0; item < segment_size; ++item)
+      {
+        sum -= h_offsets[segment] + item;
+        expected[h_out_offsets[segment] + item] = -sum;
+      }
+    }
+  };
+
+  SECTION("segments back to back")
+  {
+    c2h::host_vector<int> expected(num_items);
+    scan_expected(expected, h_offsets);
+    c2h::device_vector<int> d_out(num_items);
+    const auto d_out_it = cuda::make_transform_output_iterator(d_out.begin(), ::cuda::std::negate<>{});
+
+    device_segmented_inclusive_scan_init(
+      d_in, d_out_it, d_offsets_it, d_offsets_it + 1, d_offsets_it, num_segments, ::cuda::std::plus<>{}, init, env);
+    REQUIRE(expected == c2h::host_vector<int>(d_out));
+  }
+
+  SECTION("gaps between output segments")
+  {
+    constexpr int canary                      = ::cuda::std::numeric_limits<int>::min();
+    constexpr int output_stride               = segment_size + 3;
+    constexpr ::cuda::std::int64_t num_output = num_segments * output_stride;
+    c2h::host_vector<int> h_out_offsets(num_segments);
+    for (int segment = 0; segment < num_segments; ++segment)
+    {
+      h_out_offsets[segment] = segment * output_stride;
+    }
+    const c2h::device_vector<int> d_out_offsets = h_out_offsets;
+    const int* d_out_offsets_it                 = thrust::raw_pointer_cast(d_out_offsets.data());
+
+    c2h::host_vector<int> expected(num_output, canary);
+    scan_expected(expected, h_out_offsets);
+    c2h::device_vector<int> d_out(num_output, canary);
+    const auto d_out_it = cuda::make_transform_output_iterator(d_out.begin(), ::cuda::std::negate<>{});
+
+    device_segmented_inclusive_scan_init(
+      d_in, d_out_it, d_offsets_it, d_offsets_it + 1, d_out_offsets_it, num_segments, ::cuda::std::plus<>{}, init, env);
+    REQUIRE(expected == c2h::host_vector<int>(d_out));
   }
 }
 

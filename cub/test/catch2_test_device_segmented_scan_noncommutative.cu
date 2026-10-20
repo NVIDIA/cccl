@@ -6,6 +6,9 @@
 #include <thrust/fill.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/__execution/tune.h>
+#include <cuda/std/type_traits>
+
 #include "cub_test_macros.h"
 #include <catch2_test_device_scan.cuh>
 
@@ -191,4 +194,148 @@ CUB_TEST("Device inclusive segmented scan with schedule properties works with no
   run(cuda::std::execution::env{cub::segmented_scan_num_items(num_items)});
   run(cuda::std::execution::env{cub::segmented_scan_load_balancing});
   run(cuda::std::execution::env{cub::segmented_scan_num_items(num_items), cub::segmented_scan_load_balancing});
+}
+
+template <int MaxSegments>
+struct max_segments_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::SegmentedScanPolicy
+  {
+    return cub::SegmentedScanPolicy{cub::SegmentedScanBlockPolicy{
+      128,
+      4,
+      cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      cub::LOAD_DEFAULT,
+      cub::BLOCK_STORE_WARP_TRANSPOSE,
+      cub::BLOCK_SCAN_WARP_SCANS,
+      MaxSegments}};
+  }
+};
+
+using segments_per_block_list =
+  c2h::type_list<cuda::std::integral_constant<int, 2>, cuda::std::integral_constant<int, 4>>;
+
+CUB_TEST("Device segmented scan with num_items works with non-commutative operator and several segments per block",
+         "[segmented][scan][device]",
+         CUB_SMALL,
+         segments_per_block_list)
+{
+  using op_t   = impl::bicyclic_monoid_op<unsigned>;
+  using pair_t = typename op_t::pair_t;
+
+  constexpr int segments_per_block = c2h::get<0, TestType>::value;
+  constexpr unsigned tile_items    = 128 * 4;
+  constexpr unsigned input_gap     = 3;
+  constexpr unsigned output_gap    = 5;
+
+  // 101 segments of up to 40 items, some of them empty, and three longer than a tile. Segment 13 is empty with its end
+  // before its begin. Segment 100 is alone in the last block.
+  c2h::host_vector<unsigned> sizes(101);
+  for (size_t i = 0; i < sizes.size(); ++i)
+  {
+    sizes[i] = static_cast<unsigned>(i * 7 % 41);
+  }
+  sizes[5]                = 3 * tile_items + 17;
+  sizes[13]               = 0;
+  sizes[50]               = tile_items + 1;
+  sizes[100]              = 2 * tile_items - 3;
+  const auto num_segments = static_cast<::cuda::std::int64_t>(sizes.size());
+
+  // Segments in order, with a gap before each in the input and in the output.
+  c2h::host_vector<unsigned> h_begins(num_segments);
+  c2h::host_vector<unsigned> h_ends(num_segments);
+  c2h::host_vector<unsigned> h_out_begins(num_segments);
+  unsigned num_input             = input_gap;
+  unsigned num_output            = output_gap;
+  ::cuda::std::int64_t num_items = 0;
+  for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+  {
+    h_begins[segment]     = num_input;
+    h_ends[segment]       = num_input + sizes[segment];
+    h_out_begins[segment] = num_output;
+    num_input += sizes[segment] + input_gap;
+    num_output += sizes[segment] + output_gap;
+    num_items += sizes[segment];
+  }
+  h_ends[13] = h_begins[13] - 1;
+
+  // The policy's maximum is the segments per block that num_items selects, so the last block holds one segment.
+  REQUIRE(cub::detail::segmented_scan::segments_per_block_for_mean(
+            static_cast<int>(tile_items), segments_per_block, num_segments, num_items)
+          == segments_per_block);
+  REQUIRE(num_segments % segments_per_block == 1);
+
+  const c2h::device_vector<unsigned> d_begins     = h_begins;
+  const c2h::device_vector<unsigned> d_ends       = h_ends;
+  const c2h::device_vector<unsigned> d_out_begins = h_out_begins;
+  const unsigned* d_begins_it                     = thrust::raw_pointer_cast(d_begins.data());
+  const unsigned* d_ends_it                       = thrust::raw_pointer_cast(d_ends.data());
+  const unsigned* d_out_begins_it                 = thrust::raw_pointer_cast(d_out_begins.data());
+
+  c2h::device_vector<pair_t> input(num_input);
+  thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
+  const c2h::host_vector<pair_t> h_input(input);
+  const pair_t* d_input = thrust::raw_pointer_cast(input.data());
+
+  // No scan of this input reaches the canary, which stays in the gaps between output segments.
+  const pair_t canary{~0u, ~0u};
+  c2h::device_vector<pair_t> output(num_output, canary);
+  pair_t* d_output = thrust::raw_pointer_cast(output.data());
+  c2h::host_vector<pair_t> expected(num_output, canary);
+
+  const pair_t init{1, 2};
+  const auto env = cuda::std::execution::env{cub::segmented_scan_num_items(num_items),
+                                             cuda::execution::tune(max_segments_policy_selector<segments_per_block>{})};
+
+  SECTION("inclusive scan")
+  {
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      compute_inclusive_scan_reference(
+        h_input.begin() + h_begins[segment],
+        h_input.begin() + h_begins[segment] + sizes[segment],
+        expected.begin() + h_out_begins[segment],
+        op_t{},
+        pair_t{0, 0});
+    }
+    REQUIRE(cudaSuccess
+            == cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+              d_input, d_output, d_begins_it, d_ends_it, d_out_begins_it, num_segments, op_t{}, env));
+    REQUIRE(expected == c2h::host_vector<pair_t>(output));
+  }
+
+  SECTION("exclusive scan")
+  {
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      compute_exclusive_scan_reference(
+        h_input.begin() + h_begins[segment],
+        h_input.begin() + h_begins[segment] + sizes[segment],
+        expected.begin() + h_out_begins[segment],
+        init,
+        op_t{});
+    }
+    REQUIRE(cudaSuccess
+            == cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+              d_input, d_output, d_begins_it, d_ends_it, d_out_begins_it, num_segments, op_t{}, init, env));
+    REQUIRE(expected == c2h::host_vector<pair_t>(output));
+  }
+
+  SECTION("inclusive scan with init")
+  {
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      compute_inclusive_scan_reference(
+        h_input.begin() + h_begins[segment],
+        h_input.begin() + h_begins[segment] + sizes[segment],
+        expected.begin() + h_out_begins[segment],
+        op_t{},
+        init);
+    }
+    REQUIRE(cudaSuccess
+            == cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+              d_input, d_output, d_begins_it, d_ends_it, d_out_begins_it, num_segments, op_t{}, init, env));
+    REQUIRE(expected == c2h::host_vector<pair_t>(output));
+  }
 }

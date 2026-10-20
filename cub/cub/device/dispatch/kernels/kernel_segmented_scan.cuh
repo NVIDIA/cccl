@@ -934,6 +934,20 @@ private:
   }
 };
 
+// The policy a kernel is compiled with. The one-segment kernel provisions storage for one segment per block.
+template <typename PolicySelector, bool MultiSegment>
+[[nodiscard]] _CCCL_DEVICE_API constexpr SegmentedScanPolicy kernel_policy()
+{
+  SegmentedScanPolicy policy = current_policy<PolicySelector>();
+  if (!MultiSegment)
+  {
+    policy.block.max_segments = 1;
+  }
+  return policy;
+}
+
+//! @brief With MultiSegment, block b scans the num_segments_per_worker consecutive segments starting at
+//!        b * num_segments_per_worker; otherwise block b scans segment b.
 template <typename PolicySelector,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -945,6 +959,7 @@ template <typename PolicySelector,
           typename InitValueT,
           typename AccumT,
           bool ForceInclusive,
+          bool MultiSegment,
           bool MarkSegmentHeads     = false,
           typename ActualInitValueT = typename InitValueT::value_type>
 #if _CCCL_HAS_CONCEPTS()
@@ -960,9 +975,9 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     const OffsetT n_segments,
     const ScanOpT scan_op,
     const InitValueT init_value,
-    const int num_segments_per_worker)
+    [[maybe_unused]] const int num_segments_per_worker)
 {
-  static constexpr auto policy = current_policy<PolicySelector>();
+  static constexpr auto policy = kernel_policy<PolicySelector, MultiSegment>();
   static_assert(policy.block.load_modifier != CacheLoadModifier::LOAD_LDG,
                 "The memory consistency model does not apply to texture accesses");
 
@@ -993,12 +1008,11 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   _CCCL_ASSERT(num_segments_per_worker <= policy.block.max_segments,
                "Requested number of segments to be processed by block exceeds compile-time maximum");
 
-  const auto work_id = num_segments_per_worker * blockIdx.x;
-
   agent_t agent(temp_storage, d_in, d_out, scan_op, _init_value);
 
   if constexpr (policy.block.max_segments == 1)
   {
+    const auto work_id = blockIdx.x;
     _CCCL_ASSERT(num_segments_per_worker == 1, "Inconsistent parameters in device_segmented_scan_kernel");
     _CCCL_ASSERT(work_id < n_segments, "device_segmented_scan_kernel launch configuration results in access violation");
 
@@ -1010,6 +1024,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
   }
   else
   {
+    const auto work_id = num_segments_per_worker * blockIdx.x;
     if (work_id >= n_segments)
     {
       return;
@@ -1026,21 +1041,18 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     auto worker_input_end_idx_it    = end_offset_d_in + start_offset;
     auto worker_output_begin_idx_it = begin_offset_d_out + start_offset;
 
-    if (size == 1)
+    if constexpr (MarkSegmentHeads)
+    {
+      agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
+    }
+    else if (size == 1)
     {
       agent.scan_one_segment(worker_input_begin_idx_it[0], worker_input_end_idx_it[0], worker_output_begin_idx_it[0]);
     }
     else
     {
-      if constexpr (MarkSegmentHeads)
-      {
-        agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
-      }
-      else
-      {
-        agent.scan_segments_by_search(
-          worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
-      }
+      agent.scan_segments_by_search(
+        worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
     }
   }
 }

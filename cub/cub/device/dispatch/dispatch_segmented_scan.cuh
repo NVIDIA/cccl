@@ -69,7 +69,6 @@ struct device_segmented_scan_kernel_source
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
 
-  // MarkSegmentHeads selects the several-segments path of scan_segments.
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_kernel,
     device_segmented_scan_kernel<
@@ -84,6 +83,25 @@ struct device_segmented_scan_kernel_source
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes,
+      false,
+      false>);
+
+  // MarkSegmentHeads selects the several-segments path of scan_segments.
+  CUB_DEFINE_KERNEL_GETTER(
+    segmented_scan_multi_segment_kernel,
+    device_segmented_scan_kernel<
+      PolicySelector,
+      InputIteratorT,
+      OutputIteratorT,
+      BeginOffsetIteratorInputT,
+      EndOffsetIteratorInputT,
+      BeginOffsetIteratorOutputT,
+      OffsetT,
+      ScanOpT,
+      InitValueT,
+      AccumT,
+      EnforceInclusive == ForceInclusive::Yes,
+      true,
       MarkSegmentHeads>);
 };
 
@@ -415,7 +433,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     {
       case worker::block:
         if (const auto error = CubDebug(launcher.doit(
-              kernel_source.segmented_scan_kernel(),
+              num_segments_per_worker == 1 ? kernel_source.segmented_scan_kernel()
+                                           : kernel_source.segmented_scan_multi_segment_kernel(),
               d_in,
               d_out,
               input_begin_offsets,
