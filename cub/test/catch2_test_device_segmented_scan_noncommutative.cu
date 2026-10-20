@@ -339,3 +339,163 @@ CUB_TEST("Device segmented scan with num_items works with non-commutative operat
     REQUIRE(expected == c2h::host_vector<pair_t>(output));
   }
 }
+
+// With no minimum of tiles per block, the load-balanced grid gives every tile its own range when the work is a whole
+// number of tiles and the resident blocks can hold them.
+struct one_tile_per_range_policy_selector
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
+    -> cub::SegmentedScanLoadBalancedPolicy
+  {
+    return cub::SegmentedScanLoadBalancedPolicy{
+      64,
+      2,
+      cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      cub::LOAD_DEFAULT,
+      cub::BLOCK_STORE_WARP_TRANSPOSE,
+      cub::BLOCK_SCAN_WARP_SCANS,
+      0,
+      4};
+  }
+};
+
+CUB_TEST("Device segmented scan with load balancing works with non-commutative operator and segments across ranges",
+         "[segmented][scan][device]",
+         CUB_SMALL)
+{
+  using op_t   = impl::bicyclic_monoid_op<unsigned>;
+  using pair_t = typename op_t::pair_t;
+
+  constexpr unsigned range_items = 64 * 2;
+  const unsigned input_gap       = GENERATE(values({0u, 3u}));
+  const unsigned output_gap      = GENERATE(values({0u, 5u}));
+
+  // Short segments, some of them empty, so that ranges begin inside segments. Then a segment that begins at a range
+  // boundary and spans six ranges, an empty segment with its end before its begin, and more short segments. The last
+  // segment pads the work to a whole number of ranges.
+  c2h::host_vector<unsigned> sizes;
+  unsigned num_items = 0;
+  const auto push    = [&](unsigned size) {
+    sizes.push_back(size);
+    num_items += size;
+  };
+  for (unsigned i = 0; i < 60; ++i)
+  {
+    push(i * 7 % 41);
+  }
+  push(range_items - num_items % range_items);
+  const auto boundary_head = num_items;
+  push(5 * range_items + 17);
+  const size_t reversed_segment = sizes.size();
+  push(0);
+  for (unsigned i = 0; i < 40; ++i)
+  {
+    push(i * 11 % 37);
+  }
+  push(range_items - num_items % range_items);
+  REQUIRE(boundary_head % range_items == 0);
+  REQUIRE(num_items % range_items == 0);
+  const auto num_segments = static_cast<::cuda::std::int64_t>(sizes.size());
+
+  // Segments in order, with a gap before each in the input and in the output.
+  c2h::host_vector<unsigned> h_begins(num_segments);
+  c2h::host_vector<unsigned> h_ends(num_segments);
+  c2h::host_vector<unsigned> h_out_begins(num_segments);
+  unsigned num_input  = input_gap;
+  unsigned num_output = output_gap;
+  for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+  {
+    h_begins[segment]     = num_input;
+    h_ends[segment]       = num_input + sizes[segment];
+    h_out_begins[segment] = num_output;
+    num_input += sizes[segment] + input_gap;
+    num_output += sizes[segment] + output_gap;
+  }
+  h_ends[reversed_segment] = h_begins[reversed_segment] - 1;
+
+  const c2h::device_vector<unsigned> d_begins     = h_begins;
+  const c2h::device_vector<unsigned> d_ends       = h_ends;
+  const c2h::device_vector<unsigned> d_out_begins = h_out_begins;
+  const unsigned* d_begins_it                     = thrust::raw_pointer_cast(d_begins.data());
+  const unsigned* d_ends_it                       = thrust::raw_pointer_cast(d_ends.data());
+  const unsigned* d_out_begins_it                 = thrust::raw_pointer_cast(d_out_begins.data());
+
+  c2h::device_vector<pair_t> input(num_input);
+  thrust::tabulate(input.begin(), input.end(), impl::populate_input<unsigned>{});
+  const c2h::host_vector<pair_t> h_input(input);
+  const pair_t* d_input = thrust::raw_pointer_cast(input.data());
+
+  // No scan of this input reaches the canary, which stays in the gaps between output segments.
+  const pair_t canary{~0u, ~0u};
+  c2h::device_vector<pair_t> output(num_output);
+  pair_t* d_output = thrust::raw_pointer_cast(output.data());
+  c2h::host_vector<pair_t> expected(num_output, canary);
+
+  const pair_t init{1, 2};
+  const auto tuning            = cuda::execution::tune(one_tile_per_range_policy_selector{});
+  const auto load_balanced_env = cuda::std::execution::env{cub::segmented_scan_load_balancing, tuning};
+  const auto both_env =
+    cuda::std::execution::env{cub::segmented_scan_num_items(num_items), cub::segmented_scan_load_balancing, tuning};
+
+  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  const auto run = [&, num_segments](const auto& scan, const auto& env) {
+    thrust::fill(c2h::device_policy, output.begin(), output.end(), canary);
+    REQUIRE(cudaSuccess == scan(num_segments, env));
+    REQUIRE(expected == c2h::host_vector<pair_t>(output));
+  };
+  const auto check = [&](const auto& scan) {
+    run(scan, load_balanced_env);
+    run(scan, both_env);
+  };
+
+  SECTION("inclusive scan")
+  {
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      compute_inclusive_scan_reference(
+        h_input.begin() + h_begins[segment],
+        h_input.begin() + h_begins[segment] + sizes[segment],
+        expected.begin() + h_out_begins[segment],
+        op_t{},
+        pair_t{0, 0});
+    }
+    check([&](::cuda::std::int64_t segments, const auto& env) {
+      return cub::DeviceSegmentedScan::InclusiveSegmentedScan(
+        d_input, d_output, d_begins_it, d_ends_it, d_out_begins_it, segments, op_t{}, env);
+    });
+  }
+
+  SECTION("exclusive scan")
+  {
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      compute_exclusive_scan_reference(
+        h_input.begin() + h_begins[segment],
+        h_input.begin() + h_begins[segment] + sizes[segment],
+        expected.begin() + h_out_begins[segment],
+        init,
+        op_t{});
+    }
+    check([&](::cuda::std::int64_t segments, const auto& env) {
+      return cub::DeviceSegmentedScan::ExclusiveSegmentedScan(
+        d_input, d_output, d_begins_it, d_ends_it, d_out_begins_it, segments, op_t{}, init, env);
+    });
+  }
+
+  SECTION("inclusive scan with init")
+  {
+    for (::cuda::std::int64_t segment = 0; segment < num_segments; ++segment)
+    {
+      compute_inclusive_scan_reference(
+        h_input.begin() + h_begins[segment],
+        h_input.begin() + h_begins[segment] + sizes[segment],
+        expected.begin() + h_out_begins[segment],
+        op_t{},
+        init);
+    }
+    check([&](::cuda::std::int64_t segments, const auto& env) {
+      return cub::DeviceSegmentedScan::InclusiveSegmentedScanInit(
+        d_input, d_output, d_begins_it, d_ends_it, d_out_begins_it, segments, op_t{}, init, env);
+    });
+  }
+}

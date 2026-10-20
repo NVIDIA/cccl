@@ -53,11 +53,15 @@ template <typename OffsetT>
 using load_balanced_work_t = ::cuda::std::
   conditional_t<::cuda::std::is_signed_v<OffsetT>, ::cuda::std::make_unsigned_t<OffsetT>, ::cuda::std::uint64_t>;
 
+// A range's begin and the segment holding it, and the segment holding the range's last item. tail_begin is the later
+// of the range's begin and that segment's head.
 template <typename OffsetT>
 struct boundary_record
 {
   load_balanced_work_t<OffsetT> offset;
+  load_balanced_work_t<OffsetT> tail_begin;
   OffsetT first_segment;
+  OffsetT tail_segment;
   bool is_head;
 };
 
@@ -155,12 +159,86 @@ warp_kary_upper_bound_offset(OffsetIteratorT offsets, OffsetT num_offsets, Value
   return ShuffleIndex<detail::warp_threads>(result, 0, warp_mask);
 }
 
+// Finds the upper bounds of both values as warp_kary_upper_bound_offset does, in the same rounds, and resolves the
+// last at most warp_threads candidates of each with one more round.
+template <typename OffsetIteratorT, typename OffsetT, typename ValueT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void warp_kary_upper_bound_offsets(
+  OffsetIteratorT offsets, OffsetT num_offsets, const ValueT (&values)[2], OffsetT (&first)[2])
+{
+  constexpr unsigned int warp_mask = 0xffffffffu;
+  constexpr OffsetT warp_size      = static_cast<OffsetT>(detail::warp_threads);
+  const int lane                   = static_cast<int>(threadIdx.x) & (detail::warp_threads - 1);
+
+  OffsetT count[2] = {num_offsets, num_offsets};
+  first[0]         = 0;
+  first[1]         = 0;
+  while (count[0] > warp_size || count[1] > warp_size)
+  {
+    bool before[2] = {false, false};
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int search = 0; search < 2; ++search)
+    {
+      if (count[search] > warp_size)
+      {
+        const OffsetT probe = first[search] + warp_kary_partition_offset(count[search], lane + 1) - OffsetT{1};
+        before[search]      = offsets[probe] <= values[search];
+      }
+    }
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int search = 0; search < 2; ++search)
+    {
+      if (count[search] > warp_size)
+      {
+        const int bucket = __popc(__ballot_sync(warp_mask, before[search]));
+        if (bucket == detail::warp_threads)
+        {
+          first[search] += count[search];
+          count[search] = 0;
+        }
+        else
+        {
+          const OffsetT bucket_begin = warp_kary_partition_offset(count[search], bucket);
+          const OffsetT bucket_end   = warp_kary_partition_offset(count[search], bucket + 1);
+          first[search] += bucket_begin;
+          count[search] = bucket_end - bucket_begin;
+        }
+      }
+    }
+  }
+
+  bool before[2] = {false, false};
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int search = 0; search < 2; ++search)
+  {
+    if (static_cast<OffsetT>(lane) < count[search])
+    {
+      before[search] = offsets[first[search] + static_cast<OffsetT>(lane)] <= values[search];
+    }
+  }
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int search = 0; search < 2; ++search)
+  {
+    first[search] += static_cast<OffsetT>(__popc(__ballot_sync(warp_mask, before[search])));
+  }
+}
+
+// Run by a full warp. range_begin is less than range_end.
 template <typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE boundary_record<OffsetT> make_even_boundary_record(
-  const load_balanced_work_t<OffsetT>* offsets, OffsetT num_segments, load_balanced_work_t<OffsetT> boundary)
+  const load_balanced_work_t<OffsetT>* offsets,
+  OffsetT num_segments,
+  load_balanced_work_t<OffsetT> range_begin,
+  load_balanced_work_t<OffsetT> range_end)
 {
-  const OffsetT first_segment = warp_kary_upper_bound_offset(offsets, num_segments + OffsetT{1}, boundary) - OffsetT{1};
-  return {boundary, first_segment, offsets[first_segment] == boundary};
+  using work_t           = load_balanced_work_t<OffsetT>;
+  const work_t values[2] = {range_begin, range_end - work_t{1}};
+  OffsetT bounds[2];
+  warp_kary_upper_bound_offsets(offsets, num_segments + OffsetT{1}, values, bounds);
+  const OffsetT first_segment = bounds[0] - OffsetT{1};
+  const OffsetT tail_segment  = bounds[1] - OffsetT{1};
+  const work_t head           = offsets[first_segment];
+  const work_t tail_head      = offsets[tail_segment];
+  return {range_begin, (::cuda::std::max) (range_begin, tail_head), first_segment, tail_segment, head == range_begin};
 }
 
 inline constexpr int work_index_threads          = 128;
@@ -490,7 +568,6 @@ private:
     delta_t carried_output;
     delta_t uniform_input;
     delta_t uniform_output;
-    int entry_count;
     bool input_is_uniform;
     bool output_is_uniform;
     bool input_is_contiguous;
@@ -505,9 +582,6 @@ private:
     tile_deltas_t deltas;
     OffsetT segment_cursor;
     work_t next_head;
-    work_t tail_begin;
-    OffsetT tail_segment;
-    bool begins_at_head;
   };
 
   static_assert(sizeof(typename prefix_callback_t::TempStorage) <= sizeof(tile_storage_t),
@@ -553,37 +627,8 @@ private:
     return result;
   }
 
-  // Largest index r in [known, num_segments] with offsets[r] == head. Requires offsets[known] == head.
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT last_offset_equal_to(OffsetT known, work_t head, OffsetT num_segments) const
-  {
-    OffsetT lo   = known;
-    OffsetT step = 1;
-    while (step <= num_segments - lo && offsets[lo + step] == head)
-    {
-      lo += step;
-      if (step <= num_segments - lo)
-      {
-        step += step;
-      }
-    }
-    const OffsetT last = step <= num_segments - lo ? lo + step : num_segments + OffsetT{1};
-    return upper_bound_offset_in_range(offsets, lo + OffsetT{1}, last, head) - OffsetT{1};
-  }
-
-  // first_segment is the segment holding range_begin.
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  find_tail(work_t range_begin, work_t range_end, OffsetT num_segments, OffsetT first_segment)
-  {
-    const OffsetT tail_segment =
-      upper_bound_offset_in_range(offsets, first_segment + OffsetT{1}, num_segments + OffsetT{1}, range_end - work_t{1})
-      - OffsetT{1};
-    const work_t tail_head          = offsets[tail_segment];
-    temp_storage.local.tail_begin   = (::cuda::std::max) (range_begin, tail_head);
-    temp_storage.local.tail_segment = tail_segment;
-  }
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  initialize_cursor([[maybe_unused]] work_t range_begin, OffsetT num_segments, OffsetT first_segment)
+  initialize_cursor([[maybe_unused]] work_t range_begin, [[maybe_unused]] OffsetT num_segments, OffsetT first_segment)
   {
     auto& shared_head_flags = temp_storage.local.head_flags.Alias();
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -594,71 +639,123 @@ private:
     if (threadIdx.x == 0)
     {
       _CCCL_ASSERT(first_segment < num_segments, "the first segment of a range exists");
-      // Reads every begin it may need before testing the flags.
-      const work_t contiguity         = offsets[num_segments + OffsetT{1}];
-      const work_t head               = offsets[first_segment];
-      const OffsetT input_origin      = static_cast<OffsetT>(addressing.input_begin[0]);
-      const OffsetT first_input_begin = static_cast<OffsetT>(addressing.input_begin[first_segment]);
-      const bool input_is_contiguous  = (contiguity & contiguous_input_flag) != 0;
-      const bool output_is_contiguous = (contiguity & contiguous_output_flag) != 0;
+      const work_t head = offsets[first_segment];
       _CCCL_ASSERT(head <= range_begin, "a range begins in its first segment");
 
       auto& deltas                      = temp_storage.local.deltas;
-      deltas.input_is_contiguous        = input_is_contiguous;
-      deltas.output_is_contiguous       = output_is_contiguous;
       temp_storage.local.segment_cursor = first_segment;
       temp_storage.local.next_head      = head;
-      if (input_is_contiguous)
+      if (!deltas.input_is_contiguous)
       {
-        deltas.uniform_input    = make_delta(input_origin, work_t{0});
-        deltas.input_is_uniform = true;
-      }
-      else
-      {
-        deltas.carried_input = make_delta(first_input_begin, head);
+        deltas.carried_input = make_delta(static_cast<OffsetT>(addressing.input_begin[first_segment]), head);
       }
       if constexpr (has_output_deltas)
       {
-        const OffsetT output_origin      = static_cast<OffsetT>(addressing.output_begin[0]);
-        const OffsetT first_output_begin = static_cast<OffsetT>(addressing.output_begin[first_segment]);
-        if (output_is_contiguous)
+        if (!deltas.output_is_contiguous)
         {
-          deltas.uniform_output    = make_delta(output_origin, work_t{0});
-          deltas.output_is_uniform = true;
-        }
-        else
-        {
-          deltas.carried_output = make_delta(first_output_begin, head);
+          deltas.carried_output = make_delta(static_cast<OffsetT>(addressing.output_begin[first_segment]), head);
         }
       }
     }
     __syncthreads();
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  record_head(OffsetT segment, work_t head, work_t tile_begin, int entry, bool records_input, bool records_output)
+  // Run by the first warp. Flags the head of every nonempty segment in [tile_begin, tile_end) and numbers the heads
+  // from 1 in segment order, recording each head's deltas under its number where asked. Each round reads the work
+  // index of one segment per lane. Returns the number of heads to every lane.
+  _CCCL_DEVICE _CCCL_FORCEINLINE int
+  discover_heads(work_t tile_begin, work_t tile_end, OffsetT num_segments, bool records_input, bool records_output)
   {
-    temp_storage.local.head_flags.Alias()[static_cast<int>(head - tile_begin)] = 1;
-    if (records_input)
+    constexpr unsigned int warp_mask   = 0xffffffffu;
+    constexpr work_t past_last_segment = ::cuda::std::numeric_limits<work_t>::max();
+    auto& local                        = temp_storage.local;
+    if (local.next_head >= tile_end)
     {
-      temp_storage.local.deltas.input.Alias()[entry] =
-        make_delta(static_cast<OffsetT>(addressing.input_begin[segment]), head);
+      return 0;
     }
-    if constexpr (has_output_deltas)
+
+    const int lane                  = static_cast<int>(threadIdx.x);
+    const unsigned int lanes_before = (1u << lane) - 1u;
+    auto& head_flags                = local.head_flags.Alias();
+    auto& deltas                    = local.deltas;
+    OffsetT batch                   = local.segment_cursor;
+    int entry_count                 = 0;
+    while (true)
     {
-      if (records_output)
+      const bool valid      = static_cast<OffsetT>(lane) < num_segments - batch;
+      const OffsetT segment = valid ? batch + static_cast<OffsetT>(lane) : batch;
+      work_t head           = past_last_segment;
+      work_t next           = past_last_segment;
+      OffsetT input_begin{};
+      [[maybe_unused]] OffsetT output_begin{};
+      if (valid)
       {
-        temp_storage.local.deltas.output.Alias()[entry] =
-          make_delta(static_cast<OffsetT>(addressing.output_begin[segment]), head);
+        head = offsets[segment];
+        next = offsets[segment + OffsetT{1}];
+        // Read before it is known whether the segment's head lies in the tile.
+        if (records_input)
+        {
+          input_begin = static_cast<OffsetT>(addressing.input_begin[segment]);
+        }
+        if constexpr (has_output_deltas)
+        {
+          if (records_output)
+          {
+            output_begin = static_cast<OffsetT>(addressing.output_begin[segment]);
+          }
+        }
+      }
+
+      const bool before_end    = head < tile_end;
+      const bool is_head       = before_end && head >= tile_begin && next != head;
+      const unsigned int heads = __ballot_sync(warp_mask, is_head);
+      if (is_head)
+      {
+        const int entry                                 = entry_count + __popc(heads & lanes_before) + 1;
+        head_flags[static_cast<int>(head - tile_begin)] = 1;
+        if (records_input)
+        {
+          deltas.input.Alias()[entry] = make_delta(input_begin, head);
+        }
+        if constexpr (has_output_deltas)
+        {
+          if (records_output)
+          {
+            deltas.output.Alias()[entry] = make_delta(output_begin, head);
+          }
+        }
+      }
+      entry_count += __popc(heads);
+
+      // Heads do not decrease, so the lanes before the tile's end are a prefix of the warp.
+      const unsigned int lanes_before_end = __ballot_sync(warp_mask, before_end);
+      if (lanes_before_end != warp_mask)
+      {
+        const int stop         = __popc(lanes_before_end);
+        const work_t stop_head = ShuffleIndex<detail::warp_threads>(head, stop, warp_mask);
+        if (lane == 0)
+        {
+          local.segment_cursor = batch + static_cast<OffsetT>(stop);
+          local.next_head      = stop_head;
+        }
+        return entry_count;
+      }
+
+      batch += static_cast<OffsetT>(detail::warp_threads);
+      const work_t run_head = ShuffleIndex<detail::warp_threads>(head, 0, warp_mask);
+      if (run_head == ShuffleIndex<detail::warp_threads>(next, detail::warp_threads - 1, warp_mask))
+      {
+        // The batch lies in a run of empty segments: skip to the run's last segment.
+        const OffsetT remaining = num_segments - batch + OffsetT{1};
+        batch += warp_kary_upper_bound_offset(offsets + batch, remaining, run_head) - OffsetT{1};
       }
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void finish_tile_deltas()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void finish_tile_deltas(int entry_count)
   {
     const int lane        = static_cast<int>(threadIdx.x);
     auto& deltas          = temp_storage.local.deltas;
-    const int entry_count = deltas.entry_count;
     const int first_entry = (entry_count > 0 && temp_storage.local.head_flags.Alias()[0] != 0) ? 1 : 0;
 
     const auto check = [&](const delta_t* table, delta_t& uniform_delta, bool& is_uniform, delta_t& carried) {
@@ -696,11 +793,11 @@ private:
     {
       return;
     }
-    auto& deltas = temp_storage.local.deltas;
+    auto& deltas              = temp_storage.local.deltas;
+    const bool records_input  = !deltas.input_is_contiguous;
+    const bool records_output = has_output_deltas && !deltas.output_is_contiguous;
     if (threadIdx.x == 0)
     {
-      const bool records_input  = !deltas.input_is_contiguous;
-      const bool records_output = has_output_deltas && !deltas.output_is_contiguous;
       if (records_input)
       {
         deltas.input.Alias()[0] = deltas.carried_input;
@@ -712,40 +809,10 @@ private:
           deltas.output.Alias()[0] = deltas.carried_output;
         }
       }
-
-      OffsetT segment = temp_storage.local.segment_cursor;
-      work_t head     = temp_storage.local.next_head;
-      while (segment < num_segments && head < tile_begin)
-      {
-        ++segment;
-        if (segment < num_segments)
-        {
-          head = offsets[segment];
-        }
-      }
-
-      int entry_count = 0;
-      while (segment < num_segments && head < tile_end)
-      {
-        const work_t next = offsets[segment + OffsetT{1}];
-        if (next != head)
-        {
-          record_head(segment, head, tile_begin, ++entry_count, records_input, records_output);
-        }
-        else
-        {
-          // Skip the run of empty segments at head.
-          segment = last_offset_equal_to(segment + OffsetT{1}, head, num_segments) - OffsetT{1};
-        }
-        ++segment;
-        head = next;
-      }
-      temp_storage.local.segment_cursor = segment;
-      temp_storage.local.next_head      = head;
-      deltas.entry_count                = entry_count;
     }
+    const int entry_count = discover_heads(tile_begin, tile_end, num_segments, records_input, records_output);
     __syncwarp();
-    finish_tile_deltas();
+    finish_tile_deltas(entry_count);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_noncontiguous_tile(
@@ -892,39 +959,13 @@ private:
       block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
     }
 
-    auto& shared_head_flags = temp_storage.local.head_flags.Alias();
-    if (threadIdx.x == 0)
+    if (threadIdx.x < detail::warp_threads)
     {
-      OffsetT segment = temp_storage.local.segment_cursor;
-      work_t head     = temp_storage.local.next_head;
-      while (segment < num_segments && head < tile_begin)
-      {
-        ++segment;
-        if (segment < num_segments)
-        {
-          head = offsets[segment];
-        }
-      }
-
-      while (segment < num_segments && head < tile_end)
-      {
-        shared_head_flags[static_cast<int>(head - tile_begin)] = 1;
-        ++segment;
-        if (segment < num_segments)
-        {
-          const work_t next = offsets[segment];
-          if (next == head)
-          {
-            // Skip the run of empty segments at head.
-            segment = last_offset_equal_to(segment, head, num_segments);
-          }
-          head = next;
-        }
-      }
-      temp_storage.local.segment_cursor = segment;
-      temp_storage.local.next_head      = head;
+      static_cast<void>(discover_heads(tile_begin, tile_end, num_segments, false, false));
     }
     __syncthreads();
+
+    auto& shared_head_flags = temp_storage.local.head_flags.Alias();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
@@ -1160,45 +1201,64 @@ public:
       , addressing(addressing)
   {}
 
+  // Run by thread 0 once per block, before the first barrier: records the contiguity flags and the uniform deltas
+  // they imply, which hold for every range the block scans.
+  _CCCL_DEVICE _CCCL_FORCEINLINE void initialize_addressing(OffsetT num_segments)
+  {
+    // Reads every origin it may need before testing the flags.
+    const work_t contiguity         = offsets[num_segments + OffsetT{1}];
+    const OffsetT input_origin      = static_cast<OffsetT>(addressing.input_begin[0]);
+    const bool input_is_contiguous  = (contiguity & contiguous_input_flag) != 0;
+    const bool output_is_contiguous = (contiguity & contiguous_output_flag) != 0;
+
+    auto& deltas                = temp_storage.local.deltas;
+    deltas.input_is_contiguous  = input_is_contiguous;
+    deltas.output_is_contiguous = output_is_contiguous;
+    if (input_is_contiguous)
+    {
+      deltas.uniform_input    = make_delta(input_origin, work_t{0});
+      deltas.input_is_uniform = true;
+    }
+    if constexpr (has_output_deltas)
+    {
+      const OffsetT output_origin = static_cast<OffsetT>(addressing.output_begin[0]);
+      if (output_is_contiguous)
+      {
+        deltas.uniform_output    = make_delta(output_origin, work_t{0});
+        deltas.output_is_uniform = true;
+      }
+    }
+  }
+
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_suffix_first_range(
-    work_t range_begin,
+    const boundary_record<OffsetT>& range,
     work_t range_end,
     OffsetT num_segments,
-    OffsetT first_segment,
-    bool begins_at_head,
     int tile_idx,
     scan_tile_state_t& tile_state)
   {
+    const work_t range_begin    = range.offset;
+    const OffsetT first_segment = range.first_segment;
     _CCCL_ASSERT(range_begin < range_end, "load-balanced ranges must not be empty");
 
-    if (threadIdx.x == 0)
-    {
-      find_tail(range_begin, range_end, num_segments, first_segment);
-      // Read after the suffix scan.
-      temp_storage.local.begins_at_head = begins_at_head;
-    }
-    __syncthreads();
-
-    const bool has_independent_suffix = begins_at_head || temp_storage.local.tail_begin > range_begin;
+    const bool has_independent_suffix = range.is_head || range.tail_begin > range_begin;
     if (!has_independent_suffix)
     {
       consume_forward_range(range_begin, range_end, num_segments, first_segment, tile_idx, tile_state);
       return;
     }
 
-    const flag_value_t suffix_aggregate = scan_range(
-      temp_storage.local.tail_begin, range_end, num_segments, flag_value_t{}, temp_storage.local.tail_segment);
+    const flag_value_t suffix_aggregate =
+      scan_range(range.tail_begin, range_end, num_segments, flag_value_t{}, range.tail_segment);
     publish_without_lookback(suffix_aggregate, tile_idx, tile_state);
 
-    if (temp_storage.local.tail_begin == range_begin)
+    if (range.tail_begin == range_begin)
     {
       return;
     }
 
-    const flag_value_t range_prefix =
-      temp_storage.local.begins_at_head ? flag_value_t{} : obtain_predecessor_prefix(tile_idx, tile_state);
-    static_cast<void>(
-      scan_range(range_begin, temp_storage.local.tail_begin, num_segments, range_prefix, first_segment));
+    const flag_value_t range_prefix = range.is_head ? flag_value_t{} : obtain_predecessor_prefix(tile_idx, tile_state);
+    static_cast<void>(scan_range(range_begin, range.tail_begin, num_segments, range_prefix, first_segment));
   }
 };
 
@@ -1303,9 +1363,13 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
 
   _CCCL_ASSERT(num_segments < ::cuda::std::numeric_limits<OffsetT>::max(), "the work index is indexed by OffsetT");
 
+  const ActualInitValueT actual_init_value = init_value;
+  agent_t agent(temp_storage, d_in, d_out, work_index, scan_op, actual_init_value, addressing);
+
   constexpr int tile_size = policy.threads_per_block * policy.items_per_thread;
   if (threadIdx.x == 0)
   {
+    agent.initialize_addressing(num_segments);
     split.total = work_index[num_segments];
     split.virtual_blocks =
       (::cuda::std::min) (load_balanced_block_count(
@@ -1317,9 +1381,6 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
                           capacity);
   }
 
-  const ActualInitValueT actual_init_value = init_value;
-  agent_t agent(temp_storage, d_in, d_out, work_index, scan_op, actual_init_value, addressing);
-
   const int block = static_cast<int>(blockIdx.x);
   if (threadIdx.x < detail::warp_threads)
   {
@@ -1327,7 +1388,8 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
     if (block < split.virtual_blocks)
     {
       const work_t begin = even_split_boundary(split.total, split.virtual_blocks, block);
-      const auto record  = make_even_boundary_record(work_index, num_segments, begin);
+      const work_t end   = even_split_boundary(split.total, split.virtual_blocks, block + 1);
+      const auto record  = make_even_boundary_record(work_index, num_segments, begin, end);
       if (threadIdx.x == 0)
       {
         begin_record = record;
@@ -1344,8 +1406,7 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
 
   const boundary_record<OffsetT> begin = begin_record;
   const work_t end                     = even_split_boundary(split.total, virtual_blocks, block + 1);
-  agent.consume_suffix_first_range(
-    begin.offset, end, num_segments, begin.first_segment, begin.is_head, block, tile_state);
+  agent.consume_suffix_first_range(begin, end, num_segments, block, tile_state);
 }
 } // namespace detail::segmented_scan
 
