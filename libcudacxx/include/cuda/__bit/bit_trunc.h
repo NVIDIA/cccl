@@ -59,6 +59,8 @@ template <class _Tp>
   using ::cuda::std::uint64_t;
 
 #if defined(_CCCL_BUILTIN_IA32_BZHI_SI) && defined(_CCCL_BUILTIN_IA32_BZHI_DI)
+  const auto __un = static_cast<unsigned>(__n);
+
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
     // BZHI only uses the low eight bits of the width.
