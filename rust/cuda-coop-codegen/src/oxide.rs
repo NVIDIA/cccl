@@ -10,7 +10,7 @@
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
-//! The protocol supports the raw i32 and typed Direct validity recipes
+//! The protocol supports the raw i32 and typed Direct/Transpose validity recipes
 //! documented by [`Operation`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
@@ -197,23 +197,25 @@ struct BatchResponse {
 fn arguments(request: Request) -> Vec<Argument> {
     let operation = request.operation();
     let dtype = Scalar::from(request.dtype());
+    let shared_payload =
+        operation.validity() && !operation.is_load() && request.algorithm() == Algorithm::Direct;
     let mut arguments = vec![
         if operation.is_load() {
             Argument::ConstPointer(dtype)
         } else {
             Argument::MutPointer(dtype)
         },
-        if operation.validity() && !operation.is_load() {
+        if shared_payload {
             Argument::ConstPointer(dtype)
         } else {
             Argument::MutPointer(dtype)
         },
     ];
     if operation.validity() {
-        arguments.push(if operation.is_load() {
-            Argument::MutPointer(Scalar::Unsigned(8))
-        } else {
+        arguments.push(if shared_payload {
             Argument::ConstPointer(Scalar::Unsigned(8))
+        } else {
+            Argument::MutPointer(Scalar::Unsigned(8))
         });
     }
     if operation.counted() {
@@ -487,41 +489,52 @@ mod tests {
         ] {
             let scalar = Scalar::from(dtype);
             assert_eq!(scalar.dtype().unwrap(), dtype);
-            let request = SpecializationRequest {
-                operation: "load_filled_validity_bits_v1".into(),
-                algorithm: "direct".into(),
-                dtype: scalar,
-                block: [128, 1, 1],
-                items_per_thread: 4,
+            for algorithm in ["direct", "transpose"] {
+                let request = SpecializationRequest {
+                    operation: "load_filled_validity_bits_v1".into(),
+                    algorithm: algorithm.into(),
+                    dtype: scalar,
+                    block: [128, 1, 1],
+                    items_per_thread: 4,
+                }
+                .native()
+                .unwrap();
+                assert_eq!(
+                    arguments(request),
+                    vec![
+                        Argument::ConstPointer(scalar),
+                        Argument::MutPointer(scalar),
+                        Argument::MutPointer(Scalar::Unsigned(8)),
+                        Argument::Value(Scalar::Signed(32)),
+                        Argument::Value(scalar),
+                    ]
+                );
             }
-            .native()
-            .unwrap();
-            assert_eq!(
-                arguments(request),
-                vec![
-                    Argument::ConstPointer(scalar),
-                    Argument::MutPointer(scalar),
-                    Argument::MutPointer(Scalar::Unsigned(8)),
-                    Argument::Value(Scalar::Signed(32)),
-                    Argument::Value(scalar),
-                ]
-            );
         }
         for operation in [
             Operation::StoreFullValidity,
             Operation::StorePartialValidity,
         ] {
-            let request =
-                Request::new_typed(Dtype::I16, operation, Algorithm::Direct, 128, 4).unwrap();
-            let mut expected = vec![
-                Argument::MutPointer(Scalar::Signed(16)),
-                Argument::ConstPointer(Scalar::Signed(16)),
-                Argument::ConstPointer(Scalar::Unsigned(8)),
-            ];
-            if operation.counted() {
-                expected.push(Argument::Value(Scalar::Signed(32)));
+            for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+                let request = Request::new_typed(Dtype::I16, operation, algorithm, 128, 4).unwrap();
+                let mut expected = vec![
+                    Argument::MutPointer(Scalar::Signed(16)),
+                    if algorithm == Algorithm::Direct {
+                        Argument::ConstPointer(Scalar::Signed(16))
+                    } else {
+                        Argument::MutPointer(Scalar::Signed(16))
+                    },
+                    if algorithm == Algorithm::Direct {
+                        Argument::ConstPointer(Scalar::Unsigned(8))
+                    } else {
+                        Argument::MutPointer(Scalar::Unsigned(8))
+                    },
+                ];
+                if operation.counted() {
+                    expected.push(Argument::Value(Scalar::Signed(32)));
+                }
+                assert_eq!(arguments(request), expected);
             }
-            assert_eq!(arguments(request), expected);
         }
         for scalar in [Scalar::Signed(1), Scalar::Unsigned(128), Scalar::Float(16)] {
             assert!(scalar.dtype().is_err());

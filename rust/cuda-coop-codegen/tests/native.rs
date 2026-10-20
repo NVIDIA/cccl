@@ -14,7 +14,6 @@ fn rejects_invalid_shapes() {
     assert!(
         Request::new_typed(Dtype::U64, Operation::LoadFull, Algorithm::Direct, 128, 4).is_err()
     );
-    assert!(Request::new(Operation::LoadMaskedValidity, Algorithm::Transpose, 128, 4).is_err());
 }
 
 #[test]
@@ -37,22 +36,45 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
         Dtype::F32,
         Dtype::F64,
     ] {
-        for items in [1, 4] {
-            for operation in [
-                Operation::LoadFullValidity,
-                Operation::LoadMaskedValidity,
-                Operation::LoadFilledValidity,
-                Operation::StoreFullValidity,
-                Operation::StorePartialValidity,
-            ] {
-                requests.push(Request::new_typed(
-                    dtype,
-                    operation,
-                    Algorithm::Direct,
-                    128,
-                    items,
-                )?);
+        for (algorithm, threads) in [(Algorithm::Direct, 128), (Algorithm::Transpose, 33)] {
+            for items in [1, 4] {
+                for operation in [
+                    Operation::LoadFullValidity,
+                    Operation::LoadMaskedValidity,
+                    Operation::LoadFilledValidity,
+                    Operation::StoreFullValidity,
+                    Operation::StorePartialValidity,
+                ] {
+                    requests.push(Request::new_typed(
+                        dtype, operation, algorithm, threads, items,
+                    )?);
+                }
             }
+        }
+    }
+    // Partial warps, complete warps, maximum block size, CUB bank padding and
+    // packed-mask byte boundaries exercise different actual storage layouts.
+    for (threads, items) in [
+        (1, 4),
+        (31, 4),
+        (32, 4),
+        (128, 4),
+        (130, 4),
+        (1024, 1),
+        (33, 8),
+        (33, 9),
+    ] {
+        for operation in [
+            Operation::LoadMaskedValidity,
+            Operation::StoreFullValidity,
+            Operation::StorePartialValidity,
+        ] {
+            requests.push(Request::new(
+                operation,
+                Algorithm::Transpose,
+                threads,
+                items,
+            )?);
         }
     }
     let first = provider.compile(&requests, &target)?;
@@ -61,24 +83,58 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
     assert_eq!(first.identity, repeated.identity);
     assert_eq!(first.specializations.len(), requests.len());
     let mut identities = std::collections::HashSet::new();
-    for entry in first.specializations {
+    for (entry, request) in first.specializations.iter().zip(&requests) {
         assert!(identities.insert(entry.identity));
-        assert_eq!(
-            entry.cub_layout,
-            Layout {
-                size: 1,
-                alignment: 1
-            }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
         );
-        assert_eq!(
-            entry.scratch,
-            Layout {
-                size: 0,
-                alignment: 1
+        if request.algorithm() == Algorithm::Direct {
+            assert_eq!(
+                entry.cub_layout,
+                Layout {
+                    size: 1,
+                    alignment: 1
+                }
+            );
+            assert_eq!(
+                entry.scratch,
+                Layout {
+                    size: 0,
+                    alignment: 1
+                }
+            );
+            assert!(entry.scratch_free);
+            assert!(!entry.mutates_payload);
+        } else {
+            assert!(!entry.scratch_free);
+            assert_eq!(
+                entry.mutates_payload,
+                matches!(
+                    request.operation(),
+                    Operation::StoreFullValidity | Operation::StorePartialValidity
+                )
+            );
+            assert_eq!(entry.scratch.alignment, entry.cub_layout.alignment);
+            if request.operation() == Operation::StorePartialValidity
+                && request.items_per_thread() > 1
+            {
+                let plane = 4
+                    * request.block_threads().div_ceil(32) as usize
+                    * request.items_per_thread() as usize;
+                let aligned_total = (entry.cub_layout.size + plane)
+                    .div_ceil(entry.cub_layout.alignment)
+                    * entry.cub_layout.alignment;
+                assert_eq!(entry.scratch.size, aligned_total);
+                assert!(entry.scratch.size > entry.cub_layout.size);
+                if request.block_threads() == 128 {
+                    assert_eq!(entry.cub_layout.size, 2064);
+                    assert_eq!(entry.scratch.size, 2128);
+                }
+            } else {
+                assert_eq!(entry.scratch, entry.cub_layout);
             }
-        );
-        assert!(entry.scratch_free);
-        assert!(!entry.mutates_payload);
+        }
     }
     Ok(())
 }
