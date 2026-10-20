@@ -1,0 +1,81 @@
+<!-- Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+
+SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="cutlass-phases-overview-title cutlass-phases-overview-desc" viewBox="0 0 1024 1180">
+  <title id="cutlass-phases-overview-title">Compiler phases: overview</title>
+  <desc id="cutlass-phases-overview-desc">Read from top to bottom. CuTe traces symbolic calls. cuda.coop finalizes the provider bundle inside the CuTe hook. CuTe then compiles and links the kernel.</desc>
+  <defs>
+    <marker id="cutlass-phases-overview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#44556b"/>
+    </marker>
+  </defs>
+  <rect width="1024" height="1180" fill="#ffffff"/>
+  <text x="4" y="30" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">1. Trace the</text>
+  <text x="4" y="58.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">kernel</text>
+  <g data-node="Python with symbolic values → typed IR" role="group" aria-label="CuTe compiler. Python with symbolic values → typed IR. CuTe traces the kernel and its control flow.. Cooperative calls emit IR during tracing.">
+    <rect x="154" y="8" width="862" height="108.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="44.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Python with symbolic values → typed IR</text>
+    <text x="166" y="73.6" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">CuTe traces the kernel and its control flow.</text>
+    <text x="166" y="102.39999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Cooperative calls emit IR during tracing.</text>
+  </g>
+  <path d="M585 119.4V144.4" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="180.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">2. Plan each call</text>
+  <g data-node="Select the provider and its ABI" role="group" aria-label="cuda.coop. Select the provider and its ABI. Use value types, controls, and exact launch facts.. Use CUB. Derive the provider symbol.">
+    <rect x="154" y="158.4" width="862" height="108.4" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="195.20000000000002" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Select the provider and its ABI</text>
+    <text x="166" y="224.00000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Use value types, controls, and exact launch facts.</text>
+    <text x="166" y="252.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Use CUB. Derive the provider symbol.</text>
+  </g>
+  <path d="M585 269.8V294.8" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="330.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">3. Emit calls and</text>
+  <text x="4" y="359.6" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">collect requests</text>
+  <g data-node="Emit symbolic calls; keep provider requests" role="group" aria-label="cuda.coop. Emit symbolic calls; keep provider requests. Each call names its provider before LTO-IR exists.. Keep distinct requests in the trace's session.. Record scratch uses with temporary operands when needed.">
+    <rect x="154" y="308.8" width="862" height="137.2" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="345.6" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Emit symbolic calls; keep provider requests</text>
+    <text x="166" y="374.40000000000003" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Each call names its provider before LTO-IR exists.</text>
+    <text x="166" y="403.20000000000005" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Keep distinct requests in the trace's session.</text>
+    <text x="166" y="432.00000000000006" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Record scratch uses with temporary operands when needed.</text>
+  </g>
+  <path d="M585 449V474" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="154" y="506" font-family="sans-serif" font-size="15.4286px" font-weight="400" fill="#44556b">Tracing complete · finalize providers before kernel compilation</text>
+  <text x="4" y="547" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">4. Finalize the</text>
+  <text x="4" y="575.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">provider bundle</text>
+  <g data-node="Compile or reuse the completed bundle" role="group" aria-label="cuda.coop. Compile or reuse the completed bundle. After tracing, render one C++ unit for the session.. On a cache miss, NVRTC returns provider LTO-IR.. The same program supplies any scratch layouts.">
+    <rect x="154" y="525" width="862" height="137.2" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="561.8" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Compile or reuse the completed bundle</text>
+    <text x="166" y="590.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">After tracing, render one C++ unit for the session.</text>
+    <text x="166" y="619.3999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">On a cache miss, NVRTC returns provider LTO-IR.</text>
+    <text x="166" y="648.1999999999998" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">The same program supplies any scratch layouts.</text>
+  </g>
+  <path d="M585 665.2V690.2" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="726.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">5. Resolve</text>
+  <text x="4" y="755" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">deferred scratch</text>
+  <g data-node="Resolve scratch; attach the provider link input" role="group" aria-label="cuda.coop. Resolve scratch; attach the provider link input. For deferred uses, apply the C++ sizes and alignments.. Allocate at kernel entry. Bind each call to its slice.. Attach the LTO-IR path to gpu.module link-libraries.">
+    <rect x="154" y="704.2" width="862" height="137.2" rx="7" fill="#e5f1d7" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="741" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Resolve scratch; attach the provider link input</text>
+    <text x="166" y="769.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">For deferred uses, apply the C++ sizes and alignments.</text>
+    <text x="166" y="798.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Allocate at kernel entry. Bind each call to its slice.</text>
+    <text x="166" y="827.3999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Attach the LTO-IR path to gpu.module link-libraries.</text>
+  </g>
+  <path d="M585 844.4000000000001V869.4000000000001" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="905.4000000000001" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">6. Compile and</text>
+  <text x="4" y="934.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">link the kernel</text>
+  <g data-node="Completed kernel IR + provider LTO-IR → cubin" role="group" aria-label="CuTe compiler. Completed kernel IR + provider LTO-IR → cubin. Hash and build the module after the finalization hook.. Merge gpu.module link-libraries into LinkLibraries; compile.. nvJitLink resolves provider symbols. LTO can inline them.">
+    <rect x="154" y="883.4000000000001" width="862" height="137.2" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="920.2" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Completed kernel IR + provider LTO-IR → cubin</text>
+    <text x="166" y="949" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Hash and build the module after the finalization hook.</text>
+    <text x="166" y="977.8" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Merge gpu.module link-libraries into LinkLibraries; compile.</text>
+    <text x="166" y="1006.5999999999999" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">nvJitLink resolves provider symbols. LTO can inline them.</text>
+  </g>
+  <path d="M585 1023.6000000000001V1048.6000000000001" marker-end="url(#cutlass-phases-overview-arrow)" fill="none" stroke="#44556b" stroke-width="1.5"/>
+  <text x="4" y="1084.6000000000001" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">7. Load and</text>
+  <text x="4" y="1113.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">launch</text>
+  <g data-node="Load the device binary; obtain the kernel entry" role="group" aria-label="CuTe compiler. Load the device binary; obtain the kernel entry. Launch the compiled kernel.. Reuse it on later calls.">
+    <rect x="154" y="1062.6000000000001" width="862" height="108.4" rx="7" fill="#e9f2fb" stroke="#68798b" stroke-width="1"/>
+    <text x="166" y="1099.4" font-family="sans-serif" font-size="18px" font-weight="500" fill="#172b3a">Load the device binary; obtain the kernel entry</text>
+    <text x="166" y="1128.2" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Launch the compiled kernel.</text>
+    <text x="166" y="1157" font-family="sans-serif" font-size="18px" font-weight="400" fill="#172b3a">Reuse it on later calls.</text>
+  </g>
+</svg>

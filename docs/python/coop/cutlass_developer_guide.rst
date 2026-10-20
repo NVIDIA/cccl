@@ -7,6 +7,29 @@
 CUTLASS Developer Guide
 =======================
 
+.. raw:: html
+
+   <style>
+   .coop-cutlass-compiler-tabs { container-type: inline-size; }
+   .coop-cutlass-compiler-tabs .coop-cutlass-diagram-mobile {
+     display: none;
+     max-width: 360px;
+     margin-inline: auto;
+   }
+   #cutlass-developer-guide code.literal .pre {
+     white-space: normal;
+     overflow-wrap: anywhere;
+   }
+   @container (max-width: 760px) {
+     .coop-cutlass-compiler-tabs .coop-cutlass-diagram-desktop { display: none; }
+     .coop-cutlass-compiler-tabs .coop-cutlass-diagram-mobile { display: block; }
+   }
+   @media print {
+     .coop-cutlass-compiler-tabs .coop-cutlass-diagram-desktop { display: block; }
+     .coop-cutlass-compiler-tabs .coop-cutlass-diagram-mobile { display: none; }
+   }
+   </style>
+
 CuTe compiles your kernel and its control flow. For each cooperative
 primitive, ``cuda.coop.cutlass`` generates a C++ device function that calls
 CUB or CUDAX. NVRTC compiles those functions to LTO-IR, which CuTe links into
@@ -30,8 +53,9 @@ where to look when changing the implementation. Numba-CUDA-MLIR has its own
 :doc:`Programming Guide <programming_guide>`.
 
 For a hands-on tour, follow the :ref:`cuda.coop.cutlass.debugger_walkthrough`.
-Both compiler walkthroughs use a 128-thread tile copy, so their registration,
-planning, code generation, and linking steps can be compared directly.
+The Numba and CUTLASS debugger walkthroughs both use a 128-thread tile copy,
+so their registration, planning, code generation, and linking stops can be
+compared directly.
 
 Following a tile copy
 ---------------------
@@ -71,12 +95,172 @@ same kernel.
 Compiler requirements
 ---------------------
 
-The CuTe compiler must support external NVIDIA LTO-IR linking, a scoped hook
-at the end of tracing, and access to the active compiler environment. It must
-also supply exact block, grid, and cluster dimensions and launch flags.
+The CuTe compiler must support external NVIDIA LTO-IR linking and
+trace-finalization hooks that run after tracing and before module hashing.
+It must provide access to the active compiler environment, exact block, grid,
+and cluster dimensions, and launch flags.
 ``cutlass/_compiler/_runtime.py`` checks for the required Python interfaces
 during registration. Compilation and execution tests check that the
 interfaces work together with NVRTC and the final linker.
+
+.. _cuda.coop.cutlass.compiler_flow:
+
+Compiler phases and handoffs
+----------------------------
+
+Read each figure from top to bottom. These steps run on the host. CuTe
+traces the Python kernel with symbolic values. It compiles and links the
+result before the GPU executes it.
+
+The phase map shows where cooperative calls enter this process. Select
+**Python classes** to see the classes, data records, and module functions
+that implement each step. Function labels include parentheses; a data
+record carries information between steps.
+
+.. tab-set::
+   :class: coop-cutlass-compiler-tabs
+
+   .. tab-item:: Overview
+
+      .. figure:: visualizations/cutlass-compiler-phases.svg
+         :alt: CUTLASS compilation phases, from tracing cooperative calls through provider collection, bundle compilation, scratch materialization, and final linking.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-desktop
+
+         Tracing records calls. Finalization supplies their definitions and
+         completes deferred scratch allocations.
+
+      .. figure:: visualizations/cutlass-compiler-phases-mobile.svg
+         :alt: CUTLASS compilation phases arranged vertically, from tracing through provider compilation, scratch materialization, linking, and execution.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-mobile
+
+         Tracing records calls. Finalization supplies their definitions and
+         completes deferred scratch allocations.
+
+   .. tab-item:: Python classes
+
+      .. figure:: visualizations/cutlass-compiler-phases-classes.svg
+         :alt: CUTLASS phases with concrete implementation names. BundleSession collects provider requests. The trace finalizer obtains a BundleCompilation and materializes DeferredTempStoragePlan records before CuTe links the kernel.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-desktop
+
+         Classes and records describe ownership and data. Module functions
+         perform much of the compilation work.
+
+      .. figure:: visualizations/cutlass-compiler-phases-classes-mobile.svg
+         :alt: Detailed CUTLASS phases in a vertical layout, including BundleSession, provider request records, bundle compilation, and deferred scratch plans.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-mobile
+
+         Classes and records describe ownership and data. Module functions
+         perform much of the compilation work.
+
+Each cooperative call is planned as CuTe traces it. The lowering already
+has the operand types and exact launch facts needed to select its provider.
+It adds a request to ``BundleSession``, then emits a symbolic call. CuTe's
+end-of-trace hook runs after these requests have been collected and before
+device linking.
+
+The next figure expands this boundary. It shows a nonempty session on a
+provider-cache miss, with deferred scratch. NVRTC compiles the provider
+bundle; CuTe compiles the enclosing kernel and arranges the final link.
+The figures show the device-LTO path that produces a cubin. CuTe supplies
+kernel LTO-IR and provider LTO-IR to nvJitLink.
+
+.. tab-set::
+   :class: coop-cutlass-compiler-tabs
+
+   .. tab-item:: Overview
+
+      .. figure:: visualizations/cutlass-compiler-swimlane.svg
+         :alt: Actor swimlanes show CuTe tracing, cuda.coop collecting providers, NVRTC returning LTO-IR and scratch layouts, and CuTe arranging the final device link before launch.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-desktop
+
+         The bundle and layout queries share one NVRTC program. The final
+         device link is a later step.
+
+      .. figure:: visualizations/cutlass-compiler-swimlane-mobile.svg
+         :alt: CUTLASS compilation handoffs in time order, with CuTe, cuda.coop, NVRTC, and the device linker identified at each step.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-mobile
+
+         The bundle and layout queries share one NVRTC program. The final
+         device link is a later step.
+
+   .. tab-item:: Python classes
+
+      .. figure:: visualizations/cutlass-compiler-swimlane-classes.svg
+         :alt: Implementation-level handoffs through BundleSession, the trace-finalization hook, BundleCompilation, deferred storage planning, and GPU module link-libraries.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-desktop
+
+         The finalizer supplies an artifact path and completes scratch
+         operands. It does not launch the kernel.
+
+      .. figure:: visualizations/cutlass-compiler-swimlane-classes-mobile.svg
+         :alt: Detailed CUTLASS handoffs in a vertical layout, from provider requests and symbolic calls through NVRTC results, scratch operand replacement, and final linking.
+         :width: 100%
+         :figclass: coop-cutlass-diagram-mobile
+
+         The finalizer supplies an artifact path and completes scratch
+         operands. It does not launch the kernel.
+
+Equivalent provider requests share one generated wrapper. Scratch events
+retain each traced use, because separate uses can need separate slices.
+A valid cache entry supplies both the LTO-IR and the queried layouts, so
+that path does not call NVRTC. A session with no providers needs no bundle.
+Separate trace modules keep separate sessions. A trace module can contain
+several kernels; deferred scratch is allocated separately for each kernel.
+
+Calls before compiled provider code exists
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A provider request determines a symbol name and an argument/result contract
+before NVRTC runs. The renderer uses that name for the C++ definition.
+The lowering uses the same name and contract to emit ``cute.ffi`` calls.
+This step needs a symbol, not a loaded device address.
+
+At finalization, ``_trace_finalize_hook()`` attaches the compiled bundle to
+the GPU module's ``link-libraries`` attribute. CuTe computes its module hash
+after the hook returns, builds the module, then checks its compile cache.
+The device linker resolves the call against its definition and can optimize
+it with the kernel.
+The provider can be inlined, so it need not remain a separate function in
+the final cubin. Loading that cubin makes the kernel available to launch.
+
+Scratch addresses follow a separate path. During tracing, calls that need
+deferred scratch use placeholder address and size operands. NVRTC supplies
+the exact C++ size and alignment. The finalizer inserts shared-memory
+allocations and replaces those operands before device compilation finishes.
+It does not replace a placeholder provider function pointer.
+
+What to inspect at each boundary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table:: Trace data and finalization data
+   :header-rows: 1
+   :widths: 33 67
+
+   * - Object or record
+     - What it tells you
+   * - ``GroupLoweringPlan``
+     - Selected implementation, participation, result, storage, and
+       synchronization requirements for one cooperative call.
+   * - Provider request, such as ``_CubLoadStoreRequest``
+     - Shared plan plus the CuTe types and ABI choices needed to render a
+       wrapper and emit its matching call.
+   * - ``BundleSession``
+     - Unique provider requests and ordered scratch events for one trace
+       module. A snapshot restores this bookkeeping after failed emission;
+       it does not undo emitted IR.
+   * - ``BundleCompilation``
+     - Path to provider LTO-IR and exact C++ layouts indexed by requirement.
+       A cache hit and a fresh compilation return the same kind of result.
+   * - ``DeferredTempStoragePlan``
+     - Allocation size, alignment, and per-use bindings. Materialization
+       inserts allocations and replaces each use's address and size.
 
 .. _registration-and-compiler-ownership:
 
@@ -171,11 +355,12 @@ module. The session deduplicates equivalent requests and records deferred
 scratch uses. Load and Store in the example contribute to the same bundle;
 finalization compiles the two providers together.
 
-CuTe's scoped trace-finalization hook finds the session belonging to the
-module being finalized. It leaves an unrelated or nested module's session
-alone. The hook renders the requests into one C++ translation unit, compiles
-it to NVIDIA LTO-IR, and attaches the artifact to that GPU module's
-``link-libraries`` attribute. The CuTe compiler and final linker then resolve
+``cuda.coop`` registers one persistent trace-finalization hook with CuTe.
+The hook runs for every trace on that DSL. It finds the session belonging
+to the module being finalized and leaves unrelated or nested sessions alone.
+The hook renders the requests into one C++ translation unit, compiles it
+to NVIDIA LTO-IR, and attaches the artifact to each ``gpu.module`` in the
+trace through its ``link-libraries`` attribute. The CuTe compiler and final linker then resolve
 the ``cute.ffi`` calls while compiling the enclosing kernel.
 
 Header and toolkit discovery reuse the neutral helpers under ``_headers``.
@@ -209,7 +394,7 @@ Direct, striped, and vectorized Load/Store do not use scratch. Their provider
 ABI omits a storage pointer, and passing a ``TempStorage`` descriptor does
 not add a reuse barrier or change the storage-free provider's identity.
 
-Algorithms that need scratch record its use while tracing. The finalizer
+Calls with deferred scratch record its use while tracing. The finalizer
 adds ``sizeof`` and ``alignof`` probes to the same NVRTC program as the
 provider bundle. The resulting C++ layouts determine the allocation; the
 adapter does not estimate storage sizes from the element count.
@@ -220,6 +405,14 @@ storage assigns separate slices to distinct call sites. Requested alignment
 is a minimum. An explicit capacity that cannot accommodate its uses is an
 error. Once the layouts are known, the finalizer materializes shared-memory
 allocations and replaces the trace's storage placeholders.
+
+``TempStorage.reserve`` records an event with a known element size and
+alignment, and returns an ordinary CuTe tensor built from an address
+placeholder. It participates in the same descriptor layout as primitive
+scratch. Finalization resolves these views even when the kernel has no
+cooperative provider calls. A descriptor with reservations requires
+``auto_sync=False`` for every use; finalization also checks earlier and later
+primitive events before materializing its allocation.
 
 Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both

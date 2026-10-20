@@ -424,9 +424,9 @@ allocator before compilation finishes. The
 and [CuTe storage example](examples/cutlass/block_storage.py) demonstrate
 reuse policies and synchronization.
 
-Numba-CUDA-MLIR also supports `storage.reserve(num_elems, dtype, alignment=None)`
-inside a kernel. It returns an ordinary one-dimensional shared array for
-application data or another device library. The count, integer/float/complex
+Both integrations support `storage.reserve(num_elems, dtype, alignment=None)`
+inside a kernel. It returns an ordinary one-dimensional shared array in
+Numba-CUDA-MLIR or a shared `cute.Tensor` in CuTe. The count, supported numeric
 scalar dtype, and optional byte alignment must be compile-time constants.
 Reservations inherit the descriptor's sharing policy. The default
 `sharing="shared"` aliases reservations and primitive scratch within the same
