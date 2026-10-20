@@ -181,6 +181,91 @@ cases.update(
         ),
     }
 )
+wrapper = """
+struct Wrapper { raw: library::StorageDescriptor }
+#[inline(never)]
+fn use_raw(raw: &mut library::StorageDescriptor) {
+    unsafe {
+        let view = library::storage_reserve_v1::<i32, _, 128, 0>(raw);
+        library::storage_release_v1(view);
+    }
+}
+#[inline(never)]
+fn use_wrapper(wrapper: &mut Wrapper) { use_raw(&mut wrapper.raw); }
+let mut wrapper = Wrapper { raw: library::storage_new_v1::<0, 0, false, false>() };
+"""
+cases.update(
+    {
+        "wrapper_raw_borrow": (wrapper + "use_raw(&mut wrapper.raw);", None),
+        "wrapper_local_field": (
+            wrapper
+            + "let view=library::storage_reserve_v1::<i32,_,128,0>(&mut wrapper.raw);"
+            + release,
+            None,
+        ),
+        "wrapper_helper": (wrapper + "use_wrapper(&mut wrapper);", None),
+        "wrapper_returned_field": (
+            wrapper
+            + """
+#[inline(never)]
+fn raw(wrapper: &mut Wrapper) -> &mut library::StorageDescriptor { &mut wrapper.raw }
+use_raw(raw(&mut wrapper));
+""",
+            None,
+        ),
+        "wrapper_nested": (
+            wrapper
+            + """
+struct Outer { inner: Wrapper }
+#[inline(never)]
+fn use_outer(outer: &mut Outer) { use_wrapper(&mut outer.inner); }
+let mut outer = Outer { inner: wrapper };
+use_outer(&mut outer);
+""",
+            None,
+        ),
+        "wrapper_ambiguous": (
+            wrapper
+            + "let mut other=Wrapper { raw: library::storage_new_v1::<0,0,false,false>() };"
+            + "use_wrapper(if valid==0 {&mut wrapper} else {&mut other});",
+            "no unambiguous descriptor origin",
+        ),
+        "wrapper_replacement": (
+            wrapper
+            + """
+#[inline(never)]
+fn replace(wrapper: &mut Wrapper, other: Wrapper) { *wrapper = other; }
+let other=Wrapper { raw: library::storage_new_v1::<0,0,false,false>() };
+replace(&mut wrapper, other);
+use_wrapper(&mut wrapper);
+""",
+            "mutation through a reference to a resource descriptor",
+        ),
+        "wrapper_enum_replacement": (
+            wrapper
+            + """
+enum Storage { Present(Wrapper), Absent }
+#[inline(never)]
+fn replace(storage: &mut Storage) { *storage = Storage::Absent; }
+let mut storage = Storage::Present(wrapper);
+replace(&mut storage);
+""",
+            "mutation through a reference to a resource descriptor",
+        ),
+        "wrapper_scalar_mutation": (
+            new
+            + """
+struct Scalar { value: usize }
+#[inline(never)]
+fn change(value: &mut Scalar) { value.value=thread::threadIdx_x() as usize; }
+let mut control=Scalar { value: valid };
+change(&mut control);
+"""
+            + load.replace("offset,valid", "offset,control.value"),
+            "lane-varying control flow",
+        ),
+    }
+)
 for capacity in [55, 56]:
     cases[f"padded_capacity_{capacity}"] = (
         f"let mut scratch=library::storage_new_v1::<{capacity},0,false,true>();"
