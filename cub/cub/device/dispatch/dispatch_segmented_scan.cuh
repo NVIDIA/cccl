@@ -63,8 +63,7 @@ template <typename PolicySelector,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
-          ForceInclusive EnforceInclusive,
-          bool MarkSegmentHeads = false>
+          ForceInclusive EnforceInclusive>
 struct device_segmented_scan_kernel_source
 {
   static_assert(::cuda::std::is_empty_v<PolicySelector>);
@@ -83,10 +82,8 @@ struct device_segmented_scan_kernel_source
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes,
-      false,
       false>);
 
-  // MarkSegmentHeads selects the several-segments path of scan_segments.
   CUB_DEFINE_KERNEL_GETTER(
     segmented_scan_multi_segment_kernel,
     device_segmented_scan_kernel<
@@ -101,8 +98,7 @@ struct device_segmented_scan_kernel_source
       InitValueT,
       AccumT,
       EnforceInclusive == ForceInclusive::Yes,
-      true,
-      MarkSegmentHeads>);
+      true>);
 };
 
 template <typename BeginOffsetIteratorT,
@@ -305,6 +301,111 @@ using deduced_accum_t = ::cuda::std::__accumulator_t<
   InputValueT,
   ::cuda::std::conditional_t<::cuda::std::is_same_v<InitValueT, NullType>, InputValueT, typename InitValueT::value_type>>;
 
+// Launches kernel so that block b of each launch scans the segments_per_block consecutive segments starting at
+// b * segments_per_block, in launches of at most INT32_MAX segments. num_segments must be positive.
+template <typename OffsetT,
+          typename KernelT,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename BeginOffsetIteratorInputT,
+          typename EndOffsetIteratorInputT,
+          typename BeginOffsetIteratorOutputT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename KernelLauncherFactory>
+CUB_RUNTIME_FUNCTION cudaError_t launch_blocks(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KernelT kernel,
+  int segments_per_block,
+  ::cuda::compute_capability cc,
+  const SegmentedScanPolicy& active_policy,
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  ::cuda::std::int64_t num_segments,
+  BeginOffsetIteratorInputT input_begin_offsets,
+  EndOffsetIteratorInputT input_end_offsets,
+  BeginOffsetIteratorOutputT output_begin_offsets,
+  ScanOpT scan_op,
+  InitValueT init_value,
+  cudaStream_t stream,
+  KernelLauncherFactory& launcher_factory)
+{
+  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
+
+  if (d_temp_storage == nullptr)
+  {
+    temp_storage_bytes = 1;
+    return cudaSuccess;
+  }
+
+  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG),
+               "The memory consistency model does not apply to texture accesses");
+  _CCCL_ASSERT(active_policy.block.threads_per_block > 0, "Policy value for threads_per_block is not positive");
+  _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
+  _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
+  _CCCL_ASSERT(segments_per_block <= active_policy.block.max_segments,
+               "Number of segments per block exceeds maximum value");
+
+  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
+  static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
+
+  const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
+
+  for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+  {
+    const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
+    const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
+    const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
+
+    _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
+                 "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
+
+    const auto grid_size = ::cuda::ceil_div(static_cast<int>(num_segments_per_invocation), segments_per_block);
+
+    auto launcher = launcher_factory(grid_size, active_policy.block.threads_per_block, 0, stream);
+
+    // Cast is safe, since OffsetT is integral with sizeof(OffsetT) >= 4, and num_segments_per_invocation
+    // fits in int32_t by construction
+    const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
+
+    if (const auto error = CubDebug(launcher.doit(
+          kernel,
+          d_in,
+          d_out,
+          input_begin_offsets,
+          input_end_offsets,
+          output_begin_offsets,
+          segment_count,
+          scan_op,
+          init_value,
+          segments_per_block));
+        cudaSuccess != error)
+    {
+      return error;
+    }
+
+    if (const auto error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
+    {
+      return error;
+    }
+
+    if (invocation_index + 1 < num_invocations)
+    {
+      input_begin_offsets += num_segments_per_invocation;
+      input_end_offsets += num_segments_per_invocation;
+      output_begin_offsets += num_segments_per_invocation;
+    }
+
+    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
+    {
+      return error;
+    }
+  }
+
+  return cudaSuccess;
+}
+
 template <
   ForceInclusive EnforceInclusive = ForceInclusive::No,
   typename InputIteratorT,
@@ -345,7 +446,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   BeginOffsetIteratorOutputT output_begin_offsets,
   ScanOpT scan_op,
   InitValueT init_value,
-  int num_segments_per_worker,
   worker worker_choice,
   cudaStream_t stream,
   PolicySelector policy_selector         = {},
@@ -368,110 +468,30 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
 
   const SegmentedScanPolicy active_policy = policy_selector(cc);
 
-  detail::log_dispatch("DeviceSegmentedScan", cc, active_policy);
-
-  if (d_temp_storage == nullptr)
+  switch (worker_choice)
   {
-    temp_storage_bytes = 1;
-    return cudaSuccess;
+    case worker::block:
+      return launch_blocks<OffsetT>(
+        d_temp_storage,
+        temp_storage_bytes,
+        kernel_source.segmented_scan_kernel(),
+        1,
+        cc,
+        active_policy,
+        d_in,
+        d_out,
+        num_segments,
+        input_begin_offsets,
+        input_end_offsets,
+        output_begin_offsets,
+        scan_op,
+        init_value,
+        stream,
+        launcher_factory);
+    default:
+      _CCCL_UNREACHABLE();
   }
-
-  _CCCL_ASSERT((active_policy.block.load_modifier != CacheLoadModifier::LOAD_LDG),
-               "The memory consistency model does not apply to texture accesses");
-
-  _CCCL_ASSERT(num_segments_per_worker > 0, "Number of segments per worker parameter must be positive");
-
-  const auto [workers_per_block, block_size, normalized_spw] =
-    [&](worker selector) -> ::cuda::std::tuple<int, int, int> {
-    switch (selector)
-    {
-      case worker::block: {
-        constexpr int workers_per_block = 1;
-        const auto max_segments         = active_policy.block.max_segments;
-        const auto threads_per_block    = active_policy.block.threads_per_block;
-        _CCCL_ASSERT(active_policy.block.threads_per_block > 0, "Policy value for threads_per_block is not positive");
-        _CCCL_ASSERT(active_policy.block.items_per_thread > 0, "Policy value for items_per_thread is not positive");
-        _CCCL_ASSERT(max_segments > 0, "Policy value for max segments is not positive");
-        _CCCL_ASSERT(num_segments_per_worker <= max_segments, "Number of segments per block exceeds maximum value");
-        return {workers_per_block, threads_per_block, ::cuda::std::min(num_segments_per_worker, max_segments)};
-      }
-      default:
-        _CCCL_UNREACHABLE();
-    }
-    _CCCL_UNREACHABLE();
-  }(worker_choice);
-
-  // Clamp to produce a positive integer
-  num_segments_per_worker = (::cuda::std::max) (normalized_spw, 1);
-
-  const auto segments_per_block = num_segments_per_worker * workers_per_block;
-  _CCCL_ASSERT(segments_per_block > 0, "Number of segments to be processed by block must be positive");
-
-  static constexpr auto int32_max                       = ::cuda::std::numeric_limits<::cuda::std::int32_t>::max();
-  static constexpr auto max_num_segments_per_invocation = static_cast<::cuda::std::int64_t>(int32_max);
-
-  const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
-
-  for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
-  {
-    const auto current_seg_offset          = invocation_index * max_num_segments_per_invocation;
-    const auto next_seg_offset             = current_seg_offset + max_num_segments_per_invocation;
-    const auto num_segments_per_invocation = ::cuda::std::min(next_seg_offset, num_segments) - current_seg_offset;
-
-    _CCCL_ASSERT(num_segments_per_invocation <= max_num_segments_per_invocation,
-                 "data loss during narrowing: num_segments_per_invocation exceeds int32_t range");
-
-    const auto grid_size = ::cuda::ceil_div(static_cast<int>(num_segments_per_invocation), segments_per_block);
-
-    auto launcher = launcher_factory(grid_size, block_size, 0, stream);
-
-    // Cast is safe, since OffsetT is integral with sizeof(OffsetT) >= 4, and num_segments_per_invocation
-    // fits in int32_t by construction
-    const auto segment_count = static_cast<OffsetT>(num_segments_per_invocation);
-
-    switch (worker_choice)
-    {
-      case worker::block:
-        if (const auto error = CubDebug(launcher.doit(
-              num_segments_per_worker == 1 ? kernel_source.segmented_scan_kernel()
-                                           : kernel_source.segmented_scan_multi_segment_kernel(),
-              d_in,
-              d_out,
-              input_begin_offsets,
-              input_end_offsets,
-              output_begin_offsets,
-              segment_count,
-              scan_op,
-              init_value,
-              num_segments_per_worker));
-            cudaSuccess != error)
-        {
-          return error;
-        };
-        break;
-      default:
-        _CCCL_UNREACHABLE();
-    }
-
-    if (const auto error = CubDebug(cudaPeekAtLastError()); cudaSuccess != error)
-    {
-      return error;
-    }
-
-    if (invocation_index + 1 < num_invocations)
-    {
-      input_begin_offsets += num_segments_per_invocation;
-      input_end_offsets += num_segments_per_invocation;
-      output_begin_offsets += num_segments_per_invocation;
-    }
-
-    if (const auto error = CubDebug(DebugSyncStream(stream)); cudaSuccess != error)
-    {
-      return error;
-    }
-  }
-
-  return cudaSuccess;
+  _CCCL_UNREACHABLE();
 }
 
 // Segments per block such that a block holds about two tiles of items at the mean segment size. Scan several segments
@@ -560,7 +580,20 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_num_items(
     return cudaErrorInvalidValue;
   }
 
-  int segments_per_block = 1;
+  const device_segmented_scan_kernel_source<
+    PolicySelector,
+    InputIteratorT,
+    OutputIteratorT,
+    BeginOffsetIteratorInputT,
+    EndOffsetIteratorInputT,
+    BeginOffsetIteratorOutputT,
+    OffsetT,
+    ScanOpT,
+    InitValueT,
+    AccumT,
+    EnforceInclusive>
+    kernel_source{};
+
   if (num_segments > 0)
   {
     ::cuda::compute_capability cc{};
@@ -570,47 +603,35 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_num_items(
     }
     const SegmentedScanPolicy active_policy = policy_selector(cc);
     const int tile_items = active_policy.block.threads_per_block * active_policy.block.items_per_thread;
-    segments_per_block =
+    int segments_per_block =
       segments_per_block_for_mean(tile_items, active_policy.block.max_segments, num_segments, num_items);
-    // The marked-heads path places a block's items in make_unsigned_t<OffsetT>, and its last tile must not wrap.
+    // A block of several segments places its items in make_unsigned_t<OffsetT>, and its last tile must not wrap.
     using logical_offset_t = ::cuda::std::make_unsigned_t<OffsetT>;
     if (::cuda::std::cmp_greater(num_items, ::cuda::std::numeric_limits<logical_offset_t>::max() - tile_items))
     {
       segments_per_block = 1;
     }
-  }
 
-  if (segments_per_block > 1)
-  {
-    return dispatch<EnforceInclusive>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      input_begin_offsets,
-      input_end_offsets,
-      output_begin_offsets,
-      scan_op,
-      init_value,
-      segments_per_block,
-      worker::block,
-      stream,
-      policy_selector,
-      device_segmented_scan_kernel_source<
-        PolicySelector,
-        InputIteratorT,
-        OutputIteratorT,
-        BeginOffsetIteratorInputT,
-        EndOffsetIteratorInputT,
-        BeginOffsetIteratorOutputT,
-        OffsetT,
-        ScanOpT,
-        InitValueT,
-        AccumT,
-        EnforceInclusive,
-        true>{},
-      launcher_factory);
+    if (segments_per_block > 1)
+    {
+      return launch_blocks<OffsetT>(
+        d_temp_storage,
+        temp_storage_bytes,
+        kernel_source.segmented_scan_multi_segment_kernel(),
+        segments_per_block,
+        cc,
+        active_policy,
+        d_in,
+        d_out,
+        num_segments,
+        input_begin_offsets,
+        input_end_offsets,
+        output_begin_offsets,
+        scan_op,
+        init_value,
+        stream,
+        launcher_factory);
+    }
   }
 
   return dispatch<EnforceInclusive>(
@@ -624,22 +645,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_with_num_items(
     output_begin_offsets,
     scan_op,
     init_value,
-    1,
     worker::block,
     stream,
     policy_selector,
-    device_segmented_scan_kernel_source<
-      PolicySelector,
-      InputIteratorT,
-      OutputIteratorT,
-      BeginOffsetIteratorInputT,
-      EndOffsetIteratorInputT,
-      BeginOffsetIteratorOutputT,
-      OffsetT,
-      ScanOpT,
-      InitValueT,
-      AccumT,
-      EnforceInclusive>{},
+    kernel_source,
     launcher_factory);
 }
 
@@ -732,7 +741,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
       output_begin_offsets(segments),
       scan_op,
       init_value,
-      1,
       worker::block,
       stream,
       policy_selector,

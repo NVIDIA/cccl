@@ -214,7 +214,6 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_from_env(
       output_begin_offsets,
       scan_op,
       init_value,
-      1,
       worker::block,
       stream,
       policy_selector);
@@ -496,7 +495,6 @@ public:
       d_in_begin_offsets,
       scan_op,
       detail::InputValue<init_value_t>(init_value),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -752,7 +750,6 @@ public:
       d_out_begin_offsets,
       scan_op,
       detail::InputValue<init_value_t>(init_value),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -1013,7 +1010,6 @@ public:
       d_in_begin_offsets,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -1277,7 +1273,6 @@ public:
       d_out_begin_offsets,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -1540,7 +1535,6 @@ public:
       d_in_begin_offsets,
       scan_op,
       NullType(),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -1784,7 +1778,6 @@ public:
       d_out_begin_offsets,
       scan_op,
       NullType(),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -2020,7 +2013,6 @@ public:
       d_in_begin_offsets,
       scan_op,
       NullType(),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -2276,7 +2268,6 @@ public:
       d_out_begin_offsets,
       scan_op,
       NullType(),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -2545,7 +2536,6 @@ public:
       d_in_begin_offsets,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }
@@ -2812,7 +2802,6 @@ public:
       d_out_begin_offsets,
       scan_op,
       detail::InputValue<InitValueT>(init_value),
-      1,
       detail::segmented_scan::worker::block,
       stream);
   }

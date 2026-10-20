@@ -18,7 +18,6 @@
 #endif // no system header
 
 #include <cub/block/block_load.cuh>
-#include <cub/block/block_reduce.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
@@ -30,13 +29,14 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/atomic>
 #include <cuda/iterator>
+#include <cuda/std/__bit/integral.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
 
@@ -66,9 +66,6 @@ namespace detail::segmented_scan
 //! @tparam AccumT
 //!   The type of intermediate accumulator (according to P2322R6)
 //!
-//! @tparam MarkSegmentHeads
-//!   Give the several-segments temporary storage the per-tile head state `scan_segments` needs
-//!
 template <typename SegmentedScanPolicyGetterT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -76,8 +73,7 @@ template <typename SegmentedScanPolicyGetterT,
           typename ScanOpT,
           typename InitValueT,
           typename AccumT,
-          bool ForceInclusive   = false,
-          bool MarkSegmentHeads = false>
+          bool ForceInclusive = false>
 struct agent_segmented_scan
 {
 private:
@@ -132,11 +128,7 @@ private:
 
   using augmented_accum_t = agent_segmented_scan_compute_t<AccumT, max_segments>;
 
-  using block_load_aug_t    = BlockLoad<augmented_accum_t, threads_per_block, items_per_thread, load_algorithm>;
-  using block_store_aug_t   = BlockStore<augmented_accum_t, threads_per_block, items_per_thread, store_algorithm>;
-  using block_scan_aug_t    = BlockScan<augmented_accum_t, threads_per_block, scan_algorithm>;
-  using block_offset_scan_t = BlockScan<OffsetT, threads_per_block, scan_algorithm>;
-  using block_reduce_t      = BlockReduce<unsigned int, threads_per_block>;
+  using block_scan_aug_t = BlockScan<augmented_accum_t, threads_per_block, scan_algorithm>;
 
   // In-block positions of scan_segments. A block's summed sizes can reach the offset maximum plus one.
   using logical_offset_t            = ::cuda::std::make_unsigned_t<OffsetT>;
@@ -148,27 +140,7 @@ private:
                                unsigned char,
                                ::cuda::std::conditional_t<(max_segments <= 0xFFFF), unsigned short, unsigned int>>;
 
-  union _multiple_segment_algorithms_storage_t
-  {
-    typename block_load_t::TempStorage load;
-    typename block_store_t::TempStorage store;
-    typename block_scan_t::TempStorage scan;
-    typename block_load_aug_t::TempStorage load_aug;
-    typename block_store_aug_t::TempStorage store_aug;
-    typename block_scan_aug_t::TempStorage scan_aug;
-    typename block_offset_scan_t::TempStorage offset_scan;
-    typename block_reduce_t::TempStorage min_reduce;
-  };
-
-  struct _multi_segment_temp_storage_t
-  {
-    OffsetT logical_segment_offsets[max_segments];
-    unsigned int fixed_size_mask;
-    _multiple_segment_algorithms_storage_t reused;
-  };
-
-  // scan_segments loads and stores plain values, so it needs no augmented load or store storage.
-  union _marked_heads_algorithms_storage_t
+  union _multi_segment_algorithms_storage_t
   {
     typename block_load_t::TempStorage load;
     typename block_store_t::TempStorage store;
@@ -177,7 +149,7 @@ private:
     typename block_logical_offset_scan_t::TempStorage logical_offset_scan;
   };
 
-  struct _marked_heads_temp_storage_t
+  struct _multi_segment_temp_storage_t
   {
     logical_offset_t logical_segment_offsets[max_segments];
     // The tile's first item in the input and in the output, and whether it starts a segment. Valid for the
@@ -192,13 +164,11 @@ private:
     // Whether the tile holds a segment start after its first item.
     bool tile_has_heads;
     head_flag_t head_flags[tile_items];
-    _marked_heads_algorithms_storage_t reused;
+    _multi_segment_algorithms_storage_t reused;
   };
 
-  using _TempStorage = ::cuda::std::conditional_t<
-    multi_segment_enabled,
-    ::cuda::std::conditional_t<MarkSegmentHeads, _marked_heads_temp_storage_t, _multi_segment_temp_storage_t>,
-    _single_segment_temp_storage_t>;
+  using _TempStorage =
+    ::cuda::std::conditional_t<multi_segment_enabled, _multi_segment_temp_storage_t, _single_segment_temp_storage_t>;
 
   _TempStorage& temp_storage; ///< Reference to temp_storage
   wrapped_input_iterator_t d_in; ///< Input data
@@ -300,146 +270,6 @@ public:
     }
   };
 
-  //! @brief Scan dynamically specified number of segments of values
-  template <typename InputBeginOffsetIteratorT,
-            typename InputEndOffsetIteratorT,
-            typename OutputBeginOffsetIteratorT,
-            ::cuda::std::size_t NumSegments                  = max_segments,
-            ::cuda::std::enable_if_t<(NumSegments > 1), int> = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_by_search(
-    InputBeginOffsetIteratorT input_begin_idx_it,
-    InputEndOffsetIteratorT input_end_idx_it,
-    OutputBeginOffsetIteratorT output_begin_idx_it,
-    int n_segments)
-  {
-    static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputBeginOffsetIteratorT>, OffsetT>,
-                  "Unexpected iterator type");
-    static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputEndOffsetIteratorT>, OffsetT>,
-                  "Unexpected iterator type");
-    static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<OutputBeginOffsetIteratorT>, OffsetT>,
-                  "Unexpected iterator type");
-
-    static_assert(NumSegments <= max_segments,
-                  "Template value NumSegments of consume_ranges method must not exceed class template value "
-                  "controlling size of shared memory array");
-
-    _CCCL_ASSERT(n_segments > 0, "Number of segments per worker should be positive");
-    _CCCL_ASSERT(n_segments <= NumSegments, "Number of segments per worker exceeds statically provisioned storage");
-
-    // cooperatively compute inclusive scan of sizes of segments to be processed by this block
-    {
-      const auto tid = threadIdx.x;
-
-      // assume all segments have the same size
-      if (tid == 0)
-      {
-        temp_storage.fixed_size_mask = 1u;
-      }
-
-      n_segments               = ::cuda::std::min(n_segments, static_cast<int>(NumSegments));
-      const unsigned n_chunks  = ::cuda::ceil_div(n_segments, threads_per_block);
-      OffsetT exclusive_prefix = 0;
-      using plus_t             = ::cuda::std::plus<>;
-      const plus_t offsets_scan_op{};
-      worker_prefix_callback_t prefix_callback_op{exclusive_prefix, offsets_scan_op};
-
-      for (unsigned chunk_id = 0; chunk_id < n_chunks; ++chunk_id)
-      {
-        const unsigned work_id = chunk_id * threads_per_block + tid;
-
-        // TODO: use BlockLoad to load
-        const OffsetT input_segment_begin = (work_id < n_segments) ? input_begin_idx_it[work_id] : 0;
-        const OffsetT input_segment_end   = (work_id < n_segments) ? input_end_idx_it[work_id] : 0;
-        const OffsetT segment_size = ::cuda::std::max(input_segment_end, input_segment_begin) - input_segment_begin;
-
-        block_offset_scan_t offset_scanner(temp_storage.reused.offset_scan);
-
-        OffsetT prefix;
-        offset_scanner.InclusiveSum(segment_size, prefix, prefix_callback_op);
-
-        if (work_id < n_segments)
-        {
-          temp_storage.logical_segment_offsets[work_id] = prefix;
-        }
-        __syncthreads();
-
-        block_reduce_t min_reducer(temp_storage.reused.min_reduce);
-        ::cuda::minimum<unsigned int> min_op;
-
-        const unsigned int fixed_size_check =
-          ((work_id >= n_segments) || (prefix == (work_id + 1) * temp_storage.logical_segment_offsets[0])) ? 1u : 0u;
-        const unsigned int block_fixed_size_check = min_reducer.Reduce(fixed_size_check, min_op);
-        if (tid == 0)
-        {
-          temp_storage.fixed_size_mask = min_op(temp_storage.fixed_size_mask, block_fixed_size_check);
-        }
-        __syncthreads();
-      }
-    }
-
-    const ::cuda::std::span<OffsetT> cum_sizes{
-      temp_storage.logical_segment_offsets, static_cast<::cuda::std::size_t>(n_segments)};
-
-    const OffsetT items_per_block = cum_sizes[n_segments - 1];
-
-    if (temp_storage.fixed_size_mask && (items_per_block > 0))
-    {
-      // fast path: assumes all segments have identical size (checked via fixed_size_mask)
-      // fixed-size searcher can cheaply identify which segment an element belongs to
-      // using segment_id = elem_id / segment_size;
-      const auto segment_size = cum_sizes[0];
-      _CCCL_ASSERT((segment_size > 0) && ((items_per_block % segment_size) == 0),
-                   "Precondition violated, likely due to a race condition");
-
-      const bag_of_fixed_size_segments searcher{segment_size};
-      scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
-    }
-    else
-    {
-      // Branchless search is faster
-      constexpr bool use_branchless = true;
-
-      if constexpr (use_branchless)
-      {
-        /*
-## varying_size_segments
-
-### [0] NVIDIA RTX A6000
-
-| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | $Seg/Worker{io} | Worker{io} | Samples | BWUtil |
-|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
-|   I32 |         I32 |    2^27      |       57 |             216 |      block |    672x | 51.97% |
-|   I32 |         I32 |    2^27      |       57 |              18 |       warp |   2832x | 86.45% |
-|   I64 |         I32 |    2^27      |       57 |             216 |      block |    720x | 76.07% |
-|   I64 |         I32 |    2^27      |       57 |              18 |       warp |    784x | 86.95% |
-         */
-        // searcher locates segment_id using branchless linear/binary search in cum_sizes
-        const auto searcher = make_statically_bound_bag_of_segments<NumSegments>(cum_sizes);
-        scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
-      }
-      else
-      {
-        /*
-## varying_size_segments
-
-### [0] NVIDIA RTX A6000
-
-| T{ct} | OffsetT{ct} | Elements{io} | #Seg{io} | #Seg/Worker{io} | Worker{io} | Samples | BWUtil |
-|-------|-------------|--------------|----------|-----------------|------------|---------|--------|
-|   I32 |         I32 |     2^27     |       57 |             117 |      block |    944x | 39.85% |
-|   I32 |         I32 |     2^27     |       57 |              18 |       warp |   2821x | 86.41% |
-|   I64 |         I32 |     2^27     |       57 |             117 |      block |    544x | 53.11% |
-|   I64 |         I32 |     2^27     |       57 |              18 |       warp |    752x | 86.90% |
-         */
-
-        // searcher locates segment_id using linear/binary search in cum_sizes
-        // binary search is using while-loop based cub::std::upper_bound
-        bag_of_segments searcher{cum_sizes};
-        scan_segments_chunked(searcher, input_begin_idx_it, output_begin_idx_it, items_per_block);
-      }
-    }
-  }
-
   //! @brief Scan dynamically specified number of segments. Each tile of the block's
   //!        items has its segment starts marked once. A tile inside one segment takes scan_one_segment's
   //!        path; a tile holding a segment start scans value-and-flag pairs, loaded and stored as a block when
@@ -455,7 +285,6 @@ public:
     OutputBeginOffsetIteratorT output_begin_idx_it,
     int n_segments)
   {
-    static_assert(MarkSegmentHeads, "scan_segments needs the marked-heads temporary storage");
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputBeginOffsetIteratorT>, OffsetT>,
                   "Unexpected iterator type");
     static_assert(::cuda::std::is_convertible_v<::cuda::std::iter_reference_t<InputEndOffsetIteratorT>, OffsetT>,
@@ -799,133 +628,6 @@ private:
     }
   }
 
-  template <typename SearcherT, typename InputBeginOffsetIteratorT, typename OutputBeginOffsetIteratorT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void scan_segments_chunked(
-    const SearcherT& searcher,
-    InputBeginOffsetIteratorT input_begin_idx_it,
-    OutputBeginOffsetIteratorT output_begin_idx_it,
-    OffsetT items_per_block)
-  {
-    const OffsetT n_chunks = ::cuda::ceil_div(items_per_block, tile_items);
-
-    using augmented_scan_op_t = schwarz_scan_op<ScanOpT, AccumT>;
-
-    augmented_scan_op_t augmented_scan_op{scan_op};
-
-    augmented_accum_t exclusive_prefix{};
-    worker_prefix_callback_t prefix_op{exclusive_prefix, augmented_scan_op};
-
-    augmented_accum_t thread_flag_values[items_per_thread];
-    for (OffsetT chunk_id = 0; chunk_id < n_chunks;)
-    {
-      const OffsetT chunk_begin = chunk_id * tile_items;
-      const OffsetT chunk_end   = (::cuda::std::min) (chunk_begin + tile_items, items_per_block);
-
-      // chunk_size <= TILE_ITEMS, casting to int is safe
-      const int chunk_size = static_cast<int>(chunk_end - chunk_begin);
-
-      // load values, and pack them into head_flag-value pairs
-      {
-        constexpr auto oob_default = augmented_value_t{AccumT{}, false};
-
-        block_load_aug_t loader(temp_storage.reused.load_aug);
-        if constexpr (has_init)
-        {
-          const packer_iv<ScanOpT, AccumT> packer_op{scan_op, initial_value};
-          const multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
-
-          if (chunk_size == tile_items)
-          {
-            loader.Load(it_in, thread_flag_values);
-          }
-          else
-          {
-            loader.Load(it_in, thread_flag_values, chunk_size, oob_default);
-          }
-        }
-        else
-        {
-          constexpr packer<AccumT> packer_op{};
-          const multi_segmented_input_iterator it_in{d_in, chunk_begin, searcher, input_begin_idx_it, packer_op};
-
-          if (chunk_size == tile_items)
-          {
-            loader.Load(it_in, thread_flag_values);
-          }
-          else
-          {
-            loader.Load(it_in, thread_flag_values, chunk_size, oob_default);
-          }
-        }
-      }
-      __syncthreads();
-
-      {
-        block_scan_aug_t scanner(temp_storage.reused.scan_aug);
-        if (chunk_id == 0)
-        {
-          const auto augmented_init_value = [&]() {
-            if constexpr (has_init)
-            {
-              return augmented_value_t{initial_value, false};
-            }
-            else
-            {
-              return augmented_value_t{AccumT{}, false};
-            }
-          }();
-          // Initialize exclusive_prefix, referenced from prefix_op
-          scan_first_tile(scanner, thread_flag_values, augmented_init_value, augmented_scan_op, exclusive_prefix);
-        }
-        else
-        {
-          scan_later_tile(scanner, thread_flag_values, augmented_scan_op, prefix_op);
-        }
-      }
-      __syncthreads();
-
-      // store prefix-scan values, discarding head flags
-      {
-        const OffsetT out_offset = chunk_id * tile_items;
-
-        block_store_aug_t storer(temp_storage.reused.store_aug);
-        if constexpr (is_inclusive)
-        {
-          constexpr projector<AccumT> projector_op{};
-          const multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
-
-          if (chunk_size == tile_items)
-          {
-            storer.Store(it_out, thread_flag_values);
-          }
-          else
-          {
-            storer.Store(it_out, thread_flag_values, chunk_size);
-          }
-        }
-        else
-        {
-          const projector_iv<AccumT> projector_op{initial_value};
-          const multi_segmented_output_iterator it_out{d_out, out_offset, searcher, output_begin_idx_it, projector_op};
-          if (chunk_size == tile_items)
-          {
-            storer.Store(it_out, thread_flag_values);
-          }
-          else
-          {
-            storer.Store(it_out, thread_flag_values, chunk_size);
-          }
-        }
-      }
-      // Avoiding synchronization at the end of last chunk
-      // could save up to 10% of performance for very short segments
-      if (++chunk_id < n_chunks)
-      {
-        __syncthreads();
-      }
-    }
-  }
-
   template <typename ScannerT,
             typename ItemTy,
             typename InitValueTy,
@@ -1000,7 +702,6 @@ template <typename PolicySelector,
           typename AccumT,
           bool ForceInclusive,
           bool MultiSegment,
-          bool MarkSegmentHeads     = false,
           typename ActualInitValueT = typename InitValueT::value_type>
 #if _CCCL_HAS_CONCEPTS()
   requires segmented_scan_policy_selector<PolicySelector>
@@ -1029,16 +730,15 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     }
   };
 
-  using agent_t = agent_segmented_scan<
-    policy_getter,
-    InputIteratorT,
-    OutputIteratorT,
-    OffsetT,
-    ScanOpT,
-    ActualInitValueT,
-    AccumT,
-    ForceInclusive,
-    MarkSegmentHeads>;
+  using agent_t =
+    agent_segmented_scan<policy_getter,
+                         InputIteratorT,
+                         OutputIteratorT,
+                         OffsetT,
+                         ScanOpT,
+                         ActualInitValueT,
+                         AccumT,
+                         ForceInclusive>;
 
   __shared__ typename agent_t::TempStorage temp_storage;
 
@@ -1081,19 +781,7 @@ __launch_bounds__(current_policy<PolicySelector>().block.threads_per_block)
     auto worker_input_end_idx_it    = end_offset_d_in + start_offset;
     auto worker_output_begin_idx_it = begin_offset_d_out + start_offset;
 
-    if constexpr (MarkSegmentHeads)
-    {
-      agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
-    }
-    else if (size == 1)
-    {
-      agent.scan_one_segment(worker_input_begin_idx_it[0], worker_input_end_idx_it[0], worker_output_begin_idx_it[0]);
-    }
-    else
-    {
-      agent.scan_segments_by_search(
-        worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
-    }
+    agent.scan_segments(worker_input_begin_idx_it, worker_input_end_idx_it, worker_output_begin_idx_it, size);
   }
 }
 } // namespace detail::segmented_scan
