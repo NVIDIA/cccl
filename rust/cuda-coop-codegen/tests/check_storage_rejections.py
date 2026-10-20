@@ -204,6 +204,17 @@ cases.update(
             None,
         ),
         "wrapper_helper": (wrapper + "use_wrapper(&mut wrapper);", None),
+        "wrapper_helper_reuse": (
+            wrapper + "use_wrapper(&mut wrapper);use_wrapper(&mut wrapper);",
+            "explicit storage reuse requires",
+        ),
+        "wrapper_helper_reuse_sync": (
+            wrapper
+            + "use_wrapper(&mut wrapper);"
+            + sync
+            + "use_wrapper(&mut wrapper);",
+            None,
+        ),
         "wrapper_returned_field": (
             wrapper
             + """
@@ -230,6 +241,20 @@ use_outer(&mut outer);
             + "use_wrapper(if valid==0 {&mut wrapper} else {&mut other});",
             "no unambiguous descriptor origin",
         ),
+        "wrapper_callee_ambiguous": (
+            wrapper
+            + """
+#[inline(never)]
+fn pick<'a>(a: &'a mut Wrapper, b: &'a mut Wrapper, count: usize)
+    -> &'a mut library::StorageDescriptor
+{
+    if count == 0 { &mut a.raw } else { &mut b.raw }
+}
+let mut other=Wrapper { raw: library::storage_new_v1::<0,0,false,false>() };
+use_raw(pick(&mut wrapper, &mut other, valid));
+""",
+            "no unambiguous descriptor origin",
+        ),
         "wrapper_replacement": (
             wrapper
             + """
@@ -252,7 +277,7 @@ replace(&mut storage);
 """,
             "mutation through a reference to a resource descriptor",
         ),
-        "wrapper_scalar_mutation": (
+        "control_scalar_invalidation": (
             new
             + """
 struct Scalar { value: usize }
