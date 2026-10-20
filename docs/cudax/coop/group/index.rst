@@ -170,13 +170,13 @@ The supported query kinds are:
 
 .. code:: cpp
 
-  qunit.static_count(group); // (1), always constexpr
-  qunit.count_as<T>(group);  // (2)
-  qunit.rank_as<T>(group);   // (3)
+  constexpr auto a = qunit.static_count(group); // (1), always constexpr
+  const auto b     = qunit.count_as<T>(group);  // (2)
+  const auto c     = qunit.rank_as<T>(group);   // (3)
 
-  qunit.count(group);        // (4)
-  qunit.rank(group);         // (5)
-  qunit.is_root_rank(group); // (6)
+  const auto d     = qunit.count(group);        // (4)
+  const auto e     = qunit.rank(group);         // (5)
+  const auto f     = qunit.is_root_rank(group); // (6)
 
 #. Queries the statically known number of ``qunit`` units inside the ``group`` group. When equal to ``cuda::std::dynamic_extent``, the value is known only at runtime.
 #. Queries the number of ``qunit`` units inside the ``group`` group, returned as type ``T``.
@@ -207,12 +207,12 @@ The supported query kinds are:
 .. code:: cpp
 
   // Super-level queries.
-  group.static_count(/*parent-group-or-qlevel*/); // (1), always constexpr
-  group.count_as<T>(/*parent-group-or-qlevel*/);  // (2)
-  group.rank_as<T>(/*parent-group-or-qlevel*/);   // (3)
+  constexpr auto a = group.static_count(/*parent-group-or-qlevel*/); // (1), always constexpr
+  const auto b     = group.count_as<T>(/*parent-group-or-qlevel*/);  // (2)
+  const auto c     = group.rank_as<T>(/*parent-group-or-qlevel*/);   // (3)
 
-  group.count(/*parent-group-or-qlevel*/);        // (4)
-  group.rank(/*parent-group-or-qlevel*/);         // (5)
+  const auto d     = group.count(/*parent-group-or-qlevel*/);        // (4)
+  const auto e     = group.rank(/*parent-group-or-qlevel*/);         // (5)
 
 #. Queries the statically known number of ``group`` groups made from ``group``'s parent group or contained within the ``qlevel`` level. When equal to ``cuda::std::dynamic_extent``, the value is known only at runtime.
 #. Queries the number of ``group`` groups made from ``group``'s parent group or contained within the ``qlevel`` level, returned as type ``T``.
