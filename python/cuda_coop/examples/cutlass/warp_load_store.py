@@ -9,9 +9,7 @@ import numpy as np
 from cutlass import cute
 from cutlass.cute.runtime import make_ptr
 
-from cuda import coop
 from cuda.bindings import driver
-from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
 _SOURCE_OFFSET = 3
@@ -40,9 +38,12 @@ def run_example(api="common", items_per_thread=4):
 
     warp_tile = 32 * items_per_thread
     block_tile = 2 * warp_tile
-    if api not in {"common", "qualified"}:
+    if api == "common":
+        from cuda import coop
+    elif api == "qualified":
+        import cuda.coop.cutlass as coop
+    else:
         raise ValueError("api must be 'common' or 'qualified'")
-    module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-warp-load-store
     @cute.kernel
@@ -55,11 +56,11 @@ def run_example(api="common", items_per_thread=4):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         warp = thread // 32
-        payload = module.ThreadData(items_per_thread)
+        payload = coop.ThreadData(items_per_thread)
         # Each warp gets its own consecutive tile automatically. The user
         # offset selects the beginning of the block's collection of tiles.
-        module.load(
-            module.this_warp(),
+        coop.load(
+            coop.this_warp(),
             source,
             payload,
             algorithm="transpose",
@@ -67,8 +68,8 @@ def run_example(api="common", items_per_thread=4):
             oob_default=-1,
             offset=_SOURCE_OFFSET,
         )
-        module.store(
-            module.this_warp(),
+        coop.store(
+            coop.this_warp(),
             destination,
             payload,
             algorithm="transpose",

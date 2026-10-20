@@ -9,9 +9,7 @@ import numpy as np
 from cutlass import cute
 from cutlass.cute.runtime import make_ptr
 
-from cuda import coop
 from cuda.bindings import driver
-from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 1)
 _LOAD_OFFSET = 3
@@ -45,9 +43,12 @@ def run_example(api="common", items_per_thread=2):
     tile_size = 32 * items_per_thread
     load_valid_items = tile_size - 19
     store_valid_items = tile_size - 11
-    if api not in {"common", "qualified"}:
+    if api == "common":
+        from cuda import coop
+    elif api == "qualified":
+        import cuda.coop.cutlass as coop
+    else:
         raise ValueError("api must be 'common' or 'qualified'")
-    module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-block-load-store
     @cute.kernel
@@ -59,9 +60,9 @@ def run_example(api="common", items_per_thread=2):
         tile_size = 32 * items_per_thread
         load_valid_items = tile_size - 19
         store_valid_items = tile_size - 11
-        block = module.this_block()
-        payload = module.ThreadData(items_per_thread)
-        module.load(
+        block = coop.this_block()
+        payload = coop.ThreadData(items_per_thread)
+        coop.load(
             block,
             source,
             payload,
@@ -69,7 +70,7 @@ def run_example(api="common", items_per_thread=2):
             oob_default=_DEFAULT,
             offset=_LOAD_OFFSET,
         )
-        module.store(
+        coop.store(
             block,
             destination,
             payload,

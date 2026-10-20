@@ -9,9 +9,7 @@ import numpy as np
 from cutlass import cute
 from cutlass.cute.runtime import make_ptr
 
-from cuda import coop
 from cuda.bindings import driver
-from cuda.coop import cutlass as cutlass_coop
 
 _BLOCK = (8, 4, 2)
 _WIDTH = 8
@@ -39,9 +37,12 @@ def run_example(api="common", items_per_thread=4):
 
     group_tile = _WIDTH * items_per_thread
     block_tile = _GROUPS * group_tile
-    if api not in {"common", "qualified"}:
+    if api == "common":
+        from cuda import coop
+    elif api == "qualified":
+        import cuda.coop.cutlass as coop
+    else:
         raise ValueError("api must be 'common' or 'qualified'")
-    module = coop if api == "common" else cutlass_coop
 
     # docs: start cutlass-logical-warp-load-store
     @cute.kernel
@@ -54,11 +55,11 @@ def run_example(api="common", items_per_thread=4):
         x, y, z = cute.arch.thread_idx()
         thread = x + _BLOCK[0] * (y + _BLOCK[1] * z)
         group_index = thread // _WIDTH
-        group = module.this_warp().group_by(_WIDTH)
-        payload = module.ThreadData(items_per_thread)
+        group = coop.this_warp().group_by(_WIDTH)
+        payload = coop.ThreadData(items_per_thread)
         # The compiler assigns each eight-lane group its own consecutive tile.
         # valid_items counts elements in that group's tile.
-        module.load(
+        coop.load(
             group,
             source,
             payload,
@@ -67,7 +68,7 @@ def run_example(api="common", items_per_thread=4):
             oob_default=-1,
             offset=_SOURCE_OFFSET,
         )
-        module.store(
+        coop.store(
             group,
             destination,
             payload,

@@ -20,7 +20,9 @@ with the :doc:`Numba-CUDA-MLIR Programming Guide <programming_guide>` and its
 :doc:`shared overview <../coop>` introduces the common API; see
 :doc:`concepts` for groups, layouts, and participation.
 
-For a hands-on tour, follow the :ref:`cuda.coop.debugger_walkthrough`.
+For a hands-on tour, follow the :ref:`cuda.coop.debugger_walkthrough`, then
+explore scratch allocation and reuse in the
+:ref:`cuda.coop.debugger_walkthrough_temp_storage`.
 The :ref:`validation scope <coop-numba-validation>` below distinguishes
 host, compilation, and GPU runtime coverage in CI.
 
