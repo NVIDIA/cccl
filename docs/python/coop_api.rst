@@ -13,6 +13,9 @@
 Common API
 ----------
 
+``ThreadGroup`` and ``ThreadHierarchy`` describe which threads cooperate.
+``ThreadData`` constructs the per-thread payload supplied to a primitive.
+
 The primitive functions below are compiler markers; ``register`` is a
 host-side configuration function. The installed ``.pyi`` files are
 authoritative for overload and result typing. Implemented operations follow
@@ -34,9 +37,8 @@ Thread groups
 ^^^^^^^^^^^^^
 
 See :ref:`thread groups <coop-common-groups>` and :ref:`participation and
-synchronization <coop-common-participation>` for the shared execution model. ``ThreadGroup`` and ``ThreadHierarchy`` describe which
-threads cooperate. A descriptor's availability does not imply that every primitive supports that
-group.
+synchronization <coop-common-participation>` for the shared execution model.
+Not every primitive supports every available group.
 
 .. autofunction:: this_thread
 .. autofunction:: this_warp
@@ -67,9 +69,6 @@ group.
 
 Payloads and temporary storage
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-``ThreadData`` constructs the per-thread payload supplied to a primitive;
-thread-group descriptors describe the participating threads.
 
 .. autofunction:: ThreadData
 
@@ -288,17 +287,21 @@ conversions, and the extensions documented below:
 
    import cuda.coop.cutlass as cutlass_coop
 
-Block construction and Load/Store follow the :ref:`Common API
-<coop-common-api>`. Use the qualified ``ThreadData`` conversion methods below
-to move values between CuTe register tensors or vectors and payloads, for
-example before Store or after Load. Payload items are CuTe values. A NumPy
-dtype selector does not change the compiler that owns them.
+Group construction, synchronization, Load/Store, and temporary storage follow
+the :ref:`Common API <coop-common-api>`. Use the qualified ``ThreadData``
+conversion methods below to adapt CuTe register tensors before Load or Store.
+Qualified Reduce and Sum also accept register tensors and ``TensorSSA`` values
+directly. Their scalar results are CuTe values, including when a NumPy dtype
+selects the payload type.
 
 The :doc:`CUTLASS Programming Guide <coop_cutlass>` explains how to choose
-between common and qualified calls. See :ref:`CUTLASS-specific behavior and
-limits <coop-cutlass-differences>` for supported operations, participation and
-launch requirements, and the :doc:`CUTLASS Developer Guide
-<coop/cutlass_developer_guide>` for compilation, linking and debugging.
+between common and qualified calls. Qualified Reduce also accepts Python
+``operator`` functions and NumPy ufuncs as aliases for its built-in operators.
+Sum always adds. CUTLASS does not implement Scan, and its Reduce rejects
+custom operators. See :ref:`CUTLASS-specific behavior and limits
+<coop-cutlass-differences>` for participation and launch requirements,
+and the :doc:`CUTLASS Developer Guide <coop/cutlass_developer_guide>` for
+compilation, linking, and debugging.
 
 .. currentmodule:: cuda.coop.cutlass
 
@@ -322,3 +325,9 @@ Memory operations
 
 .. autofunction:: load
 .. autofunction:: store
+
+Reduction
+^^^^^^^^^
+
+.. autofunction:: reduce
+.. autofunction:: sum

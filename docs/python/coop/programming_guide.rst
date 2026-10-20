@@ -829,8 +829,8 @@ Scratch lasts for the kernel's execution on that block. It cannot carry
 state between blocks or kernel launches. For running scan state within a
 block, use a separate payload as in the prefix-callback example below.
 
-Numba-CUDA-MLIR also supports typed reservations for application data and
-device libraries:
+Numba-CUDA-MLIR and CUTLASS support typed reservations for application data and
+device libraries. For example, in a Numba-CUDA-MLIR kernel:
 
 .. code-block:: python
 
@@ -844,6 +844,11 @@ supports indexing and can be passed to
 device functions accepting arrays. Compilation replaces the reservation with
 an aligned typed view of the planner's shared backing; there is no runtime
 allocator.
+
+In a CuTe kernel, ``scratch.reserve(128, cutlass.Float32, alignment=32)``
+returns an ordinary shared ``cute.Tensor``. CuTe supports fixed-width integer
+and floating-point reservation dtypes. The :ref:`CUTLASS storage guide
+<coop-cutlass-storage>` includes a native CuTe workspace and reduction example.
 
 Reservations inherit the descriptor's ``sharing`` policy. With the default
 ``sharing="shared"``, reservations and primitive scratch from the same
