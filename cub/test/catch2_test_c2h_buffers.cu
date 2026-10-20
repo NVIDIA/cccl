@@ -195,6 +195,31 @@ CUB_TEST("c2h uniform offset generators validate sizes before allocation", "[c2h
                     std::invalid_argument);
 }
 
+namespace
+{
+template <typename T, std::size_t N>
+struct check_device_offsets
+{
+  std::size_t expected_size;
+  std::size_t expected_capacity;
+  std::array<T, N> expected;
+
+  void operator()(cuda::stream_ref stream,
+                  const cuda::__resizable_buffer<T, cuda::mr::device_accessible>& offsets) const
+  {
+    REQUIRE(offsets.size() == expected_size);
+    REQUIRE(offsets.capacity() == expected_capacity);
+
+    const auto host = c2h::make_host_buffer<T>(stream, offsets.first(offsets.size()));
+    stream.sync();
+
+    REQUIRE(std::equal(host.begin(), host.end(), expected.begin(), expected.begin() + expected_size));
+  }
+};
+template <typename T, std::size_t N>
+check_device_offsets(std::size_t, std::size_t, const std::array<T, N>&) -> check_device_offsets<T, N>;
+} // namespace
+
 CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size",
          "[c2h][buffers][generators]",
          CUB_SMALL)
@@ -205,23 +230,22 @@ CUB_TEST("c2h offset buffers retain capacity after shrinking their logical size"
   const auto expected_size     = static_cast<std::size_t>(total_elements / 2 + 1);
   const auto expected_capacity = static_cast<std::size_t>(total_elements + 2);
 
-  const auto check_device_offsets = [&](const auto& offsets) {
-    REQUIRE(offsets.size() == expected_size);
-    REQUIRE(offsets.capacity() == expected_capacity);
-    const auto host = c2h::make_host_buffer<std::int32_t>(stream, offsets.first(offsets.size()));
-    stream.sync();
-    REQUIRE(std::equal(host.begin(), host.end(), expected.begin(), expected.begin() + expected_size));
-  };
+  REQUIRE(1 <= expected_size);
+  REQUIRE(expected_size <= expected.size());
+  REQUIRE(total_elements == expected[expected_size - 1]);
+
+  const check_device_offsets verify_device_offsets{expected_size, expected_capacity, expected};
 
   SECTION("device buffer")
   {
     const auto offsets = c2h::gen_uniform_offsets_device_buffer(stream, c2h::seed_t{1234}, total_elements, 2, 2);
-    check_device_offsets(offsets);
+    verify_device_offsets(stream, offsets);
   }
+
   SECTION("device and host buffers")
   {
     const auto buffers = c2h::gen_uniform_offsets_buffers(stream, c2h::seed_t{1234}, total_elements, 2, 2);
-    check_device_offsets(buffers.d_items);
+    verify_device_offsets(stream, buffers.d_items);
     REQUIRE(buffers.size() == expected_size);
     REQUIRE(
       std::equal(buffers.h_items.begin(), buffers.h_items.end(), expected.begin(), expected.begin() + expected_size));
