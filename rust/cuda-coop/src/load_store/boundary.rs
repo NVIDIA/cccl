@@ -47,7 +47,11 @@ pub(super) fn containment<const CAPACITY: usize>(offset: usize, valid: usize) {
     assert!(groups > 0 && groups <= usize::MAX / capacity);
     let period = groups * capacity;
     if valid != 0 {
-        let within = offset % period;
+        let within = if offset < period {
+            offset
+        } else {
+            offset % period
+        };
         let begin = rank * capacity;
         assert!(within >= begin && within - begin <= capacity);
         assert!(valid <= capacity - (within - begin));

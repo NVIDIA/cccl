@@ -73,6 +73,11 @@ cases = {
     ),
     "early_return": ("if thread::threadIdx_x()!=0 { return; }" + load, "lane-varying"),
     "missing_completion": (load + store + reload, "requires a full-block barrier"),
+    "write_after_read": (
+        reload
+        + "coop::store(block,&mut output,1_i32,coop::StoreOptions::default().offset(offset));",
+        "requires a full-block barrier",
+    ),
     "loop_without_completion": (
         load + "let mut iteration=0;while iteration<2 {" + store + "iteration+=1;}",
         "requires a full-block barrier",

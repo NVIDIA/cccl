@@ -86,6 +86,11 @@ collective ownership without giving each lane an overlapping mutable slice.
 The compiler's generated host launch consumes or borrows the actual device
 buffers until the operation completes.
 
+For a grid of ``G`` blocks with ownership grain ``C``, block rank ``r`` owns
+``[r*C, (r+1)*C)`` in each period of ``G*C`` elements. An offset may start inside
+that region, and its nonempty selected range must stay inside the same region.
+This also supports grid-stride traversal through later periods.
+
 The descriptor returned by ``this_block()`` is a query value. Safe collective
 calls additionally require a supported Oxide build, an exact launch contract,
 uniform control flow, and matching group participation. Compilation diagnoses
@@ -93,9 +98,9 @@ lane-varying controls or conflicting resource use. Runtime checks trap invalid
 bounds, ownership ranges, counts, or unwritten values selected for Store.
 Failures are not transactional across lanes.
 
-To load from a carrier after storing to it, call
-``cuda_device::thread::sync_threads()`` and pass ``&mut carrier`` as the Load
-source. The compiler requires this completion before conflicting accesses,
+Use ``cuda_device::thread::sync_threads()`` between conflicting accesses to a
+carrier: Store followed by Load or Store, or Load followed by Store. Pass
+``&mut carrier`` as the Load source. The compiler requires this completion,
 including reuse in loops. Ending a Rust borrow or dropping a value is not
 completion. The host example calls ``sync()`` before inspecting its output.
 
