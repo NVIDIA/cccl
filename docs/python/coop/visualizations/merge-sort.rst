@@ -102,7 +102,7 @@ returned index still identifies its key in the original input.
    :dedent: 4
 
 This CuTe example sorts a partial tile with 64 threads and an
-``items_per_thread`` argument, defaulting to three. ``module`` selects the
+``items_per_thread`` argument, defaulting to three. ``api`` selects the
 common or CUTLASS-qualified API. It checks both key order and pair association
 while preserving the original inputs. :download:`Download the complete CuTe
 example <../../../../python/cuda_coop/examples/cutlass/merge_sort.py>` for
