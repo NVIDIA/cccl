@@ -211,7 +211,8 @@ struct TransformAsyncCopyPolicy
 struct TransformPolicy
 {
   int min_bytes_in_flight; //!< Minimum number of bytes in flight per SM to reach by scaling the items per thread. Has
-                           //!< no effect if algorithm is @p vectorized.
+                           //!< no effect if algorithm is @p vectorized and the input pointers are sufficiently
+                           //!< aligned.
   TransformAlgorithm algorithm; //!< The transform algorithm to use by the kernel
   TransformPrefetchPolicy prefetch; //!< Sub-policy for the prefetch algorithm. Only used when @p algorithm is @p
                                     //!< prefetch or when @p algorithm is @p vectorized and the input pointers are not

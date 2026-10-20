@@ -55,6 +55,11 @@ using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for Devic
   detail::agent_merge_sort_policy<ThreadsPerBlock, ItemsPerThread, LoadAlgorithm, LoadModifier, StoreAlgorithm>;
 
 //! The tuning policy for all algorithms in @ref DeviceMergeSort.
+//!
+//! ``threads_per_block`` must be a power of two in the range [1; 1024], and a multiple of the warp size if a
+//! ``WARP_TRANSPOSE`` load or store algorithm is used. ``items_per_thread`` must be at least 1.
+//! If a tile of ``threads_per_block * items_per_thread`` items needs more shared memory than available per block, the
+//! algorithms silently fall back to 64 threads per block and 1 item per thread, keeping the other members.
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergeSortPolicy
 {
