@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>

@@ -19,6 +19,15 @@
 
 #include <cuda/__device/compute_capability.h>
 
+// By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
+// The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
+// in CUB tests. This allows us to:
+//   1. retrieve kernel pointers on the usage side of the API, and
+//   2. validate use of specified CUDA stream by accelerated algorithms.
+#ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY
+#  define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY cub::detail::TripleChevronFactory
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -146,6 +155,43 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
   {
     return CubDebug(::cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
+  }
+};
+
+/**
+ * Kernel dispatch configuration
+ */
+struct KernelConfig
+{
+  int threads_per_block{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
+
+  // TODO(bgruber): remove this overload in CCCL 4.0 when we drop the public dispatchers
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    threads_per_block = cub::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
+    items_per_thread  = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
+  }
+
+  // Using new tuning API conventions
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  __init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
 } // namespace detail

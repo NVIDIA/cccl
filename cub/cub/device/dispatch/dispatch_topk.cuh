@@ -22,6 +22,7 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/double_buffer.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/topk_helpers.cuh>
