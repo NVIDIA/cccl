@@ -95,12 +95,12 @@ GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const s
 }
 
 template <size_t N, typename... T>
-std::enable_if_t<N >= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+std::enable_if_t<N >= cuda::std::tuple_size_v<cuda::std::tuple<T...>>>
 print_tuple(std::ostream&, const cuda::std::tuple<T...>&)
 {}
 
 template <size_t N, typename... T>
-std::enable_if_t<N + 1 <= cuda::std::tuple_size<cuda::std::tuple<T...>>::value>
+std::enable_if_t<N + 1 <= cuda::std::tuple_size_v<cuda::std::tuple<T...>>>
 print_tuple(std::ostream& os, const cuda::std::tuple<T...>& tup)
 {
   if constexpr (N != 0)

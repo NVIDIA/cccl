@@ -153,8 +153,13 @@ struct BaseTraits<FLOATING_POINT, true, UnsignedBitsT, T>
                 "The size of the unsigned type holding the bits of T must be the same as T");
   static_assert(::cuda::std::numeric_limits<T>::is_specialized,
                 "Please also specialize cuda::std::numeric_limits for T");
+  static_assert(::cuda::is_floating_point_v<T>, "Please specialize cuda::is_floating_point_v for T");
+  // Note: this is technically superfluous. cuda::is_floating_point is a using decl that the
+  // user cannot specialize. There should be no scenario in which is_floating_point_v is
+  // specialized but not is_floating_point.
+  //
+  // NOLINTNEXTLINE(cccl-modernize-type-traits)
   static_assert(::cuda::is_floating_point<T>::value, "Please also specialize cuda::is_floating_point for T");
-  static_assert(::cuda::is_floating_point_v<T>, "Please also specialize cuda::is_floating_point_v for T");
 
   using UnsignedBits = UnsignedBitsT;
 

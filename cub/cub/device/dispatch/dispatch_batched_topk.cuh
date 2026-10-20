@@ -65,8 +65,6 @@
 #include <cuda/std/expected>
 #include <cuda/std/limits>
 
-#include <cuda_runtime.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::batched_topk

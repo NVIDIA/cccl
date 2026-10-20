@@ -38,8 +38,6 @@
 #    include <cuda/std/cstdint>
 #    include <cuda/std/span>
 
-#    include <driver_types.h>
-
 #    include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA

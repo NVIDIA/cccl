@@ -268,6 +268,11 @@ public:
             // NOLINTBEGIN(modernize-type-traits)
             enable_if_t<__is_tuple_of_iterator_references_v<remove_cvref_t<_TupleOfIteratorReferences>>, int> = 0,
             // NOLINTEND(modernize-type-traits)
+            //
+            // Must keep ::value here because it induces substitution failure. A variable
+            // template does not.
+            //
+            // NOLINTNEXTLINE(cccl-modernize-type-traits)
             enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
   _CCCL_API constexpr tuple(_TupleOfIteratorReferences&& __t)
       : __base_(__tuple_like_constructor_tag{}, ::cuda::std::forward<_TupleOfIteratorReferences>(__t))
