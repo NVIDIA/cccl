@@ -117,6 +117,66 @@ cases = {
         "carrier::store(refs.0, offset, valid, &mut values);",
         "requires a full-block barrier",
     ),
+    "joined_owner_replacement": (
+        "let mut first = Owner { buf: output };\n"
+        "let mut second = Owner { buf: other };\n"
+        "let mut replacement = Owner { buf: third };\n"
+        "let mut one = [7_i32; 1];\n"
+        "carrier::store(&mut replacement.buf, offset, 4, &mut one);\n"
+        "let selected = if choose { &mut first } else { &mut second };\n"
+        "*selected = replacement;\n"
+        "carrier::store(&mut first.buf, offset, 4, &mut values);",
+        "mutation through a reference to a resource descriptor",
+    ),
+    "joined_owner_helper": (
+        "let mut first = Owner { buf: output };\n"
+        "let mut second = Owner { buf: other };\n"
+        "let mut replacement = Owner { buf: third };\n"
+        "let mut one = [7_i32; 1];\n"
+        "carrier::store(&mut replacement.buf, offset, 4, &mut one);\n"
+        "let selected = if choose { &mut first } else { &mut second };\n"
+        "replace_owner(selected, replacement);\n"
+        "carrier::store(&mut first.buf, offset, 4, &mut values);",
+        "mutation through a reference to a resource descriptor",
+    ),
+    "tuple_owner_replacement": (
+        "let mut first = Owner { buf: output };\n"
+        "let mut replacement = Owner { buf: other };\n"
+        "let mut one = [7_i32; 1];\n"
+        "carrier::store(&mut replacement.buf, offset, 4, &mut one);\n"
+        "let references = (&mut first,);\n"
+        "*references.0 = replacement;\n"
+        "carrier::store(&mut first.buf, offset, 4, &mut values);",
+        "mutation through a reference to a resource descriptor",
+    ),
+    "warp_barrier": (
+        "carrier::store(&mut output, offset, valid, &mut values);\n"
+        "cuda_device::warp::sync_mask(u32::MAX);\n"
+        "carrier::reload(&mut output, offset, valid, &mut values);",
+        "intrinsic is outside the supported checked block subset",
+    ),
+    "changed_items_without_barrier": (
+        "let mut one = [0_i32; 1];\n"
+        "carrier::store(&mut output, offset, 128, &mut one);\n"
+        "carrier::store(&mut output, offset, 512, &mut values);",
+        "requires a full-block barrier",
+    ),
+    "slice_write_witness": (
+        "carrier::load(input, offset, valid, &mut values);",
+        "resource witness requires DisjointSlice<T, CollectiveTiles<C>>",
+    ),
+    "immutable_write_witness": (
+        "carrier::store(&mut output, offset, valid, &mut values);",
+        "resource writes require a mutable carrier witness",
+    ),
+    "wrong_element_witness": (
+        "carrier::store(&mut output, offset, valid, &mut values);",
+        "resource witness element type disagrees with the library element type",
+    ),
+    "zero_capacity": (
+        "carrier::store(&mut output, offset, valid, &mut values);",
+        "resource carriers require positive capacity",
+    ),
     "mixed_marker": (
         "unsafe { coop_marker_fixture_api::store::<4, false>(output.as_mut_ptr(), values.as_mut_ptr(), valid as i32, true); }\n"
         "carrier::reload(&mut output, offset, valid, &mut values);",
@@ -133,6 +193,20 @@ cases = {
     "distinct_allocations": (
         "carrier::store(&mut output, offset, valid, &mut values);\n"
         "carrier::store(&mut other, offset, valid, &mut values);",
+        None,
+    ),
+    "aggregate_forward": (
+        "let owned = Owner { buf: output };\n"
+        "let mut moved = owned;\n"
+        "carrier::store(&mut moved.buf, offset, valid, &mut values);\n"
+        "thread::sync_threads();\n"
+        "carrier::reload(&mut moved.buf, offset, valid, &mut values);",
+        None,
+    ),
+    "payload_reference_write": (
+        "let references = (&mut values,);\n"
+        "references.0[0] = 37;\n"
+        "carrier::store(&mut output, offset, valid, &mut values);",
         None,
     ),
     "same_origin_join": (
@@ -153,6 +227,9 @@ cases = {
     ),
 }
 helpers = """
+struct Owner<'a> { buf: Buffer<'a> }
+#[inline(never)]
+fn replace_owner<'a>(target: &mut Owner<'a>, value: Owner<'a>) { *target = value; }
 #[inline(never)]
 fn complete() { thread::sync_threads(); }
 #[inline(never)]
@@ -172,20 +249,55 @@ try:
     for name, (body, diagnostic) in cases.items():
         if args.case and name not in args.case:
             continue
-        root.write_text(prefix + body + suffix + helpers)
-        api.write_text(
-            original_api.replace(
+        case_prefix = prefix
+        if name.startswith("joined_owner"):
+            case_prefix = prefix.replace(
+                "valid: usize)", "valid: usize, third: Buffer<'a>, choose: bool)"
+            )
+        if name == "zero_capacity":
+            case_prefix = prefix.replace("CollectiveTiles<4>", "CollectiveTiles<0>")
+        root.write_text(case_prefix + body + suffix + helpers)
+        case_api = original_api
+        if name == "scratch_provider":
+            case_api = original_api.replace(
                 "super::direct_store_partial", "super::transpose_store_partial"
             )
-            if name == "scratch_provider"
-            else original_api
-        )
+        elif name == "slice_write_witness":
+            case_api = original_api.replace("ITEMS, false>", "ITEMS, true>")
+        elif name == "immutable_write_witness":
+            case_api = original_api.replace(
+                "            target,", "            &*target,"
+            )
+        elif name == "wrong_element_witness":
+            case_api = (
+                original_api.replace(
+                    "::<i32, _, _, _, _, ITEMS, true>",
+                    "::<u32, _, _, _, _, ITEMS, true>",
+                )
+                .replace(
+                    "(pointer.add(offset), valid as i32)",
+                    "(pointer.add(offset).cast::<u32>(), valid as i32)",
+                )
+                .replace(
+                    "(values.as_mut_ptr(),)", "(values.as_mut_ptr().cast::<u32>(),)"
+                )
+            )
+        elif name == "zero_capacity":
+            # Keep the marker reachable: this case tests structural witness
+            # validation, independently of the wrapper's runtime containment.
+            case_api = original_api.replace(
+                "    containment::<CAPACITY>(offset, valid);\n", ""
+            )
+        api.write_text(case_api)
         log_path = output / f"carrier-{name}.log"
+        # Each program gets its own artifacts, including wrapper dependencies.
+        case_env = env.copy()
+        case_env["CARGO_TARGET_DIR"] = str(output / "carrier-targets" / name)
         with log_path.open("w") as log:
             result = subprocess.run(
                 command,
                 cwd=record["cwd"],
-                env=env,
+                env=case_env,
                 stdout=log,
                 stderr=subprocess.STDOUT,
             )
