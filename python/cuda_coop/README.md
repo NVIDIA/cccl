@@ -104,10 +104,10 @@ already imported `cuda.coop`. Both integrations can be registered in one
 process; common calls select the backend from the active compiler context.
 
 The common API in `cuda.coop` is the contract shared by Numba-CUDA-MLIR and
-CUTLASS. Each implemented operation follows the documented groups, dtypes, and
-result rules; consult backend coverage for availability. Its public entry
-points live in `cuda/coop/_core/api/`; the private `_core` package also
-contains shared implementation.
+CUTLASS. Both implement every common kernel operation with the documented
+groups, dtypes, and result rules. Its public entry points live in
+`cuda/coop/_core/api/`; the private `_core` package also contains shared
+implementation.
 
 For CUTLASS-only code, use the qualified namespace directly:
 
@@ -131,11 +131,12 @@ common calls and the longer aliases for qualified calls; application code
 need not import both namespaces for one backend. Aliasing dotted imports also
 avoids rebinding `cuda`, which Numba examples use for `cuda.jit`.
 
-Each qualified API includes its supported common operations, preserving their
+Each qualified API includes all common kernel operations, preserving their
 signatures, string selectors, and inference rules. Numba-CUDA-MLIR adds
 local-array payloads, memory namespaces, and device callbacks. CUTLASS adds
-CuTe register conversions and the controls documented in its guide. Only
-Numba-CUDA-MLIR currently supports custom operators and Scan prefix callbacks.
+CuTe register conversions and qualified controls such as warp Scan
+aggregates and scalar Shuffle. Custom operators and Scan prefix callbacks
+are currently supported only by Numba-CUDA-MLIR.
 
 Both integrations accept `ThreadData(items_per_thread, alignment=None)`: use a
 compile-time positive power of two in bytes to request minimum payload storage
@@ -168,10 +169,9 @@ explains terms and concepts, including blocked and striped layouts.
 | Counting | `histogram` |
 | Run Length Decode | `run_length_decode`, `run_length_decode_into` |
 
-Numba-CUDA-MLIR implements every family in this table. CUTLASS coverage
-expands with its implemented families; the [coverage
-table](https://nvidia.github.io/cccl/unstable/python/coop/concepts.html#coop-backend-operation-support)
-lists current support. Each guide describes its qualified API's extensions.
+Both backends implement every family in this table through the common API.
+Their qualified APIs include those operations and add the extensions
+documented in each programming guide.
 
 Each operation documents its supported groups and result ownership in the
 [API reference](https://nvidia.github.io/cccl/unstable/python/coop_api.html).
@@ -410,13 +410,14 @@ call site still reuses its slice and must be synchronized. Omitting storage
 lets the compiler choose the layout and insert reuse barriers; it does not
 guarantee a separate slice per call site.
 
-Distinct descriptors and compiler-owned storage do not alias each other. With
-the default `auto_sync=False`, call `storage.sync()` or the appropriate block
-barrier before reusing the scratch, including on the next loop iteration.
-Set `auto_sync=True` to append a barrier after each scratch-using call,
-including the last call. That barrier protects reuse of CUB scratch; it does
-not replace barriers needed by the kernel's own shared-memory operations.
-Compiler-owned scratch always synchronizes.
+Distinct descriptors and compiler-owned storage do not alias each other.
+With the default `auto_sync=False`, issue a block barrier before reusing the
+scratch, including on the next loop iteration: `cuda.syncthreads()` in
+Numba-CUDA-MLIR, or `storage.sync()` in CUTLASS. Set `auto_sync=True` to
+append a barrier after each scratch-using call, including the last call.
+That barrier protects reuse of CUB scratch; it does not replace barriers
+needed by the kernel's own shared-memory operations. Compiler-owned scratch
+always synchronizes.
 
 Construct descriptors inside the kernel. Numba-CUDA-MLIR resolves descriptors
 in its compiler passes; a descriptor may also be passed to a device helper

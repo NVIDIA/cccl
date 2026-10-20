@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Provide ``cuda.coop.cutlass.histogram``.
+"""Count block-wide integer samples into bins for CuTe kernels.
 
 Check the group, bin count, output extent, algorithm, and scratch here. These
 controls are fixed at compile time. Copy samples into a new ThreadData so
@@ -108,7 +108,9 @@ def histogram(
     Each call starts from zero, even when scratch is reused. Accumulate
     returned counters explicitly to count several tiles. There is no
     ``valid_items`` control; padding contributes samples. The complete
-    contract is shared with :func:`cuda.coop.histogram`.
+    contract is shared with :func:`cuda.coop.histogram`. See the
+    :doc:`Histogram visualization <coop/visualizations/histogram>` for sample
+    and counter layouts.
 
     Examples
     --------

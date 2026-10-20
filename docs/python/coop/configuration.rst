@@ -7,50 +7,8 @@
 Configuration
 =============
 
-Installation
-------------
-
-Install ``cuda-coop`` without adding Python package dependencies:
-
-.. code-block:: console
-
-   python -m pip install cuda-coop
-
-The wheel includes the common API, every shipped DSL integration (including
-``cuda.coop.numba_mlir`` and ``cuda.coop.cutlass``), type declarations, and a
-matching bundle of CUB, Thrust, and libcu++ headers. The base install
-declares no Python package dependencies. You can import ``cuda.coop`` without
-a compiler or GPU; using an integration requires its backend dependencies to
-be installed.
-
-For Numba-CUDA-MLIR, install the extra matching your CUDA major version:
-
-.. code-block:: console
-
-   python -m pip install "cuda-coop[numba-cuda-mlir-cu13]"
-   # Use numba-cuda-mlir-cu12 with CUDA 12.
-
-Both commands install the same ``cuda-coop`` wheel with the same DSL
-integrations. The extra only adds the dependency requirements declared in
-``pyproject.toml`` so pip installs the supported Numba-CUDA-MLIR stack for
-the selected CUDA major version. The current integration requires
-``numba-cuda-mlir>=0.5.0,<0.6``.
-For CUTLASS / CuTe DSL, install the base wheel alongside a runtime meeting
-the :ref:`CUTLASS requirements <coop-cutlass-requirements>`. A public CUTLASS
-extra and minimum version await qualification of an official artifact.
-
-Installing an extra does not register a backend in a running Python process;
-see :ref:`installation versus registration <coop-faq-installed-extra>`.
-
-Installed-wheel compilation uses the bundled CCCL headers. Development from a
-CCCL source checkout uses its matching headers. ``CUDA_COOP_CCCL_ROOT`` can
-select another source checkout or ``cuda-coop`` header bundle.
-
-
-With Numba-CUDA-MLIR 0.5.x, activating the ``cuda.coop`` backend disables
-the compiler's ``cache=True`` disk cache for all kernels in that process.
-Compiled kernels still have an in-memory cache. The provider cache controlled
-by ``CUDA_COOP_ENABLE_CACHE`` below is separate.
+Use these settings to choose headers, control compiler caches, or inspect
+generated code. Build-time settings apply when packaging ``cuda-coop``.
 
 Runtime environment variables
 -----------------------------
@@ -120,7 +78,7 @@ does not try the Unix fallback. If no valid CUDA include directory is found,
 compilation reports a header-resolution error.
 
 Build-time CMake variables
---------------------------
+----------------------------
 
 ``CUDA_COOP_INSTALL_HEADER_BUNDLE``
    Defaults to ``ON``. Installs the private CCCL header and CMake-package
@@ -134,7 +92,6 @@ Build-time CMake variables
 ``CUDA_COOP_CCCL_SOURCE_REVISION``
    Defaults to empty. Supplies the revision token recorded instead of deriving
    it from Git. A dirty or unverifiable Git worktree still records ``unknown``.
-
 
 Compilation and headers
 -----------------------
