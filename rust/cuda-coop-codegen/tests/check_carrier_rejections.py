@@ -92,6 +92,14 @@ cases = {
         "carrier::load(selected, offset, valid, &mut values);",
         "mutation through a reference to a resource descriptor",
     ),
+    "enum_descriptor_mutation": (
+        "let mut selected = Some(output);\n"
+        "replace_optional(&mut selected, other);\n"
+        "if let Some(mut target) = selected {\n"
+        "    carrier::store(&mut target, offset, valid, &mut values);\n"
+        "}",
+        "mutation through a reference to a resource descriptor",
+    ),
     "descriptor_swap": (
         "carrier::store(&mut other, offset, valid, &mut values);\n"
         "core::mem::swap(&mut output, &mut other);\n"
@@ -234,6 +242,8 @@ fn replace_owner<'a>(target: &mut Owner<'a>, value: Owner<'a>) { *target = value
 fn complete() { thread::sync_threads(); }
 #[inline(never)]
 fn replace<'a>(target: &mut Buffer<'a>, value: Buffer<'a>) { *target = value; }
+#[inline(never)]
+fn replace_optional<'a>(target: &mut Option<Buffer<'a>>, value: Buffer<'a>) { *target = Some(value); }
 #[inline(never)]
 fn redirect<'a, 'b>(target: &mut (&'a mut Buffer<'b>,), value: &'a mut Buffer<'b>) {
     target.0 = value;
