@@ -54,7 +54,6 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN
