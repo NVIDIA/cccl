@@ -1,0 +1,19 @@
+# Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[package]
+name = "coop-load-store"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+members = ["helper"]
+
+[dependencies]
+cuda-coop = { path = "../.." }
+coop-load-store-helper = { path = "helper" }
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }
+cuda-host = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e", features = ["async"] }
+cuda-core = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }
+cuda-async = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }

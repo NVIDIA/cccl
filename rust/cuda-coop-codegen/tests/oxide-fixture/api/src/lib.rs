@@ -24,12 +24,6 @@ pub mod thread_data {
         env!("CCCL_SOURCE"),
         "/rust/cuda-coop/src/thread_data.rs"
     ));
-    mod block_io {
-        include!(concat!(
-            env!("CCCL_SOURCE"),
-            "/rust/cuda-coop/src/thread_data/block_io.rs"
-        ));
-    }
 
     // Fault injection and flag observation belong only to this private fixture.
     pub fn flag<T: Numeric, const N: usize>(values: &ThreadData<T, N>, index: usize) -> u8 {

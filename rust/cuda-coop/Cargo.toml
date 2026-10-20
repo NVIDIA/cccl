@@ -9,7 +9,10 @@ license.workspace = true
 publish = false
 
 [dependencies]
-cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "8c4a42e9c95b2a6bdc14a7531904d8469f0e7ca6" }
+cuda-device = { git = "https://github.com/tpn/cuda-rust.git", rev = "be42c33eeb15ea5639fdd7d793a76706f10cb19e" }
+
+[build-dependencies]
+cuda-coop-codegen = { path = "../cuda-coop-codegen" }
 
 [lints]
 workspace = true

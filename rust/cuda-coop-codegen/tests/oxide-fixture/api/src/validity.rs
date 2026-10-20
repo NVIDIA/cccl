@@ -99,7 +99,7 @@ pub fn store_full<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CAPA
     _group: ThreadGroup<Block>,
     target: &mut DisjointSlice<T, CollectiveTiles<CAPACITY>>,
     offset: usize,
-    values: &mut ThreadData<T, ITEMS, ALIGN>,
+    values: &ThreadData<T, ITEMS, ALIGN>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -107,7 +107,7 @@ pub fn store_full<T: Numeric, const ITEMS: usize, const ALIGN: usize, const CAPA
     extent::<T, ITEMS>(target.len(), offset, valid);
     crate::carrier::containment::<CAPACITY>(offset, valid);
     let pointer = target.as_mut_ptr();
-    let payload = values.block_io_parts();
+    let payload = values.block_io_read_parts();
     // SAFETY: this carrier owns the checked range. The provider checks every
     // written slot's validity bit before interpreting its bytes as T.
     unsafe {
@@ -126,14 +126,14 @@ pub fn store_partial<T: Numeric, const ITEMS: usize, const ALIGN: usize, const C
     target: &mut DisjointSlice<T, CollectiveTiles<CAPACITY>>,
     offset: usize,
     valid: usize,
-    values: &mut ThreadData<T, ITEMS, ALIGN>,
+    values: &ThreadData<T, ITEMS, ALIGN>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
     extent::<T, ITEMS>(target.len(), offset, valid);
     crate::carrier::containment::<CAPACITY>(offset, valid);
     let pointer = target.as_mut_ptr();
-    let payload = values.block_io_parts();
+    let payload = values.block_io_read_parts();
     // SAFETY: the guarded native iterator forms an effective pointer only for
     // a written slot. Preflight covers that same domain, with no tail reads.
     unsafe {

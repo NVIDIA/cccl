@@ -6,12 +6,12 @@ Rust development
 
 The Rust workspace contains per-thread payloads, CUDA group queries, and the
 native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
-``ThreadData`` values and physical/mapped hierarchy queries; see :doc:`payload`
-and :doc:`groups`. Its private ``cuda-coop-codegen`` crate
+``ThreadData`` values, physical/mapped hierarchy queries, and Direct block
+Load/Store; see :doc:`payload`, :doc:`groups`, and :doc:`load_store`. Its private ``cuda-coop-codegen`` crate
 specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
-compiler integration development; collective operations and scratch storage are
-still under development. The crate is unpublished and its interface can change.
+compiler integration development. Additional collective algorithms and public
+scratch storage remain under development. The crate is unpublished and its interface can change.
 
 Device code uses the pinned Oxide dependency and ``nightly-2026-10-11``.
 The host provider supports Rust 1.85 independently; validate it with
@@ -64,9 +64,9 @@ all payload bytes and flags. A failing Store traps; it is not transactional
 across lanes. Partial Store forms destination pointers only within its valid
 prefix, including when the allocation is shorter than a complete tile.
 
-Validity-aware Transpose and the public collective API remain under development.
-The private integration fixture uses the actual ``ThreadData`` implementation
-without exposing an initialized slice or a public native layout.
+Validity-aware Transpose remains under development. The public Direct API uses
+the same ``ThreadData`` representation without exposing an initialized slice or
+a public native layout.
 
 Compile a provider
 ------------------
@@ -144,3 +144,4 @@ timestamps may require an explicit rebuild.
 
    payload
    groups
+   load_store

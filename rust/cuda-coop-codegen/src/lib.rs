@@ -349,18 +349,18 @@ pub struct Layout {
 /// so a null pointer is permitted for that argument only. All providers return
 /// unit; loads fill payloads in place and stores write memory.
 ///
-/// Validity-aware Direct ABIs add `unsigned char* flags` immediately after
+/// Validity-aware Direct ABIs add a byte `flags` pointer immediately after
 /// scratch. `payload` addresses aligned storage for the requested number of
 /// elements; it need not contain initialized values. Flags occupy a separate,
 /// initialized array of `items_per_thread.div_ceil(8)` bytes. Bit `i % 8` of
 /// byte `i / 8` denotes whether slot `i` is initialized. Both arrays are private
-/// to the lane, disjoint from memory/scratch and one another, and remain
-/// exclusively borrowed for the call. Native code accesses payload bytes
-/// without evaluating invalid values. Masked Load clears bits outside its
-/// prefix; filled/full Load write every value before setting its bit.
-/// Store checks its entire lane-local write domain before numeric conversion
-/// and preserves both arrays. Failure traps; it does not promise rollback of
-/// stores by other lanes.
+/// to the lane, disjoint from memory/scratch and one another. Load exclusively
+/// borrows both arrays; Direct Store receives const pointers and borrows them
+/// read-only. Native code accesses payload bytes without evaluating invalid
+/// values. Masked Load clears bits outside its prefix; filled/full Load write
+/// every value before setting its bit. Store checks its entire lane-local
+/// write domain before numeric conversion and preserves both arrays. Failure
+/// traps; it does not promise rollback of stores by other lanes.
 #[derive(Debug)]
 pub struct Specialization {
     /// SHA-256 of request/source, target/options, captured headers and native toolchain inputs.
@@ -588,6 +588,11 @@ fn source(request: Request, symbol: &str) -> String {
     } else {
         "memory"
     };
+    let payload_const = if op.validity() && !op.is_load() {
+        "const "
+    } else {
+        ""
+    };
     let (cell, flags, body) = if op.validity() {
         let domain = if matches!(
             op,
@@ -633,8 +638,14 @@ fn source(request: Request, symbol: &str) -> String {
         };
         (
             "cuda_coop_detail::opaque_cell<value_type>",
-            ", unsigned char* flags",
-            format!("auto* const bytes = reinterpret_cast<unsigned char*>(payload);\n  {body}"),
+            if op.is_load() {
+                ", unsigned char* flags"
+            } else {
+                ", const unsigned char* flags"
+            },
+            format!(
+                "auto* const bytes = reinterpret_cast<{payload_const}unsigned char*>(payload);\n  {body}"
+            ),
         )
     } else {
         (
@@ -655,7 +666,7 @@ using cell = {cell};
 using primitive = cub::{primitive}<cell, {threads}, {items}, cub::{algorithm}_{choice}>;
 static_assert(sizeof(value_type) == {size} && alignof(value_type) == {size});
 static_assert(sizeof(cell) == sizeof(value_type) && alignof(cell) == alignof(value_type));
-extern "C" __device__ void {symbol}({qualifier}value_type* memory, value_type* payload, unsigned char* scratch{flags}{controls}) {{
+extern "C" __device__ void {symbol}({qualifier}value_type* memory, {payload_const}value_type* payload, unsigned char* scratch{flags}{controls}) {{
   {check}
   {constructor}
   {body}

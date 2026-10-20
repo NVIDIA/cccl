@@ -203,10 +203,18 @@ fn arguments(request: Request) -> Vec<Argument> {
         } else {
             Argument::MutPointer(dtype)
         },
-        Argument::MutPointer(dtype),
+        if operation.validity() && !operation.is_load() {
+            Argument::ConstPointer(dtype)
+        } else {
+            Argument::MutPointer(dtype)
+        },
     ];
     if operation.validity() {
-        arguments.push(Argument::MutPointer(Scalar::Unsigned(8)));
+        arguments.push(if operation.is_load() {
+            Argument::MutPointer(Scalar::Unsigned(8))
+        } else {
+            Argument::ConstPointer(Scalar::Unsigned(8))
+        });
     }
     if operation.counted() {
         arguments.push(Argument::Value(Scalar::Signed(32)));
@@ -215,6 +223,48 @@ fn arguments(request: Request) -> Vec<Argument> {
         arguments.push(Argument::Value(dtype));
     }
     arguments
+}
+
+/// Register the public Direct recipes from cuda-coop's owning build script.
+///
+/// Normal Cargo builds only emit registrations for the current build-script
+/// executable. Oxide later invokes that executable with the existing native
+/// request/input protocol. Headers come from this codegen crate's complete CCCL
+/// checkout, independent of the consumer's working directory. Host checks and
+/// documentation do not load CUDA. Native compilation uses Oxide's selected
+/// toolkit and target; no consumer build script is required.
+///
+/// # Errors
+///
+/// Returns errors locating this checkout or executable, encoding registrations,
+/// or serving a native request. Native request errors are those of [`serve`]
+/// and [`serve_inputs`].
+pub fn build_script() -> Result<()> {
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()?;
+    match std::env::args().nth(1).as_deref() {
+        Some("--oxide-library-request-v1") => {
+            return serve(&checkout, std::io::stdin().lock(), std::io::stdout().lock());
+        }
+        Some("--oxide-library-inputs-v1") => {
+            return serve_inputs(&checkout, std::io::stdin().lock(), std::io::stdout().lock());
+        }
+        _ => {}
+    }
+    println!("cargo::rerun-if-changed=build.rs");
+    let executable = std::env::current_exe()?;
+    for (operation, name) in [
+        (Operation::LoadFullValidity, "LOAD_FULL"),
+        (Operation::LoadMaskedValidity, "LOAD_MASKED"),
+        (Operation::LoadFilledValidity, "LOAD_FILLED"),
+        (Operation::StoreFullValidity, "STORE_FULL"),
+        (Operation::StorePartialValidity, "STORE_PARTIAL"),
+    ] {
+        let value = registration(&executable, operation, Algorithm::Direct)?;
+        println!("cargo::rustc-env=COOP_VALIDITY_{name}={value}");
+    }
+    Ok(())
 }
 
 /// Encode a constant registration for one native recipe.
@@ -456,6 +506,22 @@ mod tests {
                     Argument::Value(scalar),
                 ]
             );
+        }
+        for operation in [
+            Operation::StoreFullValidity,
+            Operation::StorePartialValidity,
+        ] {
+            let request =
+                Request::new_typed(Dtype::I16, operation, Algorithm::Direct, 128, 4).unwrap();
+            let mut expected = vec![
+                Argument::MutPointer(Scalar::Signed(16)),
+                Argument::ConstPointer(Scalar::Signed(16)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+            ];
+            if operation.counted() {
+                expected.push(Argument::Value(Scalar::Signed(32)));
+            }
+            assert_eq!(arguments(request), expected);
         }
         for scalar in [Scalar::Signed(1), Scalar::Unsigned(128), Scalar::Float(16)] {
             assert!(scalar.dtype().is_err());

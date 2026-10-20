@@ -30,16 +30,20 @@
 //! [`this_block`] and the other dimension-free group constructors describe
 //! the executing thread's current launch. Queries grant no collective
 //! participation or synchronization guarantee. This crate supplies no
-//! collective operations or scratch storage. Host payload tests need no GPU;
+//! scratch storage. Direct [`load`] and [`store`] use complete blocks with
+//! compiler-checked participation and collective memory ownership. Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
 #![no_std]
 
 mod alignment;
 mod group;
+mod load_store;
 mod thread_data;
 
 pub use alignment::{Alignment, SupportedAlignment};
+pub use cuda_device::{CollectiveTiles, DisjointSlice};
+pub use load_store::{LoadOptions, LoadSource, StoreOptions, StoreValue, load, store};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
 
 pub use group::{
