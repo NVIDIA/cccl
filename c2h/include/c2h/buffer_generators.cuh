@@ -5,6 +5,7 @@
 
 #include <cuda/__algorithm/copy.h>
 #include <cuda/__cccl_config>
+#include <cuda/__container/resizable_buffer.h>
 #include <cuda/buffer>
 #include <cuda/devices>
 #include <cuda/std/limits>
@@ -49,17 +50,6 @@ make_generator_buffer(cuda::stream_ref stream, std::size_t num_items, const cust
 }
 } // namespace detail
 
-//! @brief Holds a generated device buffer and its logical size.
-//!
-//! @c size is the number of generated items. The owning buffer may contain additional capacity that is not part of the
-//! generated sequence.
-template <typename T>
-struct sized_device_buffer
-{
-  cuda::device_buffer<T> d_items;
-  std::size_t size;
-};
-
 //! @brief Generates random values in @p data using its associated stream.
 //!
 //! @pre Querying the device of the stream associated with @p data must succeed and return the current C2H test device.
@@ -87,18 +77,18 @@ void gen(seed_t seed,
 
 //! @brief Holds generated device and host buffers for the same logical sequence.
 //!
-//! @c h_items contains the complete logical sequence. The corresponding sequence is stored at the beginning of
-//! @c d_items, which may contain additional unused storage.
-template <typename T>
+//! @c h_items contains the complete logical sequence. The corresponding sequence is stored in @c d_items, which may
+//! retain additional allocation capacity beyond its logical size.
+template <typename T, typename DeviceBuffer = cuda::device_buffer<T>>
 struct device_host_buffers
 {
-  cuda::device_buffer<T> d_items;
+  DeviceBuffer d_items;
   cuda::host_buffer<T> h_items;
 
   //! @brief Returns the number of logical items shared by both buffers.
   [[nodiscard]] std::size_t size() const noexcept
   {
-    _CCCL_ASSERT(d_items.size() >= h_items.size(), "The device buffer must contain the complete logical host sequence");
+    _CCCL_ASSERT(d_items.size() == h_items.size(), "Device and host buffers must have the same logical size");
     return h_items.size();
   }
 };
@@ -142,33 +132,35 @@ template <typename T>
 //!
 //! @pre @c stream must not be the legacy default stream.
 template <typename T>
-[[nodiscard]] sized_device_buffer<T> gen_uniform_offsets_device_buffer(
+[[nodiscard]] cuda::__resizable_buffer<T, cuda::mr::device_accessible> gen_uniform_offsets_device_buffer(
   cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
   const auto offsets_size = ::c2h::detail::checked_uniform_offsets_size(total_elements);
 
   const auto device = stream.device();
 
-  auto d_segment_offsets = ::c2h::make_device_buffer<T>(stream, device, offsets_size, cuda::no_init);
+  cuda::__resizable_buffer<T, cuda::mr::device_accessible> d_segment_offsets{
+    ::c2h::make_device_buffer<T>(stream, device, offsets_size, cuda::no_init)};
   const auto num_offsets = ::c2h::detail::gen_uniform_offsets(
     stream, seed, d_segment_offsets.first(d_segment_offsets.size()), total_elements, min_segment_size, max_segment_size);
 
-  return {::cuda::std::move(d_segment_offsets), num_offsets};
+  d_segment_offsets.resize_unsynchronized(num_offsets, cuda::no_init);
+  return d_segment_offsets;
 }
 
 //! @brief Generates uniform segment offsets with the existing c2h device generator and returns device and host buffers.
 //!
 //! @pre @c stream must not be the legacy default stream.
 template <typename T>
-[[nodiscard]] device_host_buffers<T> gen_uniform_offsets_buffers(
+[[nodiscard]] device_host_buffers<T, cuda::__resizable_buffer<T, cuda::mr::device_accessible>>
+gen_uniform_offsets_buffers(
   cuda::stream_ref stream, seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
   auto d_segment_offsets =
     ::c2h::gen_uniform_offsets_device_buffer<T>(stream, seed, total_elements, min_segment_size, max_segment_size);
 
-  const auto num_items   = d_segment_offsets.size;
-  auto h_segment_offsets = ::c2h::detail::device_buffer_to_host_buffer(d_segment_offsets.d_items, num_items);
+  auto h_segment_offsets = ::c2h::detail::device_buffer_to_host_buffer(d_segment_offsets, d_segment_offsets.size());
 
-  return {::cuda::std::move(d_segment_offsets.d_items), ::cuda::std::move(h_segment_offsets)};
+  return {::cuda::std::move(d_segment_offsets), ::cuda::std::move(h_segment_offsets)};
 }
 } // namespace c2h
