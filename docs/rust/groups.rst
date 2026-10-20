@@ -2,7 +2,7 @@
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 Hierarchy and group queries
-==========================
+===========================
 
 ``cuda-coop`` describes the current CUDA launch without requiring dimensions in
 the Rust source. ``this_thread()``, ``this_warp()``, ``this_block()``,
@@ -23,7 +23,8 @@ Rank and count
 an explicit level with ``rank_at::<coop::Warp>()`` or
 ``count_at::<coop::Warp>()``. An inner level queries constituents within the
 group; an outer level queries that group within its parent. Equal levels have
-rank zero and count one. Physical queries use x-fastest linearization.
+rank zero and count one. Physical queries use x-fastest linearization within
+each level, with blocks ordered before their constituent threads or warps.
 
 For example, ``this_block().rank()`` is the current thread's linear rank in the
 block, while ``this_block().rank_at::<coop::Grid>()`` is the block's linear rank
@@ -67,7 +68,10 @@ Run the native query checks
 The standalone ``rust/cuda-coop/tests/device_queries`` package contains the
 complete native program. It verifies all physical scope/level pairs with
 multidimensional blocks and grids, a partial final warp, a clustered launch,
-exhaustive and non-exhaustive mappings, and integer conversions. It uses the
+exhaustive and non-exhaustive mappings, and integer conversions. Raw CUDA
+coordinates select output locations independently of the queries being checked.
+The same program checks payload initialization, safe access and copying at
+item counts 1 and 4. It uses the
 same pinned public Oxide dependencies as the library. Keeping this native
 package separate lets ordinary workspace tests run without CUDA host libraries.
 
@@ -80,15 +84,16 @@ sm_120 GPU, run from the CCCL checkout:
    CUDA_HOME=/usr/local/cuda-13.3 cargo oxide run --arch sm_120 --materialize-cubin
    compute-sanitizer --tool memcheck --error-exitcode 1 target/release/device_queries
 
-The four rejection modes run in separate processes because a device trap makes
+The five rejection modes run in separate processes because a device trap makes
 its CUDA context unusable:
 
 .. code-block:: shell
 
-   for case in 0 1 2 3; do
+   for case in 0 1 2 3 4; do
      target/release/device_queries "$case"
    done
 
 They check partial physical warps, an indivisible exhaustive partition, a
 partition larger than its parent, and a rank query by an excluded lane. The
-program reports success only when CUDA returns the expected device-trap error.
+last mode indexes an unwritten payload slot. The program reports success only
+when CUDA returns the expected device-trap error.

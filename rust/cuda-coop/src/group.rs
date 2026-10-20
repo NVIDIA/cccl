@@ -381,11 +381,11 @@ pair!(Cluster, Grid, u64, cluster_rank_grid(), clusters_grid());
 /// otherwise trailing lanes are excluded. The block must have complete
 /// warps. Only Thread/Warp queries are available; groups cannot be nested.
 ///
-/// ```compile_fail
+/// ```compile_fail,E0277
 /// let group = cuda_coop::this_warp().group_by::<8>();
 /// group.rank_at::<cuda_coop::Block>();
 /// ```
-/// ```compile_fail
+/// ```compile_fail,E0599
 /// cuda_coop::this_warp().group_by::<8>().group_by::<2>();
 /// ```
 #[derive(Clone, Copy, Debug)]
@@ -397,7 +397,7 @@ pub enum ThreadsWithinWarp<const N: usize, const EXHAUSTIVE: bool = true> {}
 /// `EXHAUSTIVE = true` requires divisibility; otherwise trailing warps are
 /// excluded. Only Thread/Warp/Block queries are available; no nesting.
 ///
-/// ```compile_fail
+/// ```compile_fail,E0277
 /// cuda_coop::this_block().group_by::<2>().count_at::<cuda_coop::Cluster>();
 /// ```
 #[derive(Clone, Copy, Debug)]
@@ -436,10 +436,10 @@ impl ThreadGroup<Warp> {
     /// `N` must be positive and divide 32 (checked at compilation). Panics
     /// (traps on device) if the block has a partial physical warp.
     ///
-    /// ```compile_fail
+    /// ```compile_fail,E0080
     /// cuda_coop::this_warp().group_by::<0>();
     /// ```
-    /// ```compile_fail
+    /// ```compile_fail,E0080
     /// cuda_coop::this_warp().group_by::<6>();
     /// ```
     #[inline(always)]
@@ -473,7 +473,7 @@ impl ThreadGroup<Block> {
     /// device) unless the block has complete warps and its warp count is
     /// divisible by `N`.
     ///
-    /// ```compile_fail
+    /// ```compile_fail,E0080
     /// cuda_coop::this_block().group_by::<33>();
     /// ```
     #[inline(always)]

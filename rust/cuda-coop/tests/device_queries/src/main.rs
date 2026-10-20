@@ -2,10 +2,51 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //! Query physical and mapped groups in an Oxide-compiled CUDA kernel.
 use cuda_coop as coop;
-use cuda_device::{cluster_launch, device, kernel};
+use cuda_device::{cluster_launch, device, kernel, thread};
 use cuda_host::cuda_module;
 const PHYSICAL: usize = 55;
 const MAPPED: usize = 20;
+
+// Output addresses use raw CUDA coordinates, independently of group queries.
+#[device]
+fn output_index() -> usize {
+    let block = (u64::from(thread::blockIdx_z()) * u64::from(thread::gridDim_y())
+        + u64::from(thread::blockIdx_y()))
+        * u64::from(thread::gridDim_x())
+        + u64::from(thread::blockIdx_x());
+    let lane = (thread::threadIdx_z() * thread::blockDim_y() + thread::threadIdx_y())
+        * thread::blockDim_x()
+        + thread::threadIdx_x();
+    let threads = thread::blockDim_x() * thread::blockDim_y() * thread::blockDim_z();
+    (block * u64::from(threads) + u64::from(lane)) as usize
+}
+
+#[device]
+unsafe fn payload_values<const ITEMS: usize>(output: *mut i32) {
+    let lane = output_index();
+    let selected = lane % ITEMS;
+    let seed = lane as i32 * 3 - 11;
+    let mut values = coop::ThreadData::<_, ITEMS>::new();
+    for i in 0..ITEMS {
+        assert!(values.get(i).is_none());
+        assert!(values.get_mut(i).is_none());
+    }
+    values.write(selected, seed);
+    let mut copy = values;
+    *copy.get_mut(selected).unwrap() += 7;
+    copy[selected] += 5;
+    assert_eq!(values[selected], seed);
+    assert!(copy.get(ITEMS).is_none());
+    for i in 0..ITEMS {
+        values.write(i, seed + i as i32);
+        unsafe {
+            output.add(lane * ITEMS * 2 + i).write(values[i]);
+            output
+                .add(lane * ITEMS * 2 + ITEMS + i)
+                .write(copy.get(i).unwrap_or(-999));
+        }
+    }
+}
 
 // Check each local query's public return width while converting test output.
 macro_rules! local {
@@ -80,7 +121,7 @@ unsafe fn physical(output: *mut u64) {
         cluster.is_member() as u64,
         grid.is_member() as u64,
     ];
-    let base = grid.rank() as usize * PHYSICAL;
+    let base = output_index() * PHYSICAL;
     for (i, value) in values.into_iter().enumerate() {
         unsafe {
             output.add(base + i).write(value);
@@ -154,10 +195,20 @@ mod kernels {
             single.rank_at_as::<i64, coop::Block>() as u64,
             single.count_at_as::<u64, coop::Block>(),
         ];
-        let base = coop::this_grid().rank() as usize * MAPPED;
+        let base = output_index() * MAPPED;
         for (i, value) in values.into_iter().enumerate() {
             unsafe {
                 output.add(base + i).write(value);
+            }
+        }
+    }
+    #[kernel]
+    pub unsafe fn payload(output: *mut i32, items: u32) {
+        unsafe {
+            if items == 1 {
+                payload_values::<1>(output);
+            } else {
+                payload_values::<4>(output);
             }
         }
     }
@@ -169,10 +220,15 @@ mod kernels {
             0 => coop::this_warp().group_by::<8>().count(),
             1 => coop::this_block().group_by::<2>().count(),
             2 => coop::this_block().group_by_non_exhaustive::<4>().count(),
-            _ => coop::this_warp().group_by_non_exhaustive::<6>().rank(),
+            3 => coop::this_warp().group_by_non_exhaustive::<6>().rank(),
+            _ => {
+                let mut data = coop::ThreadData::<_, 4>::new();
+                data.write(0, 1_u32);
+                data[1]
+            }
         };
         unsafe {
-            output.add(coop::this_block().rank() as usize).write(value);
+            output.add(output_index()).write(value);
         }
     }
 }
@@ -185,7 +241,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let module = kernels::load(&ctx)?;
     if let Some(mode) = std::env::args().nth(1) {
         let mode: u32 = mode.parse()?;
-        assert!(mode <= 3);
+        assert!(mode <= 4);
         let threads = if mode == 0 { 48 } else { 96 };
         let out = DeviceBuffer::<u32>::zeroed(&stream, threads)?;
         unsafe {
@@ -202,9 +258,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let err = out
             .to_host_vec(&stream)
-            .expect_err("invalid group query must trap");
+            .expect_err("invalid group query or payload access must trap");
         assert!(err.to_string().contains("719"), "unexpected error: {err}");
-        println!("PASS rejected invalid group case {mode}: {err}");
+        println!("PASS rejected invalid query/payload case {mode}: {err}");
         return Ok(());
     }
     let grid = (4u32, 2u32, 2u32);
@@ -330,6 +386,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         println!("PASS mapped block={block:?}: {} values", values.len());
+    }
+    for items in [1, 4] {
+        let block = (8, 3, 4);
+        let threads = block.0 * block.1 * block.2 * grid.0 * grid.1 * grid.2;
+        let out = DeviceBuffer::<i32>::zeroed(&stream, threads as usize * items * 2)?;
+        unsafe {
+            module.payload(
+                &stream,
+                LaunchConfig {
+                    grid_dim: grid,
+                    block_dim: block,
+                    shared_mem_bytes: 0,
+                },
+                out.cu_deviceptr() as *mut i32,
+                items as u32,
+            )?;
+        }
+        let actual = out.to_host_vec(&stream)?;
+        for lane in 0..threads as usize {
+            let seed = lane as i32 * 3 - 11;
+            for i in 0..items {
+                assert_eq!(actual[lane * items * 2 + i], seed + i as i32);
+                assert_eq!(
+                    actual[lane * items * 2 + items + i],
+                    if i == lane % items { seed + 12 } else { -999 }
+                );
+            }
+        }
+        println!("PASS payload items={items}: {} values", actual.len());
     }
     Ok(())
 }
