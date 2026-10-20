@@ -6,7 +6,7 @@ Rust development
 
 The Rust workspace contains per-thread payloads, CUDA group queries, and the
 native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
-``ThreadData`` values, physical/mapped hierarchy queries, and Direct/Transpose block
+``ThreadData`` values, physical/mapped hierarchy queries, and Direct, Striped and Transpose block
 Load/Store; see :doc:`payload`, :doc:`groups`, and :doc:`load_store`. Its private ``cuda-coop-codegen`` crate
 specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
@@ -38,7 +38,7 @@ these forms:
      - Behavior
      - Payload requirement
    * - Full Load
-     - Fills every payload slot in blocked order
+     - Fills every payload slot in the algorithm's order
      - Writable storage
    * - Default-filled Load
      - Loads a valid prefix and fills the suffix with a supplied value
@@ -50,25 +50,26 @@ these forms:
      - Writes a valid prefix; leaves the destination suffix unchanged
      - Every slot initialized
 
-Both Direct and Transpose algorithms are supported. Direct accesses no shared
-scratch. Transpose Store redistributes blocked payloads across lanes into striped
+Direct, Striped and Transpose algorithms are supported. Direct and Striped access
+no shared scratch. Striped loads and stores striped payload order.
+Transpose Store redistributes blocked payloads across lanes into striped
 order, retaining initialized values in every slot, and uses the exact CUB storage
 layout. Compiler integrations must enforce collective participation, memory
 ownership, valid bounds, and synchronization before scratch reuse.
 
-The separate validity-aware Direct and Transpose recipes support all ten numeric payload
+The separate validity-aware recipes support all ten numeric payload
 types: ``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``, ``i64``, ``u64``,
 ``f32`` and ``f64``. ``Request::new_typed`` selects the exact type. These recipes
 take opaque value storage and a packed validity bitmap. Full and
 default-filled Load initialize every slot. Masked Load without a default copies
 only the loaded prefix and resets all other flags to zero. Full and partial
-Store require initialized slots in their write domain. Direct preserves all
+Store require initialized slots in their write domain. Direct and Striped preserve all
 payload bytes and validity bits; Transpose permutes both into striped order,
 including slots outside its write prefix. A failing Store traps; it is not transactional
 across lanes. Partial Store forms destination pointers only within its valid
 prefix, including when the allocation is shorter than a complete tile.
 
-The public Direct and Transpose API uses
+The public Load/Store API uses
 the same ``ThreadData`` representation without exposing an initialized slice or
 a public native layout.
 
@@ -106,7 +107,7 @@ Native regression checks are opt-in:
    CUDA_HOME=/usr/local/cuda-13.3 cargo test --workspace -- --include-ignored
 
 ``CUDA_COOP_TEST_TARGET`` can select another supported NVRTC target; its default
-is ``compute_120``. These checks compile the supported Direct/Transpose forms at
+is ``compute_120``. These checks compile the supported algorithm forms at
 item counts 1 and 4, compare repeated LTO output, and check exact layout decoding
 and specialization identity. They do not execute GPU kernels.
 
