@@ -25,6 +25,9 @@ parser.add_argument(
     action="store_true",
     help="exercise shared helpers at 64 and 128 threads",
 )
+parser.add_argument(
+    "--carrier", action="store_true", help="exercise private collective-only carriers"
+)
 args = parser.parse_args()
 source = Path(__file__).resolve().parent
 checkout = source.parents[2]
@@ -48,7 +51,7 @@ with manifest.open("a") as stream:
         stream.write(
             f"{name} = {{ path = {json.dumps(str(oxide / 'cuda-oxide/crates' / name))} }}\n"
         )
-    for name in ["cuda-core", "cuda-core-derive", "cuda-bindings"]:
+    for name in ["cuda-core", "cuda-core-derive", "cuda-bindings", "cuda-async"]:
         stream.write(f"{name} = {{ path = {json.dumps(str(oxide / name))} }}\n")
 # Reuse exact same-base dependency resolutions; Cargo adds only fixture/provider
 # packages. Do not refresh every example's lockfile for this integration test.
@@ -75,15 +78,16 @@ if args.root_context:
     command.extend(["--features", "root-context"])
 elif args.checked:
     command.extend(["--features", "checked"])
+consumer = fixture / ("carrier" if args.carrier else "consumer")
 with (output / "build-run.log").open("w") as log:
     result = subprocess.run(
-        command, cwd=fixture / "consumer", env=env, stdout=log, stderr=subprocess.STDOUT
+        command, cwd=consumer, env=env, stdout=log, stderr=subprocess.STDOUT
     )
 (output / "command.json").write_text(
     json.dumps(
         {
             "argv": command,
-            "cwd": str(fixture / "consumer"),
+            "cwd": str(consumer),
             "oxide_root": str(oxide),
             "backend": env["CUDA_OXIDE_BACKEND"],
             "cuda_root": env["CUDA_HOME"],
