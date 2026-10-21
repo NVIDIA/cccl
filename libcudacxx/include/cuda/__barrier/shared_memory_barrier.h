@@ -38,8 +38,6 @@
 
 #  include <nv/target>
 
-#  include <cuda_runtime_api.h>
-
 #  include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_DEVICE
