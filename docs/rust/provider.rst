@@ -85,6 +85,15 @@ prefix, including when the allocation is shorter than a complete tile.
 The public API uses this representation without exposing an initialized slice
 or a public native layout.
 
+``ReduceBatchedRequest`` has different input and output extents: each lane
+supplies ``B`` batches and receives capacity ``ceil(B/W)`` at Warp width ``W``.
+Its striped or blocked layout marks only actual batch results initialized.
+The native request carries ``B`` and derives the output extent; the Rust API
+uses the same calculation in its return type. See :doc:`reduce_batched` for
+the current nightly feature and generic-signature requirements. The provider
+queries this operation's actual CUB storage, including a nonzero empty-type
+layout, and retains ordinary group replication and reuse planning.
+
 Compile a provider
 ------------------
 

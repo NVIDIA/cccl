@@ -12,13 +12,15 @@
 //! host process. This module never invokes Cargo or executes device Rust code.
 //! The protocol supports raw i32 and typed validity Load/Store recipes documented
 //! by [`Operation`], numeric Block/scalar Warp Scan through [`ScanRecipe`], and
-//! root-result scalar/payload Reduce through [`ReduceRecipe`].
+//! root-result scalar/payload Reduce through [`ReduceRecipe`], and partial-output
+//! Warp batched Reduce through [`ReduceBatchedRecipe`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
-    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider, ReduceForm,
-    ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
+    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider,
+    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe, ReduceRequest, Request,
+    Result, ScanRecipe, ScanRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -121,6 +123,20 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("reduce_batched_") {
+            let recipe = ReduceBatchedRecipe::parse(&self.operation, &self.algorithm)?;
+            let width = self
+                .warp_width
+                .ok_or_else(|| Error::message("batched Reduce requires a Warp scope"))?;
+            return ReduceBatchedRequest::warp(
+                self.dtype.dtype()?,
+                recipe,
+                self.block,
+                width,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::ReduceBatched);
+        }
         if self.operation.starts_with("reduce_") {
             let recipe = ReduceRecipe::parse(&self.operation, &self.algorithm)?;
             let dtype = self.dtype.dtype()?;
@@ -246,6 +262,15 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::ReduceBatched(request) => {
+            let dtype = Scalar::from(request.dtype);
+            return vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+        }
         NativeRequest::Reduce(request) => {
             let dtype = Scalar::from(request.dtype);
             let mut arguments = vec![
@@ -429,6 +454,32 @@ pub fn reduce_registration(executable: &Path, recipe: ReduceRecipe) -> Result<St
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode a Warp batched-reduction recipe for the existing provider executable.
+///
+/// Dtype, exact Block geometry, Warp width and batch count arrive with
+/// specialization. Each lane's output capacity is derived as ceil(batches/width).
+/// There are four typed payload pointers and no scalar controls; scratch is
+/// inserted by the existing library-call ABI.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn reduce_batched_registration(
+    executable: &Path,
+    recipe: ReduceBatchedRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.token(),
+        algorithm: "warp",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InputRequest {
@@ -593,7 +644,163 @@ fn write_response(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ReduceAlgorithm, ReduceOperator, ScanAlgorithm, ScanOperation, ScanOperator};
+    use crate::{
+        ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
+        ScanOperator,
+    };
+
+    #[test]
+    fn batched_registration_preserves_derived_extent_and_pointer_abi() {
+        for (dtype, op, layout, width, batches, outputs) in [
+            (
+                Dtype::I8,
+                ReduceOperator::Sum,
+                ReduceBatchedLayout::Striped,
+                32,
+                1,
+                1,
+            ),
+            (
+                Dtype::U16,
+                ReduceOperator::BitAnd,
+                ReduceBatchedLayout::Blocked,
+                8,
+                10,
+                2,
+            ),
+            (
+                Dtype::F64,
+                ReduceOperator::Max,
+                ReduceBatchedLayout::Striped,
+                1,
+                9,
+                9,
+            ),
+        ] {
+            let recipe = ReduceBatchedRecipe::new(op, layout);
+            let registration: serde_json::Value = serde_json::from_str(
+                &reduce_batched_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let scalar = Scalar::from(dtype);
+            let request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: scalar,
+                block: [4, 4, 4],
+                items_per_thread: batches,
+                warp_width: Some(width),
+            }
+            .native()
+            .unwrap();
+            let NativeRequest::ReduceBatched(native) = request else {
+                panic!("batched recipe decoded as another family");
+            };
+            assert_eq!(native.outputs_per_thread(), outputs);
+            assert_eq!(native.recipe, recipe);
+            assert!(!request.scratch_free());
+            assert!(!request.mutates_payload());
+            assert_eq!(
+                arguments(request),
+                vec![
+                    Argument::ConstPointer(scalar),
+                    Argument::MutPointer(scalar),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::Unsigned(8)),
+                ]
+            );
+            assert_eq!(registration["provider"], "cuda_coop");
+            assert_eq!(registration["version"], 1);
+        }
+        let recipe = ReduceBatchedRecipe::new(ReduceOperator::Sum, ReduceBatchedLayout::Striped);
+        assert!(reduce_batched_registration(Path::new("relative"), recipe).is_err());
+        let last_padded = (i32::MAX as u32 / 32) * 32;
+        assert_eq!(
+            ReduceBatchedRequest::warp(Dtype::I32, recipe, [32, 1, 1], 32, last_padded)
+                .unwrap()
+                .outputs_per_thread(),
+            last_padded / 32,
+        );
+        assert!(
+            ReduceBatchedRequest::warp(Dtype::I32, recipe, [32, 1, 1], 32, last_padded + 1,)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_batched_reduce_before_opening_toolkit() {
+        let base = serde_json::json!({"version":1,"target":"compute_120","cuda_root":"/absent", "requests":[{
+            "operation":"reduce_batched_bit_xor_blocked_validity_bits_v1","algorithm":"warp",
+            "dtype":{"kind":"signed","bits":32},"block":[4,4,4],"items_per_thread":10,"warp_width":8
+        }]});
+        for (path, value, diagnostic) in [
+            (
+                "/requests/0/dtype",
+                serde_json::json!({"kind":"float","bits":32}),
+                "integer",
+            ),
+            (
+                "/requests/0/algorithm",
+                serde_json::json!("raking"),
+                "Warp algorithm",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("reduce_batched_sum_payload_validity_bits_v1"),
+                "output layout",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("reduce_batched_unknown_striped_validity_bits_v1"),
+                "operator",
+            ),
+            (
+                "/requests/0/items_per_thread",
+                serde_json::json!(0),
+                "positive batches",
+            ),
+            (
+                "/requests/0/items_per_thread",
+                serde_json::json!(u32::MAX),
+                "padded extent",
+            ),
+            (
+                "/requests/0/warp_width",
+                serde_json::json!(null),
+                "Warp scope",
+            ),
+            (
+                "/requests/0/warp_width",
+                serde_json::json!(17),
+                "power-of-two",
+            ),
+            (
+                "/requests/0/warp_width",
+                serde_json::json!(0),
+                "power-of-two",
+            ),
+            (
+                "/requests/0/block",
+                serde_json::json!([48, 1, 1]),
+                "complete physical warps",
+            ),
+            (
+                "/requests/0/block",
+                serde_json::json!([u32::MAX, 4, 4]),
+                "positive axes",
+            ),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+    }
 
     #[test]
     fn reduce_registration_preserves_scalar_count_and_payload_abi() {
