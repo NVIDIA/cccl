@@ -75,11 +75,7 @@ jobs:
 
       - name: Prepare AWS config for devcontainer
         run: |
-          # `defaults.run.shell` sets `-u`, so an unset credential stops the job
-          # here. Without it the file would hold an empty value, the build would
-          # run with no access to the sccache bucket, and every compile would
-          # miss while the job still reported success.
-          #
+          # Credentials can be unset when AWS setup is skipped.
           # The devcontainer mounts this path to /home/coder/.aws.
           aws_dir="${{ github.workspace }}/.aws"
           mkdir -p "${aws_dir}"
@@ -90,9 +86,9 @@ jobs:
           EOF
           cat > "${aws_dir}/credentials" <<EOF
           [default]
-          aws_access_key_id=${AWS_ACCESS_KEY_ID}
-          aws_session_token=${AWS_SESSION_TOKEN}
-          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
           EOF
           chmod 0600 "${aws_dir}/credentials"
           chmod 0664 "${aws_dir}/config"
