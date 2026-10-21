@@ -162,12 +162,12 @@ struct TestKernel
   {
     {
       const cudax::coop::group_by mapping1{cuda::std::cw<4>};
-      const cudax::coop::group_as mapping2{cuda::std::integer_sequence<cuda::std::size_t, 1, 3>{}};
+      const cudax::coop::group_as mapping2{cuda::std::index_sequence<1, 3>{}};
       test_composite_mapping(mapping1, mapping2, config);
     }
     {
       const cudax::coop::group_by mapping1{4};
-      const cudax::coop::group_as mapping2{cuda::std::integer_sequence<cuda::std::size_t, 1, 3>{}};
+      const cudax::coop::group_as mapping2{cuda::std::index_sequence<1, 3>{}};
       test_composite_mapping(mapping1, mapping2, config);
     }
     {
