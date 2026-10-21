@@ -63,8 +63,8 @@ Sizes must be positive compile-time constants. Invalid static sizes fail during
 compilation. Checks that depend on the actual block dimensions trap on device
 when violated. These descriptors and checks provide no proof of collective
 participation, uniform control flow, or scratch ownership. The Load/Store API
-accepts power-of-two lane groups of widths 1, 2, 4, 8, 16 and 32 with Direct and
-implicit storage. Other mapped groups remain query-only. Canonical Warp-in-Block
+accepts power-of-two lane groups of widths 1, 2, 4, 8, 16 and 32 with Direct, Striped, Vectorize or
+Transpose and implicit storage. Other mapped groups remain query-only. Canonical Warp-in-Block
 and logical-group-in-Warp ranks preserve group uniformity in checked operations;
 ordinary lane arithmetic does not receive that guarantee.
 

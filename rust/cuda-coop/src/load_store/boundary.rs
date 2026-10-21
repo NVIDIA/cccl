@@ -370,6 +370,7 @@ pub(super) fn store_permuting<
     const CAPACITY: usize,
     A: Algorithm,
     S: TempStorageLike,
+    G: Group,
 >(
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: &mut ThreadData<T, ITEMS, ALIGN>,
@@ -379,10 +380,11 @@ pub(super) fn store_permuting<
 {
     let valid = match options.valid_items {
         Some(count) => count,
-        None => tile::<ITEMS>(),
+        None => group_tile::<ITEMS, G>(),
     };
-    extent::<T, ITEMS, crate::Block>(destination.len(), options.offset, valid);
-    containment::<CAPACITY>(options.offset, valid);
+    let offset = group_offset::<ITEMS, G>(options.offset);
+    extent::<T, ITEMS, G>(destination.len(), offset, valid);
+    group_containment::<CAPACITY, G>(offset, valid);
     let pointer = destination.as_mut_ptr();
     let payload = value.block_io_parts();
     let storage = options.storage.into_raw();
@@ -391,37 +393,31 @@ pub(super) fn store_permuting<
     // together with its initialized bit. The exclusive payload borrow permits
     // that mutation. The compiler plans total scratch and completion before reuse.
     unsafe {
-        let pointer = pointer.add(options.offset);
+        let pointer = pointer.add(offset);
         macro_rules! call {
             ($transpose:ident, $warp:ident, $timesliced:ident, $controls:expr) => {
                 match A::KIND {
-                    TRANSPOSE => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                            $transpose,
-                            destination,
-                            storage,
-                            $controls,
-                            payload,
-                        )
-                    }
-                    WARP_TRANSPOSE => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                            $warp,
-                            destination,
-                            storage,
-                            $controls,
-                            payload,
-                        )
-                    }
-                    WARP_TRANSPOSE_TIMESLICED => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                            $timesliced,
-                            destination,
-                            storage,
-                            $controls,
-                            payload,
-                        )
-                    }
+                    TRANSPOSE => G::call::<T, _, _, _, _, _, ITEMS, true>(
+                        $transpose,
+                        destination,
+                        storage,
+                        $controls,
+                        payload,
+                    ),
+                    WARP_TRANSPOSE => G::call::<T, _, _, _, _, _, ITEMS, true>(
+                        $warp,
+                        destination,
+                        storage,
+                        $controls,
+                        payload,
+                    ),
+                    WARP_TRANSPOSE_TIMESLICED => G::call::<T, _, _, _, _, _, ITEMS, true>(
+                        $timesliced,
+                        destination,
+                        storage,
+                        $controls,
+                        payload,
+                    ),
                     _ => panic!(),
                 }
             };

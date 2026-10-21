@@ -391,14 +391,14 @@ cases.update(
         warp_load.replace(
             ".oob_default(0)", ".oob_default(0).algorithm(coop::Transpose)"
         ),
-        "expected `Direct`, found `Transpose`",
+        None,
     ),
     warp_explicit_storage=(
         new_storage
         + warp_load.replace(
             ".oob_default(0)", ".oob_default(0).temp_storage(&mut scratch)"
         ),
-        "expected `LoadOptions<i32>`",
+        "LoadStoreGroup<Direct, &mut TempStorage>",
     ),
 )
 
@@ -605,6 +605,155 @@ for width in (1, 2, 4, 8, 16, 32):
             ),
             None,
         )
+
+
+# Replicated implicit Warp pools use actual provider extents and scoped completion.
+logical_transpose_load = logical_load.replace(
+    ".oob_default(0)", ".oob_default(0).algorithm(coop::Transpose)"
+)
+logical_transpose_store = logical_store.replace("&values", "&mut values").replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Transpose)"
+)
+logical_transpose_reload = logical_reload.replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Transpose)"
+)
+warp16 = "coop::this_warp().group_by::<16>()"
+logical_fixed_view = "let prefix=unsafe {cuda_device::DynamicSharedArray::<[u64;8],32>::get_fixed()};let _=prefix;"
+cases.update(
+    logical_transpose_managed=(
+        logical_transpose_load
+        + logical_transpose_store
+        + logical_transpose_store
+        + logical_transpose_reload,
+        None,
+    ),
+    logical_transpose_shared=(
+        logical_transpose_load
+        + logical_transpose_store.replace("&mut values", "&values"),
+        "StoreValue<i32, Transpose>",
+    ),
+    logical_transpose_sibling_count=(
+        logical_transpose_load.replace(".valid_items(valid)", ".valid_items(q)"),
+        None,
+    ),
+    logical_transpose_lane_count=(
+        logical_transpose_load.replace(
+            ".valid_items(valid)", ".valid_items(thread::threadIdx_x() as usize)"
+        ),
+        "not proved Warp-uniform",
+    ),
+    logical_transpose_block_pool=(
+        transpose_load
+        + logical_transpose_load
+        + logical_transpose_load
+        + transpose_load,
+        None,
+    ),
+    logical_transpose_containing_sync=(
+        logical_transpose_load
+        + logical_transpose_load.replace("(warp,", f"({warp16},")
+        + logical_sync.replace("::<8>()", "::<16>()")
+        + logical_transpose_load,
+        None,
+    ),
+    logical_transpose_wider_clean=(
+        logical_transpose_load
+        + logical_transpose_store
+        + logical_transpose_reload.replace("(warp,", f"({warp16},"),
+        "requires a barrier covering both accesses",
+    ),
+    logical_transpose_wider_completed=(
+        logical_transpose_load
+        + logical_transpose_store
+        + logical_sync.replace("::<8>()", "::<16>()")
+        + logical_transpose_reload.replace("(warp,", f"({warp16},"),
+        None,
+    ),
+    logical_transpose_block_completion=(
+        logical_transpose_load + logical_transpose_store + reload,
+        "requires a barrier covering both accesses",
+    ),
+    logical_transpose_live_reservation=(
+        new_storage
+        + reserve
+        + logical_transpose_load
+        + logical_sync
+        + explicit_load
+        + release,
+        "overlaps a live reservation",
+    ),
+    logical_transpose_explicit_dirty=(
+        new_storage
+        + explicit_load
+        + logical_transpose_load
+        + logical_transpose_load
+        + explicit_load,
+        "requires a full-block barrier",
+    ),
+    logical_transpose_loop=(
+        "let mut i=0;while i<2 {"
+        + logical_transpose_load
+        + logical_transpose_store
+        + "i+=1;}"
+        + logical_transpose_reload,
+        None,
+    ),
+    logical_shared_getter_lookalike=(
+        "struct DynamicSharedArray;impl DynamicSharedArray {#[inline(never)] fn get_fixed()->*mut u8 {if thread::threadIdx_x()&1==0 {thread::sync_threads();}core::ptr::null_mut()}}let _=DynamicSharedArray::get_fixed();"
+        + logical_transpose_load,
+        "block barrier is reached through lane-varying control flow",
+    ),
+    logical_transpose_fixed_prefix=(logical_fixed_view + logical_transpose_load, None),
+    logical_transpose_raw_view=(
+        logical_fixed_view.replace("get_fixed()", "get_raw()") + logical_transpose_load,
+        "planned storage cannot include an unconstrained native dynamic shared view",
+    ),
+    logical_zero_raw_view=(
+        logical_fixed_view.replace("get_fixed()", "get_raw()") + logical_load,
+        "planned storage cannot include an unconstrained native dynamic shared view",
+    ),
+    logical_zero_no_completion=(
+        logical_load + logical_store + logical_reload,
+        "requires a barrier covering both accesses",
+    ),
+)
+
+
+# Scratch-free Warp choices preserve shared payloads without completion credit.
+for selector in ("Striped", "Vectorize"):
+    selected_load = logical_load.replace(
+        ".oob_default(0)", f".oob_default(0).algorithm(coop::{selector})"
+    )
+    selected_store = logical_store.replace(
+        ".valid_items(valid)", f".valid_items(valid).algorithm(coop::{selector})"
+    )
+    key = "logical_" + selector.lower()
+    cases[key + "_shared"] = (selected_load + selected_store, None)
+    cases[key + "_non_exhaustive"] = (
+        selected_load.replace(
+            "(warp,", "(coop::this_warp().group_by_non_exhaustive::<8>(),"
+        )
+        + selected_store.replace(
+            "(warp,", "(coop::this_warp().group_by_non_exhaustive::<8>(),"
+        ),
+        None,
+    )
+    cases[key + "_physical"] = (
+        selected_load.replace("(warp,", "(coop::this_warp(),")
+        + selected_store.replace("(warp,", "(coop::this_warp(),"),
+        None,
+    )
+    cases[key + "_missing_completion"] = (
+        selected_load + selected_store + logical_reload,
+        "requires a barrier covering both accesses",
+    )
+    cases[key + "_explicit_storage"] = (
+        new_storage
+        + selected_load.replace(
+            ".oob_default(0)", ".oob_default(0).temp_storage(&mut scratch)"
+        ),
+        f"LoadStoreGroup<{selector}, &mut TempStorage>",
+    )
 
 
 command = [

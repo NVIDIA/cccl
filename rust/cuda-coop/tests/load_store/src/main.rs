@@ -3,6 +3,8 @@
 
 use coop::{Numeric, ThreadData, this_block};
 mod block_warp;
+mod logical_plain;
+mod logical_transpose;
 mod logical_warp;
 mod storage;
 mod striped;
@@ -370,6 +372,12 @@ mod kernels {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().any(|arg| arg == "logical-plain") {
+        return logical_plain::run();
+    }
+    if std::env::args().any(|arg| arg == "logical-transpose") {
+        return logical_transpose::run();
+    }
     if matches!(
         std::env::args().nth(1).as_deref(),
         Some("--warp" | "--warp-grain-trap")
