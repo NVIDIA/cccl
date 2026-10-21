@@ -343,7 +343,7 @@ jobs:
     needs: run
     # Temporarily disable posting compile-time results to pull requests.
     if: ${{ false && always() && inputs.comment == 'true' && inputs.pr_number != '' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       actions: read
       pull-requests: write

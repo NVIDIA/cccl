@@ -160,7 +160,7 @@ jobs:
       - matrix-build
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
       - name: Check out Slack publisher

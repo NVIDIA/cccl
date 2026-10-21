@@ -132,7 +132,7 @@ jobs:
     name: Notify Slack of PyTorch failure
     if: ${{ failure() && inputs.enable_slack_alerts }}
     needs: build-pytorch
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Notify
         uses: slackapi/slack-github-action@v1.26.0

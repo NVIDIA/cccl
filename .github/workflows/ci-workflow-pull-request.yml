@@ -583,7 +583,7 @@ jobs:
     needs: [build-workflow, dispatch-bench]
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Determine outcome
         id: outcome
@@ -622,7 +622,7 @@ jobs:
     permissions:
       actions: read
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Download the SASS comment artifacts
         uses: actions/download-artifact@v4
@@ -716,7 +716,7 @@ jobs:
       - dispatch-bench
       - dispatch-sass-diff
       - sass-results
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Check results
         run: |
@@ -881,7 +881,7 @@ jobs:
     needs: analyze-failures
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Append to CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5

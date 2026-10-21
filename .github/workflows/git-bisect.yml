@@ -110,7 +110,7 @@ jobs:
   # job id from within a running job, unless the name is unique across the entire run.
   generate-job-name:
     name: Generate Unique Job Name
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       job-name: ${{ steps.set-name.outputs.unique-name }}
     steps:
