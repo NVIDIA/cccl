@@ -6,10 +6,12 @@
 
 #include <thrust/sort.h>
 
+#include <cuda/cmath>
 #include <cuda/iterator>
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -176,9 +178,54 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[f
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, 1, tile_size);
 }
 
+template <typename Variant, typename HostVariant>
+void test_sorted_uint32_limit(Variant variant, HostVariant host_variant)
+{
+  using value_type         = std::uint32_t;
+  constexpr auto max_count = std::numeric_limits<value_type>::max();
+  cuda::compute_capability cc{};
+  REQUIRE(cub::detail::ptx_compute_cap(cc) == cudaSuccess);
+  const auto policy = cub::detail::find_bound_sorted_values::policy_selector_from_types<value_type, value_type>{}(cc);
+  const auto tile_size      = static_cast<value_type>(policy.threads_per_block * policy.items_per_thread);
+  const auto last_full_tile = cuda::round_down(max_count, tile_size);
+  const auto total_items    = GENERATE_COPY(last_full_tile - 1, last_full_tile, last_full_tile + 1, max_count);
+  constexpr value_type values_num_items = 2000;
+  const value_type range_num_items      = total_items - values_num_items;
+  CAPTURE(range_num_items, values_num_items, tile_size);
+
+  const auto range  = cuda::counting_iterator<value_type>{0};
+  const auto values = cuda::counting_iterator<value_type>{range_num_items - values_num_items / 2};
+
+  c2h::device_vector<value_type> offsets_d(values_num_items, max_count);
+  variant(range,
+          range_num_items,
+          values,
+          values_num_items,
+          thrust::raw_pointer_cast(offsets_d.data()),
+          cuda::std::less<value_type>{});
+
+  c2h::host_vector<value_type> offsets_ref(values_num_items);
+  for (value_type i = 0; i < values_num_items; ++i)
+  {
+    offsets_ref[i] = static_cast<value_type>(
+      host_variant(range, range + range_num_items, values[i], cuda::std::less<value_type>{}) - range);
+  }
+  REQUIRE(offsets_ref == offsets_d);
+}
+
+CUB_TEST("DeviceFind::LowerBoundSortedValues near the uint32 limit", "[find][device][binary-search]", CUB_SMALL)
+{
+  test_sorted_uint32_limit(lower_bound_sorted_values, std_lower_bound);
+}
+
+CUB_TEST("DeviceFind::UpperBoundSortedValues near the uint32 limit", "[find][device][binary-search]", CUB_SMALL)
+{
+  test_sorted_uint32_limit(upper_bound_sorted_values, std_upper_bound);
+}
+
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::LowerBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
@@ -196,7 +243,7 @@ CUB_TEST("DeviceFind::LowerBoundSortedValues really large input",
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::UpperBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try

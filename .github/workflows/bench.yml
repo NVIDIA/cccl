@@ -32,8 +32,8 @@ on:
         required: false
         default: ""
         type: string
-      cub_filters:
-        description: "CUB filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
+      cpp_filters:
+        description: "C++ filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
         required: false
         default: ""
         type: string
@@ -88,8 +88,8 @@ on:
         required: false
         default: ""
         type: string
-      cub_filters:
-        description: "CUB filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
+      cpp_filters:
+        description: "C++ filters, space-separated (ex: '^cub.bench.copy.memcpy.base$')"
         required: false
         default: ""
         type: string
@@ -178,7 +178,7 @@ jobs:
           INPUT_ARCH: ${{ inputs.arch }}
           INPUT_BASE_REF: ${{ inputs.base_ref }}
           INPUT_TEST_REF: ${{ inputs.test_ref }}
-          INPUT_CUB_FILTERS: ${{ inputs.cub_filters }}
+          INPUT_CPP_FILTERS: ${{ inputs.cpp_filters }}
           INPUT_PYTHON_FILTERS: ${{ inputs.python_filters }}
           INPUT_RAW_ARGS: ${{ inputs.raw_args }}
           INPUT_NVBENCH_ARGS: ${{ inputs.nvbench_args }}
@@ -216,8 +216,8 @@ jobs:
               echo "::error::When Raw Args is empty, Base Ref and Test Ref must be set."
               exit 2
             fi
-            if [[ -z "${INPUT_CUB_FILTERS}" && -z "${INPUT_PYTHON_FILTERS}" ]]; then
-              echo "::error::At least one of CUB Filters or Python Filters must be set."
+            if [[ -z "${INPUT_CPP_FILTERS}" && -z "${INPUT_PYTHON_FILTERS}" ]]; then
+              echo "::error::At least one of C++ Filters or Python Filters must be set."
               exit 2
             fi
 
@@ -228,20 +228,20 @@ jobs:
               bench_args+=(--arch "${INPUT_ARCH}")
             fi
 
-            # Add CUB filters as --cub-filter flags.
-            if [[ -n "${INPUT_CUB_FILTERS}" ]]; then
-              declare -a parsed_cub_filters
-              parsed_cub_filters=()
-              parsed_cub_filters_file="$(mktemp "${RUNNER_TEMP}/bench-cub-filters-XXXXXX")"
-              if ! parse_quoted_args "${INPUT_CUB_FILTERS}" > "${parsed_cub_filters_file}"; then
-                rm -f "${parsed_cub_filters_file}"
+            # Add C++ filters as --cpp-filter flags.
+            if [[ -n "${INPUT_CPP_FILTERS}" ]]; then
+              declare -a parsed_cpp_filters
+              parsed_cpp_filters=()
+              parsed_cpp_filters_file="$(mktemp "${RUNNER_TEMP}/bench-cpp-filters-XXXXXX")"
+              if ! parse_quoted_args "${INPUT_CPP_FILTERS}" > "${parsed_cpp_filters_file}"; then
+                rm -f "${parsed_cpp_filters_file}"
                 exit 2
               fi
-              mapfile -d '' -t parsed_cub_filters < "${parsed_cub_filters_file}"
-              rm -f "${parsed_cub_filters_file}"
+              mapfile -d '' -t parsed_cpp_filters < "${parsed_cpp_filters_file}"
+              rm -f "${parsed_cpp_filters_file}"
 
-              for cub_filter in "${parsed_cub_filters[@]}"; do
-                bench_args+=(--cub-filter "${cub_filter}")
+              for cpp_filter in "${parsed_cpp_filters[@]}"; do
+                bench_args+=(--cpp-filter "${cpp_filter}")
               done
             fi
 

@@ -20,7 +20,8 @@ def register(backend: Literal["numba-cuda-mlir", "numba_cuda_mlir"]) -> None:
 
     Call this on the host before compiling a kernel, including when
     :mod:`cuda.coop` was imported before the compiler. Repeated calls are
-    safe.
+    safe. Explicit registration also works when automatic registration is
+    disabled with ``CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION=1``.
 
     Parameters
     ----------
