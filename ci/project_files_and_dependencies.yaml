@@ -23,7 +23,7 @@
 # Layout:
 #   project_key:          mapping from project key to configuration
 #     name:               display name used in logs/reports
-#     matrix_project:     project name to use in the output lists. If not provided,
+#     matrix_project:     project name to use for matrix generation. If not provided,
 #                           the project is considered internal-only and will not be listed
 #                           in the FULL_BUILD or LITE_BUILD outputs.
 #     lite_dependencies:  Add the current project to the `lite` matrix if any of these
@@ -46,7 +46,10 @@ projects:
     name: "libcu++ Public API"
     lite_dependencies: ['thrust_public', 'cub_public']
     full_dependencies: []
-    include_regexes: ["libcudacxx/include/"]
+    include_regexes:
+      - "libcudacxx/include/"
+      - "libcudacxx/CMakeLists\\.txt$"
+      - "libcudacxx/cmake/libcudacxxAddSubdir\\.cmake$"
 
   libcudacxx_internal:
     name: "libcu++ Tests/Infra"
@@ -61,7 +64,10 @@ projects:
     name: "CUB Public API"
     lite_dependencies: [libcudacxx_public, thrust_public]
     full_dependencies: []
-    include_regexes: ["cub/cub/"]
+    include_regexes:
+      - "cub/cub/"
+      - "cub/CMakeLists\\.txt$"
+      - "cub/cmake/CubAddSubdir\\.cmake$"
 
   cub_internal:
     name: "CUB Tests/Infra"
@@ -76,7 +82,10 @@ projects:
     name: "Thrust Public API"
     lite_dependencies: [libcudacxx_public, cub_public]
     full_dependencies: []
-    include_regexes: ["thrust/thrust/"]
+    include_regexes:
+      - "thrust/thrust/"
+      - "thrust/CMakeLists\\.txt$"
+      - "thrust/cmake/ThrustAddSubdir\\.cmake$"
 
   thrust_internal:
     name: "Thrust Tests/Infra"
@@ -248,7 +257,6 @@ projects:
     full_dependencies: []
     include_regexes: ["nvrtcc/"]
 
-  # Third-party jobs consume these output names directly; they have no matrix jobs.
   matx:
     name: "MatX"
     matrix_project: "matx"
