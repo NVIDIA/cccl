@@ -303,8 +303,9 @@ TEST_CASE("TestVectorInsertExceedsSmallMaxSize", "[vector_insert]")
   const cuda::constant_iterator<int> first(7);
 
   REQUIRE_THROWS_AS(v.insert(v.end(), 6, 7), std::length_error);
+  REQUIRE(v == decltype(v)(3, 1));
   REQUIRE_THROWS_AS(v.insert(v.end(), first, first + 6), std::length_error);
-  REQUIRE(v.size() == 3);
+  REQUIRE(v == decltype(v)(3, 1));
 }
 
 TEST_CASE("TestVectorInsertUpToSmallMaxSize", "[vector_insert]")
