@@ -135,7 +135,7 @@ dependencies = [
 [[package]]
 name = "cuda-artifact-finalizer"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "libnvvm-sys",
  "nvjitlink-sys",
@@ -147,7 +147,7 @@ dependencies = [
 [[package]]
 name = "cuda-async"
 version = "0.4.0"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "anyhow",
  "cuda-bindings",
@@ -163,7 +163,7 @@ dependencies = [
 [[package]]
 name = "cuda-bindings"
 version = "0.4.0"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "bindgen",
  "libloading",
@@ -194,7 +194,7 @@ dependencies = [
 [[package]]
 name = "cuda-core"
 version = "0.4.0"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "anyhow",
  "cuda-bindings",
@@ -206,7 +206,7 @@ dependencies = [
 [[package]]
 name = "cuda-core-derive"
 version = "0.4.0"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -216,7 +216,7 @@ dependencies = [
 [[package]]
 name = "cuda-device"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "cuda-macros",
 ]
@@ -224,7 +224,7 @@ dependencies = [
 [[package]]
 name = "cuda-host"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "cuda-artifact-finalizer",
  "cuda-async",
@@ -241,7 +241,7 @@ dependencies = [
 [[package]]
 name = "cuda-macros"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "oxide-tile-export",
  "proc-macro2",
@@ -255,7 +255,7 @@ dependencies = [
 [[package]]
 name = "cuda-target-spec"
 version = "0.1.0"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 
 [[package]]
 name = "dashmap"
@@ -510,7 +510,7 @@ dependencies = [
 [[package]]
 name = "libnvvm-sys"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "cuda-target-spec",
  "libloading",
@@ -563,7 +563,7 @@ dependencies = [
 [[package]]
 name = "nvjitlink-sys"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "libloading",
  "thiserror 2.0.21",
@@ -590,7 +590,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 [[package]]
 name = "oxide-artifacts"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "object",
 ]
@@ -598,7 +598,7 @@ dependencies = [
 [[package]]
 name = "oxide-tile-export"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 dependencies = [
  "serde",
  "serde_json",
@@ -646,7 +646,7 @@ dependencies = [
 [[package]]
 name = "ptx-parse"
 version = "0.1.0"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 
 [[package]]
 name = "quote"
@@ -698,7 +698,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "reserved-oxide-symbols"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=231a29dc933ce698e9ab7520315c46d6dcd922bc#231a29dc933ce698e9ab7520315c46d6dcd922bc"
 
 [[package]]
 name = "rustc-hash"
