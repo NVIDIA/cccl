@@ -3,8 +3,139 @@
 
 //! Real native compiler coverage; ordinary host tests need no CUDA installation.
 
-use cuda_coop_codegen::{Algorithm, Dtype, Layout, Operation, Provider, Request};
+use cuda_coop_codegen::{
+    Algorithm, Dtype, Layout, NativeRequest, Operation, Provider, Request, ScanAlgorithm,
+    ScanOperation, ScanOperator, ScanRequest,
+};
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_scan_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // Each operator is compiled in both modes; types/algorithms are spread
+    // across those cases rather than multiplying independent dimensions.
+    let types = [
+        Dtype::I8,
+        Dtype::U8,
+        Dtype::I16,
+        Dtype::U16,
+        Dtype::I32,
+        Dtype::U32,
+        Dtype::I64,
+        Dtype::U64,
+        Dtype::F32,
+        Dtype::F64,
+        Dtype::I8,
+        Dtype::I16,
+        Dtype::U16,
+        Dtype::U64,
+    ];
+    let operators = [
+        ScanOperator::Sum,
+        ScanOperator::Multiplies,
+        ScanOperator::Min,
+        ScanOperator::Max,
+        ScanOperator::BitAnd,
+        ScanOperator::BitOr,
+        ScanOperator::BitXor,
+    ];
+    let algorithms = [
+        ScanAlgorithm::Raking,
+        ScanAlgorithm::RakingMemoize,
+        ScanAlgorithm::WarpScans,
+    ];
+    let mut requests = Vec::new();
+    for (index, dtype) in types.into_iter().enumerate() {
+        let op = operators[index % operators.len()];
+        let operation = if index < operators.len() {
+            ScanOperation::Exclusive(op)
+        } else {
+            ScanOperation::Inclusive(op)
+        };
+        requests.push(NativeRequest::Scan(ScanRequest::block(
+            dtype,
+            operation,
+            algorithms[index % algorithms.len()],
+            [4, 4, 4],
+            if index % 2 == 0 { 1 } else { 4 },
+        )?));
+    }
+    requests.push(NativeRequest::Scan(ScanRequest::block(
+        Dtype::I8,
+        ScanOperation::ExclusiveSum,
+        ScanAlgorithm::Raking,
+        [8, 4, 1],
+        9,
+    )?));
+    for (index, width) in [1, 2, 4, 8, 16, 32].into_iter().enumerate() {
+        requests.push(NativeRequest::Scan(ScanRequest::warp(
+            if index % 2 == 0 {
+                Dtype::I8
+            } else {
+                Dtype::F64
+            },
+            match index % 3 {
+                0 => ScanOperation::ExclusiveSum,
+                1 => ScanOperation::Exclusive(ScanOperator::Min),
+                _ => ScanOperation::Inclusive(ScanOperator::Max),
+            },
+            [4, 4, 4],
+            width,
+        )?));
+    }
+    for operation in [Operation::LoadFullValidity, Operation::StoreFullValidity] {
+        requests.push(NativeRequest::LoadStore(Request::new_typed(
+            Dtype::I32,
+            operation,
+            Algorithm::Direct,
+            64,
+            4,
+        )?));
+    }
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), requests.len());
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        if matches!(request, NativeRequest::Scan(_)) {
+            assert!(!entry.scratch_free);
+            assert_eq!(entry.scratch, entry.cub_layout);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.mutates_payload, "Scan must preserve its input");
+        } else {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    let single = provider.compile_native(&requests[..1], &target)?;
+    assert_eq!(
+        single.specializations[0].identity,
+        artifact.specializations[0].identity
+    );
+    assert_eq!(
+        single.specializations[0].symbol,
+        artifact.specializations[0].symbol
+    );
+    assert!(
+        provider
+            .compile_native(&[requests[0]; 2], &target)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate")
+    );
+    eprintln!(
+        "{} mixed Scan/Load/Store specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
 
 #[test]
 fn rejects_invalid_shapes() {

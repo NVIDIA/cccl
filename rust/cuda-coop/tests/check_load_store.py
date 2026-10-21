@@ -1,7 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile public Load/Store participation and resource-epoch contrasts.
+"""Compile public Load/Store and Scan participation/resource-epoch contrasts.
 
 Use the same Cargo config/backend as the qualified public example. The config
 is optional for an installed compatible Oxide revision; local source integration
@@ -25,6 +25,9 @@ parser.add_argument(
 )
 parser.add_argument("--cuda-root", type=Path, default=Path("/usr/local/cuda"))
 parser.add_argument("--arch", default="sm_120")
+parser.add_argument(
+    "--case", action="append", help="Run only this named case; repeat to select several"
+)
 args = parser.parse_args()
 output = args.output.resolve()
 output.mkdir(parents=True, exist_ok=False)
@@ -829,6 +832,111 @@ for selector in ("Striped", "Vectorize"):
         ),
         f"LoadStoreGroup<{selector}, &mut TempStorage>",
     )
+
+
+# Scan returns fresh lane-private output while retaining the existing group and
+# storage proofs. These cases exercise the public API, not private markers.
+scan = "values=coop::scan(block,&values,Default::default());"
+scan_manual = "values=coop::scan(block,&values,coop::ScanOptions::default().temp_storage(&mut scratch));"
+scan_warp = "let warp=coop::this_warp().group_by::<8>();"
+cases.update(
+    scan_defaults=(
+        load
+        + scan
+        + "values=coop::exclusive_sum(block,&values,Default::default());"
+        + "values=coop::inclusive_sum(block,&values,Default::default());"
+        + "values=coop::exclusive_scan(block,&values,Default::default());"
+        + "values=coop::inclusive_scan(block,&values,Default::default());"
+        + store,
+        None,
+    ),
+    scan_generic_seed=(
+        load + "fn seeded<T:coop::Numeric,Op:coop::ScanOperator<T>,const N:usize>("
+        "group:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N>,seed:T,op:Op)"
+        "->coop::ThreadData<T,N> where ():coop::ScanMode<T,Op,T> {"
+        "coop::exclusive_scan(group,input,coop::ScanOptions::default().scan_op(op).initial_value(seed))}"
+        "values=seeded(block,&values,valid as i32,coop::Min);" + store,
+        None,
+    ),
+    scan_varying_seed=(
+        load
+        + "values=coop::exclusive_scan(block,&values,coop::ScanOptions::default().initial_value(thread::threadIdx_x() as i32));",
+        "not proved block-uniform",
+    ),
+    scan_varying_participation=(
+        load + "if thread::threadIdx_x()&1==0 {" + scan + "}",
+        "lane-varying",
+    ),
+    scan_warp_scalar=(
+        load + scan_warp + "let seed=warp.rank_at::<coop::Warp>() as i32;"
+        "let result=coop::exclusive_scan(warp,thread::threadIdx_x() as i32,coop::ScanOptions::default().initial_value(seed));"
+        "values.write(0,result);",
+        None,
+    ),
+    scan_warp_payload=(
+        load + scan_warp + "let _result=coop::scan(warp,&values,Default::default());",
+        "ScanValue",
+    ),
+    scan_warp_algorithm=(
+        load
+        + scan_warp
+        + "let _result=coop::scan(warp,1_i32,coop::ScanOptions::default().algorithm(coop::Raking));",
+        "expected `()`, found `Raking`",
+    ),
+    scan_warp_storage=(
+        load
+        + scan_warp
+        + new_storage
+        + "let _result=coop::scan(warp,1_i32,coop::ScanOptions::default().temp_storage(&mut scratch));",
+        "expected struct `ScanOptions<i32, _, _, _, _, ()>`",
+    ),
+    scan_missing_seed=(
+        load
+        + "let _result=coop::scan(block,&values,coop::ScanOptions::default().scan_op(coop::Min));",
+        "ScanMode",
+    ),
+    scan_inclusive_seed=(
+        load
+        + "let _result=coop::scan(block,&values,coop::ScanOptions::default().mode(coop::Inclusive).initial_value(0));",
+        "ScanMode",
+    ),
+    scan_seed_dtype=(
+        load
+        + "let _result=coop::exclusive_scan(block,&values,coop::ScanOptions::default().initial_value(0_i16));",
+        "mismatched types",
+    ),
+    scan_float_bitwise=(
+        load
+        + "let _result=coop::inclusive_scan(block,1_f32,coop::ScanOptions::default().scan_op(coop::BitAnd));",
+        "ScanOperator<f32>",
+    ),
+    scan_storage_reuse=(
+        load + new_storage + scan_manual + sync + scan_manual + store,
+        None,
+    ),
+    scan_storage_missing_barrier=(
+        load + new_storage + scan_manual + scan_manual,
+        "requires a full-block barrier",
+    ),
+    scan_no_global_completion=(
+        load + store + scan + reload,
+        "requires a barrier covering both accesses",
+    ),
+    scan_storage_auto_reuse=(
+        load
+        + new_storage.replace("new()", "new().auto_sync()")
+        + scan_manual
+        + scan_manual
+        + store,
+        None,
+    ),
+)
+
+if args.case:
+    unknown = set(args.case).difference(cases)
+    if unknown:
+        parser.error(f"unknown cases: {', '.join(sorted(unknown))}")
+    cases = {name: case for name, case in cases.items() if name in args.case}
 
 
 command = [

@@ -37,6 +37,11 @@
 //! compiler-planned shared scratch. [`TempStorage`] selects explicit Block reuse
 //! and completion policies; [`StorageReservation`] exposes typed scratch through
 //! raw pointers.
+//! [`scan`] and its four named forms return fresh numeric prefixes. Blocks
+//! accept scalars or borrowed payloads; physical/logical Warp accepts scalars.
+//! Mode, built-in operator and Block algorithm are selected statically through
+//! [`ScanOptions`], with exclusive sum as the default. Scan preserves its input
+//! and uses the same compiler-checked scratch and participation rules.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -45,6 +50,7 @@
 mod alignment;
 mod group;
 mod load_store;
+mod scan;
 mod temp_storage;
 mod thread_data;
 
@@ -53,6 +59,12 @@ pub use cuda_device::{CollectiveTiles, DisjointSlice};
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,
+};
+pub use scan::{
+    BitAnd, BitOr, BitXor, Exclusive, ExclusiveScanOptions, Inclusive, InclusiveScanOptions, Max,
+    Min, Multiplies, Raking, RakingMemoize, ScanAlgorithm, ScanGroup, ScanMode, ScanOperator,
+    ScanOptions, ScanValue, Sum, SumScanOptions, WarpScans, exclusive_scan, exclusive_sum,
+    inclusive_scan, inclusive_sum, scan,
 };
 pub use temp_storage::{StorageReservation, TempStorage, TempStorageLike};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};
