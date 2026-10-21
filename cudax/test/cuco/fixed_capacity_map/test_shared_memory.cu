@@ -162,7 +162,7 @@ C2H_TEST("fixed_capacity_map_ref device initialize — map fully in shared memor
   const ::cuda::stream stream{::cuda::device_ref{0}};
   auto mr = ::cuda::device_default_memory_pool(::cuda::device_ref{0});
 
-  auto thread_ok = ::cuda::make_buffer<int>(stream, mr, num_blocks * block_size, 0);
+  auto thread_ok = ::cuda::make_buffer<int>(stream, mr, static_cast<::cuda::std::size_t>(num_blocks) * block_size, 0);
   cuda::launch(stream,
                cuda::make_config(cuda::grid_dims<num_blocks>(), cuda::block_dims<block_size>()),
                shmem_map_lifecycle_kernel,
@@ -260,8 +260,8 @@ C2H_TEST("fixed_capacity_map_ref make_copy — shared memory copy of a map",
                cudax::cuco::empty_value{static_cast<mapped_type>(-1)},
                cudax::cuco::erased_key{static_cast<key_type>(-2)}};
 
-  auto keys_exist    = ::cuda::make_buffer<int>(stream, mr, num_blocks * num_keys, 0);
-  auto pairs_correct = ::cuda::make_buffer<int>(stream, mr, num_blocks * num_keys, 0);
+  auto keys_exist    = ::cuda::make_buffer<int>(stream, mr, static_cast<::cuda::std::size_t>(num_blocks) * num_keys, 0);
+  auto pairs_correct = ::cuda::make_buffer<int>(stream, mr, static_cast<::cuda::std::size_t>(num_blocks) * num_keys, 0);
   auto copy_mutable  = ::cuda::make_buffer<int>(stream, mr, num_blocks, 0);
 
   SECTION("all keys are found after insertion and pairs are correct")

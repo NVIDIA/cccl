@@ -230,8 +230,11 @@ C2H_TEST("reduce/this_block Integral Type Tests",
   const cuda::stream stream{cuda::devices[0]};
   for (const int num_items : {1, 4})
   {
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * block_size_t::value, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * block_size_t::value,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, block_size_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -256,8 +259,11 @@ C2H_TEST("reduce/this_block Floating-Point Type Tests",
   const cuda::stream stream{cuda::devices[0]};
   for (const int num_items : {1, 4})
   {
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * block_size_t::value, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * block_size_t::value,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, block_size_t{}, num_items, d_in, d_out, reduce_op);
     verify_results(reference_result, c2h::host_vector<value_t>(d_out)[0]);
   }
@@ -278,8 +284,11 @@ C2H_TEST("reduce/this_block Broadcasted", "[reduce][this_block]", integral_type_
   for (const int num_items : {1, 4})
   {
     c2h::device_vector<value_t> d_out(block_size_t::value);
-    auto reference_result =
-      cuda::std::accumulate(h_in.begin(), h_in.begin() + num_items * block_size_t::value, operator_identity, reduce_op);
+    auto reference_result = cuda::std::accumulate(
+      h_in.begin(),
+      h_in.begin() + static_cast<typename decltype(h_in)::difference_type>(num_items) * block_size_t::value,
+      operator_identity,
+      reduce_op);
     run_reduce_kernel(stream, block_size_t{}, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
     verify_results(c2h::host_vector<value_t>(block_size_t::value, reference_result), c2h::host_vector<value_t>(d_out));
   }

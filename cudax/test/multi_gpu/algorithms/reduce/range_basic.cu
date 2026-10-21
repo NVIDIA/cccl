@@ -215,7 +215,7 @@ MULTI_GPU_TEST("reduce, multiple elements per rank", value_types, operators)
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size() * values_per_rank);
+    reference.reserve(static_cast<cuda::std::size_t>(comms.front().size()) * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       const auto v = make_value<T>(r);
@@ -280,7 +280,7 @@ MULTI_GPU_TEST("reduce, some ranks empty", value_types, operators)
   const T expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size() * values_per_rank);
+    reference.reserve(static_cast<cuda::std::size_t>(comms.front().size()) * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       if (r % 2 == 0)

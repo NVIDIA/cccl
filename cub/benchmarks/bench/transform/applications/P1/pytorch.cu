@@ -259,7 +259,7 @@ struct normal_gen
   __host__ __device__ T operator()(int64_t idx) const
   {
     cuda::pcg64 rng(42);
-    rng.discard(offset + idx);
+    rng.discard(static_cast<unsigned long long>(offset) + idx);
     cuda::std::normal_distribution<float> dist(mean, stddev);
     return T(dist(rng));
   }

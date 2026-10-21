@@ -82,7 +82,7 @@ int main(int argc, char** argv)
   const size_t N = nmb * 1024ULL * 1024ULL;
 
   const int ndevs      = cuda_try<cudaGetDeviceCount>();
-  const size_t NBLOCKS = 2 * ndevs;
+  const size_t NBLOCKS = size_t{2} * ndevs;
 
   const size_t BLOCK_SIZE = (N + NBLOCKS - 1) / NBLOCKS;
 

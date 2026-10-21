@@ -72,7 +72,9 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxKeys temp-storage API example", "[batched_t
   REQUIRE(error == cudaSuccess);
   // keys_out is unordered, so sort each segment (descending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == expected_result_set);
 }
 
@@ -120,7 +122,8 @@ CUB_TEST("cub::DeviceBatchedTopK::MinKeys temp-storage API example", "[batched_t
   REQUIRE(error == cudaSuccess);
   // keys_out is unordered, so sort each segment (ascending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k));
   REQUIRE(keys_out == expected_result_set);
 }
 
@@ -193,7 +196,9 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxPairs temp-storage API example", "[batched_
 
   // keys_out is unordered, so sort each segment (descending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == expected_result_set);
 }
 
@@ -265,7 +270,8 @@ CUB_TEST("cub::DeviceBatchedTopK::MinPairs temp-storage API example", "[batched_
 
   // keys_out is unordered, so sort each segment (ascending) before comparing against the expected set.
   thrust::sort(keys_out.begin(), keys_out.begin() + k);
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k);
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k));
   REQUIRE(keys_out == expected_result_set);
 }
 
@@ -314,6 +320,8 @@ CUB_TEST("cub::DeviceBatchedTopK::MaxKeys handles a misaligned temporary storage
   REQUIRE(error == cudaSuccess);
 
   thrust::sort(keys_out.begin(), keys_out.begin() + k, cuda::std::greater<int>{});
-  thrust::sort(keys_out.begin() + k, keys_out.begin() + 2 * k, cuda::std::greater<int>{});
+  thrust::sort(keys_out.begin() + k,
+               keys_out.begin() + 2 * static_cast<typename decltype(keys_out)::difference_type>(k),
+               cuda::std::greater<int>{});
   REQUIRE(keys_out == thrust::device_vector<int>{8, 7, 6, 9, 8, 7});
 }

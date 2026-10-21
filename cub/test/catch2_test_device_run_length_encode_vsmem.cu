@@ -5,6 +5,8 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <cuda/std/cstddef>
+
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
 #include <c2h/catch2_test_helper.h>
@@ -46,8 +48,9 @@ CUB_TEST("DeviceRunLengthEncode::Encode works with huge keys", "[device][run_len
   c2h::host_vector<length_t> expected_lengths(num_segments);
   for (offset_t i = 0; i < num_segments; ++i)
   {
-    expected_keys[i]    = h_segment_keys[h_segment_offsets[i]];
-    expected_lengths[i] = static_cast<length_t>(h_segment_offsets[i + 1] - h_segment_offsets[i]);
+    expected_keys[i] = h_segment_keys[h_segment_offsets[i]];
+    expected_lengths[i] =
+      static_cast<length_t>(h_segment_offsets[static_cast<cuda::std::size_t>(i) + 1] - h_segment_offsets[i]);
   }
 
   c2h::device_vector<key_t> out_unique_keys(num_segments);

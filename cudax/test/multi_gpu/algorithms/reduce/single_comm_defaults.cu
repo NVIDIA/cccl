@@ -59,7 +59,7 @@ MULTI_GPU_TEST("reduce single-comm, overloads default values", )
   const auto expected = [&] {
     std::vector<T> reference;
 
-    reference.reserve(comms.front().size() * values_per_rank);
+    reference.reserve(static_cast<cuda::std::size_t>(comms.front().size()) * values_per_rank);
     for (int r = 0; r < comms.front().size(); ++r)
     {
       reference.insert(reference.end(), values_per_rank, static_cast<T>(r));

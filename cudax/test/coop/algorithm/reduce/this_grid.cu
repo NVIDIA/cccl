@@ -222,7 +222,9 @@ C2H_TEST("reduce/this_grid Integral Type Tests",
   {
     auto reference_result = cuda::std::accumulate(
       h_in.begin(),
-      h_in.begin() + num_items * grid_size_t::value * cluster_size * block_size,
+      h_in.begin()
+        + static_cast<typename decltype(h_in)::difference_type>(num_items) * grid_size_t::value * cluster_size
+            * block_size,
       operator_identity,
       reduce_op);
     run_reduce_kernel(stream, grid_size_t{}, num_items, d_in, d_out, reduce_op);
@@ -255,7 +257,9 @@ C2H_TEST(
   {
     auto reference_result = cuda::std::accumulate(
       h_in.begin(),
-      h_in.begin() + num_items * grid_size_t::value * cluster_size * block_size,
+      h_in.begin()
+        + static_cast<typename decltype(h_in)::difference_type>(num_items) * grid_size_t::value * cluster_size
+            * block_size,
       operator_identity,
       reduce_op);
     run_reduce_kernel(stream, grid_size_t{}, num_items, d_in, d_out, reduce_op);
@@ -287,7 +291,9 @@ C2H_TEST("reduce/this_grid Broadcasted", "[reduce][this_grid]", integral_type_li
     c2h::device_vector<value_t> d_out(grid_size_t::value * cluster_size * block_size);
     auto reference_result = cuda::std::accumulate(
       h_in.begin(),
-      h_in.begin() + num_items * grid_size_t::value * cluster_size * block_size,
+      h_in.begin()
+        + static_cast<typename decltype(h_in)::difference_type>(num_items) * grid_size_t::value * cluster_size
+            * block_size,
       operator_identity,
       reduce_op);
     run_reduce_kernel(stream, grid_size_t{}, num_items, d_in, d_out, reduce_op, cuda::std::true_type{});
