@@ -210,7 +210,6 @@ jobs:
             --env "SCCACHE_DIST_AUTH_TYPE=token" \
             --env "SCCACHE_DIST_AUTH_TOKEN" \
             --env "SCCACHE_ERROR_LOG=/home/coder/cccl/sccache.log" \
-            --env "SCCACHE_RECACHE_DEPENDENCIES=1" \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- ./ci/rapids/rapids-entrypoint.sh /ci.sh
 
