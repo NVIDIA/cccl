@@ -156,7 +156,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!   (e.g., ``(threadIdx.y * blockDim.x) + linear_tid`` for 2D thread blocks)
 //!
 //! @param[in] block_ptr
-//!   Input pointer for storing from
+//!   Output pointer for storing to
 //!
 //! @param[in] items
 //!   Data to store
@@ -473,7 +473,7 @@ enum BlockStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //! - The following conditions will prevent vectorization and writing will fall back to cub::BLOCK_STORE_DIRECT:
   //!
   //!   - ``ItemsPerThread`` is odd
-  //!   - The ``OutputIteratorT`` is not a simple pointer type
+  //!   - The ``OutputIteratorT`` is not a contiguous iterator
   //!   - The block output offset is not quadword-aligned
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
   //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)
