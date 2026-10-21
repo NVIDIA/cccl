@@ -83,7 +83,7 @@ jobs:
             pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
                            select(.node.project.id == "${{ env.PROJECT_ID }}") |
                            .node.id' project_data.json)
-            echo "ITEM_ID=$pr_id" >> $GITHUB_ENV
+            echo "ITEM_ID=$pr_id" >> "$GITHUB_ENV"
         continue-on-error: true
 
       - name: Get Issue Project ID
@@ -121,7 +121,7 @@ jobs:
             issue_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
                            select(.node.project.id == "${{ env.PROJECT_ID }}") |
                            .node.id' project_data.json)
-            echo "ITEM_ID=$issue_id" >> $GITHUB_ENV
+            echo "ITEM_ID=$issue_id" >> "$GITHUB_ENV"
         continue-on-error: true
 
       - name: Get Current Release
@@ -149,7 +149,7 @@ jobs:
                 }
                 }' > roadmap_option_data.json
             current_roadmap_option_id=$(jq -r '.data.node.field.options[0].id' roadmap_option_data.json)
-            echo "CURRENT_ROADMAP_OPTION_ID=$current_roadmap_option_id" >> $GITHUB_ENV
+            echo "CURRENT_ROADMAP_OPTION_ID=$current_roadmap_option_id" >> "$GITHUB_ENV"
         continue-on-error: true
 
       - name: Set Item Roadmap

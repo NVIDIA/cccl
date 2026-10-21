@@ -64,12 +64,9 @@ struct __static_abs
 };
 
 template <intmax_t _Xp>
-struct __static_sign
-{
-  static const intmax_t value = _Xp == 0 ? 0 : (_Xp < 0 ? -1 : 1);
-};
+inline constexpr intmax_t __static_sign_v = _Xp == 0 ? 0 : (_Xp < 0 ? -1 : 1);
 
-template <intmax_t _Xp, intmax_t _Yp, intmax_t = __static_sign<_Yp>::value>
+template <intmax_t _Xp, intmax_t _Yp, intmax_t = __static_sign_v<_Yp>>
 class __ll_add;
 
 template <intmax_t _Xp, intmax_t _Yp>
@@ -103,7 +100,7 @@ public:
   static const intmax_t value = _Xp + _Yp;
 };
 
-template <intmax_t _Xp, intmax_t _Yp, intmax_t = __static_sign<_Yp>::value>
+template <intmax_t _Xp, intmax_t _Yp, intmax_t = __static_sign_v<_Yp>>
 class __ll_sub;
 
 template <intmax_t _Xp, intmax_t _Yp>
@@ -195,7 +192,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT ratio
   static_assert(__static_abs<_Den>::value > 0, "ratio denominator is out of range");
   static constexpr intmax_t __na  = __static_abs<_Num>::value;
   static constexpr intmax_t __da  = __static_abs<_Den>::value;
-  static constexpr intmax_t __s   = __static_sign<_Num>::value * __static_sign<_Den>::value;
+  static constexpr intmax_t __s   = __static_sign_v<_Num> * __static_sign_v<_Den>;
   static constexpr intmax_t __gcd = __static_gcd<__na, __da>::value;
 
 public:
@@ -307,8 +304,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_equal : public bool_constant<(_R1::nu
 {};
 
 template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_not_equal : public bool_constant<(!ratio_equal<_R1, _R2>::value)>
+inline constexpr bool ratio_equal_v = ratio_equal<_R1, _R2>::value;
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_not_equal : public bool_constant<(!ratio_equal_v<_R1, _R2>)>
 {};
+
+template <class _R1, class _R2>
+inline constexpr bool ratio_not_equal_v = ratio_not_equal<_R1, _R2>::value;
 
 // ratio_less
 
@@ -348,10 +351,7 @@ struct __ratio_less1<_R1, _R2, _Odd, _Qp, _M1, _Qp, _M2>
   static const bool value = __ratio_less1<ratio<_R1::den, _M1>, ratio<_R2::den, _M2>, !_Odd>::value;
 };
 
-template <class _R1,
-          class _R2,
-          intmax_t _S1 = __static_sign<_R1::num>::value,
-          intmax_t _S2 = __static_sign<_R2::num>::value>
+template <class _R1, class _R2, intmax_t _S1 = __static_sign_v<_R1::num>, intmax_t _S2 = __static_sign_v<_R2::num>>
 struct __ratio_less
 {
   static const bool value = _S1 < _S2;
@@ -374,15 +374,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_less : public bool_constant<(__ratio_
 {};
 
 template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_less_equal : public bool_constant<(!ratio_less<_R2, _R1>::value)>
+inline constexpr bool ratio_less_v = ratio_less<_R1, _R2>::value;
+
+template <class _R1, class _R2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_less_equal : public bool_constant<(!ratio_less_v<_R2, _R1>)>
 {};
 
 template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater : public bool_constant<(ratio_less<_R2, _R1>::value)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater : public bool_constant<(ratio_less_v<_R2, _R1>)>
 {};
 
 template <class _R1, class _R2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater_equal : public bool_constant<(!ratio_less<_R1, _R2>::value)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT ratio_greater_equal : public bool_constant<(!ratio_less_v<_R1, _R2>)>
 {};
 
 template <class _R1, class _R2>
@@ -390,15 +393,6 @@ struct __ratio_gcd
 {
   using type = ratio<__static_gcd<_R1::num, _R2::num>::value, __static_lcm<_R1::den, _R2::den>::value>;
 };
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_equal_v = ratio_equal<_R1, _R2>::value;
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_not_equal_v = ratio_not_equal<_R1, _R2>::value;
-
-template <class _R1, class _R2>
-inline constexpr bool ratio_less_v = ratio_less<_R1, _R2>::value;
 
 template <class _R1, class _R2>
 inline constexpr bool ratio_less_equal_v = ratio_less_equal<_R1, _R2>::value;

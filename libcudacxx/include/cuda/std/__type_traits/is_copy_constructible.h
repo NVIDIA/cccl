@@ -22,7 +22,8 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/is_constructible.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_constructible.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -19,9 +19,7 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
-using ffloat = cudax::fp32mp2;
+using ffloat = cuda::fp32mp2;
 
 // double -> fp32mp2 -> double must be idempotent after the first round trip.
 TEST_HOST_DEVICE_FUNC void run_test()

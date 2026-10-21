@@ -24,9 +24,6 @@
 #include <cuda/std/__algorithm/comp_ref_type.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/iterator_operations.h>
-#include <cuda/std/__functional/identity.h>
-#include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>

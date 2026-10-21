@@ -5,15 +5,14 @@
 //
 //  Unit test: every named fpmp2 free function is callable qualified.
 //
-//  The recommended way to reach the FP SDK is a namespace alias plus explicit
-//  qualification, not a using-directive:
+//  The recommended way to reach the FP SDK is explicit qualification, not a
+//  using-directive:
 //
-//      namespace cudax = cuda::experimental;
-//      auto y = cudax::sqrt(x);
+//      auto y = cuda::sqrt(x);
 //
 //  That only works if the named functions are members of the namespace. A
 //  function defined as a hidden friend inside the class is found by ADL alone,
-//  so the qualified spelling fails to compile with "is not a member of cudax",
+//  so the qualified spelling fails to compile with "is not a member of cuda",
 //  which is why this file exists: it pins every named entry point to namespace
 //  scope so none of them can regress to a hidden friend unnoticed.
 //
@@ -37,8 +36,6 @@
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
-
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // Equality on the full multi-precision value, not just its double image, so a
 // wrong low word cannot pass unnoticed.
@@ -64,59 +61,59 @@ TEST_HOST_DEVICE_FUNC void test_named()
   // itself the check that it is a namespace member, since qualified lookup does not
   // find a hidden friend - this line stops compiling if it moves back into the class,
   // even though ADL would still find the unqualified one next to it.
-  assert(same(cudax::renormalize(a), renormalize(a)));
-  assert(static_cast<double>(cudax::renormalize(a)) == 3.0);
+  assert(same(cuda::renormalize(a), renormalize(a)));
+  assert(static_cast<double>(cuda::renormalize(a)) == 3.0);
 
-  assert(same(cudax::sqrt(c), sqrt(c)));
-  assert(static_cast<double>(cudax::sqrt(c)) == 2.0);
+  assert(same(cuda::sqrt(c), sqrt(c)));
+  assert(static_cast<double>(cuda::sqrt(c)) == 2.0);
 
   // rsqrt is iterative, so only the two spellings are compared, not an exact value.
-  assert(same(cudax::rsqrt(c), rsqrt(c)));
+  assert(same(cuda::rsqrt(c), rsqrt(c)));
 
-  assert(same(cudax::fma(a, b, c), fma(a, b, c)));
-  assert(static_cast<double>(cudax::fma(a, b, c)) == 8.5); // 3 * 1.5 + 4
+  assert(same(cuda::fma(a, b, c), fma(a, b, c)));
+  assert(static_cast<double>(cuda::fma(a, b, c)) == 8.5); // 3 * 1.5 + 4
 
-  assert(same(cudax::mad(a, b, c), mad(a, b, c)));
-  assert(static_cast<double>(cudax::mad(a, b, c)) == 8.5);
+  assert(same(cuda::mad(a, b, c), mad(a, b, c)));
+  assert(static_cast<double>(cuda::mad(a, b, c)) == 8.5);
 }
 
 // ---- accuracy-selecting functions: qualified only -------------------------
-template <class T, cudax::fpmp2_accuracy Acc>
+template <class T, cuda::fpmp2_accuracy Acc>
 TEST_HOST_DEVICE_FUNC void test_accuracy_selected()
 {
   const T a(3.0);
   const T b(1.5);
   const T c(4.0);
 
-  assert(static_cast<double>(cudax::add<Acc>(a, b)) == 4.5);
-  assert(static_cast<double>(cudax::sub<Acc>(a, b)) == 1.5);
-  assert(static_cast<double>(cudax::mul<Acc>(a, b)) == 4.5);
-  assert(static_cast<double>(cudax::div<Acc>(a, b)) == 2.0);
-  assert(static_cast<double>(cudax::fma<Acc>(a, b, c)) == 8.5);
-  assert(static_cast<double>(cudax::mad<Acc>(a, b, c)) == 8.5);
+  assert(static_cast<double>(cuda::add<Acc>(a, b)) == 4.5);
+  assert(static_cast<double>(cuda::sub<Acc>(a, b)) == 1.5);
+  assert(static_cast<double>(cuda::mul<Acc>(a, b)) == 4.5);
+  assert(static_cast<double>(cuda::div<Acc>(a, b)) == 2.0);
+  assert(static_cast<double>(cuda::fma<Acc>(a, b, c)) == 8.5);
+  assert(static_cast<double>(cuda::mad<Acc>(a, b, c)) == 8.5);
 }
 
 template <class T>
 TEST_HOST_DEVICE_FUNC void test_type()
 {
   test_named<T>();
-  test_accuracy_selected<T, cudax::fpmp2_accuracy::low>();
-  test_accuracy_selected<T, cudax::fpmp2_accuracy::mid>();
-  test_accuracy_selected<T, cudax::fpmp2_accuracy::high>();
-  test_accuracy_selected<T, cudax::fpmp2_accuracy::def>();
+  test_accuracy_selected<T, cuda::fpmp2_accuracy::low>();
+  test_accuracy_selected<T, cuda::fpmp2_accuracy::mid>();
+  test_accuracy_selected<T, cuda::fpmp2_accuracy::high>();
+  test_accuracy_selected<T, cuda::fpmp2_accuracy::def>();
 }
 
 TEST_HOST_DEVICE_FUNC void test()
 {
-  test_type<cudax::fp32mp2>();
-  test_type<cudax::fp32mp2_low>();
-  test_type<cudax::fp32mp2_mid>();
-  test_type<cudax::fp32mp2_high>();
+  test_type<cuda::fp32mp2>();
+  test_type<cuda::fp32mp2_low>();
+  test_type<cuda::fp32mp2_mid>();
+  test_type<cuda::fp32mp2_high>();
 
-  test_type<cudax::fp64mp2>();
-  test_type<cudax::fp64mp2_low>();
-  test_type<cudax::fp64mp2_mid>();
-  test_type<cudax::fp64mp2_high>();
+  test_type<cuda::fp64mp2>();
+  test_type<cuda::fp64mp2_low>();
+  test_type<cuda::fp64mp2_mid>();
+  test_type<cuda::fp64mp2_high>();
 }
 
 int main(int, char**)

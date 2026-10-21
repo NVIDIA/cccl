@@ -130,19 +130,15 @@ Using the types
 #include <cuda/fpemu>
 ```
 
-The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
-examples abbreviate it rather than using a using-directive:
+The CCCL FP component lives in the `cuda` namespace. The examples qualify its names rather
+than using a using-directive.
 
-```c++
-namespace cudax = cuda::experimental;
-```
-
-Type names carry the `cudax::` prefix; the standard-named math functions are left
+Type names carry the `cuda::` prefix; the standard-named math functions are left
 **unqualified** and found by argument-dependent lookup, so a body of `double` code keeps its
 call sites when the type underneath is swapped:
 
 ```c++
-cudax::fp64emu x = 2.0;      // implicit, as to double
+cuda::fp64emu x = 2.0;      // implicit, as to double
 auto r = sqrt(x);            // unqualified: ADL finds the fpemu overload
 ```
 
@@ -162,7 +158,7 @@ drop-in — including the integer constructors, which are implicit at 64 bits as
 the same principle that makes `long` to `double` implicit despite its potential loss. The
 unpacked form asks for the cast everywhere, since entering it is a change of representation
 rather than just of type — the practical consequence in real code is that `acc += 0.5` needs to
-become `acc += cudax::fp64emu_unpacked{0.5}`.
+become `acc += cuda::fp64emu_unpacked{0.5}`.
 
 `__int128` and `__uint128` are `= delete`d in both directions, and `__float128` on the way in,
 rather than being absent, so the diagnostic names the rule. Only the default constructors are
