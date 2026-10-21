@@ -1318,6 +1318,120 @@ cases.update(
     ),
 )
 
+# Adjacent Difference keeps counted suffixes initialized and requires uniform
+# neighbor/count controls. Explicit scratch retains its existing completion rules.
+adjacent = "let result=coop::adjacent_difference(block,&values,Default::default());"
+adjacent_manual = "values=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().temp_storage(&mut scratch));"
+cases.update(
+    adjacent_generic_defaults=(
+        load + "fn forward<T:coop::Numeric,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>)->coop::ThreadData<T,N,A> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::adjacent_difference(block,input,Default::default())}"
+        "let default_result=forward(block,&values);"
+        "let mut one=coop::ThreadData::<_,1>::new();one.write(0,7_i32);"
+        "let one_result=forward(block,&mut one);"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,0_i32);aligned.write(1,1);aligned.write(2,2);aligned.write(3,3);"
+        "let mut aligned_result:coop::ThreadData<_,4,16>=forward(block,&mut aligned);"
+        "aligned_result.write(0,default_result[0]^one_result[0]);"
+        + store.replace("&values", "&aligned_result"),
+        None,
+    ),
+    adjacent_recipes_partial_block=(
+        load + "let a=coop::adjacent_difference(block,&values,Default::default());"
+        "let b=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().tile_predecessor_item(7));"
+        "let c=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().valid_items(valid));"
+        "let d=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().tile_predecessor_item(7).valid_items(0));"
+        "let e=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().direction(coop::Right));"
+        "let f=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().tile_successor_item(7).direction(coop::Right));"
+        "let g=coop::adjacent_difference(block,&values,coop::AdjacentDifferenceOptions::default().valid_items(valid).direction(coop::Right));"
+        "values.write(0,a[0]^b[0]^c[0]^d[0]^e[0]^f[0]^g[0]);" + store,
+        None,
+    ),
+    adjacent_right_count_successor=(
+        load + "let result=coop::adjacent_difference(block,&values,"
+        "coop::AdjacentDifferenceOptions::default().direction(coop::Right).valid_items(512).tile_successor_item(0));",
+        "AdjacentDifferenceDirection",
+    ),
+    adjacent_predecessor_then_right=(
+        load + "let result=coop::adjacent_difference(block,&values,"
+        "coop::AdjacentDifferenceOptions::default().tile_predecessor_item(0).direction(coop::Right));",
+        "AdjacentDifferenceDirection",
+    ),
+    adjacent_left_successor=(
+        load + "let result=coop::adjacent_difference(block,&values,"
+        "coop::AdjacentDifferenceOptions::default().tile_successor_item(0));",
+        "AdjacentDifferenceDirection",
+    ),
+    adjacent_neighbor_type=(
+        load + "let result=coop::adjacent_difference(block,&values,"
+        "coop::AdjacentDifferenceOptions::default().tile_predecessor_item(0_i64));",
+        "mismatched types",
+    ),
+    adjacent_scalar=(
+        load + "let result=coop::adjacent_difference(block,&3_i32,Default::default());",
+        "mismatched types",
+    ),
+    adjacent_warp=(
+        load
+        + "let result=coop::adjacent_difference(coop::this_warp(),&values,Default::default());",
+        "mismatched types",
+    ),
+    adjacent_partition=(
+        load
+        + "let result=coop::adjacent_difference(block.group_by::<2>(),&values,Default::default());",
+        "mismatched types",
+    ),
+    adjacent_varying_count=(
+        load + "let result=coop::adjacent_difference(block,&values,"
+        "coop::AdjacentDifferenceOptions::default().valid_items(thread::threadIdx_x() as usize));",
+        "not proved block-uniform",
+    ),
+    adjacent_varying_predecessor=(
+        load + "let result=coop::adjacent_difference(block,&values,"
+        "coop::AdjacentDifferenceOptions::default().tile_predecessor_item(thread::threadIdx_x() as i32));",
+        "not proved block-uniform",
+    ),
+    adjacent_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + adjacent + "}",
+        "lane-varying",
+    ),
+    adjacent_result_control=(
+        load + adjacent + "if result[0]==0 {" + adjacent + "}",
+        "lane-varying",
+    ),
+    adjacent_storage_missing_barrier=(
+        load + new_storage + adjacent_manual + adjacent_manual,
+        "requires a full-block barrier",
+    ),
+    adjacent_storage_completed=(
+        load + new_storage + adjacent_manual + sync + adjacent_manual + store,
+        None,
+    ),
+    adjacent_storage_auto=(
+        load
+        + new_storage.replace("new()", "new().auto_sync()")
+        + adjacent_manual
+        + adjacent_manual
+        + store,
+        None,
+    ),
+    adjacent_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + adjacent
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+    adjacent_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + adjacent
+        + sync
+        + store,
+        None,
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

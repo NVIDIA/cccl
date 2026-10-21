@@ -3,8 +3,9 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles Load/Store, Scan, Reduce, batched Reduce, Exchange and Shuffle with
-//! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
+//! This private development crate compiles Load/Store, Scan, Reduce, batched
+//! Reduce, Exchange, Shuffle and Adjacent Difference with NVRTC. It returns
+//! linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
 //!
@@ -47,6 +48,9 @@
 //! supports exact Blocks and power-of-two Warps using shared memory.
 //! [`ShuffleRequest`] shifts a complete Block tile by one item, preserving input
 //! and returning fresh output with exactly one invalid boundary slot.
+//! [`AdjacentDifferenceRequest`] subtracts left or right neighbors in a Block
+//! tile or prefix, preserving input and copying unchanged boundary/suffix items
+//! into a fully initialized fresh output.
 //! [`Provider::compile_native`] batches these families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
@@ -76,12 +80,14 @@
 
 #![deny(unsafe_code)]
 
+mod adjacent_difference;
 mod exchange;
 mod headers;
 mod reduce;
 mod reduce_batched;
 mod scan;
 mod shuffle;
+pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
@@ -477,6 +483,8 @@ pub enum NativeRequest {
     Exchange(ExchangeRequest),
     /// One-item Block Shuffle with preserved input and a partial fresh output.
     Shuffle(ShuffleRequest),
+    /// Block adjacent subtraction with preserved input and a complete fresh output.
+    AdjacentDifference(AdjacentDifferenceRequest),
 }
 
 impl NativeRequest {
@@ -488,6 +496,7 @@ impl NativeRequest {
             Self::ReduceBatched(request) => request.block_shape(),
             Self::Exchange(request) => request.block_shape(),
             Self::Shuffle(request) => request.block_shape(),
+            Self::AdjacentDifference(request) => request.block_shape(),
         }
     }
 
@@ -499,6 +508,7 @@ impl NativeRequest {
             Self::ReduceBatched(request) => request.source(symbol),
             Self::Exchange(request) => request.source(symbol),
             Self::Shuffle(request) => request.source(symbol),
+            Self::AdjacentDifference(request) => request.source(symbol),
         }
     }
 
@@ -510,6 +520,7 @@ impl NativeRequest {
             Self::ReduceBatched(request) => request.recipe.token(),
             Self::Exchange(request) => request.recipe.token().into(),
             Self::Shuffle(request) => request.recipe.token().into(),
+            Self::AdjacentDifference(request) => request.recipe.token().into(),
         }
     }
 
@@ -520,7 +531,8 @@ impl NativeRequest {
             | Self::Reduce(_)
             | Self::ReduceBatched(_)
             | Self::Exchange(_)
-            | Self::Shuffle(_) => false,
+            | Self::Shuffle(_)
+            | Self::AdjacentDifference(_) => false,
         }
     }
 
@@ -534,7 +546,8 @@ impl NativeRequest {
             | Self::Reduce(_)
             | Self::ReduceBatched(_)
             | Self::Exchange(_)
-            | Self::Shuffle(_) => false,
+            | Self::Shuffle(_)
+            | Self::AdjacentDifference(_) => false,
         }
     }
 }
@@ -553,9 +566,10 @@ pub struct Layout {
 /// # Device ABI obligations
 ///
 /// The memory-tile and payload-layout requirements below describe Load/Store.
-/// Scan, Reduce, batched Reduce, Exchange and Shuffle use lane-private input and fresh output;
-/// their ABI and validity contracts are documented by [`ScanRequest`],
-/// [`ReduceRequest`], [`ReduceBatchedRequest`], [`ExchangeRequest`] and [`ShuffleRequest`].
+/// Scan, Reduce, batched Reduce, Exchange, Shuffle and Adjacent Difference use
+/// lane-private input and fresh output. Their ABI and validity contracts are
+/// documented by [`ScanRequest`], [`ReduceRequest`], [`ReduceBatchedRequest`],
+/// [`ExchangeRequest`], [`ShuffleRequest`] and [`AdjacentDifferenceRequest`].
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -709,8 +723,8 @@ impl Provider {
     /// Compile an ordered mixed batch of the supported families in one NVRTC program.
     ///
     /// Per-specialization identity is independent of unrelated batch members.
-    /// Scan/Reduce/batched Reduce/Exchange/Shuffle scratch describes one group and includes
-    /// the actual CUB TempStorage,
+    /// Scan/Reduce/batched Reduce/Exchange/Shuffle/Adjacent Difference scratch
+    /// describes one group and includes the actual CUB TempStorage,
     /// even when its C++ empty type occupies one byte. The caller plans replication.
     ///
     /// # Errors
@@ -754,6 +768,7 @@ impl Provider {
             include_bytes!("reduce_batched.rs"),
             include_bytes!("exchange.rs"),
             include_bytes!("shuffle.rs"),
+            include_bytes!("adjacent_difference.rs"),
         ] {
             hash_field(&mut inputs, bytes);
         }

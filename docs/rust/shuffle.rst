@@ -82,7 +82,7 @@ Oxide checks participation and plans the actual CUB shared storage, including
 synchronization before reuse. Keep collective calls outside lane-specific
 branches and reconverge after repairing the edge, as the helper does.
 Shuffle does not promise completion of earlier global-memory accesses. Use
-the block's ``sync()`` when dependent accesses need completion.
+``cuda_device::thread::sync_threads()`` when dependent accesses need block completion.
 
 See :doc:`payload` for checked access and :doc:`groups` for participation.
 Generate the item reference with ``cargo doc --workspace --no-deps`` from

@@ -3,9 +3,9 @@
 
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
-    Algorithm, ExchangeMode, ExchangeRecipe, Operation, ReduceAlgorithm, ReduceBatchedLayout,
-    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
-    ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
+    AdjacentDifferenceRecipe, Algorithm, ExchangeMode, ExchangeRecipe, Operation, ReduceAlgorithm,
+    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe,
+    ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -17,6 +17,28 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (recipe, name) in [
+        (AdjacentDifferenceRecipe::LeftFull, "LEFT_FULL"),
+        (
+            AdjacentDifferenceRecipe::LeftFullPredecessor,
+            "LEFT_FULL_PREDECESSOR",
+        ),
+        (AdjacentDifferenceRecipe::LeftPartial, "LEFT_PARTIAL"),
+        (
+            AdjacentDifferenceRecipe::LeftPartialPredecessor,
+            "LEFT_PARTIAL_PREDECESSOR",
+        ),
+        (AdjacentDifferenceRecipe::RightFull, "RIGHT_FULL"),
+        (
+            AdjacentDifferenceRecipe::RightFullSuccessor,
+            "RIGHT_FULL_SUCCESSOR",
+        ),
+        (AdjacentDifferenceRecipe::RightPartial, "RIGHT_PARTIAL"),
+    ] {
+        let value = oxide::adjacent_difference_registration(&executable, recipe)
+            .expect("cuda.coop adjacent difference registration");
+        println!("cargo::rustc-env=COOP_ADJACENT_DIFFERENCE_{name}={value}");
+    }
     for (recipe, name) in [(ShuffleRecipe::Down, "DOWN"), (ShuffleRecipe::Up, "UP")] {
         let value = oxide::shuffle_registration(&executable, recipe)
             .expect("cuda.coop shuffle registration");

@@ -16,13 +16,16 @@
 //! Warp batched Reduce through [`ReduceBatchedRecipe`]. Out-of-place Block/Warp
 //! Exchange uses [`ExchangeRecipe`] with no scalar controls; Block Shuffle uses
 //! [`ShuffleRecipe`] for one-item shifts with partial fresh output.
+//! [`AdjacentDifferenceRecipe`] selects Block neighbor subtraction with typed
+//! optional count and predecessor/successor controls.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
-    Algorithm, Artifact, Dtype, Error, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
-    Operation, Provider, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe,
-    ReduceRequest, Request, Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
+    AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, Dtype, Error,
+    ExchangeRecipe, ExchangeRequest, Layout, NativeRequest, Operation, Provider,
+    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe, ReduceRequest, Request,
+    Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -125,6 +128,19 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("adjacent_difference_") {
+            let recipe = AdjacentDifferenceRecipe::parse(&self.operation, &self.algorithm)?;
+            if self.warp_width.is_some() {
+                return Err(Error::message("Adjacent Difference requires a Block scope"));
+            }
+            return AdjacentDifferenceRequest::block(
+                self.dtype.dtype()?,
+                recipe,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::AdjacentDifference);
+        }
         if self.operation.starts_with("shuffle_") {
             let recipe = ShuffleRecipe::parse(&self.operation, &self.algorithm)?;
             if self.warp_width.is_some() {
@@ -291,6 +307,22 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::AdjacentDifference(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.counted() {
+                arguments.push(Argument::Value(Scalar::Signed(32)));
+            }
+            if request.recipe.has_neighbor() {
+                arguments.push(Argument::Value(dtype));
+            }
+            return arguments;
+        }
         NativeRequest::Shuffle(request) => {
             let dtype = Scalar::from(request.dtype);
             return vec![
@@ -573,6 +605,35 @@ pub fn shuffle_registration(executable: &Path, recipe: ShuffleRecipe) -> Result<
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode a Block Adjacent Difference recipe for the existing provider executable.
+///
+/// Dtype, exact Block geometry and payload extent arrive with specialization.
+/// Four typed payload pointers describe preserved input and fully initialized
+/// fresh output with packed validity. Partial recipes append an `i32` count;
+/// recipes with a tile predecessor or successor append that value in the exact
+/// input dtype, after the count when present. Scratch is inserted by the
+/// existing library-call ABI. See [`AdjacentDifferenceRequest`] for capacities,
+/// boundary behavior and participation requirements.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn adjacent_difference_registration(
+    executable: &Path,
+    recipe: AdjacentDifferenceRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InputRequest {
@@ -741,6 +802,66 @@ mod tests {
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn adjacent_difference_registration_preserves_typed_controls() {
+        use AdjacentDifferenceRecipe::*;
+        for (recipe, controls) in [
+            (LeftFull, vec![]),
+            (LeftFullPredecessor, vec![Scalar::Float(64)]),
+            (LeftPartial, vec![Scalar::Signed(32)]),
+            (
+                LeftPartialPredecessor,
+                vec![Scalar::Signed(32), Scalar::Float(64)],
+            ),
+            (RightFull, vec![]),
+            (RightFullSuccessor, vec![Scalar::Float(64)]),
+            (RightPartial, vec![Scalar::Signed(32)]),
+        ] {
+            let registration: serde_json::Value = serde_json::from_str(
+                &adjacent_difference_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let mut request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: Scalar::Float(64),
+                block: [4, 3, 2],
+                items_per_thread: 9,
+                warp_width: None,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::AdjacentDifference(
+                    AdjacentDifferenceRequest::block(Dtype::F64, recipe, [4, 3, 2], 9).unwrap()
+                )
+            );
+            let mut expected = vec![
+                Argument::ConstPointer(Scalar::Float(64)),
+                Argument::MutPointer(Scalar::Float(64)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            expected.extend(controls.into_iter().map(Argument::Value));
+            assert_eq!(arguments(native), expected);
+            assert!(!native.scratch_free() && !native.mutates_payload());
+            assert_eq!(registration["version"], 1);
+            assert_eq!(registration["provider"], "cuda_coop");
+            request.warp_width = Some(32);
+            assert!(request.native().is_err());
+        }
+        assert!(adjacent_difference_registration(Path::new("relative"), LeftFull).is_err());
+        assert!(
+            AdjacentDifferenceRecipe::parse(
+                "adjacent_difference_right_partial_successor_validity_bits_v1",
+                "block"
+            )
+            .is_err()
+        );
+        assert!(AdjacentDifferenceRecipe::parse(LeftFull.token(), "warp").is_err());
+        assert!(AdjacentDifferenceRecipe::parse(RightFull.token(), "transpose").is_err());
+    }
 
     #[test]
     fn shuffle_registration_preserves_scope_extent_and_pointer_abi() {

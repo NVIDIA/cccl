@@ -4,12 +4,134 @@
 //! Real native compiler coverage; ordinary host tests need no CUDA installation.
 
 use cuda_coop_codegen::{
-    Algorithm, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
-    Operation, Provider, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
-    ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request, ScanAlgorithm,
-    ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
+    AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Dtype, ExchangeMode,
+    ExchangeRecipe, ExchangeRequest, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
+    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator,
+    ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe,
+    ShuffleRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_adjacent_difference_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use AdjacentDifferenceRecipe::*;
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    // Distribute all types and seven overloads over small, odd and XYZ Blocks;
+    // N9 crosses the packed-validity byte boundary without a Cartesian matrix.
+    for (dtype, block, items, recipe) in [
+        (Dtype::I8, [1, 1, 1], 1, LeftFull),
+        (Dtype::U8, [1, 1, 1], 1, RightFull),
+        (Dtype::I16, [33, 1, 1], 1, LeftFullPredecessor),
+        (Dtype::U16, [4, 3, 2], 4, RightFullSuccessor),
+        (Dtype::I32, [33, 1, 1], 9, LeftPartial),
+        (Dtype::U32, [64, 1, 1], 4, RightPartial),
+        (Dtype::I64, [4, 3, 2], 4, LeftPartialPredecessor),
+        (Dtype::U64, [64, 1, 1], 1, LeftFull),
+        (Dtype::F32, [128, 1, 1], 4, RightFull),
+        (Dtype::F64, [4, 3, 2], 9, LeftPartialPredecessor),
+    ] {
+        requests.push(NativeRequest::AdjacentDifference(
+            AdjacentDifferenceRequest::block(dtype, recipe, block, items)?,
+        ));
+    }
+    requests.extend([
+        NativeRequest::LoadStore(Request::new_typed(
+            Dtype::I32,
+            Operation::LoadFullValidity,
+            Algorithm::Direct,
+            64,
+            4,
+        )?),
+        NativeRequest::Scan(ScanRequest::warp(
+            Dtype::I32,
+            ScanOperation::ExclusiveSum,
+            [64, 1, 1],
+            8,
+        )?),
+        NativeRequest::Reduce(ReduceRequest::warp(
+            Dtype::I32,
+            ReduceOperator::Sum,
+            ReduceForm::Payload,
+            [64, 1, 1],
+            8,
+            4,
+        )?),
+        NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+            Dtype::I32,
+            ReduceBatchedRecipe::new(ReduceOperator::Sum, ReduceBatchedLayout::Striped),
+            [64, 1, 1],
+            8,
+            4,
+        )?),
+        NativeRequest::Exchange(ExchangeRequest::warp(
+            Dtype::I32,
+            ExchangeRecipe::Warp(ExchangeMode::StripedToBlocked),
+            [64, 1, 1],
+            32,
+            4,
+        )?),
+        NativeRequest::Shuffle(ShuffleRequest::block(
+            Dtype::I32,
+            ShuffleRecipe::Down,
+            [64, 1, 1],
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 16);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        if matches!(request, NativeRequest::LoadStore(_)) {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        } else {
+            assert_eq!(entry.cub_layout, entry.scratch);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free && !entry.mutates_payload);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    // Both endpoint planes belong to CUB TempStorage, even for one direction.
+    assert_eq!(
+        artifact.specializations[0].scratch,
+        Layout {
+            size: 2,
+            alignment: 1
+        }
+    );
+    assert_eq!(
+        artifact.specializations[9].scratch,
+        Layout {
+            size: 384,
+            alignment: 8
+        }
+    );
+    assert!(
+        provider
+            .compile_native(&[requests[0], requests[0]], &target)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate")
+    );
+    eprintln!(
+        "{} mixed Adjacent Difference/Load/Scan/Reduce/batched Reduce/Exchange/Shuffle specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]

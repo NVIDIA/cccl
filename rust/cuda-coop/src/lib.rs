@@ -57,6 +57,10 @@
 //! returns a fresh payload with the same type, extent and alignment.
 //! [`shuffle`] shifts a complete block's values by one item, preserving input
 //! and returning the same payload shape with one invalid boundary slot.
+//! [`adjacent_difference`] subtracts adjacent blocked items on a complete Block.
+//! It preserves full-readable input and returns a fully initialized fresh payload,
+//! copying any inactive count suffix unchanged. [`AdjacentDifferenceOptions`]
+//! selects direction, typed outside neighbors, count and existing scratch policy.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -64,6 +68,7 @@
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
 
+mod adjacent_difference;
 mod alignment;
 mod exchange;
 mod group;
@@ -75,6 +80,9 @@ mod shuffle;
 mod temp_storage;
 mod thread_data;
 
+pub use adjacent_difference::{
+    AdjacentDifferenceDirection, AdjacentDifferenceOptions, Left, Right, adjacent_difference,
+};
 pub use alignment::{Alignment, SupportedAlignment};
 pub use cuda_device::{CollectiveTiles, DisjointSlice};
 pub use exchange::{
