@@ -46,7 +46,9 @@ jobs:
     name: "SASS diff: ${{ inputs.id }}"
     # No GPU is necessary: the benchmarks are compiled and disassembled, not
     # run. A CPU runner is enough and is much cheaper.
-    runs-on: linux-amd64-cpu32m
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu32m' || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -64,6 +66,7 @@ jobs:
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA

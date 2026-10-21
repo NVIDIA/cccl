@@ -33,7 +33,6 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
       pull-requests: write
@@ -220,7 +219,12 @@ jobs:
           allow_override: "true"
           inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
-          workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
+          workflows: |-
+            ${{ case(
+              github.event.repository.fork, 'pull_request_fork',
+              contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner), 'pull_request',
+              'pull_request_fork'
+            ) }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -333,11 +337,7 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: >-
-      ${{
-           needs.build-workflow.outputs.vdc_enabled == 'true' &&
-           github.repository == 'NVIDIA/cccl'
-      }}
+    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
     permissions:
       id-token: write
       contents: read
@@ -354,7 +354,9 @@ jobs:
         needs.build-workflow.outputs.docs_enabled == 'true' &&
         github.repository == 'NVIDIA/cccl'
       }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:
@@ -374,7 +376,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.rapids_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -391,7 +393,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.matx_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -405,7 +407,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pytorch_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:

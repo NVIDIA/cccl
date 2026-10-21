@@ -67,7 +67,9 @@ on:
 jobs:
   run:
     name: "Compile-time: ${{ inputs.name }}"
-    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          format('linux-amd64-gpu-{0}-latest-1', inputs.gpu) || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -79,6 +81,7 @@ jobs:
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA

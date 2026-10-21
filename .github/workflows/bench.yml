@@ -122,7 +122,9 @@ on:
 jobs:
   run:
     name: "Bench: ${{inputs.gpu}} ${{inputs.arch}} ${{inputs.launch_args}}"
-    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          format('linux-amd64-gpu-{0}-latest-1', inputs.gpu) || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -147,6 +149,7 @@ jobs:
           echo "CCCL_BENCH_NVBENCH_SHA=${nvbench_sha}" >> "${GITHUB_ENV}"
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
