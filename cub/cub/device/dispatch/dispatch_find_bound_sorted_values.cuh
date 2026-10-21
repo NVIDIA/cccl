@@ -27,7 +27,6 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/limits>
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
@@ -56,7 +55,10 @@ _CCCL_KERNEL_ATTRIBUTES void device_partition_find_bound_sorted_values_kernel(
   const Offset diagonal_idx = static_cast<Offset>(blockDim.x) * (start_block + blockIdx.x) + threadIdx.x;
   if (diagonal_idx < num_diagonals)
   {
-    const Offset diagonal = ::cuda::std::min(diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count);
+    // the expression cuda::std::min(diagonal_idx * static_cast<Offset>(tile_size), range_count + values_count) can
+    // overflow the offset type
+    const Offset diagonal =
+      diagonal_idx == num_diagonals - 1 ? range_count + values_count : diagonal_idx * static_cast<Offset>(tile_size);
     range_beg_offsets[diagonal_idx] =
       cub::MergePath(d_range, d_values, range_count, values_count, diagonal, partition_comp);
   }
