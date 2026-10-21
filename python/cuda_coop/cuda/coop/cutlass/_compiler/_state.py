@@ -55,6 +55,7 @@ class BundleSession:
         self.trace_module_op = trace_module_op
         self.requests = set()
         self._deferred_temp_storage_events: list[DeferredTempStorageEvent] = []
+        self._temp_storage_lifetime_events: list[Any] = []
         self._lock = threading.RLock()
 
     def add(self, request):
@@ -69,15 +70,17 @@ class BundleSession:
                 self.trace_module_op,
                 set(self.requests),
                 list(self._deferred_temp_storage_events),
+                list(self._temp_storage_lifetime_events),
             )
 
     def restore(self, snapshot):
         """Restore trace bookkeeping without changing emitted MLIR."""
 
         with self._lock:
-            self.trace_module_op, requests, events = snapshot
+            self.trace_module_op, requests, events, lifetimes = snapshot
             self.requests = set(requests)
             self._deferred_temp_storage_events = list(events)
+            self._temp_storage_lifetime_events = list(lifetimes)
 
     def request_list(self):
         """Order requests by symbol and reject conflicting definitions."""
@@ -101,7 +104,19 @@ class BundleSession:
 
     def is_empty(self):
         with self._lock:
-            return not self.requests and not self._deferred_temp_storage_events
+            return not (
+                self.requests
+                or self._deferred_temp_storage_events
+                or self._temp_storage_lifetime_events
+            )
+
+    def add_temp_storage_lifetime_event(self, event):
+        with self._lock:
+            self._temp_storage_lifetime_events.append(event)
+
+    def temp_storage_lifetime_event_list(self):
+        with self._lock:
+            return list(self._temp_storage_lifetime_events)
 
     def belongs_to_trace_module(self, module):
         with self._lock:

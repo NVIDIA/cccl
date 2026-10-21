@@ -6,8 +6,8 @@
 
 The descriptor holds compile-time policy and identity, not a device pointer.
 Finalization allocates storage after C++ layout probes establish its size.
-The MLIR hooks expose no values and rebuild to the same object, so traced
-loops keep the descriptor identity used to group storage requests.
+The MLIR hooks carry an analysis token through branches and loops, preserving
+aliases until finalization checks terminal release.
 """
 
 from enum import Enum
@@ -45,8 +45,9 @@ class TempStorage:
         execution of one call site reuses its slice, including in a loop.
 
     Equal settings do not combine separate descriptors. Reuse the same object
-    to share an allocation across calls in a kernel. The descriptor carries
-    no runtime MLIR values. Finalization supplies the storage operands.
+    to share an allocation across calls in a kernel. Finalization validates
+    descriptor lifetimes and supplies the storage operands. ``release``
+    consumes the descriptor and returns its complete region as a native view.
     """
 
     def __init__(
@@ -90,16 +91,31 @@ class TempStorage:
         # Sharing selects the slice layout; synchronization is independent.
         # The caller synchronizes before reuse unless auto_sync=True.
         self.auto_sync = False if auto_sync is None else auto_sync
+        from ._compiler._lifetime import register_creation
+
+        self._identity_owner = self
+        self._identity_token = register_creation(self)
 
     def __extract_mlir_values__(self):
-        # The descriptor carries compile-time identity, including through loops.
-        # Its storage pointer is supplied by finalization at each call site.
-        return []
+        return [] if self._identity_token is None else [self._identity_token]
 
     def __new_from_mlir_values__(self, values):
-        if values:
-            raise ValueError("TempStorage has no runtime MLIR values")
-        return self
+        if self._identity_token is None:
+            if values:
+                raise ValueError("Host TempStorage has no runtime MLIR values")
+            return self
+        if len(values) != 1:
+            raise ValueError(
+                "TempStorage requires one descriptor identity token"
+            )
+        result = object.__new__(type(self))
+        result.__dict__.update(self.__dict__)
+        result._identity_token = (
+            values[0].ir_value()
+            if hasattr(values[0], "ir_value")
+            else values[0]
+        )
+        return result
 
     @property
     def capacity_size_in_bytes(self):
@@ -115,6 +131,9 @@ class TempStorage:
         """Synchronize the block before manually reusing temporary storage."""
         from cutlass.cute.arch import sync_threads
 
+        from ._compiler._lifetime import register_use
+
+        register_use(self, "sync()")
         sync_threads()
 
     def reserve(self, num_elems, dtype, *, alignment=None):
@@ -142,6 +161,27 @@ class TempStorage:
         return reserve_temp_storage_tensor(
             self, num_elems, dtype, alignment=alignment
         )
+
+    def release(self, dtype=None):
+        """Return the entire existing region as a native shared CuTe tensor.
+
+        ``dtype`` is a supported compile-time scalar type; omission returns
+        bytes (Uint8). The resolved capacity includes exclusive slices,
+        padding, and any explicit capacity. Its size must be divisible by
+        the element size and its alignment must satisfy that type. An empty
+        inferred region is rejected. Inferred extents resolve at finalization.
+        The descriptor must be constructed inside the kernel.
+
+        This consumes every alias of the descriptor on the executing path.
+        Subsequent primitives, reserve, sync, or release calls are compile
+        errors, including across loop iterations. A fresh constructor inside
+        a loop creates a new logical instance. Release adds no allocation,
+        barrier, or asynchronous completion wait; the caller completes prior
+        work before using overlapping bytes through the returned tensor.
+        """
+        from ._compiler._storage import release_temp_storage_tensor
+
+        return release_temp_storage_tensor(self, dtype)
 
 
 __all__ = ["TempStorage"]

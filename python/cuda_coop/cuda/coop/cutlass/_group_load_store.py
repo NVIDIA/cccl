@@ -67,6 +67,11 @@ def _resolve_group(group, algorithm, temp_storage, operation):
     algorithm = _normalize_algorithm(algorithm)
     if temp_storage is not None:
         _validate_common_temp_storage(operation, temp_storage)
+        from ._compiler._lifetime import register_use
+        from ._temp_storage import TempStorage
+
+        if isinstance(temp_storage, TempStorage):
+            register_use(temp_storage, operation)
     from ._compiler._launch import current_kernel_launch_facts
 
     launch = current_kernel_launch_facts()
