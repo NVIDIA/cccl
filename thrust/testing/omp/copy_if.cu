@@ -27,8 +27,8 @@ struct is_even
   }
 };
 
-// Returns memory 7 bytes past a cache line boundary, which is legal for a char allocator. Every eighth 8-byte word in
-// it then crosses a cache line.
+// Returns memory 7 bytes past a cache line boundary, which is legal for a char allocator, so every eighth 8-byte word
+// in it crosses a cache line
 struct misaligning_allocator
 {
   using value_type = char;
@@ -135,9 +135,9 @@ TEST_CASE("TestOmpCopyIfOutputIteratorWithoutComparisons", "[copy_if]")
 {
   for (const int n : {100, 1 << 16})
   {
-    thrust::host_vector<int> input(n);
+    thrust::host_vector<int> input(n, thrust::no_init);
     thrust::sequence(input.begin(), input.end());
-    thrust::host_vector<int> result(n);
+    thrust::host_vector<int> result(n, thrust::no_init);
 
     const output_iterator_without_comparisons end = thrust::copy_if(
       thrust::omp::par, input.data(), input.data() + n, output_iterator_without_comparisons{result.data()}, is_even{});
@@ -152,15 +152,15 @@ TEST_CASE("TestOmpCopyIfOutputIteratorWithoutComparisons", "[copy_if]")
 
 TEST_CASE("TestOmpCopyIfPredicateTakingLvalueReferenceToZipReference", "[copy_if]")
 {
-  // Like the generic implementation, copy_if passes elements to pred as const lvalues, also for a zip_iterator, whose
+  // copy_if passes elements to pred as const lvalues, like the generic implementation, although zip_iterator's
   // reference is a prvalue
   for (const int n : {100, 1 << 16})
   {
-    thrust::device_vector<int> a(n);
+    thrust::device_vector<int> a(n, thrust::no_init);
     thrust::device_vector<int> b(n, n / 2);
     thrust::sequence(a.begin(), a.end());
-    thrust::device_vector<int> out_a(n);
-    thrust::device_vector<int> out_b(n);
+    thrust::device_vector<int> out_a(n, thrust::no_init);
+    thrust::device_vector<int> out_b(n, thrust::no_init);
 
     const auto first = thrust::make_zip_iterator(a.begin(), b.begin());
     const auto end =
@@ -181,7 +181,7 @@ TEST_CASE("TestOmpCopyIfNarrowDifferenceType", "[copy_if]")
   const int n = 20000;
 
   const thrust::counting_iterator<int, thrust::use_default, thrust::use_default, short> first(0);
-  thrust::device_vector<int> result(n);
+  thrust::device_vector<int> result(n, thrust::no_init);
 
   const auto end = thrust::copy_if(first, first + static_cast<short>(n), result.begin(), is_even{});
 

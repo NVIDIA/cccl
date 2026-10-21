@@ -33,6 +33,7 @@
 #include <cuda/std/__iterator/distance.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/atomic>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
@@ -50,20 +51,18 @@ inline constexpr int parallel_copy_if_threshold = 1024;
 
 namespace copy_if_detail
 {
-// Measured on a 64-core Grace with 1- to 32-byte elements: small tiles spread a costly predicate over all threads just
-// above the threshold, while more and smaller tiles make the shared tile counter a bottleneck for large inputs, and
-// larger tiles lose cache locality for large elements.
+// Tuned on a 64-core Grace with 1- to 32-byte elements: the minimum lets a costly predicate use all threads just above
+// the threshold, and the maximum balances contention on the tile counter against cache locality.
 inline constexpr int min_tile_size = 64;
 inline constexpr int max_tile_size = 8192;
 
 using status_word = ::cuda::std::uint64_t;
 
-// A tile's status word holds a number of selected elements, shifted left by two, and one of these flags
+// A status word holds a count of selected elements, shifted left by two, and one of these flags
 inline constexpr status_word status_partial = 1; // selected elements in this tile
 inline constexpr status_word status_prefix  = 2; // selected elements in this tile and all earlier ones
 
-// Whether an iterator's reference is an rvalue reference or a tuple holding one, like a zip_iterator over a
-// move_iterator
+// Whether a reference type is or holds an rvalue reference, like that of a move_iterator or a zip_iterator over one
 template <typename Reference>
 inline constexpr bool has_rvalue_reference = ::cuda::std::is_rvalue_reference_v<Reference>;
 
@@ -97,8 +96,7 @@ OutputIterator copy_if(
                                                         (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value,
                 "OpenMP compiler support is not enabled");
 
-  // Moving the selected elements out would break the algorithms built on copy_if that read their input again, like
-  // unique_copy and stable_partition_copy
+  // Moving elements out would break algorithms built on copy_if that read the input again, like unique_copy
   static_assert(!copy_if_detail::has_rvalue_reference<thrust::detail::it_reference_t<InputIterator1>>,
                 "copy_if and the algorithms built on it do not support an input iterator with an rvalue reference, "
                 "like a move_iterator, with the OpenMP system");
@@ -114,7 +112,7 @@ OutputIterator copy_if(
   const int num_threads = 1;
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 
-  // Like generic::copy_if, call pred with a const lvalue, also for prvalue references like zip_iterator's
+  // Pass elements to pred as const lvalues, as generic::copy_if does
   using const_lvalue_predicate = thrust::detail::predicate_to_integral<Predicate, bool>;
 
   if (n < parallel_copy_if_threshold || num_threads <= 1)
@@ -122,30 +120,25 @@ OutputIterator copy_if(
     return thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, const_lvalue_predicate{pred});
   }
 
-  // Single pass with decoupled look-back. Threads take tiles in increasing order from a shared counter. For its tile, a
-  // thread evaluates pred once per element into a local flag buffer and publishes the tile's count in the tile's status
-  // word. It then adds up the counts of the preceding tiles, walking back until it finds a published prefix, publishes
-  // its own prefix, and copies the selected elements of the tile to their final position.
+  // Single pass with decoupled look-back. Threads take tiles in order from a shared counter. For its tile, a thread
+  // evaluates pred once per element into a flag buffer and publishes the tile's count. It then adds up the counts of
+  // earlier tiles back to the first published prefix, publishes its own prefix and copies the selected elements.
   //
-  // Progress: a thread only waits for the status of an earlier tile. That tile was handed out earlier, so a thread is
-  // working on it, and that thread publishes the tile's count before it waits for anything. The waits cannot form a
-  // cycle and only require the owners of earlier tiles to get scheduled, whatever the team size. Publishers call
-  // atomic_ref::notify_all for the waiters. libcu++ implements the host wait by polling with a back-off from spinning
-  // to yielding and sleeping, which it does on an idle machine too, and which lets more threads than cores progress.
+  // Progress: a thread only waits for earlier tiles, whose owners publish their counts before waiting on anything, so
+  // the waits cannot form a cycle, whatever the team size. libcu++'s host wait polls with a back-off from spinning to
+  // yielding and sleeping, so more threads than cores also make progress.
   //
-  // Memory order: a status word packs the flag with the count, so a reader never sees one without the other, and the
-  // counts are the only data a thread reads from another one. The output ranges of the tiles are disjoint and only read
-  // after the barrier that ends the parallel region, so relaxed accesses are sufficient.
+  // Memory order: a status word packs the flag with the count, the counts are the only data threads share, and the
+  // disjoint output ranges are only read after the region's closing barrier, so relaxed accesses are sufficient.
   const Size tile_size = ::cuda::std::clamp(
     ::cuda::ceil_div(n, static_cast<Size>(num_threads)),
     static_cast<Size>(copy_if_detail::min_tile_size),
     static_cast<Size>(copy_if_detail::max_tile_size));
   const Size num_tiles = ::cuda::ceil_div(n, tile_size);
 
-  // A custom temporary allocator may return memory that is only aligned for its own value_type, e.g. char, while a
-  // misaligned status word can be read torn. Allocate bytes with room for one more word and align the start.
+  // A custom allocator may only align for its own value_type, e.g. char, and a misaligned status word can be read torn
   thrust::detail::temporary_array<::cuda::std::uint8_t, DerivedPolicy> status_storage(
-    exec, (num_tiles + 1) * static_cast<Size>(sizeof(status_word)));
+    exec, (static_cast<::cuda::std::size_t>(num_tiles) + 1) * sizeof(status_word));
   status_word* const tile_status = reinterpret_cast<status_word*>(::cuda::align_up(
     thrust::raw_pointer_cast(status_storage.data()), ::cuda::atomic_ref<status_word>::required_alignment));
   ::cuda::std::fill_n(tile_status, num_tiles, status_word{0});
@@ -155,8 +148,7 @@ OutputIterator copy_if(
   // Set by the thread that handles the last tile
   Size num_selected = 0;
 
-  // Set by a team of one thread. Keeping the end returned by sequential::copy_if, instead of its distance to result,
-  // requires no comparison or difference of OutputIterators.
+  // Set by a team of one thread. Keeping the returned end avoids comparing or subtracting OutputIterators.
   ::cuda::std::optional<OutputIterator> team_of_one_result;
 
   const thrust::detail::wrapped_function<const_lvalue_predicate, bool> wrapped_pred{const_lvalue_predicate{pred}};
@@ -188,7 +180,7 @@ OutputIterator copy_if(
         }
 
         const Size tile_begin = tile * tile_size;
-        // n - tile_begin is an int for a Size like short
+        // n - tile_begin is an int for a narrow Size like short
         const Size tile_items = (::cuda::std::min) (tile_size, static_cast<Size>(n - tile_begin));
 
         Size count                = 0;
