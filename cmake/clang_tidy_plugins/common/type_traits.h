@@ -73,7 +73,7 @@ template <class Node, class DeclFactory>
     }
     else
     {
-      static_assert(!std::is_same_v<Decl, Decl>, "Unhandled node kind");
+      static_assert(!std::is_same_v<Node, Node>, "Unhandled node kind");
     }
   }();
 
