@@ -67,9 +67,8 @@ on:
 jobs:
   run:
     name: "Compile-time: ${{ inputs.name }}"
-    runs-on: |-
-      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
-          format('linux-amd64-gpu-{0}-latest-1', inputs.gpu) || 'ubuntu-latest' }}
+    if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
+    runs-on: linux-amd64-gpu-${{ inputs.gpu }}-latest-1
     permissions:
       id-token: write
       contents: read

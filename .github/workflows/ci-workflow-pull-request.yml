@@ -351,8 +351,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.docs_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        needs.build-workflow.outputs.docs_enabled == 'true'
       }}
     runs-on: |-
       ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
@@ -422,7 +421,7 @@ jobs:
     needs:
       - dispatch-groups-linux-two-stage
       - dispatch-groups-linux-standalone
-    if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
     steps:
