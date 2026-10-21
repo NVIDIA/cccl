@@ -904,6 +904,7 @@ private:
       merge_candidates(keys_out, values_out, key, value, compare_op);
       k_th = get_key_threshold(keys_out, k_th_item, k_th_lane);
       num_candidates -= LogicalWarpThreads;
+      __syncwarp(member_mask); // ensure the temp_storage load has finished
     }
     if (is_candidate)
     {

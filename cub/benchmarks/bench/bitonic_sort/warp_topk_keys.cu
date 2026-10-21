@@ -56,6 +56,7 @@ struct full_op_t
     using warp_topk_t = cub::detail::WarpBitonicTopK<KeyT, MaxK, warp_threads, cub::NullType, Algo>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
     warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, CustomLess{}, calc_k(MaxK));
+    __syncwarp(); // reuse temp_storage in the next benchmark iteration
   }
 };
 
@@ -88,6 +89,7 @@ struct partial_op_t
     // valid_items axis that would bloat benchmark combinations.
     constexpr int valid_nums = ItemsPerThread * warp_threads;
     warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, CustomLess{}, calc_k(MaxK), valid_nums);
+    __syncwarp(); // reuse temp_storage in the next benchmark iteration
   }
 };
 
@@ -122,6 +124,7 @@ __global__ void iterator_kernel(int num_iterations, KeyT* keys_in, int k, int nu
     const std::size_t offset = input_offset + i * num_items;
     warp_topk.TopK(keys_in + offset, CustomLess{}, k, num_items, keys_out);
     sink(keys_out);
+    __syncwarp(); // reused temp_storage in the next iteration
   }
 }
 
