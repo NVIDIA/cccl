@@ -38,5 +38,7 @@ class TempStorage:
         alignment: int | None = None,
     ) -> Any:
         """Return a typed CuTe tensor using this descriptor's sharing policy."""
+    def release(self, dtype: object = None) -> Any:
+        """Consume this descriptor and return its complete shared region."""
 
 __all__ = ["TempStorage"]

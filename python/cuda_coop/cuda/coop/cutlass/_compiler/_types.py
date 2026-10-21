@@ -124,6 +124,7 @@ class DeferredTempStorageEvent:
     size_placeholder: Any
     location: str
     reservation_layout: ScratchLayout | None = None
+    release_itemsize: int | None = None
 
 
 @dataclass(frozen=True)

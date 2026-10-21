@@ -111,6 +111,7 @@ def register_deferred_temp_storage_event(
     primitive_name: str,
     requirement_key: Hashable,
     reservation_layout: ScratchLayout | None = None,
+    release_itemsize: int | None = None,
     active_session_getter: Callable[[], BundleSession] = active_bundle_session,
 ) -> tuple[Any, Any, Any]:
     """Record one traced scratch use before its C++ layout is available.
@@ -154,6 +155,12 @@ def register_deferred_temp_storage_event(
         raise TypeError("scratch requirement keys must be hashable") from exc
 
     session = active_session_getter()
+    from ._lifetime import register_use
+
+    if hasattr(temp_storage, "_identity_token"):
+        register_use(
+            temp_storage, primitive_name, release=release_itemsize is not None
+        )
     kernel_op = _active_cuda_kernel_op()
     smem_addr_placeholder = _fresh_i32_placeholder()
     size_placeholder = _fresh_i32_placeholder()
@@ -167,7 +174,7 @@ def register_deferred_temp_storage_event(
         DeferredTempStorageEvent(
             kernel_op=kernel_op,
             kernel_name=_cuda_kernel_name(kernel_op),
-            temp_storage=temp_storage,
+            temp_storage=getattr(temp_storage, "_identity_owner", temp_storage),
             primitive_name=primitive_name,
             requirement_key=requirement_key,
             sharing=temp_storage.sharing,
@@ -178,6 +185,7 @@ def register_deferred_temp_storage_event(
             size_placeholder=size_placeholder,
             location=location,
             reservation_layout=reservation_layout,
+            release_itemsize=release_itemsize,
         )
     )
     return (
@@ -256,6 +264,47 @@ def _align_up(value: int, alignment: int) -> int:
     return value if remainder == 0 else value + alignment - remainder
 
 
+def release_temp_storage_tensor(temp_storage, dtype):
+    """Expose the full allocation using deferred address and extent operands."""
+    import numpy as np
+    from cutlass import BFloat16, Float16, Uint8, cute
+
+    from ._types import ALL_PROVIDER_TYPES, canonical_dsl_type
+
+    if dtype is None:
+        value_type = Uint8
+    else:
+        if not isinstance(dtype, (type, np.dtype)):
+            raise TypeError(
+                "TempStorage.release dtype must be a compile-time scalar type."
+            )
+        value_type = canonical_dsl_type(dtype)
+        if dtype is np.float16 or dtype == np.dtype(np.float16):
+            value_type = Float16
+        if dtype in (Float16, BFloat16):
+            value_type = dtype
+    if value_type not in ALL_PROVIDER_TYPES | {Float16, BFloat16}:
+        raise TypeError(
+            "TempStorage.release dtype must be a supported numeric scalar type."
+        )
+    itemsize = value_type.width // 8
+    address, size, _ = register_deferred_temp_storage_event(
+        temp_storage,
+        primitive_name="release()",
+        requirement_key=None,
+        release_itemsize=itemsize,
+    )
+    pointer = cute.make_ptr(
+        value_type,
+        address,
+        cute.AddressSpace.smem,
+        assumed_align=max(itemsize, temp_storage.alignment or 1),
+    )
+    tensor = cute.make_tensor(pointer, cute.make_layout(size // itemsize))
+    # Preserve signedness when the pointer's MLIR element type is signless.
+    return cute.recast_tensor(tensor, value_type)
+
+
 def plan_deferred_temp_storage_events(
     events: list[DeferredTempStorageEvent],
     layouts: Mapping[Hashable, ScratchLayout],
@@ -320,6 +369,8 @@ def plan_deferred_temp_storage_events(
                 )
         event_layouts = []
         for event in group_events:
+            if event.release_itemsize is not None:
+                continue
             layout = event.reservation_layout or layouts.get(
                 event.requirement_key
             )
@@ -331,11 +382,11 @@ def plan_deferred_temp_storage_events(
             event_layouts.append((event, layout))
 
         required_plan_alignment = max(
-            layout.alignment for _, layout in event_layouts
+            (layout.alignment for _, layout in event_layouts), default=1
         )
         if first.sharing == "shared":
             planned_size = max(
-                layout.size_in_bytes for _, layout in event_layouts
+                (layout.size_in_bytes for _, layout in event_layouts), default=0
             )
             planned_bindings = tuple(
                 (event, 0, planned_size, required_plan_alignment)
@@ -365,6 +416,31 @@ def plan_deferred_temp_storage_events(
         plan_alignment = max(
             first.capacity_alignment or 1, required_plan_alignment
         )
+
+        releases = []
+        for event in group_events:
+            itemsize = event.release_itemsize
+            if itemsize is None:
+                continue
+            if not resolved_size_in_bytes:
+                raise DSLRuntimeError(
+                    "TempStorage.release requires an existing nonempty region."
+                )
+            if resolved_size_in_bytes % itemsize:
+                raise DSLRuntimeError(
+                    "TempStorage.release region size is not divisible by "
+                    "dtype item size "
+                    f"({resolved_size_in_bytes} % {itemsize}; "
+                    f"{event.location})."
+                )
+            if plan_alignment % itemsize:
+                raise DSLRuntimeError(
+                    "TempStorage.release dtype requires "
+                    f"{itemsize}-byte alignment; "
+                    f"region guarantees {plan_alignment} ({event.location})."
+                )
+            releases.append((event, 0, resolved_size_in_bytes, plan_alignment))
+        planned_bindings = (*planned_bindings, *releases)
 
         bindings = tuple(
             DeferredTempStorageBinding(

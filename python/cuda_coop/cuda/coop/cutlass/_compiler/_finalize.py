@@ -11,7 +11,7 @@ from typing import Any
 
 from cutlass.base_dsl.common import DSLRuntimeError
 
-from . import _bundle, _cache, _rendering, _state, _storage, _target
+from . import _bundle, _cache, _lifetime, _rendering, _state, _storage, _target
 
 ROOT_SCOPE = "cuda.coop.cutlass"
 
@@ -83,12 +83,14 @@ def _trace_finalize_hook(dsl, module, function_name):
     session = _state.pop_bundle_session(options, trace_module_op=module)
     if session is None or session.is_empty():
         return
+    _lifetime.validate_temp_storage_lifetimes(session)
     requests = session.request_list()
     if not requests:
         plans = _storage.plan_deferred_temp_storage_events(
             session.deferred_temp_storage_event_list(), {}
         )
         _storage.materialize_deferred_temp_storage_plans(plans)
+        _lifetime.erase_temp_storage_lifetime_markers(session)
         return
     source = _rendering.render_bundle_source(requests)
     arch = _target.resolve_nvrtc_arch(
@@ -114,6 +116,7 @@ def _trace_finalize_hook(dsl, module, function_name):
         session.deferred_temp_storage_event_list(), layouts
     )
     _storage.materialize_deferred_temp_storage_plans(plans)
+    _lifetime.erase_temp_storage_lifetime_markers(session)
     _bundle.append_link_library_attr(module, path)
 
 

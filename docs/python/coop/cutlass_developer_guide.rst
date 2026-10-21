@@ -414,6 +414,28 @@ cooperative provider calls. A descriptor with reservations requires
 ``auto_sync=False`` for every use; finalization also checks earlier and later
 primitive events before materializing its allocation.
 
+``TempStorage.release(dtype=None)`` consumes the descriptor and returns its
+complete region as a one-dimensional native CuTe tensor. The default dtype
+is ``cutlass.Uint8``. Inferred size resolves during finalization; exclusive
+slices, their padding, and explicit extra capacity are included. The region
+must be nonempty, its size divisible by the element size, and its guaranteed
+alignment sufficient for the requested type. The descriptor must be
+constructed inside the kernel.
+For a typed release without preceding primitive or reservation uses, specify
+``alignment`` of at least the dtype's element size on the constructor.
+
+Release adds no allocation or synchronization. Complete previous accesses
+and asynchronous operations before using overlapping bytes. All aliases of
+the descriptor become unusable on the executing path, including calls to
+``reserve``, ``sync``, ``release``, and storage-free primitives. The finalizer
+checks reachable branch and loop paths, so a conditional release prevents a
+later use after the branches join. Mutually exclusive releases are valid,
+as is a fresh descriptor constructed and consumed within each iteration.
+Runtime selection between different descriptor instances is rejected when
+release is involved; it cannot silently select the Python trace's template.
+Identity tokens and use markers support this analysis without device-side
+lifetime flags.
+
 Exclusive slices still need reuse synchronization when one call site runs
 again in a loop. Explicit descriptors default to ``auto_sync=False`` for both
 sharing modes, so the kernel must call ``storage.sync()`` before reuse. Set
