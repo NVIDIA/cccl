@@ -15,6 +15,7 @@
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
@@ -57,8 +58,9 @@ using AgentMergeSortPolicy CCCL_DEPRECATED_BECAUSE("Use the tuning API for Devic
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct MergeSortPolicy
 {
-  int threads_per_block; //!< Number of threads in a CUDA block
-  int items_per_thread; //!< Number of items processed per thread
+  int threads_per_block; //!< Number of threads in a CUDA block. Must be a power of two in the range [1; 1024], and a
+                         //!< multiple of the warp size if a @c WARP_TRANSPOSE load or store algorithm is used
+  int items_per_thread; //!< Number of items processed per thread. Must be at least 1
   BlockLoadAlgorithm load_algorithm; //!< The @ref BlockLoadAlgorithm used for loading items from global memory
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory

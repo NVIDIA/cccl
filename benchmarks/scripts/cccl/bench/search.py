@@ -3,7 +3,7 @@ import re
 
 import numpy as np
 
-from .bench import BaseBench, Bench
+from .bench import BaseBench, Bench, device_json
 from .cmake import CMake
 from .config import Config
 from .smoke import (
@@ -137,11 +137,17 @@ def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
             )
         )
 
-    # Scanning 2^32 elements of I128 allocates too much memory on DGX Spark. See NVBug 6683746
-    if algname in [
-        "cub.bench.scan.exclusive.sum",
-        "cub.bench.scan.exclusive.deterministic",
-    ]:
+    # Exclude high-memory types on GB10's shared CPU/GPU memory. See NVBug 6683746
+    if (
+        algname
+        in [
+            "cub.bench.scan.exclusive.sum",
+            "cub.bench.scan.exclusive.custom",
+            "cub.bench.scan.exclusive.deterministic",
+            "cub.bench.transform.babelstream",
+        ]
+        and device_json(algname)["name"] == "NVIDIA GB10"
+    ):
         ct_space = list(filter(lambda variant: "T{ct}=I128" not in variant, ct_space))
 
     if algname == "cub.bench.merge_sort.pairs":

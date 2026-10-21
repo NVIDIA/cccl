@@ -54,9 +54,7 @@ _CCCL_CONCEPT group = _CCCL_REQUIRES_EXPR((_Group), _Group&& __g, const _Group&&
   _Same_as(void) __g.sync_aligned(),
 
   // Properties.
-  _Same_as(bool) _Group::is_always_exhaustive(),
   _Same_as(bool) _Group::is_always_contiguous(),
-  (::cuda::std::bool_constant<_Group::is_always_exhaustive()>::value),
   (::cuda::std::bool_constant<_Group::is_always_contiguous()>::value)
 
   // todo: add __sub_unit_queryable and __super_unit_queryable

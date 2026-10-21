@@ -75,7 +75,7 @@ Common options:
 Example:
 
 ```bash
-.devcontainer/launch.sh -d --cuda 13.3 --host gcc14 -- <script> [args...]
+.devcontainer/launch.sh -d --cuda 13.4 --host gcc14 -- <script> [args...]
 ```
 
 ### `ci/util/build_and_test_targets.sh`

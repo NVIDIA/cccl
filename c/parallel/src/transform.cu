@@ -14,7 +14,6 @@
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_temporary_storage.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstdint>

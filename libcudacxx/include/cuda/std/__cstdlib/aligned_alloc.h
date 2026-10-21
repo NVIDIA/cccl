@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__cstdlib/malloc.h>
 #include <cuda/std/cstring>
 
 #if _CCCL_HOSTED()

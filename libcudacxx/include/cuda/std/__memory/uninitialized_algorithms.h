@@ -27,13 +27,18 @@
 #include <cuda/std/__algorithm/move.h>
 #include <cuda/std/__algorithm/unwrap_iter.h>
 #include <cuda/std/__algorithm/unwrap_range.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__fwd/iterator.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__memory/voidify.h>
-#include <cuda/std/__new/device_new.h>
+#include <cuda/std/__new/device_new.h> // IWYU pragma: keep
 #include <cuda/std/__new_>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
@@ -41,7 +46,6 @@
 #include <cuda/std/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #include <cuda/std/__type_traits/is_unbounded_array.h>
-#include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__utility/exception_guard.h>

@@ -3,7 +3,10 @@
 
 #include <thrust/tabulate.h>
 
+#include <cuda/stream>
+
 #include <c2h/bfloat16.cuh>
+#include <c2h/detail/current_device.cuh>
 #include <c2h/detail/generators.cuh>
 #include <c2h/device_policy.h>
 #include <c2h/extended_types.h>
@@ -12,11 +15,24 @@
 
 namespace c2h::detail
 {
+template <typename Policy, typename T>
+void gen_values_between_impl(const Policy& policy, seed_t seed, ::cuda::std::span<T> data, T min, T max)
+{
+  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
+  gen_values_op(policy, data, op);
+}
+
 template <typename T>
 void gen_values_between(seed_t seed, ::cuda::std::span<T> data, T min, T max)
 {
-  auto op = index_to_transformed_random_uniform<random_to_item_t<T>>{seed.get(), random_to_item_t<T>(min, max)};
-  thrust::tabulate(device_policy, data.begin(), data.end(), op);
+  gen_values_between_impl(device_policy, seed, data, min, max);
+}
+
+template <typename T>
+void gen_values_between(::cuda::stream_ref stream, seed_t seed, ::cuda::std::span<T> data, T min, T max)
+{
+  assert_current_device(stream.device().get());
+  gen_values_between_impl(device_policy.on(stream.get()), seed, data, min, max);
 }
 
 template <typename T>
@@ -38,8 +54,9 @@ void gen_values_cyclic(modulo_t mod, ::cuda::std::span<T> data)
   thrust::tabulate(device_policy, data.begin(), data.end(), counter_to_cyclic_item_t<T>{mod.get()});
 }
 
-#define INSTANTIATE_RND(TYPE) \
-  template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max)
+#define INSTANTIATE_RND(TYPE)                                                                       \
+  template void gen_values_between<TYPE>(seed_t, ::cuda::std::span<TYPE> data, TYPE min, TYPE max); \
+  template void gen_values_between<TYPE>(::cuda::stream_ref, seed_t, ::cuda::std::span<TYPE>, TYPE min, TYPE max)
 #define INSTANTIATE_MOD(TYPE) template void gen_values_cyclic<TYPE>(modulo_t, ::cuda::std::span<TYPE> data)
 
 #define INSTANTIATE(TYPE) \

@@ -11,7 +11,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-#include <cuda/experimental/__nccl/abi_compatible.h>
+#include <cuda/experimental/mgmn/__nccl/abi_compatible.h>
 
 #include <c2h/catch2_test_helper.h>
 

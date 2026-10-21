@@ -31,8 +31,8 @@ sequenced in the output (unless you also request a stable ordering, as described
 the selected items in the output buffer may still vary unless you also request a specific output
 ordering. Non-determinism arises only when more elements compare equal at the selection boundary
 than there are remaining slots in the top-*K*. For example, with *K* = 3 and four elements tied for
-the third-largest position, the algorithm must choose three of the four, and that choice is the
-source of variability.
+the largest key, the algorithm must choose three of the four, and that choice is the source of
+variability.
 
 **Output ordering applies to the result sequence.** Once the result set is fixed, output ordering
 specifies how those *K* items are laid out in the output buffer.
@@ -86,8 +86,10 @@ requires ``determinism::gpu_to_gpu``. See :ref:`cub-topk-set-membership` for the
        -- and segments larger than a single thread block are also supported.
 
    * :cpp:struct:`cub::DeviceTopK` implements only the fully opted-out configuration
-     (``cuda::execution::determinism::not_guaranteed`` with unsorted output) and has no tie-break
-     dimension yet, so it omits the ``tie_break`` token. Its sorted output remains unimplemented.
+     (``cuda::execution::determinism::not_guaranteed`` with unsorted output). It accepts
+     ``tie_break::unspecified`` (the recommended, forward-compatible spelling) and, in CCCL 3.x, also
+     the omission of ``tie_break``; ``prefer_smaller_index`` / ``prefer_larger_index`` are rejected
+     because they remain unimplemented as does its sorted output.
 
    The remaining deterministic, tie-broken, and stable-sorted modes documented here define the
    committed long-term contract and will become available (including as the no-requirement default) as
@@ -125,6 +127,9 @@ across GPUs, so it requires ``determinism::gpu_to_gpu``. Pairing it with ``run_t
 ``not_guaranteed`` is rejected at compile time. ``determinism`` and ``tie_break`` must always be
 specified together (or both omitted to take the default). Use ``tie_break::unspecified`` to leave the
 boundary policy to the implementation, for example alongside ``not_guaranteed`` or ``run_to_run``.
+
+For floating-point keys, -0.0 and +0.0 compare equal. Under ``prefer_smaller_index`` and
+``prefer_larger_index`` the index preference decides between them.
 
 .. list-table::
    :header-rows: 1
@@ -223,10 +228,15 @@ Reading the table:
 
 .. note::
 
-   This determinism and tie_break pairing rule is currently enforced only by
-   :cpp:struct:`cub::DeviceBatchedTopK`. :cpp:struct:`cub::DeviceTopK` does not yet inspect
-   ``tie_break``, so it still accepts requirement combinations that ``cub::DeviceBatchedTopK`` rejects.
-   The same enforcement will be added to ``cub::DeviceTopK`` in the next major release of CCCL (4.0).
+   :cpp:struct:`cub::DeviceBatchedTopK` rejects an explicit ``prefer_smaller_index`` /
+   ``prefer_larger_index`` that is not paired with ``gpu_to_gpu``; :cpp:struct:`cub::DeviceTopK` rejects
+   them altogether because it does not implement tie-breaking yet. The determinism and tie_break
+   *pairing* rule (both specified or both omitted) is currently enforced only by
+   :cpp:struct:`cub::DeviceBatchedTopK`. ``cub::DeviceTopK`` still accepts
+   ``require(determinism::not_guaranteed, output_ordering::unsorted)`` without a ``tie_break`` and will
+   enforce the pairing in the next major release of CCCL (4.0). To be forward-compatible, spell the
+   tie-break out today: ``require(determinism::not_guaranteed, tie_break::unspecified,
+   output_ordering::unsorted)``.
 
 Worked example: set membership x output ordering
 -------------------------------------------------
@@ -238,7 +248,7 @@ Consider ``cub::DeviceTopK::MaxKeys`` with *K* = 3 on this input:
    index :  0     1     2     3     4     5
    key   : 10     8     8     8     6     5
 
-The top three keys are ``10`` and two ``8``\ s. Four elements compare equal at the boundary (the
+The top three keys are ``10`` and two ``8``\ s. Three elements compare equal at the boundary (the
 ``8``\ s at indices 1, 2, 3), but only two can be kept. That is the tie. The notation ``key@index``
 identifies an element by both its key and its source position (for example ``8@2`` is the ``8`` at
 index 2).

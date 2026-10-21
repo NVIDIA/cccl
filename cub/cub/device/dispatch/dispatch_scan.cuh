@@ -25,8 +25,10 @@
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/warpspeed/warpspeed.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
@@ -52,7 +54,6 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN

@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/order.h>
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__atomic/types.h>
+#include <cuda/std/__atomic/types.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/types/common.h>
 #include <cuda/std/__thread/poll.h>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -23,9 +23,9 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__cstdlib/aligned_alloc.h>
-#include <cuda/std/__cstdlib/malloc.h>
-#include <cuda/std/__exception/exception_macros.h>
+#include <cuda/std/__cstdlib/aligned_alloc.h> // IWYU pragma: keep
+#include <cuda/std/__cstdlib/malloc.h> // IWYU pragma: keep
+#include <cuda/std/__exception/exception_macros.h> // IWYU pragma: keep
 #include <cuda/std/__fwd/new.h>
 #include <cuda/std/__host_stdlib/new>
 

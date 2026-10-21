@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/null_type.cuh>
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>

@@ -27,8 +27,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/iterator_facade_category.h>
+
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/remove_const.h>
+#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -234,7 +239,7 @@ class iterator_core_access
   // so return Facade1's difference_type
   template <class Facade1, class Facade2>
   _CCCL_HOST_DEVICE static typename Facade1::difference_type
-  distance_from(Facade1 const& f1, Facade2 const& f2, thrust::detail::true_type)
+  distance_from(Facade1 const& f1, Facade2 const& f2, ::cuda::std::true_type)
   {
     return -f1.distance_to(f2);
   }
@@ -243,7 +248,7 @@ class iterator_core_access
   // so return Facade2's difference_type
   template <class Facade1, class Facade2>
   _CCCL_HOST_DEVICE static typename Facade2::difference_type
-  distance_from(Facade1 const& f1, Facade2 const& f2, thrust::detail::false_type)
+  distance_from(Facade1 const& f1, Facade2 const& f2, ::cuda::std::false_type)
   {
     return f2.distance_to(f1);
   }

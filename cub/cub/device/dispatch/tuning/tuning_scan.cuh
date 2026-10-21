@@ -19,6 +19,8 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/warpspeed/allocators/smem_allocator.cuh>
 #include <cub/detail/warpspeed/resource/smem_resource_raw.cuh>
 #include <cub/detail/warpspeed/squad/squad_desc.cuh>
@@ -26,7 +28,6 @@
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
@@ -136,6 +137,7 @@ struct ScanLookbackPolicy
 // struct (used wherever a ScanLookaheadPolicy is copied or returned by value) trigger -Wdeprecated-declarations, so
 // we suppress it for the whole struct rather than only at the explicit uses of block_idx_stages further down.
 _CCCL_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_NVRTC_DIAG
 struct ScanLookaheadPolicy
 {
   int reduce_and_scan_warps; //!< Number of warps used for reduction and scanning
@@ -1037,6 +1039,12 @@ struct policy_selector
             // above)
             return ScanLookaheadPolicy{4, 64 - 1, 7, -2};
           case 8:
+            if (input_type == type_t::int64)
+            {
+              // retuned for the scan squad kernel (mean score 1.059, min 1.047, max 1.080 relative to the tuning
+              // below): wrps_4.lbi_5.ipt_32.lbs_2. This regresses double and complex<float>, so only use it for int64.
+              return ScanLookaheadPolicy{4, 32 - 1, 5, 2};
+            }
             // wrps_2.lbi_5.ipt_88 ()  1.085781   1.0  1.079245  1.103545
             // wrps_2.lbi_7.ipt_88.lbs_-2 ()  1.011922  0.997768  1.010818  1.039350 (score relative to the tuning
             // above)

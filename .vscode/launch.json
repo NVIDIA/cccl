@@ -1,6 +1,40 @@
 {
   "configurations": [
     {
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
+        "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION": "0",
+        "CUDA_COOP_ENABLE_CACHE": "0",
+        "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-debug-sources",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "PYTHONPATH": "${workspaceFolder}/python/cuda_coop"
+      },
+      "justMyCode": false,
+      "name": "cuda.coop: Debugger walkthrough",
+      "program": "${workspaceFolder}/docs/python/coop/debugger_walkthrough.py",
+      "request": "launch",
+      "type": "debugpy"
+    },
+    {
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CUDA_COOP_CCCL_ROOT": "${workspaceFolder}",
+        "CUDA_COOP_DISABLE_AUTO_DSL_REGISTRATION": "0",
+        "CUDA_COOP_ENABLE_CACHE": "0",
+        "CUDA_COOP_SOURCE_DUMP_DIR": "${workspaceFolder}/build/coop-debug-sources",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "PYTHONPATH": "${workspaceFolder}/python/cuda_coop"
+      },
+      "justMyCode": false,
+      "name": "cuda.coop: Debug active Python file",
+      "program": "${file}",
+      "request": "launch",
+      "type": "debugpy"
+    },
+    {
       "cwd": "${workspaceFolder}",
       "initCommands": [
         "set cuda api_failures stop"

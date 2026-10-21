@@ -22,12 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__type_traits/is_array.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_function.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
