@@ -306,3 +306,22 @@ TEST_CASE("TestVectorInsertExceedsSmallMaxSize", "[vector_insert]")
   REQUIRE_THROWS_AS(v.insert(v.end(), first, first + 6), std::length_error);
   REQUIRE(v.size() == 3);
 }
+
+TEST_CASE("TestVectorInsertUpToSmallMaxSize", "[vector_insert]")
+{
+  // growing to exactly max_size() must work, also when 2 * capacity() exceeds max_size()
+  const cuda::constant_iterator<int> first(7);
+
+  thrust::host_vector<int, small_max_size_allocator<int>> v(5, 1);
+  REQUIRE(v.size() == v.capacity());
+  v.insert(v.end(), 3, 7);
+  REQUIRE(v.size() == 8);
+  REQUIRE(v[4] == 1);
+  REQUIRE(v[7] == 7);
+
+  thrust::host_vector<int, small_max_size_allocator<int>> w(5, 1);
+  REQUIRE(w.size() == w.capacity());
+  w.insert(w.end(), first, first + 3);
+  REQUIRE(w.size() == 8);
+  REQUIRE(w[7] == 7);
+}

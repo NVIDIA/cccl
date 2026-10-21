@@ -938,9 +938,10 @@ void vector_base<T, Alloc>::fill_insert(iterator position, size_type n, const T&
       throw std::length_error("insert(): insertion exceeds max_size().");
     }
 
-    // Ensure allocation grows exponentially within bounds
+    // Ensure allocation grows exponentially within bounds. Cap the lower bound at max_size(): with a small max_size(),
+    // 2 * capacity() can exceed it, and clamp() requires lo <= hi.
     const size_type new_capacity =
-      ::cuda::std::clamp<size_type>(old_size + n, static_cast<size_type>(2 * capacity()), max_size());
+      ::cuda::std::clamp<size_type>(old_size + n, ::cuda::std::min<size_type>(2 * capacity(), max_size()), max_size());
 
     storage_type new_storage(copy_allocator_t(), m_storage, new_capacity);
 
