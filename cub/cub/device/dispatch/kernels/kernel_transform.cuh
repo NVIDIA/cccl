@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivial.h>
+#include <cuda/std/__type_traits/is_trivially_assignable.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
 #include <cuda/std/cstdint>
@@ -988,11 +989,14 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // 2. memory layout is contiguous
   // 3. semantically we can raw copy
   // 4. size is power-of-2 and <= 16 bytes
+  // 5. assigning f's result to an output element is trivial, i.e. does not read or partially write the destination
+  //    (the vectorized path assigns into an uninitialized register array before storing it as a whole)
   constexpr bool vectorize_eligible =
     store_vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
     && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
-    && ::cuda::is_trivially_copyable_v<output_t> && ::cuda::is_power_of_two(out_size)
-    && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
+    && ::cuda::is_trivially_copyable_v<output_t>
+    && ::cuda::std::is_trivially_assignable_v<output_t&, ::cuda::std::invoke_result_t<F, InTs&...>>
+    && ::cuda::is_power_of_two(out_size) && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
 
   [[maybe_unused]] bool can_vectorize = false;
   if constexpr (vectorize_eligible)
