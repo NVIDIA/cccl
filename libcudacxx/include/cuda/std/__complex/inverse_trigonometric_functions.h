@@ -23,15 +23,11 @@
 
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/fma.h>
-#include <cuda/std/__cmath/isinf.h>
-#include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__cmath/signbit.h>
 #include <cuda/std/__complex/complex.h>
 #include <cuda/std/__complex/inverse_hyperbolic_functions.h>
 #include <cuda/std/__complex/nvbf16.h>
 #include <cuda/std/__complex/nvfp16.h>
-#include <cuda/std/limits>
-#include <cuda/std/numbers>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -36,14 +36,15 @@ namespace cuda::experimental::cuco::detail
 using __index_type = ::cuda::std::int64_t;
 
 #if _CCCL_CUDA_COMPILATION()
+// These helpers are used by bulk kernels launched with one-dimensional grids and blocks.
 [[nodiscard]] _CCCL_DEVICE_API inline __index_type __global_thread_id() noexcept
 {
-  return ::cuda::gpu_thread.rank_as<__index_type>(::cuda::grid);
+  return ::cuda::gpu_thread.index_as<__index_type>(::cuda::grid).x;
 }
 
 [[nodiscard]] _CCCL_DEVICE_API inline __index_type __grid_stride() noexcept
 {
-  return ::cuda::gpu_thread.count_as<__index_type>(::cuda::grid);
+  return ::cuda::gpu_thread.dims_as<__index_type>(::cuda::grid).x;
 }
 #endif // _CCCL_CUDA_COMPILATION()
 

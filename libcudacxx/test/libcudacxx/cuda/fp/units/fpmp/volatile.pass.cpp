@@ -23,17 +23,13 @@
 
 #include "test_macros.h"
 
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
-
 // Compile-time: every accuracy variant is trivially copyable.
-static_assert(::cuda::std::is_trivially_copyable<cudax::fp32mp2>::value, "fp32mp2 must be trivially copyable");
-static_assert(::cuda::std::is_trivially_copyable<cudax::fp32mp2_low>::value, "fp32mp2_low must be trivially copyable");
-static_assert(::cuda::std::is_trivially_copyable<cudax::fp32mp2_high>::value,
-              "fp32mp2_high must be trivially copyable");
-static_assert(::cuda::std::is_trivially_copyable<cudax::fp64mp2>::value, "fp64mp2 must be trivially copyable");
-static_assert(::cuda::std::is_trivially_copyable<cudax::fp64mp2_low>::value, "fp64mp2_low must be trivially copyable");
-static_assert(::cuda::std::is_trivially_copyable<cudax::fp64mp2_high>::value,
-              "fp64mp2_high must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<cuda::fp32mp2>::value, "fp32mp2 must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<cuda::fp32mp2_low>::value, "fp32mp2_low must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<cuda::fp32mp2_high>::value, "fp32mp2_high must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<cuda::fp64mp2>::value, "fp64mp2 must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<cuda::fp64mp2_low>::value, "fp64mp2_low must be trivially copyable");
+static_assert(::cuda::std::is_trivially_copyable<cuda::fp64mp2_high>::value, "fp64mp2_high must be trivially copyable");
 
 // Exercise the volatile paths for one fpmp2 type. Value checks use a
 // tolerance (the double-word truncates the source double); the bit-preserving
@@ -104,12 +100,12 @@ TEST_HOST_DEVICE_FUNC void vol_ok()
 
 TEST_HOST_DEVICE_FUNC void run_test()
 {
-  vol_ok<cudax::fp32mp2>();
-  vol_ok<cudax::fp32mp2_low>();
-  vol_ok<cudax::fp32mp2_high>();
-  vol_ok<cudax::fp64mp2>();
-  vol_ok<cudax::fp64mp2_low>();
-  vol_ok<cudax::fp64mp2_high>();
+  vol_ok<cuda::fp32mp2>();
+  vol_ok<cuda::fp32mp2_low>();
+  vol_ok<cuda::fp32mp2_high>();
+  vol_ok<cuda::fp64mp2>();
+  vol_ok<cuda::fp64mp2_low>();
+  vol_ok<cuda::fp64mp2_high>();
 }
 
 TEST_HOST_DEVICE_FUNC void test()

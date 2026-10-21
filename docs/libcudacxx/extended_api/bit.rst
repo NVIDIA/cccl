@@ -11,6 +11,7 @@ Bit
    bit/bit_ffs
    bit/bit_fns
    bit/bit_reverse
+   bit/bit_trunc
    bit/bitfield_insert
    bit/bitfield_extract
 
@@ -42,6 +43,11 @@ Bit
      - Reverse the order of bits
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`bit_trunc <libcudacxx-extended-api-bit-bit_trunc>`
+     - Retain the least significant bits
+     - CCCL 3.7.0
+     - CUDA 13.7
 
    * - :ref:`bitfield_insert <libcudacxx-extended-api-bit-bitfield_insert>`
      - Insert a bitfield

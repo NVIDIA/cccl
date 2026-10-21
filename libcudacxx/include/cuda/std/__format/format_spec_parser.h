@@ -20,16 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/copy_n.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__format/format_arg.h>
 #include <cuda/std/__format/format_error.h>
-#include <cuda/std/__format/format_parse_context.h>
 #include <cuda/std/__format/parse_arg_id.h>
-#include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -39,10 +35,6 @@
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/string_view>
-
-#if _CCCL_HOSTED()
-#  include <string>
-#endif // _CCCL_HOSTED()
 
 // This file contains the std-format-spec parser.
 //

@@ -42,11 +42,11 @@ __device__ void test_take(Config config)
     // Test the mapping is constructible from uint32_t.
     static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::uint32_t>);
 
-    // Test the mapping is constructible and deducible from integral_constant<size_t, N>.
+    // Test the mapping is constructible and deducible from constant_wrapper<N>.
     {
-      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
+      static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
-      cudax::coop::take mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}}; // NOLINT(misc-const-correctness)
+      cudax::coop::take mapping{cuda::std::cw<N>}; // NOLINT(misc-const-correctness)
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
 
@@ -60,7 +60,7 @@ __device__ void test_take(Config config)
       static_assert(
         noexcept(cuda::std::declval<const Mapping>().map(cuda::gpu_thread, parent_group, prev_mapping_result)));
 
-      const cudax::coop::take mapping{cuda::std::integral_constant<cuda::std::size_t, N>{}};
+      const cudax::coop::take mapping{cuda::std::cw<N>};
       auto result  = mapping.map(cuda::gpu_thread, parent_group, prev_mapping_result);
       using Result = decltype(result);
 
@@ -104,8 +104,8 @@ __device__ void test_take(Config config)
       static_assert(cuda::std::is_same_v<decltype(mapping), Mapping>);
     }
 
-    // Test the mapping is constructible from integral_constant<size_t, N>.
-    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::integral_constant<cuda::std::size_t, N>>);
+    // Test the mapping is constructible from constant_wrapper<N>.
+    static_assert(cuda::std::is_nothrow_constructible_v<Mapping, cuda::std::constant_wrapper<N>>);
 
     // Test map(...).
     {

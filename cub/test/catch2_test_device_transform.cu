@@ -21,6 +21,7 @@
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 #include <c2h/custom_type.h>
 #include <c2h/test_util_vec.h>
 
@@ -138,10 +139,9 @@ try
   std::transform(input_h.begin(), input_h.end(), reference_h.begin(), times_seven{});
   REQUIRE((reference_h == result));
 }
-catch (const std::bad_alloc&)
+catch (...)
 {
-  // allocation failure is not a test failure, so we can run tests on smaller GPUs
-  SUCCEED("allocation failure is not a test failure");
+  c2h::skip_if_allocation_failure();
 }
 
 template <int Alignment>

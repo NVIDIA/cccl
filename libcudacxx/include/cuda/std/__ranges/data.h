@@ -21,8 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
-#include <cuda/std/__iterator/reverse_iterator.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__type_traits/is_object.h>

@@ -313,6 +313,7 @@ jobs:
       - dispatch-groups-linux-standalone
       - dispatch-groups-windows-standalone
     permissions:
+      actions: read
       contents: read
       pull-requests: write # Posts a comment back to the PR.
     runs-on: ubuntu-latest
@@ -453,7 +454,8 @@ jobs:
         run: |
           echo "Artifact contents:"
           find artifact -name "*.whl" -type f
-          pip install $(find artifact -name "*.whl" -type f | head -1)[cu13]
+          wheel=$(find artifact -name "*.whl" -type f | head -1)
+          pip install "${wheel}[cu13]"
 
       - name: Test CPU-only import
         if: steps.check-wheel.outputs.skip != 'true'
@@ -498,7 +500,7 @@ jobs:
       arch: ${{ matrix.arch }}
       base_ref: ${{ matrix.base_ref }}
       test_ref: ${{ matrix.test_ref }}
-      cub_filters: ${{ matrix.cub_filters }}
+      cpp_filters: ${{ matrix.cpp_filters }}
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}

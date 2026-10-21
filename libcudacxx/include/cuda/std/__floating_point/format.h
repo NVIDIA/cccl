@@ -23,7 +23,7 @@
 
 #include <cuda/std/__fwd/fp.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/cfloat>
+#include <cuda/std/cfloat> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
