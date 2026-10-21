@@ -374,7 +374,7 @@ cases.update(
         None,
     ),
     warp_sibling_cycle=(warp_loop + warp_load, None),
-    warp_cycle_then_block=(warp_loop + load, "lane-varying"),
+    warp_cycle_then_block=(warp_loop + load, None),
     warp_lane_cycle=(
         warp_loop.replace("i<q+1", "i<thread::threadIdx_x() as usize+1") + warp_load,
         "lane-varying",
@@ -384,7 +384,7 @@ cases.update(
         + warp_loop
         + "}cycles(input);"
         + load,
-        "lane-varying",
+        None,
     ),
     warp_partial_geometry=(warp_load, "complete physical warps"),
     warp_transpose=(
@@ -559,14 +559,14 @@ cases.update(
         + logical_reload,
         None,
     ),
-    logical_cycle_to_wider=(logical_loop + load, "lane-varying"),
+    logical_cycle_to_wider=(logical_loop + load, None),
     logical_sibling_loop=(logical_loop + logical_load, None),
     logical_helper_cycle=(
         "#[inline(never)] fn cycle(input:&[i32]) {let warp=coop::this_warp().group_by::<8>();let q=warp.rank_at::<coop::Warp>() as usize;let valid=1;let offset=0;let mut values=coop::ThreadData::<_,4>::new();"
         + logical_loop
         + "}cycle(input);"
         + load,
-        "lane-varying",
+        None,
     ),
     logical_lane_control=(
         logical_load.replace(
@@ -596,6 +596,76 @@ cases.update(
         "power-of-two width in 1..=32",
     ),
 )
+# Finite sibling cycles reconverge structurally; value precision and memory
+# completion remain independent requirements for a subsequent wider call.
+cycle = logical_loop.replace("i<q+1", "i<q")
+block_sync = "thread::sync_threads();"
+write_cycle = (
+    logical_load + "let mut i=0;while i<q+1 {" + logical_store + logical_sync + "i+=1;}"
+)
+cases.update(
+    logical_cycle_wider_sequence=(
+        cycle + logical_load.replace("(warp,", "(coop::this_warp(),") + load,
+        None,
+    ),
+    logical_cycle_fresh_counter=(
+        cycle + "let mut j=0;while j<valid {" + load + "j+=1;}",
+        None,
+    ),
+    logical_cycle_tainted_count=(
+        cycle + load.replace(".valid_items(valid)", ".valid_items(q+1)"),
+        "not proved block-uniform",
+    ),
+    logical_cycle_carried_count=(
+        cycle + load.replace(".valid_items(valid)", ".valid_items(i)"),
+        "not proved block-uniform",
+    ),
+    logical_cycle_active_barrier=(
+        logical_load + "let mut i=0;while i<q+1 {" + block_sync + "i+=1;}",
+        "block barrier is reached through lane-varying",
+    ),
+    logical_cycle_continue=(
+        "let mut i=0;while i<2 {i+=1;if q==0 {continue;}" + load + "}",
+        "lane-varying",
+    ),
+    logical_cycle_nested_region=(
+        "let mut i=0;while i<q+1 {let mut j=0;while j<2 {" + load + "j+=1;}i+=1;}",
+        "lane-varying",
+    ),
+    logical_cycle_early_return=(
+        cycle + "if q==0 {return;}" + load,
+        "lane-varying",
+    ),
+    logical_cycle_write_no_completion=(
+        write_cycle + reload,
+        "requires a barrier covering both accesses",
+    ),
+    logical_cycle_write_completed=(write_cycle + block_sync + reload, None),
+    logical_cycle_outer_break=(
+        "let mut k=0;'outer: while k<2 {let mut i=0;while i<q {if valid==0 {break 'outer;}"
+        + logical_load
+        + "i+=1;}"
+        + load
+        + "k+=1;}",
+        "lane-varying",
+    ),
+    logical_cycle_inner_break=(
+        "let mut k=0;while k<2 {let mut i=0;while i<q {if valid==0 {break;}"
+        + logical_load
+        + "i+=1;}"
+        + load
+        + "k+=1;}",
+        None,
+    ),
+    logical_cycle_lane_scalar=(
+        load
+        + "let limit=thread::threadIdx_x() as usize%8;let mut i=0;let mut acc=1_i32;"
+        "while i<limit {acc=acc.wrapping_mul(3).wrapping_add(i as i32);i+=1;}"
+        "values.write(0,acc);" + store,
+        None,
+    ),
+)
+
 for width in (1, 2, 4, 8, 16, 32):
     for exhaustive in (True, False):
         constructor = "group_by" if exhaustive else "group_by_non_exhaustive"

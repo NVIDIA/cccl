@@ -219,6 +219,78 @@ mod kernels {
 
     #[kernel]
     #[launch_contract(domain=1,block=(64,1,1),dynamic_shared=inferred)]
+    pub fn logical_cycle<const COMPLETE: bool>(
+        input: &[i32],
+        mut output: coop::DisjointSlice<i32, coop::CollectiveTiles<4>>,
+    ) {
+        let group = coop::this_warp().group_by::<8>();
+        let q = coop::this_block().rank_at::<coop::Warp>() as usize * 4
+            + group.rank_at::<coop::Warp>() as usize;
+        let block = thread::blockIdx_x() as usize;
+        let lane = thread::threadIdx_x() as usize;
+        let base = block * 9 * 256;
+        let mut values = coop::ThreadData::<_, 4>::new();
+        let mut sums = [0_i32; 4];
+        let mut matches = true;
+        let mut iteration = 0;
+        // Siblings execute zero through seven iterations over immutable input.
+        while iteration < q {
+            let offset = base + iteration * 256;
+            coop::load(
+                group,
+                input,
+                &mut values,
+                coop::LoadOptions::default().offset(offset),
+            );
+            let mut i = 0;
+            while i < 4 {
+                matches &= values.get(i) == Some(input[offset + lane * 4 + i]);
+                sums[i] += values.get(i).unwrap_or(0);
+                i += 1;
+            }
+            iteration += 1;
+        }
+        if COMPLETE {
+            cg::this_thread_block().tiled_partition::<32>().sync();
+        }
+        coop::load(
+            coop::this_warp(),
+            input,
+            &mut values,
+            coop::LoadOptions::default().offset(base + 7 * 256),
+        );
+        let mut i = 0;
+        while i < 4 {
+            matches &= values.get(i) == Some(input[base + 7 * 256 + lane * 4 + i]);
+            sums[i] += 3 * values.get(i).unwrap_or(0);
+            i += 1;
+        }
+        if COMPLETE {
+            thread::sync_threads();
+        }
+        coop::load(
+            coop::this_block(),
+            input,
+            &mut values,
+            coop::LoadOptions::default().offset(base + 8 * 256),
+        );
+        let mut i = 0;
+        while i < 4 {
+            matches &= values.get(i) == Some(input[base + 8 * 256 + lane * 4 + i]);
+            values.write(i, sums[i] + 5 * values.get(i).unwrap_or(0));
+            i += 1;
+        }
+        coop::store(
+            coop::this_block(),
+            &mut output,
+            &values,
+            coop::StoreOptions::default().offset(block * 256),
+        );
+        assert!(matches);
+    }
+
+    #[kernel]
+    #[launch_contract(domain=1,block=(64,1,1),dynamic_shared=inferred)]
     pub fn logical_mixed_block(
         input: &[i32],
         mut output: coop::DisjointSlice<i32, coop::CollectiveTiles<4>>,
@@ -385,5 +457,49 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     stream.synchronize()?;
     assert_eq!(result, input);
     println!("PASS mixed Block Transpose/logical Warp Direct: 768 values");
+    run_cycles()?;
+    Ok(())
+}
+
+pub fn run_cycles() -> Result<(), Box<dyn std::error::Error>> {
+    use cuda_async::simt::device_context::{init_device_contexts, with_cuda_context};
+    use cuda_async::simt::device_operation::DeviceOperation;
+    use cuda_core::{DeviceBuffer, LaunchConfig1D};
+    init_device_contexts(0, 1)?;
+    let stream = with_cuda_context(0, |context| context.default_stream())?;
+    // SAFETY: this module and its typed launchers compile together.
+    let module = unsafe { kernels::load_async(0)? };
+    let input: Vec<i32> = (0..3 * 9 * 256).map(|i| i + 17).collect();
+    let expected: Vec<i32> = (0..3 * 256)
+        .map(|index| {
+            let base = index / 256 * 9 * 256;
+            let element = index % 256;
+            let q = element / 4 / 8;
+            (0..q)
+                .map(|iteration| input[base + iteration * 256 + element])
+                .sum::<i32>()
+                + 3 * input[base + 7 * 256 + element]
+                + 5 * input[base + 8 * 256 + element]
+        })
+        .collect();
+    macro_rules! exercise {
+        ($complete:literal) => {{
+            let plan =
+                module.prepare_logical_cycle::<$complete>(LaunchConfig1D::auto_shared(3, 64))?;
+            assert_eq!(plan.__raw_config().shared_mem_bytes, 0);
+            let source = DeviceBuffer::from_host(&stream, &input)?;
+            let target = DeviceBuffer::from_host(&stream, &vec![-99_i32; expected.len()])?;
+            let (_, target) = module
+                .logical_cycle_async_owned::<$complete, _, _>(&plan, source, target)
+                .sync()?;
+            let mut result = vec![0; expected.len()];
+            target.copy_to_host(&stream, &mut result)?;
+            stream.synchronize()?;
+            assert_eq!(result, expected);
+        }};
+    }
+    exercise!(false);
+    exercise!(true);
+    println!("PASS finite sibling cycles then W32/Block: 1536 values, without/with barriers");
     Ok(())
 }
