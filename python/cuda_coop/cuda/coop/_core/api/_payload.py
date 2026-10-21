@@ -58,6 +58,16 @@ class TempStorageLike(Protocol):
     auto_sync: bool
     sharing: str
 
+    def release(self, dtype: object | None = None) -> object:
+        """Consume the descriptor and return its complete native shared array.
+
+        An omitted dtype returns bytes. An explicit dtype must fit the
+        region's existing capacity and alignment. No allocation or barrier is
+        added. Every alias becomes unavailable for subsequent primitive,
+        reservation, or release calls on any reachable control-flow path.
+        """
+        ...
+
 
 def _normalize_alignment(alignment: SupportsIndex | None) -> int | None:
     """Normalize a payload or scratch alignment request to bytes.

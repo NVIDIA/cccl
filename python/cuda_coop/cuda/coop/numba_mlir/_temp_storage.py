@@ -24,8 +24,9 @@ class TempStorage:
     Set ``auto_sync=True`` to request automatic reuse barriers.
 
     Only supported block algorithms accept an explicit descriptor. The
-    planner determines capacity and alignment from its uses; its contents
-    are opaque to user code. See :ref:`temporary storage <coop-temp-storage>`
+    planner determines capacity and alignment from its uses. ``release()``
+    hands the complete region to user code after its final cooperative use.
+    See :ref:`temporary storage <coop-temp-storage>`
     for shared versus exclusive slices and manual reuse synchronization.
     """
 
@@ -74,6 +75,28 @@ class TempStorage:
         # Sharing selects the slice layout; synchronization is independent.
         # The caller synchronizes before reuse unless auto_sync=True.
         self.auto_sync = False if auto_sync is None else auto_sync
+
+    def release(self, dtype=None):
+        """Consume this descriptor and return its complete shared-memory region.
+
+        ``dtype=None`` returns a one-dimensional byte array. A supplied
+        compile-time numeric dtype must divide the region's byte capacity and
+        satisfy its existing alignment. Release does not initialize the returned
+        memory, allocate memory, or synchronize.
+        Finish previous accesses and required asynchronous operations before
+        using it. Automatic barriers on preceding primitive calls are retained.
+
+        Every alias of this descriptor is consumed. A subsequent primitive,
+        reservation, or release on any reachable control-flow path is a compile
+        error, including reuse through a loop backedge. A new construction in
+        a loop creates a new instance but reuses the same physical region, so
+        the caller must finish accesses and synchronize before that reuse.
+        """
+        from .._core.thread_group import CoopCompilerContextRequiredError
+
+        raise CoopCompilerContextRequiredError(
+            "TempStorage.release must be called from a supported GPU kernel."
+        )
 
 
 __all__ = ["TempStorage"]
