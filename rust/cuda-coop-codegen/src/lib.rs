@@ -3,7 +3,7 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles block Load/Store providers with
+//! This private development crate compiles block and Warp Load/Store providers with
 //! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -21,9 +21,12 @@
 //! Masked Load resets validity outside its prefix; Direct/Striped/Vectorize Store preserves both
 //! arrays and checks initialization only in its write domain. Transposing Store
 //! replaces each lane's blocked payload and validity with striped items across
-//! the block or physical warp, including when its write count is zero. Full Vectorize operations
+//! the block or selected Warp, including when its write count is zero. Full Vectorize operations
 //! use numeric local arrays after full initialization or complete Store preflight;
 //! counted Vectorize overloads retain the opaque Direct path.
+//! Physical and logical Warp requests support Direct, Striped, Vectorize and
+//! Transpose at power-of-two widths from 1 through 32, within complete physical
+//! warps. Their scratch layout describes one group, not the complete block.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -96,7 +99,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Algorithm {
     /// Consecutive items per thread, without shared scratch or a reuse barrier.
     Direct,
-    /// Thread `t` accesses item `i` at `t + block_threads * i`, without scratch.
+    /// Thread `t` accesses item `i` at `t + group_threads * i`, without scratch.
     Striped,
     /// Blocked access with aligned vector operations for full tiles.
     /// Misaligned pointers and counted overloads use Direct accesses.
@@ -378,22 +381,25 @@ impl Request {
             warp_width: None,
         })
     }
-    /// Select a physical or logical Warp Direct specialization within this block.
+    /// Select a physical or logical Warp specialization within this block.
     ///
     /// # Errors
     /// Rejects non-power-of-two widths and widths outside 1..=32, partial physical warps,
-    /// non-Direct algorithms
+    /// algorithms other than Direct, Striped, Vectorize and Transpose,
     /// and legacy raw recipes. The exact root block shape is retained.
     pub fn with_warp_width(mut self, width: u32) -> Result<Self> {
         if width == 0
             || width > 32
             || !width.is_power_of_two()
             || self.block_threads() % 32 != 0
-            || self.algorithm != Algorithm::Direct
+            || matches!(
+                self.algorithm,
+                Algorithm::WarpTranspose | Algorithm::WarpTransposeTimesliced
+            )
             || !self.operation.validity()
         {
             return Err(Error::message(
-                "Warp recipes require power-of-two width 1..=32, complete physical warps, Direct and a validity-aware operation",
+                "Warp recipes require power-of-two width 1..=32, complete physical warps, Direct/Striped/Vectorize/Transpose and a validity-aware operation",
             ));
         }
         self.warp_width = Some(width);
@@ -438,21 +444,23 @@ pub struct Layout {
 ///
 /// # Device ABI obligations
 ///
-/// Every thread in the exact block executes the provider in converged control
-/// flow. Memory is device-accessible and properly aligned; input/output spans
+/// Every thread in the selected group executes the provider in converged control
+/// flow. The group is the exact block, or one aligned Warp of the selected width.
+/// Memory is device-accessible and properly aligned; input/output spans
 /// cover the full tile or selected valid prefix. Payloads contain the requested
 /// number of slots of the requested type. Raw Store payloads are fully
 /// initialized and may be mutated.
-/// `memory` is the same block tile base pointer in every lane; the provider
-/// applies no block-origin offset for the caller.
+/// `memory` is the same group tile base pointer in every participating lane; the
+/// provider applies no block-origin or subgroup-origin offset for the caller.
 /// Load output and Store input must not overlap the memory tile or scratch.
 /// The caller supplies disjoint collective ownership of the memory tile.
 /// A lane is the x-fastest linear thread rank, `cub::RowMajorTid(X, Y, Z)`.
 ///
-/// Partial controls are block-uniform, with `0 <= valid <= tile_size`; generated
-/// code traps on invalid counts. A filled Load's default is also block-uniform.
+/// Partial controls are group-uniform, with `0 <= valid <= tile_size`; generated
+/// code traps on invalid counts. A filled Load's default is also group-uniform.
 /// Scratch for transposing algorithms satisfies [`Self::scratch`] and cannot alias another live
-/// region. The caller synchronizes before reuse, including loop iterations;
+/// region. Concurrent groups require disjoint scratch regions. The caller
+/// synchronizes participating members before reuse, including loop iterations;
 /// the provider does not add a trailing reuse barrier. Direct, Striped and Vectorize ignore scratch,
 /// so a null pointer is permitted for that argument only. All providers return
 /// unit; loads fill payloads in place and stores write memory.
@@ -466,9 +474,9 @@ pub struct Layout {
 /// borrows both arrays; Direct/Striped/Vectorize Store receives const pointers and borrows them
 /// read-only. Transposing Stores exclusively borrow both arrays. Destination
 /// `(lane, item)` receives source `(q / items_per_thread, q % items_per_thread)`:
-/// Transpose uses `q = block_threads * item + lane`; both warp variants use
+/// Transpose uses `q = group_threads * item + lane`; both Block warp variants use
 /// `q = (lane / 32) * (32 * items_per_thread) + 32 * item + lane % 32`.
-/// Lane rank is x-fastest within the complete block.
+/// Lane rank is x-fastest within the block, or modulo the selected Warp width.
 /// This applies to every slot, independently of the Store count. Repeated
 /// Stores permute the current payload again. Native code accesses payload bytes
 /// without evaluating invalid values. Masked Load clears bits outside its prefix; filled/full Load write
@@ -698,13 +706,16 @@ fn source(request: Request, symbol: &str) -> String {
         .unwrap_or_else(|| request.block_threads());
     let (group, primitive_type, rank) = if let Some(width) = request.warp_width {
         let (primitive, algorithm) = if op.is_load() {
-            ("WarpLoad", "WARP_LOAD_DIRECT")
+            ("WarpLoad", "WARP_LOAD")
         } else {
-            ("WarpStore", "WARP_STORE_DIRECT")
+            ("WarpStore", "WARP_STORE")
         };
         (
             "warp",
-            format!("cub::{primitive}<cell, {items}, cub::{algorithm}, {width}>"),
+            format!(
+                "cub::{primitive}<cell, {items}, cub::{algorithm}_{}, {width}>",
+                request.algorithm.token()
+            ),
             format!("cub::RowMajorTid({block_x}, {block_y}, {block_z}) % {width}"),
         )
     } else {
@@ -727,14 +738,25 @@ fn source(request: Request, symbol: &str) -> String {
     let mask_plane = op == Operation::StorePartialValidity && transpose && items > 1;
     let storage = if mask_plane {
         let plane_bytes = u64::from(threads.div_ceil(32)) * u64::from(items) * 4;
+        let layout_assertions = if request.warp_width.is_some() {
+            format!(
+                "static_assert(offsetof(scratch_storage, masks) >= sizeof(primitive::TempStorage));\n\
+                 static_assert(offsetof(scratch_storage, masks) % alignof(unsigned int) == 0);\n\
+                 static_assert(offsetof(scratch_storage, masks) + {plane_bytes} <= sizeof(scratch_storage));\n\
+                 static_assert(alignof(scratch_storage) >= alignof(primitive::TempStorage));"
+            )
+        } else {
+            "static_assert(offsetof(scratch_storage, masks) == sizeof(primitive::TempStorage));\n\
+             static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"
+                .to_owned()
+        };
         format!(
             r#"struct scratch_storage {{
   alignas(alignof(primitive::TempStorage)) unsigned char cub[sizeof(primitive::TempStorage)];
   alignas(unsigned int) unsigned char masks[{plane_bytes}];
 }};
 static_assert(sizeof(unsigned int) == 4);
-static_assert(offsetof(scratch_storage, masks) == sizeof(primitive::TempStorage));
-static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
+{layout_assertions}"#
         )
     } else {
         "using scratch_storage = primitive::TempStorage;".to_owned()
@@ -812,7 +834,22 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
             // slots outside its write domain. Nonmutating algorithms only
             // need their write domain, checked before any numeric copy below.
             let copy_domain = if transpose { "true" } else { &domain };
-            let prepare = if mask_plane {
+            let prepare = if let Some(width) = request.warp_width.filter(|_| mask_plane) {
+                let mask = u32::MAX >> (32 - width);
+                format!(
+                    r#"unsigned char* const mask_plane = scratch + offsetof(scratch_storage, masks);
+  const unsigned int first_lane = cuda::ptx::get_sreg_laneid() & (32u - {width});
+  const unsigned int member = 0x{mask:08x}u << first_lane;
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    const unsigned int bits = __ballot_sync(member, (flags[i / 8] & (1u << (i % 8))) != 0) >> first_lane;
+    if (tid == 0) {{
+      void* const address = mask_plane + sizeof(unsigned int) * i;
+      ::new (address) unsigned int(bits);
+    }}
+  }}"#
+                )
+            } else if mask_plane {
                 format!(
                     r#"unsigned char* const mask_plane = scratch + offsetof(scratch_storage, masks);
   const int warp = tid / 32;
@@ -846,8 +883,13 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
   }}"#
                     )
                 } else if mask_plane {
+                    let completion = if request.warp_width.is_some() {
+                        "// Complete this group's plane writes before any plane read.\n  __syncwarp(member);"
+                    } else {
+                        "// CUB's exchange barrier orders the initialized plane writes above."
+                    };
                     format!(
-                        r#"// CUB's exchange barrier orders the initialized plane writes above.
+                        r#"{completion}
 #pragma unroll
   for (int byte = 0; byte < {bitmap_bytes}; ++byte) {{
     unsigned int bits = 0;

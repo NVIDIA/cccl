@@ -46,18 +46,124 @@ fn rejects_invalid_shapes() {
                 .is_err()
         );
     }
-    assert!(
-        Request::new(Operation::LoadMaskedValidity, Algorithm::Transpose, 64, 4)
-            .unwrap()
-            .with_warp_width(8)
-            .is_err()
-    );
+    for algorithm in [Algorithm::WarpTranspose, Algorithm::WarpTransposeTimesliced] {
+        assert!(
+            Request::new(Operation::LoadMaskedValidity, algorithm, 64, 4)
+                .unwrap()
+                .with_warp_width(8)
+                .is_err()
+        );
+    }
+    for algorithm in [
+        Algorithm::Direct,
+        Algorithm::Striped,
+        Algorithm::Vectorize,
+        Algorithm::Transpose,
+    ] {
+        assert!(
+            Request::new(Operation::LoadMaskedValidity, algorithm, 64, 4)
+                .unwrap()
+                .with_warp_width(8)
+                .is_ok()
+        );
+    }
     assert!(
         Request::new(Operation::LoadFull, Algorithm::Direct, 64, 4)
             .unwrap()
             .with_warp_width(8)
             .is_err()
     );
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_warp_algorithms_and_padded_masks() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut cases = Vec::new();
+    for width in [1, 8, 32] {
+        for dtype in [Dtype::I8, Dtype::I32, Dtype::F64] {
+            for items in [1, 4] {
+                cases.push((width, dtype, items, Algorithm::Transpose));
+            }
+        }
+    }
+    for width in [2, 4, 16] {
+        cases.push((width, Dtype::I32, 4, Algorithm::Transpose));
+    }
+    cases.push((8, Dtype::I8, 9, Algorithm::Transpose));
+    for algorithm in [Algorithm::Striped, Algorithm::Vectorize] {
+        for width in [1, 8] {
+            cases.push((width, Dtype::I32, 4, algorithm));
+        }
+    }
+    let mut requests = Vec::new();
+    for &(width, dtype, items, algorithm) in &cases {
+        for operation in [
+            Operation::LoadFullValidity,
+            Operation::LoadMaskedValidity,
+            Operation::LoadFilledValidity,
+            Operation::StoreFullValidity,
+            Operation::StorePartialValidity,
+        ] {
+            requests.push(
+                Request::new_typed_with_shape(dtype, operation, algorithm, [8, 4, 2], items)?
+                    .with_warp_width(width)?,
+            );
+        }
+    }
+    let artifact = provider.compile(&requests, &target)?;
+    for ((width, dtype, items, algorithm), entries) in cases
+        .into_iter()
+        .zip(artifact.specializations.chunks_exact(5))
+    {
+        for (index, entry) in entries.iter().enumerate() {
+            eprintln!(
+                "Warp{width} {dtype:?} {algorithm:?} N{items} operation{index}: CUB {:?}, total {:?}",
+                entry.cub_layout, entry.scratch
+            );
+            if algorithm != Algorithm::Transpose {
+                assert_eq!(
+                    entry.scratch,
+                    Layout {
+                        size: 0,
+                        alignment: 1
+                    }
+                );
+                assert!(!entry.mutates_payload);
+            } else {
+                assert_eq!(entry.mutates_payload, index >= 3);
+                assert!(entry.scratch.alignment >= entry.cub_layout.alignment);
+                if index == 4 && items > 1 {
+                    assert!(entry.scratch.alignment >= 4);
+                    assert!(entry.scratch.size >= entry.cub_layout.size + 4 * items as usize);
+                    if (width, dtype, items) == (8, Dtype::I8, 4) {
+                        // CUB has 33 byte-aligned cells; the actual combined C++
+                        // struct pads before its 16-byte unsigned-int mask plane.
+                        assert_eq!(
+                            entry.cub_layout,
+                            Layout {
+                                size: 33,
+                                alignment: 1
+                            }
+                        );
+                        assert_eq!(
+                            entry.scratch,
+                            Layout {
+                                size: 52,
+                                alignment: 4
+                            }
+                        );
+                    }
+                } else {
+                    assert_eq!(entry.scratch, entry.cub_layout);
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 #[test]

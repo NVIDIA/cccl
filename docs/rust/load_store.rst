@@ -12,8 +12,9 @@ transpose algorithms require a total block thread count divisible by 32.
 Striped Load gives each thread elements separated by the block size; the other
 algorithms produce blocked payloads, where each thread owns consecutive elements.
 Physical Warp and logical lane groups of widths 1, 2, 4, 8, 16 and 32 support
-Direct with implicit storage when the exact block size is a multiple of 32.
-Other Warp algorithms remain under development.
+Direct, Striped, Vectorize and Transpose with implicit storage when the exact
+block size is a multiple of 32. WarpTranspose and WarpTransposeTimesliced are
+Block algorithms.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
 named ``ITEMS_PER_THREAD``. The payload element type is inferred from its source.
@@ -95,8 +96,8 @@ or a scalar numeric value. A scalar contributes one item per thread. All three p
 and validity bit, including
 initialized slots outside their write domain.
 
-Physical and logical Warp Direct
---------------------------------
+Physical and logical Warp Load/Store
+-----------------------------------
 
 Pass ``this_warp()`` through the same group-first API. No block dimensions or
 extra payload type annotations are needed at the call site:
@@ -114,11 +115,20 @@ Use ``this_warp().group_by::<8>()`` for an eight-lane group. Both exhaustive
 and non-exhaustive forms support the six power-of-two widths; every lane is a
 member for these widths. Let ``W`` be the selected width (32 for ``this_warp()``),
 ``t = x + X * (y + Y * z)``, ``q = t / W``, and ``lane = t % W``.
-Warp slot ``i`` addresses
-``offset + q * W * ITEMS_PER_THREAD + lane * ITEMS_PER_THREAD + i``.
+A blocked Warp slot ``i`` addresses
+``offset + q * W * ITEMS_PER_THREAD + lane * ITEMS_PER_THREAD + i``;
+a Striped slot addresses
+``offset + q * W * ITEMS_PER_THREAD + lane + W * i``.
 The operation adds this Warp origin; the caller still supplies the block
 origin. The exact launch contract must contain only complete physical warps.
-Direct uses no shared scratch and accepts shared payload borrows for Store.
+Direct, Striped and Vectorize use no shared scratch and accept shared payload
+borrows for Store. Striped selects the striped mapping above. Full Vectorize
+can use wide accesses when the actual offset-adjusted pointer is aligned; it
+falls back to Direct otherwise. Counted Vectorize calls use Direct accesses.
+Transpose uses disjoint shared storage for each group. The compiler reserves
+one padded instance per group from the provider's actual layout; launch metadata
+includes every instance. Its mutable Store permutes both values and validity.
+Select it with ``.algorithm(coop::Transpose)`` on the same Load/Store options.
 Explicit ``TempStorage`` is currently supported for Block calls only.
 
 A collective carrier keeps its declared ``CAPACITY`` even when an operation
@@ -149,6 +159,14 @@ complete narrower accesses. Transitions involving Block accesses still need
 ``cuda_device::thread::sync_threads()``. Raw mask barriers are unsupported in checked
 collective roots, and Warp synchronization does not release Block scratch. Direct adds no
 implicit Warp barrier.
+
+Reusing dirty implicit Transpose storage inserts a matching Warp barrier before
+the next call and completes conflicting accesses covered by that tile. First
+use, scratch-free calls, and an operation in a different storage pool do not
+provide this completion. A canonical containing barrier also completes narrower
+implicit pools; a narrower barrier leaves wider and Block storage pending.
+These barriers never end live explicit reservations or imply completion after
+the final call.
 
 The public logical group width is ``usize`` and the canonical WarpTile width is
 ``u32``. An ordinary generic helper can take the group and tile as separate
@@ -195,9 +213,9 @@ its count equals the tile size. Filled Load is also counted. The example helper
 uses full calls for complete tiles and counted calls for its final short tile.
 Its Store accepts a shared payload borrow and preserves values and validity.
 
-Transpose uses CUB's coalesced accesses and shared block exchange. Its Store
+Transpose uses CUB's coalesced accesses and shared exchange within the selected group. Its Store
 requires a mutable payload borrow and permutes every value and initialized bit
-from blocked into striped order. For a block of ``B`` threads and ``I`` items
+from blocked into striped order. For a group of ``B`` threads and ``I`` items
 per thread, destination lane/item ``(t, i)`` receives the old blocked slot at
 linear index ``B*i+t``. This mutation occurs even for a zero-count Store; a
 partial count only controls the global writes. Initialized slots outside the

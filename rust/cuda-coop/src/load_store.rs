@@ -30,7 +30,7 @@ pub struct Striped;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Vectorize;
 
-/// Coalesced access through CUB's shared-memory block exchange.
+/// Coalesced access through CUB's shared-memory exchange within the group.
 ///
 /// Load produces blocked payloads. Store permutes payload values and validity
 /// into striped order, including slots outside its selected write prefix.
@@ -99,7 +99,8 @@ impl sealed::Algorithm for WarpTransposeTimesliced {
 ///
 /// Blocks support the existing algorithms and explicit or implicit storage.
 /// Physical [`Warp`] and power-of-two [`ThreadsWithinWarp`] widths 1..=32
-/// support [`Direct`] with implicit storage `()`. Generic
+/// support [`Direct`], [`Striped`], [`Vectorize`] and [`Transpose`] with implicit
+/// storage `()`. Generic
 /// helpers can carry this bound; ordinary calls infer it from the group/options.
 /// A helper that also synchronizes can accept a canonical
 /// `cuda_device::cooperative_groups::WarpTile<N>` separately. Its `N` uses
@@ -109,6 +110,9 @@ impl sealed::Algorithm for WarpTransposeTimesliced {
 pub trait LoadStoreGroup<A: Algorithm, S: TempStorageLike>: GroupScope + sealed::Group {}
 impl<A: Algorithm, S: TempStorageLike> LoadStoreGroup<A, S> for Block {}
 impl LoadStoreGroup<Direct, ()> for Warp {}
+impl LoadStoreGroup<Striped, ()> for Warp {}
+impl LoadStoreGroup<Vectorize, ()> for Warp {}
+impl LoadStoreGroup<Transpose, ()> for Warp {}
 impl sealed::Group for Block {
     const WARP: bool = false;
     const WIDTH: usize = 0;
@@ -155,7 +159,7 @@ macro_rules! warp_group {
             #[inline(always)]
             unsafe fn call<T: Copy, R: Fn() -> &'static str + Copy, M, S, U: Copy, P: Copy,
                 const I: usize, const WRITE: bool>(registration: R, memory: M, _storage: S, uniform: U, payload: P) {
-                // SAFETY: LoadStoreGroup restricts this dispatch to Direct/implicit
+                // SAFETY: LoadStoreGroup restricts this dispatch to supported algorithms/implicit
                 // storage; the owning boundary checks the fixed group interval.
                 unsafe { cuda_device::library::checked_warp_call_v1::<T, _, _, _, _, $width, I, WRITE>(
                     registration, memory, uniform, payload) }
@@ -167,6 +171,9 @@ warp_group!(Warp, 32);
 macro_rules! logical_groups {
     ($($width:literal),+ $(,)?) => {$ (
         impl<const E: bool> LoadStoreGroup<Direct, ()> for ThreadsWithinWarp<$width, E> {}
+        impl<const E: bool> LoadStoreGroup<Striped, ()> for ThreadsWithinWarp<$width, E> {}
+        impl<const E: bool> LoadStoreGroup<Vectorize, ()> for ThreadsWithinWarp<$width, E> {}
+        impl<const E: bool> LoadStoreGroup<Transpose, ()> for ThreadsWithinWarp<$width, E> {}
         warp_group!(ThreadsWithinWarp<$width, E>, $width, E);
     )+};
 }
@@ -370,7 +377,7 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 /// `T` is inferred from `source`; `ITEMS` is the positive per-thread extent and
 /// `ALIGN` is the payload's minimum alignment. The tile has
 /// `group.count() * ITEMS` elements. Striped gives each thread items separated
-/// by the block size; the other algorithms give it consecutive items.
+/// by the group size; the other algorithms give it consecutive items.
 /// [`LoadSource`] accepts an immutable slice or a mutable borrow of a collective
 /// carrier. [`LoadOptions`] supplies the count, typed default and element offset.
 /// The operation returns unit. [`Direct`], [`Striped`] and [`Vectorize`] use no
@@ -385,8 +392,8 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 /// for the other algorithms, relative to the selected offset.
 /// Compile with the supported Oxide backend and an exact block launch contract.
 /// Physical [`Warp`] and logical [`ThreadsWithinWarp`] widths 1, 2, 4, 8, 16 and
-/// 32 support [`Direct`] with implicit storage when the exact block size is a
-/// multiple of 32. A width-`W` group's origin is the caller's element offset
+/// 32 support [`Direct`], [`Striped`], [`Vectorize`] and [`Transpose`] with
+/// implicit storage when the exact block size is a multiple of 32. A width-`W` group's origin is the caller's element offset
 /// plus its x-fastest group index times `W * ITEMS`. Every participating group
 /// thread must reach matching calls with uniform source, controls and
 /// participation. Sibling groups may choose different controls. The compiler
@@ -397,6 +404,10 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 /// consumer groups. A canonical `WarpTile<W>::sync()` completes accesses within
 /// its tile; a containing tile can also provide completion. Transitions to or
 /// from Block accesses require `cuda_device::thread::sync_threads()`.
+/// Warp Transpose receives disjoint shared storage for each group. Reusing its
+/// dirty implicit storage inserts matching completion before the next call;
+/// first use and scratch-free calls provide no such completion. Canonical
+/// containing barriers also complete narrower implicit storage.
 /// Ending a borrow is not completion. Raw-mask synchronization is unsupported
 /// in checked collective roots.
 /// Full/filled Load initializes every output slot. Masked Load without a default
@@ -672,13 +683,21 @@ where
                 );
             }
             sealed::TRANSPOSE => {
-                boundary::store_permuting(destination, self, options.algorithm(Transpose));
+                boundary::store_permuting::<_, I, ALIGN, C, _, S, G>(
+                    destination,
+                    self,
+                    options.algorithm(Transpose),
+                );
             }
             sealed::WARP_TRANSPOSE => {
-                boundary::store_permuting(destination, self, options.algorithm(WarpTranspose));
+                boundary::store_permuting::<_, I, ALIGN, C, _, S, G>(
+                    destination,
+                    self,
+                    options.algorithm(WarpTranspose),
+                );
             }
             sealed::WARP_TRANSPOSE_TIMESLICED => {
-                boundary::store_permuting(
+                boundary::store_permuting::<_, I, ALIGN, C, _, S, G>(
                     destination,
                     self,
                     options.algorithm(WarpTransposeTimesliced),
