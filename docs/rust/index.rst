@@ -43,13 +43,14 @@ as the remaining input length capped at the tile size. The kernel above shows
 that idiom, including a short final tile. Counts and offsets describe the whole
 group's tile, and must be uniform across that group.
 
-The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`
-and :doc:`reduce_batched`. Scan returns fresh per-group prefixes; Reduce
-returns a total only at each group's root. Batched reduction returns a fresh
+The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
+:doc:`reduce_batched` and :doc:`exchange`. Scan returns fresh per-group prefixes;
+Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
-Scan, Reduce and batched reduction preserve their input. Additional primitive
-families are under development. The crate is unpublished and its interface can
-change.
+Exchange converts between blocked and striped per-thread layouts.
+Scan, Reduce, batched reduction and Exchange preserve their input. Additional
+primitive families are under development. The crate is unpublished and its
+interface can change.
 
 Build and run
 -------------
@@ -108,6 +109,7 @@ Read next
    scan
    reduce
    reduce_batched
+   exchange
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

@@ -52,6 +52,9 @@
 //! extent and explicit striped or blocked result ownership. The defining crate
 //! and callers instantiating these calculated signatures enable nightly
 //! `generic_const_exprs`; ordinary non-calculated consumers remain feature-free.
+//! [`exchange`] converts between blocked and striped layouts on complete Blocks
+//! and physical or power-of-two logical Warp groups. It preserves input and
+//! returns a fresh payload with the same type, extent and alignment.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -60,6 +63,7 @@
 #![allow(incomplete_features)]
 
 mod alignment;
+mod exchange;
 mod group;
 mod load_store;
 mod reduce;
@@ -70,6 +74,9 @@ mod thread_data;
 
 pub use alignment::{Alignment, SupportedAlignment};
 pub use cuda_device::{CollectiveTiles, DisjointSlice};
+pub use exchange::{
+    BlockedToStriped, ExchangeGroup, ExchangeMode, ExchangeOptions, StripedToBlocked, exchange,
+};
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,

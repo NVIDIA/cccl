@@ -1149,6 +1149,85 @@ cases.update(
     ),
 )
 
+# Exchange preserves extent/alignment and input ownership. Fresh output does not
+# establish participation or complete an unrelated global-memory access.
+exchange = "values=coop::exchange(block,&values,Default::default());"
+exchange_warp = "let warp=coop::this_warp().group_by_non_exhaustive::<8>();"
+cases.update(
+    exchange_generic_defaults=(
+        load
+        + "fn forward<T:coop::Numeric,G:coop::ExchangeGroup,const N:usize,const A:usize>("
+        "group:coop::ThreadGroup<G>,input:&coop::ThreadData<T,N,A>)->coop::ThreadData<T,N,A> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::exchange(group,input,Default::default())}"
+        "fn selected<T:coop::Numeric,G:coop::ExchangeGroup,M:coop::ExchangeMode,const N:usize,const A:usize>("
+        "group:coop::ThreadGroup<G>,input:&coop::ThreadData<T,N,A>,options:coop::ExchangeOptions<M>)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::exchange(group,input,options)}"
+        "values=forward(block,&values);"
+        "values=selected(block,&mut values,coop::ExchangeOptions::default());"
+        "let mut one=coop::ThreadData::<_,1>::new();one.write(0,7_i32);"
+        "let _one=forward(block,&mut one);"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,0_i32);aligned.write(1,1);aligned.write(2,2);aligned.write(3,3);"
+        "let aligned_result:coop::ThreadData<_,4,16>=selected(block,&mut aligned,"
+        "coop::ExchangeOptions::default().mode(coop::BlockedToStriped));"
+        + store.replace("&values", "&aligned_result"),
+        None,
+    ),
+    exchange_warp_siblings=(
+        load
+        + "values=coop::exchange(coop::this_warp(),&values,Default::default());"
+        + exchange_warp
+        + "if warp.rank_at::<coop::Warp>()&1==0 {"
+        "values=coop::exchange(warp,&values,Default::default());"
+        "values=coop::exchange(warp,&values,coop::ExchangeOptions::default().mode(coop::BlockedToStriped));}"
+        + store,
+        None,
+    ),
+    exchange_block_partial_block=(load + exchange + store, None),
+    exchange_block_partition=(
+        load
+        + "let _result=coop::exchange(block.group_by::<2>(),&values,Default::default());",
+        "ExchangeGroup",
+    ),
+    exchange_prefix17=(
+        load + "let group=coop::this_warp().group_by_non_exhaustive::<17>();"
+        "if group.is_member()!=0 {let _result=coop::exchange(group,&values,Default::default());}",
+        "ExchangeGroup",
+    ),
+    exchange_bad_mode=(
+        load + "struct StripedToBlocked;"
+        "let _result=coop::exchange(block,&values,coop::ExchangeOptions::default().mode(StripedToBlocked));",
+        "ExchangeMode",
+    ),
+    exchange_block_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + exchange + "}",
+        "lane-varying",
+    ),
+    exchange_warp_lane_divergence=(
+        load
+        + exchange_warp
+        + "if thread::threadIdx_x()&1==0 {let _result=coop::exchange(warp,&values,Default::default());}",
+        "lane-varying",
+    ),
+    exchange_warp_partial_block=(
+        load
+        + "let _result=coop::exchange(coop::this_warp(),&values,Default::default());",
+        "complete physical warps",
+    ),
+    exchange_result_control=(
+        load + "let result=coop::exchange(block,&values,Default::default());"
+        "if result.get(0)==Some(0) {" + exchange + "}",
+        "lane-varying",
+    ),
+    exchange_read_epoch=(
+        reload + exchange + store,
+        "requires a barrier covering both accesses",
+    ),
+    exchange_read_completed=(reload + exchange + sync + store, None),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

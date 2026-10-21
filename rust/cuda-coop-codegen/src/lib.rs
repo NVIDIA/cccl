@@ -3,7 +3,7 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles Load/Store, Scan, Reduce and batched Reduce providers with
+//! This private development crate compiles Load/Store, Scan, Reduce, batched Reduce and Exchange with
 //! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -42,6 +42,9 @@
 //! [`ReduceBatchedRequest`] reduces each payload position independently across
 //! a power-of-two Warp. Its fresh per-lane output capacity is ceil(batches/width),
 //! with striped or blocked distribution and validity only for real batches.
+//! [`ExchangeRequest`] preserves complete numeric payloads and produces fresh
+//! same-extent outputs redistributed between blocked and striped layouts. It
+//! supports exact Blocks and power-of-two Warps using shared memory.
 //! [`Provider::compile_native`] batches these families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
@@ -71,10 +74,12 @@
 
 #![deny(unsafe_code)]
 
+mod exchange;
 mod headers;
 mod reduce;
 mod reduce_batched;
 mod scan;
+pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
@@ -464,6 +469,8 @@ pub enum NativeRequest {
     Reduce(ReduceRequest),
     /// Batched Warp reduction with preserved input and partial fresh outputs.
     ReduceBatched(ReduceBatchedRequest),
+    /// Out-of-place Block or Warp Exchange with preserved input.
+    Exchange(ExchangeRequest),
 }
 
 impl NativeRequest {
@@ -473,6 +480,7 @@ impl NativeRequest {
             Self::Scan(request) => request.block_shape(),
             Self::Reduce(request) => request.block_shape(),
             Self::ReduceBatched(request) => request.block_shape(),
+            Self::Exchange(request) => request.block_shape(),
         }
     }
 
@@ -482,6 +490,7 @@ impl NativeRequest {
             Self::Scan(request) => request.source(symbol),
             Self::Reduce(request) => request.source(symbol),
             Self::ReduceBatched(request) => request.source(symbol),
+            Self::Exchange(request) => request.source(symbol),
         }
     }
 
@@ -491,13 +500,14 @@ impl NativeRequest {
             Self::Scan(request) => request.recipe.operation().token(),
             Self::Reduce(request) => request.recipe.token(),
             Self::ReduceBatched(request) => request.recipe.token(),
+            Self::Exchange(request) => request.recipe.token().into(),
         }
     }
 
     fn scratch_free(self) -> bool {
         match self {
             Self::LoadStore(request) => request.algorithm.scratch_free(),
-            Self::Scan(_) | Self::Reduce(_) | Self::ReduceBatched(_) => false,
+            Self::Scan(_) | Self::Reduce(_) | Self::ReduceBatched(_) | Self::Exchange(_) => false,
         }
     }
 
@@ -507,7 +517,7 @@ impl NativeRequest {
                 !request.operation.is_load() && !request.algorithm.scratch_free()
             }
             // These families write fresh outputs, never rearranging inputs.
-            Self::Scan(_) | Self::Reduce(_) | Self::ReduceBatched(_) => false,
+            Self::Scan(_) | Self::Reduce(_) | Self::ReduceBatched(_) | Self::Exchange(_) => false,
         }
     }
 }
@@ -526,9 +536,9 @@ pub struct Layout {
 /// # Device ABI obligations
 ///
 /// The memory-tile and payload-layout requirements below describe Load/Store.
-/// Scan, Reduce and batched Reduce use lane-private input and fresh output;
+/// Scan, Reduce, batched Reduce and Exchange use lane-private input and fresh output;
 /// their ABI and validity contracts are documented by [`ScanRequest`],
-/// [`ReduceRequest`] and [`ReduceBatchedRequest`].
+/// [`ReduceRequest`], [`ReduceBatchedRequest`] and [`ExchangeRequest`].
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -682,7 +692,8 @@ impl Provider {
     /// Compile an ordered mixed batch of the supported families in one NVRTC program.
     ///
     /// Per-specialization identity is independent of unrelated batch members.
-    /// Scan/Reduce/batched Reduce scratch describes one group and includes the actual CUB TempStorage,
+    /// Scan/Reduce/batched Reduce/Exchange scratch describes one group and includes
+    /// the actual CUB TempStorage,
     /// even when its C++ empty type occupies one byte. The caller plans replication.
     ///
     /// # Errors
@@ -724,6 +735,7 @@ impl Provider {
             include_bytes!("scan.rs"),
             include_bytes!("reduce.rs"),
             include_bytes!("reduce_batched.rs"),
+            include_bytes!("exchange.rs"),
         ] {
             hash_field(&mut inputs, bytes);
         }

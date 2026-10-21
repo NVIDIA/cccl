@@ -4,9 +4,10 @@
 //! Real native compiler coverage; ordinary host tests need no CUDA installation.
 
 use cuda_coop_codegen::{
-    Algorithm, Dtype, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
-    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator,
-    ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest,
+    Algorithm, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
+    Operation, Provider, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
+    ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request, ScanAlgorithm,
+    ScanOperation, ScanOperator, ScanRequest,
 };
 use std::{env, path::Path, time::Instant};
 
@@ -107,6 +108,111 @@ fn native_warp_shape_identity() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(entry.scratch_free, previous.scratch_free);
         assert_eq!(entry.mutates_payload, previous.mutates_payload);
     }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_exchange_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use ExchangeMode::{BlockedToStriped, StripedToBlocked};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // Ten numeric types, both directions, all Warp widths, XYZ and padded
+    // extents are distributed over rows rather than taking their product.
+    let mut requests = Vec::new();
+    for (dtype, block, width, items, mode) in [
+        (Dtype::I8, [33, 1, 1], None, 1, StripedToBlocked),
+        (Dtype::U8, [64, 1, 1], Some(1), 9, BlockedToStriped),
+        (Dtype::I16, [4, 3, 2], None, 4, BlockedToStriped),
+        (Dtype::U16, [4, 4, 4], Some(2), 4, StripedToBlocked),
+        (Dtype::I32, [128, 1, 1], None, 4, StripedToBlocked),
+        (Dtype::U32, [64, 1, 1], Some(4), 8, BlockedToStriped),
+        (Dtype::I64, [1, 1, 1], None, 1, BlockedToStriped),
+        (Dtype::U64, [64, 1, 1], Some(8), 4, StripedToBlocked),
+        (Dtype::F32, [64, 1, 1], Some(16), 1, BlockedToStriped),
+        (Dtype::F64, [8, 4, 2], Some(32), 4, StripedToBlocked),
+        (Dtype::I32, [33, 1, 1], None, 8, BlockedToStriped),
+        (Dtype::I32, [64, 1, 1], Some(32), 4, StripedToBlocked),
+        (Dtype::I32, [128, 1, 1], Some(32), 4, StripedToBlocked),
+    ] {
+        requests.push(NativeRequest::Exchange(match width {
+            None => ExchangeRequest::block(dtype, ExchangeRecipe::Block(mode), block, items)?,
+            Some(width) => {
+                ExchangeRequest::warp(dtype, ExchangeRecipe::Warp(mode), block, width, items)?
+            }
+        }));
+    }
+    requests.push(NativeRequest::LoadStore(Request::new_typed(
+        Dtype::I32,
+        Operation::LoadFullValidity,
+        Algorithm::Direct,
+        64,
+        4,
+    )?));
+    requests.push(NativeRequest::Scan(ScanRequest::warp(
+        Dtype::I32,
+        ScanOperation::ExclusiveSum,
+        [64, 1, 1],
+        8,
+    )?));
+    requests.push(NativeRequest::Reduce(ReduceRequest::warp(
+        Dtype::I32,
+        ReduceOperator::Sum,
+        ReduceForm::Payload,
+        [64, 1, 1],
+        8,
+        4,
+    )?));
+    requests.push(NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+        Dtype::I32,
+        ReduceBatchedRecipe::new(ReduceOperator::Sum, ReduceBatchedLayout::Striped),
+        [64, 1, 1],
+        8,
+        4,
+    )?));
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 17);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        if matches!(request, NativeRequest::LoadStore(_)) {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        } else {
+            assert_eq!(entry.cub_layout, entry.scratch);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free && !entry.mutates_payload);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    // Actual queried layouts include Warp sentinel/padding and Block padding.
+    assert_eq!(
+        artifact.specializations[5].scratch,
+        Layout {
+            size: 136,
+            alignment: 4
+        }
+    );
+    assert_eq!(
+        artifact.specializations[10].scratch,
+        Layout {
+            size: 1088,
+            alignment: 16
+        }
+    );
+    eprintln!(
+        "{} mixed Exchange/Load/Scan/Reduce/batched Reduce specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
     Ok(())
 }
 

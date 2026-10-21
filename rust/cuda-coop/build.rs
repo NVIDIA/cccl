@@ -1,10 +1,11 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! Register the owning host provider for native Load, Store, Scan, Reduce and batched reduction.
+//! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
-    Algorithm, Operation, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm,
-    ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, oxide,
+    Algorithm, ExchangeMode, ExchangeRecipe, Operation, ReduceAlgorithm, ReduceBatchedLayout,
+    ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
+    ScanOperator, ScanRecipe, oxide,
 };
 
 fn main() {
@@ -16,6 +17,20 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (mode, name) in [
+        (ExchangeMode::StripedToBlocked, "STRIPED_TO_BLOCKED"),
+        (ExchangeMode::BlockedToStriped, "BLOCKED_TO_STRIPED"),
+    ] {
+        for (recipe, group) in [
+            (ExchangeRecipe::Block(mode), "BLOCK"),
+            (ExchangeRecipe::Warp(mode), "WARP"),
+        ] {
+            let value = oxide::exchange_registration(&executable, recipe)
+                .expect("cuda.coop exchange registration");
+            println!("cargo::rustc-env=COOP_EXCHANGE_{group}_{name}={value}");
+        }
+    }
+
     for (operator, name) in [
         (ReduceOperator::Sum, "SUM"),
         (ReduceOperator::Multiplies, "MULTIPLIES"),

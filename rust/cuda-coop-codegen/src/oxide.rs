@@ -13,14 +13,15 @@
 //! The protocol supports raw i32 and typed validity Load/Store recipes documented
 //! by [`Operation`], numeric Block/scalar Warp Scan through [`ScanRecipe`], and
 //! root-result scalar/payload Reduce through [`ReduceRecipe`], and partial-output
-//! Warp batched Reduce through [`ReduceBatchedRecipe`].
+//! Warp batched Reduce through [`ReduceBatchedRecipe`]. Out-of-place Block/Warp
+//! Exchange uses [`ExchangeRecipe`] with no scalar controls.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
-    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider,
-    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe, ReduceRequest, Request,
-    Result, ScanRecipe, ScanRequest,
+    Algorithm, Artifact, Dtype, Error, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
+    Operation, Provider, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe,
+    ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -123,6 +124,20 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("exchange_") {
+            let recipe = ExchangeRecipe::parse(&self.operation, &self.algorithm)?;
+            let dtype = self.dtype.dtype()?;
+            let request = match (recipe, self.warp_width) {
+                (ExchangeRecipe::Block(_), None) => {
+                    ExchangeRequest::block(dtype, recipe, self.block, self.items_per_thread)?
+                }
+                (ExchangeRecipe::Warp(_), Some(width)) => {
+                    ExchangeRequest::warp(dtype, recipe, self.block, width, self.items_per_thread)?
+                }
+                _ => return Err(Error::message("Exchange recipe disagrees with Warp scope")),
+            };
+            return Ok(NativeRequest::Exchange(request));
+        }
         if self.operation.starts_with("reduce_batched_") {
             let recipe = ReduceBatchedRecipe::parse(&self.operation, &self.algorithm)?;
             let width = self
@@ -262,6 +277,15 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::Exchange(request) => {
+            let dtype = Scalar::from(request.dtype);
+            return vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+        }
         NativeRequest::ReduceBatched(request) => {
             let dtype = Scalar::from(request.dtype);
             return vec![
@@ -480,6 +504,29 @@ pub fn reduce_batched_registration(
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode a Block or Warp Exchange recipe for the existing provider executable.
+///
+/// Dtype, exact Block geometry, optional Warp width and payload extent arrive
+/// with specialization. Four typed payload pointers describe preserved input
+/// and fresh same-extent output with packed validity; there are no scalar
+/// controls. Scratch is inserted by the existing library-call ABI.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn exchange_registration(executable: &Path, recipe: ExchangeRecipe) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: recipe.algorithm_token(),
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InputRequest {
@@ -648,6 +695,64 @@ mod tests {
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn exchange_registration_preserves_scope_extent_and_pointer_abi() {
+        use crate::ExchangeMode::{BlockedToStriped, StripedToBlocked};
+        for (recipe, width) in [
+            (ExchangeRecipe::Block(StripedToBlocked), None),
+            (ExchangeRecipe::Block(BlockedToStriped), None),
+            (ExchangeRecipe::Warp(StripedToBlocked), Some(8)),
+            (ExchangeRecipe::Warp(BlockedToStriped), Some(8)),
+        ] {
+            let registration: serde_json::Value = serde_json::from_str(
+                &exchange_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let mut request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: Scalar::Float(64),
+                block: [8, 4, 2],
+                items_per_thread: 9,
+                warp_width: width,
+            };
+            let native = request.native().unwrap();
+            let expected = match width {
+                None => ExchangeRequest::block(Dtype::F64, recipe, [8, 4, 2], 9).unwrap(),
+                Some(width) => {
+                    ExchangeRequest::warp(Dtype::F64, recipe, [8, 4, 2], width, 9).unwrap()
+                }
+            };
+            assert_eq!(native, NativeRequest::Exchange(expected));
+            assert_eq!(
+                arguments(native),
+                vec![
+                    Argument::ConstPointer(Scalar::Float(64)),
+                    Argument::MutPointer(Scalar::Float(64)),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::Unsigned(8)),
+                ]
+            );
+            assert!(!native.scratch_free() && !native.mutates_payload());
+            assert_eq!(registration["version"], 1);
+            assert_eq!(registration["provider"], "cuda_coop");
+            request.warp_width = if width.is_some() { None } else { Some(8) };
+            assert!(request.native().is_err());
+        }
+        assert!(
+            exchange_registration(
+                Path::new("relative"),
+                ExchangeRecipe::Block(StripedToBlocked)
+            )
+            .is_err()
+        );
+        assert!(ExchangeRecipe::parse("exchange_ranked", "block").is_err());
+        assert!(
+            ExchangeRecipe::parse(ExchangeRecipe::Block(StripedToBlocked).token(), "shuffle")
+                .is_err()
+        );
+    }
 
     #[test]
     fn batched_registration_preserves_derived_extent_and_pointer_abi() {
