@@ -1,7 +1,12 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{Algorithm, Direct, LoadOptions, StoreOptions, Transpose, sealed::Group};
+use super::{
+    Algorithm, LoadOptions, StoreOptions,
+    sealed::{
+        DIRECT, Group, STRIPED, TRANSPOSE, VECTORIZE, WARP_TRANSPOSE, WARP_TRANSPOSE_TIMESLICED,
+    },
+};
 use crate::{Alignment, Numeric, SupportedAlignment, TempStorageLike, ThreadData};
 use cuda_device::{CollectiveTiles, DisjointSlice, library, thread};
 
@@ -18,6 +23,21 @@ registration!(load_filled, "COOP_VALIDITY_LOAD_FILLED");
 registration!(store_full, "COOP_VALIDITY_STORE_FULL");
 registration!(store_partial, "COOP_VALIDITY_STORE_PARTIAL");
 
+registration!(striped_load_full, "COOP_STRIPED_VALIDITY_LOAD_FULL");
+registration!(striped_load_masked, "COOP_STRIPED_VALIDITY_LOAD_MASKED");
+registration!(striped_load_filled, "COOP_STRIPED_VALIDITY_LOAD_FILLED");
+registration!(striped_store_full, "COOP_STRIPED_VALIDITY_STORE_FULL");
+registration!(striped_store_partial, "COOP_STRIPED_VALIDITY_STORE_PARTIAL");
+
+registration!(vectorize_load_full, "COOP_VECTORIZE_VALIDITY_LOAD_FULL");
+registration!(vectorize_load_masked, "COOP_VECTORIZE_VALIDITY_LOAD_MASKED");
+registration!(vectorize_load_filled, "COOP_VECTORIZE_VALIDITY_LOAD_FILLED");
+registration!(vectorize_store_full, "COOP_VECTORIZE_VALIDITY_STORE_FULL");
+registration!(
+    vectorize_store_partial,
+    "COOP_VECTORIZE_VALIDITY_STORE_PARTIAL"
+);
+
 registration!(transpose_load_full, "COOP_TRANSPOSE_VALIDITY_LOAD_FULL");
 registration!(transpose_load_masked, "COOP_TRANSPOSE_VALIDITY_LOAD_MASKED");
 registration!(transpose_load_filled, "COOP_TRANSPOSE_VALIDITY_LOAD_FILLED");
@@ -25,6 +45,47 @@ registration!(transpose_store_full, "COOP_TRANSPOSE_VALIDITY_STORE_FULL");
 registration!(
     transpose_store_partial,
     "COOP_TRANSPOSE_VALIDITY_STORE_PARTIAL"
+);
+
+registration!(
+    warp_transpose_load_full,
+    "COOP_WARP_TRANSPOSE_VALIDITY_LOAD_FULL"
+);
+registration!(
+    warp_transpose_load_masked,
+    "COOP_WARP_TRANSPOSE_VALIDITY_LOAD_MASKED"
+);
+registration!(
+    warp_transpose_load_filled,
+    "COOP_WARP_TRANSPOSE_VALIDITY_LOAD_FILLED"
+);
+registration!(
+    warp_transpose_store_full,
+    "COOP_WARP_TRANSPOSE_VALIDITY_STORE_FULL"
+);
+registration!(
+    warp_transpose_store_partial,
+    "COOP_WARP_TRANSPOSE_VALIDITY_STORE_PARTIAL"
+);
+registration!(
+    warp_transpose_timesliced_load_full,
+    "COOP_WARP_TRANSPOSE_TIMESLICED_VALIDITY_LOAD_FULL"
+);
+registration!(
+    warp_transpose_timesliced_load_masked,
+    "COOP_WARP_TRANSPOSE_TIMESLICED_VALIDITY_LOAD_MASKED"
+);
+registration!(
+    warp_transpose_timesliced_load_filled,
+    "COOP_WARP_TRANSPOSE_TIMESLICED_VALIDITY_LOAD_FILLED"
+);
+registration!(
+    warp_transpose_timesliced_store_full,
+    "COOP_WARP_TRANSPOSE_TIMESLICED_VALIDITY_STORE_FULL"
+);
+registration!(
+    warp_transpose_timesliced_store_partial,
+    "COOP_WARP_TRANSPOSE_TIMESLICED_VALIDITY_STORE_PARTIAL"
 );
 
 #[inline(always)]
@@ -155,35 +216,85 @@ pub(super) unsafe fn load<
     // storage marker plans the complete provider layout and either synchronizes
     // managed reuse or requires the caller's explicit completion.
     macro_rules! call {
-        ($direct:ident, $transpose:ident, $controls:expr) => {
+        ($direct:ident, $striped:ident, $vectorize:ident, $transpose:ident, $warp:ident, $timesliced:ident, $controls:expr) => {
             if G::WARP {
                 library::checked_warp_call_v1::<T, _, _, _, _, 32, ITEMS, false>(
                     $direct, memory, $controls, payload,
                 )
-            } else if A::TRANSPOSE {
-                library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                    $transpose, memory, storage, $controls, payload,
-                )
             } else {
-                library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                    $direct, memory, storage, $controls, payload,
-                )
+                match A::KIND {
+                    DIRECT => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                            $direct, memory, storage, $controls, payload,
+                        )
+                    }
+                    STRIPED => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                            $striped, memory, storage, $controls, payload,
+                        )
+                    }
+                    VECTORIZE => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                            $vectorize, memory, storage, $controls, payload,
+                        )
+                    }
+                    TRANSPOSE => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                            $transpose, memory, storage, $controls, payload,
+                        )
+                    }
+                    WARP_TRANSPOSE => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                            $warp, memory, storage, $controls, payload,
+                        )
+                    }
+                    WARP_TRANSPOSE_TIMESLICED => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
+                            $timesliced,
+                            memory,
+                            storage,
+                            $controls,
+                            payload,
+                        )
+                    }
+                    _ => panic!(),
+                }
             }
         };
     }
     // SAFETY: the checked marker enforces participation, uniform controls and
     // resource epochs. The exact typed provider initializes values before flags
     // and transports masked invalid cells without reading them as T. The
-    // compiler allocates Transpose scratch and checks the required completion.
+    // compiler allocates exact scratch and checks the selected completion policy.
     unsafe {
         match (options.valid_items, options.oob_default) {
-            (None, None) => call!(load_full, transpose_load_full, (pointer,)),
+            (None, None) => call!(
+                load_full,
+                striped_load_full,
+                vectorize_load_full,
+                transpose_load_full,
+                warp_transpose_load_full,
+                warp_transpose_timesliced_load_full,
+                (pointer,)
+            ),
             (Some(count), None) => {
-                call!(load_masked, transpose_load_masked, (pointer, count as i32))
+                call!(
+                    load_masked,
+                    striped_load_masked,
+                    vectorize_load_masked,
+                    transpose_load_masked,
+                    warp_transpose_load_masked,
+                    warp_transpose_timesliced_load_masked,
+                    (pointer, count as i32)
+                )
             }
             (Some(count), Some(default)) => call!(
                 load_filled,
+                striped_load_filled,
+                vectorize_load_filled,
                 transpose_load_filled,
+                warp_transpose_load_filled,
+                warp_transpose_timesliced_load_filled,
                 (pointer, count as i32, default)
             ),
             (None, Some(_)) => panic!(),
@@ -197,12 +308,13 @@ pub(super) fn store<
     const ITEMS: usize,
     const ALIGN: usize,
     const CAPACITY: usize,
+    A: Algorithm,
     S: TempStorageLike,
     G: Group,
 >(
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: &ThreadData<T, ITEMS, ALIGN>,
-    options: StoreOptions<Direct, S>,
+    options: StoreOptions<A, S>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -222,55 +334,79 @@ pub(super) fn store<
     // ones. The compiler checks uniform controls, participation and epochs.
     unsafe {
         let pointer = pointer.add(offset);
-        if G::WARP {
-            match options.valid_items {
-                None => library::checked_warp_call_v1::<T, _, _, _, _, 32, ITEMS, true>(
-                    store_full,
-                    destination,
-                    (pointer,),
-                    payload,
-                ),
-                Some(count) => library::checked_warp_call_v1::<T, _, _, _, _, 32, ITEMS, true>(
-                    store_partial,
-                    destination,
-                    (pointer, count as i32),
-                    payload,
-                ),
-            }
-        } else {
-            match options.valid_items {
-                None => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                    store_full,
-                    destination,
-                    storage,
-                    (pointer,),
-                    payload,
-                ),
-                Some(count) => {
-                    library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                        store_partial,
+        macro_rules! call {
+            ($direct:ident, $striped:ident, $vectorize:ident, $controls:expr) => {
+                if G::WARP {
+                    library::checked_warp_call_v1::<T, _, _, _, _, 32, ITEMS, true>(
+                        $direct,
                         destination,
-                        storage,
-                        (pointer, count as i32),
+                        $controls,
                         payload,
                     )
+                } else {
+                    match A::KIND {
+                        DIRECT => {
+                            library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                                $direct,
+                                destination,
+                                storage,
+                                $controls,
+                                payload,
+                            )
+                        }
+                        STRIPED => {
+                            library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                                $striped,
+                                destination,
+                                storage,
+                                $controls,
+                                payload,
+                            )
+                        }
+                        VECTORIZE => {
+                            library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                                $vectorize,
+                                destination,
+                                storage,
+                                $controls,
+                                payload,
+                            )
+                        }
+                        // Only the shared-preserving Store implementations call this boundary.
+                        _ => panic!(),
+                    }
                 }
-            }
+            };
+        }
+        match options.valid_items {
+            None => call!(
+                store_full,
+                striped_store_full,
+                vectorize_store_full,
+                (pointer,)
+            ),
+            Some(count) => call!(
+                store_partial,
+                striped_store_partial,
+                vectorize_store_partial,
+                (pointer, count as i32)
+            ),
         }
     }
 }
 
 #[inline(always)]
-pub(super) fn store_transpose<
+pub(super) fn store_permuting<
     T: Numeric,
     const ITEMS: usize,
     const ALIGN: usize,
     const CAPACITY: usize,
+    A: Algorithm,
     S: TempStorageLike,
 >(
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: &mut ThreadData<T, ITEMS, ALIGN>,
-    options: StoreOptions<Transpose, S>,
+    options: StoreOptions<A, S>,
 ) where
     Alignment<ALIGN>: SupportedAlignment,
 {
@@ -289,20 +425,52 @@ pub(super) fn store_transpose<
     // that mutation. The compiler plans total scratch and completion before reuse.
     unsafe {
         let pointer = pointer.add(options.offset);
+        macro_rules! call {
+            ($transpose:ident, $warp:ident, $timesliced:ident, $controls:expr) => {
+                match A::KIND {
+                    TRANSPOSE => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                            $transpose,
+                            destination,
+                            storage,
+                            $controls,
+                            payload,
+                        )
+                    }
+                    WARP_TRANSPOSE => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                            $warp,
+                            destination,
+                            storage,
+                            $controls,
+                            payload,
+                        )
+                    }
+                    WARP_TRANSPOSE_TIMESLICED => {
+                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+                            $timesliced,
+                            destination,
+                            storage,
+                            $controls,
+                            payload,
+                        )
+                    }
+                    _ => panic!(),
+                }
+            };
+        }
         match options.valid_items {
-            None => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+            None => call!(
                 transpose_store_full,
-                destination,
-                storage,
-                (pointer,),
-                payload,
+                warp_transpose_store_full,
+                warp_transpose_timesliced_store_full,
+                (pointer,)
             ),
-            Some(count) => library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
+            Some(count) => call!(
                 transpose_store_partial,
-                destination,
-                storage,
-                (pointer, count as i32),
-                payload,
+                warp_transpose_store_partial,
+                warp_transpose_timesliced_store_partial,
+                (pointer, count as i32)
             ),
         }
     }

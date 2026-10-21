@@ -6,11 +6,14 @@ Block and Warp Load/Store
 
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
-first. Complete one-, two- and three-dimensional blocks support Direct and
-Transpose algorithms. Both Load algorithms produce blocked
-payloads, where each thread owns consecutive elements. Physical Warp groups
-support Direct with implicit storage when the exact block size is a multiple
-of 32. Other Warp algorithms and logical Warp groups remain under development.
+first. Complete one-, two- and three-dimensional blocks support Direct, Striped,
+Vectorize, Transpose, WarpTranspose and WarpTransposeTimesliced. The two warp
+transpose algorithms require a total block thread count divisible by 32.
+Striped Load gives each thread elements separated by the block size; the other
+algorithms produce blocked payloads, where each thread owns consecutive elements.
+Physical Warp groups support Direct with implicit storage when the exact block
+size is a multiple of 32. Other Warp algorithms and logical Warp groups remain
+under development.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
 named ``ITEMS_PER_THREAD``. The payload element type is inferred from its source.
@@ -21,8 +24,8 @@ A complete program
 ------------------
 
 The example is an independent Cargo workspace with a separate generic helper
-crate. It copies three block tiles with Direct and Transpose at item counts 1
-and 4, including a short last tile. It also uses explicit automatic scratch in
+crate. It copies three block tiles with each of the six algorithms at item counts
+1 and 4, including a short last tile. It also uses explicit automatic scratch in
 a repeated helper call. The consumer has no build script, native shim, provider,
 or scratch-size argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
@@ -42,15 +45,15 @@ Choose the architecture for your GPU. Materialization produces the native device
 artifact during the Cargo build. No separate compilation or linking step is
 required. The exact block launch contract is checked when preparing the launch;
 ``auto_shared`` uses the compiler's inferred requirement, which is zero for
-Direct Load/Store and includes the planned shared storage for Transpose.
+Direct, Striped and Vectorize Load/Store and includes the planned shared storage
+for the three transposing algorithms.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/src/main.rs
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 The reusable helper preserves the source element type. Its algorithm-generic
-form borrows the payload mutably because Transpose Store permutes it.
-Direct-only code may pass a shared payload borrow:
+form borrows the payload mutably because the transposing Stores permute it.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
    :language: rust
@@ -69,7 +72,8 @@ participating group; sibling physical warps may choose different values.
 
 For block shape ``[X,Y,Z]``, thread rank is x-fastest:
 ``t = x + X * (y + Y * z)``. A blocked payload slot ``i`` addresses
-``offset + t * ITEMS_PER_THREAD + i``. The exact shape is part of the kernel
+``offset + t * ITEMS_PER_THREAD + i``; a Striped slot addresses
+``offset + t + X*Y*Z * i``. The exact shape is part of the kernel
 launch contract; another shape with the same thread count is rejected.
 Use ``LaunchConfig2D`` or ``LaunchConfig3D`` for the corresponding launch domain.
 Declare the matching kernel contract, for example
@@ -86,9 +90,10 @@ the source's numeric type. Filled Load initializes every slot, including the
 missing tail. Partial Store writes only its selected prefix and requires only
 those slots to be initialized.
 
-Direct Store accepts ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
-or a scalar numeric value. A scalar contributes one item per thread. Direct Store preserves every payload value and validity flag, including
-initialized slots outside its write domain.
+Direct, Striped and Vectorize Store accept ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
+or a scalar numeric value. A scalar contributes one item per thread. All three preserve every payload value
+and validity bit, including
+initialized slots outside their write domain.
 
 Physical Warp Direct
 --------------------
@@ -135,8 +140,8 @@ Generic helpers can state ``G: coop::LoadStoreGroup<A, S>`` alongside
 bound from their group, algorithm and options; Block helpers retain their
 existing algorithm and storage choices.
 
-Selecting Transpose
--------------------
+Selecting an algorithm
+----------------------
 
 Select the algorithm through the trailing options. Selection is a Rust type,
 so each call compiles one algorithm; ordinary defaults continue to select Direct.
@@ -148,6 +153,27 @@ so each call compiles one algorithm; ordinary defaults continue to select Direct
    coop::store(block, output, &mut values,
        coop::StoreOptions::default().valid_items(count).algorithm(coop::Transpose));
 
+Striped uses CUB's direct striped accesses without shared scratch. Select
+``.algorithm(coop::Striped)`` on both operations to load and store a striped
+payload. Its Store accepts a shared payload borrow and preserves the complete
+payload, including a zero-count Store and initialized slots outside its prefix.
+
+.. code-block:: rust
+
+   coop::load(block, input, &mut values,
+       coop::LoadOptions::default().algorithm(coop::Striped));
+   coop::store(block, output, &values,
+       coop::StoreOptions::default().algorithm(coop::Striped));
+
+Vectorize preserves blocked payload order and uses no shared scratch. Full
+Load and Store can use wide accesses when the numeric type, item count and
+actual offset-adjusted pointer permit them. CUB falls back to Direct access
+when the pointer is not sufficiently aligned; ordinary scalar alignment is
+enough to call the operation. A counted overload uses Direct access even when
+its count equals the tile size. Filled Load is also counted. The example helper
+uses full calls for complete tiles and counted calls for its final short tile.
+Its Store accepts a shared payload borrow and preserves values and validity.
+
 Transpose uses CUB's coalesced accesses and shared block exchange. Its Store
 requires a mutable payload borrow and permutes every value and initialized bit
 from blocked into striped order. For a block of ``B`` threads and ``I`` items
@@ -155,7 +181,18 @@ per thread, destination lane/item ``(t, i)`` receives the old blocked slot at
 linear index ``B*i+t``. This mutation occurs even for a zero-count Store; a
 partial count only controls the global writes. Initialized slots outside the
 written prefix remain initialized at their permuted positions. Scalar Store
-uses a one-item temporary and accepts either algorithm.
+uses a one-item temporary and accepts every algorithm.
+
+WarpTranspose and WarpTransposeTimesliced use the same blocked Load layout.
+Their Store requires a mutable payload and permutes every slot within its
+physical warp: ``(t, i)`` receives old blocked slot
+``q = (t / 32) * (32 * I) + 32 * i + t % 32``. Both values and validity follow
+that mapping, including zero-count and repeated Stores. The timesliced variant
+reuses one warp's CUB exchange storage across successive warps; its counted
+Store retains a separate validity plane for all warps. Both algorithms still
+require the entire block to participate, and their internal warp barriers do
+not complete a conflicting full-block memory access. For shape ``[X,Y,Z]``,
+``X*Y*Z`` must be divisible by 32; X alone need not be.
 
 The compiler allocates the provider's complete shared storage, including the
 validity plane when needed, and inserts completion before reusing managed
@@ -181,8 +218,8 @@ compiler-managed reuse synchronization instead.
            .temp_storage(&mut scratch));
 
 The consuming ``auto_sync()`` builder inserts a trailing block barrier after
-each operation that actually uses scratch. Direct Load/Store receives no barrier
-or allocation from this policy. Options carrying a mutable storage borrow are
+each operation that actually uses scratch. Direct, Striped and Vectorize
+Load/Store receive no barrier or allocation from this policy. Options carrying a mutable storage borrow are
 consumed by the operation; construct fresh options with an ordinary reborrow
 for each call, including inside loops.
 
@@ -277,7 +314,8 @@ replacing them with unchanged or older timestamps may require an explicit
 rebuild. Crate publication is not supported yet.
 
 The rustdoc entries for ``load``, ``store``, ``LoadOptions``, ``StoreOptions``,
-``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct`` and ``Transpose`` specify their full generic signatures and
+``LoadSource``, ``StoreValue``, ``Algorithm`` and the six algorithm selectors
+specify their full generic signatures and
 supported argument forms. Native correctness and artifact checks are separate
 from host compilation. Performance qualification for masked payload access is
 ongoing; the current implementation makes no negligible-overhead claim.

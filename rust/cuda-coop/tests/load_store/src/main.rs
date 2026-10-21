@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 use coop::{Numeric, ThreadData, this_block};
+mod block_warp;
 mod storage;
+mod striped;
 mod transpose;
+mod vectorize;
 mod warp;
 
 use cuda_coop as coop;
@@ -375,6 +378,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(argument) = std::env::args().nth(1) {
         if argument == "storage" {
             return storage::run();
+        }
+        if argument == "block-warp" {
+            return block_warp::run(None);
+        }
+        if argument.starts_with("block-warp-") {
+            return block_warp::run(Some(&argument));
+        }
+        if argument == "vectorize" {
+            return vectorize::run(None);
+        }
+        if argument.starts_with("vectorize-") {
+            return vectorize::run(Some(&argument));
+        }
+        if argument == "striped" {
+            return striped::run(None);
+        }
+        if argument.starts_with("striped-") {
+            return striped::run(Some(&argument));
         }
         if argument == "transpose" {
             return transpose::run(None);

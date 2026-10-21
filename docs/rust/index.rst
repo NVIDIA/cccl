@@ -6,13 +6,15 @@ Rust development
 
 The Rust workspace contains per-thread payloads, CUDA group queries, and the
 native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
-``ThreadData`` values, physical/mapped hierarchy queries, Direct/Transpose block
-Load/Store, and physical-Warp Direct; see :doc:`payload`, :doc:`groups`, and
-:doc:`load_store`. Its private ``cuda-coop-codegen`` crate
+``ThreadData`` values, physical/mapped hierarchy queries, block Load/Store with
+Direct, Striped, Vectorize, Transpose, WarpTranspose and WarpTransposeTimesliced,
+explicit block storage, and physical-Warp Direct; see :doc:`payload`,
+:doc:`groups`, and :doc:`load_store`. Its private ``cuda-coop-codegen`` crate
 specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
-compiler integration development. Additional collective algorithms and public
-scratch storage remain under development. The crate is unpublished and its interface can change.
+compiler integration development. Additional collective algorithms and Warp
+capabilities remain under development. The crate is unpublished and its interface
+can change.
 
 Device code uses the pinned Oxide dependency and ``nightly-2026-10-11``.
 The host provider supports Rust 1.85 independently; validate it with
@@ -41,7 +43,7 @@ these forms:
      - Behavior
      - Payload requirement
    * - Full Load
-     - Fills every payload slot in blocked order
+     - Fills every payload slot in the selected arrangement
      - Writable storage
    * - Default-filled Load
      - Loads a valid prefix and fills the suffix with a supplied value
@@ -53,27 +55,33 @@ these forms:
      - Writes a valid prefix; leaves the destination suffix unchanged
      - Every slot initialized
 
-Both Direct and Transpose algorithms are supported. Direct accesses no shared
-scratch. Transpose Store redistributes blocked payloads across lanes into striped
-order, retaining initialized values in every slot, and uses the exact CUB storage
-layout. Compiler integrations must enforce collective participation, memory
-ownership, valid bounds, and synchronization before scratch reuse.
+Direct, Striped and Vectorize access no shared scratch. Direct and Vectorize
+use blocked payloads; Striped uses striped payloads. Full Vectorize operations
+use wide accesses when the type, item count and adjusted pointer permit them;
+misaligned pointers and counted overloads use Direct accesses. Transpose Store
+redistributes blocked payloads across lanes into striped order and uses the
+queried CUB storage layout. WarpTranspose and WarpTransposeTimesliced exchange
+within physical warps and require a complete block whose thread count is
+divisible by 32. The timesliced form reuses one warp's CUB exchange buffer.
+Compiler integrations enforce collective
+participation, memory ownership, valid bounds and completion before scratch reuse.
 
-The separate validity-aware Direct and Transpose recipes support all ten numeric payload
-types: ``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``, ``i64``, ``u64``,
-``f32`` and ``f64``. ``Request::new_typed`` selects the exact type. These recipes
-take opaque value storage and a packed validity bitmap. Full and
-default-filled Load initialize every slot. Masked Load without a default copies
-only the loaded prefix and resets all other flags to zero. Full and partial
-Store require initialized slots in their write domain. Direct preserves all
-payload bytes and validity bits; Transpose permutes both into striped order,
-including slots outside its write prefix. A failing Store traps; it is not transactional
-across lanes. Partial Store forms destination pointers only within its valid
+The validity-aware recipes support all six algorithms and all ten numeric
+payload types: ``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``, ``i64``,
+``u64``, ``f32`` and ``f64``. ``Request::new_typed`` selects the exact type.
+Separate packed validity bits track initialized slots. Full and default-filled
+Load initialize every slot; masked Load resets slots outside its selected
+prefix to unwritten. Store checks initialization throughout its write domain.
+Direct, Striped and Vectorize preserve payloads and bits; the three transposing
+algorithms permute both, including slots outside the prefix. Their complete
+scratch layouts include a validity plane when needed. For counted warp-transpose
+Store with more than one item per thread, that plane covers every warp even
+when the CUB exchange buffer is timesliced. A failing Store traps and is not transactional
+across lanes. Counted Store forms destination pointers only within its valid
 prefix, including when the allocation is shorter than a complete tile.
 
-The public Direct and Transpose API uses
-the same ``ThreadData`` representation without exposing an initialized slice or
-a public native layout.
+The public API uses this representation without exposing an initialized slice
+or a public native layout.
 
 Compile a provider
 ------------------
@@ -109,8 +117,9 @@ Native regression checks are opt-in:
    CUDA_HOME=/usr/local/cuda-13.3 cargo test --workspace -- --include-ignored
 
 ``CUDA_COOP_TEST_TARGET`` can select another supported NVRTC target; its default
-is ``compute_120``. These checks compile the supported Direct/Transpose forms at
-item counts 1 and 4, compare repeated LTO output, and check exact layout decoding
+is ``compute_120``. These checks compile the supported algorithm forms at
+item counts 1 and 4 plus odd-count Vectorize cases, compare repeated LTO output,
+and check exact layout decoding
 and specialization identity. They do not execute GPU kernels.
 
 Compiler integration and API reference

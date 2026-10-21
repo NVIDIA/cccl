@@ -14,6 +14,11 @@ struct alignas(T) opaque_cell
   unsigned char bytes[sizeof(T)];
 
   __device__ opaque_cell() = default;
+  // Warp-striped CUB Load constructs a cell from an initialized input value.
+  __device__ opaque_cell(T value)
+  {
+    cuda::std::memcpy(bytes, &value, sizeof(T));
+  }
   __device__ opaque_cell(const opaque_cell& other)
   {
     cuda::std::memcpy(bytes, other.bytes, sizeof(T));

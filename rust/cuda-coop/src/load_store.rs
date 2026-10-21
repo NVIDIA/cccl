@@ -14,6 +14,22 @@ mod boundary;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Direct;
 
+/// Direct striped access without shared scratch.
+///
+/// Thread rank `t` and item `i` address `t + group.count() * i`. Load produces
+/// this striped arrangement; Store consumes it and preserves the payload.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Striped;
+
+/// Blocked access using aligned vector operations for full tiles.
+///
+/// CUB checks the actual pointer after the element offset and falls back to
+/// Direct access when it is not sufficiently aligned. Counts, including a
+/// full-tile count, select Direct accesses. No extra alignment precondition or
+/// shared scratch is required. Store preserves every payload value and bit.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Vectorize;
+
 /// Coalesced access through CUB's shared-memory block exchange.
 ///
 /// Load produces blocked payloads. Store permutes payload values and validity
@@ -36,15 +52,49 @@ pub struct Direct;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Transpose;
 
+/// Coalesced blocked access through a shared-memory exchange within each warp.
+///
+/// The complete block participates; its total thread count must be divisible
+/// by 32. Load produces blocked payloads. Store mutates every value and validity
+/// bit into warp-striped order, including when its write count is zero. See
+/// [`store`] for the exact permutation and synchronization requirements.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct WarpTranspose;
+
+/// [`WarpTranspose`] using one warp's CUB exchange storage in successive slices.
+///
+/// Every thread in the complete block participates, including the block barriers
+/// between slices. The block thread count must be divisible by 32. Load, Store
+/// mutation and validity follow [`WarpTranspose`]. Counted Store additionally
+/// reserves its validity plane for every warp; that plane is not timesliced.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct WarpTransposeTimesliced;
+
 /// A sealed, compile-time algorithm selected through Load/Store options.
 pub trait Algorithm: sealed::Algorithm + Copy {}
 impl Algorithm for Direct {}
+impl Algorithm for Striped {}
+impl Algorithm for Vectorize {}
 impl Algorithm for Transpose {}
+impl Algorithm for WarpTranspose {}
+impl Algorithm for WarpTransposeTimesliced {}
 impl sealed::Algorithm for Direct {
-    const TRANSPOSE: bool = false;
+    const KIND: u8 = sealed::DIRECT;
+}
+impl sealed::Algorithm for Striped {
+    const KIND: u8 = sealed::STRIPED;
+}
+impl sealed::Algorithm for Vectorize {
+    const KIND: u8 = sealed::VECTORIZE;
 }
 impl sealed::Algorithm for Transpose {
-    const TRANSPOSE: bool = true;
+    const KIND: u8 = sealed::TRANSPOSE;
+}
+impl sealed::Algorithm for WarpTranspose {
+    const KIND: u8 = sealed::WARP_TRANSPOSE;
+}
+impl sealed::Algorithm for WarpTransposeTimesliced {
+    const KIND: u8 = sealed::WARP_TRANSPOSE_TIMESLICED;
 }
 
 /// A sealed group supported by a Load/Store algorithm and storage choice.
@@ -225,27 +275,33 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 
     /// Set an element offset from the start of the destination, default zero.
     ///
-    /// Include the block's origin explicitly. The written prefix must fit the
-    /// allocation and this block's collective ownership region.
+    /// Include the block's origin explicitly. Warp adds its x-fastest warp index
+    /// times `32 * ITEMS` automatically. The written prefix must fit the
+    /// allocation and the group's fixed ownership region.
     pub fn offset(mut self, offset: usize) -> Self {
         self.offset = offset;
         self
     }
 }
 
-/// Load a group tile in blocked order into an existing per-thread payload.
+/// Load a group tile into an existing per-thread payload.
 ///
 /// `T` is inferred from `source`; `ITEMS` is the positive per-thread extent and
 /// `ALIGN` is the payload's minimum alignment. The tile has
-/// `group.count() * ITEMS` elements. Each thread receives consecutive items.
+/// `group.count() * ITEMS` elements. Striped gives each thread items separated
+/// by the block size; the other algorithms give it consecutive items.
 /// [`LoadSource`] accepts an immutable slice or a mutable borrow of a collective
 /// carrier. [`LoadOptions`] supplies the count, typed default and element offset.
-/// The operation returns unit. [`Direct`] uses no shared scratch; [`Transpose`]
-/// uses compiler-planned shared storage and returns the same blocked layout.
+/// The operation returns unit. [`Direct`], [`Striped`] and [`Vectorize`] use no
+/// shared scratch. The three transposing algorithms use compiler-planned shared
+/// storage and return blocked payloads.
 ///
-/// Complete one-, two- and three-dimensional blocks support [`Direct`] and
-/// [`Transpose`]. Thread rank is x-fastest: `x + X * (y + Y * z)` for shape
-/// `[X, Y, Z]`. Each ranked thread receives `ITEMS` consecutive elements.
+/// Complete one-, two- and three-dimensional blocks support all six algorithms.
+/// [`WarpTranspose`] and [`WarpTransposeTimesliced`] require a total thread count
+/// divisible by 32; they still require participation by every block thread.
+/// Thread rank is x-fastest: `t = x + X * (y + Y * z)` for shape `[X, Y, Z]`.
+/// Slot `i` addresses `t + group.count() * i` for Striped Load and `t * ITEMS + i`
+/// for the other algorithms, relative to the selected offset.
 /// Compile with the supported Oxide backend and an exact block launch contract.
 /// Physical [`Warp`] supports [`Direct`] with implicit storage when the exact
 /// block size is a multiple of 32. Its origin is the caller's element offset
@@ -294,17 +350,23 @@ pub fn load<
     source.load(group, output, options);
 }
 
-/// Store a group tile from a blocked per-thread payload.
+/// Store a group tile from a per-thread payload.
 ///
 /// `T` is inferred from the destination and value. [`StoreValue`] accepts a
-/// shared or mutable borrow of [`ThreadData`] for [`Direct`], a mutable borrow
-/// for [`Transpose`], or a numeric scalar (one item per thread) for either.
+/// shared or mutable borrow of [`ThreadData`] for [`Direct`], [`Striped`] and [`Vectorize`], a
+/// mutable borrow for [`Transpose`], [`WarpTranspose`] or [`WarpTransposeTimesliced`],
+/// or a numeric scalar (one item per thread)
+/// for any algorithm.
 /// `CAPACITY` describes the carrier's ownership grain; it need not equal the
-/// payload extent. Direct preserves values and flags and uses no shared scratch.
+/// payload extent. Direct and Vectorize consume blocked items; Striped consumes striped items.
+/// These algorithms preserve every value and initialized bit and use no shared scratch.
 /// Transpose uses compiler-planned shared storage and permutes all payload slots
 /// into striped order, including a zero-count Store. Destination lane/item
 /// `(t, i)` receives the prior blocked slot at linear index `group.count()*i+t`.
-/// Its initialized bit follows the value, including unwritten slots and slots
+/// Both warp-transpose algorithms instead use warp-striped index
+/// `(t / 32) * (32 * ITEMS) + 32 * i + t % 32`, where `ITEMS` is the payload extent.
+/// They also mutate every slot, including a zero-count Store. All three preserve
+/// the initialized bit of the moved value, including unwritten slots and slots
 /// outside the write prefix. Scalars use a mutable one-item temporary.
 ///
 /// The supported groups, compiler/launch and uniformity requirements are those
@@ -439,10 +501,10 @@ impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, Col
 
 /// A sealed per-thread value accepted by [`store`] for type `T` and algorithm `A`.
 ///
-/// Numeric scalars and mutable [`ThreadData`] borrows support both algorithms.
-/// Shared payload borrows support only [`Direct`]. A scalar contributes one item
-/// per thread. Direct preserves every value and bit; [`Transpose`] mutates their
-/// positions as described by [`store`].
+/// Numeric scalars and mutable [`ThreadData`] borrows support all algorithms.
+/// Shared payload borrows support [`Direct`], [`Striped`] and [`Vectorize`]. A scalar contributes
+/// one item per thread. These algorithms preserve every value and bit;
+/// the transposing algorithms mutate their positions as described by [`store`].
 pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A> {
     #[doc(hidden)]
     fn store<const CAPACITY: usize, S: TempStorageLike, G: LoadStoreGroup<A, S>>(
@@ -453,26 +515,34 @@ pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A
     );
 }
 
-impl<T: Numeric, const I: usize, const A: usize> sealed::StoreValue<T, Direct>
-    for &ThreadData<T, I, A>
-where
-    Alignment<A>: SupportedAlignment,
-{
+macro_rules! shared_store_value {
+    ($algorithm:ty) => {
+        impl<T: Numeric, const I: usize, const ALIGN: usize> sealed::StoreValue<T, $algorithm>
+            for &ThreadData<T, I, ALIGN>
+        where
+            Alignment<ALIGN>: SupportedAlignment,
+        {
+        }
+        impl<T: Numeric, const I: usize, const ALIGN: usize> StoreValue<T, $algorithm>
+            for &ThreadData<T, I, ALIGN>
+        where
+            Alignment<ALIGN>: SupportedAlignment,
+        {
+            #[inline(always)]
+            fn store<const C: usize, S: TempStorageLike, G: LoadStoreGroup<$algorithm, S>>(
+                self,
+                _group: ThreadGroup<G>,
+                destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
+                options: StoreOptions<$algorithm, S>,
+            ) {
+                boundary::store::<_, I, ALIGN, C, $algorithm, S, G>(destination, self, options);
+            }
+        }
+    };
 }
-impl<T: Numeric, const I: usize, const A: usize> StoreValue<T> for &ThreadData<T, I, A>
-where
-    Alignment<A>: SupportedAlignment,
-{
-    #[inline(always)]
-    fn store<const C: usize, S: TempStorageLike, G: LoadStoreGroup<Direct, S>>(
-        self,
-        _group: ThreadGroup<G>,
-        destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
-        options: StoreOptions<Direct, S>,
-    ) {
-        boundary::store::<_, I, A, C, S, G>(destination, self, options);
-    }
-}
+shared_store_value!(Direct);
+shared_store_value!(Striped);
+shared_store_value!(Vectorize);
 impl<T: Numeric, const I: usize, const ALIGN: usize, A: Algorithm> sealed::StoreValue<T, A>
     for &mut ThreadData<T, I, ALIGN>
 where
@@ -492,10 +562,42 @@ where
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
         options: StoreOptions<A, S>,
     ) {
-        if A::TRANSPOSE {
-            boundary::store_transpose(destination, self, options.algorithm(Transpose));
-        } else {
-            boundary::store::<_, I, ALIGN, C, S, G>(destination, self, options.algorithm(Direct));
+        match A::KIND {
+            sealed::DIRECT => {
+                boundary::store::<_, I, ALIGN, C, Direct, S, G>(
+                    destination,
+                    self,
+                    options.algorithm(Direct),
+                );
+            }
+            sealed::STRIPED => {
+                boundary::store::<_, I, ALIGN, C, Striped, S, G>(
+                    destination,
+                    self,
+                    options.algorithm(Striped),
+                );
+            }
+            sealed::VECTORIZE => {
+                boundary::store::<_, I, ALIGN, C, Vectorize, S, G>(
+                    destination,
+                    self,
+                    options.algorithm(Vectorize),
+                );
+            }
+            sealed::TRANSPOSE => {
+                boundary::store_permuting(destination, self, options.algorithm(Transpose));
+            }
+            sealed::WARP_TRANSPOSE => {
+                boundary::store_permuting(destination, self, options.algorithm(WarpTranspose));
+            }
+            sealed::WARP_TRANSPOSE_TIMESLICED => {
+                boundary::store_permuting(
+                    destination,
+                    self,
+                    options.algorithm(WarpTransposeTimesliced),
+                );
+            }
+            _ => panic!(),
         }
     }
 }
@@ -520,7 +622,15 @@ mod sealed {
     pub trait Group {
         const WARP: bool;
     }
+    // Scalar tags let the compiler prune unused native operation arms before
+    // planning scratch. Only the sealed selector implementations assign them.
+    pub const DIRECT: u8 = 0;
+    pub const STRIPED: u8 = 1;
+    pub const TRANSPOSE: u8 = 2;
+    pub const VECTORIZE: u8 = 3;
+    pub const WARP_TRANSPOSE: u8 = 4;
+    pub const WARP_TRANSPOSE_TIMESLICED: u8 = 5;
     pub trait Algorithm {
-        const TRANSPOSE: bool;
+        const KIND: u8;
     }
 }

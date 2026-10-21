@@ -201,6 +201,57 @@ mod kernels {
             }
         }
     }
+
+    #[kernel]
+    #[launch_contract(domain = 1, block = (64, 1, 1), dynamic_shared = inferred)]
+    pub fn timesliced_reuse(
+        input: &[i32],
+        mut output: DisjointSlice<i32, CollectiveTiles<4>>,
+        valid: usize,
+    ) {
+        let block = coop::this_block();
+        let offset = thread::blockIdx_x() as usize * 256;
+        let lane = thread::threadIdx_x() as usize;
+        let mut values = coop::ThreadData::<_, 4>::new();
+        let mut scratch = coop::TempStorage::new().auto_sync();
+        let mut correct = true;
+        let mut iteration = 0;
+        while iteration < 2 {
+            coop::load(
+                block,
+                input,
+                &mut values,
+                coop::LoadOptions::default()
+                    .offset(offset)
+                    .valid_items(valid)
+                    .algorithm(coop::WarpTransposeTimesliced)
+                    .temp_storage(&mut scratch),
+            );
+            coop::store(
+                block,
+                &mut output,
+                &mut values,
+                coop::StoreOptions::default()
+                    .offset(offset)
+                    .valid_items(valid)
+                    .algorithm(coop::WarpTransposeTimesliced)
+                    .temp_storage(&mut scratch),
+            );
+            let mut item = 0;
+            while item < 4 {
+                let index = (lane / 32) * 128 + 32 * item + lane % 32;
+                let expected = if index < valid {
+                    Some((offset + index) as i32 * 7 + 3)
+                } else {
+                    None
+                };
+                correct &= values.get(item) == expected;
+                item += 1;
+            }
+            iteration += 1;
+        }
+        assert!(correct);
+    }
 }
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -277,6 +328,30 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     modes!(1);
     modes!(4);
+    // Counted timesliced Store needs its full, non-timesliced validity plane:
+    // 528 CUB bytes plus 32 mask bytes for two warps at four items per thread.
+    let plan = module.prepare_timesliced_reuse(LaunchConfig1D::auto_shared(3, 64))?;
+    assert_eq!(plan.__raw_config().shared_mem_bytes, 560);
+    let input: Vec<i32> = (0..3 * 256).map(|i| i * 7 + 3).collect();
+    for valid in [0, 1, 255, 256] {
+        let source = DeviceBuffer::from_host(&stream, &input)?;
+        let target = DeviceBuffer::from_host(&stream, &vec![-19_i32; input.len()])?;
+        let (_, target) = module
+            .timesliced_reuse_async_owned(&plan, source, target, valid)
+            .sync()?;
+        let mut output = vec![0; input.len()];
+        target.copy_to_host(&stream, &mut output)?;
+        stream.synchronize()?;
+        for (index, actual) in output.into_iter().enumerate() {
+            let expected = if index % 256 < valid {
+                input[index]
+            } else {
+                -19
+            };
+            assert_eq!(actual, expected, "timesliced valid={valid} index={index}");
+        }
+        cases += 1;
+    }
     println!("PASS: {cases} public storage cases");
     Ok(())
 }

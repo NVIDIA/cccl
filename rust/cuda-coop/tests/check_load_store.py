@@ -115,7 +115,7 @@ transpose_store = store.replace("&values", "&mut values").replace(
 cases.update(
     shared_transpose=(
         load + transpose_store.replace("&mut values", "&values"),
-        "expected `Direct`, found `Transpose`",
+        "StoreValue<i32, Transpose>",
     ),
     transpose_managed_reuse=(
         transpose_load + transpose_store + transpose_store,
@@ -390,6 +390,70 @@ cases.update(
     ),
 )
 
+striped_load = load.replace(
+    ".oob_default(0)", ".oob_default(0).algorithm(coop::Striped)"
+)
+striped_store = store.replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Striped)"
+)
+cases.update(
+    striped_shared=(striped_load + striped_store, None),
+    striped_varying_count=(
+        striped_load.replace(
+            ".valid_items(valid)", ".valid_items(thread::threadIdx_x() as usize)"
+        ),
+        "not proved block-uniform",
+    ),
+    striped_missing_completion=(
+        striped_load + striped_store + reload,
+        "requires a full-block barrier",
+    ),
+)
+
+
+vectorize_load = load.replace(
+    ".oob_default(0)", ".oob_default(0).algorithm(coop::Vectorize)"
+)
+vectorize_store = store.replace(
+    ".valid_items(valid)", ".valid_items(valid).algorithm(coop::Vectorize)"
+)
+cases.update(
+    vectorize_shared=(vectorize_load + vectorize_store, None),
+    vectorize_varying_offset=(
+        vectorize_load.replace(
+            ".offset(offset)", ".offset(offset+thread::threadIdx_x() as usize)"
+        ),
+        "not proved block-uniform",
+    ),
+    vectorize_missing_completion=(
+        vectorize_load + vectorize_store + reload,
+        "requires a full-block barrier",
+    ),
+)
+
+# Both algorithms participate as complete blocks and mutate the payload.
+for name, selector in [
+    ("warp_transpose", "WarpTranspose"),
+    ("warp_timesliced", "WarpTransposeTimesliced"),
+]:
+    warp_load = transpose_load.replace("coop::Transpose", f"coop::{selector}")
+    warp_store = transpose_store.replace("coop::Transpose", f"coop::{selector}")
+    cases[name + "_shared"] = (
+        load + warp_store.replace("&mut values", "&values"),
+        f"StoreValue<i32, {selector}>",
+    )
+    cases[name + "_managed_reuse"] = (warp_load + warp_store + warp_store, None)
+    cases[name + "_scalar"] = (
+        warp_load
+        + f"coop::store(block,&mut output,-17_i32,coop::StoreOptions::default().offset(offset).algorithm(coop::{selector}));",
+        None,
+    )
+    cases[name + "_partial_block"] = (warp_load, "divisible by 32")
+    cases[name + "_warp_only_participation"] = (
+        "if thread::threadIdx_x()<32 {" + warp_load + "}",
+        "lane-varying",
+    )
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",
@@ -410,9 +474,12 @@ env.update(
 )
 results = []
 for name, (body, diagnostic) in cases.items():
-    case_prefix = warp_prefix if name.startswith("warp_") else prefix
+    block_warp = name.startswith(("warp_transpose_", "warp_timesliced_"))
+    case_prefix = warp_prefix if name.startswith("warp_") and not block_warp else prefix
     if name == "warp_partial_geometry":
         case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")
+    elif name.endswith("_partial_block"):
+        case_prefix = case_prefix.replace("block=(128,1,1)", "block=(33,1,1)")
     text = case_prefix + body + "\n}\nfn main() {}\n"
     source.write_text(text)
     (output / f"{name}.rs").write_text(text)

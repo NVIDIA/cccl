@@ -60,6 +60,106 @@ mod kernels {
     }
     #[kernel]
     #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn striped<const ITEMS_PER_THREAD: usize>(
+        input: &[i16],
+        mut output: coop::DisjointSlice<i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+    ) {
+        let block = coop::this_block();
+        let tile = block.count() as usize * ITEMS_PER_THREAD;
+        let offset = block.rank_at::<coop::Grid>() as usize * tile;
+        let remaining = if offset <= input.len() {
+            input.len() - offset
+        } else {
+            0
+        };
+        let valid = remaining.min(tile);
+        coop_load_store_helper::copy_with_algorithm::<_, ITEMS_PER_THREAD, _>(
+            block,
+            input,
+            &mut output,
+            offset,
+            valid,
+            -7_i16,
+            coop::Striped,
+        );
+    }
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn vectorize<const ITEMS_PER_THREAD: usize>(
+        input: &[i16],
+        mut output: coop::DisjointSlice<i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+    ) {
+        let block = coop::this_block();
+        let tile = block.count() as usize * ITEMS_PER_THREAD;
+        let offset = block.rank_at::<coop::Grid>() as usize * tile;
+        let remaining = if offset <= input.len() {
+            input.len() - offset
+        } else {
+            0
+        };
+        let valid = remaining.min(tile);
+        coop_load_store_helper::copy_with_algorithm::<_, ITEMS_PER_THREAD, _>(
+            block,
+            input,
+            &mut output,
+            offset,
+            valid,
+            -7_i16,
+            coop::Vectorize,
+        );
+    }
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn warp_transpose<const ITEMS_PER_THREAD: usize>(
+        input: &[i16],
+        mut output: coop::DisjointSlice<i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+    ) {
+        let block = coop::this_block();
+        let tile = block.count() as usize * ITEMS_PER_THREAD;
+        let offset = block.rank_at::<coop::Grid>() as usize * tile;
+        let remaining = if offset <= input.len() {
+            input.len() - offset
+        } else {
+            0
+        };
+        let valid = remaining.min(tile);
+        coop_load_store_helper::copy_with_algorithm::<_, ITEMS_PER_THREAD, _>(
+            block,
+            input,
+            &mut output,
+            offset,
+            valid,
+            -7_i16,
+            coop::WarpTranspose,
+        );
+    }
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
+    pub fn warp_transpose_timesliced<const ITEMS_PER_THREAD: usize>(
+        input: &[i16],
+        mut output: coop::DisjointSlice<i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
+    ) {
+        let block = coop::this_block();
+        let tile = block.count() as usize * ITEMS_PER_THREAD;
+        let offset = block.rank_at::<coop::Grid>() as usize * tile;
+        let remaining = if offset <= input.len() {
+            input.len() - offset
+        } else {
+            0
+        };
+        let valid = remaining.min(tile);
+        coop_load_store_helper::copy_with_algorithm::<_, ITEMS_PER_THREAD, _>(
+            block,
+            input,
+            &mut output,
+            offset,
+            valid,
+            -7_i16,
+            coop::WarpTransposeTimesliced,
+        );
+    }
+    #[kernel]
+    #[launch_contract(domain = 1, block = (128, 1, 1), dynamic_shared = inferred)]
     pub fn explicit_storage<const ITEMS_PER_THREAD: usize>(
         input: &[i16],
         mut output: coop::DisjointSlice<i16, coop::CollectiveTiles<ITEMS_PER_THREAD>>,
@@ -120,8 +220,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     run!(1, prepare_copy, copy_async_owned);
     run!(4, prepare_copy, copy_async_owned);
+    run!(1, prepare_striped, striped_async_owned);
+    run!(4, prepare_striped, striped_async_owned);
+    run!(1, prepare_vectorize, vectorize_async_owned);
+    run!(4, prepare_vectorize, vectorize_async_owned);
     run!(1, prepare_transpose, transpose_async_owned);
     run!(4, prepare_transpose, transpose_async_owned);
+    run!(1, prepare_warp_transpose, warp_transpose_async_owned);
+    run!(4, prepare_warp_transpose, warp_transpose_async_owned);
+    run!(
+        1,
+        prepare_warp_transpose_timesliced,
+        warp_transpose_timesliced_async_owned
+    );
+    run!(
+        4,
+        prepare_warp_transpose_timesliced,
+        warp_transpose_timesliced_async_owned
+    );
     run!(1, prepare_explicit_storage, explicit_storage_async_owned);
     run!(4, prepare_explicit_storage, explicit_storage_async_owned);
     Ok(())

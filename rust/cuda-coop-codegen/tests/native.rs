@@ -11,6 +11,16 @@ fn rejects_invalid_shapes() {
     for (threads, items) in [(0, 1), (1025, 1), (128, 0), (1024, u32::MAX)] {
         assert!(Request::new(Operation::LoadFull, Algorithm::Direct, threads, items).is_err());
     }
+    for algorithm in [Algorithm::WarpTranspose, Algorithm::WarpTransposeTimesliced] {
+        assert!(
+            Request::new(Operation::LoadFull, algorithm, 33, 4)
+                .unwrap_err()
+                .to_string()
+                .contains("divisible by 32")
+        );
+        assert!(Request::new_with_shape(Operation::LoadFull, algorithm, [11, 3, 1], 4).is_err());
+        assert!(Request::new_with_shape(Operation::LoadFull, algorithm, [8, 4, 2], 4).is_ok());
+    }
     for block in [
         [0, 4, 4],
         [8, 0, 4],
@@ -81,7 +91,14 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
         Dtype::F32,
         Dtype::F64,
     ] {
-        for (algorithm, threads) in [(Algorithm::Direct, 128), (Algorithm::Transpose, 33)] {
+        for (algorithm, threads) in [
+            (Algorithm::Direct, 128),
+            (Algorithm::Striped, 33),
+            (Algorithm::Vectorize, 33),
+            (Algorithm::Transpose, 33),
+            (Algorithm::WarpTranspose, 64),
+            (Algorithm::WarpTransposeTimesliced, 64),
+        ] {
             for items in [1, 4] {
                 for operation in [
                     Operation::LoadFullValidity,
@@ -125,7 +142,12 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
     // The first shape has a partial physical warp crossing rows; the second
     // spans four Z planes, one warp each, and matches an existing 1D total.
     for block in [[11, 3, 1], [8, 4, 4]] {
-        for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+        for algorithm in [
+            Algorithm::Direct,
+            Algorithm::Striped,
+            Algorithm::Vectorize,
+            Algorithm::Transpose,
+        ] {
             for items in [1, 4] {
                 for operation in [
                     Operation::LoadFullValidity,
@@ -136,6 +158,28 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
                 ] {
                     requests.push(Request::new_with_shape(operation, algorithm, block, items)?);
                 }
+            }
+        }
+    }
+    // Odd item counts retain CUB's scalar fallback with the same validity ABI.
+    for operation in [Operation::LoadFullValidity, Operation::StoreFullValidity] {
+        requests.push(Request::new(operation, Algorithm::Vectorize, 33, 3)?);
+    }
+    for algorithm in [Algorithm::WarpTranspose, Algorithm::WarpTransposeTimesliced] {
+        for items in [1, 4] {
+            for operation in [
+                Operation::LoadFullValidity,
+                Operation::LoadMaskedValidity,
+                Operation::LoadFilledValidity,
+                Operation::StoreFullValidity,
+                Operation::StorePartialValidity,
+            ] {
+                requests.push(Request::new_with_shape(
+                    operation,
+                    algorithm,
+                    [8, 4, 2],
+                    items,
+                )?);
             }
         }
     }
@@ -151,7 +195,10 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
             "{request:?}: CUB {:?}, scratch {:?}",
             entry.cub_layout, entry.scratch
         );
-        if request.algorithm() == Algorithm::Direct {
+        if matches!(
+            request.algorithm(),
+            Algorithm::Direct | Algorithm::Striped | Algorithm::Vectorize
+        ) {
             assert_eq!(
                 entry.cub_layout,
                 Layout {
@@ -178,6 +225,26 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
                 )
             );
             assert_eq!(entry.scratch.alignment, entry.cub_layout.alignment);
+            if request.dtype() == Dtype::I32 && request.block_threads() == 64 {
+                let (load, store) = match (request.algorithm(), request.items_per_thread()) {
+                    (Algorithm::WarpTranspose, 1) => (256, 272),
+                    (Algorithm::WarpTranspose, 4) => (1024, 1040),
+                    (Algorithm::WarpTransposeTimesliced, 1) => (128, 144),
+                    (Algorithm::WarpTransposeTimesliced, 4) => (512, 528),
+                    _ => unreachable!(),
+                };
+                let is_store = matches!(
+                    request.operation(),
+                    Operation::StoreFullValidity | Operation::StorePartialValidity
+                );
+                assert_eq!(
+                    entry.cub_layout,
+                    Layout {
+                        size: if is_store { store } else { load },
+                        alignment: 16
+                    }
+                );
+            }
             if request.operation() == Operation::StorePartialValidity
                 && request.items_per_thread() > 1
             {
@@ -211,7 +278,14 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
     let provider = Provider::from_checkout(&checkout, &toolkit)?;
     eprintln!("provider initialization: {:?}", start.elapsed());
     let mut requests = Vec::new();
-    for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+    for algorithm in [
+        Algorithm::Direct,
+        Algorithm::Striped,
+        Algorithm::Vectorize,
+        Algorithm::Transpose,
+        Algorithm::WarpTranspose,
+        Algorithm::WarpTransposeTimesliced,
+    ] {
         for items in [1, 4] {
             for operation in [
                 Operation::LoadFull,
@@ -223,7 +297,14 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
             }
         }
     }
-    for algorithm in [Algorithm::Direct, Algorithm::Transpose] {
+    for algorithm in [
+        Algorithm::Direct,
+        Algorithm::Striped,
+        Algorithm::Vectorize,
+        Algorithm::Transpose,
+        Algorithm::WarpTranspose,
+        Algorithm::WarpTransposeTimesliced,
+    ] {
         for operation in [
             Operation::LoadFull,
             Operation::LoadFilled,
@@ -256,18 +337,23 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
         assert_eq!(entry.symbol, repeated.symbol);
         assert_eq!(
             entry.mutates_payload,
-            request.algorithm() == Algorithm::Transpose
-                && matches!(
-                    request.operation(),
-                    Operation::StoreFull | Operation::StorePartial
-                )
+            !matches!(
+                request.algorithm(),
+                Algorithm::Direct | Algorithm::Striped | Algorithm::Vectorize
+            ) && matches!(
+                request.operation(),
+                Operation::StoreFull | Operation::StorePartial
+            )
         );
         assert!(identities.insert(entry.identity));
         eprintln!(
             "{request:?}: CUB {:?}, scratch {:?}",
             entry.cub_layout, entry.scratch
         );
-        if request.algorithm() == Algorithm::Direct {
+        if matches!(
+            request.algorithm(),
+            Algorithm::Direct | Algorithm::Striped | Algorithm::Vectorize
+        ) {
             assert!(entry.scratch_free);
             assert_eq!(
                 entry.scratch,
@@ -286,7 +372,14 @@ fn native_specializations_and_determinism() -> Result<(), Box<dyn std::error::Er
         } else {
             assert!(!entry.scratch_free);
             assert_eq!(entry.scratch, entry.cub_layout);
-            assert!(entry.scratch.size >= 128 * request.items_per_thread() as usize * 4);
+            let exchange_threads = if request.algorithm() == Algorithm::WarpTransposeTimesliced {
+                32
+            } else {
+                128
+            };
+            assert!(
+                entry.scratch.size >= exchange_threads * request.items_per_thread() as usize * 4
+            );
         }
     }
     // A specialization's symbol is independent of unrelated batch members.
