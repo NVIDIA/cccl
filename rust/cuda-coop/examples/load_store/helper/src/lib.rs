@@ -43,17 +43,13 @@ pub fn copy_with_algorithm<T: coop::Numeric, const ITEMS_PER_THREAD: usize, A: c
             block,
             input,
             &mut values,
-            coop::LoadOptions::default()
-                .offset(offset)
-                .algorithm(algorithm),
+            coop::LoadOptions::from(algorithm).offset(offset),
         );
         coop::store(
             block,
             output,
             &mut values,
-            coop::StoreOptions::default()
-                .offset(offset)
-                .algorithm(algorithm),
+            coop::StoreOptions::from(algorithm).offset(offset),
         );
     } else {
         coop::load(

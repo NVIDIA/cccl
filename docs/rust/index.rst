@@ -20,7 +20,7 @@ valid prefix and leaves the rest of the destination unchanged:
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
    :language: rust
-   :lines: 59-77
+   :lines: 55-73
    :dedent: 8
 
 The complete :doc:`load_store` example includes the helper, imports, host

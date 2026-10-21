@@ -43,10 +43,8 @@ pub struct Vectorize;
 /// ) {
 ///     let block = coop::this_block();
 ///     let mut values = coop::ThreadData::<_, ITEMS_PER_THREAD>::new();
-///     coop::load(block, input, &mut values,
-///         coop::LoadOptions::default().algorithm(coop::Transpose));
-///     coop::store(block, output, &mut values,
-///         coop::StoreOptions::default().algorithm(coop::Transpose));
+///     coop::load(block, input, &mut values, coop::Transpose.into());
+///     coop::store(block, output, &mut values, coop::Transpose.into());
 /// }
 /// ```
 #[derive(Clone, Copy, Debug, Default)]
@@ -181,6 +179,9 @@ logical_groups!(1, 2, 4, 8, 16, 32);
 /// load without an out-of-bounds default makes every slot outside its prefix
 /// unwritten, including slots initialized before the call.
 ///
+/// Pass an algorithm alone as `Transpose.into()`. To chain controls, start
+/// with `LoadOptions::from(Transpose)`.
+///
 /// Omitted storage uses compiler-managed reuse synchronization.
 /// [`temp_storage`](Self::temp_storage) borrows an explicit descriptor.
 /// Controls, including whether a count/default is present, must be uniform
@@ -203,6 +204,12 @@ impl<T> Default for LoadOptions<T, Direct> {
             oob_default: None,
             offset: 0,
         }
+    }
+}
+
+impl<T, A: Algorithm> From<A> for LoadOptions<T, A> {
+    fn from(algorithm: A) -> Self {
+        LoadOptions::default().algorithm(algorithm)
     }
 }
 
@@ -274,6 +281,10 @@ impl<T, A: Algorithm, S: TempStorageLike> LoadOptions<T, A, S> {
 /// Defaults write the entire group tile at element offset zero. A partial
 /// store leaves destination elements outside its prefix unchanged. Controls,
 /// including whether a count is present, must be uniform across the group.
+///
+/// Pass an algorithm alone as `Transpose.into()`. To chain controls, start
+/// with `StoreOptions::from(Transpose)`.
+///
 /// Omitted storage uses compiler-managed reuse synchronization;
 /// [`temp_storage`](Self::temp_storage) selects explicit storage.
 #[derive(Clone, Copy)]
@@ -292,6 +303,12 @@ impl Default for StoreOptions<Direct> {
             valid_items: None,
             offset: 0,
         }
+    }
+}
+
+impl<A: Algorithm> From<A> for StoreOptions<A> {
+    fn from(algorithm: A) -> Self {
+        StoreOptions::default().algorithm(algorithm)
     }
 }
 
