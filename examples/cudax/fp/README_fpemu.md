@@ -232,3 +232,14 @@ the levels for these operands.
 
 Each operation prints its inputs and its result. Nothing is checked against a reference: the
 point is to show what the interface looks like in use.
+
+Optimization guide
+------------------
+
+`fpemu` pays for `double`'s semantics in integer and FP32 instructions, so it wins only where
+FP64 is rationed, and how much it wins depends on keeping the pack and unpack out of the loop
+and on matching the accuracy level to the computation. The [FP optimization
+guide](README_fp_optimization_guide.md#using-fpemu-efficiently) collects that advice, and its
+[Choosing the type](README_fp_optimization_guide.md#choosing-the-type) section places `fpemu`
+against `fpmp` and native `double` — including the three-way choice around `double` on a
+rationed part, where the two representations and `fp32mp2` compete.

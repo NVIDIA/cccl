@@ -354,6 +354,18 @@ little to show beyond the fact that the overloads exist:
   is exercised by the test suite, and the accuracy of each is characterized in the
   specification document.
 
+Optimization guide
+------------------
+
+`fp32mp2` pays for its digits in FP32 instructions and wins only where FP64 is rationed;
+`fp64mp2` pays in FP64 instructions and wins only where FP64 runs at full rate. Past that first
+decision, what a kernel gets out of either type depends on where its conversions sit, which
+accuracy level each step runs at, and whether its reductions go through atomics. The [FP
+optimization guide](README_fp_optimization_guide.md#using-fpmp-efficiently) covers those choices
+for both types, with per-operation costs, and its opening section on [choosing the
+type](README_fp_optimization_guide.md#choosing-the-type) places `fpmp` against the other
+components.
+
 References
 ----------
 
