@@ -67,7 +67,7 @@ def _compile(kernel, *arg_types, block=(32, 1, 1)):
 def test_release_explicit_region_returns_shared_array(qualified, dtype):
     from cuda import coop as common_coop
 
-    module = coop if qualified else common_coop
+    module = numba_coop if qualified else common_coop
 
     @cuda.jit(chip="sm_90")
     def kernel(output):
@@ -85,15 +85,15 @@ def test_release_explicit_region_returns_shared_array(qualified, dtype):
 def test_release_consumes_aliases_on_reachable_paths(action, conditional):
     @cuda.jit(chip="sm_90")
     def kernel(source, flag):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         alias = storage
         release = alias.release
         if not conditional or flag:
             storage.release()
         if action == "primitive":
-            items = coop.ThreadData(items_per_thread=1)
-            coop.load(
-                coop.this_block(),
+            items = numba_coop.ThreadData(items_per_thread=1)
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 items,
                 algorithm="direct",
@@ -113,7 +113,7 @@ def test_release_consumes_aliases_on_reachable_paths(action, conditional):
 def test_release_in_loop_consumes_outer_instance_on_backedge():
     @cuda.jit(chip="sm_90")
     def kernel(output, count):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         for i in range(count):
             view = storage.release()
             output[i] = len(view)
@@ -128,7 +128,7 @@ def test_release_in_mutually_exclusive_branches_and_fresh_loop_instances():
     @cuda.jit(chip="sm_90")
     def kernel(output, flag, count):
         for i in range(count):
-            storage = coop.TempStorage(128)
+            storage = numba_coop.TempStorage(128)
             if flag:
                 view = storage.release(types.int32)
             else:
@@ -145,7 +145,7 @@ def test_release_in_mutually_exclusive_branches_and_fresh_loop_instances():
 def test_release_requires_nonempty_compatible_region(size):
     @cuda.jit(chip="sm_90")
     def kernel(output):
-        storage = coop.TempStorage(size)
+        storage = numba_coop.TempStorage(size)
         view = storage.release(types.int32)
         output[0] = len(view)
 
@@ -161,7 +161,7 @@ def test_release_in_helper_consumes_callers_descriptor():
 
     @cuda.jit(chip="sm_90")
     def kernel(source):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         view = handoff(storage)
         source[0] = len(view)
         storage.release()
@@ -175,9 +175,9 @@ def test_release_in_helper_consumes_callers_descriptor():
 def test_release_rejects_stale_alias_after_loop_local_reconstruction():
     @cuda.jit(chip="sm_90")
     def kernel(output, count):
-        stale = coop.TempStorage(128, auto_sync=True)
+        stale = numba_coop.TempStorage(128, auto_sync=True)
         for i in range(count):
-            storage = coop.TempStorage(128, auto_sync=True)
+            storage = numba_coop.TempStorage(128, auto_sync=True)
             if i > 0:
                 stale.release()
             stale = storage
@@ -194,7 +194,7 @@ def test_release_rejects_stale_alias_after_loop_local_reconstruction():
 def test_release_exit_or_backedge(break_after_release):
     @cuda.jit(chip="sm_90")
     def kernel(output, count):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         for i in range(count):
             view = storage.release()
             output[i] = len(view)
@@ -215,11 +215,11 @@ def test_release_exit_or_backedge(break_after_release):
 def test_release_after_repeated_cooperative_uses():
     @cuda.jit(chip="sm_90")
     def kernel(source, output, count):
-        storage = coop.TempStorage(auto_sync=True)
-        items = coop.ThreadData(items_per_thread=1)
+        storage = numba_coop.TempStorage(auto_sync=True)
+        items = numba_coop.ThreadData(items_per_thread=1)
         for i in range(count):
-            coop.load(
-                coop.this_block(),
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 items,
                 algorithm="transpose",
@@ -234,14 +234,16 @@ def test_release_after_repeated_cooperative_uses():
 def test_release_then_break_does_not_consume_continuing_loop_path():
     @cuda.jit(chip="sm_90")
     def kernel(source, output, count, flag):
-        storage = coop.TempStorage(128, auto_sync=True)
-        items = coop.ThreadData(items_per_thread=1)
+        storage = numba_coop.TempStorage(128, auto_sync=True)
+        items = numba_coop.ThreadData(items_per_thread=1)
         for i in range(count):
             if flag:
                 view = storage.release()
                 output[0] = len(view)
                 break
-            coop.load(coop.this_block(), source, items, temp_storage=storage)
+            numba_coop.load(
+                numba_coop.this_block(), source, items, temp_storage=storage
+            )
 
     _compile(
         kernel, types.int32[::1], types.int32[::1], types.int32, types.boolean
@@ -251,7 +253,7 @@ def test_release_then_break_does_not_consume_continuing_loop_path():
 def test_release_rejects_runtime_dtype():
     @cuda.jit(chip="sm_90")
     def kernel(output, dtype):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         view = storage.release(dtype)
         output[0] = len(view)
 
@@ -262,7 +264,7 @@ def test_release_rejects_runtime_dtype():
 def test_release_method_cannot_escape_to_container():
     @cuda.jit(chip="sm_90")
     def kernel(output):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         methods = (storage.release,)
         output[0] = len(methods)
 
@@ -277,7 +279,7 @@ def test_release_requires_binding_on_every_path(conditional_binding):
         @cuda.jit(chip="sm_90")
         def kernel(output, flag):
             if flag:
-                storage = coop.TempStorage(128)
+                storage = numba_coop.TempStorage(128)
             view = storage.release()
             output[0] = len(view)
 
@@ -285,7 +287,7 @@ def test_release_requires_binding_on_every_path(conditional_binding):
 
         @cuda.jit(chip="sm_90")
         def kernel(output, flag):
-            storage = coop.TempStorage(128)
+            storage = numba_coop.TempStorage(128)
             if flag:
                 release = storage.release
             view = release()
@@ -300,11 +302,13 @@ def test_release_requires_binding_on_every_path(conditional_binding):
 def test_release_rejects_merged_independent_descriptor_regions():
     @cuda.jit(chip="sm_90")
     def kernel(source, output, flag):
-        first = coop.TempStorage(128, auto_sync=True)
-        second = coop.TempStorage(128, auto_sync=True)
+        first = numba_coop.TempStorage(128, auto_sync=True)
+        second = numba_coop.TempStorage(128, auto_sync=True)
         selected = first if flag else second
-        items = coop.ThreadData(items_per_thread=1)
-        coop.load(coop.this_block(), source, items, temp_storage=selected)
+        items = numba_coop.ThreadData(items_per_thread=1)
+        numba_coop.load(
+            numba_coop.this_block(), source, items, temp_storage=selected
+        )
         left = first.release(types.int32)
         right = second.release(types.int32)
         left[0] = 1
@@ -321,7 +325,7 @@ def test_release_rejects_descriptor_missing_on_zero_trip_loop():
     @cuda.jit(chip="sm_90")
     def kernel(output, count):
         for i in range(count):
-            storage = coop.TempStorage(128)
+            storage = numba_coop.TempStorage(128)
         view = storage.release()
         output[0] = len(view)
 
@@ -335,7 +339,7 @@ def test_release_rejects_descriptor_missing_on_zero_trip_loop():
 def test_release_rejects_unsupported_or_unaligned_dtype(dtype):
     @cuda.jit(chip="sm_90")
     def kernel(output):
-        storage = coop.TempStorage(128)
+        storage = numba_coop.TempStorage(128)
         view = storage.release(dtype)
         output[0] = len(view)
 
@@ -348,10 +352,10 @@ def test_release_retains_last_primitive_barrier_without_adding_one():
     def count_barriers(auto_sync):
         @cuda.jit(chip="sm_90")
         def kernel(source, output):
-            storage = coop.TempStorage(auto_sync=auto_sync)
-            items = coop.ThreadData(items_per_thread=1)
-            coop.load(
-                coop.this_block(),
+            storage = numba_coop.TempStorage(auto_sync=auto_sync)
+            items = numba_coop.ThreadData(items_per_thread=1)
+            numba_coop.load(
+                numba_coop.this_block(),
                 source,
                 items,
                 algorithm="transpose",
