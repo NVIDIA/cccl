@@ -204,7 +204,6 @@ struct agent_t
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()(Offset tile_idx)
   {
-    const int tile_idx = static_cast<int>(blockIdx.x);
     const Offset diag0 = static_cast<Offset>(tile_size) * tile_idx;
     // The following expression is equivalent to
     // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
