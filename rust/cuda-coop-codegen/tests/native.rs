@@ -7,9 +7,133 @@ use cuda_coop_codegen::{
     Algorithm, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
     Operation, Provider, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
     ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request, ScanAlgorithm,
-    ScanOperation, ScanOperator, ScanRequest,
+    ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_shuffle_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use ShuffleRecipe::{Down, Up};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    // Cover all numeric types, both empty-result directions, cross-thread
+    // shifts, XYZ and a second validity byte without a Cartesian matrix.
+    for (dtype, block, items, recipe) in [
+        (Dtype::I8, [1, 1, 1], 1, Down),
+        (Dtype::U8, [1, 1, 1], 1, Up),
+        (Dtype::I16, [33, 1, 1], 1, Down),
+        (Dtype::U16, [4, 3, 2], 4, Up),
+        (Dtype::I32, [1, 1, 1], 4, Down),
+        (Dtype::U32, [33, 1, 1], 9, Up),
+        (Dtype::I64, [64, 1, 1], 4, Down),
+        (Dtype::U64, [4, 3, 2], 1, Up),
+        (Dtype::F32, [128, 1, 1], 4, Down),
+        (Dtype::F64, [4, 3, 2], 9, Up),
+        (Dtype::I32, [33, 1, 1], 9, Down),
+        (Dtype::I32, [33, 1, 1], 9, Up),
+    ] {
+        requests.push(NativeRequest::Shuffle(ShuffleRequest::block(
+            dtype, recipe, block, items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::LoadStore(Request::new_typed(
+            Dtype::I32,
+            Operation::LoadFullValidity,
+            Algorithm::Direct,
+            64,
+            4,
+        )?),
+        NativeRequest::Scan(ScanRequest::warp(
+            Dtype::I32,
+            ScanOperation::ExclusiveSum,
+            [64, 1, 1],
+            8,
+        )?),
+        NativeRequest::Reduce(ReduceRequest::warp(
+            Dtype::I32,
+            ReduceOperator::Sum,
+            ReduceForm::Payload,
+            [64, 1, 1],
+            8,
+            4,
+        )?),
+        NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+            Dtype::I32,
+            ReduceBatchedRecipe::new(ReduceOperator::Sum, ReduceBatchedLayout::Striped),
+            [64, 1, 1],
+            8,
+            4,
+        )?),
+        NativeRequest::Exchange(ExchangeRequest::warp(
+            Dtype::I32,
+            ExchangeRecipe::Warp(ExchangeMode::StripedToBlocked),
+            [64, 1, 1],
+            32,
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 17);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (request, entry) in requests.iter().zip(&artifact.specializations) {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        if matches!(request, NativeRequest::LoadStore(_)) {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        } else {
+            assert_eq!(entry.cub_layout, entry.scratch);
+            assert!(entry.scratch.size > 0 && entry.scratch.alignment.is_power_of_two());
+            assert!(!entry.scratch_free && !entry.mutates_payload);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    // CUB scratch still exists for Block1/N1 even though the result is invalid.
+    assert_eq!(
+        artifact.specializations[0].scratch,
+        Layout {
+            size: 1,
+            alignment: 1
+        }
+    );
+    assert_eq!(
+        artifact.specializations[1].scratch,
+        Layout {
+            size: 1,
+            alignment: 1
+        }
+    );
+    assert_eq!(
+        artifact.specializations[9].scratch,
+        Layout {
+            size: 192,
+            alignment: 8
+        }
+    );
+    assert!(
+        provider
+            .compile_native(&[requests[0], requests[0]], &target)
+            .unwrap_err()
+            .to_string()
+            .contains("duplicate")
+    );
+    eprintln!(
+        "{} mixed Shuffle/Load/Scan/Reduce/batched Reduce/Exchange specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]

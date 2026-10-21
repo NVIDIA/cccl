@@ -44,11 +44,12 @@ that idiom, including a short final tile. Counts and offsets describe the whole
 group's tile, and must be uniform across that group.
 
 The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
-:doc:`reduce_batched` and :doc:`exchange`. Scan returns fresh per-group prefixes;
+:doc:`reduce_batched`, :doc:`exchange` and :doc:`shuffle`. Scan returns fresh per-group prefixes;
 Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
 Exchange converts between blocked and striped per-thread layouts.
-Scan, Reduce, batched reduction and Exchange preserve their input. Additional
+Shuffle shifts blocked values by one item, leaving the exposed edge invalid.
+Scan, Reduce, batched reduction, Exchange and Shuffle preserve their input. Additional
 primitive families are under development. The crate is unpublished and its
 interface can change.
 
@@ -110,6 +111,7 @@ Read next
    reduce
    reduce_batched
    exchange
+   shuffle
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

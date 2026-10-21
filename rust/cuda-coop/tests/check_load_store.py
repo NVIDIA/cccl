@@ -1228,6 +1228,96 @@ cases.update(
     exchange_read_completed=(reload + exchange + sync + store, None),
 )
 
+# Shuffle preserves its input but returns one invalid edge. Neither result
+# values nor validity prove participation or unrelated global-memory completion.
+shuffle = "let result=coop::shuffle(block,&values,Default::default());"
+cases.update(
+    shuffle_generic_defaults=(
+        load + "fn forward<T:coop::Numeric,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>)->coop::ThreadData<T,N,A> "
+        "where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::shuffle(block,input,Default::default())}"
+        "fn selected<T:coop::Numeric,M:coop::ShuffleMode,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N,A>,options:coop::ShuffleOptions<M>)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment {"
+        "coop::shuffle(block,input,options)}"
+        "let default_result=forward(block,&values);"
+        "let explicit_result=selected(block,&mut values,coop::ShuffleOptions::default().distance::<1>().mode(coop::Down));"
+        "let mut one=coop::ThreadData::<_,1>::new();one.write(0,7_i32);"
+        "let one_result=forward(block,&mut one);"
+        "let mut aligned=coop::ThreadData::<_,4,16>::new();"
+        "aligned.write(0,0_i32);aligned.write(1,1);aligned.write(2,2);aligned.write(3,3);"
+        "let mut aligned_result:coop::ThreadData<_,4,16>=selected(block,&mut aligned,"
+        "coop::ShuffleOptions::default().mode(coop::Up).distance::<1>());"
+        "aligned_result.write(0,default_result.get(0).unwrap_or(0));"
+        "aligned_result.write(1,explicit_result.get(0).unwrap_or(0));"
+        "aligned_result.write(2,one_result.get(0).unwrap_or(0));"
+        + store.replace("&values", "&aligned_result"),
+        None,
+    ),
+    shuffle_block_partial_block=(
+        load
+        + shuffle
+        + "let mut repaired=result;if repaired.get(3).is_none(){repaired.write(3,0);}"
+        + store.replace("&values", "&repaired"),
+        None,
+    ),
+    shuffle_distance_zero=(
+        load
+        + "let result=coop::shuffle(block,&values,coop::ShuffleOptions::default().distance::<0>());"
+        + store,
+        "Shuffle supports only distance one",
+    ),
+    shuffle_distance_two=(
+        load
+        + "let result=coop::shuffle(block,&values,coop::ShuffleOptions::default().distance::<2>());"
+        + store,
+        "Shuffle supports only distance one",
+    ),
+    shuffle_warp_group=(
+        load
+        + "let result=coop::shuffle(coop::this_warp(),&values,Default::default());",
+        "mismatched types",
+    ),
+    shuffle_block_partition=(
+        load
+        + "let result=coop::shuffle(block.group_by::<2>(),&values,Default::default());",
+        "mismatched types",
+    ),
+    shuffle_scalar=(
+        load + "let result=coop::shuffle(block,&3_i32,Default::default());",
+        "mismatched types",
+    ),
+    shuffle_bad_mode=(
+        load + "struct Up;"
+        "let result=coop::shuffle(block,&values,coop::ShuffleOptions::default().mode(Up));",
+        "ShuffleMode",
+    ),
+    shuffle_lane_divergence=(
+        load + "if thread::threadIdx_x()&1==0 {" + shuffle + "}",
+        "lane-varying",
+    ),
+    shuffle_result_control=(
+        load
+        + "let first=coop::shuffle(block,&values,coop::ShuffleOptions::default().mode(coop::Up));"
+        "if first.get(0).is_some() {" + shuffle + "}",
+        "lane-varying",
+    ),
+    shuffle_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + shuffle
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+    shuffle_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + shuffle
+        + sync
+        + store,
+        None,
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

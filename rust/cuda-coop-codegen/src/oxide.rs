@@ -14,14 +14,15 @@
 //! by [`Operation`], numeric Block/scalar Warp Scan through [`ScanRecipe`], and
 //! root-result scalar/payload Reduce through [`ReduceRecipe`], and partial-output
 //! Warp batched Reduce through [`ReduceBatchedRecipe`]. Out-of-place Block/Warp
-//! Exchange uses [`ExchangeRecipe`] with no scalar controls.
+//! Exchange uses [`ExchangeRecipe`] with no scalar controls; Block Shuffle uses
+//! [`ShuffleRecipe`] for one-item shifts with partial fresh output.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
     Algorithm, Artifact, Dtype, Error, ExchangeRecipe, ExchangeRequest, Layout, NativeRequest,
     Operation, Provider, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe,
-    ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
+    ReduceRequest, Request, Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -124,6 +125,19 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("shuffle_") {
+            let recipe = ShuffleRecipe::parse(&self.operation, &self.algorithm)?;
+            if self.warp_width.is_some() {
+                return Err(Error::message("Shuffle requires a Block scope"));
+            }
+            return ShuffleRequest::block(
+                self.dtype.dtype()?,
+                recipe,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::Shuffle);
+        }
         if self.operation.starts_with("exchange_") {
             let recipe = ExchangeRecipe::parse(&self.operation, &self.algorithm)?;
             let dtype = self.dtype.dtype()?;
@@ -277,6 +291,15 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::Shuffle(request) => {
+            let dtype = Scalar::from(request.dtype);
+            return vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+        }
         NativeRequest::Exchange(request) => {
             let dtype = Scalar::from(request.dtype);
             return vec![
@@ -527,6 +550,29 @@ pub fn exchange_registration(executable: &Path, recipe: ExchangeRecipe) -> Resul
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode a one-item Block Shuffle recipe for the existing provider executable.
+///
+/// Dtype, exact Block geometry and payload extent arrive with specialization.
+/// Four typed payload pointers describe preserved input and fresh same-extent
+/// output with packed validity, including its one invalid boundary slot. There
+/// are no scalar controls; scratch is inserted by the existing library-call ABI.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn shuffle_registration(executable: &Path, recipe: ShuffleRecipe) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct InputRequest {
@@ -695,6 +741,49 @@ mod tests {
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn shuffle_registration_preserves_scope_extent_and_pointer_abi() {
+        for recipe in [ShuffleRecipe::Down, ShuffleRecipe::Up] {
+            let registration: serde_json::Value = serde_json::from_str(
+                &shuffle_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let mut request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: Scalar::Float(64),
+                block: [4, 3, 2],
+                items_per_thread: 9,
+                warp_width: None,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::Shuffle(
+                    ShuffleRequest::block(Dtype::F64, recipe, [4, 3, 2], 9).unwrap()
+                )
+            );
+            assert_eq!(
+                arguments(native),
+                vec![
+                    Argument::ConstPointer(Scalar::Float(64)),
+                    Argument::MutPointer(Scalar::Float(64)),
+                    Argument::ConstPointer(Scalar::Unsigned(8)),
+                    Argument::MutPointer(Scalar::Unsigned(8)),
+                ]
+            );
+            assert!(!native.scratch_free() && !native.mutates_payload());
+            assert_eq!(registration["version"], 1);
+            assert_eq!(registration["provider"], "cuda_coop");
+            request.warp_width = Some(32);
+            assert!(request.native().is_err());
+        }
+        assert!(shuffle_registration(Path::new("relative"), ShuffleRecipe::Down).is_err());
+        assert!(ShuffleRecipe::parse("shuffle_rotate", "block").is_err());
+        assert!(ShuffleRecipe::parse(ShuffleRecipe::Down.token(), "warp").is_err());
+        assert!(ShuffleRecipe::parse(ShuffleRecipe::Up.token(), "transpose").is_err());
+    }
 
     #[test]
     fn exchange_registration_preserves_scope_extent_and_pointer_abi() {

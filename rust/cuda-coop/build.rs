@@ -5,7 +5,7 @@
 use cuda_coop_codegen::{
     Algorithm, ExchangeMode, ExchangeRecipe, Operation, ReduceAlgorithm, ReduceBatchedLayout,
     ReduceBatchedRecipe, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation,
-    ScanOperator, ScanRecipe, oxide,
+    ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -17,6 +17,11 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (recipe, name) in [(ShuffleRecipe::Down, "DOWN"), (ShuffleRecipe::Up, "UP")] {
+        let value = oxide::shuffle_registration(&executable, recipe)
+            .expect("cuda.coop shuffle registration");
+        println!("cargo::rustc-env=COOP_SHUFFLE_{name}={value}");
+    }
     for (mode, name) in [
         (ExchangeMode::StripedToBlocked, "STRIPED_TO_BLOCKED"),
         (ExchangeMode::BlockedToStriped, "BLOCKED_TO_STRIPED"),
