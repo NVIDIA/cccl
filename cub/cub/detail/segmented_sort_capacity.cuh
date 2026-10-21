@@ -70,17 +70,17 @@ struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, R
     : concatenate_capacities<capacity_list<Left..., Right...>, Rest...>
 {};
 
-template <typename Algorithm, const auto* Tuning>
+template <typename Algorithm, typename PolicyGetter>
 struct sort_entry
 {
-  using implementation                = typename Algorithm::template implementation<Tuning>;
+  using implementation                = typename Algorithm::template implementation<PolicyGetter>;
   using expansion                     = typename implementation::expansion;
   using capacities                    = typename expansion::capacities;
-  inline static constexpr auto tuning = *Tuning;
-  static constexpr int block_threads  = Tuning->block_threads;
+  inline static constexpr auto tuning = PolicyGetter{}();
+  static constexpr int block_threads  = tuning.block_threads;
   static constexpr int unit_threads   = implementation::unit_threads;
   static_assert(block_threads > 0 && block_threads <= 1024 && block_threads % unit_threads == 0);
-  static_assert(Tuning->blocks_per_sm > 0 && Tuning->min_blocks_per_sm > 0);
+  static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
   static_assert(capacities::valid());
 };
 

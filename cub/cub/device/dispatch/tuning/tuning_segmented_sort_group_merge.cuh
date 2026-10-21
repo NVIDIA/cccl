@@ -67,13 +67,30 @@ struct group_merge_policy_selector
 template <typename PolicyGetter>
 struct group_merge_entries
 {
-  inline static constexpr auto policy = PolicyGetter{}();
-  inline static constexpr auto warp   = policy.warp;
-  inline static constexpr auto small  = policy.small;
-  inline static constexpr auto large  = policy.large;
-  using type                          = sort_entries<sort_entry<group_merge_algorithm, &warp>,
-                                                     sort_entry<group_merge_algorithm, &small>,
-                                                     sort_entry<group_merge_algorithm, &large>>;
+  struct warp_policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+    {
+      return PolicyGetter{}().warp;
+    }
+  };
+  struct small_policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+    {
+      return PolicyGetter{}().small;
+    }
+  };
+  struct large_policy_getter
+  {
+    _CCCL_HOST_DEVICE_API constexpr group_merge_policy operator()() const
+    {
+      return PolicyGetter{}().large;
+    }
+  };
+  using type = sort_entries<sort_entry<group_merge_algorithm, warp_policy_getter>,
+                            sort_entry<group_merge_algorithm, small_policy_getter>,
+                            sort_entry<group_merge_algorithm, large_policy_getter>>;
 };
 } // namespace detail::segmented_sort_capacity
 
