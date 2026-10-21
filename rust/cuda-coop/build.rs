@@ -1,9 +1,10 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! Register the owning host provider for native Load, Store and Scan.
+//! Register the owning host provider for native Load, Store, Scan and Reduce.
 use cuda_coop_codegen::{
-    Algorithm, Operation, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, oxide,
+    Algorithm, Operation, ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ScanAlgorithm,
+    ScanOperation, ScanOperator, ScanRecipe, oxide,
 };
 
 fn main() {
@@ -15,6 +16,41 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (operator, name) in [
+        (ReduceOperator::Sum, "SUM"),
+        (ReduceOperator::Multiplies, "MULTIPLIES"),
+        (ReduceOperator::Min, "MIN"),
+        (ReduceOperator::Max, "MAX"),
+        (ReduceOperator::BitAnd, "BIT_AND"),
+        (ReduceOperator::BitOr, "BIT_OR"),
+        (ReduceOperator::BitXor, "BIT_XOR"),
+    ] {
+        for (form, suffix) in [
+            (ReduceForm::Scalar, "SCALAR"),
+            (ReduceForm::ScalarPrefix, "PREFIX"),
+            (ReduceForm::Payload, "PAYLOAD"),
+        ] {
+            for (recipe, prefix) in [
+                (
+                    ReduceRecipe::Block(operator, ReduceAlgorithm::RakingCommutativeOnly, form),
+                    "RAKING_COMMUTATIVE_ONLY",
+                ),
+                (
+                    ReduceRecipe::Block(operator, ReduceAlgorithm::Raking, form),
+                    "RAKING",
+                ),
+                (
+                    ReduceRecipe::Block(operator, ReduceAlgorithm::WarpReductions, form),
+                    "WARP_REDUCTIONS",
+                ),
+                (ReduceRecipe::Warp(operator, form), "WARP"),
+            ] {
+                let value = oxide::reduce_registration(&executable, recipe)
+                    .expect("cuda.coop reduce registration");
+                println!("cargo::rustc-env=COOP_REDUCE_{prefix}_{name}_{suffix}={value}");
+            }
+        }
+    }
     for (operation, name) in [
         (ScanOperation::ExclusiveSum, "EXCLUSIVE_ZERO"),
         (ScanOperation::Exclusive(ScanOperator::Sum), "EXCLUSIVE_SUM"),

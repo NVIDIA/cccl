@@ -31,14 +31,14 @@ operators!(
     (
         Sum,
         0,
-        "Addition in the input numeric type; the default Scan operator."
+        "Addition in the input numeric type; the default Scan and Reduce operator."
     ),
     (Multiplies, 1, "Multiplication in the input numeric type."),
     (Min, 2, "CUB minimum in the input numeric type."),
     (Max, 3, "CUB maximum in the input numeric type."),
-    (BitAnd, 4, "Bitwise AND for integer Scan inputs."),
-    (BitOr, 5, "Bitwise OR for integer Scan inputs."),
-    (BitXor, 6, "Bitwise XOR for integer Scan inputs."),
+    (BitAnd, 4, "Bitwise AND for integer inputs."),
+    (BitOr, 5, "Bitwise OR for integer inputs."),
+    (BitXor, 6, "Bitwise XOR for integer inputs."),
 );
 
 /// A sealed static Scan operator for numeric input type `T`.
@@ -73,7 +73,7 @@ algorithms!(
     (
         Raking,
         1,
-        "CUB's raking Block Scan; selected when the algorithm is omitted."
+        "CUB's raking Block algorithm; default for Scan and an explicit choice for Reduce."
     ),
     (RakingMemoize, 2, "CUB's memoized raking Block Scan."),
     (

@@ -11,13 +11,14 @@
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
 //! The protocol supports raw i32 and typed validity Load/Store recipes documented
-//! by [`Operation`], and numeric Block/scalar Warp Scan through [`ScanRecipe`].
+//! by [`Operation`], numeric Block/scalar Warp Scan through [`ScanRecipe`], and
+//! root-result scalar/payload Reduce through [`ReduceRecipe`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
-    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider, Request, Result,
-    ScanRecipe, ScanRequest,
+    Algorithm, Artifact, Dtype, Error, Layout, NativeRequest, Operation, Provider, ReduceForm,
+    ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -120,6 +121,25 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("reduce_") {
+            let recipe = ReduceRecipe::parse(&self.operation, &self.algorithm)?;
+            let dtype = self.dtype.dtype()?;
+            let request = match (recipe, self.warp_width) {
+                (ReduceRecipe::Block(op, algorithm, form), None) => ReduceRequest::block(
+                    dtype,
+                    op,
+                    algorithm,
+                    form,
+                    self.block,
+                    self.items_per_thread,
+                )?,
+                (ReduceRecipe::Warp(op, form), Some(width)) => {
+                    ReduceRequest::warp(dtype, op, form, self.block, width, self.items_per_thread)?
+                }
+                _ => return Err(Error::message("Reduce recipe disagrees with Warp scope")),
+            };
+            return Ok(NativeRequest::Reduce(request));
+        }
         if self.operation.starts_with("scan_") {
             let recipe = ScanRecipe::parse(&self.operation, &self.algorithm)?;
             let dtype = self.dtype.dtype()?;
@@ -226,6 +246,19 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::Reduce(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.form() == ReduceForm::ScalarPrefix {
+                arguments.push(Argument::Value(Scalar::Signed(32)));
+            }
+            return arguments;
+        }
         NativeRequest::Scan(request) => {
             let dtype = Scalar::from(request.dtype);
             let mut arguments = vec![
@@ -368,6 +401,29 @@ pub fn scan_registration(executable: &Path, recipe: ScanRecipe) -> Result<String
         provider: "cuda_coop",
         executable,
         operation: &recipe.operation().token(),
+        algorithm: recipe.algorithm_token(),
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one Reduce recipe for the existing dependency provider executable.
+///
+/// ScalarPrefix adds one signed 32-bit uniform count. Scalar and Payload add
+/// no controls; their distinct identities preserve scalar-only count support.
+/// Warp recipes use implicit algorithm selection. Dtype, geometry and input
+/// extent arrive with specialization; the output always has one slot.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn reduce_registration(executable: &Path, recipe: ReduceRecipe) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.token(),
         algorithm: recipe.algorithm_token(),
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
@@ -537,7 +593,138 @@ fn write_response(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ScanAlgorithm, ScanOperation, ScanOperator};
+    use crate::{ReduceAlgorithm, ReduceOperator, ScanAlgorithm, ScanOperation, ScanOperator};
+
+    #[test]
+    fn reduce_registration_preserves_scalar_count_and_payload_abi() {
+        for (dtype, recipe, items) in [
+            (
+                Dtype::I8,
+                ReduceRecipe::Block(
+                    ReduceOperator::Sum,
+                    ReduceAlgorithm::WarpReductions,
+                    ReduceForm::Payload,
+                ),
+                1,
+            ),
+            (
+                Dtype::U16,
+                ReduceRecipe::Block(
+                    ReduceOperator::Min,
+                    ReduceAlgorithm::Raking,
+                    ReduceForm::ScalarPrefix,
+                ),
+                1,
+            ),
+            (
+                Dtype::F64,
+                ReduceRecipe::Warp(ReduceOperator::Max, ReduceForm::Scalar),
+                1,
+            ),
+            (
+                Dtype::I32,
+                ReduceRecipe::Warp(ReduceOperator::BitXor, ReduceForm::Payload),
+                9,
+            ),
+        ] {
+            let registration: serde_json::Value =
+                serde_json::from_str(&reduce_registration(Path::new("/provider"), recipe).unwrap())
+                    .unwrap();
+            let scalar = Scalar::from(dtype);
+            let request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype: scalar,
+                block: [4, 4, 4],
+                items_per_thread: items,
+                warp_width: matches!(recipe, ReduceRecipe::Warp(..)).then_some(17),
+            }
+            .native()
+            .unwrap();
+            let mut expected = vec![
+                Argument::ConstPointer(scalar),
+                Argument::MutPointer(scalar),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if recipe.form() == ReduceForm::ScalarPrefix {
+                expected.push(Argument::Value(Scalar::Signed(32)));
+            }
+            assert_eq!(arguments(request), expected);
+            assert_eq!(registration["provider"], "cuda_coop");
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_reduce_before_opening_toolkit() {
+        let base = serde_json::json!({"version":1,"target":"compute_120","cuda_root":"/absent", "requests":[{
+            "operation":"reduce_bit_xor_payload_validity_bits_v1","algorithm":"raking",
+            "dtype":{"kind":"signed","bits":32},"block":[8,4,2],"items_per_thread":9,"warp_width":null
+        }]});
+        for (path, value, diagnostic) in [
+            (
+                "/requests/0/dtype",
+                serde_json::json!({"kind":"float","bits":32}),
+                "integer",
+            ),
+            (
+                "/requests/0/algorithm",
+                serde_json::json!("raking_memoize"),
+                "Reduce algorithm",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("reduce_sum_prefix_validity_bits_v1"),
+                "exactly one",
+            ),
+            (
+                "/requests/0/operation",
+                serde_json::json!("reduce_sum_payload_prefix_validity_bits_v1"),
+                "Reduce operator",
+            ),
+            (
+                "/requests/0/items_per_thread",
+                serde_json::json!(0),
+                "positive items",
+            ),
+            (
+                "/requests/0/warp_width",
+                serde_json::json!(17),
+                "Warp scope",
+            ),
+            (
+                "/requests/0/block",
+                serde_json::json!([u32::MAX, 4, 4]),
+                "positive axes",
+            ),
+        ] {
+            let mut request = base.clone();
+            *request.pointer_mut(path).unwrap() = value;
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+        for (block, width, diagnostic) in [
+            ([48, 1, 1], 17, "complete physical warps"),
+            ([64, 1, 1], 15, "guarded prefix"),
+        ] {
+            let mut request = base.clone();
+            request["requests"][0]["algorithm"] = "warp".into();
+            request["requests"][0]["block"] = serde_json::json!(block);
+            request["requests"][0]["warp_width"] = width.into();
+            let error = serve(
+                Path::new("/absent"),
+                request.to_string().as_bytes(),
+                Vec::new(),
+            )
+            .unwrap_err();
+            assert!(error.to_string().contains(diagnostic), "{error}");
+        }
+    }
 
     #[test]
     fn scan_registration_preserves_typed_seed_and_empty_controls() {

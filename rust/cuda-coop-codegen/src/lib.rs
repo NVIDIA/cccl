@@ -3,7 +3,7 @@
 
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
-//! This private development crate compiles block and Warp Load/Store and Scan providers with
+//! This private development crate compiles block and Warp Load/Store, Scan and Reduce providers with
 //! NVRTC. It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -34,7 +34,12 @@
 //! per lane with implicit algorithm selection. Scan checks every input validity
 //! bit, preserves the input, and initializes every fresh output slot. Seeded
 //! exclusive forms carry one runtime value of exactly the input dtype.
-//! [`Provider::compile_native`] batches both families in one native compilation.
+//! [`ReduceRequest`] preserves scalar or fixed-payload inputs and produces one
+//! initialized scalar only at group rank zero. Scalar forms optionally take a
+//! nonempty valid prefix; payload forms include every item. Blocks select
+//! RakingCommutativeOnly, Raking or WarpReductions. Warp reductions also support
+//! guarded low-lane prefixes of widths 17..31 within each physical warp.
+//! [`Provider::compile_native`] batches these families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -64,7 +69,9 @@
 #![deny(unsafe_code)]
 
 mod headers;
+mod reduce;
 mod scan;
+pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
 #[allow(unsafe_code)]
 mod nvrtc;
@@ -448,6 +455,8 @@ pub enum NativeRequest {
     LoadStore(Request),
     /// Numeric Scan with preserved input and fresh initialized output.
     Scan(ScanRequest),
+    /// Numeric reduction with preserved input and a fresh root-only scalar.
+    Reduce(ReduceRequest),
 }
 
 impl NativeRequest {
@@ -455,6 +464,7 @@ impl NativeRequest {
         match self {
             Self::LoadStore(request) => source(request, symbol),
             Self::Scan(request) => request.source(symbol),
+            Self::Reduce(request) => request.source(symbol),
         }
     }
 
@@ -462,13 +472,14 @@ impl NativeRequest {
         match self {
             Self::LoadStore(request) => request.operation.token().into(),
             Self::Scan(request) => request.recipe.operation().token(),
+            Self::Reduce(request) => request.recipe.token(),
         }
     }
 
     fn scratch_free(self) -> bool {
         match self {
             Self::LoadStore(request) => request.algorithm.scratch_free(),
-            Self::Scan(_) => false,
+            Self::Scan(_) | Self::Reduce(_) => false,
         }
     }
 
@@ -477,8 +488,8 @@ impl NativeRequest {
             Self::LoadStore(request) => {
                 !request.operation.is_load() && !request.algorithm.scratch_free()
             }
-            // Scan writes a fresh output, never rearranges its input payload.
-            Self::Scan(_) => false,
+            // Scan and Reduce write fresh outputs, never rearranging inputs.
+            Self::Scan(_) | Self::Reduce(_) => false,
         }
     }
 }
@@ -497,8 +508,8 @@ pub struct Layout {
 /// # Device ABI obligations
 ///
 /// The memory-tile and payload-layout requirements below describe Load/Store.
-/// Scan uses lane-private input and fresh output; its ABI and validity contract
-/// are documented by [`ScanRequest`].
+/// Scan and Reduce use lane-private input and fresh output; their ABI and
+/// validity contracts are documented by [`ScanRequest`] and [`ReduceRequest`].
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -649,10 +660,10 @@ impl Provider {
         self.compile_native(&requests, target)
     }
 
-    /// Compile one ordered mixed Load/Store and Scan batch in a single NVRTC program.
+    /// Compile one ordered mixed Load/Store, Scan and Reduce batch in one NVRTC program.
     ///
     /// Per-specialization identity is independent of unrelated batch members.
-    /// Scan scratch describes one group and includes the actual CUB TempStorage,
+    /// Scan/Reduce scratch describes one group and includes the actual CUB TempStorage,
     /// even when its C++ empty type occupies one byte. The caller plans replication.
     ///
     /// # Errors
@@ -692,6 +703,7 @@ impl Provider {
             include_bytes!("nvrtc.rs"),
             include_bytes!("block_io.cuh"),
             include_bytes!("scan.rs"),
+            include_bytes!("reduce.rs"),
         ] {
             hash_field(&mut inputs, bytes);
         }

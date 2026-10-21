@@ -1,7 +1,7 @@
 # Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-"""Compile public Load/Store and Scan participation/resource-epoch contrasts.
+"""Compile public collective participation, result and resource-epoch contrasts.
 
 Use the same Cargo config/backend as the qualified public example. The config
 is optional for an installed compatible Oxide revision; local source integration
@@ -929,6 +929,141 @@ cases.update(
         + scan_manual
         + store,
         None,
+    ),
+)
+
+# A cold hint preserves participation and outstanding memory-access facts.
+cases.update(
+    cold_path_before_collective=("core::hint::cold_path();" + load + store, None),
+    cold_path_divergent_collective=(
+        "if thread::threadIdx_x()&1==0 {core::hint::cold_path();" + load + "}",
+        "lane-varying",
+    ),
+    cold_path_no_completion=(
+        load + store + "core::hint::cold_path();" + reload,
+        "requires a barrier covering both accesses",
+    ),
+    cold_path_user_function=(
+        "fn cold_path() {thread::sync_threads();}"
+        "if thread::threadIdx_x()&1==0 {cold_path();}" + load,
+        "block barrier is reached through lane-varying control flow",
+    ),
+)
+
+# Reduce returns a guarded scalar only at the group root. That local result
+# does not establish collective participation or complete global accesses.
+reduce_call = "let _result=coop::sum(block,&values,Default::default());"
+reduce_manual = "let _result=coop::sum(block,&values,coop::ReduceOptions::default().temp_storage(&mut scratch));"
+reduce_prefix = "let group=coop::this_warp().group_by_non_exhaustive::<17>();"
+cases.update(
+    reduce_defaults=(
+        load
+        + reduce_call
+        + "let _result:Option<i32>=coop::reduce(block,&mut values,Default::default());"
+        + "let _result=coop::sum(block,1_i32,coop::ReduceOptions::default().valid_items(valid));"
+        + "let _result=coop::sum(coop::this_warp(),&values,Default::default());"
+        + "let _result=coop::sum(coop::this_warp().group_by::<8>(),&values,Default::default());",
+        None,
+    ),
+    reduce_generic_operator=(
+        load + "fn aggregate<T:coop::Numeric,Op:coop::ReduceOperator<T>,const N:usize>("
+        "group:coop::ThreadGroup<coop::Block>,input:&coop::ThreadData<T,N>,op:Op)"
+        "->Option<T> {coop::reduce(group,input,coop::ReduceOptions::default().binary_op(op))}"
+        "let _result=aggregate(block,&values,coop::Min);",
+        None,
+    ),
+    reduce_payload_count=(
+        load
+        + "let _result=coop::sum(block,&values,coop::ReduceOptions::default().valid_items(valid));",
+        "expected struct `ReduceOptions<i32, _, _, (), _>`",
+    ),
+    reduce_one_item_payload_count=(
+        "values.write(0,0_i32);let mut one=coop::ThreadData::<_,1>::new();one.write(0,1_i32);"
+        "let _result=coop::sum(block,&one,coop::ReduceOptions::default().valid_items(valid));",
+        "expected struct `ReduceOptions<i32, _, _, (), _>`",
+    ),
+    reduce_float_bitwise=(
+        "values.write(0,0_i32);let _result=coop::reduce(block,1_f32,coop::ReduceOptions::default().binary_op(coop::BitAnd));",
+        "ReduceOperator<f32>",
+    ),
+    reduce_warp_algorithm=(
+        "values.write(0,0_i32);let _result=coop::sum(coop::this_warp(),1_i32,coop::ReduceOptions::default().algorithm(coop::Raking));",
+        "expected `()`, found `Raking`",
+    ),
+    reduce_warp_storage=(
+        "values.write(0,0_i32);"
+        + new_storage
+        + "let _result=coop::sum(coop::this_warp(),1_i32,coop::ReduceOptions::default().temp_storage(&mut scratch));",
+        "expected struct `ReduceOptions<i32, _, _, _, ()>`",
+    ),
+    reduce_thread_group=(
+        "values.write(0,0_i32);let _result=coop::sum(coop::this_thread(),1_i32,Default::default());",
+        "ReduceGroup",
+    ),
+    reduce_varying_count=(
+        "values.write(0,0_i32);let count=thread::threadIdx_x() as usize+1;"
+        "let _result=coop::sum(block,1_i32,coop::ReduceOptions::default().valid_items(count));",
+        "not proved block-uniform",
+    ),
+    reduce_varying_participation=(
+        load + "if thread::threadIdx_x()&1==0 {" + reduce_call + "}",
+        "lane-varying",
+    ),
+    reduce_warp_uniform_count=(
+        "values.write(0,0_i32);let warp=coop::this_warp();let count=warp.rank_at::<coop::Block>() as usize+1;"
+        "let _result=coop::sum(warp,1_i32,coop::ReduceOptions::default().valid_items(count));",
+        None,
+    ),
+    reduce_warp_varying_count=(
+        "values.write(0,0_i32);let count=(thread::threadIdx_x()&31) as usize+1;"
+        "let _result=coop::sum(coop::this_warp(),1_i32,coop::ReduceOptions::default().valid_items(count));",
+        "not proved Warp-uniform",
+    ),
+    reduce_prefix_member=(
+        load + reduce_prefix + "if group.is_member()!=0 {"
+        "let _result=coop::sum(group,&values,Default::default());}",
+        None,
+    ),
+    reduce_prefix_missing_guard=(
+        load
+        + reduce_prefix
+        + "let _result=coop::sum(group,&values,Default::default());",
+        "lane-varying",
+    ),
+    reduce_prefix_arithmetic_guard=(
+        load + reduce_prefix + "if thread::threadIdx_x()%32<17 {"
+        "let _result=coop::sum(group,&values,Default::default());}",
+        "lane-varying",
+    ),
+    reduce_prefix_varying_count=(
+        "values.write(0,0_i32);" + reduce_prefix + "if group.is_member()!=0 {"
+        "let count=(thread::threadIdx_x()&31) as usize+1;"
+        "let _result=coop::sum(group,1_i32,coop::ReduceOptions::default().valid_items(count));}",
+        "not proved Warp-uniform",
+    ),
+    reduce_result_is_not_participation=(
+        load + "if let Some(total)=coop::sum(block,&values,Default::default()) {"
+        "let _result=coop::sum(block,total,Default::default());}",
+        "lane-varying",
+    ),
+    reduce_storage_auto_reuse=(
+        load
+        + new_storage.replace("new()", "new().auto_sync()")
+        + reduce_manual
+        + reduce_manual,
+        None,
+    ),
+    reduce_storage_reuse=(
+        load + new_storage + reduce_manual + sync + reduce_manual,
+        None,
+    ),
+    reduce_storage_missing_barrier=(
+        load + new_storage + reduce_manual + reduce_manual,
+        "requires a full-block barrier",
+    ),
+    reduce_no_global_completion=(
+        load + store + reduce_call + reload,
+        "requires a barrier covering both accesses",
     ),
 )
 
