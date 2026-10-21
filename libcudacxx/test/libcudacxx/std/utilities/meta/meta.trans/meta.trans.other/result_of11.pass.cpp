@@ -27,6 +27,7 @@
 
 TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
+TEST_DIAG_SUPPRESS_NVHPC(volatile_func_param_deprecated)
 #if TEST_COMPILER(GCC, >, 9)
 TEST_DIAG_SUPPRESS_GCC("-Wvolatile")
 #endif // TEST_COMPILER(GCC, >, 9)

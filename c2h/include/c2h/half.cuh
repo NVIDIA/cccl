@@ -11,7 +11,7 @@
 
 #include <cuda_fp16.h>
 
-#include <cub/util_type.cuh>
+#include <cub/detail/numeric_traits.cuh>
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -40,9 +40,8 @@ struct half_t
 
   /// Constructor from __half
   __host__ __device__ __forceinline__ explicit half_t(const __half& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
+      : __x(reinterpret_cast<const uint16_t&>(other))
+  {}
 
   /// Constructor from integer
   __host__ __device__ __forceinline__ explicit half_t(int a)
@@ -64,9 +63,8 @@ struct half_t
 
   /// Constructor from unsigned long long int
   template <typename T,
-            typename = typename ::cuda::std::enable_if<
-              ::cuda::std::is_same<T, unsigned long long int>::value
-              && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+            typename = ::cuda::std::enable_if_t<::cuda::std::is_same_v<T, unsigned long long int>
+                                                && (!::cuda::std::is_same_v<std::size_t, unsigned long long int>)>>
   __host__ __device__ __forceinline__ explicit half_t(T a)
   {
     *this = half_t(static_cast<float>(a));
@@ -80,9 +78,7 @@ struct half_t
   {
     // Stolen from Norbert Juffa
     uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
-    uint16_t ir;
-
-    ir = (ia >> 16) & 0x8000;
+    uint16_t ir = (ia >> 16) & 0x8000;
 
     if ((ia & 0x7f800000) == 0x7f800000)
     {

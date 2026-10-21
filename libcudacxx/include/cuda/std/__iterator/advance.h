@@ -22,10 +22,12 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
 
@@ -85,8 +87,8 @@ struct __fn
 {
 private:
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _Iter_difference>
-  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  template <class _IterDifference>
+  [[nodiscard]] _CCCL_API static constexpr auto __magnitude_geq(_IterDifference __a, _IterDifference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b

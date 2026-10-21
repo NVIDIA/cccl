@@ -18,6 +18,8 @@
 
 #include <cuda/experimental/stf.cuh>
 
+#include <string>
+
 using namespace cuda::experimental::stf;
 
 void dump_iter(slice<const double, 2> sUn, int iter)
@@ -31,7 +33,7 @@ void dump_iter(slice<const double, 2> sUn, int iter)
   {
     for (size_t i = 0; i < sUn.extent(0); i++)
     {
-      int v = (int) (255.0 * sUn(i, j) / 100.0);
+      const int v = (int) (255.0 * sUn(i, j) / 100.0);
       // we assume values between 0.0 and 100.0 : max value is in red,
       // min is in blue
       unsigned char color[3];
@@ -54,22 +56,22 @@ int main(int argc, char** argv)
 
   if (argc > 1)
   {
-    N = atol(argv[1]);
+    N = ::std::stol(argv[1]);
   }
 
   if (argc > 2)
   {
-    nsteps = atoi(argv[2]);
+    nsteps = ::std::stoi(argv[2]);
   }
 
   if (argc > 3)
   {
-    image_freq = atoi(argv[3]);
+    image_freq = ::std::stoi(argv[3]);
   }
 
   if (argc > 4)
   {
-    int use_graphs = atoi(argv[4]);
+    const int use_graphs = ::std::stoi(argv[4]);
     if (use_graphs != 0)
     {
       ctx = graph_ctx();
@@ -88,14 +90,14 @@ int main(int argc, char** argv)
   // temperature in the middle.
   ctx.parallel_for(blocked_partition(), all_devs, lU.shape(), lU.write()).set_symbol("init")->*
     [=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
-      double rad = U.extent(0) / 8.0;
-      double dx  = (double) i - U.extent(0) / 2;
-      double dy  = (double) j - U.extent(1) / 2;
+      const double rad = U.extent(0) / 8.0;
+      const double dx  = (double) i - U.extent(0) / 2.0;
+      const double dy  = (double) j - U.extent(1) / 2.0;
 
       U(i, j) = (dx * dx + dy * dy < rad * rad) ? 100.0 : 0.0;
 
       /* Set up boundary conditions */
-      if (j == 0.0)
+      if (static_cast<double>(j) == 0.0)
       {
         U(i, j) = 100.0;
       }
@@ -103,7 +105,7 @@ int main(int argc, char** argv)
       {
         U(i, j) = 0.0;
       }
-      if (i == 0.0)
+      if (static_cast<double>(i) == 0.0)
       {
         U(i, j) = 0.0;
       }
@@ -114,15 +116,15 @@ int main(int argc, char** argv)
     };
 
   // diffusion constant
-  double a = 0.5;
+  const double a = 0.5;
 
-  double dx  = 0.1;
-  double dy  = 0.1;
-  double dx2 = dx * dx;
-  double dy2 = dy * dy;
+  const double dx = 0.1;
+  const double dy = 0.1;
+  double dx2      = dx * dx;
+  double dy2      = dy * dy;
 
   // time step
-  double dt = dx2 * dy2 / (2.0 * a * (dx2 + dy2));
+  const double dt = dx2 * dy2 / (2.0 * a * (dx2 + dy2));
 
   double c = a * dt;
 

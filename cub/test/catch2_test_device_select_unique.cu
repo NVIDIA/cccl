@@ -6,7 +6,6 @@
 #include <cub/device/device_select.cuh>
 
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/iterator>
 #include <cuda/std/execution>
 #include <cuda/stream>
@@ -14,9 +13,11 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 struct fake_equal_to
 {
@@ -274,47 +275,7 @@ CUB_TEST(
     }
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DeviceSelect::Unique works with cudaStream_t")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_unique(stream.get());
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_unique(stream);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::stream_ref")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const cuda::stream_ref stream_ref{stream};
-    test_unique(stream_ref);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_unique(env);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_unique(policy);
-  }
-
-  SECTION("DeviceSelect::Unique works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_unique(policy);
-  }
+  test_with_custom_streams(test_unique);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -594,8 +555,7 @@ try
     check_result_helper.check_all_results_correct();
   }
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

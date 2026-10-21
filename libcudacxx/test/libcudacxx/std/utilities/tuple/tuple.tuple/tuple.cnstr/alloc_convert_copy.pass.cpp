@@ -13,89 +13,98 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, const tuple<UTypes...>&);
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
-#include "../alloc_first.h"
-#include "../alloc_last.h"
+#include "../alloc_constexpr_types.h"
 #include "allocators.h"
 #include "test_macros.h"
 
-struct Explicit
+TEST_FUNC constexpr bool test()
 {
-  int value;
-  TEST_FUNC explicit Explicit(int x)
-      : value(x)
-  {}
-};
+  A1<int> alloc{5};
+  {
+    const cuda::std::tuple<int> const_ints{9};
+    cuda::std::tuple<constexpr_alloc_arg> from_const_tuple(cuda::std::allocator_arg, alloc, const_ints);
+    assert(cuda::std::get<0>(from_const_tuple).value == 9);
+  }
+  {
+    const cuda::std::array<int, 2> const_array{1, 2};
+    cuda::std::tuple<constexpr_alloc_arg, constexpr_alloc_arg> from_const_array(
+      cuda::std::allocator_arg, alloc, const_array);
+    assert(cuda::std::get<0>(from_const_array).value == 1);
+    assert(cuda::std::get<1>(from_const_array).value == 2);
+  }
+  {
+    const cuda::std::tuple<long> src(2);
+    cuda::std::tuple<long long> t(cuda::std::allocator_arg, alloc, src);
+    assert(cuda::std::get<0>(t) == 2);
+  }
+  {
+    const cuda::std::tuple<int> src(2);
+    cuda::std::tuple<constexpr_alloc_arg> t(cuda::std::allocator_arg, alloc, src);
+    assert(cuda::std::get<0>(t).value == 2);
+  }
+  {
+    const cuda::std::tuple<int, int> src(2, 3);
+    cuda::std::tuple<constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, src);
+    assert(cuda::std::get<0>(t).value == 2);
+    assert(cuda::std::get<1>(t).value == 3);
+  }
+  {
+    const cuda::std::tuple<long, int, int> src(1, 2, 3);
+    cuda::std::tuple<long long, constexpr_alloc_arg, constexpr_alloc_last> t(cuda::std::allocator_arg, alloc, src);
+    assert(cuda::std::get<0>(t) == 1);
+    assert(cuda::std::get<1>(t).value == 2);
+    assert(cuda::std::get<2>(t).value == 3);
+  }
+  static_assert(
+    cuda::std::
+      is_constructible_v<cuda::std::tuple<>, cuda::std::allocator_arg_t, A1<int>, const cuda::std::array<int, 0>&>);
+  static_assert(
+    cuda::std::
+      is_constructible_v<cuda::std::tuple<int>, cuda::std::allocator_arg_t, A1<int>, const cuda::std::array<int, 1>&>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::tuple<int, int>,
+                                              cuda::std::allocator_arg_t,
+                                              A1<int>,
+                                              const cuda::std::array<int, 2>&>);
+  static_assert(cuda::std::is_constructible_v<cuda::std::tuple<int, int, int>,
+                                              cuda::std::allocator_arg_t,
+                                              A1<int>,
+                                              const cuda::std::array<int, 3>&>);
+  return true;
+}
 
-struct Implicit
+#if TEST_HAS_EXCEPTIONS() && _CCCL_HOST_COMPILATION()
+void test_exceptions()
 {
-  int value;
-  TEST_FUNC Implicit(int x)
-      : value(x)
+  using FromComplex = cuda::std::tuple<throw_on_alloc_arg, throw_on_alloc_arg>;
+  static_assert(
+    cuda::std::is_constructible_v<FromComplex, cuda::std::allocator_arg_t, A1<int>, const cuda::std::complex<float>&>);
+  static_assert(
+    !cuda::std::
+      is_nothrow_constructible_v<FromComplex, cuda::std::allocator_arg_t, A1<int>, const cuda::std::complex<float>&>);
+
+  try
+  {
+    const cuda::std::complex<float> src{1.f, 2.f};
+    [[maybe_unused]] FromComplex t(cuda::std::allocator_arg, A1<int>{}, src);
+    assert(false);
+  }
+  catch (int)
   {}
-};
+}
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-  alloc_first::allocator_constructed() = false;
-  alloc_last::allocator_constructed()  = false;
-
-  {
-    using T0 = cuda::std::tuple<long>;
-    using T1 = cuda::std::tuple<long long>;
-    T0 t0(2);
-    T1 t1(cuda::std::allocator_arg, A1<int>(), t0);
-    assert(cuda::std::get<0>(t1) == 2);
-  }
-  {
-    using T0 = cuda::std::tuple<int>;
-    using T1 = cuda::std::tuple<alloc_first>;
-    T0 t0(2);
-    alloc_first::allocator_constructed() = false;
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
-    assert(alloc_first::allocator_constructed());
-    assert(cuda::std::get<0>(t1) == 2);
-  }
-  {
-    using T0 = cuda::std::tuple<int, int>;
-    using T1 = cuda::std::tuple<alloc_first, alloc_last>;
-    T0 t0(2, 3);
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
-    assert(alloc_first::allocator_constructed());
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<0>(t1) == 2);
-    assert(cuda::std::get<1>(t1) == 3);
-  }
-  {
-    using T0 = cuda::std::tuple<long, int, int>;
-    using T1 = cuda::std::tuple<long long, alloc_first, alloc_last>;
-    T0 t0(1, 2, 3);
-    alloc_first::allocator_constructed() = false;
-    alloc_last::allocator_constructed()  = false;
-    T1 t1(cuda::std::allocator_arg, A1<int>(5), t0);
-    assert(alloc_first::allocator_constructed());
-    assert(alloc_last::allocator_constructed());
-    assert(cuda::std::get<0>(t1) == 1);
-    assert(cuda::std::get<1>(t1) == 2);
-    assert(cuda::std::get<2>(t1) == 3);
-  }
-  // cuda::std::allocator is unsupported
-  /*
-  {
-      const cuda::std::tuple<int> t1(42);
-      cuda::std::tuple<Explicit> t2{cuda::std::allocator_arg, cuda::std::allocator<void>{},  t1};
-      assert(cuda::std::get<0>(t2).value == 42);
-  }
-  {
-      const cuda::std::tuple<int> t1(42);
-      cuda::std::tuple<Implicit> t2 = {cuda::std::allocator_arg, cuda::std::allocator<void>{}, t1};
-      assert(cuda::std::get<0>(t2).value == 42);
-  }
-  */
-
+  test();
+  static_assert(test());
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

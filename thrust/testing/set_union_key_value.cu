@@ -5,7 +5,7 @@
 #include <unittest/unittest.h>
 
 template <typename U>
-void TestSetUnionKeyValue(size_t n)
+void test_set_union_key_value(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -40,12 +40,12 @@ void TestSetUnionKeyValue(size_t n)
   d_end = thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValue);
+DECLARE_VARIABLE_UNITTEST(test_set_union_key_value);
 
 template <typename U>
-void TestSetUnionKeyValueDescending(size_t n)
+void test_set_union_key_value_descending(size_t n)
 {
   using T = key_value<U, U>;
 
@@ -82,6 +82,6 @@ void TestSetUnionKeyValueDescending(size_t n)
     thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
   d_result.erase(d_end, d_result.end());
 
-  ASSERT_EQUAL_QUIET(h_result, d_result);
+  REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestSetUnionKeyValueDescending);
+DECLARE_VARIABLE_UNITTEST(test_set_union_key_value_descending);

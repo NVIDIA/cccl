@@ -456,7 +456,7 @@ struct TestTupleTie
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestTupleTie, NumericTypes);
 
-void TestTupleSwap()
+TEST_CASE("TestTupleSwap", "[tuple]")
 {
   const int a = 7;
   const int b = 13;
@@ -488,15 +488,16 @@ void TestTupleSwap()
   thrust::swap_ranges(d_v1.begin(), d_v1.end(), d_v2.begin());
 
   const swappable_tuple ref(user_swappable(true), user_swappable(true), user_swappable(true), user_swappable(true));
+  const swappable_tuple not_swapped(
+    user_swappable(false), user_swappable(false), user_swappable(false), user_swappable(false));
 
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_tuple) d_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_tuple) d_v1[0]);
+  REQUIRE(ref == h_v1[0]);
+  REQUIRE(not_swapped == h_v2[0]);
+  REQUIRE(ref == (swappable_tuple) d_v1[0]);
+  REQUIRE(not_swapped == (swappable_tuple) d_v2[0]);
 }
-DECLARE_UNITTEST(TestTupleSwap);
 
-void TestTupleStructuredBindings()
+TEST_CASE("TestTupleStructuredBindings", "[tuple]")
 {
   const int a = 0;
   const int b = 42;
@@ -508,9 +509,8 @@ void TestTupleStructuredBindings()
   REQUIRE(b == b2);
   REQUIRE(c == c2);
 }
-DECLARE_UNITTEST(TestTupleStructuredBindings);
 
-void TestTupleCTAD()
+TEST_CASE("TestTupleCTAD", "[tuple]")
 {
   const int a   = 0;
   const char b  = 42;
@@ -522,9 +522,8 @@ void TestTupleCTAD()
   REQUIRE(b == b2);
   REQUIRE(c == c2);
 }
-DECLARE_UNITTEST(TestTupleCTAD);
 
-void TestTupleOfIteratorReferenceAssignsFromConst()
+TEST_CASE("TestTupleOfIteratorReferenceAssignsFromConst", "[tuple]")
 {
   // tuple of mutable references
   thrust::device_vector<int> v(10);
@@ -539,4 +538,3 @@ void TestTupleOfIteratorReferenceAssignsFromConst()
   // should compile:
   refs = crefs;
 }
-DECLARE_UNITTEST(TestTupleOfIteratorReferenceAssignsFromConst);

@@ -22,6 +22,8 @@
 
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -89,8 +91,7 @@ struct BlockHistogramSort
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Thread fields
   _TempStorage& temp_storage;

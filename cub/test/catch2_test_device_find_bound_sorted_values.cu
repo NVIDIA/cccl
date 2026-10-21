@@ -12,6 +12,7 @@
 
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -193,7 +194,7 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[f
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::LowerBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
@@ -203,16 +204,15 @@ CUB_TEST("DeviceFind::LowerBoundSortedValues really large input",
     const auto values_num_items = range_num_items / 100;
     test_sorted<value_type>(lower_bound_sorted_values, std_lower_bound, range_num_items, values_num_items);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
 CUB_TEST("DeviceFind::UpperBoundSortedValues really large input",
-         "[find][device][binary-search][skip-cs-rangecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         "[find][device][binary-search][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          CUB_LARGE)
 {
   try
@@ -222,9 +222,8 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues really large input",
     const auto values_num_items = range_num_items / 100;
     test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, range_num_items, values_num_items);
   }
-  catch (const std::bad_alloc&)
+  catch (...)
   {
-    // allocation failure is not a test failure, so we can run tests on smaller GPUs
-    SUCCEED("allocation failure is not a test failure");
+    c2h::skip_if_allocation_failure();
   }
 }

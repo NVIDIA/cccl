@@ -24,7 +24,7 @@ struct return_value
 };
 
 template <class Vector>
-void TestGenerateSimple()
+void test_generate_simple()
 {
   using T = typename Vector::value_type;
 
@@ -39,7 +39,7 @@ void TestGenerateSimple()
   Vector ref(result.size(), value);
   REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestGenerateSimple);
+DECLARE_VECTOR_UNITTEST(test_generate_simple);
 
 template <typename ForwardIterator, typename Generator>
 void generate(my_system& system, ForwardIterator /*first*/, ForwardIterator, Generator)
@@ -47,7 +47,7 @@ void generate(my_system& system, ForwardIterator /*first*/, ForwardIterator, Gen
   system.validate_dispatch();
 }
 
-void TestGenerateDispatchExplicit()
+TEST_CASE("TestGenerateDispatchExplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -56,7 +56,6 @@ void TestGenerateDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGenerateDispatchExplicit);
 
 template <typename ForwardIterator, typename Generator>
 void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
@@ -64,7 +63,7 @@ void generate(my_tag, ForwardIterator first, ForwardIterator, Generator)
   *first = 13;
 }
 
-void TestGenerateDispatchImplicit()
+TEST_CASE("TestGenerateDispatchImplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -72,10 +71,9 @@ void TestGenerateDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGenerateDispatchImplicit);
 
 template <typename T>
-void TestGenerate(const size_t n)
+void test_generate(const size_t n)
 {
   thrust::host_vector<T> h_result(n);
   thrust::device_vector<T> d_result(n);
@@ -88,10 +86,10 @@ void TestGenerate(const size_t n)
 
   REQUIRE(h_result == d_result);
 }
-DECLARE_VARIABLE_UNITTEST(TestGenerate);
+DECLARE_VARIABLE_UNITTEST(test_generate);
 
 template <typename T>
-void TestGenerateToDiscardIterator(const size_t)
+void test_generate_to_discard_iterator(const size_t)
 {
   T value = 13;
   const return_value<T> f(value);
@@ -104,10 +102,10 @@ void TestGenerateToDiscardIterator(const size_t)
 
   // there's nothing to actually check except that it compiles
 }
-DECLARE_VARIABLE_UNITTEST(TestGenerateToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_generate_to_discard_iterator);
 
 template <class Vector>
-void TestGenerateNSimple()
+void test_generate_n_simple()
 {
   using T = typename Vector::value_type;
 
@@ -122,7 +120,7 @@ void TestGenerateNSimple()
   Vector ref(result.size(), value);
   REQUIRE(result == ref);
 }
-DECLARE_VECTOR_UNITTEST(TestGenerateNSimple);
+DECLARE_VECTOR_UNITTEST(test_generate_n_simple);
 
 template <typename ForwardIterator, typename Size, typename Generator>
 ForwardIterator generate_n(my_system& system, ForwardIterator first, Size, Generator)
@@ -131,7 +129,7 @@ ForwardIterator generate_n(my_system& system, ForwardIterator first, Size, Gener
   return first;
 }
 
-void TestGenerateNDispatchExplicit()
+TEST_CASE("TestGenerateNDispatchExplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -140,7 +138,6 @@ void TestGenerateNDispatchExplicit()
 
   REQUIRE(sys.is_valid());
 }
-DECLARE_UNITTEST(TestGenerateNDispatchExplicit);
 
 template <typename ForwardIterator, typename Size, typename Generator>
 ForwardIterator generate_n(my_tag, ForwardIterator first, Size, Generator)
@@ -149,7 +146,7 @@ ForwardIterator generate_n(my_tag, ForwardIterator first, Size, Generator)
   return first;
 }
 
-void TestGenerateNDispatchImplicit()
+TEST_CASE("TestGenerateNDispatchImplicit", "[generate]")
 {
   thrust::device_vector<int> vec(1);
 
@@ -157,10 +154,9 @@ void TestGenerateNDispatchImplicit()
 
   REQUIRE(13 == vec.front());
 }
-DECLARE_UNITTEST(TestGenerateNDispatchImplicit);
 
 template <typename T>
-void TestGenerateNToDiscardIterator(const size_t n)
+void test_generate_n_to_discard_iterator(const size_t n)
 {
   T value = 13;
   const return_value<T> f(value);
@@ -173,13 +169,13 @@ void TestGenerateNToDiscardIterator(const size_t n)
 
   const thrust::discard_iterator<> reference(static_cast<std::ptrdiff_t>(n));
 
-  ASSERT_EQUAL_QUIET(reference, h_result);
-  ASSERT_EQUAL_QUIET(reference, d_result);
+  REQUIRE((reference == h_result));
+  REQUIRE((reference == d_result));
 }
-DECLARE_VARIABLE_UNITTEST(TestGenerateNToDiscardIterator);
+DECLARE_VARIABLE_UNITTEST(test_generate_n_to_discard_iterator);
 
 template <typename Vector>
-void TestGenerateZipIterator()
+void test_generate_zip_iterator()
 {
   using T = typename Vector::value_type;
 
@@ -195,9 +191,9 @@ void TestGenerateZipIterator()
   REQUIRE(v1 == ref1);
   REQUIRE(v2 == ref2);
 };
-DECLARE_VECTOR_UNITTEST(TestGenerateZipIterator);
+DECLARE_VECTOR_UNITTEST(test_generate_zip_iterator);
 
-void TestGenerateTuple()
+TEST_CASE("TestGenerateTuple", "[generate]")
 {
   using T     = int;
   using Tuple = cuda::std::tuple<T, T>;
@@ -208,8 +204,7 @@ void TestGenerateTuple()
   thrust::generate(h.begin(), h.end(), return_value<Tuple>(Tuple(4, 7)));
   thrust::generate(d.begin(), d.end(), return_value<Tuple>(Tuple(4, 7)));
 
-  ASSERT_EQUAL_QUIET(h, d);
-};
-DECLARE_UNITTEST(TestGenerateTuple);
+  REQUIRE((h == d));
+}
 
 _CCCL_DIAG_POP

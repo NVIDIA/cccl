@@ -11,7 +11,6 @@
 
 #include <cuda/__execution/tune.h>
 #include <cuda/cmath>
-#include <cuda/devices>
 #include <cuda/functional>
 #include <cuda/iterator>
 #include <cuda/std/execution>
@@ -20,9 +19,11 @@
 #include <algorithm>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_test_custom_streams.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
+#include <c2h/catch2_allocation_failure.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
@@ -233,47 +234,7 @@ CUB_TEST(
     REQUIRE(reference == out);
   };
 
-  int current_device;
-  error = cudaGetDevice(&current_device);
-  REQUIRE(error == cudaSuccess);
-
-  SECTION("DevicePartition::If works with cudaStream_t")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_partition_if(stream.get());
-  }
-
-  SECTION("DevicePartition::If works with cuda::stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    test_partition_if(stream);
-  }
-
-  SECTION("DevicePartition::If works with cuda::stream_ref")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const cuda::stream_ref stream_ref{stream};
-    test_partition_if(stream_ref);
-  }
-
-  SECTION("DevicePartition::If works with cuda::std::execution::env")
-  {
-    const cuda::std::execution::env env{};
-    test_partition_if(env);
-  }
-
-  SECTION("DevicePartition::If works with cuda::execution::gpu")
-  {
-    const auto policy = cuda::execution::gpu;
-    test_partition_if(policy);
-  }
-
-  SECTION("DevicePartition::If works with cuda::execution::gpu with stream")
-  {
-    const cuda::stream stream{cuda::devices[current_device]};
-    const auto policy = cuda::execution::gpu.with(cuda::get_stream, stream);
-    test_partition_if(policy);
-  }
+  test_with_custom_streams(test_partition_if);
 }
 #endif // TEST_LAUNCH == 0
 
@@ -429,8 +390,7 @@ try
   REQUIRE(num_selected_out[0] == cut_off_index);
   check_result_helper.check_all_results_correct();
 }
-catch (std::bad_alloc&)
+catch (...)
 {
-  // Exceeding memory is not a failure.
-  SUCCEED("exceeding memory is not a failure");
+  c2h::skip_if_allocation_failure();
 }

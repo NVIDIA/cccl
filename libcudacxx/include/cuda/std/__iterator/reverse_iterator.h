@@ -27,25 +27,20 @@
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iter_swap.h>
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
-#include <cuda/std/__iterator/next.h>
 #include <cuda/std/__iterator/prev.h>
 #include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_assignable.h>
-#include <cuda/std/__type_traits/is_nothrow_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -94,7 +89,8 @@ private:
 #endif // _CCCL_STD_VER > 2017
 
 protected:
-  _Iter current;
+  // The standard requires protected access.
+  _Iter current; // NOLINT(cppcoreguidelines-non-private-member-variables-in-classes)
 
 public:
   using iterator_type = _Iter;
@@ -362,8 +358,8 @@ struct __unwrap_reverse_iter_impl
   }
 };
 
-template <class _Iter, bool __b>
-struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, __b>
+template <class _Iter, bool _Bp>
+struct __unwrap_iter_impl<reverse_iterator<reverse_iterator<_Iter>>, _Bp>
     : __unwrap_reverse_iter_impl<reverse_iterator, reverse_iterator, _Iter>
 {};
 

@@ -246,36 +246,44 @@ struct TestPairTupleSize
 {
   void operator()()
   {
+    // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the class trait API.
     REQUIRE(2 == static_cast<int>(thrust::tuple_size<Pair>::value));
   }
 };
 DECLARE_GENERIC_UNITTEST_WITH_TYPES(TestPairTupleSize, PairConstVolatileTypes);
 
-void TestPairTupleElement()
+TEST_CASE("TestPairTupleElement", "[pair]")
 {
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using type0 = thrust::tuple_element<0, thrust::pair<int, float>>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using type1 = thrust::tuple_element<1, thrust::pair<int, float>>::type;
   static_assert(std::is_same_v<int, type0>);
   static_assert(std::is_same_v<float, type1>);
 
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using c_type0 = thrust::tuple_element<0, thrust::pair<int, float> const>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using c_type1 = thrust::tuple_element<1, thrust::pair<int, float> const>::type;
   static_assert(std::is_same_v<int const, c_type0>);
   static_assert(std::is_same_v<float const, c_type1>);
 
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using v_type0 = thrust::tuple_element<0, thrust::pair<int, float> volatile>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using v_type1 = thrust::tuple_element<1, thrust::pair<int, float> volatile>::type;
   static_assert(std::is_same_v<int volatile, v_type0>);
   static_assert(std::is_same_v<float volatile, v_type1>);
 
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using cv_type0 = thrust::tuple_element<0, thrust::pair<int, float> const volatile>::type;
+  // NOLINTNEXTLINE(cccl-modernize-type-traits): Test the nested type API.
   using cv_type1 = thrust::tuple_element<1, thrust::pair<int, float> const volatile>::type;
   static_assert(std::is_same_v<int const volatile, cv_type0>);
   static_assert(std::is_same_v<float const volatile, cv_type1>);
-};
-DECLARE_UNITTEST(TestPairTupleElement);
+}
 
-void TestPairSwap()
+TEST_CASE("TestPairSwap", "[pair]")
 {
   const int x = 7;
   const int y = 13;
@@ -304,14 +312,13 @@ void TestPairSwap()
 
   const swappable_pair ref(user_swappable(true), user_swappable(true));
 
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, h_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_pair) d_v1[0]);
-  ASSERT_EQUAL_QUIET(ref, (swappable_pair) d_v1[0]);
+  REQUIRE(ref == h_v1[0]);
+  REQUIRE(ref == h_v1[0]);
+  REQUIRE(ref == (swappable_pair) d_v1[0]);
+  REQUIRE(ref == (swappable_pair) d_v1[0]);
 }
-DECLARE_UNITTEST(TestPairSwap);
 
-void TestPairStructuredBindings()
+TEST_CASE("TestPairStructuredBindings", "[pair]")
 {
   const int a = 42;
   const int b = 1337;
@@ -321,9 +328,8 @@ void TestPairStructuredBindings()
   REQUIRE(a == a2);
   REQUIRE(b == b2);
 }
-DECLARE_UNITTEST(TestPairStructuredBindings);
 
-void TestPairCTAD()
+TEST_CASE("TestPairCTAD", "[pair]")
 {
   const int a = 42;
   const int b = 1337;
@@ -333,4 +339,3 @@ void TestPairCTAD()
   REQUIRE(a == a2);
   REQUIRE(b == b2);
 }
-DECLARE_UNITTEST(TestPairCTAD);

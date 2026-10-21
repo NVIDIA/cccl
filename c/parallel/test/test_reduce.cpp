@@ -163,7 +163,7 @@ struct reduce_build_ex
       thrust_path,
       libcudacxx_path,
       ctk_path,
-      const_cast<cccl_build_config*>(&config));
+      &config);
   }
 };
 

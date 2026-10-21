@@ -11,6 +11,7 @@
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 #include <iostream>
+#include <string>
 
 #if !_CCCL_COMPILER(MSVC)
 using namespace cuda::experimental::stf;
@@ -30,12 +31,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 1)
   {
-    nblocks = atoi(argv[1]);
+    nblocks = ::std::stoi(argv[1]);
   }
 
   if (argc > 2)
   {
-    block_size = atoi(argv[2]);
+    block_size = ::std::stoi(argv[2]);
   }
 
   // At most 1 buffer is allocated at the same time

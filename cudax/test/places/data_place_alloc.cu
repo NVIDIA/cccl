@@ -28,7 +28,7 @@ using namespace cuda::experimental::places;
 
 __global__ void init_kernel(int* ptr, int n, int value)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
   {
     ptr[tid] = value + tid;
@@ -37,7 +37,7 @@ __global__ void init_kernel(int* ptr, int n, int value)
 
 __global__ void check_kernel(int* ptr, int n, int value, int* result)
 {
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
   if (tid < n)
   {
     if (ptr[tid] != value + tid)
@@ -123,7 +123,7 @@ void test_managed_allocation()
   // Check if concurrent managed access is supported
   int dev;
   cuda_try(cudaGetDevice(&dev));
-  cudaDeviceProp prop;
+  cudaDeviceProp prop{};
   cuda_try(cudaGetDeviceProperties(&prop, dev));
   if (!prop.concurrentManagedAccess)
   {

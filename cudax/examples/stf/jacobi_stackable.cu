@@ -18,6 +18,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <iostream>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -35,13 +36,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   if (argc > 2)
   {
-    n = atol(argv[1]);
-    m = atol(argv[2]);
+    n = ::std::stol(argv[1]);
+    m = ::std::stol(argv[2]);
   }
 
   if (argc > 3)
   {
-    tol = atof(argv[3]);
+    tol = ::std::stod(argv[3]);
   }
 
   auto lA    = ctx.logical_data(shape_of<slice<double, 2>>(m, n));
@@ -69,9 +70,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
   ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lconverged.reduce(reducer::logical_and<bool>{}))
       ->*[tol] __device__(size_t i, size_t j, auto A, auto Anew, auto& converged) {
-            Anew(i, j)   = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
-            double error = fabs(A(i, j) - Anew(i, j));
-            converged    = converged && (error < tol);
+            Anew(i, j)         = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+            const double error = fabs(A(i, j) - Anew(i, j));
+            converged          = converged && (error < tol);
           };
 
   ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__(size_t i, size_t j, auto A, auto Anew) {

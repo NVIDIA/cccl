@@ -43,15 +43,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_topk.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_params.cuh>
+#include <cub/detail/topk_helpers.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/optimize_smem_ptr.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_topk.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
@@ -247,6 +249,10 @@ struct agent_batched_topk_cluster
     Determinism != ::cuda::execution::determinism::__determinism_t::__not_guaranteed;
   static constexpr bool is_tie_reversed =
     TieBreak == ::cuda::execution::tie_break::__tie_break_t::__prefer_larger_index;
+
+  // An explicit index tie-break picks among keys that compare equal, so -0.0 and +0.0 must rank equal. Without one,
+  // any set of tied keys is a valid result and the extra normalization is skipped.
+  static constexpr bool normalize_minus_zero = TieBreak != ::cuda::execution::tie_break::__tie_break_t::__unspecified;
 
   // Push direction of the cross-CTA prefix scan (`prime_placement_counters`). The leader must be *last* in scan
   // order so it derives its own (merged-away) counts from the predecessor sum: deterministic-prefer-smaller puts the
@@ -617,8 +623,7 @@ struct agent_batched_topk_cluster
     load_phase ^= (::cuda::std::uint32_t{1} << stage);
   }
 
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   // Per-segment, per-rank geometry computed once by `compute_segment_layout` at the top of `run`: the head-aligned
   // chunking, the logical (non-idle) cluster width and this rank's partition of it, the leader/idle roles, and the
@@ -1313,8 +1318,8 @@ private:
   template <detail::topk::select SelectDirection>
   struct det_filter_state
   {
-    using identify_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using identify_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     identify_op_t identify_op;
     it_value_t<KeyOutputItItT> block_keys_out;
@@ -1524,25 +1529,29 @@ private:
     for (int i = 0; i < ItemsPerThread; ++i)
     {
       const int pos = tile_item_pos<Blocked, ItemsPerThread>(tile_base, i);
-      flags[i]      = flag_none;
-      if (pos < num_keys)
+      // No per-key branch: an out-of-range lane (only in the last, partial tile) reads the last in-range key, which
+      // exists because `process_tiles` classifies a tile only while `tile_base < num_keys`, and is forced to
+      // `flag_none` below. Keeping the per-key body straight-line avoids the reconvergence bookkeeping ptxas emits
+      // once the body grows past its if-conversion threshold.
+      const bool in_range = pos < num_keys;
+      const int clamped   = in_range ? pos : num_keys - 1;
+      // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
+      // local read and the segment-local value index.
+      const int folded_pos = Reversed ? (num_keys - 1 - clamped) : clamped;
+      if constexpr (FromSmem)
       {
-        // In-region index: forward, or (`Reversed`) counting down from the last element. Shared by the `FromSmem`
-        // local read and the segment-local value index.
-        const int folded_pos = Reversed ? (num_keys - 1 - pos) : pos;
-        if constexpr (FromSmem)
-        {
-          keys[i] = smem_src[folded_pos];
-        }
-        else
-        {
-          keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
-        }
-        const auto cls = state.identify_op(keys[i]);
-        flags[i]       = (cls == detail::topk::candidate_class::candidate)
-                         ? flag_candidate
-                         : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+        keys[i] = smem_src[folded_pos];
       }
+      else
+      {
+        keys[i] = layout.block_keys_in[static_cast<segment_size_val_t>(seg_base + static_cast<offset_t>(folded_pos))];
+      }
+      const auto cls = state.identify_op(keys[i]);
+      const offset_t flag =
+        (cls == detail::topk::candidate_class::candidate)
+          ? flag_candidate
+          : (cls == detail::topk::candidate_class::selected ? flag_selected : flag_none);
+      flags[i] = in_range ? flag : flag_none;
     }
   }
 
@@ -2230,7 +2239,8 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void load_and_histogram_first_pass(smem_keys_t& resident_keys)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
     constexpr int total_bits = int{sizeof(key_t)} * 8;
 
     extract_bin_op_t extract_op(0, total_bits, decomposer_t{});
@@ -2908,9 +2918,10 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE int run_radix_passes(smem_keys_t resident_keys, key_prefix_t& kth_key_bits_local)
   {
-    using extract_bin_op_t = detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using extract_bin_op_t =
+      detail::topk::extract_bin_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
+    using identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     constexpr int num_passes = detail::topk::calc_num_passes<key_t>(policy.bits_per_pass);
@@ -3125,8 +3136,8 @@ private:
   template <detail::topk::select SelectDirection>
   _CCCL_DEVICE _CCCL_FORCEINLINE void run()
   {
-    using identify_candidates_op_t =
-      detail::topk::identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t>;
+    using identify_candidates_op_t = detail::topk::
+      identify_candidates_op_t<key_t, SelectDirection, policy.bits_per_pass, decomposer_t, normalize_minus_zero>;
 
     constexpr int total_bits = int{sizeof(key_t)} * 8;
     // Only read inside the `needs_set_determinism` branch below; unused otherwise.

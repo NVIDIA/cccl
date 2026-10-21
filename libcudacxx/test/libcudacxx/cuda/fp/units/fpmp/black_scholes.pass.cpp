@@ -39,14 +39,11 @@
 // error: calling a __host__ __device__ function in tile is not allowed
 
 #include <cuda/fpmp>
-#include <cuda/fpmp_math>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
 #include <cuda/std/limits>
 
 #include "test_macros.h"
-
-namespace cudax = cuda::experimental; // FP SDK lives in cuda::experimental (later cuda::)
 
 // The native-double control resolves to these; the fpmp2 types find their own by
 // ADL. Non-template overloads so double picks them exactly.
@@ -207,15 +204,15 @@ TEST_HOST_DEVICE_FUNC void test()
   check_all<double>(cases, n, one, tol_mult); // control
 
   // fpmp2_accuracy::def aliases mid, so the def and mid rows are the same type.
-  check_all<cudax::fp32mp2>(cases, n, one, tol_mult);
-  check_all<cudax::fp32mp2_high>(cases, n, one, tol_mult);
-  check_all<cudax::fp32mp2_mid>(cases, n, one, tol_mult);
-  check_all<cudax::fp32mp2_low>(cases, n, one, tol_mult);
+  check_all<cuda::fp32mp2>(cases, n, one, tol_mult);
+  check_all<cuda::fp32mp2_high>(cases, n, one, tol_mult);
+  check_all<cuda::fp32mp2_mid>(cases, n, one, tol_mult);
+  check_all<cuda::fp32mp2_low>(cases, n, one, tol_mult);
 
-  check_all<cudax::fp64mp2>(cases, n, one, tol_mult);
-  check_all<cudax::fp64mp2_high>(cases, n, one, tol_mult);
-  check_all<cudax::fp64mp2_mid>(cases, n, one, tol_mult);
-  check_all<cudax::fp64mp2_low>(cases, n, one, tol_mult);
+  check_all<cuda::fp64mp2>(cases, n, one, tol_mult);
+  check_all<cuda::fp64mp2_high>(cases, n, one, tol_mult);
+  check_all<cuda::fp64mp2_mid>(cases, n, one, tol_mult);
+  check_all<cuda::fp64mp2_low>(cases, n, one, tol_mult);
 }
 
 int main(int, char**)

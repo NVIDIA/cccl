@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__chrono/calendar.h>
 #include <cuda/std/__chrono/day.h>
 #include <cuda/std/__chrono/duration.h>
@@ -46,5 +47,6 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_CHRONO

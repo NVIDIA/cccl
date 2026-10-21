@@ -65,9 +65,13 @@ public:
   _CCCL_HOST_DEVICE_API constexpr __independent_bits_engine(_Engine& __e, size_t __w) noexcept
       : __e_(__e)
       , __w_(__w)
+      , __n_(__w_ / __m + (__w_ % __m != 0))
   {
-    __n_  = __w_ / __m + (__w_ % __m != 0);
-    __w0_ = __w_ / __n_;
+    // TODO(jfaibussowit):
+    //
+    // Fix in CCCL 4.0 (or next ABI bump), reorder __n_ and __w0_ so we can initialize this in
+    // the member initializer list above
+    __w0_ = __w_ / __n_; // NOLINT(cppcoreguidelines-prefer-member-initializer)
     if constexpr (_Rp == 0)
     {
       __y0_ = _Rp;

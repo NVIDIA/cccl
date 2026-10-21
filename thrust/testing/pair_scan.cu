@@ -48,22 +48,22 @@ struct TestPairScan
     // scan with plus
     thrust::inclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), add_pairs());
     thrust::inclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), add_pairs());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // scan with maximum (thrust issue #69)
     thrust::inclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), ::cuda::maximum<P>());
     thrust::inclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), ::cuda::maximum<P>());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // scan with plus
     thrust::exclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), init, add_pairs());
     thrust::exclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), init, add_pairs());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
 
     // scan with maximum (thrust issue #69)
     thrust::exclusive_scan(h_pairs.begin(), h_pairs.end(), h_output.begin(), init, ::cuda::maximum<P>());
     thrust::exclusive_scan(d_pairs.begin(), d_pairs.end(), d_output.begin(), init, ::cuda::maximum<P>());
-    ASSERT_EQUAL_QUIET(h_output, d_output);
+    REQUIRE((h_output == d_output));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairScan,

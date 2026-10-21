@@ -24,8 +24,12 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -257,7 +261,7 @@ struct AgentScanByKey
   // Zip utility methods
   //---------------------------------------------------------------------
 
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ZipValuesAndFlags(
     OffsetT num_remaining,
     AccumT (&values)[ITEMS_PER_THREAD],
@@ -269,7 +273,7 @@ struct AgentScanByKey
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set segment_flags for first out-of-bounds item, zero for others
-      if (IS_LAST_TILE && OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
+      if (IsLastTile && OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
       {
         segment_flags[ITEM] = 1;
       }
@@ -312,7 +316,7 @@ struct AgentScanByKey
 
   // Process a tile of input (dynamic chained scan)
   //
-  template <bool IS_LAST_TILE>
+  template <bool IsLastTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT /*num_items*/, OffsetT num_remaining, int tile_idx, OffsetT tile_base, ScanTileStateT& tile_state)
   {
@@ -322,7 +326,7 @@ struct AgentScanByKey
     OffsetT segment_flags[ITEMS_PER_THREAD];
     FlagValuePairT scan_items[ITEMS_PER_THREAD];
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last element with the first element
       // because collectives are not suffix guarded
@@ -335,7 +339,7 @@ struct AgentScanByKey
 
     __syncthreads();
 
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       // Fill last element with the first element
       // because collectives are not suffix guarded
@@ -355,7 +359,7 @@ struct AgentScanByKey
       BlockDiscontinuityKeysT(storage.scan_storage.discontinuity).FlagHeads(segment_flags, keys, inequality_op);
 
       // Zip values and segment_flags
-      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
+      ZipValuesAndFlags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       // Exclusive scan of values and segment_flags
       FlagValuePairT tile_aggregate;
@@ -363,7 +367,7 @@ struct AgentScanByKey
 
       if (threadIdx.x == 0)
       {
-        if (!IS_LAST_TILE)
+        if (!IsLastTile)
         {
           tile_state.SetInclusive(0, tile_aggregate);
         }
@@ -379,7 +383,7 @@ struct AgentScanByKey
         .FlagHeads(segment_flags, keys, inequality_op, tile_pred_key);
 
       // Zip values and segment_flags
-      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
+      ZipValuesAndFlags<IsLastTile>(num_remaining, values, segment_flags, scan_items);
 
       FlagValuePairT tile_aggregate;
       TilePrefixCallbackT prefix_op(tile_state, storage.scan_storage.prefix, pair_scan_op, tile_idx);
@@ -393,7 +397,7 @@ struct AgentScanByKey
     AddInitToScan(values, segment_flags);
 
     // Store items
-    if (IS_LAST_TILE)
+    if (IsLastTile)
     {
       BlockStoreValuesT(storage.store_values).Store(d_values_out + tile_base, values, num_remaining);
     }

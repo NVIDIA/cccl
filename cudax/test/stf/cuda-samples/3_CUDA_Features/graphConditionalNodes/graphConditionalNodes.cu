@@ -47,7 +47,7 @@ using namespace cuda::experimental::stf;
 #if _CCCL_CTK_AT_LEAST(12, 4)
 
 // This kernel will only be executed if the condition is true
-__global__ void doWhileEmptyKernel(void)
+__global__ void doWhileEmptyKernel()
 {
   printf("GPU: doWhileEmptyKernel()\n");
   return;
@@ -62,7 +62,7 @@ __global__ void doWhileLoopKernel(char* dPtr, cudaGraphConditionalHandle handle)
   printf("GPU: counter = %d\n", *dPtr);
 }
 
-void simpleDoWhileGraph(void)
+void simpleDoWhileGraph()
 {
   cudaGraph_t graph;
   cudaGraphExec_t graphExec;
@@ -70,7 +70,7 @@ void simpleDoWhileGraph(void)
 
   // Allocate a byte of device memory to use as input
   char* dPtr;
-  cuda_safe_call(cudaMalloc((void**) &dPtr, 1));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dPtr), 1));
 
   printf("simpleDoWhileGraph: Building graph...\n");
   cuda_safe_call(cudaGraphCreate(&graph, 0));
@@ -164,13 +164,13 @@ __global__ void capturedWhileKernel(char* dPtr, cudaGraphConditionalHandle handl
   cudaGraphSetConditional(handle, *dPtr);
 }
 
-__global__ void capturedWhileEmptyKernel(void)
+__global__ void capturedWhileEmptyKernel()
 {
   printf("GPU: capturedWhileEmptyKernel()\n");
   return;
 }
 
-void capturedWhileGraph(void)
+void capturedWhileGraph()
 {
   cudaGraph_t graph;
   cudaGraphExec_t graphExec;
@@ -181,7 +181,7 @@ void capturedWhileGraph(void)
 
   // Allocate a byte of device memory to use as input
   char* dPtr;
-  cuda_safe_call(cudaMalloc((void**) &dPtr, 1));
+  cuda_safe_call(cudaMalloc(reinterpret_cast<void**>(&dPtr), 1));
 
   printf("capturedWhileGraph: Building graph...\n");
   cudaStream_t captureStream;

@@ -12,7 +12,7 @@ static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 #endif // __cpp_lib_concepts
 static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 
-void TestDevicePointerManipulation()
+TEST_CASE("TestDevicePointerManipulation", "[device_ptr]")
 {
   thrust::device_vector<int> data(5);
 
@@ -56,9 +56,8 @@ void TestDevicePointerManipulation()
 
   REQUIRE(end - begin == 5);
 }
-DECLARE_UNITTEST(TestDevicePointerManipulation);
 
-void TestMakeDevicePointer()
+TEST_CASE("TestMakeDevicePointer", "[device_ptr]")
 {
   using T = int;
 
@@ -72,10 +71,9 @@ void TestMakeDevicePointer()
 
   REQUIRE(p0 == p1);
 }
-DECLARE_UNITTEST(TestMakeDevicePointer);
 
 template <typename Vector>
-void TestRawPointerCast()
+void test_raw_pointer_cast()
 {
   using T = typename Vector::value_type;
 
@@ -97,34 +95,34 @@ void TestRawPointerCast()
   // last  = thrust::raw_pointer_cast(vec.end());
   // ASSERT_EQUAL(last - first, 3);
 }
-DECLARE_VECTOR_UNITTEST(TestRawPointerCast);
+DECLARE_VECTOR_UNITTEST(test_raw_pointer_cast);
 
 template <typename T>
-void TestDevicePointerNullptrCompatibility()
+void test_device_pointer_nullptr_compatibility()
 {
   thrust::device_ptr<T> p0(nullptr);
 
-  ASSERT_EQUAL_QUIET(nullptr, p0);
-  ASSERT_EQUAL_QUIET(p0, nullptr);
+  REQUIRE(nullptr == p0);
+  REQUIRE(p0 == nullptr);
 
   p0 = nullptr;
 
-  ASSERT_EQUAL_QUIET(nullptr, p0);
-  ASSERT_EQUAL_QUIET(p0, nullptr);
+  REQUIRE(nullptr == p0);
+  REQUIRE(p0 == nullptr);
 }
-DECLARE_GENERIC_UNITTEST(TestDevicePointerNullptrCompatibility);
+DECLARE_GENERIC_UNITTEST(test_device_pointer_nullptr_compatibility);
 
 template <typename T>
-void TestDevicePointerBoolConversion()
+void test_device_pointer_bool_conversion()
 {
   const thrust::device_ptr<T> p0(nullptr);
   auto const b = bool(p0);
 
-  ASSERT_EQUAL_QUIET(false, b);
+  REQUIRE_FALSE(b);
 }
-DECLARE_GENERIC_UNITTEST(TestDevicePointerBoolConversion);
+DECLARE_GENERIC_UNITTEST(test_device_pointer_bool_conversion);
 
-void TestDevicePointerCompare()
+TEST_CASE("TestDevicePointerCompare", "[device_ptr]")
 {
   using T1 = int;
 
@@ -228,10 +226,9 @@ void TestDevicePointerCompare()
     static_assert(!::cuda::std::__is_cpp17_less_than_comparable_v<device_ptr, other_ptr>);
   }
 }
-DECLARE_UNITTEST(TestDevicePointerCompare);
 
 template <typename Vector>
-void TestToAddress()
+void test_to_address()
 {
   using T = typename Vector::value_type;
 
@@ -252,7 +249,7 @@ void TestToAddress()
   last  = cuda::std::to_address(vec.end());
   REQUIRE(last - first == 3);
 }
-DECLARE_VECTOR_UNITTEST(TestToAddress);
+DECLARE_VECTOR_UNITTEST(test_to_address);
 
 // Verify that cuda::std::pointer_traits<device_ptr<T>>::rebind produces the
 // correct pointer type, not a nested struct. This is required for

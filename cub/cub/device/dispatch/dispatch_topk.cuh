@@ -18,8 +18,14 @@
 #endif // no system header
 
 #include <cub/agent/agent_topk.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/topk_helpers.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_topk.cuh>
 #include <cub/util_arch.cuh>
@@ -39,204 +45,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::topk
 {
-// Used in the bin ID calculation to exclude bits unrelated to the current pass
-template <typename T, int BitsPerPass>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned calc_mask(const int pass)
-{
-  const int num_bits = calc_start_bit<T, BitsPerPass>(pass - 1) - calc_start_bit<T, BitsPerPass>(pass);
-  return (1 << num_bits) - 1;
-}
-
-// Get the bin ID from the value of element
-template <typename T,
-          select SelectDirection,
-          int BitsPerPass,
-          typename DecomposerT,
-          bool CanTwiddle = detail::radix::can_twiddle<T>>
-struct extract_bin_op_t;
-
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
-{
-  static constexpr bool is_descending = SelectDirection != select::min;
-  using bit_ordered_type              = typename Traits<T>::UnsignedBits;
-
-  int pass{};
-  int start_bit{};
-  unsigned mask{};
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
-      : pass(pass)
-      , start_bit(calc_start_bit<T, BitsPerPass>(pass))
-      , mask(calc_mask<T, BitsPerPass>(pass))
-  {}
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
-  {
-    auto bits = reinterpret_cast<typename Traits<T>::UnsignedBits&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-    if constexpr (SelectDirection != select::min)
-    {
-      bits = ~bits;
-    }
-    const int bucket = (bits >> start_bit) & mask;
-    return bucket;
-  }
-};
-
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct extract_bin_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
-{
-  static constexpr bool is_descending = SelectDirection != select::min;
-  using radix_traits_t                = detail::radix::traits_t<T>;
-  using bit_ordered_type              = typename radix_traits_t::bit_ordered_type;
-  using digit_extractor_t = typename radix_traits_t::template digit_extractor_t<ShiftDigitExtractor<T>, DecomposerT>;
-
-  DecomposerT decomposer{};
-  digit_extractor_t digit_extractor;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE extract_bin_op_t(int pass, int total_bits, DecomposerT decomposer)
-      : decomposer(decomposer)
-      , digit_extractor(radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(
-          calc_start_bit<BitsPerPass>(total_bits, pass),
-          calc_start_bit<BitsPerPass>(total_bits, pass - 1) - calc_start_bit<BitsPerPass>(total_bits, pass),
-          decomposer))
-  {}
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int operator()(T key) const
-  {
-    bit_ordered_type ordered = key;
-    ordered                  = RadixSortTwiddle<is_descending, T>::In(ordered, decomposer);
-    return static_cast<int>(digit_extractor.Digit(ordered));
-  }
-};
-
-// Check if the input element is still a candidate for the target pass.
-template <typename T,
-          select SelectDirection,
-          int BitsPerPass,
-          typename DecomposerT,
-          bool CanTwiddle = detail::radix::can_twiddle<T>>
-struct identify_candidates_op_t;
-
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, true>
-{
-  using unsigned_bits_t = typename Traits<T>::UnsignedBits;
-  using key_prefix_t    = key_prefix_storage_t<T>;
-  unsigned_bits_t* kth_key_bits;
-  int start_bit;
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int /*total_bits*/, DecomposerT /*decomposer*/)
-      : kth_key_bits(&kth_key_bits->bits)
-  {
-    start_bit = calc_start_bit<T, BitsPerPass>(pass - 1);
-  }
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
-  {
-    auto bits = reinterpret_cast<unsigned_bits_t&>(key);
-    bits      = Traits<T>::TwiddleIn(bits);
-
-    if constexpr (SelectDirection != select::min)
-    {
-      bits = ~bits;
-    }
-
-    bits = (bits >> start_bit) << start_bit;
-
-    return (bits < *kth_key_bits) ? candidate_class::selected
-         : (bits == *kth_key_bits)
-           ? candidate_class::candidate
-           : candidate_class::rejected;
-  }
-};
-
-template <typename T, select SelectDirection, int BitsPerPass, typename DecomposerT>
-struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, false>
-{
-  static constexpr bool is_descending = SelectDirection != select::min;
-  using radix_traits_t                = detail::radix::traits_t<T>;
-  using bit_ordered_type              = typename radix_traits_t::bit_ordered_type;
-  using key_prefix_t                  = key_prefix_storage_t<T>;
-
-  key_prefix_t* kth_key_bits{};
-  int pass{};
-  int total_bits{};
-  DecomposerT decomposer{};
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  identify_candidates_op_t(key_prefix_t* kth_key_bits, int pass, int total_bits, DecomposerT decomposer)
-      : kth_key_bits(kth_key_bits)
-      , pass(pass)
-      , total_bits(total_bits)
-      , decomposer(decomposer)
-  {}
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE candidate_class operator()(T key) const
-  {
-    if (pass <= 0)
-    {
-      return candidate_class::candidate;
-    }
-
-    bit_ordered_type ordered = key;
-    ordered                  = RadixSortTwiddle<is_descending, T>::In(ordered, decomposer);
-
-    // Build the key's prefix using the same funnel shift as set_kth_key_bits
-    key_prefix_t key_prefix{};
-    for (int prefix_pass = 0; prefix_pass < pass; ++prefix_pass)
-    {
-      const int start_bit = calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
-      const int num_bits =
-        calc_start_bit<BitsPerPass>(total_bits, prefix_pass - 1) - calc_start_bit<BitsPerPass>(total_bits, prefix_pass);
-      auto extractor =
-        radix_traits_t::template digit_extractor<ShiftDigitExtractor<T>>(start_bit, num_bits, decomposer);
-      key_prefix.shift_or(BitsPerPass, static_cast<unsigned int>(extractor.Digit(ordered)));
-    }
-
-    // Compare word-by-word from MSB to LSB
-    const int total_prefix_bits = pass * BitsPerPass;
-    const int top_word_idx      = (total_prefix_bits - 1) / 32;
-    const int bits_in_top_word  = ((total_prefix_bits - 1) % 32) + 1;
-
-    // Top word may be partially filled
-    {
-      unsigned int key_w = key_prefix.words[top_word_idx];
-      unsigned int kth_w = kth_key_bits->words[top_word_idx];
-      if (bits_in_top_word < 32)
-      {
-        const unsigned int mask = (1u << bits_in_top_word) - 1u;
-        key_w &= mask;
-        kth_w &= mask;
-      }
-      if (key_w < kth_w)
-      {
-        return candidate_class::selected;
-      }
-      if (key_w > kth_w)
-      {
-        return candidate_class::rejected;
-      }
-    }
-
-    // Remaining words are fully populated
-    for (int w = top_word_idx - 1; w >= 0; --w)
-    {
-      if (key_prefix.words[w] < kth_key_bits->words[w])
-      {
-        return candidate_class::selected;
-      }
-      if (key_prefix.words[w] > kth_key_bits->words[w])
-      {
-        return candidate_class::rejected;
-      }
-    }
-
-    return candidate_class::candidate;
-  }
-};
-
 template <typename PolicySelector,
           typename KeyInputIteratorT,
           typename KeyOutputIteratorT,
@@ -486,18 +294,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
 
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     static constexpr topk_policy active_policy = policy_getter();
-#if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    NV_IF_TARGET(NV_IS_HOST, ({
-                   std::stringstream ss;
-                   ss << active_policy;
-                   _CubLog("Dispatching DeviceTopK to compute capability %d.%d with tuning: %s\n",
-                           cc.major_cap(),
-                           cc.minor_cap(),
-                           ss.str().c_str());
-                 }))
-#else // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
-    log_dispatch("DeviceTopK", cc, active_policy);
-#endif // _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
+    detail::log_dispatch("DeviceTopK", cc, active_policy);
     using key_in_t                  = it_value_t<KeyInputIteratorT>;
     using value_in_t                = it_value_t<ValueInputIteratorT>;
     static constexpr bool keys_only = ::cuda::std::is_same_v<value_in_t, NullType>;
@@ -528,8 +325,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     constexpr int num_buckets = 1 << bits_per_pass;
 
     // Define operators
-    using identify_candidates_op = identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
-    using extract_bin_op         = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT>;
+    // The trailing `false` skips the -0.0 normalization: DeviceTopK has no index tie-break, so any set of tied keys is
+    // valid and -0.0 may rank below +0.0
+    using identify_candidates_op =
+      identify_candidates_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, false>;
+    using extract_bin_op = extract_bin_op_t<key_in_t, SelectDirection, bits_per_pass, DecomposerT, false>;
 
     // We are capping k at a maximum of num_items
     using common_offset_t = ::cuda::std::common_type_t<OffsetT, OutOffsetT>;
@@ -604,23 +404,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch(
     const auto main_kernel_max_occupancy = static_cast<unsigned int>(main_kernel_blocks_per_sm * num_sms);
     const auto topk_grid_size            = (::cuda::std::min) (main_kernel_max_occupancy, num_tiles);
 
-#ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking topk_kernel<<<%d, %d, 0, "
-            "%lld>>>(), %d items per thread, %d SM occupancy\n",
-            topk_grid_size,
-            threads_per_block,
-            (long long) stream,
-            items_per_thread,
-            main_kernel_blocks_per_sm);
-#else // CUB_DEBUG_LOG
-    log("Invoking topk_kernel<<<%d, %d, 0, "
-        "%lld>>>(), %d items per thread, %d SM occupancy\n",
-        topk_grid_size,
-        threads_per_block,
-        (long long) stream,
-        items_per_thread,
-        main_kernel_blocks_per_sm);
-#endif // CUB_DEBUG_LOG
+    _CUB_LOG_KERNEL_LAUNCH(
+      "topk_kernel", topk_grid_size, 1, 1, threads_per_block, 0, stream, ", SM occupancy: %d", main_kernel_blocks_per_sm);
 
     // Initialize address variables
     counter_t* counter = static_cast<counter_t*>(allocations[0]);

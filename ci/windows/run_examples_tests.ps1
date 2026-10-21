@@ -26,6 +26,10 @@ Import-Module "$PSScriptRoot/build_common_python.psm1"
 
 Assert-MinimalEnvironment
 
+# The only Windows lane that still installs a C++ runtime, and only because the
+# CuPy wheel on PyPI imports the system msvcp140.dll (cupy/cupy#10316); every
+# other package here carries its own. Drop this call once that issue is
+# resolved, so this lane also proves the wheel is self-contained.
 Install-MsvcRuntime
 
 $python = Get-Python -Version $PyVersion

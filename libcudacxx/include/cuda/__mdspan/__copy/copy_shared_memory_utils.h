@@ -349,7 +349,7 @@ template <typename _TpIn,
 [[nodiscard]] _CCCL_HOST_API __shared_mem_tiling_result<_MaxRank> __find_shared_mem_tiling(
   const __raw_tensor<_ExtentT, _StrideTIn, _TpSrc, _MaxRank>& __src,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpDst, _MaxRank>& __dst,
-  ::cuda::device_ref __device) noexcept
+  ::cuda::device_ref __device)
 {
   const auto __max_shared_mem_bytes = __device.attribute<::cudaDevAttrMaxSharedMemoryPerBlock>();
   const auto __num_sms              = __device.attribute<::cudaDevAttrMultiProcessorCount>();
@@ -372,7 +372,7 @@ template <typename _ExtentT,
 [[nodiscard]] _CCCL_HOST_API bool __use_shared_mem_kernel(
   const __raw_tensor<_ExtentT, _StrideTIn, _TpIn, _MaxRank>& __src,
   const __raw_tensor<_ExtentT, _StrideTOut, _TpOut, _MaxRank>& __dst,
-  ::cuda::device_ref __device) noexcept
+  ::cuda::device_ref __device)
 {
   return ::cuda::__find_shared_mem_tiling<_TpIn>(__src, __dst, __device).__is_valid;
 }

@@ -20,9 +20,13 @@
 #endif // no system header
 
 #include <cub/block/block_exchange.cuh>
+#include <cub/detail/cub_vector.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
@@ -610,7 +614,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
 
 //! @brief cub::BlockLoadAlgorithm enumerates alternative algorithms for cub::BlockLoad to read a linear segment of data
 //!        from memory into a blocked arrangement across a CUDA thread block.
-enum BlockLoadAlgorithm
+enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! @rst
   //! Overview

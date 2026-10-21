@@ -22,12 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_function.h>
-#include <cuda/std/__type_traits/is_void.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/__type_traits/is_array.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_function.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_void.h> // IWYU pragma: keep
+#include <cuda/std/__utility/declval.h> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -94,8 +92,8 @@ inline constexpr int __is_array_function_or_void_v<_Tp, false, false, true> = 3;
 
 template <class _T1,
           class _T2,
-          int _T1_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_T1>,
-          int _T2_is_array_function_or_void = __is_convertible_imp::__is_array_function_or_void_v<_T2>>
+          int _T1IsArrayFunctionOrVoid = __is_convertible_imp::__is_array_function_or_void_v<_T1>,
+          int _T2IsArrayFunctionOrVoid = __is_convertible_imp::__is_array_function_or_void_v<_T2>>
 inline constexpr bool __is_convertible_fallback_v =
   decltype(::cuda::std::__is_convertible_imp::__is_convertible_test<_T1, _T2>(0))::value;
 

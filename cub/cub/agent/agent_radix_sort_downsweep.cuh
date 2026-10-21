@@ -25,10 +25,12 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/cstdint>
@@ -130,7 +132,7 @@ namespace detail::radix_sort
  * @tparam AgentRadixSortDownsweepPolicy
  *   Parameterized AgentRadixSortDownsweepPolicy tuning policy type
  *
- * @tparam IS_DESCENDING
+ * @tparam IsDescending
  *   Whether or not the sorted-order is high-to-low
  *
  * @tparam KeyT
@@ -143,7 +145,7 @@ namespace detail::radix_sort
  *   Signed integer type for global offsets
  */
 template <typename AgentRadixSortDownsweepPolicy,
-          bool IS_DESCENDING,
+          bool IsDescending,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -179,7 +181,7 @@ struct AgentRadixSortDownsweep
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;
 
   // Radix ranking type to use
-  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+  using BlockRadixRankT = block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IsDescending, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;
@@ -218,8 +220,7 @@ struct AgentRadixSortDownsweep
   };
 
   /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+  using TempStorage = Uninitialized<_TempStorage>;
 
   //---------------------------------------------------------------------
   // Thread fields
@@ -257,7 +258,7 @@ struct AgentRadixSortDownsweep
   /**
    * Scatter ranked keys through shared memory, then to device-accessible memory
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeys(
     bit_ordered_type (&twiddled_keys)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
@@ -281,7 +282,7 @@ struct AgentRadixSortDownsweep
 
       key = bit_ordered_conversion::from_bit_ordered(decomposer, key);
 
-      if (FULL_TILE
+      if (FullTile
           || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
               < valid_items))
       {
@@ -293,7 +294,7 @@ struct AgentRadixSortDownsweep
   /**
    * Scatter ranked values through shared memory, then to device-accessible memory
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValues(
     ValueT (&values)[ITEMS_PER_THREAD],
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
@@ -317,7 +318,7 @@ struct AgentRadixSortDownsweep
     {
       ValueT value = exchange_values[threadIdx.x + (ITEM * BLOCK_THREADS)];
 
-      if (FULL_TILE
+      if (FullTile
           || (static_cast<OffsetT>(threadIdx.x + (ITEM * BLOCK_THREADS)) // NOLINT(bugprone-misplaced-widening-cast)
               < valid_items))
       {
@@ -413,7 +414,7 @@ struct AgentRadixSortDownsweep
   /**
    * Truck along associated values
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
     OffsetT (&relative_bin_offsets)[ITEMS_PER_THREAD],
     int (&ranks)[ITEMS_PER_THREAD],
@@ -424,15 +425,15 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-    LoadValues(values, block_offset, valid_items, bool_constant_v<FULL_TILE>);
+    LoadValues(values, block_offset, valid_items, bool_constant_v<FullTile>);
 
-    ScatterValues<FULL_TILE>(values, relative_bin_offsets, ranks, valid_items);
+    ScatterValues<FullTile>(values, relative_bin_offsets, ranks, valid_items);
   }
 
   /**
    * Process tile
    */
-  template <bool FULL_TILE>
+  template <bool FullTile>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(OffsetT block_offset, OffsetT valid_items = TILE_ITEMS)
   {
     bit_ordered_type keys[ITEMS_PER_THREAD];
@@ -441,10 +442,10 @@ struct AgentRadixSortDownsweep
 
     // Assign default (min/max) value to all keys
     const bit_ordered_type default_key =
-      IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
+      IsDescending ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
 
     // Load tile of keys
-    LoadKeys(keys, block_offset, valid_items, default_key, bool_constant_v<FULL_TILE>);
+    LoadKeys(keys, block_offset, valid_items, default_key, bool_constant_v<FullTile>);
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
@@ -481,7 +482,7 @@ struct AgentRadixSortDownsweep
       const int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           // Get inclusive digit prefix from exclusive prefix (higher bins come first)
           inclusive_digit_prefix[track] =
@@ -516,12 +517,12 @@ struct AgentRadixSortDownsweep
     __syncthreads();
 
     // Scatter keys
-    ScatterKeys<FULL_TILE>(keys, relative_bin_offsets, ranks, valid_items);
+    ScatterKeys<FullTile>(keys, relative_bin_offsets, ranks, valid_items);
 
     // Gather/scatter values
     if constexpr (!KEYS_ONLY)
     {
-      GatherScatterValues<FULL_TILE>(relative_bin_offsets, ranks, block_offset, valid_items);
+      GatherScatterValues<FullTile>(relative_bin_offsets, ranks, block_offset, valid_items);
     }
   }
 
@@ -644,7 +645,7 @@ struct AgentRadixSortDownsweep
       // Load digit bin offsets (each of the first RADIX_DIGITS threads will load an offset for that digit)
       if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
       {
-        if (IS_DESCENDING)
+        if (IsDescending)
         {
           bin_idx = RADIX_DIGITS - bin_idx - 1;
         }

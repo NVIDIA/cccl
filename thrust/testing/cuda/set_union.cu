@@ -36,20 +36,18 @@ void TestSetUnionDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
 
-void TestSetUnionDeviceSeq()
+TEST_CASE("TestSetUnionDeviceSeq", "[set_union]")
 {
   TestSetUnionDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestSetUnionDeviceSeq);
 
-void TestSetUnionDeviceDevice()
+TEST_CASE("TestSetUnionDeviceDevice", "[set_union]")
 {
   TestSetUnionDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestSetUnionDeviceDevice);
 #endif
 
-void TestSetUnionCudaStreams()
+TEST_CASE("TestSetUnionCudaStreams", "[set_union]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -61,7 +59,6 @@ void TestSetUnionCudaStreams()
   auto end =
     thrust::set_union(thrust::cuda::par.on(stream.get()), a.begin(), a.end(), b.begin(), b.end(), result.begin());
 
-  ASSERT_EQUAL_QUIET(result.end(), end);
+  REQUIRE(result.end() == end);
   test_runtime::assert_equal(stream, result, {0, 2, 3, 3, 4});
 }
-DECLARE_UNITTEST(TestSetUnionCudaStreams);

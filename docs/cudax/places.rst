@@ -146,6 +146,10 @@ domain can improve locality. Locality domain places expose this capability:
   method; the single-device counterpart of ``exec_place::all_devices()``
   (``make_locality_domain_grid(devid[, split])`` is the equivalent free
   function)
+- ``exec_place::all_locality_domains([split])`` -- the machine-wide form: a grid
+  with one execution place per domain of every visible device, in
+  device-major order; devices without locality-domain support contribute a
+  single whole-device place
 - ``locality_domain_helper`` -- enumerates the domains of a device, mirroring
   ``green_context_helper``; hands out ``locality_domain_view`` identity
   tokens accepted by both factories
@@ -191,11 +195,12 @@ offset the locality benefit the partitioning was meant to capture. Prefer
 whole-device coverage.
 
 The split method only affects the execution side: data places take no
-method, and places built with different methods for the same
-``(device, domain)`` are distinct places sharing the same (equal) affine
-data place. Backends without native locality-domain support (pre-13.4
-toolkits, the whole-device degrade, the fake-topology override) accept and
-ignore the method.
+method, and on a device with several domains, places built with different
+methods for the same ``(device, domain)`` are distinct places sharing the
+same (equal) affine data place. Single-domain devices and backends without
+native locality-domain support (pre-13.4 toolkits, the whole-device degrade,
+the fake-topology override) accept and ignore the method: the domain is the
+device.
 
 All three methods rest on the CUDA 13.4 driver surface that locality-domain
 places already require (splitting by locality domain with
@@ -663,9 +668,9 @@ The partitioning granularity is specified by ``place_partition_scope``:
 
 Partitioning ``exec_place::all_devices()`` at ``locality_domain`` scope is
 the machine-wide form: it yields every locality domain of every device. The
-single-device helper ``exec_place::locality_domains(dev_id)`` (equivalently
-``make_locality_domain_grid(dev_id)``) is convenience sugar over this
-mechanism.
+helpers ``exec_place::locality_domains(dev_id)`` (single device, equivalently
+``make_locality_domain_grid(dev_id)``) and ``exec_place::all_locality_domains()``
+(every device) are convenience sugar over this mechanism.
 
 .. code:: c++
 

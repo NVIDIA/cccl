@@ -73,20 +73,18 @@ void TestMergeByKeyDevice(ExecutionPolicy exec)
   test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }
 
-void TestMergeByKeyDeviceSeq()
+TEST_CASE("TestMergeByKeyDeviceSeq", "[merge_by_key]")
 {
   TestMergeByKeyDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestMergeByKeyDeviceSeq);
 
-void TestMergeByKeyDeviceDevice()
+TEST_CASE("TestMergeByKeyDeviceDevice", "[merge_by_key]")
 {
   TestMergeByKeyDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestMergeByKeyDeviceDevice);
 #endif
 
-void TestMergeByKeyCudaStreams()
+TEST_CASE("TestMergeByKeyCudaStreams", "[merge_by_key]")
 {
   const auto device = test_runtime::current_test_device();
   const cuda::stream stream{device};
@@ -111,9 +109,8 @@ void TestMergeByKeyCudaStreams()
     result_val.begin());
   stream.sync();
 
-  ASSERT_EQUAL_QUIET(result_key.end(), end.first);
-  ASSERT_EQUAL_QUIET(result_val.end(), end.second);
+  REQUIRE(result_key.end() == end.first);
+  REQUIRE(result_val.end() == end.second);
   test_runtime::assert_equal(stream, result_key, {0, 0, 2, 3, 3, 4, 4});
   test_runtime::assert_equal(stream, result_val, {13, 42, 7, 42, 7, 42, 13});
 }
-DECLARE_UNITTEST(TestMergeByKeyCudaStreams);

@@ -22,7 +22,8 @@ namespace detail
 template <typename Output, typename Input>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
 {
-  Output output;
+  // memcpy overwrites the complete object representation.
+  Output output; // NOLINT(cppcoreguidelines-pro-type-member-init)
   static_assert(sizeof(input) == sizeof(output), "wrong size");
   // NOLINTNEXTLINE(bugprone-undefined-memory-manipulation)
   ::memcpy(&output, &input, sizeof(input));

@@ -52,7 +52,7 @@ struct TestPairReduce
     // reduce on the device
     const P d_result = thrust::reduce(d_pairs.begin(), d_pairs.end(), init, add_pairs());
 
-    ASSERT_EQUAL_QUIET(h_result, d_result);
+    REQUIRE(h_result == d_result);
   }
 }; // end TestPairReduce
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestPairReduce, SignedIntegralTypes);

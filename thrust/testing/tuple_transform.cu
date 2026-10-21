@@ -17,7 +17,7 @@ template <int N>
 struct GetFunctor
 {
   template <typename Tuple>
-  _CCCL_HOST_DEVICE typename cuda::std::tuple_element<N, Tuple>::type operator()(const Tuple& t)
+  _CCCL_HOST_DEVICE cuda::std::tuple_element_t<N, Tuple> operator()(const Tuple& t)
   {
     return cuda::std::get<N>(t);
   }
@@ -49,7 +49,7 @@ struct TestTupleTransform
     ASSERT_ALMOST_EQUAL(h_t1, d_t1);
     ASSERT_ALMOST_EQUAL(h_t2, d_t2);
 
-    ASSERT_EQUAL_QUIET(h_tuples, d_tuples);
+    REQUIRE((h_tuples == d_tuples));
   }
 };
 DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(TestTupleTransform, SignedIntegralTypes);

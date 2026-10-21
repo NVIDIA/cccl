@@ -1,6 +1,8 @@
 #include <thrust/execution_policy.h>
 #include <thrust/scatter.h>
 
+#include <cuda/functional>
+
 #include <algorithm>
 
 #include <unittest/unittest.h>
@@ -43,17 +45,15 @@ void TestScatterDevice(ExecutionPolicy exec)
   REQUIRE(h_output == d_output);
 }
 
-void TestScatterDeviceSeq()
+TEST_CASE("TestScatterDeviceSeq", "[scatter]")
 {
   TestScatterDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterDeviceSeq);
 
-void TestScatterDeviceDevice()
+TEST_CASE("TestScatterDeviceDevice", "[scatter]")
 {
   TestScatterDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterDeviceDevice);
 
 template <typename ExecutionPolicy,
           typename Iterator1,
@@ -72,15 +72,6 @@ __global__ void scatter_if_kernel(
 {
   thrust::scatter_if(exec, first, last, map_first, stencil_first, result, f);
 }
-
-template <typename T>
-struct is_even_scatter_if
-{
-  _CCCL_HOST_DEVICE bool operator()(const T i) const
-  {
-    return (i % 2) == 0;
-  }
-};
 
 template <typename ExecutionPolicy>
 void TestScatterIfDevice(ExecutionPolicy exec)
@@ -103,37 +94,28 @@ void TestScatterIfDevice(ExecutionPolicy exec)
   thrust::host_vector<int> h_output(output_size, 0);
   thrust::device_vector<int> d_output(output_size, 0);
 
-  thrust::scatter_if(
-    h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), is_even_scatter_if<unsigned int>());
+  thrust::scatter_if(h_input.begin(), h_input.end(), h_map.begin(), h_map.begin(), h_output.begin(), cuda::__is_even{});
 
   scatter_if_kernel<<<1, 1>>>(
-    exec,
-    d_input.begin(),
-    d_input.end(),
-    d_map.begin(),
-    d_map.begin(),
-    d_output.begin(),
-    is_even_scatter_if<unsigned int>());
+    exec, d_input.begin(), d_input.end(), d_map.begin(), d_map.begin(), d_output.begin(), cuda::__is_even{});
   cudaError_t const err = cudaDeviceSynchronize();
   REQUIRE(cudaSuccess == err);
 
   REQUIRE(h_output == d_output);
 }
 
-void TestScatterIfDeviceSeq()
+TEST_CASE("TestScatterIfDeviceSeq", "[scatter]")
 {
   TestScatterIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceSeq);
 
-void TestScatterIfDeviceDevice()
+TEST_CASE("TestScatterIfDeviceDevice", "[scatter]")
 {
   TestScatterIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestScatterIfDeviceDevice);
 #endif
 
-void TestScatterCudaStreams()
+TEST_CASE("TestScatterCudaStreams", "[scatter]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -153,9 +135,8 @@ void TestScatterCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterCudaStreams);
 
-void TestScatterIfCudaStreams()
+TEST_CASE("TestScatterIfCudaStreams", "[scatter]")
 {
   using Vector = thrust::device_vector<int>;
 
@@ -175,4 +156,3 @@ void TestScatterIfCudaStreams()
 
   cudaStreamDestroy(s);
 }
-DECLARE_UNITTEST(TestScatterIfCudaStreams);

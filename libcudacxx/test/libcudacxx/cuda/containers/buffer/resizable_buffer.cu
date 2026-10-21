@@ -28,16 +28,16 @@
 using buffer_t = cuda::__resizable_buffer<int, cuda::mr::device_accessible>;
 using base_t   = cuda::buffer<int, cuda::mr::device_accessible>;
 
-template <cuda::std::size_t _Size>
-void check_prefix(const buffer_t& buf, const cuda::std::array<int, _Size>& expected)
+template <cuda::std::size_t Size>
+void check_prefix(const buffer_t& buf, const cuda::std::array<int, Size>& expected)
 {
-  REQUIRE(buf.size() >= _Size);
+  REQUIRE(buf.size() >= Size);
 
-  std::vector<int> actual(_Size);
-  cuda::copy_bytes(buf.stream(), buf.first(_Size), actual);
+  std::vector<int> actual(Size);
+  cuda::copy_bytes(buf.stream(), buf.first(Size), actual);
   buf.stream().sync();
 
-  for (cuda::std::size_t i = 0; i != _Size; ++i)
+  for (cuda::std::size_t i = 0; i != Size; ++i)
   {
     REQUIRE(actual[i] == expected[i]);
   }

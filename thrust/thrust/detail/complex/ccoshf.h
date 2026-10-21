@@ -91,8 +91,7 @@ _CCCL_HOST_DEVICE inline complex<float> ccoshf(const complex<float>& z)
     else if (ix < 0x4340b1e7)
     {
       /* x < 192.7: scale to avoid overflow */
-      thrust::complex<float> z_;
-      z_ = ldexp_cexpf(complex<float>(::cuda::std::fabsf(x), y), -1);
+      const thrust::complex<float> z_ = ldexp_cexpf(complex<float>(::cuda::std::fabsf(x), y), -1);
       return (complex<float>(z_.real(), z_.imag() * ::cuda::std::copysignf(1.0f, x)));
     }
     else

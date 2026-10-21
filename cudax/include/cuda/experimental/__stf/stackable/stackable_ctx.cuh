@@ -173,6 +173,7 @@ public:
 
   void push(int ctx_offset, access_mode m, data_place where = data_place::invalid()) const
   {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
     const_cast<stackable_logical_data*>(this)->push_at(ctx_offset, m, mv(where));
   }
 
@@ -305,7 +306,7 @@ public:
                        access_mode m,
                        const data_place& dplace_hint = data_place::invalid()) const
   {
-    auto& self = *const_cast<stackable_logical_data*>(this);
+    auto& self = *const_cast<stackable_logical_data*>(this); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     auto lock  = self.mut_data().acquire_exclusive_lock();
 
     _CCCL_ASSERT(m != access_mode::none && m != access_mode::relaxed, "Unsupported access mode in nested context");
@@ -416,7 +417,7 @@ private:
 
     void pop_after_finalize(int parent_offset, const event_list& finalize_prereqs) override
     {
-      nvtx_range r("stackable_logical_data::pop_after_finalize");
+      const nvtx_range r("stackable_logical_data::pop_after_finalize");
 
       _CCCL_ASSERT(parent_offset >= 0, "");
       _CCCL_ASSERT(data_nodes[static_cast<size_t>(parent_offset)].has_value(), "");
@@ -517,13 +518,15 @@ private:
       return ::std::unique_lock<::std::shared_mutex>(mutex);
     }
 
+  private:
+    friend class stackable_logical_data;
+
     stackable_ctx sctx;
     ::std::vector<::cuda::std::optional<data_node>> data_nodes;
     int data_root_offset = -1;
     ::std::string symbol;
     bool read_only = false;
 
-  private:
     mutable ::std::shared_mutex mutex;
   };
 
@@ -749,7 +752,7 @@ private:
 
 inline stackable_logical_data<void_interface> stackable_ctx::token()
 {
-  int head = pimpl->get_head_offset();
+  const int head = pimpl->get_head_offset();
   return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().token(), true);
 }
 
@@ -762,14 +765,11 @@ template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep
 {
 public:
-  using data_t      = T;
-  using dep_type    = T;
-  using op_and_init = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
-  using op_type     = reduce_op;
-  enum : bool
-  {
-    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
-  };
+  using data_t                    = T;
+  using dep_type                  = T;
+  using op_and_init               = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type                   = reduce_op;
+  static constexpr bool does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>;
 
   stackable_task_dep(stackable_logical_data<T> _d, access_mode _mode, data_place _dplace = data_place::affine())
       : d(mv(_d))
@@ -991,12 +991,11 @@ public:
     ctx_.push(loc);
   }
 
-  // A push() that cannot be matched by its pop() leaves the context stack inconsistent, so
-  // terminating is the intended outcome.
-  // NOLINTNEXTLINE(bugprone-exception-escape)
+  // pop() completes the level's teardown whatever its steps report; a destructor cannot pass the
+  // first failure on, so the policy is to report it and end the program.
   ~graph_scope_guard()
   {
-    ctx_.pop();
+    ctx_.pop(exception_policies::abort);
   }
 
   graph_scope_guard(const graph_scope_guard&)            = delete;
@@ -1102,10 +1101,13 @@ public:
     // If no one ever called launch()/exec()/stream()/graph(): we still ran push()
     // in the constructor, so we must match it with a prologue+epilogue
     // pair to tear the node down cleanly. finalize_after_launch handles
-    // the no-launch case correctly.
-    ensure_prepared_();
-
-    ctx_.pop_epilogue();
+    // the no-launch case correctly. This function is noexcept and runs from the destructor, so
+    // a failure in either step is reported and the program ends.
+    ON_THROW(abort)
+    {
+      ensure_prepared_();
+    };
+    ctx_.pop_epilogue(exception_policies::abort);
     released_ = true;
   }
 
@@ -1314,12 +1316,10 @@ public:
     ctx_.push_while(&conditional_handle_, default_launch_value, flags, loc);
   }
 
-  // As with graph_scope_guard, a push_while() that cannot be matched by its pop() leaves the
-  // context stack inconsistent, so terminating is the intended outcome.
-  // NOLINTNEXTLINE(bugprone-exception-escape)
+  // As with graph_scope_guard: a destructor can only report the first failure and end the program.
   ~while_graph_scope_guard()
   {
-    ctx_.pop();
+    ctx_.pop(exception_policies::abort);
   }
 
   cudaGraphConditionalHandle cond_handle() const
@@ -1527,6 +1527,12 @@ static __global__ void kernel_check_value(T* addr, T val)
 UNITTEST("stackable host_launch")
 {
   stackable_ctx ctx;
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.push();
   lA.push(access_mode::write, data_place::current_device());
@@ -1537,7 +1543,6 @@ UNITTEST("stackable host_launch")
     _CCCL_ASSERT(a(0) == 42, "invalid value");
   };
   ctx.pop();
-  ctx.finalize();
 };
 
 UNITTEST("graph_scope basic RAII")
@@ -1565,7 +1570,7 @@ UNITTEST("graph_scope direct constructor style")
 
   // Test direct constructor style (like std::lock_guard)
   {
-    stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
+    const stackable_ctx::graph_scope_guard scope{ctx}; // Direct constructor, push() called here
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 24);
@@ -1584,14 +1589,14 @@ UNITTEST("graph_scope nested scopes")
 
   // Test nested scopes work correctly using direct constructor style
   {
-    stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
+    const stackable_ctx::graph_scope_guard outer_scope{ctx}; // outer push()
     lA.push(access_mode::write, data_place::current_device());
     ctx.task(lA.write())->*[](cudaStream_t stream, auto a) {
       reserved::kernel_set<<<1, 1, 0, stream>>>(a.data_handle(), 10);
     };
 
     {
-      stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
+      const stackable_ctx::graph_scope_guard inner_scope{ctx}; // inner push() (nested)
       lB.push(access_mode::write, data_place::current_device());
       ctx.task(lB.write())->*[](cudaStream_t stream, auto b) {
         reserved::kernel_set<<<1, 1, 0, stream>>>(b.data_handle(), 20);
@@ -1684,7 +1689,7 @@ inline void test_graph_scope()
   int array[1024];
   for (size_t i = 0; i < 1024; i++)
   {
-    array[i] = 1 + i * i;
+    array[i] = static_cast<int>(1 + i * i);
   }
 
   auto lA = ctx.logical_data(array).set_symbol("A");
@@ -1726,27 +1731,34 @@ UNITTEST("graph_scope iterative pattern")
 UNITTEST("stackable task on exec_place::host()")
 {
   stackable_ctx ctx;
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(exec_place::host(), lA.write())->*[](cudaStream_t stream, auto) {
-    // cuda_safe_call (not cuda_try) on purpose: this lambda body is invoked from
-    // the STF runtime under host-task dispatch, where exception safety has not
-    // been audited. An abort here is preferable to an unannotated throw escaping
-    // into the runtime.
-    cuda_safe_call(cudaStreamSynchronize(stream));
+    // A throw here unwinds through operator->*'s fail path, which is exception-safe (end() is
+    // nothrow).
+    cuda_try<cudaStreamSynchronize>(stream);
   };
-  ctx.finalize();
 };
 
 UNITTEST("stackable task with set_symbol and set_exec_place")
 {
   stackable_ctx ctx;
+  // Finalized by a guard, for pedantry's sake. SCOPE(success), since finalize() may throw: a failing
+  // step leaves the context alone and its own exception propagates.
+  SCOPE(success)
+  {
+    ctx.finalize();
+  };
   auto lA = ctx.logical_data(shape_of<slice<int>>(1024));
   ctx.task(lA.write()).set_symbol("task").set_exec_place(exec_place::host())->*[](cudaStream_t stream, auto) {
-    // Same rationale as the previous test: keep cuda_safe_call inside this
-    // host-task lambda until the dispatch path is audited for exception safety.
-    cuda_safe_call(cudaStreamSynchronize(stream));
+    // Same as the previous test: the host-task dispatch path is exception-safe.
+    cuda_try<cudaStreamSynchronize>(stream);
   };
-  ctx.finalize();
 };
 
 inline void test_pop_prologue_repeated_launch()
@@ -1756,9 +1768,9 @@ inline void test_pop_prologue_repeated_launch()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1806,9 +1818,9 @@ inline void test_pop_prologue_manual_exec_launch()
   stackable_ctx ctx;
 
   int array[512];
-  for (size_t i = 0; i < 512; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1826,7 +1838,7 @@ inline void test_pop_prologue_manual_exec_launch()
   cudaStream_t s     = handle.stream();
   for (int k = 0; k < N; ++k)
   {
-    cuda_safe_call(cudaGraphLaunch(ex, s));
+    cuda_try<cudaGraphLaunch>(ex, s);
   }
 
   ctx.pop_epilogue();
@@ -1851,9 +1863,9 @@ inline void test_pop_prologue_zero_launches()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 7;
+    v = 7;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1898,9 +1910,9 @@ inline void test_pop_prologue_handle_invalidation()
   stackable_ctx ctx;
 
   int array[4];
-  for (size_t i = 0; i < 4; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1946,9 +1958,9 @@ inline void test_pop_prologue_graph_child_embed()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -1965,35 +1977,42 @@ inline void test_pop_prologue_graph_child_embed()
   cudaGraph_t body = handle.graph();
 
   // Build an outer graph that embeds `body` as a child node.
-  cudaGraph_t outer = nullptr;
-  cuda_safe_call(cudaGraphCreate(&outer, 0));
-  cudaGraphNode_t child{};
-  cuda_safe_call(cudaGraphAddChildGraphNode(&child, outer, nullptr, 0, body));
+  const cudaGraph_t outer = cuda_try<cudaGraphCreate>(0);
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaGraphDestroy>(outer);
+  };
+  ::std::ignore = cuda_try<cudaGraphAddChildGraphNode>(outer, nullptr, 0, body);
 
-  cudaGraphExec_t outer_exec = nullptr;
-  cuda_safe_call(cudaGraphInstantiateWithFlags(&outer_exec, outer, 0));
+  const cudaGraphExec_t outer_exec = cuda_try<cudaGraphInstantiateWithFlags>(outer, 0);
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaGraphExecDestroy>(outer_exec);
+  };
 
   // Order the outer launch behind the nested context's freeze/get events:
   // record an event on handle.stream() (where graph() injected dep A) and make
   // our launch stream wait on it before launching the embedded child.
-  cudaStream_t launch_stream = nullptr;
-  cuda_safe_call(cudaStreamCreate(&launch_stream));
-  cudaEvent_t dep_a = nullptr;
-  cuda_safe_call(cudaEventCreate(&dep_a));
-  cuda_safe_call(cudaEventRecord(dep_a, handle.stream()));
-  cuda_safe_call(cudaStreamWaitEvent(launch_stream, dep_a, 0));
+  const cudaStream_t launch_stream = cuda_try<cudaStreamCreate>();
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaStreamDestroy>(launch_stream);
+  };
+  // cudaEventCreate is an overload set; the flags form is the same call with the default flags.
+  const cudaEvent_t dep_a = cuda_try<cudaEventCreateWithFlags>(cudaEventDefault);
+  SCOPE(exit)
+  {
+    cuda_safe_call<cudaEventDestroy>(dep_a);
+  };
+  cuda_try<cudaEventRecord>(dep_a, handle.stream());
+  cuda_try<cudaStreamWaitEvent>(launch_stream, dep_a, 0);
 
-  cuda_safe_call(cudaGraphLaunch(outer_exec, launch_stream));
+  cuda_try<cudaGraphLaunch>(outer_exec, launch_stream);
 
   // The embedded child must finish before pop_epilogue() unfreezes the data.
-  cuda_safe_call(cudaStreamSynchronize(launch_stream));
+  cuda_try<cudaStreamSynchronize>(launch_stream);
 
   ctx.pop_epilogue();
-
-  cuda_safe_call(cudaGraphExecDestroy(outer_exec));
-  cuda_safe_call(cudaGraphDestroy(outer));
-  cuda_safe_call(cudaEventDestroy(dep_a));
-  cuda_safe_call(cudaStreamDestroy(launch_stream));
 
   ctx.host_launch(lA.read())->*[](auto a) {
     for (size_t i = 0; i < a.size(); ++i)
@@ -2017,9 +2036,9 @@ inline void test_launchable_graph_scope_raii()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2059,9 +2078,9 @@ inline void test_pop_prologue_shared_basic()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2117,9 +2136,9 @@ inline void test_pop_prologue_shared_copies()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2168,9 +2187,9 @@ inline void test_pop_prologue_shared_stored_in_container()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2221,9 +2240,9 @@ inline void test_pop_prologue_shared_manual_epilogue_meh()
   stackable_ctx ctx;
 
   int array[4];
-  for (size_t i = 0; i < 4; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 
@@ -2259,9 +2278,9 @@ inline void test_pop_prologue_with_while_graph_scope_meh()
   stackable_ctx ctx;
 
   int array[1024];
-  for (size_t i = 0; i < 1024; ++i)
+  for (auto& v : array)
   {
-    array[i] = 0;
+    v = 0;
   }
   auto lA = ctx.logical_data(array).set_symbol("A");
 

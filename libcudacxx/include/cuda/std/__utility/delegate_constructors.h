@@ -20,11 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h> // IWYU pragma: keep
+
+#if _CCCL_COMPILER(NVRTC, <, 12, 6)
+#  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#  include <cuda/std/__utility/forward.h>
+#endif // _CCCL_COMPILER(NVRTC, <, 12, 6)
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,10 +44,13 @@
     _CCCL_EXEC_CHECK_DISABLE                                                                                           \
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #else // ^^^ workaround ^^^ / vvv no workaround vvv
-#  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
-    using __base = __baseclass<__VA_ARGS__>;                     \
-    using __base::__base;                                        \
-    _CCCL_EXEC_CHECK_DISABLE                                     \
+#  define _CCCL_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)          \
+    using __base = __baseclass<__VA_ARGS__>;                              \
+    /* clang-tidy is off its rocker */                                    \
+    /* NOLINTBEGIN(cppcoreguidelines-rvalue-reference-param-not-moved) */ \
+    using __base::__base;                                                 \
+    /* NOLINTEND(cppcoreguidelines-rvalue-reference-param-not-moved) */   \
+    _CCCL_EXEC_CHECK_DISABLE                                              \
     _CCCL_HIDE_FROM_ABI constexpr __class() noexcept(::cuda::std::is_nothrow_default_constructible_v<__base>) = default;
 #endif // ^^^ no workaround ^^^
 

@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/unit_word.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
@@ -151,10 +152,8 @@ public:
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
     const cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
-    cudaResourceDesc res_desc;
-    cudaTextureDesc tex_desc;
-    memset(&res_desc, 0, sizeof(cudaResourceDesc));
-    memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+    cudaResourceDesc res_desc{};
+    cudaTextureDesc tex_desc{};
     res_desc.resType                = cudaResourceTypeLinear;
     res_desc.res.linear.devPtr      = this->ptr;
     res_desc.res.linear.desc        = channel_desc;

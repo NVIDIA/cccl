@@ -22,10 +22,11 @@
 // %PARAM% TEST_DIM_X dimx 1:7:32:65:128:256
 // %PARAM% TEST_DIM_YZ dimyz 1:2
 
-template <int BlockDimX, int BlockDimYZ, class T, class ReductionOp>
+template <int BlockDimX, int BlockDimYZ, int WarpAggregateThreshold = -1, class T, class ReductionOp>
 __global__ void broadcast_kernel(const T* input, T* output, int valid_items, bool full_tile, ReductionOp reduction_op)
 {
-  using block_reduce_t = cub::BlockReduce<T, BlockDimX, cub::BLOCK_REDUCE_WARP_REDUCTIONS, BlockDimYZ, BlockDimYZ>;
+  using block_reduce_t =
+    cub::BlockReduce<T, BlockDimX, cub::BLOCK_REDUCE_WARP_REDUCTIONS, BlockDimYZ, BlockDimYZ, WarpAggregateThreshold>;
   __shared__ typename block_reduce_t::TempStorage storage;
   constexpr int block_threads = BlockDimX * BlockDimYZ * BlockDimYZ;
   const int tid               = static_cast<int>(cub::RowMajorTid(BlockDimX, BlockDimYZ, BlockDimYZ));
@@ -41,7 +42,7 @@ __global__ void broadcast_kernel(const T* input, T* output, int valid_items, boo
   }
 }
 
-template <int BlockDimX, int BlockDimYZ, class T, class ReductionOp>
+template <int BlockDimX, int BlockDimYZ, int WarpAggregateThreshold = -1, class T, class ReductionOp>
 void check_broadcast(c2h::device_vector<T>& input, ReductionOp reduction_op)
 {
   constexpr int block_threads = BlockDimX * BlockDimYZ * BlockDimYZ;
@@ -57,9 +58,9 @@ void check_broadcast(c2h::device_vector<T>& input, ReductionOp reduction_op)
           std::max(1, block_threads - 1),
           block_threads,
           block_threads + 3);
-  CAPTURE(full_tile, valid_items);
+  CAPTURE(WarpAggregateThreshold, full_tile, valid_items);
   c2h::device_vector<T> output(block_threads + 1);
-  broadcast_kernel<BlockDimX, BlockDimYZ><<<1, dim3(BlockDimX, BlockDimYZ, BlockDimYZ)>>>(
+  broadcast_kernel<BlockDimX, BlockDimYZ, WarpAggregateThreshold><<<1, dim3(BlockDimX, BlockDimYZ, BlockDimYZ)>>>(
     thrust::raw_pointer_cast(input.data()),
     thrust::raw_pointer_cast(output.data()),
     valid_items,
@@ -127,7 +128,14 @@ CUB_TEST("Block reduce broadcasts numeric aggregates", "[reduce][block][broadcas
   c2h::gen(C2H_SEED(3), input, minimum, type{7});
   if (GENERATE(true, false))
   {
-    check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, cuda::std::plus<>{});
+    if (GENERATE(true, false))
+    {
+      check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, cuda::std::plus<>{});
+    }
+    else
+    {
+      check_broadcast<TEST_DIM_X, TEST_DIM_YZ, 1>(input, cuda::std::plus<>{});
+    }
   }
   else
   {
@@ -160,7 +168,14 @@ CUB_TEST("Block reduce preserves affine composition order", "[reduce][block][bro
     values[i] = (static_cast<std::uint64_t>(2 * i + 3) << 32) | (i + 1);
   }
   c2h::device_vector<std::uint64_t> input = values;
-  check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, compose_affine_t{});
+  if (GENERATE(true, false))
+  {
+    check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, compose_affine_t{});
+  }
+  else
+  {
+    check_broadcast<TEST_DIM_X, TEST_DIM_YZ, 1>(input, compose_affine_t{});
+  }
 }
 
 CUB_TEST("Block reduce broadcasts unsigned hardware aggregates", "[reduce][block][broadcast]", CUB_SMALL, unsigned_ops)
@@ -172,5 +187,12 @@ CUB_TEST("Block reduce broadcasts unsigned hardware aggregates", "[reduce][block
     values[i] = 0x80000000u | (static_cast<std::uint32_t>(i) * 2654435761u);
   }
   c2h::device_vector<std::uint32_t> input = values;
-  check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, reduction_op{});
+  if (GENERATE(true, false))
+  {
+    check_broadcast<TEST_DIM_X, TEST_DIM_YZ>(input, reduction_op{});
+  }
+  else
+  {
+    check_broadcast<TEST_DIM_X, TEST_DIM_YZ, 0>(input, reduction_op{});
+  }
 }

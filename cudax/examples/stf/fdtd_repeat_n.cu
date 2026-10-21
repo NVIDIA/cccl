@@ -20,9 +20,9 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
-
-#include <stdlib.h>
+#include <string>
 
 using namespace cuda::experimental::stf;
 
@@ -49,7 +49,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   size_t timesteps = 10;
   if (argc > 1)
   {
-    timesteps = (size_t) atol(argv[1]);
+    timesteps = (size_t) ::std::stol(argv[1]);
   }
 
   // Domain dimensions (smaller for this example)
@@ -79,7 +79,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   const double MU      = 1.256e-6; // Permeability of free space
 
   // CFL condition DT <= min(DX, DY, DZ) * sqrt(epsilon_max * mu_max)
-  double DT = 0.25 * std::min(std::min(DX, DY), DZ) * sqrt(EPSILON * MU);
+  double DT = 0.25 * std::min({DX, DY, DZ}) * sqrt(EPSILON * MU);
 
   // Initialize E fields
   ctx.parallel_for(data_shape, lEx.write(), lEy.write(), lEz.write())
@@ -149,7 +149,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     ctx.parallel_for(source_s, lEz.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
       // For simplicity, using a constant source in this example
       // In the full version, you'd want to track the current timestep
-      Ez(i, j, k) = Ez(i, j, k) + 0.1 * sin(0.1 * (i + j + k));
+      Ez(i, j, k) = Ez(i, j, k) + 0.1 * sin(0.1 * static_cast<double>((i + j + k)));
     };
 
     // Update Hx

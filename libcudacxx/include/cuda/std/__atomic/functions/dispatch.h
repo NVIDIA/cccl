@@ -21,13 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/functions/backend.h>
 #include <cuda/std/__atomic/functions/common.h>
-#include <cuda/std/__atomic/functions/cuda_local.h>
-#include <cuda/std/__atomic/functions/device_backend.h>
+#include <cuda/std/__atomic/functions/cuda_local.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/functions/device_backend.h> // IWYU pragma: keep
 #include <cuda/std/__atomic/functions/generic.h>
 #include <cuda/std/__atomic/functions/host.h>
+#include <cuda/std/__atomic/order.h>
 #include <cuda/std/__type_traits/copy_cv.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cassert>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -223,8 +224,8 @@ struct __cuda_atomic_bind_load
   const _Type* __ptr;
   __unv<_Type>* __dst;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco, typename _Mmio>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Mmio, _Sco)
   {
     ::cuda::std::__cuda_atomic_load(__backend, __ptr, *__dst, __order, _Tag{}, _Sco{}, _Mmio{});
   }
@@ -269,8 +270,8 @@ struct __cuda_atomic_bind_store
   _Type* __ptr;
   __unv<_Type> __val;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco, typename _Mmio>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Mmio, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco, typename _Mmio>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Mmio, _Sco)
   {
     ::cuda::std::__cuda_atomic_store(__backend, __ptr, __val, __order, _Tag{}, _Sco{}, _Mmio{});
   }
@@ -309,8 +310,8 @@ struct __cuda_atomic_bind_compare_exchange
   __unv<_Type> __cmp;
   __unv<_Type> __des;
 
-  template <typename _Atomic_Memorder, typename _Cas, typename _Tag, typename _Sco>
-  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_Atomic_Memorder __order, _Cas, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Cas, typename _Tag, typename _Sco>
+  [[nodiscard]] _CCCL_HOST_DEVICE_API bool operator()(_AtomicMemorder __order, _Cas, _Tag, _Sco)
   {
     return ::cuda::std::__cuda_atomic_compare_exchange(
       __backend, __ptr, *__exp, __cmp, __des, _Cas{}, __order, _Tag{}, _Sco{});
@@ -358,8 +359,8 @@ struct __cuda_atomic_bind_exchange
   __unv<_Type>* __old;
   __unv<_Type> __new;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_exchange(__backend, __ptr, *__old, __new, __order, _Tag{}, _Sco{});
   }
@@ -407,8 +408,8 @@ struct __cuda_atomic_bind_fetch_add
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_fetch_add(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
@@ -448,8 +449,8 @@ struct __cuda_atomic_bind_fetch_and
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_fetch_and(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
@@ -488,8 +489,8 @@ struct __cuda_atomic_bind_fetch_max
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_fetch_max(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
@@ -528,8 +529,8 @@ struct __cuda_atomic_bind_fetch_min
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_fetch_min(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
@@ -568,8 +569,8 @@ struct __cuda_atomic_bind_fetch_or
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_fetch_or(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }
@@ -608,8 +609,8 @@ struct __cuda_atomic_bind_fetch_xor
   __unv<_Type>* __dst;
   __unv<_Type> __op;
 
-  template <typename _Atomic_Memorder, typename _Tag, typename _Sco>
-  _CCCL_HOST_DEVICE_API void operator()(_Atomic_Memorder __order, _Tag, _Sco)
+  template <typename _AtomicMemorder, typename _Tag, typename _Sco>
+  _CCCL_HOST_DEVICE_API void operator()(_AtomicMemorder __order, _Tag, _Sco)
   {
     ::cuda::std::__cuda_atomic_fetch_xor(__backend, __ptr, *__dst, __op, __order, _Tag{}, _Sco{});
   }

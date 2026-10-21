@@ -33,9 +33,6 @@
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class...>
-struct __type_list;
-
 template <class _Set, class... _Ty>
 struct __type_set_contains : __fold_and<is_base_of_v<type_identity<_Ty>, _Set>...>
 {};
@@ -84,18 +81,9 @@ struct __bulk_insert
 template <>
 struct __bulk_insert<false>
 {
-#if _CCCL_COMPILER(MSVC, <, 19, 20)
-  template <class _Set, class _Ty, class... _Us>
-  _CCCL_API inline static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
-    typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
-
-  template <class _Set, class... _Us>
-  using __call _CCCL_NODEBUG = decltype(__insert_fn<_Set>(static_cast<__type_list<_Us...>*>(nullptr)));
-#else
   template <class _Set, class _Ty, class... _Us>
   using __call _CCCL_NODEBUG =
     typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
-#endif
 };
 } // namespace __set
 

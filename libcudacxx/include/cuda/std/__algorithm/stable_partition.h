@@ -22,13 +22,13 @@
 
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/rotate.h>
-#include <cuda/std/__iterator/advance.h>
-#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/destruct_n.h>
 #include <cuda/std/__memory/temporary_buffer.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__new_>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 
@@ -119,15 +119,17 @@ _CCCL_API _ForwardIterator __stable_partition_impl(
   {
     if (++__m1 == __last)
     {
-      goto __second_half_done;
+      break;
     }
     --__len_half;
   }
-  // TTTFFFFFTTTF??????
-  // f  ff   m  m1     l
-  __second_false =
-    ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __fit);
-__second_half_done:
+  if (__m1 != __last)
+  {
+    // TTTFFFFFTTTF??????
+    // f  ff   m  m1     l
+    __second_false =
+      ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __fit);
+  }
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf   l
   return ::cuda::std::__rotate<_AlgPolicy>(__first_false, __m, __second_false).first;
@@ -255,15 +257,17 @@ _CCCL_API _BidirectionalIterator __stable_partition_impl(
   {
     if (__m1 == __first)
     {
-      goto __first_half_done;
+      break;
     }
     --__len_half;
   }
-  // F???TFFF?????????T
-  // f   m1  m        l
-  __first_false =
-    ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__first, __m1, __pred, __len_half, __p, __bit);
-__first_half_done:
+  if (__m1 != __first)
+  {
+    // F???TFFF?????????T
+    // f   m1  m        l
+    __first_false =
+      ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__first, __m1, __pred, __len_half, __p, __bit);
+  }
   // TTTFFFFF?????????T
   // f  ff   m        l
   // recurse on [__m, __last], except increase __m until *(__m) is false, *__last know to be true
@@ -275,15 +279,17 @@ __first_half_done:
   {
     if (++__m1 == __last)
     {
-      goto __second_half_done;
+      break;
     }
     --__len_half;
   }
-  // TTTFFFFFTTTF?????T
-  // f  ff   m  m1    l
-  __second_false =
-    ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __bit);
-__second_half_done:
+  if (__m1 != __last)
+  {
+    // TTTFFFFFTTTF?????T
+    // f  ff   m  m1    l
+    __second_false =
+      ::cuda::std::__stable_partition_impl<_AlgPolicy, _Predicate&>(__m1, __last, __pred, __len_half, __p, __bit);
+  }
   // TTTFFFFFTTTTTFFFFF
   // f  ff   m    sf  l
   return ::cuda::std::__rotate<_AlgPolicy>(__first_false, __m, __second_false).first;

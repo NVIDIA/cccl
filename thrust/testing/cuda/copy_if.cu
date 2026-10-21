@@ -2,17 +2,10 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sequence.h>
 
+#include <cuda/functional>
+
 #include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
-
-template <typename T>
-struct is_even
-{
-  _CCCL_HOST_DEVICE bool operator()(T x)
-  {
-    return (static_cast<unsigned int>(x) & 1) == 0;
-  }
-};
 
 template <typename T>
 struct mod_3
@@ -68,10 +61,10 @@ void TestCopyIfDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
 
@@ -103,27 +96,24 @@ void TestCopyIfDevice(ExecutionPolicy exec)
   }
 }
 
-void TestCopyIfDeviceSeq()
+TEST_CASE("TestCopyIfDeviceSeq", "[copy_if]")
 {
   TestCopyIfDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceSeq);
 
-void TestCopyIfDeviceDevice()
+TEST_CASE("TestCopyIfDeviceDevice", "[copy_if]")
 {
   TestCopyIfDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceDevice);
 
-void TestCopyIfDeviceNoSync()
+TEST_CASE("TestCopyIfDeviceNoSync", "[copy_if]")
 {
   TestCopyIfDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestCopyIfCudaStreams(ExecutionPolicy policy)
+void test_copy_if_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
 
@@ -133,7 +123,8 @@ void TestCopyIfCudaStreams(ExecutionPolicy policy)
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  const Vector::iterator end = thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), is_even<int>());
+  const Vector::iterator end =
+    thrust::copy_if(policy.on(s), data.begin(), data.end(), result.begin(), cuda::__is_even{});
 
   REQUIRE(end - result.begin() == 2);
   result.resize(end - result.begin());
@@ -143,17 +134,15 @@ void TestCopyIfCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestCopyIfCudaStreamsSync()
+TEST_CASE("TestCopyIfCudaStreamsSync", "[copy_if]")
 {
-  TestCopyIfCudaStreams(thrust::cuda::par);
+  test_copy_if_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCopyIfCudaStreamsSync);
 
-void TestCopyIfCudaStreamsNoSync()
+TEST_CASE("TestCopyIfCudaStreamsNoSync", "[copy_if]")
 {
-  TestCopyIfCudaStreams(thrust::cuda::par_nosync);
+  test_copy_if_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfCudaStreamsNoSync);
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template <typename ExecutionPolicy,
@@ -196,10 +185,10 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
     thrust::host_vector<int> h_result(n);
     thrust::device_vector<int> d_result(n);
 
-    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), is_even<int>());
+    h_new_end = thrust::copy_if(h_data.begin(), h_data.end(), h_result.begin(), cuda::__is_even{});
 
     copy_if_kernel<<<1, 1>>>(
-      exec, d_data.begin(), d_data.end(), d_result.begin(), is_even<int>(), d_new_end_vec.begin());
+      exec, d_data.begin(), d_data.end(), d_result.begin(), cuda::__is_even{}, d_new_end_vec.begin());
     cudaError_t const err = cudaDeviceSynchronize();
     REQUIRE(cudaSuccess == err);
 
@@ -231,27 +220,24 @@ void TestCopyIfStencilDevice(ExecutionPolicy exec)
   }
 }
 
-void TestCopyIfStencilDeviceSeq()
+TEST_CASE("TestCopyIfStencilDeviceSeq", "[copy_if]")
 {
   TestCopyIfStencilDevice(thrust::seq);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceSeq);
 
-void TestCopyIfStencilDeviceDevice()
+TEST_CASE("TestCopyIfStencilDeviceDevice", "[copy_if]")
 {
   TestCopyIfStencilDevice(thrust::device);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceDevice);
 
-void TestCopyIfStencilDeviceNoSync()
+TEST_CASE("TestCopyIfStencilDeviceNoSync", "[copy_if]")
 {
   TestCopyIfStencilDevice(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfStencilDeviceNoSync);
 #endif
 
 template <typename ExecutionPolicy>
-void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
+void test_copy_if_stencil_cuda_streams(ExecutionPolicy policy)
 {
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
@@ -277,19 +263,17 @@ void TestCopyIfStencilCudaStreams(ExecutionPolicy policy)
   cudaStreamDestroy(s);
 }
 
-void TestCopyIfStencilCudaStreamsSync()
+TEST_CASE("TestCopyIfStencilCudaStreamsSync", "[copy_if]")
 {
-  TestCopyIfStencilCudaStreams(thrust::cuda::par);
+  test_copy_if_stencil_cuda_streams(thrust::cuda::par);
 }
-DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsSync);
 
-void TestCopyIfStencilCudaStreamsNoSync()
+TEST_CASE("TestCopyIfStencilCudaStreamsNoSync", "[copy_if]")
 {
-  TestCopyIfStencilCudaStreams(thrust::cuda::par_nosync);
+  test_copy_if_stencil_cuda_streams(thrust::cuda::par_nosync);
 }
-DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsNoSync);
 
-void TestCopyIfWithMagnitude(int magnitude)
+void test_copy_if_with_magnitude(int magnitude)
 {
   using offset_t = std::size_t;
 
@@ -316,16 +300,15 @@ void TestCopyIfWithMagnitude(int magnitude)
   REQUIRE(all_results_correct);
 }
 
-void TestCopyIfWithLargeNumberOfItems()
+TEST_CASE("TestCopyIfWithLargeNumberOfItems", "[copy_if]")
 {
-  TestCopyIfWithMagnitude(30);
-  TestCopyIfWithMagnitude(31);
-  TestCopyIfWithMagnitude(32);
-  TestCopyIfWithMagnitude(33);
+  test_copy_if_with_magnitude(30);
+  test_copy_if_with_magnitude(31);
+  test_copy_if_with_magnitude(32);
+  test_copy_if_with_magnitude(33);
 }
-DECLARE_UNITTEST(TestCopyIfWithLargeNumberOfItems);
 
-void TestCopyIfStencilWithMagnitude(int magnitude)
+void test_copy_if_stencil_with_magnitude(int magnitude)
 {
   using offset_t = std::size_t;
 
@@ -353,11 +336,10 @@ void TestCopyIfStencilWithMagnitude(int magnitude)
   REQUIRE(all_results_correct);
 }
 
-void TestCopyIfStencilWithLargeNumberOfItems()
+TEST_CASE("TestCopyIfStencilWithLargeNumberOfItems", "[copy_if]")
 {
-  TestCopyIfStencilWithMagnitude(30);
-  TestCopyIfStencilWithMagnitude(31);
-  TestCopyIfStencilWithMagnitude(32);
-  TestCopyIfStencilWithMagnitude(33);
+  test_copy_if_stencil_with_magnitude(30);
+  test_copy_if_stencil_with_magnitude(31);
+  test_copy_if_stencil_with_magnitude(32);
+  test_copy_if_stencil_with_magnitude(33);
 }
-DECLARE_UNITTEST(TestCopyIfStencilWithLargeNumberOfItems);
