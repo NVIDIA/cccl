@@ -13,31 +13,30 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/type_size.cuh>
-#include <cub/detail/uninitialized_copy.cuh>
 #include <cub/device/dispatch/dispatch_transform_tile_config.cuh>
 #include <cub/device/dispatch/kernels/kernel_transform.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
+#include <cub/util_debug.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__memory/is_aligned.h>
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__host_stdlib/cstdio>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/array>
@@ -46,6 +45,8 @@
 #include <cuda/std/expected>
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
+
+#include <nv/target>
 
 #if _CCCL_CUB_TILE_TRANSFORM_DISPATCH_ENABLED()
 #  include <cub/device/dispatch/dispatch_transform_tile.cuh>
@@ -317,7 +318,7 @@ template <typename Offset,
           typename Predicate,
           typename TransformOp,
           typename SMemFunc,
-          std::size_t... Is,
+          size_t... Is,
           typename PolicyGetter,
           typename KernelSource,
           typename KernelLauncherFactory>

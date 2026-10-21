@@ -20,6 +20,7 @@
 #include <cub/detail/logging.cuh>
 #include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/kernels/kernel_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_reduce.cuh>
 #include <cub/util_debug.cuh>
@@ -27,13 +28,21 @@
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__utility/in_range.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 

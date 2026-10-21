@@ -23,39 +23,40 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_scan.cuh>
+#include <thrust/detail/config.h>
+
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/detail/warpspeed/warpspeed.cuh>
+#include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
-#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
-#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstdint>
 
-#include <cudaTypedefs.h>
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 

@@ -21,23 +21,25 @@
 #endif // no system header
 
 #include <cub/agent/agent_select_if.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>

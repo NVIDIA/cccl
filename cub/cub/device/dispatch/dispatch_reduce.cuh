@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_reduce.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/deferred_parameter.cuh>
@@ -36,18 +37,21 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__device/compute_capability.h>
 #include <cuda/argument>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 // TODO(bgruber): included to not break users when moving DeviceSegmentedReduce to its own file. Remove in CCCL 4.0.
-#include <cub/device/dispatch/dispatch_segmented_reduce.cuh>
+#include <cub/device/dispatch/dispatch_segmented_reduce.cuh> // IWYU pragma: export
 
 CUB_NAMESPACE_BEGIN
 

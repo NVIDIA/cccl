@@ -17,6 +17,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/agent/agent_batched_topk.cuh>
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/choose_offset.cuh>
@@ -31,13 +32,13 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/kernels/kernel_batched_topk.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_macro.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/round_up.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
 #include <cuda/__execution/output_ordering.h>
 #include <cuda/__execution/tie_break.h>
@@ -49,14 +50,11 @@
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>

@@ -19,22 +19,22 @@
 
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/lazy_trait.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_ptx.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstdint>

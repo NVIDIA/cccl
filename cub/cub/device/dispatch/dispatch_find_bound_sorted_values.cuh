@@ -23,10 +23,13 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/tuning/tuning_find_bound_sorted_values.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/limits>
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)

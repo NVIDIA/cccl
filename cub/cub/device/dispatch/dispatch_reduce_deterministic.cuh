@@ -17,7 +17,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_reduce.cuh>
+#include <thrust/detail/config.h>
+
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
@@ -30,14 +31,17 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__type_traits/is_floating_point.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__execution/determinism.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/cstdint>
