@@ -45,7 +45,7 @@ that result through a shared borrow.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/scan/helper/src/lib.rs
    :language: rust
-   :start-after: use cuda_coop as coop;
+   :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 Use the Oxide revision selected by the manifests and ``nightly-2026-10-11``.
 With that toolchain installed, run from a complete CCCL checkout:
