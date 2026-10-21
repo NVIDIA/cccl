@@ -177,6 +177,27 @@ mod kernels {
         selected::<W, I>(input, &mut output, valid, mode);
     }
     #[kernel]
+    #[launch_contract(domain=1,block=(128,1,1),dynamic_shared=inferred)]
+    pub fn logical_transpose_b128(
+        input: &[i32],
+        mut output: coop::DisjointSlice<i32, coop::CollectiveTiles<4>>,
+    ) {
+        let group = coop::this_warp().group_by::<8>();
+        let q = coop::this_block().rank_at::<coop::Warp>() as usize * 4
+            + group.rank_at::<coop::Warp>() as usize;
+        exercise(
+            group,
+            input,
+            &mut output,
+            8,
+            q,
+            group.rank() as usize,
+            thread::blockIdx_x() as usize * 512,
+            17,
+            4,
+        );
+    }
+    #[kernel]
     #[launch_contract(domain=3,block=(8,4,2),dynamic_shared=inferred)]
     pub fn logical_transpose_xyz(
         input: &[i32],
@@ -455,5 +476,38 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "PASS {cases} logical Transpose cases plus mixed Block/W8 and W8/W16 pool reuse, containing synchronization and undersized launch rejection"
     );
+    run_b128()?;
+    Ok(())
+}
+
+/// One changed-replica-count contrast using the same value/validity helper.
+fn run_b128() -> Result<(), Box<dyn std::error::Error>> {
+    use cuda_async::simt::device_context::with_cuda_context;
+    use cuda_async::simt::device_operation::DeviceOperation;
+    use cuda_core::{DeviceBuffer, LaunchConfig1D};
+    let stream = with_cuda_context(0, |context| context.default_stream())?;
+    // SAFETY: the typed module and its launchers compile together.
+    let module = unsafe { kernels::load_async(0)? };
+    let plan = module.prepare_logical_transpose_b128(LaunchConfig1D::auto_shared(3, 128))?;
+    assert_eq!(plan.__raw_config().shared_mem_bytes, 148 * 16);
+    let input: Vec<i32> = (0..1536).map(|i| i + 31).collect();
+    let source = DeviceBuffer::from_host(&stream, &input)?;
+    let target = DeviceBuffer::from_host(&stream, &vec![-99_i32; input.len()])?;
+    let (_, target) = module
+        .logical_transpose_b128_async_owned(&plan, source, target)
+        .sync()?;
+    let mut result = vec![0; input.len()];
+    target.copy_to_host(&stream, &mut result)?;
+    stream.synchronize()?;
+    let mut expected = vec![-99; input.len()];
+    for block in 0..3 {
+        for q in 0..16 {
+            for i in 0..17 {
+                expected[block * 512 + q * 32 + i] = i as i32 + 17;
+            }
+        }
+    }
+    assert_eq!(result, expected);
+    println!("PASS B128/W8 Transpose: 16 replicas, 2368 bytes, observed values/validity");
     Ok(())
 }

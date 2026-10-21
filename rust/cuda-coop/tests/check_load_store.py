@@ -782,6 +782,11 @@ cases.update(
         logical_fixed_view.replace("get_fixed()", "get_raw()") + logical_load,
         "planned storage cannot include an unconstrained native dynamic shared view",
     ),
+    block_zero_raw_numeric=(
+        "let raw=unsafe {cuda_device::DynamicSharedArray::<[i32;128],16>::get_raw()};unsafe {raw.add(thread::threadIdx_x() as usize).write(1);}"
+        + load,
+        "planned storage cannot include an unconstrained native dynamic shared view",
+    ),
     logical_zero_no_completion=(
         logical_load + logical_store + logical_reload,
         "requires a barrier covering both accesses",
@@ -857,6 +862,10 @@ for name, (body, diagnostic) in cases.items():
         )
         case_prefix = case_prefix.replace("pub fn probe(", "pub fn probe<'a>(").replace(
             "DisjointSlice<i32,", "DisjointSlice<'a,i32,"
+        )
+    if name == "block_zero_raw_numeric":
+        case_prefix = case_prefix.replace(
+            "dynamic_shared=inferred", "dynamic_shared=512"
         )
     if name == "warp_partial_geometry":
         case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")

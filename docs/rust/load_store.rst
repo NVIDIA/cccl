@@ -97,7 +97,7 @@ and validity bit, including
 initialized slots outside their write domain.
 
 Physical and logical Warp Load/Store
------------------------------------
+------------------------------------
 
 Pass ``this_warp()`` through the same group-first API. No block dimensions or
 extra payload type annotations are needed at the call site:
@@ -130,6 +130,11 @@ one padded instance per group from the provider's actual layout; launch metadata
 includes every instance. Its mutable Store permutes both values and validity.
 Select it with ``.algorithm(coop::Transpose)`` on the same Load/Store options.
 Explicit ``TempStorage`` is currently supported for Block calls only.
+
+Planned library calls cannot share a root with an unconstrained native dynamic
+shared-memory view. This also applies to zero-scratch Block Direct calls with
+an explicit numeric launch contract. Declare a fixed native view with
+``DynamicSharedArray::get_fixed`` when composing it with planned storage.
 
 A collective carrier keeps its declared ``CAPACITY`` even when an operation
 uses a different item count. Each group owns ``W * CAPACITY`` elements of its
