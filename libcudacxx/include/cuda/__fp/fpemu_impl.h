@@ -44,6 +44,7 @@
 #  include <cuda/std/cstdint>
 #endif
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fp/fpemu_common.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/countl.h>
@@ -865,8 +866,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __shr_64_rnd(__uint32x2 __man, int __sh
     return __man;
   }
 
-  const uint64_t __discard_mask         = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
-  [[maybe_unused]] const bool __inexact = (__man64 & __discard_mask) != 0;
+  [[maybe_unused]] const bool __inexact = ::cuda::bit_trunc(__man64, __shift) != 0;
   __man64 >>= __shift;
 
   if constexpr (_Rm == __fpemu_rounding::ru)
@@ -1308,11 +1308,9 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __isub_u64(__uint32x2 __a, __uint32x2 _
 template <__fpemu_rounding _Rm = __fpemu_rounding::rn>
 _CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __round(__uint32x2 __man, const int __shift, bool __sign = false) noexcept
 {
-  uint64_t __man64                              = ::cuda::std::bit_cast<uint64_t>(__man);
-  const int __rshift                            = static_cast<int>(__fpemu_extra_bits) + __shift;
-  const uint64_t __round_bit                    = 1ULL << (__rshift - 1);
-  [[maybe_unused]] const uint64_t __sticky_mask = (__round_bit << 1) - 1;
-  [[maybe_unused]] const uint64_t __tie_mask    = (__round_bit << 2) - 1;
+  uint64_t __man64           = ::cuda::std::bit_cast<uint64_t>(__man);
+  const int __rshift         = static_cast<int>(__fpemu_extra_bits) + __shift;
+  const uint64_t __round_bit = 1ULL << (__rshift - 1);
 
   if constexpr (_Rm == __fpemu_rounding::rz)
   {
@@ -1320,12 +1318,12 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __uint32x2 __round(__uint32x2 __man, const int __s
   }
   else if constexpr (_Rm == __fpemu_rounding::rn)
   {
-    const int __not_sticky = (int) ((__man64 & __tie_mask) == __round_bit);
+    const int __not_sticky = (int) (::cuda::bit_trunc(__man64, __rshift + 1) == __round_bit);
     __man64                = (((__man64 + __round_bit) >> __rshift) - __not_sticky);
   }
   else
   {
-    const bool __inexact = (__man64 & __sticky_mask) != 0;
+    const bool __inexact = ::cuda::bit_trunc(__man64, __rshift) != 0;
     __man64 >>= __rshift;
     if constexpr (_Rm == __fpemu_rounding::ru)
     {

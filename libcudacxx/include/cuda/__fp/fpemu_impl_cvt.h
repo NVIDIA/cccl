@@ -35,6 +35,7 @@
 //! through appropriate decorators and provide bit-exact results matching hardware
 //! floating point units.
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/__fp/fpemu_impl_unpack.h>
 #include <cuda/std/__bit/countl.h>
@@ -376,7 +377,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __internal_fp64emu_fpbits64_to_float(__fpbit
   if (__e_f > 0)
   {
     uint64_t __half  = 1ULL << (__drop - 1);
-    uint64_t __trail = __sig & ((1ULL << __drop) - 1);
+    uint64_t __trail = ::cuda::bit_trunc(__sig, __drop);
     uint32_t __sig24 = (uint32_t) (__sig >> __drop);
 
     if (__trail > __half || (__trail == __half && (__sig24 & 1)))
@@ -406,7 +407,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __internal_fp64emu_fpbits64_to_float(__fpbit
   }
 
   uint64_t __half    = 1ULL << (__total_shift - 1);
-  uint64_t __trail   = __sig & ((1ULL << __total_shift) - 1);
+  uint64_t __trail   = ::cuda::bit_trunc(__sig, __total_shift);
   uint32_t __sig_sub = (uint32_t) (__sig >> __total_shift);
 
   if (__trail > __half || (__trail == __half && (__sig_sub & 1)))
@@ -516,7 +517,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_ll_to_fpbits64(int64
   // > 53 significant bits: round to nearest even
   int32_t __shift  = 11 - __nz;
   uint64_t __half  = 1ULL << (__shift - 1);
-  uint64_t __trail = __abs_a & ((1ULL << __shift) - 1);
+  uint64_t __trail = ::cuda::bit_trunc(__abs_a, __shift);
   uint64_t __sig53 = __abs_a >> __shift;
 
   if (__trail > __half || (__trail == __half && (__sig53 & 1)))
@@ -554,7 +555,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_ull_to_fpbits64(uint
   // > 53 significant bits: round to nearest even
   int32_t __shift  = 11 - __nz;
   uint64_t __half  = 1ULL << (__shift - 1);
-  uint64_t __trail = __x & ((1ULL << __shift) - 1);
+  uint64_t __trail = ::cuda::bit_trunc(__x, __shift);
   uint64_t __sig53 = __x >> __shift;
 
   if (__trail > __half || (__trail == __half && (__sig53 & 1)))

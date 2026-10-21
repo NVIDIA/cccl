@@ -56,6 +56,7 @@
 // that form, which drives the exponent field negative and is why it is stored unsigned.
 */
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fp/fpemu.h>
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/bit>
@@ -89,13 +90,12 @@ inline constexpr int __fpemu_limits_implicit_bit = 52 + _CCCL_FPEMU_EXTRA_BITS;
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr __fpbits64_unpacked
 __fpemu_limits_nan(::cuda::std::uint64_t __bits) noexcept
 {
-  constexpr ::cuda::std::uint64_t __mant_mask = (::cuda::std::uint64_t{1} << 52) - 1;
-  constexpr ::cuda::std::uint64_t __implicit  = ::cuda::std::uint64_t{1} << 52;
-  constexpr ::cuda::std::uint32_t __nan_band  = 0x0007ff00u;
+  constexpr ::cuda::std::uint64_t __implicit = ::cuda::std::uint64_t{1} << 52;
+  constexpr ::cuda::std::uint32_t __nan_band = 0x0007ff00u;
 
   return __fpbits64_unpacked{static_cast<::cuda::std::uint32_t>(__bits >> 63) << 31,
                              __nan_band,
-                             ((__bits & __mant_mask) | __implicit) << _CCCL_FPEMU_EXTRA_BITS};
+                             (::cuda::bit_trunc(__bits, 52) | __implicit) << _CCCL_FPEMU_EXTRA_BITS};
 }
 _CCCL_END_NAMESPACE_CUDA
 

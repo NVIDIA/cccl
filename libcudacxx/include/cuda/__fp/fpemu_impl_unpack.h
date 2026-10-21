@@ -48,6 +48,7 @@
 //! (bit_cast, __round, __fp64_ovfl_sat, ::cuda::std::countl_zero, the _CCCL_FPEMU_* masks,
 //! _CCCL_FPEMU_EXTRA_BITS, __fpemu_bias, ...).
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fp/fpemu_impl.h>
 #include <cuda/std/__bit/countl.h>
 
@@ -140,8 +141,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API __fpbits64 __internal_fp64emu_pack(__fpbits64_unpa
 
   if (__shift > 0)
   {
-    const uint64_t __mask                 = (__shift >= 64) ? ~0ULL : ((1ULL << __shift) - 1);
-    [[maybe_unused]] const bool __inexact = (__x.mantissa & __mask) != 0;
+    [[maybe_unused]] const bool __inexact = ::cuda::bit_trunc(__x.mantissa, __shift) != 0;
     __x.mantissa >>= __shift;
     if constexpr (_Rm == __fpemu_rounding::rn)
     {

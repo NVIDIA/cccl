@@ -27,6 +27,7 @@
     ==================================================================================================
 */
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__fp/fpmp_math_impl.h>
 #include <cuda/std/__floating_point/constants.h>
 
@@ -153,7 +154,7 @@ _CCCL_FPMP_CORE_API void __internal_fpmp2_modf_reconstruct(
   if (__extra > 0)
   {
     const unsigned long long __half = 1ULL << (__extra - 1);
-    const unsigned long long __frac = __mag & ((1ULL << __extra) - 1ULL);
+    const unsigned long long __frac = ::cuda::bit_trunc(__mag, __extra);
     unsigned long long __q          = __mag >> __extra;
     if (__frac > __half || (__frac == __half && (__q & 1ULL) != 0ULL))
     {
