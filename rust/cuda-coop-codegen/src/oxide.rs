@@ -10,7 +10,7 @@
 //! Use `cuda_device::library::registration!` in the getter to track these inputs.
 //! The compiler reads the registration getter's constant MIR and invokes this
 //! host process. This module never invokes Cargo or executes device Rust code.
-//! The protocol supports the raw i32 and typed Direct/Striped/Vectorize/Transpose validity recipes
+//! The protocol supports raw i32 and typed validity recipes for all six block algorithms
 //! documented by [`Operation`].
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
@@ -137,6 +137,8 @@ impl SpecializationRequest {
             "striped" => Algorithm::Striped,
             "vectorize" => Algorithm::Vectorize,
             "transpose" => Algorithm::Transpose,
+            "warp_transpose" => Algorithm::WarpTranspose,
+            "warp_transpose_timesliced" => Algorithm::WarpTransposeTimesliced,
             _ => {
                 return Err(Error::message(format!(
                     "unsupported algorithm {:?}",
@@ -294,6 +296,8 @@ pub fn registration(
             Algorithm::Striped => "striped",
             Algorithm::Vectorize => "vectorize",
             Algorithm::Transpose => "transpose",
+            Algorithm::WarpTranspose => "warp_transpose",
+            Algorithm::WarpTransposeTimesliced => "warp_transpose_timesliced",
         },
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
@@ -488,7 +492,14 @@ mod tests {
         ] {
             let scalar = Scalar::from(dtype);
             assert_eq!(scalar.dtype().unwrap(), dtype);
-            for algorithm in ["direct", "striped", "vectorize", "transpose"] {
+            for algorithm in [
+                "direct",
+                "striped",
+                "vectorize",
+                "transpose",
+                "warp_transpose",
+                "warp_transpose_timesliced",
+            ] {
                 let request = SpecializationRequest {
                     operation: "load_filled_validity_bits_v1".into(),
                     algorithm: algorithm.into(),
@@ -519,6 +530,8 @@ mod tests {
                 Algorithm::Striped,
                 Algorithm::Vectorize,
                 Algorithm::Transpose,
+                Algorithm::WarpTranspose,
+                Algorithm::WarpTransposeTimesliced,
             ] {
                 let request = Request::new_typed(Dtype::I16, operation, algorithm, 128, 4).unwrap();
                 let mut expected = vec![

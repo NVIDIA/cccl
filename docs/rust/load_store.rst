@@ -7,10 +7,11 @@ Block Load and Store
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
 first. Complete one-, two- and three-dimensional blocks support Direct, Striped,
-Vectorize and Transpose algorithms. Direct, Vectorize and Transpose Load produce blocked payloads,
-where each thread owns consecutive elements. Striped Load gives each thread
-elements separated by the block size. Other algorithms, warp
-groups, and public temporary storage remain under development.
+Vectorize, Transpose, WarpTranspose and WarpTransposeTimesliced. The two warp
+transpose algorithms require a total block thread count divisible by 32.
+Striped Load gives each thread elements separated by the block size; the other
+algorithms produce blocked payloads, where each thread owns consecutive elements.
+Warp-group invocation and public temporary storage remain under development.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
 named ``ITEMS_PER_THREAD``. The payload element type is inferred from its source.
@@ -21,7 +22,7 @@ A complete program
 ------------------
 
 The example is an independent Cargo workspace with a separate generic helper
-crate. It copies three block tiles with Direct, Striped, Vectorize and Transpose at item counts 1
+crate. It copies three block tiles with each of the six algorithms at item counts 1
 and 4, including a short last tile. The consumer has no build script, native
 shim, provider, or scratch argument.
 Its ``cuda-coop`` dependency supplies the native specialization during the normal
@@ -41,14 +42,15 @@ Choose the architecture for your GPU. Materialization produces the native device
 artifact during the Cargo build. No separate compilation or linking step is
 required. The exact block launch contract is checked when preparing the launch;
 ``auto_shared`` uses the compiler's inferred requirement, which is zero for
-Direct, Striped and Vectorize Load/Store and includes the planned shared storage for Transpose.
+Direct, Striped and Vectorize Load/Store and includes the planned shared storage
+for the three transposing algorithms.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/src/main.rs
    :language: rust
    :start-after: // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 The reusable helper preserves the source element type. Its algorithm-generic
-form borrows the payload mutably because Transpose Store permutes it.
+form borrows the payload mutably because the transposing Stores permute it.
 
 .. literalinclude:: ../../rust/cuda-coop/examples/load_store/helper/src/lib.rs
    :language: rust
@@ -132,6 +134,17 @@ partial count only controls the global writes. Initialized slots outside the
 written prefix remain initialized at their permuted positions. Scalar Store
 uses a one-item temporary and accepts every algorithm.
 
+WarpTranspose and WarpTransposeTimesliced use the same blocked Load layout.
+Their Store requires a mutable payload and permutes every slot within its
+physical warp: ``(t, i)`` receives old blocked slot
+``q = (t / 32) * (32 * I) + 32 * i + t % 32``. Both values and validity follow
+that mapping, including zero-count and repeated Stores. The timesliced variant
+reuses one warp's CUB exchange storage across successive warps; its counted
+Store retains a separate validity plane for all warps. Both algorithms still
+require the entire block to participate, and their internal warp barriers do
+not complete a conflicting full-block memory access. For shape ``[X,Y,Z]``,
+``X*Y*Z`` must be divisible by 32; X alone need not be.
+
 The compiler allocates the provider's complete shared storage, including the
 validity plane when needed, and inserts completion before reusing managed
 scratch. This does not add an unconditional trailing barrier. ``auto_shared``
@@ -188,7 +201,8 @@ replacing them with unchanged or older timestamps may require an explicit
 rebuild. Crate publication is not supported yet.
 
 The rustdoc entries for ``load``, ``store``, ``LoadOptions``, ``StoreOptions``,
-``LoadSource``, ``StoreValue``, ``Algorithm``, ``Direct``, ``Striped``, ``Vectorize`` and ``Transpose`` specify their full generic signatures and
+``LoadSource``, ``StoreValue``, ``Algorithm`` and the six algorithm selectors
+specify their full generic signatures and
 supported argument forms. Native correctness and artifact checks are separate
 from host compilation. Performance qualification for masked payload access is
 ongoing; the current implementation makes no negligible-overhead claim.

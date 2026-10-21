@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 use coop::{Numeric, ThreadData, this_block};
+mod block_warp;
 mod striped;
 mod transpose;
 mod vectorize;
@@ -367,6 +368,12 @@ mod kernels {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(argument) = std::env::args().nth(1) {
+        if argument == "block-warp" {
+            return block_warp::run(None);
+        }
+        if argument.starts_with("block-warp-") {
+            return block_warp::run(Some(&argument));
+        }
         if argument == "vectorize" {
             return vectorize::run(None);
         }

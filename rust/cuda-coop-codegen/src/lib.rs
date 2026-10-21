@@ -12,14 +12,16 @@
 //!
 //! [`Request`] describes an exact complete block shape, positive fixed
 //! items per thread, and [`Algorithm::Direct`], [`Algorithm::Striped`],
-//! [`Algorithm::Vectorize`] or [`Algorithm::Transpose`].
-//! The raw i32 recipes support all four algorithms. Their Store payloads must
+//! [`Algorithm::Vectorize`], [`Algorithm::Transpose`], [`Algorithm::WarpTranspose`]
+//! or [`Algorithm::WarpTransposeTimesliced`]. The two warp-transpose algorithms
+//! require a total block thread count divisible by 32.
+//! The raw i32 recipes support all six algorithms. Their Store payloads must
 //! be fully initialized. The validity-aware recipes support all ten
 //! [`Dtype`] variants with separate value storage and packed per-slot validity bits.
 //! Masked Load resets validity outside its prefix; Direct/Striped/Vectorize Store preserves both
-//! arrays and checks initialization only in its write domain. Transpose Store
+//! arrays and checks initialization only in its write domain. Transposing Store
 //! replaces each lane's blocked payload and validity with striped items across
-//! the block, including when its write count is zero. Full Vectorize operations
+//! the block or physical warp, including when its write count is zero. Full Vectorize operations
 //! use numeric local arrays after full initialization or complete Store preflight;
 //! counted Vectorize overloads retain the opaque Direct path.
 //!
@@ -101,6 +103,12 @@ pub enum Algorithm {
     Vectorize,
     /// Coalesced access with shared-memory transposition to/from blocked layout.
     Transpose,
+    /// Coalesced access with a separate shared exchange for each physical warp.
+    /// Requires a block thread count divisible by 32.
+    WarpTranspose,
+    /// Warp transposition that reuses one physical warp's CUB exchange storage.
+    /// Requires a block thread count divisible by 32.
+    WarpTransposeTimesliced,
 }
 impl Algorithm {
     fn scratch_free(self) -> bool {
@@ -113,6 +121,8 @@ impl Algorithm {
             Self::Striped => "STRIPED",
             Self::Vectorize => "VECTORIZE",
             Self::Transpose => "TRANSPOSE",
+            Self::WarpTranspose => "WARP_TRANSPOSE",
+            Self::WarpTransposeTimesliced => "WARP_TRANSPOSE_TIMESLICED",
         }
     }
 }
@@ -176,10 +186,10 @@ pub enum Operation {
     /// Counted Load with an exact typed default; marks every slot initialized.
     LoadFilledValidity,
     /// Full Store after checking every validity bit is set.
-    /// Transpose redistributes the payload; all resulting slots remain initialized.
+    /// Transposing algorithms redistribute the payload; all resulting slots remain initialized.
     StoreFullValidity,
     /// Counted Store after checking its write domain.
-    /// Transpose redistributes all values and validity bits, even outside that domain.
+    /// Transposing algorithms redistribute all values and validity bits, even outside that domain.
     StorePartialValidity,
 }
 impl Operation {
@@ -323,7 +333,8 @@ impl Request {
     /// # Errors
     ///
     /// Rejects the shapes documented by [`Self::new_with_shape`] and a non-i32
-    /// raw recipe.
+    /// raw recipe. Warp-transpose algorithms require a total thread count
+    /// divisible by 32; the X extent need not be divisible by 32.
     pub fn new_typed_with_shape(
         dtype: Dtype,
         operation: Operation,
@@ -346,6 +357,15 @@ impl Request {
         {
             return Err(Error::message(
                 "require 1..=1024 block threads, positive items per thread and tile extent <= i32::MAX",
+            ));
+        }
+        if matches!(
+            algorithm,
+            Algorithm::WarpTranspose | Algorithm::WarpTransposeTimesliced
+        ) && block_threads.unwrap() % 32 != 0
+        {
+            return Err(Error::message(
+                "block warp transpose requires a block thread count divisible by 32",
             ));
         }
         Ok(Self {
@@ -408,7 +428,7 @@ pub struct Layout {
 ///
 /// Partial controls are block-uniform, with `0 <= valid <= tile_size`; generated
 /// code traps on invalid counts. A filled Load's default is also block-uniform.
-/// Transpose scratch satisfies [`Self::scratch`] and cannot alias another live
+/// Scratch for transposing algorithms satisfies [`Self::scratch`] and cannot alias another live
 /// region. The caller synchronizes before reuse, including loop iterations;
 /// the provider does not add a trailing reuse barrier. Direct, Striped and Vectorize ignore scratch,
 /// so a null pointer is permitted for that argument only. All providers return
@@ -421,15 +441,16 @@ pub struct Layout {
 /// byte `i / 8` denotes whether slot `i` is initialized. Both arrays are private
 /// to the lane, disjoint from memory/scratch and one another. Load exclusively
 /// borrows both arrays; Direct/Striped/Vectorize Store receives const pointers and borrows them
-/// read-only. Transpose Store exclusively borrows both arrays and returns their
-/// permutation: destination `(lane, item)` receives source
-/// `((block_threads * item + lane) / items_per_thread,
-/// (block_threads * item + lane) % items_per_thread)`.
+/// read-only. Transposing Stores exclusively borrow both arrays. Destination
+/// `(lane, item)` receives source `(q / items_per_thread, q % items_per_thread)`:
+/// Transpose uses `q = block_threads * item + lane`; both warp variants use
+/// `q = (lane / 32) * (32 * items_per_thread) + 32 * item + lane % 32`.
+/// Lane rank is x-fastest within the complete block.
 /// This applies to every slot, independently of the Store count. Repeated
 /// Stores permute the current payload again. Native code accesses payload bytes
 /// without evaluating invalid values. Masked Load clears bits outside its prefix; filled/full Load write
 /// every value before setting its bit. Store checks its entire lane-local
-/// write domain before numeric conversion. Its counted Transpose form transports
+/// write domain before numeric conversion. The counted transposing forms transport
 /// arbitrary validity in a separate shared bitmap included in [`Self::scratch`].
 /// A full Store checks the complete tile and therefore needs no shared bitmap.
 /// Failure traps; it does not promise rollback of stores by other lanes.
@@ -448,7 +469,7 @@ pub struct Specialization {
     /// Whether this specialization accesses no shared scratch or scratch-reuse barrier.
     pub scratch_free: bool,
     /// Whether Store redistributes payloads across lanes into striped order.
-    /// True for Transpose stores, including counted stores with zero writes.
+    /// True for transposing stores, including counted stores with zero writes.
     /// This describes Store rearrangement, not whether Load writes its payload.
     pub mutates_payload: bool,
 }
@@ -601,8 +622,7 @@ impl Provider {
                     alignment: 1,
                 },
                 scratch_free: request.algorithm.scratch_free(),
-                mutates_payload: !request.operation.is_load()
-                    && request.algorithm == Algorithm::Transpose,
+                mutates_payload: !request.operation.is_load() && !request.algorithm.scratch_free(),
             });
         }
         let output = self
@@ -630,7 +650,11 @@ impl Provider {
 
 fn source(request: Request, symbol: &str) -> String {
     let op = request.operation;
-    let transpose = request.algorithm == Algorithm::Transpose;
+    let transpose = !request.algorithm.scratch_free();
+    let warp_transpose = matches!(
+        request.algorithm,
+        Algorithm::WarpTranspose | Algorithm::WarpTransposeTimesliced
+    );
     // CUB's full vectorized overload requires the same numeric T for the
     // global pointer and local array. Counted overloads keep opaque cells.
     let numeric_full = request.algorithm == Algorithm::Vectorize
@@ -649,6 +673,11 @@ fn source(request: Request, symbol: &str) -> String {
     let threads = request.block_threads();
     let bitmap_bytes = items.div_ceil(8);
     let tile = threads * items;
+    let source_index = if warp_transpose {
+        format!("(tid / 32) * (32 * {items}) + 32 * i + (tid % 32)")
+    } else {
+        format!("{threads} * i + tid")
+    };
     let mask_plane = op == Operation::StorePartialValidity && transpose && items > 1;
     let storage = if mask_plane {
         let plane_bytes = u64::from(threads.div_ceil(32)) * u64::from(items) * 4;
@@ -780,7 +809,7 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
     for (int bit = 0; bit < 8; ++bit) {{
       const int i = byte * 8 + bit;
       if (i < {items}) {{
-        const int q = {threads} * i + tid;
+        const int q = {source_index};
         const int source_thread = q / {items};
         const int source_item = q % {items};
         const auto* const address = reinterpret_cast<const unsigned int*>(

@@ -193,6 +193,29 @@ cases.update(
     ),
 )
 
+# Both algorithms participate as complete blocks and mutate the payload.
+for name, selector in [
+    ("warp_transpose", "WarpTranspose"),
+    ("warp_timesliced", "WarpTransposeTimesliced"),
+]:
+    warp_load = transpose_load.replace("coop::Transpose", f"coop::{selector}")
+    warp_store = transpose_store.replace("coop::Transpose", f"coop::{selector}")
+    cases[name + "_shared"] = (
+        load + warp_store.replace("&mut values", "&values"),
+        f"StoreValue<i32, {selector}>",
+    )
+    cases[name + "_managed_reuse"] = (warp_load + warp_store + warp_store, None)
+    cases[name + "_scalar"] = (
+        warp_load
+        + f"coop::store(block,&mut output,-17_i32,coop::StoreOptions::default().offset(offset).algorithm(coop::{selector}));",
+        None,
+    )
+    cases[name + "_partial_block"] = (warp_load, "divisible by 32")
+    cases[name + "_warp_only_participation"] = (
+        "if thread::threadIdx_x()<32 {" + warp_load + "}",
+        "lane-varying",
+    )
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",
@@ -213,7 +236,12 @@ env.update(
 )
 results = []
 for name, (body, diagnostic) in cases.items():
-    text = prefix + body + "\n}\nfn main() {}\n"
+    case_prefix = (
+        prefix.replace("block=(128,1,1)", "block=(33,1,1)")
+        if name.endswith("_partial_block")
+        else prefix
+    )
+    text = case_prefix + body + "\n}\nfn main() {}\n"
     source.write_text(text)
     (output / f"{name}.rs").write_text(text)
     run = subprocess.run(

@@ -24,6 +24,11 @@ fn main() {
             (Algorithm::Striped, "STRIPED"),
             (Algorithm::Vectorize, "VECTORIZE"),
             (Algorithm::Transpose, "TRANSPOSE"),
+            (Algorithm::WarpTranspose, "WARP_TRANSPOSE"),
+            (
+                Algorithm::WarpTransposeTimesliced,
+                "WARP_TRANSPOSE_TIMESLICED",
+            ),
         ] {
             let value = oxide::registration(&executable, operation, algorithm)
                 .expect("cuda.coop algorithm registration");

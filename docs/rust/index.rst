@@ -7,7 +7,9 @@ Rust development
 The Rust workspace contains per-thread payloads, CUDA group queries, and the
 native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
 ``ThreadData`` values, physical/mapped hierarchy queries, and block
-Load/Store with Direct, Striped, Vectorize and Transpose; see :doc:`payload`, :doc:`groups`, and :doc:`load_store`. Its private ``cuda-coop-codegen`` crate
+Load/Store with Direct, Striped, Vectorize, Transpose, WarpTranspose and
+WarpTransposeTimesliced; see :doc:`payload`, :doc:`groups`, and :doc:`load_store`.
+Its private ``cuda-coop-codegen`` crate
 specializes CUB block operations and returns
 linkable device LTO-IR with exact temporary-storage requirements. It supports
 compiler integration development. Additional collective algorithms and public
@@ -55,18 +57,23 @@ use blocked payloads; Striped uses striped payloads. Full Vectorize operations
 use wide accesses when the type, item count and adjusted pointer permit them;
 misaligned pointers and counted overloads use Direct accesses. Transpose Store
 redistributes blocked payloads across lanes into striped order and uses the
-queried CUB storage layout. Compiler integrations enforce collective
+queried CUB storage layout. WarpTranspose and WarpTransposeTimesliced exchange
+within physical warps and require a complete block whose thread count is
+divisible by 32. The timesliced form reuses one warp's CUB exchange buffer.
+Compiler integrations enforce collective
 participation, memory ownership, valid bounds and completion before scratch reuse.
 
-The validity-aware recipes support all four algorithms and all ten numeric
+The validity-aware recipes support all six algorithms and all ten numeric
 payload types: ``i8``, ``u8``, ``i16``, ``u16``, ``i32``, ``u32``, ``i64``,
 ``u64``, ``f32`` and ``f64``. ``Request::new_typed`` selects the exact type.
 Separate packed validity bits track initialized slots. Full and default-filled
 Load initialize every slot; masked Load resets slots outside its selected
 prefix to unwritten. Store checks initialization throughout its write domain.
-Direct, Striped and Vectorize preserve payloads and bits; Transpose permutes
-both, including slots outside the prefix. Its complete scratch layout includes
-the validity plane when needed. A failing Store traps and is not transactional
+Direct, Striped and Vectorize preserve payloads and bits; the three transposing
+algorithms permute both, including slots outside the prefix. Their complete
+scratch layouts include a validity plane when needed. For counted warp-transpose
+Store with more than one item per thread, that plane covers every warp even
+when the CUB exchange buffer is timesliced. A failing Store traps and is not transactional
 across lanes. Counted Store forms destination pointers only within its valid
 prefix, including when the allocation is shorter than a complete tile.
 
