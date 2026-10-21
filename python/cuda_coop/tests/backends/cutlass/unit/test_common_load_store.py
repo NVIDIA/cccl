@@ -78,6 +78,9 @@ class _TempStorage:
     def reserve(self, num_elems, dtype, *, alignment=None):
         raise AssertionError("common validation must not reserve storage")
 
+    def release(self, dtype=None):
+        raise AssertionError("common validation must not release storage")
+
 
 @pytest.mark.parametrize(
     "group",
