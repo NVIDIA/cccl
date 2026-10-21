@@ -467,6 +467,15 @@ pub enum NativeRequest {
 }
 
 impl NativeRequest {
+    fn block_shape(self) -> [u32; 3] {
+        match self {
+            Self::LoadStore(request) => request.block_shape(),
+            Self::Scan(request) => request.block_shape(),
+            Self::Reduce(request) => request.block_shape(),
+            Self::ReduceBatched(request) => request.block_shape(),
+        }
+    }
+
     fn source(self, symbol: &str) -> String {
         match self {
             Self::LoadStore(request) => source(request, symbol),
@@ -728,6 +737,9 @@ impl Provider {
         let mut specializations = Vec::with_capacity(requests.len());
         for &request in requests {
             let mut hash = inputs.clone();
+            for axis in request.block_shape() {
+                hash_field(&mut hash, &axis.to_le_bytes());
+            }
             hash_field(
                 &mut hash,
                 request.source("cuda_coop_specialization").as_bytes(),

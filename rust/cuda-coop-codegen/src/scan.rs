@@ -271,6 +271,10 @@ impl ScanRequest {
         })
     }
 
+    pub(crate) fn block_shape(self) -> [u32; 3] {
+        self.block
+    }
+
     pub(crate) fn source(self, symbol: &str) -> String {
         let (dtype, _) = self.dtype.native();
         let [x, y, z] = self.block;

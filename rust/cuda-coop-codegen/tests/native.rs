@@ -12,6 +12,106 @@ use std::{env, path::Path, time::Instant};
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_warp_shape_identity() -> Result<(), Box<dyn std::error::Error>> {
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    let mut requests = Vec::new();
+    // Two shapes have the same total threads. Warp bodies can otherwise be
+    // identical even though each root needs a distinct specialization record.
+    for block in [[64, 1, 1], [128, 1, 1], [8, 4, 2]] {
+        requests.extend([
+            NativeRequest::LoadStore(
+                Request::new_typed_with_shape(
+                    Dtype::I32,
+                    Operation::LoadMaskedValidity,
+                    Algorithm::Transpose,
+                    block,
+                    4,
+                )?
+                .with_warp_width(32)?,
+            ),
+            NativeRequest::Scan(ScanRequest::warp(
+                Dtype::I32,
+                ScanOperation::ExclusiveSum,
+                block,
+                32,
+            )?),
+            NativeRequest::Reduce(ReduceRequest::warp(
+                Dtype::I32,
+                ReduceOperator::Sum,
+                ReduceForm::Payload,
+                block,
+                32,
+                4,
+            )?),
+            NativeRequest::ReduceBatched(ReduceBatchedRequest::warp(
+                Dtype::I32,
+                ReduceBatchedRecipe::new(ReduceOperator::Sum, ReduceBatchedLayout::Striped),
+                block,
+                32,
+                4,
+            )?),
+        ]);
+    }
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 12);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    let parameters = |symbol: &str| {
+        artifact
+            .source
+            .split_once(&format!("void {symbol}("))
+            .expect("compiled native wrapper")
+            .1
+            .split_once(") {")
+            .expect("native parameter list")
+            .0
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    for (index, entry) in artifact.specializations.iter().enumerate() {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        let first = &artifact.specializations[index % 4];
+        assert_eq!(entry.cub_layout, first.cub_layout);
+        assert_eq!(entry.scratch, first.scratch);
+        assert!(entry.scratch.size > 0);
+        assert!(!entry.scratch_free && !entry.mutates_payload);
+        assert_eq!(parameters(&entry.symbol), parameters(&first.symbol));
+        eprintln!(
+            "{:?}: CUB {:?}, scratch {:?}",
+            requests[index], entry.cub_layout, entry.scratch
+        );
+    }
+    requests.reverse();
+    let reordered = provider.compile_native(&requests, &target)?;
+    assert_eq!(
+        reordered.specializations.len(),
+        artifact.specializations.len()
+    );
+    assert!(!reordered.ltoir.is_empty());
+    assert_ne!(reordered.identity, artifact.identity);
+    for (entry, previous) in reordered
+        .specializations
+        .iter()
+        .zip(artifact.specializations.iter().rev())
+    {
+        assert_eq!(entry.identity, previous.identity);
+        assert_eq!(entry.symbol, previous.symbol);
+        assert_eq!(entry.cub_layout, previous.cub_layout);
+        assert_eq!(entry.scratch, previous.scratch);
+        assert_eq!(entry.scratch_free, previous.scratch_free);
+        assert_eq!(entry.mutates_payload, previous.mutates_payload);
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
 fn native_mixed_reduce_batched_recipes() -> Result<(), Box<dyn std::error::Error>> {
     let toolkit = env::var("CUDA_HOME")?;
     let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
