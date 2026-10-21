@@ -229,6 +229,7 @@ pub struct Request {
     dtype: Dtype,
     block: [u32; 3],
     items_per_thread: u32,
+    warp_width: Option<u32>,
 }
 impl Request {
     /// Validate a one-dimensional block shape and payload extent.
@@ -340,7 +341,26 @@ impl Request {
             dtype,
             block,
             items_per_thread,
+            warp_width: None,
         })
+    }
+    /// Select a complete physical Warp Direct specialization within this block.
+    ///
+    /// # Errors
+    /// Rejects widths other than 32, partial physical warps, non-Direct algorithms
+    /// and legacy raw recipes. The exact root block shape is retained.
+    pub fn with_warp_width(mut self, width: u32) -> Result<Self> {
+        if width != 32
+            || self.block_threads() % width != 0
+            || self.algorithm != Algorithm::Direct
+            || !self.operation.validity()
+        {
+            return Err(Error::message(
+                "Warp recipes require width 32, complete physical warps, Direct and a validity-aware operation",
+            ));
+        }
+        self.warp_width = Some(width);
+        Ok(self)
     }
     /// The operation selected by this request.
     pub fn operation(self) -> Operation {
@@ -625,7 +645,30 @@ fn source(request: Request, symbol: &str) -> String {
     let (dtype, size) = request.dtype.native();
     let items = request.items_per_thread;
     let [block_x, block_y, block_z] = request.block;
-    let threads = request.block_threads();
+    let threads = request
+        .warp_width
+        .unwrap_or_else(|| request.block_threads());
+    let (group, primitive_type, rank) = if let Some(width) = request.warp_width {
+        let (primitive, algorithm) = if op.is_load() {
+            ("WarpLoad", "WARP_LOAD_DIRECT")
+        } else {
+            ("WarpStore", "WARP_STORE_DIRECT")
+        };
+        (
+            "warp",
+            format!("cub::{primitive}<cell, {items}, cub::{algorithm}, {width}>"),
+            format!("cub::RowMajorTid({block_x}, {block_y}, {block_z}) % {width}"),
+        )
+    } else {
+        (
+            "block",
+            format!(
+                "cub::{primitive}<cell, {block_x}, {items}, cub::{algorithm}_{}, {block_y}, {block_z}>",
+                request.algorithm.token()
+            ),
+            format!("cub::RowMajorTid({block_x}, {block_y}, {block_z})"),
+        )
+    };
     let bitmap_bytes = items.div_ceil(8);
     let tile = threads * items;
     let mask_plane = op == Operation::StorePartialValidity && transpose && items > 1;
@@ -813,25 +856,24 @@ static_assert(alignof(scratch_storage) == alignof(primitive::TempStorage));"#
     format!(
         r#"// Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-#include <cub/block/block_{header}.cuh>
+#include <cub/{group}/{group}_{header}.cuh>
 #include <cub/util_ptx.cuh>
 #include <cuda/std/__new/device_new.h>
 #include <cuda/std/cstddef>
 namespace {symbol}_detail {{
 using value_type = {dtype};
 using cell = {cell};
-using primitive = cub::{primitive}<cell, {block_x}, {items}, cub::{algorithm}_{choice}, {block_y}, {block_z}>;
+using primitive = {primitive_type};
 {storage}
 static_assert(sizeof(value_type) == {size} && alignof(value_type) == {size});
 static_assert(sizeof(cell) == sizeof(value_type) && alignof(cell) == alignof(value_type));
 extern "C" __device__ void {symbol}({qualifier}value_type* memory, {payload_const}value_type* payload, unsigned char* scratch{flags}{controls}) {{
-  const int tid = cub::RowMajorTid({block_x}, {block_y}, {block_z});
+  const int tid = {rank};
   {check}
   {constructor}
   {body}
 }}
 }}
-"#,
-        choice = request.algorithm.token()
+"#
     )
 }

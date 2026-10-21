@@ -1,15 +1,16 @@
 .. Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 .. SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-Block Load and Store
-====================
+Block and Warp Load/Store
+=========================
 
 ``cuda_coop::load`` fills an existing ``ThreadData`` and returns unit.
 ``cuda_coop::store`` writes its values and returns unit. Both take the group
 first. Complete one-, two- and three-dimensional blocks support Direct and
 Transpose algorithms. Both Load algorithms produce blocked
-payloads, where each thread owns consecutive elements. Other algorithms and
-warp groups remain under development.
+payloads, where each thread owns consecutive elements. Physical Warp groups
+support Direct with implicit storage when the exact block size is a multiple
+of 32. Other Warp algorithms and logical Warp groups remain under development.
 
 Use ``use cuda_coop as coop;`` and keep the per-thread item count a const generic
 named ``ITEMS_PER_THREAD``. The payload element type is inferred from its source.
@@ -60,10 +61,11 @@ Counts, offsets, and payload validity
 
 ``LoadOptions::default()`` and ``StoreOptions::default()`` select the full tile
 at element offset zero. Named setters select a partial count, a typed Load
-default, and an offset. The count describes the whole block's prefix, not a
+default, and an offset. The count describes the whole group's prefix, not a
 per-thread count. It must fit the tile and ``i32::MAX``. Offsets are element
 indices from the start of the allocation; supply each block's origin explicitly.
-Counts, defaults, offsets, and their presence must be uniform across the block.
+Counts, defaults, offsets, and their presence must be uniform across the
+participating group; sibling physical warps may choose different values.
 
 For block shape ``[X,Y,Z]``, thread rank is x-fastest:
 ``t = x + X * (y + Y * z)``. A blocked payload slot ``i`` addresses
@@ -87,6 +89,51 @@ those slots to be initialized.
 Direct Store accepts ``&ThreadData``, a shared reborrow of ``&mut ThreadData``,
 or a scalar numeric value. A scalar contributes one item per thread. Direct Store preserves every payload value and validity flag, including
 initialized slots outside its write domain.
+
+Physical Warp Direct
+--------------------
+
+Pass ``this_warp()`` through the same group-first API. No block dimensions or
+extra payload type annotations are needed at the call site:
+
+.. code-block:: rust
+
+   let warp = coop::this_warp();
+   let mut values = coop::ThreadData::<_, ITEMS_PER_THREAD>::new();
+   coop::load(warp, input, &mut values,
+       coop::LoadOptions::default().offset(block_origin).valid_items(count));
+   coop::store(warp, output, &values,
+       coop::StoreOptions::default().offset(block_origin).valid_items(count));
+
+Let ``t = x + X * (y + Y * z)``, ``q = t / 32``, and ``lane = t % 32``.
+Warp slot ``i`` addresses
+``offset + q * 32 * ITEMS_PER_THREAD + lane * ITEMS_PER_THREAD + i``.
+The operation adds this Warp origin; the caller still supplies the block
+origin. The exact launch contract must contain only complete physical warps.
+Direct uses no shared scratch and accepts shared payload borrows for Store.
+Explicit ``TempStorage`` is currently supported for Block calls only.
+
+A collective carrier keeps its declared ``CAPACITY`` even when an operation
+uses a different item count. Each warp owns ``32 * CAPACITY`` elements of its
+block region. For example, with 64 threads, ``CAPACITY=4``, and one item per
+thread, warp one owns ``[128,256)``. Caller offset zero gives the common
+operation origin32 and traps for a nonempty Store; caller offset96 gives
+origin128 and is legal. Warp zero can keep offset zero. Supply the appropriate
+block origin as well. The operation neither changes the offset nor repacks the
+carrier to fit unrelated operations. Read-only slice loads have no carrier
+grain restriction.
+
+A group descriptor alone does not prove participation. Checked calls require
+matching group-uniform controls and supported structured control flow. Ordinary
+lane arithmetic is not inferred to be Warp-uniform merely because it divides
+by32. Conflicting carrier accesses, including Warp-to-Block transitions, require
+``cuda_device::thread::sync_threads()`` in this implementation. No implicit
+Warp barrier is added to Direct.
+
+Generic helpers can state ``G: coop::LoadStoreGroup<A, S>`` alongside
+``A: coop::Algorithm`` and ``S: coop::TempStorageLike``. Calls infer this sealed
+bound from their group, algorithm and options; Block helpers retain their
+existing algorithm and storage choices.
 
 Selecting Transpose
 -------------------

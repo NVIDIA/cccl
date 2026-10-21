@@ -111,6 +111,8 @@ struct SpecializationRequest {
     dtype: Scalar,
     block: [u32; 3],
     items_per_thread: u32,
+    #[serde(default)]
+    warp_width: Option<u32>,
 }
 
 impl SpecializationRequest {
@@ -142,13 +144,17 @@ impl SpecializationRequest {
                 )));
             }
         };
-        Request::new_typed_with_shape(
+        let request = Request::new_typed_with_shape(
             self.dtype.dtype()?,
             operation,
             algorithm,
             self.block,
             self.items_per_thread,
-        )
+        )?;
+        match self.warp_width {
+            Some(width) => request.with_warp_width(width),
+            None => Ok(request),
+        }
     }
 }
 
@@ -466,6 +472,7 @@ mod tests {
                 dtype: Scalar::Signed(32),
                 block: [128, 1, 1],
                 items_per_thread: 4,
+                warp_width: None,
             }
             .native()
             .is_err()
@@ -491,6 +498,7 @@ mod tests {
                     dtype: scalar,
                     block: [128, 1, 1],
                     items_per_thread: 4,
+                    warp_width: None,
                 }
                 .native()
                 .unwrap();
@@ -600,6 +608,7 @@ mod tests {
                 dtype,
                 block: [8, 4, 4],
                 items_per_thread: 4,
+                warp_width: None,
             };
             let native = request.native().unwrap();
             assert_eq!(native.block_shape(), [8, 4, 4]);

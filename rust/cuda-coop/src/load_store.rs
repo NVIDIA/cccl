@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 use crate::{
-    Alignment, Block, Numeric, SupportedAlignment, TempStorage, TempStorageLike, ThreadData,
-    ThreadGroup,
+    Alignment, Block, GroupScope, Numeric, SupportedAlignment, TempStorage, TempStorageLike,
+    ThreadData, ThreadGroup, Warp,
 };
 use core::marker::PhantomData;
 use cuda_device::{CollectiveTiles, DisjointSlice};
@@ -47,6 +47,21 @@ impl sealed::Algorithm for Transpose {
     const TRANSPOSE: bool = true;
 }
 
+/// A sealed group supported by a Load/Store algorithm and storage choice.
+///
+/// Blocks support the existing algorithms and explicit or implicit storage.
+/// Physical [`Warp`] supports [`Direct`] with implicit storage `()`. Generic
+/// helpers can carry this bound; ordinary calls infer it from the group/options.
+pub trait LoadStoreGroup<A: Algorithm, S: TempStorageLike>: GroupScope + sealed::Group {}
+impl<A: Algorithm, S: TempStorageLike> LoadStoreGroup<A, S> for Block {}
+impl LoadStoreGroup<Direct, ()> for Warp {}
+impl sealed::Group for Block {
+    const WARP: bool = false;
+}
+impl sealed::Group for Warp {
+    const WARP: bool = true;
+}
+
 /// Controls for a [`load`], using [`Direct`] by default.
 ///
 /// `T` is inferred from the source and output. Defaults load the entire group
@@ -57,7 +72,7 @@ impl sealed::Algorithm for Transpose {
 /// Omitted storage uses compiler-managed reuse synchronization.
 /// [`temp_storage`](Self::temp_storage) borrows an explicit descriptor.
 /// Controls, including whether a count/default is present, must be uniform
-/// across the block. They are checked when the operation executes.
+/// across the participating group. They are checked when the operation executes.
 #[derive(Clone, Copy)]
 pub struct LoadOptions<T, A = Direct, S = ()> {
     storage: S,
@@ -124,7 +139,7 @@ impl<T, A: Algorithm, S: TempStorageLike> LoadOptions<T, A, S> {
     /// Initialize slots outside the valid prefix with this typed value.
     ///
     /// Requires an explicit [`valid_items`](Self::valid_items) count. The value
-    /// must have the source's element type and be uniform across the block.
+    /// must have the source's element type and be uniform across the group.
     pub fn oob_default(mut self, value: T) -> Self {
         self.oob_default = Some(value);
         self
@@ -132,8 +147,9 @@ impl<T, A: Algorithm, S: TempStorageLike> LoadOptions<T, A, S> {
 
     /// Set an element offset from the start of the source, defaulting to zero.
     ///
-    /// Include the block's origin explicitly. The accessed prefix must fit the
-    /// source and, for a collective carrier, this block's owned region.
+    /// Include the block's origin explicitly. Warp adds its x-fastest warp index
+    /// times `32 * ITEMS` automatically. The accessed prefix must fit the source
+    /// and, for a collective carrier, the group's fixed ownership region.
     pub fn offset(mut self, offset: usize) -> Self {
         self.offset = offset;
         self
@@ -144,7 +160,7 @@ impl<T, A: Algorithm, S: TempStorageLike> LoadOptions<T, A, S> {
 ///
 /// Defaults write the entire group tile at element offset zero. A partial
 /// store leaves destination elements outside its prefix unchanged. Controls,
-/// including whether a count is present, must be uniform across the block.
+/// including whether a count is present, must be uniform across the group.
 /// Omitted storage uses compiler-managed reuse synchronization;
 /// [`temp_storage`](Self::temp_storage) selects explicit storage.
 #[derive(Clone, Copy)]
@@ -217,7 +233,7 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
     }
 }
 
-/// Load a block tile in blocked order into an existing per-thread payload.
+/// Load a group tile in blocked order into an existing per-thread payload.
 ///
 /// `T` is inferred from `source`; `ITEMS` is the positive per-thread extent and
 /// `ALIGN` is the payload's minimum alignment. The tile has
@@ -231,8 +247,12 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 /// [`Transpose`]. Thread rank is x-fastest: `x + X * (y + Y * z)` for shape
 /// `[X, Y, Z]`. Each ranked thread receives `ITEMS` consecutive elements.
 /// Compile with the supported Oxide backend and an exact block launch contract.
-/// Every block thread must reach matching calls with uniform source, controls
-/// and participation. The compiler checks these requirements and resource
+/// Physical [`Warp`] supports [`Direct`] with implicit storage when the exact
+/// block size is a multiple of 32. Its origin is the caller's element offset
+/// plus its x-fastest warp index times `32 * ITEMS`. Every participating group
+/// thread must reach matching calls with uniform source, controls and
+/// participation. Sibling warps may choose different controls. The compiler
+/// checks these requirements and resource
 /// conflicts; a group value or Rust borrow alone does not prove them.
 ///
 /// Loading a carrier after Store requires block completion, such as
@@ -258,12 +278,13 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 pub fn load<
     T: Numeric,
     Source: LoadSource<T>,
+    G: LoadStoreGroup<A, S>,
     const ITEMS: usize,
     const ALIGN: usize,
     A: Algorithm,
     S: TempStorageLike,
 >(
-    group: ThreadGroup<Block>,
+    group: ThreadGroup<G>,
     source: Source,
     output: &mut ThreadData<T, ITEMS, ALIGN>,
     options: LoadOptions<T, A, S>,
@@ -273,7 +294,7 @@ pub fn load<
     source.load(group, output, options);
 }
 
-/// Store a block tile from a blocked per-thread payload.
+/// Store a group tile from a blocked per-thread payload.
 ///
 /// `T` is inferred from the destination and value. [`StoreValue`] accepts a
 /// shared or mutable borrow of [`ThreadData`] for [`Direct`], a mutable borrow
@@ -288,7 +309,10 @@ pub fn load<
 ///
 /// The supported groups, compiler/launch and uniformity requirements are those
 /// of [`load`]. The destination is the canonical collective carrier: it grants
-/// disjoint block regions without exposing duplicate mutable lane references.
+/// fixed group regions without exposing duplicate mutable lane references.
+/// For Warp, each warp owns `32 * CAPACITY` elements within the block region.
+/// When `CAPACITY != ITEMS`, choose an offset whose automatic Warp origin still
+/// lies in that fixed region; the carrier is not repartitioned by this call.
 /// Every written payload slot must be initialized. Slots outside the written
 /// prefix may be unwritten. A following conflicting access to this carrier
 /// needs block completion; Drop is not completion. Managed scratch reuse may
@@ -311,11 +335,12 @@ pub fn load<
 pub fn store<
     T: Numeric,
     V: StoreValue<T, A>,
+    G: LoadStoreGroup<A, S>,
     const CAPACITY: usize,
     A: Algorithm,
     S: TempStorageLike,
 >(
-    group: ThreadGroup<Block>,
+    group: ThreadGroup<G>,
     destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
     value: V,
     options: StoreOptions<A, S>,
@@ -331,9 +356,15 @@ pub fn store<
 /// this trait does not expose pointers or grant lane references.
 pub trait LoadSource<T: Numeric>: sealed::LoadSource {
     #[doc(hidden)]
-    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm, S: TempStorageLike>(
+    fn load<
+        const ITEMS: usize,
+        const ALIGN: usize,
+        A: Algorithm,
+        S: TempStorageLike,
+        G: LoadStoreGroup<A, S>,
+    >(
         self,
-        group: ThreadGroup<Block>,
+        group: ThreadGroup<G>,
         output: &mut ThreadData<T, ITEMS, ALIGN>,
         options: LoadOptions<T, A, S>,
     ) where
@@ -343,9 +374,15 @@ pub trait LoadSource<T: Numeric>: sealed::LoadSource {
 impl<T: Numeric> sealed::LoadSource for &[T] {}
 impl<T: Numeric> LoadSource<T> for &[T] {
     #[inline(always)]
-    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm, S: TempStorageLike>(
+    fn load<
+        const ITEMS: usize,
+        const ALIGN: usize,
+        A: Algorithm,
+        S: TempStorageLike,
+        G: LoadStoreGroup<A, S>,
+    >(
         self,
-        _group: ThreadGroup<Block>,
+        _group: ThreadGroup<G>,
         output: &mut ThreadData<T, ITEMS, ALIGN>,
         options: LoadOptions<T, A, S>,
     ) where
@@ -353,7 +390,13 @@ impl<T: Numeric> LoadSource<T> for &[T] {
     {
         // SAFETY: the pointer, length and immutable witness describe this slice.
         unsafe {
-            boundary::load(self, self.as_ptr(), self.len(), output, options);
+            boundary::load::<_, _, ITEMS, ALIGN, A, S, G>(
+                self,
+                self.as_ptr(),
+                self.len(),
+                output,
+                options,
+            );
         }
     }
 }
@@ -364,9 +407,15 @@ impl<T: Numeric, const C: usize> sealed::LoadSource
 }
 impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, CollectiveTiles<C>> {
     #[inline(always)]
-    fn load<const ITEMS: usize, const ALIGN: usize, A: Algorithm, S: TempStorageLike>(
+    fn load<
+        const ITEMS: usize,
+        const ALIGN: usize,
+        A: Algorithm,
+        S: TempStorageLike,
+        G: LoadStoreGroup<A, S>,
+    >(
         self,
-        _group: ThreadGroup<Block>,
+        _group: ThreadGroup<G>,
         output: &mut ThreadData<T, ITEMS, ALIGN>,
         options: LoadOptions<T, A, S>,
     ) where
@@ -374,15 +423,16 @@ impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, Col
     {
         let valid = match options.valid_items {
             Some(count) => count,
-            None => boundary::tile::<ITEMS>(),
+            None => boundary::group_tile::<ITEMS, G>(),
         };
-        boundary::containment::<C>(options.offset, valid);
+        let offset = boundary::group_offset::<ITEMS, G>(options.offset);
+        boundary::group_containment::<C, G>(offset, valid);
         let pointer = self.as_mut_ptr().cast_const();
         let len = self.len();
         // SAFETY: the pointer and witness share an allocation; containment was
         // checked. The compiler requires completion after conflicting accesses.
         unsafe {
-            boundary::load(&*self, pointer, len, output, options);
+            boundary::load::<_, _, ITEMS, ALIGN, A, S, G>(&*self, pointer, len, output, options);
         }
     }
 }
@@ -395,9 +445,9 @@ impl<T: Numeric, const C: usize> LoadSource<T> for &mut DisjointSlice<'_, T, Col
 /// positions as described by [`store`].
 pub trait StoreValue<T: Numeric, A: Algorithm = Direct>: sealed::StoreValue<T, A> {
     #[doc(hidden)]
-    fn store<const CAPACITY: usize, S: TempStorageLike>(
+    fn store<const CAPACITY: usize, S: TempStorageLike, G: LoadStoreGroup<A, S>>(
         self,
-        group: ThreadGroup<Block>,
+        group: ThreadGroup<G>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<CAPACITY>>,
         options: StoreOptions<A, S>,
     );
@@ -414,13 +464,13 @@ where
     Alignment<A>: SupportedAlignment,
 {
     #[inline(always)]
-    fn store<const C: usize, S: TempStorageLike>(
+    fn store<const C: usize, S: TempStorageLike, G: LoadStoreGroup<Direct, S>>(
         self,
-        _group: ThreadGroup<Block>,
+        _group: ThreadGroup<G>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
         options: StoreOptions<Direct, S>,
     ) {
-        boundary::store(destination, self, options);
+        boundary::store::<_, I, A, C, S, G>(destination, self, options);
     }
 }
 impl<T: Numeric, const I: usize, const ALIGN: usize, A: Algorithm> sealed::StoreValue<T, A>
@@ -436,25 +486,25 @@ where
     Alignment<ALIGN>: SupportedAlignment,
 {
     #[inline(always)]
-    fn store<const C: usize, S: TempStorageLike>(
+    fn store<const C: usize, S: TempStorageLike, G: LoadStoreGroup<A, S>>(
         self,
-        _group: ThreadGroup<Block>,
+        _group: ThreadGroup<G>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
         options: StoreOptions<A, S>,
     ) {
         if A::TRANSPOSE {
             boundary::store_transpose(destination, self, options.algorithm(Transpose));
         } else {
-            boundary::store(destination, self, options.algorithm(Direct));
+            boundary::store::<_, I, ALIGN, C, S, G>(destination, self, options.algorithm(Direct));
         }
     }
 }
 impl<T: Numeric, A: Algorithm> sealed::StoreValue<T, A> for T {}
 impl<T: Numeric, A: Algorithm> StoreValue<T, A> for T {
     #[inline(always)]
-    fn store<const C: usize, S: TempStorageLike>(
+    fn store<const C: usize, S: TempStorageLike, G: LoadStoreGroup<A, S>>(
         self,
-        group: ThreadGroup<Block>,
+        group: ThreadGroup<G>,
         destination: &mut DisjointSlice<'_, T, CollectiveTiles<C>>,
         options: StoreOptions<A, S>,
     ) {
@@ -467,6 +517,9 @@ impl<T: Numeric, A: Algorithm> StoreValue<T, A> for T {
 mod sealed {
     pub trait LoadSource {}
     pub trait StoreValue<T, A> {}
+    pub trait Group {
+        const WARP: bool;
+    }
     pub trait Algorithm {
         const TRANSPOSE: bool;
     }

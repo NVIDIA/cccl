@@ -48,7 +48,8 @@ mod thread_data;
 pub use alignment::{Alignment, SupportedAlignment};
 pub use cuda_device::{CollectiveTiles, DisjointSlice};
 pub use load_store::{
-    Algorithm, Direct, LoadOptions, LoadSource, StoreOptions, StoreValue, Transpose, load, store,
+    Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue,
+    Transpose, load, store,
 };
 pub use temp_storage::{StorageReservation, TempStorage, TempStorageLike};
 pub use thread_data::{Numeric, ThreadData, ThreadDataLike};

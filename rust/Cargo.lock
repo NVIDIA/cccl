@@ -57,7 +57,7 @@ dependencies = [
 [[package]]
 name = "cuda-device"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=240366db7fe70d6c3cd571bd6bb31fbb888f73dc#240366db7fe70d6c3cd571bd6bb31fbb888f73dc"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
 dependencies = [
  "cuda-macros",
 ]
@@ -65,7 +65,7 @@ dependencies = [
 [[package]]
 name = "cuda-macros"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=240366db7fe70d6c3cd571bd6bb31fbb888f73dc#240366db7fe70d6c3cd571bd6bb31fbb888f73dc"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
 dependencies = [
  "oxide-tile-export",
  "proc-macro2",
@@ -127,7 +127,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 [[package]]
 name = "oxide-tile-export"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=240366db7fe70d6c3cd571bd6bb31fbb888f73dc#240366db7fe70d6c3cd571bd6bb31fbb888f73dc"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
 dependencies = [
  "serde",
  "serde_json",
@@ -155,7 +155,7 @@ dependencies = [
 [[package]]
 name = "reserved-oxide-symbols"
 version = "0.2.1"
-source = "git+https://github.com/tpn/cuda-rust.git?rev=240366db7fe70d6c3cd571bd6bb31fbb888f73dc#240366db7fe70d6c3cd571bd6bb31fbb888f73dc"
+source = "git+https://github.com/tpn/cuda-rust.git?rev=2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3#2034c0cae0333c4adac3b1c0fefa28ab7ee8bdc3"
 
 [[package]]
 name = "serde"

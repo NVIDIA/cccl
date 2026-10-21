@@ -285,6 +285,111 @@ for name, (body, diagnostic) in list(cases.items()):
     if name.startswith("storage_"):
         cases[name] = ("values.write(0, 0_i32);" + body, diagnostic)
 
+# Physical Warp operations use the same public calls and canonical carrier.
+# Query precision is granted only to the genuine compiler query, not to
+# arithmetic that happens to divide the lane rank by 32.
+warp_prefix = (
+    prefix.replace("block=(128,1,1)", "block=(64,1,1)").replace("*512", "*256")
+    + "let warp=coop::this_warp();let q=cuda_device::library::warp_group_index_v1::<32>() as usize;\n"
+)
+warp_load = load.replace("(block,", "(warp,")
+warp_store = store.replace("(block,", "(warp,")
+warp_reload = reload.replace("(block,", "(warp,")
+warp_helper = """#[inline(never)] fn put(group:coop::ThreadGroup<coop::Warp>,
+ output:&mut DisjointSlice<i32,CollectiveTiles<4>>,offset:usize) {
+ coop::store(group,output,7_i32,coop::StoreOptions::default().offset(offset)); }
+"""
+warp_loop = "let mut i=0;while i<q+1 {" + warp_load + "i+=1;}"
+cases.update(
+    warp_sibling_participation=(
+        warp_load + "if q==0 {" + warp_store + "}thread::sync_threads();" + reload,
+        None,
+    ),
+    warp_lane_participation=(
+        "if thread::threadIdx_x()&1==0 {" + warp_load + "}",
+        "lane-varying",
+    ),
+    warp_sibling_count=(
+        warp_load.replace(".valid_items(valid)", ".valid_items(q+1)"),
+        None,
+    ),
+    warp_sibling_presence=(
+        "let options=if q==0 { coop::LoadOptions::default().offset(offset).valid_items(valid) } else { coop::LoadOptions::default().offset(offset) };"
+        "coop::load(warp,input,&mut values,options);",
+        None,
+    ),
+    warp_lane_count=(
+        warp_load.replace(
+            ".valid_items(valid)", ".valid_items(thread::threadIdx_x() as usize)"
+        ),
+        "not proved Warp-uniform",
+    ),
+    warp_arithmetic_origin=(
+        warp_load.replace(
+            ".offset(offset)", ".offset((thread::threadIdx_x() as usize/32)*128)"
+        ),
+        "not proved Warp-uniform",
+    ),
+    warp_block_control=(
+        load.replace(".offset(offset)", ".offset(q*128)"),
+        "not proved block-uniform",
+    ),
+    warp_read_after_write=(
+        warp_load + warp_store + warp_reload,
+        "requires a full-block barrier",
+    ),
+    warp_read_after_completion=(
+        warp_load + warp_store + "thread::sync_threads();" + warp_reload,
+        None,
+    ),
+    warp_write_after_read=(warp_reload + warp_store, "requires a full-block barrier"),
+    warp_to_block=(warp_load + warp_store + reload, "requires a full-block barrier"),
+    warp_from_block=(load + store + warp_reload, "requires a full-block barrier"),
+    warp_from_block_completed=(
+        load + store + "thread::sync_threads();" + warp_reload,
+        None,
+    ),
+    warp_helper_reuse=(
+        "values.write(0,0_i32);"
+        + warp_helper
+        + "put(warp,&mut output,offset);put(warp,&mut output,offset);",
+        "requires a full-block barrier",
+    ),
+    warp_helper_completed=(
+        "values.write(0,0_i32);"
+        + warp_helper
+        + "put(warp,&mut output,offset);thread::sync_threads();put(warp,&mut output,offset);",
+        None,
+    ),
+    warp_sibling_cycle=(warp_loop + warp_load, None),
+    warp_cycle_then_block=(warp_loop + load, "lane-varying"),
+    warp_lane_cycle=(
+        warp_loop.replace("i<q+1", "i<thread::threadIdx_x() as usize+1") + warp_load,
+        "lane-varying",
+    ),
+    warp_helper_cycle=(
+        "#[inline(never)] fn cycles(input:&[i32]) {let q=cuda_device::library::warp_group_index_v1::<32>() as usize;let mut values=coop::ThreadData::<_,4>::new();let warp=coop::this_warp();let valid=1;let offset=0;"
+        + warp_loop
+        + "}cycles(input);"
+        + load,
+        "lane-varying",
+    ),
+    warp_partial_geometry=(warp_load, "complete physical warps"),
+    warp_transpose=(
+        warp_load.replace(
+            ".oob_default(0)", ".oob_default(0).algorithm(coop::Transpose)"
+        ),
+        "expected `Direct`, found `Transpose`",
+    ),
+    warp_explicit_storage=(
+        new_storage
+        + warp_load.replace(
+            ".oob_default(0)", ".oob_default(0).temp_storage(&mut scratch)"
+        ),
+        "expected `LoadOptions<i32>`",
+    ),
+)
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",
@@ -305,7 +410,10 @@ env.update(
 )
 results = []
 for name, (body, diagnostic) in cases.items():
-    text = prefix + body + "\n}\nfn main() {}\n"
+    case_prefix = warp_prefix if name.startswith("warp_") else prefix
+    if name == "warp_partial_geometry":
+        case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")
+    text = case_prefix + body + "\n}\nfn main() {}\n"
     source.write_text(text)
     (output / f"{name}.rs").write_text(text)
     run = subprocess.run(

@@ -4,6 +4,7 @@
 use coop::{Numeric, ThreadData, this_block};
 mod storage;
 mod transpose;
+mod warp;
 
 use cuda_coop as coop;
 use cuda_device::{CollectiveTiles, DisjointSlice, kernel, launch_contract, thread};
@@ -365,6 +366,12 @@ mod kernels {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if matches!(
+        std::env::args().nth(1).as_deref(),
+        Some("--warp" | "--warp-grain-trap")
+    ) {
+        return warp::run();
+    }
     if let Some(argument) = std::env::args().nth(1) {
         if argument == "storage" {
             return storage::run();
