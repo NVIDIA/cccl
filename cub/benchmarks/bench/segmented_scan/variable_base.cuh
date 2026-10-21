@@ -10,15 +10,44 @@
 #include <thrust/memory.h>
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
+#include <thrust/transform.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/random>
 
 #include <nvbench_helper.cuh>
+
+#if !TUNE_BASE
+template <typename AccumT>
+struct load_balanced_policy_selector_t
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
+    -> cub::SegmentedScanLoadBalancedPolicy
+  {
+    constexpr int pair_size               = int{sizeof(cub::KeyValuePair<int, AccumT>)};
+    constexpr int min_tiles_per_block     = 16;
+    constexpr int max_subscription_factor = 5;
+    const auto scaled       = cub::detail::scale_mem_bound(1 << TUNE_THREADS_PER_BLOCK_POW2, TUNE_ITEMS, pair_size);
+    const bool large_values = pair_size > 128;
+
+    return cub::SegmentedScanLoadBalancedPolicy{
+      scaled.threads_per_block,
+      scaled.items_per_thread,
+      large_values ? cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      cub::LOAD_DEFAULT,
+      large_values ? cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_STORE_WARP_TRANSPOSE,
+      cub::BLOCK_SCAN_WARP_SCANS,
+      min_tiles_per_block,
+      max_subscription_factor};
+  }
+};
+#endif // !TUNE_BASE
 
 enum class schedule
 {
@@ -126,19 +155,50 @@ generate_uniform_segment_offsets(OffsetT elements, OffsetT num_segments, OffsetT
   return offsets;
 }
 
+template <typename OffsetT>
+struct add_gaps
+{
+  OffsetT gap;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE_API OffsetT operator()(OffsetT offset, OffsetT segment) const noexcept
+  {
+    return offset + segment * gap;
+  }
+};
+
+// Gap{io} unused items follow every segment, in the input and in the output.
 template <bool Uniform, typename T, typename OffsetT, schedule Schedule>
 void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT, nvbench::enum_type<Schedule>>)
 {
+  if (state.get_int64("Elements{io}") <= 0 || state.get_int64("MeanSegmentSize{io}") <= 0)
+  {
+    state.skip("Elements{io} and MeanSegmentSize{io} must be positive");
+    return;
+  }
+
   const auto elements          = static_cast<OffsetT>(state.get_int64("Elements{io}"));
   const auto mean_segment_size = static_cast<OffsetT>(state.get_int64("MeanSegmentSize{io}"));
+  const auto gap_size          = state.get_int64("Gap{io}");
   const auto num_segments      = ::cuda::ceil_div(elements, mean_segment_size);
+
+  const auto max_offset = static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<OffsetT>::max());
+  if (gap_size < 0
+      || gap_size > (max_offset - static_cast<::cuda::std::int64_t>(elements))
+                      / static_cast<::cuda::std::int64_t>(num_segments))
+  {
+    state.skip("Gap{io} must be non-negative and the gapped input must fit in OffsetT");
+    return;
+  }
+  const auto input_elements =
+    static_cast<::cuda::std::int64_t>(elements) + gap_size * static_cast<::cuda::std::int64_t>(num_segments);
+  const auto gap = static_cast<OffsetT>(gap_size);
 
   auto& summary = state.add_summary("user/derived/segment_count");
   summary.set_string("name", "#Segments");
   summary.set_int64("value", num_segments);
 
-  const thrust::device_vector<T> input = generate(elements);
-  thrust::device_vector<T> output(elements, thrust::default_init);
+  const thrust::device_vector<T> input = generate(static_cast<std::size_t>(input_elements));
+  thrust::device_vector<T> output(static_cast<std::size_t>(input_elements), thrust::default_init);
   const auto offsets = [&] {
     if constexpr (Uniform)
     {
@@ -154,13 +214,33 @@ void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT
     }
   }();
 
+  auto begin_offsets = thrust::device_vector<OffsetT>(gap == 0 ? OffsetT{0} : num_segments, thrust::no_init);
+  auto end_offsets   = thrust::device_vector<OffsetT>(gap == 0 ? OffsetT{0} : num_segments, thrust::no_init);
+  if (gap != 0)
+  {
+    thrust::transform(
+      offsets.begin(),
+      offsets.end() - 1,
+      ::cuda::counting_iterator<OffsetT>{0},
+      begin_offsets.begin(),
+      add_gaps<OffsetT>{gap});
+    thrust::transform(
+      offsets.begin() + 1,
+      offsets.end(),
+      ::cuda::counting_iterator<OffsetT>{0},
+      end_offsets.begin(),
+      add_gaps<OffsetT>{gap});
+  }
+
   const T* d_input         = thrust::raw_pointer_cast(input.data());
   T* d_output              = thrust::raw_pointer_cast(output.data());
   const OffsetT* d_offsets = thrust::raw_pointer_cast(offsets.data());
+  const OffsetT* d_begins  = gap == 0 ? d_offsets : thrust::raw_pointer_cast(begin_offsets.data());
+  const OffsetT* d_ends    = gap == 0 ? d_offsets + 1 : thrust::raw_pointer_cast(end_offsets.data());
 
   state.add_element_count(elements, "Elements");
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_reads<OffsetT>(num_segments + 1);
+  state.add_global_memory_reads<OffsetT>(gap == 0 ? num_segments + 1 : 2 * num_segments);
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
@@ -171,9 +251,9 @@ void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT
         "ExclusiveSegmentedScan failed",
         d_input,
         d_output,
-        d_offsets,
-        d_offsets + 1,
-        d_offsets,
+        d_begins,
+        d_ends,
+        d_begins,
         num_segments,
         op_t{},
         T{},
@@ -192,7 +272,15 @@ void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT
     }
     else
     {
-      const auto env = cub_bench_env(alloc, launch, cub::segmented_scan_load_balancing);
+      const auto env = cub_bench_env(
+        alloc,
+        launch,
+        cub::segmented_scan_load_balancing
+#if !TUNE_BASE
+        ,
+        cuda::execution::tune(load_balanced_policy_selector_t<::cuda::std::__accumulator_t<op_t, T, T>>{})
+#endif // !TUNE_BASE
+      );
       run(env);
     }
   });
@@ -230,10 +318,12 @@ NVBENCH_BENCH_TYPES(skewed_size_segments, NVBENCH_TYPE_AXES(value_types, some_of
   .add_int64_power_of_two_axis("Elements{io}", {22, 26})
   .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 256, 512, 1024, 2048})
   .add_float64_axis("Alpha{io}", {2.0, 1.5, 1.3})
-  .add_int64_axis("ShuffleSeed{io}", {42});
+  .add_int64_axis("ShuffleSeed{io}", {42})
+  .add_int64_axis("Gap{io}", {0});
 
 NVBENCH_BENCH_TYPES(uniform_size_segments, NVBENCH_TYPE_AXES(value_types, some_offset_types, schedules))
   .set_name("uniform_size_segments")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}", "Schedule{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {22, 26})
-  .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 256, 512, 1024, 2048});
+  .add_int64_axis("MeanSegmentSize{io}", {32, 64, 128, 256, 512, 1024, 2048})
+  .add_int64_axis("Gap{io}", {0});
