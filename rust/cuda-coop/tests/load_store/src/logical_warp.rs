@@ -461,11 +461,10 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn run_cycles() -> Result<(), Box<dyn std::error::Error>> {
-    use cuda_async::simt::device_context::{init_device_contexts, with_cuda_context};
+fn run_cycles() -> Result<(), Box<dyn std::error::Error>> {
+    use cuda_async::simt::device_context::with_cuda_context;
     use cuda_async::simt::device_operation::DeviceOperation;
     use cuda_core::{DeviceBuffer, LaunchConfig1D};
-    init_device_contexts(0, 1)?;
     let stream = with_cuda_context(0, |context| context.default_stream())?;
     // SAFETY: this module and its typed launchers compile together.
     let module = unsafe { kernels::load_async(0)? };
