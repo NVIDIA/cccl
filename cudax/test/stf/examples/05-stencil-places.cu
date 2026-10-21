@@ -19,7 +19,8 @@ template <typename T>
 __global__ void stencil_kernel(slice<T> Un, slice<const T> Un1)
 {
   const size_t N = Un.extent(0);
-  for (size_t i = threadIdx.x + blockIdx.x * blockDim.x; i < N; i += blockDim.x * gridDim.x)
+  for (size_t i = threadIdx.x + static_cast<size_t>(blockIdx.x) * blockDim.x; i < N;
+       i += static_cast<size_t>(blockDim.x) * gridDim.x)
   {
     Un(i) = 0.9 * Un1(i) + 0.05 * Un1((i + N - 1) % N) + 0.05 * Un1((i + 1) % N);
   }

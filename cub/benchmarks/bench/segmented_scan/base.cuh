@@ -67,17 +67,18 @@ void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using policy_t = policy_selector_t<TUNE_THREADS, TUNE_ITEMS, TUNE_MAX_SEGMENTS_PER_BLOCK>;
 #endif
 
-  const auto elements     = static_cast<OffsetT>(state.get_int64("Elements{io}"));
-  const auto segment_size = static_cast<OffsetT>(state.get_int64("SegmentSize{io}"));
-  const auto num_segments = cuda::ceil_div(elements, segment_size);
-  auto& summary           = state.add_summary("user/derived/segment_count");
+  const auto elements       = static_cast<OffsetT>(state.get_int64("Elements{io}"));
+  const auto segment_size   = static_cast<OffsetT>(state.get_int64("SegmentSize{io}"));
+  const auto num_segments   = cuda::ceil_div(elements, segment_size);
+  const auto segments_count = static_cast<std::size_t>(num_segments) + 1;
+  auto& summary             = state.add_summary("user/derived/segment_count");
   summary.set_string("name", "#Segments");
   summary.set_int64("value", num_segments);
 
   thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements, thrust::default_init);
 
-  thrust::device_vector<OffsetT> offsets(num_segments + 1, thrust::no_init);
+  thrust::device_vector<OffsetT> offsets(segments_count, thrust::no_init);
   thrust::tabulate(offsets.begin(), offsets.end(), to_offsets_functor<OffsetT>{elements, segment_size, Wobble});
 
   const T* d_input         = thrust::raw_pointer_cast(input.data());
@@ -86,7 +87,7 @@ void bench_impl(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   state.add_element_count(elements, "Elements");
   state.add_global_memory_reads<T>(elements);
-  state.add_global_memory_reads<OffsetT>(num_segments + 1);
+  state.add_global_memory_reads<OffsetT>(segment_count);
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;

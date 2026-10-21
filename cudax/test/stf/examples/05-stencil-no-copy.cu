@@ -90,7 +90,8 @@ T check_sum(stream_ctx& ctx, data_block<T>& bn)
 template <typename T>
 __global__ void stencil_kernel(size_t cnt, size_t ghost_size, T* array, const T* array1)
 {
-  for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
+  for (size_t idx = threadIdx.x + static_cast<size_t>(blockIdx.x) * blockDim.x; idx < cnt;
+       idx += static_cast<size_t>(blockDim.x) * gridDim.x)
   {
     const size_t idx2 = idx + ghost_size;
     array[idx2]       = 0.9 * array1[idx2] + 0.05 * array1[idx2 - 1] + 0.05 * array1[idx2 + 1];
@@ -112,7 +113,8 @@ void stencil(stream_ctx& ctx, data_block<T>& bn, data_block<T>& bn1)
 template <typename T>
 __global__ void copy_kernel(size_t cnt, T* dst, const T* src)
 {
-  for (size_t idx = threadIdx.x + blockIdx.x * blockDim.x; idx < cnt; idx += blockDim.x * gridDim.x)
+  for (size_t idx = threadIdx.x + static_cast<size_t>(blockIdx.x) * blockDim.x; idx < cnt;
+       idx += static_cast<size_t>(blockDim.x) * gridDim.x)
   {
     dst[idx] = src[idx];
   }
@@ -172,7 +174,7 @@ int main(int argc, char** argv)
   stream_ctx ctx;
 
   int NITER         = 500;
-  size_t NBLOCKS    = 4 * ndevs;
+  size_t NBLOCKS    = size_t{4} * ndevs;
   size_t BLOCK_SIZE = 2048 * 1024;
 
   if (argc > 1)
