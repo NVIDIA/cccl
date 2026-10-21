@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_set_operations.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_set_operations.cuh>
 #include <cub/util_device.cuh>

@@ -27,9 +27,9 @@
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/derived_from.h>
-#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__iterator/iter_move.h>
@@ -38,13 +38,11 @@
 #include <cuda/std/__iterator/move_sentinel.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/enable_if.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_convertible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>

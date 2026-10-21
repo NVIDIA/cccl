@@ -13,7 +13,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_type.cuh>
+#include <cub/detail/null_type.cuh>
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/pow2.h>
@@ -24,6 +24,13 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
+// RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
+#if defined(CCCL_AVOID_SORT_UNROLL)
+inline constexpr bool sort_unroll_default = false;
+#else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
+inline constexpr bool sort_unroll_default = true;
+#endif // !CCCL_AVOID_SORT_UNROLL
+
 template <typename KeyT, typename ValueT, typename CompareOp>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 compare_swap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, CompareOp compare_op)
@@ -39,7 +46,7 @@ compare_swap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, C
   }
 }
 
-template <bool Unroll = true, typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
+template <bool Unroll = sort_unroll_default, typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
 _CCCL_DEVICE_API _CCCL_FORCEINLINE void
 stable_odd_even_sort(KeyT (&keys)[ItemsPerThread], ValueT (&items)[ItemsPerThread], CompareOp compare_op)
 {
