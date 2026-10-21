@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__exception/terminate.h>
-#include <cuda/std/__host_stdlib/cstdio>
-#include <cuda/std/__host_stdlib/exception>
+#include <cuda/std/__exception/terminate.h> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/cstdio> // IWYU pragma: keep
+#include <cuda/std/__host_stdlib/exception> // IWYU pragma: keep
+
+#include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 

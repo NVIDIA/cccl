@@ -14,9 +14,11 @@
 #endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/non_void_value.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_namespace.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__utility/forward.h>
@@ -202,10 +204,13 @@ struct agent_t
 
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void operator()()
   {
-    const int tile_idx      = static_cast<int>(blockIdx.x);
-    const Offset diag0      = static_cast<Offset>(tile_size) * tile_idx;
-    const Offset diag1      = ::cuda::std::min(diag0 + static_cast<Offset>(tile_size), range_count + values_count);
-    const int total_in_tile = static_cast<int>(diag1 - diag0);
+    const int tile_idx = static_cast<int>(blockIdx.x);
+    const Offset diag0 = static_cast<Offset>(tile_size) * tile_idx;
+    // The following expression is equivalent to
+    // cuda::std::min(static_cast<Offset>(tile_size) + diag0, range_count + values_count)
+    // but avoid overflow of the offset type
+    const int total_in_tile =
+      static_cast<int>(::cuda::std::min(static_cast<Offset>(tile_size), range_count + values_count - diag0));
 
     if (total_in_tile == tile_size)
     {

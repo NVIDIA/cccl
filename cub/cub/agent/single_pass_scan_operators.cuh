@@ -20,8 +20,12 @@
 #endif // no system header
 
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -95,7 +99,7 @@ struct BlockScanRunningPrefixOp
 /**
  * Enumerations of tile status
  */
-enum ScanTileStatus
+enum ScanTileStatus // NOLINT(cppcoreguidelines-use-enum-class)
 {
   SCAN_TILE_OOB, // Out-of-bounds (e.g., padding)
   SCAN_TILE_INVALID = 99, // Not yet processed

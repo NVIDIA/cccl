@@ -13,8 +13,10 @@
 #endif // no system header
 
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/special_registers.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
@@ -51,7 +53,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(LoadTileStates);
 #endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
-enum scan_state : ::cuda::std::uint32_t
+enum class scan_state : ::cuda::std::uint32_t
 {
   empty          = 0,
   tile_aggregate = 1,
@@ -97,7 +99,7 @@ storeTileAggregate(tile_state_t<AccumT>* ptrTileStates, scan_state scanState, Ac
   {
     ThreadStore<STORE_CG>(&ptrTileStates[index].value, aggr);
     using state_int = ::cuda::std::underlying_type_t<scan_state>;
-    store_release(reinterpret_cast<state_int*>(&ptrTileStates[index].state), scanState);
+    store_release(reinterpret_cast<state_int*>(&ptrTileStates[index].state), static_cast<state_int>(scanState));
   }
 }
 
@@ -229,7 +231,8 @@ template <int NumTileStatesPerThread, typename AccumT, typename ScanOpT>
       NV_IF_ELSE_TARGET(
         NV_PROVIDES_SM_80,
         ({ // NOTE: Inlined from warp_reduce_shfl
-          if constexpr (is_warp_redux_op_supported_sm80<ScanOpT, AccumT>)
+          if constexpr (is_warp_redux_op_supported_sm80<ScanOpT, AccumT>
+                        && ::cuda::has_identity_element_v<ScanOpT, AccumT>)
           {
             const bool use_value = lanemaskEq & warp_right_aggregates_mask;
             const AccumT value   = use_value ? regTmpStates[idx].value : cuda::identity_element<ScanOpT, AccumT>();

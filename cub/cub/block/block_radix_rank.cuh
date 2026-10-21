@@ -19,10 +19,12 @@
 
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/thread/thread_scan.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__algorithm/max.h>
@@ -44,7 +46,7 @@ CUB_NAMESPACE_BEGIN
 //! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
 //!        keys from a single tile. Note that different ranking algorithms require different
 //!        initial arrangements of keys to function properly.
-enum RadixRankAlgorithm
+enum RadixRankAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   //! Ranking using the BlockRadixRank algorithm with `MemoizeOuterScan == false`.
   //! It uses thread-private histograms, and thus uses more shared memory.
@@ -898,7 +900,7 @@ public:
   //! @}
 };
 
-enum WarpMatchAlgorithm
+enum WarpMatchAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   WARP_MATCH_ANY,
   WARP_MATCH_ATOMIC_OR

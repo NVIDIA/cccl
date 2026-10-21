@@ -25,10 +25,8 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/__random/random_bijection.h>
+#include <cuda/__random/random_bijection.h> // IWYU pragma: keep
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__random/is_valid.h>
-#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
@@ -38,7 +36,6 @@
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>

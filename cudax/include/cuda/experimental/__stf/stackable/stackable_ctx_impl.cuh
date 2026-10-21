@@ -470,7 +470,10 @@ public:
             {
               if (dummy_graph != nullptr)
               {
-                cuda_safe_call(cudaGraphDestroy(dummy_graph));
+                ON_THROW(notify)
+                {
+                  cuda_try<cudaGraphDestroy>(dummy_graph);
+                };
               }
             };
 
@@ -512,7 +515,10 @@ public:
         {
           if (graph_owned_by_us)
           {
-            cuda_safe_call(cudaGraphDestroy(graph));
+            ON_THROW(notify)
+            {
+              cuda_try<cudaGraphDestroy>(graph);
+            };
           }
         };
 

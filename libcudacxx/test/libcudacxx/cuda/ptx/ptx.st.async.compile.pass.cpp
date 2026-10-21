@@ -13,10 +13,9 @@
 
 // UNSUPPORTED: libcpp-has-no-threads
 
-// <cuda/ptx>
+// <cuda/ptxs/st_async.h>
 
-#include <cuda/ptx>
-#include <cuda/std/utility>
+#include <cuda/ptxs/st_async.h>
 
 #include "generated/st_async.h"
 

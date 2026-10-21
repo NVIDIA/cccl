@@ -445,14 +445,14 @@ TEMPLATE_LIST_TEST_CASE("ComplexBasicArithmetic", "[complex]", FloatingPointType
   require_almost_equal(thrust::norm(a), std::norm(b));
 
   CHECK(thrust::conj(a) == std::conj(b));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::conj(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::conj(a))>);
 
   require_almost_equal(thrust::polar(data[0], data[1]), std::polar(data[0], data[1]));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::polar(data[0], data[1]))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::polar(data[0], data[1]))>);
 
   // random_samples does not seem to produce infinities so proj(z) == z
   CHECK(thrust::proj(a) == a);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::proj(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::proj(a))>);
 }
 
 TEMPLATE_LIST_TEST_CASE("ComplexBinaryArithmetic", "[complex]", FloatingPointTypes)
@@ -540,9 +540,9 @@ TEMPLATE_LIST_TEST_CASE("ComplexExponentialFunctions", "[complex]", FloatingPoin
   require_almost_equal(thrust::exp(a), std::exp(b));
   require_almost_equal(thrust::log(a), std::log(b));
   require_almost_equal(thrust::log10(a), std::log10(b));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::exp(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log10(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::exp(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::log(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::log10(a))>);
 }
 
 TEMPLATE_LIST_TEST_CASE("ComplexPowerFunctions", "[complex]", FloatingPointTypes)
@@ -558,17 +558,17 @@ TEMPLATE_LIST_TEST_CASE("ComplexPowerFunctions", "[complex]", FloatingPointTypes
     const std::complex<T> b_std(b_thrust);
 
     require_almost_equal(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust))>);
     require_almost_equal(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust.real()))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust.real()))>);
     require_almost_equal(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust.real(), b_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::pow(a_thrust.real(), b_thrust))>);
 
     require_almost_equal(thrust::pow(a_thrust, 4), std::pow(a_std, 4));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, 4))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::pow(a_thrust, 4))>);
 
     require_almost_equal(thrust::sqrt(a_thrust), std::sqrt(a_std));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sqrt(a_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::sqrt(a_thrust))>);
   }
 
   // Test power functions with promoted types.
@@ -585,21 +585,17 @@ TEMPLATE_LIST_TEST_CASE("ComplexPowerFunctions", "[complex]", FloatingPointTypes
     const std::complex<T0> b_std(data[2], data[3]);
 
     require_almost_equal(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust))>);
     require_almost_equal(thrust::pow(b_thrust, a_thrust), std::pow(b_std, a_std));
-    STATIC_REQUIRE(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust))>);
     require_almost_equal(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
-    STATIC_REQUIRE(
-      cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust.real()))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust.real()))>);
     require_almost_equal(thrust::pow(b_thrust, a_thrust.real()), std::pow(b_std, a_std.real()));
-    STATIC_REQUIRE(
-      cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust.real()))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust.real()))>);
     require_almost_equal(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
-    STATIC_REQUIRE(
-      cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust.real(), b_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<promoted>, decltype(thrust::pow(a_thrust.real(), b_thrust))>);
     require_almost_equal(thrust::pow(b_thrust.real(), a_thrust), std::pow(b_std.real(), a_std));
-    STATIC_REQUIRE(
-      cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust.real(), a_thrust))>::value);
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<promoted>, decltype(thrust::pow(b_thrust.real(), a_thrust))>);
   }
 }
 
@@ -615,30 +611,30 @@ TEMPLATE_LIST_TEST_CASE("ComplexTrigonometricFunctions", "[complex]", FloatingPo
   require_almost_equal(thrust::cos(a), std::cos(c));
   require_almost_equal(thrust::sin(a), std::sin(c));
   require_almost_equal(thrust::tan(a), std::tan(c));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::cos(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sin(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::tan(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::cos(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::sin(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::tan(a))>);
 
   require_almost_equal(thrust::cosh(a), std::cosh(c));
   require_almost_equal(thrust::sinh(a), std::sinh(c));
   require_almost_equal(thrust::tanh(a), std::tanh(c));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::cosh(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sinh(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::tanh(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::cosh(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::sinh(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::tanh(a))>);
 
   require_almost_equal(thrust::acos(a), std::acos(c));
   require_almost_equal(thrust::asin(a), std::asin(c));
   require_almost_equal(thrust::atan(a), std::atan(c));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::acos(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::asin(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atan(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::acos(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::asin(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::atan(a))>);
 
   require_almost_equal(thrust::acosh(a), std::acosh(c));
   require_almost_equal(thrust::asinh(a), std::asinh(c));
   require_almost_equal(thrust::atanh(a), std::atanh(c));
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::acosh(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::asinh(a))>::value);
-  STATIC_REQUIRE(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atanh(a))>::value);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::acosh(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::asinh(a))>);
+  STATIC_REQUIRE(cuda::std::is_same_v<thrust::complex<T>, decltype(thrust::atanh(a))>);
 }
 
 TEMPLATE_LIST_TEST_CASE("ComplexStreamOperators", "[complex]", FloatingPointTypes)

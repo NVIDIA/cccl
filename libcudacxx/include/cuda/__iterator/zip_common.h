@@ -20,10 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__fwd/iterator.h>
 #include <cuda/std/__algorithm/ranges_min_element.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iter_move.h>

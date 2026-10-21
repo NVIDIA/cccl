@@ -25,7 +25,6 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/empty_completion.h>
-#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 

@@ -62,6 +62,8 @@ void test_find_if_simple()
   Vector vec{1, 2, 3, 3, 5};
 
   using thrust::placeholders::_1;
+  Vector empty;
+  REQUIRE(thrust::find_if(empty.begin(), empty.end(), _1 == T{0}) == empty.end());
   REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{0}) - vec.begin() == 5);
   REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{1}) - vec.begin() == 0);
   REQUIRE(thrust::find_if(vec.begin(), vec.end(), _1 == T{2}) - vec.begin() == 1);

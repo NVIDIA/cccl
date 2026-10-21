@@ -344,59 +344,140 @@ inline constexpr bool is_commutative_v = __is_commutative_v<_Op, ::cuda::std::re
  * Internal helpers
  **********************************************************************************************************************/
 
-template <typename>
+template <class, class = void>
 inline constexpr bool __is_cuda_std_plus_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_plus_v<::cuda::std::plus<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_multiplies_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_multiplies_v<::cuda::std::multiplies<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_bit_and_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_bit_and_v<::cuda::std::bit_and<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_bit_or_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_bit_or_v<::cuda::std::bit_or<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_bit_xor_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_bit_xor_v<::cuda::std::bit_xor<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_logical_and_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_logical_and_v<::cuda::std::logical_and<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_std_logical_or_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_std_logical_or_v<::cuda::std::logical_or<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_minimum_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<_Tp>, void> = true;
 
-template <typename>
+template <class _Tp>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_minimum_v<::cuda::minimum<>, void> = true;
+
+template <class, class = void>
 inline constexpr bool __is_cuda_maximum_v = false;
 
-template <typename... _Tp>
-inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp...>> = true;
+template <class _Tp>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp>, void> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<_Tp>, _Tp> = true;
+
+template <class _Tp>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<>, _Tp> = true;
+
+template <>
+inline constexpr bool __is_cuda_maximum_v<::cuda::maximum<>, void> = true;
 
 /***********************************************************************************************************************
  * Identity Element
