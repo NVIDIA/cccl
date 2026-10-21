@@ -108,6 +108,8 @@ IEEE-754, so ``is_iec559`` is ``false``:
 The minimum exponent is raised relative to the component type because both halves have to stay
 normal for the pair to carry its full significand.
 
+.. _libcudacxx-extended-api-fp-fpmp-80-bit:
+
 Retiring 80-bit CPU code
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -404,6 +406,8 @@ copyability retained. A volatile lvalue is not an operand: arithmetic takes ``co
 compute on a non-volatile copy and store the result back, exactly as the compiler does for a
 built-in ``volatile double``.
 
+.. _libcudacxx-extended-api-fp-fpmp-math-accuracy:
+
 Math function accuracy
 ----------------------
 
@@ -558,6 +562,18 @@ pair operation is a run of operations on the limbs, and on these parts those are
 ones.
 The digits past ``double`` are therefore bought at a real price, unlike the ones below it, and how
 bearable that price is follows from the FP64 throughput underneath.
+
+Optimization guide
+------------------
+
+``fp32mp2`` pays for its digits in FP32 instructions and wins only where FP64 is rationed;
+``fp64mp2`` pays in FP64 instructions and wins only where FP64 runs at full rate. Past that first
+decision, what a kernel gets out of either type depends on where its conversions sit, which accuracy
+level each step runs at, and whether its reductions go through atomics. The
+:ref:`FP optimization guide <libcudacxx-extended-api-fp-optimization-guide-fpmp>` covers those
+choices for both types, with per-operation costs, and its opening section on
+:ref:`choosing the type <libcudacxx-extended-api-fp-optimization-guide-choosing>` places ``fpmp``
+against the other components.
 
 References
 ----------
