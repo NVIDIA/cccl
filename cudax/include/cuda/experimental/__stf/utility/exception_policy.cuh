@@ -3529,6 +3529,7 @@ UNITTEST("alternation and repetition nested under & and |")
   // same expressions written with the alternation outermost always compiled, which is why the
   // documented forms (`notify & retry * 3 | subst(-1)`) never exposed it.
   using namespace ::cuda::experimental::stf::exception_policies;
+#  if _CCCL_HAS_EXCEPTIONS()
   struct key : ::std::logic_error
   {
     key()
@@ -3601,6 +3602,7 @@ UNITTEST("alternation and repetition nested under & and |")
     throw boom();
   };
   EXPECT(&r == &cell);
+#  endif // _CCCL_HAS_EXCEPTIONS()
 };
 
 UNITTEST("policy inventory")
