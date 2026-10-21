@@ -35,7 +35,6 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/optional>
 #include <cuda/std/tuple>
 
 // don't attempt to #include this file without omp support
@@ -46,22 +45,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace system::omp::detail
 {
-// Below this many elements, copy_if runs on the calling thread
-inline constexpr int parallel_copy_if_threshold = 1024;
-
 namespace copy_if_detail
 {
-// Tuned on a 64-core Grace with 1- to 32-byte elements: the minimum lets a costly predicate use all threads just above
-// the threshold, and the maximum balances contention on the tile counter against cache locality.
-inline constexpr int min_tile_size = 64;
-inline constexpr int max_tile_size = 8192;
-
-using status_word = ::cuda::std::uint64_t;
-
-// A status word holds a count of selected elements, shifted left by two, and one of these flags
-inline constexpr status_word status_partial = 1; // selected elements in this tile
-inline constexpr status_word status_prefix  = 2; // selected elements in this tile and all earlier ones
-
 // Whether a reference type is or holds an rvalue reference, like that of a move_iterator or a zip_iterator over one
 template <typename Reference>
 inline constexpr bool has_rvalue_reference = ::cuda::std::is_rvalue_reference_v<Reference>;
@@ -72,6 +57,155 @@ inline constexpr bool has_rvalue_reference<::cuda::std::tuple<Ts...>> = (has_rva
 template <typename... Ts>
 inline constexpr bool has_rvalue_reference<thrust::detail::tuple_of_iterator_references<Ts...>> =
   (has_rvalue_reference<Ts> || ...);
+
+// Single pass with decoupled look-back. Threads take tiles in order from a shared counter. For its tile, a thread
+// evaluates pred once per element into a flag buffer and publishes the tile's count. It then adds up the counts of
+// earlier tiles back to the first published prefix, publishes its own prefix and copies the selected elements.
+//
+// Progress: a thread only waits for earlier tiles, whose owners publish their counts before waiting on anything, so
+// the waits cannot form a cycle, whatever the team size. libcu++'s host wait polls with a back-off from spinning to
+// yielding and sleeping, so more threads than cores also make progress.
+//
+// Memory order: a status word packs the flag with the count, the counts are the only data threads share, and the
+// disjoint output ranges are only read after the region's closing barrier, so relaxed accesses are sufficient.
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate,
+          typename Size>
+OutputIterator tiled_copy_if(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  Size n,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred,
+  int num_threads)
+{
+  // Tuned on a 64-core Grace with 1- to 32-byte elements: the minimum lets a costly predicate use all threads just
+  // above the threshold, and the maximum balances contention on the tile counter against cache locality.
+  constexpr int min_tile_size = 64;
+  constexpr int max_tile_size = 8192;
+
+  using status_word = ::cuda::std::uint64_t;
+
+  // A status word holds a count of selected elements, shifted left by two, and one of these flags
+  constexpr status_word status_partial = 1; // selected elements in this tile
+  constexpr status_word status_prefix  = 2; // selected elements in this tile and all earlier ones
+
+  const Size tile_size = ::cuda::std::clamp(
+    ::cuda::ceil_div(n, static_cast<Size>(num_threads)),
+    static_cast<Size>(min_tile_size),
+    static_cast<Size>(max_tile_size));
+  const Size num_tiles = ::cuda::ceil_div(n, tile_size);
+
+  // A custom allocator may only align for its own value_type, e.g. char, and a misaligned status word can be read torn
+  thrust::detail::temporary_array<::cuda::std::uint8_t, DerivedPolicy> status_storage(
+    exec, (static_cast<::cuda::std::size_t>(num_tiles) + 1) * sizeof(status_word));
+  status_word* const tile_status = reinterpret_cast<status_word*>(::cuda::align_up(
+    thrust::raw_pointer_cast(status_storage.data()), ::cuda::atomic_ref<status_word>::required_alignment));
+  ::cuda::std::fill_n(tile_status, num_tiles, status_word{0});
+
+  ::cuda::std::atomic<Size> next_tile{0};
+
+  // Set by the thread that handles the last tile
+  Size num_selected = 0;
+
+  // Set if the team has a single thread
+  bool team_of_one = false;
+
+  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+
+  THRUST_PRAGMA_OMP(parallel)
+  {
+#if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
+    const bool single_thread = omp_get_num_threads() == 1;
+#else
+    const bool single_thread = true;
+#endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
+
+    if (single_thread)
+    {
+      team_of_one = true;
+    }
+    else
+    {
+      bool selected[max_tile_size];
+
+      for (;;)
+      {
+        const Size tile = next_tile.fetch_add(1, ::cuda::std::memory_order_relaxed);
+        if (tile >= num_tiles)
+        {
+          break;
+        }
+
+        const Size tile_begin = tile * tile_size;
+        // n - tile_begin is an int for a narrow Size like short
+        const Size tile_items = (::cuda::std::min) (tile_size, static_cast<Size>(n - tile_begin));
+
+        Size count                = 0;
+        InputIterator2 stencil_it = stencil + tile_begin;
+        for (Size i = 0; i < tile_items; ++i, ++stencil_it)
+        {
+          selected[i] = wrapped_pred(*stencil_it);
+          count += static_cast<Size>(selected[i]);
+        }
+
+        // Number of selected elements in all earlier tiles
+        Size offset = 0;
+        const ::cuda::atomic_ref<status_word> own_status(tile_status[tile]);
+        if (tile > 0)
+        {
+          own_status.store((static_cast<status_word>(count) << 2) | status_partial, ::cuda::std::memory_order_relaxed);
+          own_status.notify_all();
+          for (Size earlier = tile - 1;; --earlier)
+          {
+            const ::cuda::atomic_ref<status_word> earlier_status(tile_status[earlier]);
+            status_word word;
+            while ((word = earlier_status.load(::cuda::std::memory_order_relaxed)) == 0)
+            {
+              earlier_status.wait(status_word{0}, ::cuda::std::memory_order_relaxed);
+            }
+            offset += static_cast<Size>(word >> 2);
+            if (word & status_prefix)
+            {
+              break;
+            }
+          }
+        }
+        own_status.store((static_cast<status_word>(offset + count) << 2) | status_prefix,
+                         ::cuda::std::memory_order_relaxed);
+        own_status.notify_all();
+
+        if (tile == num_tiles - 1)
+        {
+          num_selected = offset + count;
+        }
+
+        OutputIterator out = result + offset;
+        InputIterator1 in  = first + tile_begin;
+        for (Size i = 0; i < tile_items; ++i, ++in)
+        {
+          if (selected[i])
+          {
+            *out = *in;
+            ++out;
+          }
+        }
+      }
+    }
+  }
+
+  // E.g. inside another parallel region with nested parallelism disabled, where tiles only add overhead
+  if (team_of_one)
+  {
+    return thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, pred);
+  }
+  return result + num_selected;
+}
 } // namespace copy_if_detail
 
 template <typename DerivedPolicy,
@@ -101,9 +235,10 @@ OutputIterator copy_if(
                 "copy_if and the algorithms built on it do not support an input iterator with an rvalue reference, "
                 "like a move_iterator, with the OpenMP system");
 
-  using Size = thrust::detail::it_difference_t<InputIterator1>;
-  using copy_if_detail::status_word;
+  // Below this many elements, copy_if runs on the calling thread
+  constexpr int parallel_copy_if_threshold = 1024;
 
+  using Size   = thrust::detail::it_difference_t<InputIterator1>;
   const Size n = ::cuda::std::distance(first, last);
 
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
@@ -119,129 +254,7 @@ OutputIterator copy_if(
   {
     return thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, const_lvalue_predicate{pred});
   }
-
-  // Single pass with decoupled look-back. Threads take tiles in order from a shared counter. For its tile, a thread
-  // evaluates pred once per element into a flag buffer and publishes the tile's count. It then adds up the counts of
-  // earlier tiles back to the first published prefix, publishes its own prefix and copies the selected elements.
-  //
-  // Progress: a thread only waits for earlier tiles, whose owners publish their counts before waiting on anything, so
-  // the waits cannot form a cycle, whatever the team size. libcu++'s host wait polls with a back-off from spinning to
-  // yielding and sleeping, so more threads than cores also make progress.
-  //
-  // Memory order: a status word packs the flag with the count, the counts are the only data threads share, and the
-  // disjoint output ranges are only read after the region's closing barrier, so relaxed accesses are sufficient.
-  const Size tile_size = ::cuda::std::clamp(
-    ::cuda::ceil_div(n, static_cast<Size>(num_threads)),
-    static_cast<Size>(copy_if_detail::min_tile_size),
-    static_cast<Size>(copy_if_detail::max_tile_size));
-  const Size num_tiles = ::cuda::ceil_div(n, tile_size);
-
-  // A custom allocator may only align for its own value_type, e.g. char, and a misaligned status word can be read torn
-  thrust::detail::temporary_array<::cuda::std::uint8_t, DerivedPolicy> status_storage(
-    exec, (static_cast<::cuda::std::size_t>(num_tiles) + 1) * sizeof(status_word));
-  status_word* const tile_status = reinterpret_cast<status_word*>(::cuda::align_up(
-    thrust::raw_pointer_cast(status_storage.data()), ::cuda::atomic_ref<status_word>::required_alignment));
-  ::cuda::std::fill_n(tile_status, num_tiles, status_word{0});
-
-  ::cuda::std::atomic<Size> next_tile{0};
-
-  // Set by the thread that handles the last tile
-  Size num_selected = 0;
-
-  // Set by a team of one thread. Keeping the returned end avoids comparing or subtracting OutputIterators.
-  ::cuda::std::optional<OutputIterator> team_of_one_result;
-
-  const thrust::detail::wrapped_function<const_lvalue_predicate, bool> wrapped_pred{const_lvalue_predicate{pred}};
-
-  THRUST_PRAGMA_OMP(parallel)
-  {
-#if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-    const bool team_of_one = omp_get_num_threads() == 1;
-#else
-    const bool team_of_one = true;
-#endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
-
-    if (team_of_one)
-    {
-      // E.g. inside another parallel region with nested parallelism disabled, where tiles only add overhead
-      team_of_one_result.emplace(
-        thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, const_lvalue_predicate{pred}));
-    }
-    else
-    {
-      bool selected[copy_if_detail::max_tile_size];
-
-      for (;;)
-      {
-        const Size tile = next_tile.fetch_add(1, ::cuda::std::memory_order_relaxed);
-        if (tile >= num_tiles)
-        {
-          break;
-        }
-
-        const Size tile_begin = tile * tile_size;
-        // n - tile_begin is an int for a narrow Size like short
-        const Size tile_items = (::cuda::std::min) (tile_size, static_cast<Size>(n - tile_begin));
-
-        Size count                = 0;
-        InputIterator2 stencil_it = stencil + tile_begin;
-        for (Size i = 0; i < tile_items; ++i, ++stencil_it)
-        {
-          selected[i] = wrapped_pred(*stencil_it);
-          count += static_cast<Size>(selected[i]);
-        }
-
-        // Number of selected elements in all earlier tiles
-        Size offset = 0;
-        const ::cuda::atomic_ref<status_word> own_status(tile_status[tile]);
-        if (tile > 0)
-        {
-          own_status.store((static_cast<status_word>(count) << 2) | copy_if_detail::status_partial,
-                           ::cuda::std::memory_order_relaxed);
-          own_status.notify_all();
-          for (Size earlier = tile - 1;; --earlier)
-          {
-            const ::cuda::atomic_ref<status_word> earlier_status(tile_status[earlier]);
-            status_word word;
-            while ((word = earlier_status.load(::cuda::std::memory_order_relaxed)) == 0)
-            {
-              earlier_status.wait(status_word{0}, ::cuda::std::memory_order_relaxed);
-            }
-            offset += static_cast<Size>(word >> 2);
-            if (word & copy_if_detail::status_prefix)
-            {
-              break;
-            }
-          }
-        }
-        own_status.store((static_cast<status_word>(offset + count) << 2) | copy_if_detail::status_prefix,
-                         ::cuda::std::memory_order_relaxed);
-        own_status.notify_all();
-
-        if (tile == num_tiles - 1)
-        {
-          num_selected = offset + count;
-        }
-
-        OutputIterator out = result + offset;
-        InputIterator1 in  = first + tile_begin;
-        for (Size i = 0; i < tile_items; ++i, ++in)
-        {
-          if (selected[i])
-          {
-            *out = *in;
-            ++out;
-          }
-        }
-      }
-    }
-  }
-
-  if (team_of_one_result)
-  {
-    return *team_of_one_result;
-  }
-  return result + num_selected;
+  return copy_if_detail::tiled_copy_if(exec, first, last, n, stencil, result, const_lvalue_predicate{pred}, num_threads);
 } // end copy_if()
 } // end namespace system::omp::detail
 THRUST_NAMESPACE_END
