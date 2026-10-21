@@ -3565,7 +3565,8 @@ UNITTEST("alternation and repetition nested under & and |")
   // `*` with a value-answering fallback, nested under `&`.
   int n = 0;
   EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << [&]() -> int {
-           if (++n < 3)
+           ++n;
+           if (n < 3)
            {
              throw boom();
            }
