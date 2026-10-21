@@ -36,9 +36,12 @@ Conversions follow integer ``as`` semantics, so callers must choose a sufficient
 width to avoid truncation.
 
 A physical warp always counts 32 lanes. Block warp counts round up when the
-last warp is partially occupied. Cluster queries currently require sm_90 or
-newer; an ordinary, unclustered launch has one block per cluster. No query
-allocates storage or synchronizes threads. Copying a descriptor preserves the
+last warp is partially occupied. On known targets below sm_90, cluster queries
+describe one block per cluster.
+On sm_90 and newer they describe the launch's cluster; an ordinary, unclustered
+launch still has one block per cluster. An unknown target retains the sm_90
+minimum for these queries. No query allocates storage or synchronizes threads.
+Copying a descriptor preserves the
 scope, and subsequent queries describe the thread executing them.
 
 Mapped groups
@@ -59,8 +62,11 @@ Mapped groups cannot be partitioned again.
 Sizes must be positive compile-time constants. Invalid static sizes fail during
 compilation. Checks that depend on the actual block dimensions trap on device
 when violated. These descriptors and checks provide no proof of collective
-participation, uniform control flow, or scratch ownership. Synchronization,
-temporary storage and collective primitives are separate work.
+participation, uniform control flow, or scratch ownership. The Load/Store API
+accepts power-of-two lane groups of widths 1, 2, 4, 8, 16 and 32 with Direct and
+implicit storage. Other mapped groups remain query-only. Canonical Warp-in-Block
+and logical-group-in-Warp ranks preserve group uniformity in checked operations;
+ordinary lane arithmetic does not receive that guarantee.
 
 Run the native query checks
 ---------------------------

@@ -131,8 +131,8 @@ pub(super) fn containment<const CAPACITY: usize>(offset: usize, valid: usize) {
 #[inline(always)]
 pub(super) fn group_tile<const ITEMS: usize, G: Group>() -> usize {
     if G::WARP {
-        assert!(ITEMS > 0 && ITEMS <= usize::MAX / 32);
-        32 * ITEMS
+        assert!(ITEMS > 0 && ITEMS <= usize::MAX / G::WIDTH);
+        G::WIDTH * ITEMS
     } else {
         tile::<ITEMS>()
     }
@@ -141,7 +141,7 @@ pub(super) fn group_tile<const ITEMS: usize, G: Group>() -> usize {
 #[inline(always)]
 pub(super) fn group_offset<const ITEMS: usize, G: Group>(offset: usize) -> usize {
     if G::WARP {
-        let group = library::warp_group_index_v1::<32>() as usize;
+        let group = G::group_index() as usize;
         let tile = group_tile::<ITEMS, G>();
         assert!(group <= usize::MAX / tile);
         let origin = group * tile;
@@ -174,7 +174,7 @@ pub(super) fn group_containment<const CAPACITY: usize, G: Group>(offset: usize, 
         } else {
             offset % period
         };
-        let warp = library::warp_group_index_v1::<32>() as usize;
+        let warp = G::group_index() as usize;
         let begin = rank * block_capacity + warp * capacity;
         assert!(within >= begin && within - begin <= capacity);
         assert!(valid <= capacity - (within - begin));
@@ -217,48 +217,30 @@ pub(super) unsafe fn load<
     // managed reuse or requires the caller's explicit completion.
     macro_rules! call {
         ($direct:ident, $striped:ident, $vectorize:ident, $transpose:ident, $warp:ident, $timesliced:ident, $controls:expr) => {
-            if G::WARP {
-                library::checked_warp_call_v1::<T, _, _, _, _, 32, ITEMS, false>(
-                    $direct, memory, $controls, payload,
-                )
-            } else {
-                match A::KIND {
-                    DIRECT => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                            $direct, memory, storage, $controls, payload,
-                        )
-                    }
-                    STRIPED => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                            $striped, memory, storage, $controls, payload,
-                        )
-                    }
-                    VECTORIZE => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                            $vectorize, memory, storage, $controls, payload,
-                        )
-                    }
-                    TRANSPOSE => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                            $transpose, memory, storage, $controls, payload,
-                        )
-                    }
-                    WARP_TRANSPOSE => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                            $warp, memory, storage, $controls, payload,
-                        )
-                    }
-                    WARP_TRANSPOSE_TIMESLICED => {
-                        library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, false>(
-                            $timesliced,
-                            memory,
-                            storage,
-                            $controls,
-                            payload,
-                        )
-                    }
-                    _ => panic!(),
-                }
+            match A::KIND {
+                DIRECT => G::call::<T, _, _, _, _, _, ITEMS, false>(
+                    $direct, memory, storage, $controls, payload,
+                ),
+                STRIPED => G::call::<T, _, _, _, _, _, ITEMS, false>(
+                    $striped, memory, storage, $controls, payload,
+                ),
+                VECTORIZE => G::call::<T, _, _, _, _, _, ITEMS, false>(
+                    $vectorize, memory, storage, $controls, payload,
+                ),
+                TRANSPOSE => G::call::<T, _, _, _, _, _, ITEMS, false>(
+                    $transpose, memory, storage, $controls, payload,
+                ),
+                WARP_TRANSPOSE => G::call::<T, _, _, _, _, _, ITEMS, false>(
+                    $warp, memory, storage, $controls, payload,
+                ),
+                WARP_TRANSPOSE_TIMESLICED => G::call::<T, _, _, _, _, _, ITEMS, false>(
+                    $timesliced,
+                    memory,
+                    storage,
+                    $controls,
+                    payload,
+                ),
+                _ => panic!(),
             }
         };
     }
@@ -336,45 +318,30 @@ pub(super) fn store<
         let pointer = pointer.add(offset);
         macro_rules! call {
             ($direct:ident, $striped:ident, $vectorize:ident, $controls:expr) => {
-                if G::WARP {
-                    library::checked_warp_call_v1::<T, _, _, _, _, 32, ITEMS, true>(
+                match A::KIND {
+                    DIRECT => G::call::<T, _, _, _, _, _, ITEMS, true>(
                         $direct,
                         destination,
+                        storage,
                         $controls,
                         payload,
-                    )
-                } else {
-                    match A::KIND {
-                        DIRECT => {
-                            library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                                $direct,
-                                destination,
-                                storage,
-                                $controls,
-                                payload,
-                            )
-                        }
-                        STRIPED => {
-                            library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                                $striped,
-                                destination,
-                                storage,
-                                $controls,
-                                payload,
-                            )
-                        }
-                        VECTORIZE => {
-                            library::checked_block_storage_call_v1::<T, _, _, _, _, _, ITEMS, true>(
-                                $vectorize,
-                                destination,
-                                storage,
-                                $controls,
-                                payload,
-                            )
-                        }
-                        // Only the shared-preserving Store implementations call this boundary.
-                        _ => panic!(),
-                    }
+                    ),
+                    STRIPED => G::call::<T, _, _, _, _, _, ITEMS, true>(
+                        $striped,
+                        destination,
+                        storage,
+                        $controls,
+                        payload,
+                    ),
+                    VECTORIZE => G::call::<T, _, _, _, _, _, ITEMS, true>(
+                        $vectorize,
+                        destination,
+                        storage,
+                        $controls,
+                        payload,
+                    ),
+                    // Only the shared-preserving Store implementations call this boundary.
+                    _ => panic!(),
                 }
             };
         }

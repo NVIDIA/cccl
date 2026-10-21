@@ -56,7 +56,7 @@ cases = {
         "validity::load_filled(group, input, offset, valid, 0, &mut values);\n"
         "validity::store_partial(group, &mut output, offset, valid, &mut values);\n"
         "validity::reload_filled(group, &mut output, offset, valid, 0, &mut values);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "varying_participation": (
         "if thread::threadIdx_x() & 1 == 0 {\n"
@@ -68,7 +68,7 @@ cases = {
         "let mut count = 2; while count > 0 {\n"
         "validity::store_partial(group, &mut output, offset, valid, &mut values);\n"
         "count -= 1; }",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "explicit_completion": (
         "validity::load_filled(group, input, offset, valid, 0, &mut values);\n"

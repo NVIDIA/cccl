@@ -33,6 +33,31 @@ fn rejects_invalid_shapes() {
     assert!(
         Request::new_typed(Dtype::U64, Operation::LoadFull, Algorithm::Direct, 128, 4).is_err()
     );
+    let warp = Request::new(Operation::LoadMaskedValidity, Algorithm::Direct, 64, 4).unwrap();
+    for width in [0, 3, 6, 33, 64] {
+        assert!(warp.with_warp_width(width).is_err());
+    }
+    for width in [1, 2, 4, 8, 16, 32] {
+        assert!(warp.with_warp_width(width).is_ok());
+        assert!(
+            Request::new(Operation::LoadMaskedValidity, Algorithm::Direct, 48, 4)
+                .unwrap()
+                .with_warp_width(width)
+                .is_err()
+        );
+    }
+    assert!(
+        Request::new(Operation::LoadMaskedValidity, Algorithm::Transpose, 64, 4)
+            .unwrap()
+            .with_warp_width(8)
+            .is_err()
+    );
+    assert!(
+        Request::new(Operation::LoadFull, Algorithm::Direct, 64, 4)
+            .unwrap()
+            .with_warp_width(8)
+            .is_err()
+    );
 }
 
 #[test]
@@ -112,6 +137,22 @@ fn native_typed_validity_and_determinism() -> Result<(), Box<dyn std::error::Err
                     )?);
                 }
             }
+        }
+    }
+    // The same five typed Direct recipes support each canonical logical width
+    // inside a multidimensional block; their actual queried scratch remains zero.
+    for width in [1, 2, 4, 8, 16, 32] {
+        for operation in [
+            Operation::LoadFullValidity,
+            Operation::LoadMaskedValidity,
+            Operation::LoadFilledValidity,
+            Operation::StoreFullValidity,
+            Operation::StorePartialValidity,
+        ] {
+            requests.push(
+                Request::new_with_shape(operation, Algorithm::Direct, [8, 4, 2], 4)?
+                    .with_warp_width(width)?,
+            );
         }
     }
     // Partial warps, complete warps, maximum block size, CUB bank padding and

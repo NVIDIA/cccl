@@ -3,7 +3,7 @@
 
 use crate::{
     Alignment, Block, GroupScope, Numeric, SupportedAlignment, TempStorage, TempStorageLike,
-    ThreadData, ThreadGroup, Warp,
+    ThreadData, ThreadGroup, ThreadsWithinWarp, Warp,
 };
 use core::marker::PhantomData;
 use cuda_device::{CollectiveTiles, DisjointSlice};
@@ -100,17 +100,79 @@ impl sealed::Algorithm for WarpTransposeTimesliced {
 /// A sealed group supported by a Load/Store algorithm and storage choice.
 ///
 /// Blocks support the existing algorithms and explicit or implicit storage.
-/// Physical [`Warp`] supports [`Direct`] with implicit storage `()`. Generic
+/// Physical [`Warp`] and power-of-two [`ThreadsWithinWarp`] widths 1..=32
+/// support [`Direct`] with implicit storage `()`. Generic
 /// helpers can carry this bound; ordinary calls infer it from the group/options.
+/// A helper that also synchronizes can accept a canonical
+/// `cuda_device::cooperative_groups::WarpTile<N>` separately. Its `N` uses
+/// `u32`, while the group's width uses `usize`; no generic const conversion is
+/// required. The compiler checks that the tile's completion scope covers the
+/// accesses that follow.
 pub trait LoadStoreGroup<A: Algorithm, S: TempStorageLike>: GroupScope + sealed::Group {}
 impl<A: Algorithm, S: TempStorageLike> LoadStoreGroup<A, S> for Block {}
 impl LoadStoreGroup<Direct, ()> for Warp {}
 impl sealed::Group for Block {
     const WARP: bool = false;
+    const WIDTH: usize = 0;
+    #[inline(always)]
+    fn group_index() -> u32 {
+        0
+    }
+    #[inline(always)]
+    unsafe fn call<
+        T: Copy,
+        R: Fn() -> &'static str + Copy,
+        M,
+        S,
+        U: Copy,
+        P: Copy,
+        const I: usize,
+        const WRITE: bool,
+    >(
+        registration: R,
+        memory: M,
+        storage: S,
+        uniform: U,
+        payload: P,
+    ) {
+        // SAFETY: the owning boundary supplies the typed witness and checked bounds.
+        unsafe {
+            cuda_device::library::checked_block_storage_call_v1::<T, _, _, _, _, _, I, WRITE>(
+                registration,
+                memory,
+                storage,
+                uniform,
+                payload,
+            )
+        }
+    }
 }
-impl sealed::Group for Warp {
-    const WARP: bool = true;
+macro_rules! warp_group {
+    ($scope:ty, $width:expr $(, $e:ident)?) => {
+        impl<$(const $e: bool)?> sealed::Group for $scope {
+            const WARP: bool = true;
+            const WIDTH: usize = $width;
+            #[inline(always)]
+            fn group_index() -> u32 { cuda_device::library::warp_group_index_v1::<$width>() }
+            #[inline(always)]
+            unsafe fn call<T: Copy, R: Fn() -> &'static str + Copy, M, S, U: Copy, P: Copy,
+                const I: usize, const WRITE: bool>(registration: R, memory: M, _storage: S, uniform: U, payload: P) {
+                // SAFETY: LoadStoreGroup restricts this dispatch to Direct/implicit
+                // storage; the owning boundary checks the fixed group interval.
+                unsafe { cuda_device::library::checked_warp_call_v1::<T, _, _, _, _, $width, I, WRITE>(
+                    registration, memory, uniform, payload) }
+            }
+        }
+    };
 }
+warp_group!(Warp, 32);
+macro_rules! logical_groups {
+    ($($width:literal),+ $(,)?) => {$ (
+        impl<const E: bool> LoadStoreGroup<Direct, ()> for ThreadsWithinWarp<$width, E> {}
+        warp_group!(ThreadsWithinWarp<$width, E>, $width, E);
+    )+};
+}
+logical_groups!(1, 2, 4, 8, 16, 32);
 
 /// Controls for a [`load`], using [`Direct`] by default.
 ///
@@ -197,8 +259,9 @@ impl<T, A: Algorithm, S: TempStorageLike> LoadOptions<T, A, S> {
 
     /// Set an element offset from the start of the source, defaulting to zero.
     ///
-    /// Include the block's origin explicitly. Warp adds its x-fastest warp index
-    /// times `32 * ITEMS` automatically. The accessed prefix must fit the source
+    /// Include the block's origin explicitly. A Warp group of width `W` adds
+    /// its x-fastest group index times `W * ITEMS` automatically. The accessed
+    /// prefix must fit the source
     /// and, for a collective carrier, the group's fixed ownership region.
     pub fn offset(mut self, offset: usize) -> Self {
         self.offset = offset;
@@ -275,8 +338,9 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 
     /// Set an element offset from the start of the destination, default zero.
     ///
-    /// Include the block's origin explicitly. Warp adds its x-fastest warp index
-    /// times `32 * ITEMS` automatically. The written prefix must fit the
+    /// Include the block's origin explicitly. A Warp group of width `W` adds
+    /// its x-fastest group index times `W * ITEMS` automatically. The written
+    /// prefix must fit the
     /// allocation and the group's fixed ownership region.
     pub fn offset(mut self, offset: usize) -> Self {
         self.offset = offset;
@@ -303,16 +367,21 @@ impl<A: Algorithm, S: TempStorageLike> StoreOptions<A, S> {
 /// Slot `i` addresses `t + group.count() * i` for Striped Load and `t * ITEMS + i`
 /// for the other algorithms, relative to the selected offset.
 /// Compile with the supported Oxide backend and an exact block launch contract.
-/// Physical [`Warp`] supports [`Direct`] with implicit storage when the exact
-/// block size is a multiple of 32. Its origin is the caller's element offset
-/// plus its x-fastest warp index times `32 * ITEMS`. Every participating group
+/// Physical [`Warp`] and logical [`ThreadsWithinWarp`] widths 1, 2, 4, 8, 16 and
+/// 32 support [`Direct`] with implicit storage when the exact block size is a
+/// multiple of 32. A width-`W` group's origin is the caller's element offset
+/// plus its x-fastest group index times `W * ITEMS`. Every participating group
 /// thread must reach matching calls with uniform source, controls and
-/// participation. Sibling warps may choose different controls. The compiler
+/// participation. Sibling groups may choose different controls. The compiler
 /// checks these requirements and resource
 /// conflicts; a group value or Rust borrow alone does not prove them.
 ///
-/// Loading a carrier after Store requires block completion, such as
-/// `cuda_device::thread::sync_threads()`. Ending a borrow is not completion.
+/// Loading a carrier after Store requires completion covering the producer and
+/// consumer groups. A canonical `WarpTile<W>::sync()` completes accesses within
+/// its tile; a containing tile can also provide completion. Transitions to or
+/// from Block accesses require `cuda_device::thread::sync_threads()`.
+/// Ending a borrow is not completion. Raw-mask synchronization is unsupported
+/// in checked collective roots.
 /// Full/filled Load initializes every output slot. Masked Load without a default
 /// resets every out-of-prefix slot to unwritten; access through [`ThreadData`]
 /// remains checked. No initialized slice is exposed.
@@ -372,14 +441,15 @@ pub fn load<
 /// The supported groups, compiler/launch and uniformity requirements are those
 /// of [`load`]. The destination is the canonical collective carrier: it grants
 /// fixed group regions without exposing duplicate mutable lane references.
-/// For Warp, each warp owns `32 * CAPACITY` elements within the block region.
+/// A Warp group of width `W` owns `W * CAPACITY` elements within the block region.
 /// When `CAPACITY != ITEMS`, choose an offset whose automatic Warp origin still
 /// lies in that fixed region; the carrier is not repartitioned by this call.
 /// Every written payload slot must be initialized. Slots outside the written
 /// prefix may be unwritten. A following conflicting access to this carrier
-/// needs block completion; Drop is not completion. Managed scratch reuse may
+/// needs completion covering both accesses, as described by [`load`]; Drop is
+/// not completion. Managed scratch reuse may
 /// insert a barrier before a later scratchful call, but is not a trailing
-/// completion guarantee. Use an explicit block barrier when completion is needed.
+/// completion guarantee. Use an explicit block barrier for Block completion.
 ///
 /// # Panics
 ///
@@ -621,6 +691,24 @@ mod sealed {
     pub trait StoreValue<T, A> {}
     pub trait Group {
         const WARP: bool;
+        const WIDTH: usize;
+        fn group_index() -> u32;
+        unsafe fn call<
+            T: Copy,
+            R: Fn() -> &'static str + Copy,
+            M,
+            S,
+            U: Copy,
+            P: Copy,
+            const I: usize,
+            const WRITE: bool,
+        >(
+            registration: R,
+            memory: M,
+            storage: S,
+            uniform: U,
+            payload: P,
+        );
     }
     // Scalar tags let the compiler prune unused native operation arms before
     // planning scratch. Only the sealed selector implementations assign them.

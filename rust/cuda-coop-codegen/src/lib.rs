@@ -378,19 +378,22 @@ impl Request {
             warp_width: None,
         })
     }
-    /// Select a complete physical Warp Direct specialization within this block.
+    /// Select a physical or logical Warp Direct specialization within this block.
     ///
     /// # Errors
-    /// Rejects widths other than 32, partial physical warps, non-Direct algorithms
+    /// Rejects non-power-of-two widths and widths outside 1..=32, partial physical warps,
+    /// non-Direct algorithms
     /// and legacy raw recipes. The exact root block shape is retained.
     pub fn with_warp_width(mut self, width: u32) -> Result<Self> {
-        if width != 32
-            || self.block_threads() % width != 0
+        if width == 0
+            || width > 32
+            || !width.is_power_of_two()
+            || self.block_threads() % 32 != 0
             || self.algorithm != Algorithm::Direct
             || !self.operation.validity()
         {
             return Err(Error::message(
-                "Warp recipes require width 32, complete physical warps, Direct and a validity-aware operation",
+                "Warp recipes require power-of-two width 1..=32, complete physical warps, Direct and a validity-aware operation",
             ));
         }
         self.warp_width = Some(width);

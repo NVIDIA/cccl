@@ -3,6 +3,7 @@
 
 use coop::{Numeric, ThreadData, this_block};
 mod block_warp;
+mod logical_warp;
 mod storage;
 mod striped;
 mod transpose;
@@ -376,6 +377,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return warp::run();
     }
     if let Some(argument) = std::env::args().nth(1) {
+        if matches!(argument.as_str(), "logical-warp" | "logical-grain-trap") {
+            return logical_warp::run();
+        }
         if argument == "storage" {
             return storage::run();
         }

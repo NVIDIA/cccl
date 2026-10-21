@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 use core::marker::PhantomData;
-use cuda_device::{cluster, thread};
+use cuda_device::{cluster, library, thread};
 
 mod sealed {
     pub trait Scope {
@@ -101,8 +101,9 @@ pub trait QueryAt<L: Level>: sealed::Group {
 ///
 /// Native queries require an Oxide-compiled kernel. They read launch state
 /// without allocating, moving payloads, or synchronizing. Descriptors carry
-/// no uniformity or collective safety proof. Cluster queries currently need
-/// sm_90 or newer; an ordinary launch has one block per cluster.
+/// no uniformity or collective safety proof. Cluster queries on known
+/// pre-sm_90 targets describe one block per cluster; on newer targets they
+/// describe the launch cluster. Unknown targets retain the sm_90 minimum.
 #[derive(Debug)]
 pub struct ThreadGroup<S: GroupScope>(PhantomData<S>);
 impl<S: GroupScope> Copy for ThreadGroup<S> {}
@@ -331,7 +332,13 @@ query!(Cluster, Cluster, u32, 0, 1);
 query!(Grid, Grid, u64, 0, 1);
 pair!(Thread, Warp, u32, thread_rank_block() % 32, 32);
 pair!(Thread, Block, u32, thread_rank_block(), threads_block());
-pair!(Warp, Block, u32, thread_rank_block() / 32, warps_block());
+pair!(
+    Warp,
+    Block,
+    u32,
+    library::warp_group_index_v1::<32>(),
+    warps_block()
+);
 pair!(
     Thread,
     Cluster,
@@ -403,6 +410,8 @@ pub enum ThreadsWithinWarp<const N: usize, const EXHAUSTIVE: bool = true> {}
 #[derive(Clone, Copy, Debug)]
 pub enum WarpsWithinBlock<const N: usize, const EXHAUSTIVE: bool = true> {}
 impl<const N: usize, const E: bool> ThreadsWithinWarp<N, E> {
+    const POWER_OF_TWO: bool = N > 0 && N <= 32 && N.is_power_of_two();
+    const COMPLETE: bool = N > 0 && N <= 32 && 32 % N == 0;
     const VALID: () = {
         assert!(N > 0 && N <= 32, "lane partition size must be in 1..=32");
         assert!(
@@ -419,7 +428,11 @@ impl<const N: usize, const E: bool> WarpsWithinBlock<N, E> {
 impl<const N: usize, const E: bool> sealed::Scope for ThreadsWithinWarp<N, E> {
     #[inline(always)]
     fn member() -> u8 {
-        ((thread_rank_block() % 32) < (32 / N as u32) * N as u32) as u8
+        if Self::COMPLETE {
+            1
+        } else {
+            ((thread_rank_block() % 32) < (32 / N as u32) * N as u32) as u8
+        }
     }
 }
 impl<const N: usize, const E: bool> GroupScope for ThreadsWithinWarp<N, E> {}
@@ -459,10 +472,7 @@ impl ThreadGroup<Warp> {
     #[inline(always)]
     fn partition<const N: usize, const E: bool>(self) -> ThreadGroup<ThreadsWithinWarp<N, E>> {
         let () = ThreadsWithinWarp::<N, E>::VALID;
-        assert!(
-            threads_block().is_multiple_of(32),
-            "lane partitions require complete physical warps"
-        );
+        assert!(threads_block().is_multiple_of(32));
         ThreadGroup(PhantomData)
     }
 }
@@ -495,18 +505,9 @@ impl ThreadGroup<Block> {
     fn partition<const N: usize, const E: bool>(self) -> ThreadGroup<WarpsWithinBlock<N, E>> {
         let () = WarpsWithinBlock::<N, E>::VALID;
         let warps = warps_block();
-        assert!(
-            threads_block().is_multiple_of(32),
-            "warp partitions require complete physical warps"
-        );
-        assert!(
-            N as u32 <= warps,
-            "partition exceeds the block's warp count"
-        );
-        assert!(
-            !E || warps.is_multiple_of(N as u32),
-            "exhaustive partition must divide the block's warp count"
-        );
+        assert!(threads_block().is_multiple_of(32));
+        assert!(N as u32 <= warps);
+        assert!(!E || warps.is_multiple_of(N as u32));
         ThreadGroup(PhantomData)
     }
 }
@@ -516,10 +517,7 @@ macro_rules! mapped_query {
             type Output = u32;
             #[inline(always)]
             fn query_rank(&self) -> u32 {
-                assert!(
-                    self.is_member() == 1,
-                    "excluded thread has no mapped-group rank"
-                );
+                assert!(self.is_member() == 1);
                 $rank
             }
             #[inline(always)]
@@ -538,7 +536,11 @@ mapped_query!(
 mapped_query!(
     ThreadsWithinWarp,
     Warp,
-    thread_rank_block() % 32 / N as u32,
+    if ThreadsWithinWarp::<N, E>::POWER_OF_TWO {
+        library::warp_group_index_v1::<N>() % (32 / N as u32)
+    } else {
+        thread_rank_block() % 32 / N as u32
+    },
     32 / N as u32
 );
 mapped_query!(

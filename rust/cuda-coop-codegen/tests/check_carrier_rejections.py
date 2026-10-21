@@ -43,24 +43,24 @@ cases = {
     "missing_barrier": (
         "carrier::store(&mut output, offset, valid, &mut values);\n"
         "carrier::reload(&mut output, offset, valid, &mut values);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "loop_backedge": (
         "let mut remaining = 2;\nwhile remaining > 0 {\n"
         "carrier::store(&mut output, offset, valid, &mut values);\n"
         "remaining -= 1;\n}",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "conditional_barrier": (
         "carrier::store(&mut output, offset, valid, &mut values);\n"
         "if valid == 0 { thread::sync_threads(); }\n"
         "carrier::reload(&mut output, offset, valid, &mut values);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "conditional_access": (
         "if valid > 0 { carrier::store(&mut output, offset, valid, &mut values); }\n"
         "carrier::reload(&mut output, offset, valid, &mut values);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "divergent_barrier": (
         "carrier::store(&mut output, offset, valid, &mut values);\n"
@@ -123,7 +123,7 @@ cases = {
         "let mut refs = (&mut output,);\n"
         "let target = &mut refs.0;\n*target = &mut other;\n"
         "carrier::store(refs.0, offset, valid, &mut values);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "joined_owner_replacement": (
         "let mut first = Owner { buf: output };\n"
@@ -167,7 +167,7 @@ cases = {
         "let mut one = [0_i32; 1];\n"
         "carrier::store(&mut output, offset, 128, &mut one);\n"
         "carrier::store(&mut output, offset, 512, &mut values);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "slice_write_witness": (
         "carrier::load(input, offset, valid, &mut values);",

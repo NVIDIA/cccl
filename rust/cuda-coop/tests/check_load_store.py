@@ -77,15 +77,18 @@ cases = {
         "lane-varying",
     ),
     "early_return": ("if thread::threadIdx_x()!=0 { return; }" + load, "lane-varying"),
-    "missing_completion": (load + store + reload, "requires a full-block barrier"),
+    "missing_completion": (
+        load + store + reload,
+        "requires a barrier covering both accesses",
+    ),
     "write_after_read": (
         reload
         + "coop::store(block,&mut output,1_i32,coop::StoreOptions::default().offset(offset));",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "loop_without_completion": (
         load + "let mut iteration=0;while iteration<2 {" + store + "iteration+=1;}",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     "loop_with_completion": (
         load
@@ -123,7 +126,7 @@ cases.update(
     ),
     transpose_no_trailing_completion=(
         transpose_load + transpose_store + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     transpose_varying_count=(
         transpose_load.replace(
@@ -186,7 +189,7 @@ cases.update(
             ".valid_items(valid)", ".valid_items(valid).temp_storage(&mut scratch)"
         )
         + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     storage_exclusive_sites=(
         new_storage.replace("new()", "new().exclusive()")
@@ -336,15 +339,24 @@ cases.update(
     ),
     warp_read_after_write=(
         warp_load + warp_store + warp_reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     warp_read_after_completion=(
         warp_load + warp_store + "thread::sync_threads();" + warp_reload,
         None,
     ),
-    warp_write_after_read=(warp_reload + warp_store, "requires a full-block barrier"),
-    warp_to_block=(warp_load + warp_store + reload, "requires a full-block barrier"),
-    warp_from_block=(load + store + warp_reload, "requires a full-block barrier"),
+    warp_write_after_read=(
+        warp_reload + warp_store,
+        "requires a barrier covering both accesses",
+    ),
+    warp_to_block=(
+        warp_load + warp_store + reload,
+        "requires a barrier covering both accesses",
+    ),
+    warp_from_block=(
+        load + store + warp_reload,
+        "requires a barrier covering both accesses",
+    ),
     warp_from_block_completed=(
         load + store + "thread::sync_threads();" + warp_reload,
         None,
@@ -353,7 +365,7 @@ cases.update(
         "values.write(0,0_i32);"
         + warp_helper
         + "put(warp,&mut output,offset);put(warp,&mut output,offset);",
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
     warp_helper_completed=(
         "values.write(0,0_i32);"
@@ -406,7 +418,7 @@ cases.update(
     ),
     striped_missing_completion=(
         striped_load + striped_store + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
 )
 
@@ -427,7 +439,7 @@ cases.update(
     ),
     vectorize_missing_completion=(
         vectorize_load + vectorize_store + reload,
-        "requires a full-block barrier",
+        "requires a barrier covering both accesses",
     ),
 )
 
@@ -454,6 +466,147 @@ for name, selector in [
         "lane-varying",
     )
 
+# Logical group precision and completion use canonical public descriptors.
+logical_prefix = warp_prefix.replace(
+    "let warp=coop::this_warp();", "let warp=coop::this_warp().group_by::<8>();"
+).replace(
+    "cuda_device::library::warp_group_index_v1::<32>() as usize",
+    "warp.rank_at::<coop::Warp>() as usize",
+)
+logical_load = load.replace("(block,", "(warp,")
+logical_store = store.replace("(block,", "(warp,")
+logical_reload = reload.replace("(block,", "(warp,")
+logical_sync = "use cuda_device::cooperative_groups::ThreadGroup as _;cuda_device::cooperative_groups::this_thread_block().tiled_partition::<8>().sync();"
+wide_sync = logical_sync.replace("::<8>()", "::<32>()")
+narrow_sync = logical_sync.replace("::<8>()", "::<4>()")
+logical_loop = "let mut i=0;while i<q+1 {" + logical_load + "i+=1;}"
+cases.update(
+    logical_matching_completion=(
+        logical_load + logical_store + logical_sync + logical_reload,
+        None,
+    ),
+    logical_containing_completion=(
+        logical_load + logical_store + wide_sync + logical_reload,
+        None,
+    ),
+    logical_narrow_completion=(
+        logical_load + logical_store + narrow_sync + logical_reload,
+        "requires a barrier covering both accesses",
+    ),
+    logical_write_after_read=(logical_reload + logical_sync + logical_store, None),
+    logical_terminal_divergent_sync=(
+        logical_load + "if thread::threadIdx_x()&1==0 {" + logical_sync + "}",
+        "control narrower than its width",
+    ),
+    logical_terminal_wide_sync=(
+        logical_load + "if q==0 {" + wide_sync + "}",
+        "control narrower than its width",
+    ),
+    logical_sibling_sync=(
+        "if q==0 {"
+        + logical_load
+        + logical_store
+        + logical_sync
+        + logical_reload
+        + "}",
+        None,
+    ),
+    logical_raw_sync_no_credit=(
+        logical_load
+        + logical_store
+        + "cuda_device::warp::sync_mask(u32::MAX);"
+        + logical_reload,
+        "intrinsic is outside",
+    ),
+    logical_to_physical=(
+        logical_load
+        + logical_store
+        + logical_sync
+        + logical_reload.replace("(warp,", "(coop::this_warp(),"),
+        "requires a barrier covering both accesses",
+    ),
+    logical_to_physical_completed=(
+        logical_load
+        + logical_store
+        + wide_sync
+        + logical_reload.replace("(warp,", "(coop::this_warp(),"),
+        None,
+    ),
+    logical_read_kinds_retained=(
+        reload + logical_reload + logical_sync + logical_store,
+        "requires a barrier covering both accesses",
+    ),
+    logical_block_dirty_retained=(
+        new_storage + explicit_load + logical_sync + explicit_store,
+        "requires a full-block barrier",
+    ),
+    logical_managed_block_reuse=(transpose_load + logical_sync + transpose_load, None),
+    logical_completion_join=(
+        logical_load
+        + logical_store
+        + "if valid==1 {"
+        + logical_sync
+        + "}"
+        + logical_reload,
+        "requires a barrier covering both accesses",
+    ),
+    logical_loop_completion=(
+        logical_load
+        + "let mut i=0;while i<2 {"
+        + logical_store
+        + logical_sync
+        + "i+=1;}"
+        + logical_reload,
+        None,
+    ),
+    logical_cycle_to_wider=(logical_loop + load, "lane-varying"),
+    logical_sibling_loop=(logical_loop + logical_load, None),
+    logical_helper_cycle=(
+        "#[inline(never)] fn cycle(input:&[i32]) {let warp=coop::this_warp().group_by::<8>();let q=warp.rank_at::<coop::Warp>() as usize;let valid=1;let offset=0;let mut values=coop::ThreadData::<_,4>::new();"
+        + logical_loop
+        + "}cycle(input);"
+        + load,
+        "lane-varying",
+    ),
+    logical_lane_control=(
+        logical_load.replace(
+            ".valid_items(valid)", ".valid_items(thread::threadIdx_x() as usize)"
+        ),
+        "not proved Warp-uniform",
+    ),
+    logical_public_rank_control=(
+        logical_load.replace(".valid_items(valid)", ".valid_items(q+1)"),
+        None,
+    ),
+    logical_group6=(
+        logical_load.replace(
+            "(warp,", "(coop::this_warp().group_by_non_exhaustive::<6>(),"
+        ),
+        "LoadStoreGroup",
+    ),
+    logical_width1_origin=(
+        "let chosen=if thread::threadIdx_x()&1==0 {&mut output}else{&mut other};"
+        + logical_store.replace(
+            "(warp,&mut output", "(coop::this_warp().group_by::<1>(),chosen"
+        ),
+        "not proved Warp-uniform",
+    ),
+    logical_structural_width6=(
+        'values.write(0,0_i32);let mut local=[0_i32;4];let flags=[1_u8;4];fn registration()->&\'static str {"unused"} unsafe {cuda_device::library::checked_warp_call_v1::<i32,_,_,_,_,6,4,true>(registration,&mut output,(core::ptr::null_mut::<i32>(),),(local.as_mut_ptr(),flags.as_ptr()));}',
+        "power-of-two width in 1..=32",
+    ),
+)
+for width in (1, 2, 4, 8, 16, 32):
+    for exhaustive in (True, False):
+        constructor = "group_by" if exhaustive else "group_by_non_exhaustive"
+        cases[f"logical_width{width}_{exhaustive}"] = (
+            logical_load.replace(
+                "(warp,", f"(coop::this_warp().{constructor}::<{width}>(),"
+            ),
+            None,
+        )
+
+
 command = [
     str(args.cargo_oxide.resolve()),
     "oxide",
@@ -476,6 +629,16 @@ results = []
 for name, (body, diagnostic) in cases.items():
     block_warp = name.startswith(("warp_transpose_", "warp_timesliced_"))
     case_prefix = warp_prefix if name.startswith("warp_") and not block_warp else prefix
+    if name.startswith("logical_"):
+        case_prefix = logical_prefix
+    if name == "logical_width1_origin":
+        case_prefix = case_prefix.replace(
+            "valid:usize)",
+            "valid:usize,mut other:DisjointSlice<i32,CollectiveTiles<4>>)",
+        )
+        case_prefix = case_prefix.replace("pub fn probe(", "pub fn probe<'a>(").replace(
+            "DisjointSlice<i32,", "DisjointSlice<'a,i32,"
+        )
     if name == "warp_partial_geometry":
         case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")
     elif name.endswith("_partial_block"):
