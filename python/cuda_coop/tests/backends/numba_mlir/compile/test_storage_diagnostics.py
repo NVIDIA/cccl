@@ -345,7 +345,7 @@ def test_release_rejects_unsupported_or_unaligned_dtype(dtype):
 
 
 def test_release_retains_last_primitive_barrier_without_adding_one():
-    def count_barriers(auto_sync):
+    def count_barriers(auto_sync, release_storage):
         @cuda.jit(chip="sm_90")
         def kernel(source, output):
             storage = coop.TempStorage(auto_sync=auto_sync)
@@ -357,16 +357,23 @@ def test_release_retains_last_primitive_barrier_without_adding_one():
                 algorithm="transpose",
                 temp_storage=storage,
             )
-            view = storage.release(types.int32)
-            view[cuda.threadIdx.x] = items[0]
-            output[cuda.threadIdx.x] = view[cuda.threadIdx.x]
+            if release_storage:
+                view = storage.release(types.int32)
+                view[cuda.threadIdx.x] = items[0]
+                output[cuda.threadIdx.x] = view[cuda.threadIdx.x]
+            else:
+                output[cuda.threadIdx.x] = items[0]
 
         compiled = _compile(kernel, types.int32[::1], types.int32[::1])
         return compiled.ptx.count("bar.sync")
 
-    # CUB owns its internal barriers. Only the requested trailing barrier
-    # changes between these two variants; release adds none.
-    assert count_barriers(True) == count_barriers(False) + 1
+    # CUB owns its internal barriers. Release preserves the primitive's
+    # requested trailing barrier and adds none of its own.
+    without_sync = count_barriers(False, False)
+    with_sync = count_barriers(True, False)
+    assert with_sync == without_sync + 1
+    assert count_barriers(False, True) == without_sync
+    assert count_barriers(True, True) == with_sync
 
 
 @pytest.mark.parametrize(

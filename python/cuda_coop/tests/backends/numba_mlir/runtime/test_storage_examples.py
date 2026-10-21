@@ -190,10 +190,10 @@ def test_bound_release_survives_rebind():
         storage = coop.TempStorage(128)
         saved = storage.release
         storage = coop.TempStorage(256)
-        left = saved()
+        left = saved(None)
         right = storage.release()
         rank = cuda.threadIdx.x
-        left[rank] = rank
+        left[rank] = 128 + rank
         right[rank] = 100 + rank
         cuda.syncthreads()
         result[rank] = left[31 - rank]
@@ -205,6 +205,6 @@ def test_bound_release_survives_rebind():
     result = cuda.device_array(66, dtype=np.int32)
     kernel[1, 32](result)
     expected = np.concatenate(
-        (np.arange(32)[::-1], 100 + np.arange(32), [128, 256])
+        (128 + np.arange(32)[::-1], 100 + np.arange(32), [128, 256])
     )
     np.testing.assert_array_equal(result.copy_to_host(), expected)
