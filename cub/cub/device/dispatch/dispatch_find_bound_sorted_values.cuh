@@ -30,7 +30,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/limits>
+#include <cuda/std/__limits/numeric_limits.h>
 
 #if _CCCL_HOSTED() && defined(CUB_DEBUG_LOG)
 #  include <sstream>

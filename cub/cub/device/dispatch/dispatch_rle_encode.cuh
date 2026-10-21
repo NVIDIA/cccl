@@ -43,9 +43,9 @@
 
 #  include <cuda/__cmath/ceil_div.h>
 #  include <cuda/__type_traits/is_trivially_copyable.h>
+#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/limits>
 
 #  include <nv/target>
 #endif // __cccl_ptx_isa >= 920

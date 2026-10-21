@@ -43,7 +43,6 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 // TODO(bgruber): included for backward compatibility, remove in CCCL 4.0
 #include <cub/device/dispatch/dispatch_segmented_radix_sort.cuh> // IWYU pragma: export

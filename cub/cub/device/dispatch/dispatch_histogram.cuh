@@ -39,12 +39,12 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/transform.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
-#include <cuda/std/limits>
 #include <cuda/std/tuple>
 
 #include <nv/target>
