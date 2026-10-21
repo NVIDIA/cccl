@@ -57,7 +57,7 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
 
   // Thread-local storage
   KeyT keys[ItemsPerThread];
-  ValueT values[ItemsPerThread];
+  [[maybe_unused]] ValueT values[ItemsPerThread];
 
   // Instantiate warp-scope algorithm
   __shared__ typename warp_topk_t::TempStorage temp_storage[TotalWarps];
@@ -405,8 +405,8 @@ void verify_topk_result(
   c2h::host_vector<KeyT> keys_in        = d_keys_in;
   const c2h::host_vector<KeyT> keys_out = d_keys_out;
 
-  const int num_items = keys_in.size() / total_warps;
-  const int k         = keys_out.size() / total_warps;
+  const auto num_items = static_cast<int>(keys_in.size() / total_warps);
+  const auto k         = static_cast<int>(keys_out.size() / total_warps);
 
   for (int warp_id = 0; warp_id < total_warps; ++warp_id)
   {
@@ -435,8 +435,8 @@ void verify_topk_result(
   c2h::host_vector<KeyT> keys_out     = d_keys_out;
   c2h::host_vector<ValueT> values_out = d_values_out;
 
-  const int num_items = keys_in.size() / total_warps;
-  const int k         = keys_out.size() / total_warps;
+  const auto num_items = static_cast<int>(keys_in.size() / total_warps);
+  const auto k         = static_cast<int>(keys_out.size() / total_warps);
 
   for (int warp_id = 0; warp_id < total_warps; ++warp_id)
   {
@@ -787,7 +787,7 @@ CUB_TEST("Warp top-k on custom key-value pairs works",
   using action_t      = typename c2h::get<6, TestType>;
 
   const int k = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
-  int num_items;
+  [[maybe_unused]] int num_items;
   if constexpr (cuda::std::is_same_v<action_t, topk_pairs_full_t>)
   {
     num_items = params::items_per_thread * params::logical_warp_threads;
