@@ -49,7 +49,7 @@ array_kernel(KeyT* keys_in, KeyT* keys_out, ValueT* values_in, ValueT* values_ou
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
-  // Test case of partially finished CTA
+  // Test case of skipping some logical warps within an architectural warp
   if (warp_id >= TotalWarps)
   {
     return;
@@ -124,7 +124,7 @@ __global__ void iterator_kernel(
   const int warp_id = tid / LogicalWarpThreads;
   const int lane    = tid % LogicalWarpThreads;
 
-  // Test case of partially finished CTA
+  // Test case of skipping some logical warps within an architectural warp
   if (warp_id >= TotalWarps)
   {
     return;
@@ -166,7 +166,7 @@ __global__ void iterator_kernel(
 
 // -----------------------------------------------------------
 // Dimensions being instantiated:
-// {full,partial-oob,partial,iterator} x {keys, kv-pairs}
+// {full,partial-oob,partial,iterator,vectorized_iterator} x {keys, kv-pairs}
 // -----------------------------------------------------------
 
 /**
@@ -644,19 +644,21 @@ CUB_TEST("Warp top-k vectorized iterator on keys works",
     k + 1,
     take(5, random(k + 2, k + 100)),
     take(5, random(k + 100, k + 1000)),
-    std::max(k, max_k - 1), // num_items >= k is required
+    std::max(max_k - 1, k),
     max_k,
     max_k + 1,
-    std::max(k, vectorized_tile_items - 1),
-    std::max(k, vectorized_tile_items),
-    std::max(k, vectorized_tile_items + 1),
-    std::max(k, 2 * vectorized_tile_items - 1),
-    std::max(k, 2 * vectorized_tile_items),
-    std::max(k, 2 * vectorized_tile_items + 1));
+    std::max(vectorized_tile_items - 1, k),
+    std::max(vectorized_tile_items, k),
+    std::max(vectorized_tile_items + 1, k),
+    std::max(2 * vectorized_tile_items - 1, k),
+    std::max(2 * vectorized_tile_items, k),
+    std::max(2 * vectorized_tile_items + 1, k));
 
   test_topk_keys<TestType, topk_keys_vectorized_iterator_t>(k, num_items);
 }
 
+// Exercise more num_items cases in key-value tests. Keep keys-only coverage smaller to reduce test time,
+// because keys-only overloads delegate to key-value overloads with ValueT=NullType.
 CUB_TEST("Warp top-k on key-value pairs works",
          "[topk][warp]",
          CUB_SMALL,
@@ -686,11 +688,26 @@ CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile with an OOB defau
          extra_items_per_thread_list,
          value_types)
 {
-  using params        = params_t<TestType>;
-  constexpr int max_k = params::max_k;
+  using params                       = params_t<TestType>;
+  constexpr int max_k                = params::max_k;
+  constexpr int logical_warp_threads = params::logical_warp_threads;
+  constexpr int max_items            = params::items_per_thread * logical_warp_threads;
 
   const int k         = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
-  const int num_items = GENERATE_COPY(k, take(5, random(k, params::items_per_thread * params::logical_warp_threads)));
+  const int num_items = GENERATE_COPY(
+    k,
+    std::clamp(logical_warp_threads - 1, k, max_items),
+    std::clamp(logical_warp_threads, k, max_items),
+    std::clamp(logical_warp_threads + 1, k, max_items),
+    std::clamp(max_k - 1, k, max_items),
+    max_k,
+    std::clamp(max_k + 1, k, max_items),
+    std::clamp(2 * max_k - 1, k, max_items),
+    std::clamp(2 * max_k, k, max_items),
+    std::clamp(2 * max_k + 1, k, max_items),
+    std::clamp(max_items - 1, k, max_items),
+    max_items,
+    take(5, random(k, max_items)));
 
   test_topk_pairs<TestType, topk_pairs_partial_oob_t>(k, num_items);
 }
@@ -705,11 +722,26 @@ CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile works",
          extra_items_per_thread_list,
          value_types)
 {
-  using params        = params_t<TestType>;
-  constexpr int max_k = params::max_k;
+  using params                       = params_t<TestType>;
+  constexpr int max_k                = params::max_k;
+  constexpr int logical_warp_threads = params::logical_warp_threads;
+  constexpr int max_items            = params::items_per_thread * logical_warp_threads;
 
   const int k         = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
-  const int num_items = GENERATE_COPY(k, take(5, random(k, params::items_per_thread * params::logical_warp_threads)));
+  const int num_items = GENERATE_COPY(
+    k,
+    std::clamp(logical_warp_threads - 1, k, max_items),
+    std::clamp(logical_warp_threads, k, max_items),
+    std::clamp(logical_warp_threads + 1, k, max_items),
+    std::clamp(max_k - 1, k, max_items),
+    max_k,
+    std::clamp(max_k + 1, k, max_items),
+    std::clamp(2 * max_k - 1, k, max_items),
+    std::clamp(2 * max_k, k, max_items),
+    std::clamp(2 * max_k + 1, k, max_items),
+    std::clamp(max_items - 1, k, max_items),
+    max_items,
+    take(5, random(k, max_items)));
 
   test_topk_pairs<TestType, topk_pairs_partial_t>(k, num_items);
 }
@@ -724,11 +756,25 @@ CUB_TEST("Warp top-k iterator on key-value pairs of a partial warp-tile works",
          c2h::enum_type_list<int, 0>, // extra_items_per_thread is not used by iterator overload
          value_types)
 {
-  using params        = params_t<TestType>;
-  constexpr int max_k = params::max_k;
+  using params                       = params_t<TestType>;
+  constexpr int max_k                = params::max_k;
+  constexpr int logical_warp_threads = params::logical_warp_threads;
 
   const int k         = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
-  const int num_items = GENERATE_COPY(k, k + 1, take(5, random(k + 2, k + 100)), take(5, random(k + 100, k + 1000)));
+  const int num_items = GENERATE_COPY(
+    k,
+    k + 1,
+    std::max(logical_warp_threads - 1, k),
+    std::max(logical_warp_threads, k),
+    std::max(logical_warp_threads + 1, k),
+    std::max(max_k - 1, k),
+    max_k,
+    max_k + 1,
+    2 * max_k - 1,
+    2 * max_k,
+    2 * max_k + 1,
+    take(5, random(k + 2, k + 100)),
+    take(5, random(k + 100, k + 1000)));
 
   test_topk_pairs<TestType, topk_pairs_iterator_t>(k, num_items);
 }
@@ -754,15 +800,15 @@ CUB_TEST("Warp top-k vectorized iterator on key-value pairs works",
     k + 1,
     take(5, random(k + 2, k + 100)),
     take(5, random(k + 100, k + 1000)),
-    std::max(k, max_k - 1), // num_items >= k is required
+    std::max(max_k - 1, k),
     max_k,
     max_k + 1,
-    std::max(k, vectorized_tile_items - 1),
-    std::max(k, vectorized_tile_items),
-    std::max(k, vectorized_tile_items + 1),
-    std::max(k, 2 * vectorized_tile_items - 1),
-    std::max(k, 2 * vectorized_tile_items),
-    std::max(k, 2 * vectorized_tile_items + 1));
+    std::max(vectorized_tile_items - 1, k),
+    std::max(vectorized_tile_items, k),
+    std::max(vectorized_tile_items + 1, k),
+    std::max(2 * vectorized_tile_items - 1, k),
+    std::max(2 * vectorized_tile_items, k),
+    std::max(2 * vectorized_tile_items + 1, k));
 
   test_topk_pairs<TestType, topk_pairs_vectorized_iterator_t>(k, num_items);
 }
@@ -776,25 +822,37 @@ CUB_TEST("Warp top-k on custom key-value pairs works",
          c2h::type_list<custom_t>, // key_types,
          algo_list,
          c2h::enum_type_list<int, 4, warp_threads>, // logical_warp_threads
-         c2h::enum_type_list<int, 2>, // max_k
+         c2h::enum_type_list<int, 2>, // max_k_per_thread
          c2h::enum_type_list<int, 1>, // extra_items_per_thread
          c2h::type_list<custom_t>, // value_types,
          c2h::type_list<topk_pairs_full_t, topk_pairs_partial_t, topk_pairs_iterator_t>)
 {
-  using params        = params_t<TestType>;
-  constexpr auto algo = params::algo;
-  constexpr int max_k = params::max_k;
-  using action_t      = typename c2h::get<6, TestType>;
+  using params                       = params_t<TestType>;
+  using action_t                     = typename c2h::get<6, TestType>;
+  constexpr auto algo                = params::algo;
+  constexpr int max_k                = params::max_k;
+  constexpr int logical_warp_threads = params::logical_warp_threads;
+  constexpr int max_items            = params::items_per_thread * logical_warp_threads;
 
   const int k = GENERATE_COPY(1, max_k, take(5, random(1, max_k)));
   [[maybe_unused]] int num_items;
   if constexpr (cuda::std::is_same_v<action_t, topk_pairs_full_t>)
   {
-    num_items = params::items_per_thread * params::logical_warp_threads;
+    num_items = max_items;
   }
   else
   {
-    num_items = GENERATE_COPY(k, take(5, random(k, params::items_per_thread * params::logical_warp_threads)));
+    num_items = GENERATE_COPY(
+      k,
+      std::clamp(logical_warp_threads - 1, k, max_items),
+      std::clamp(logical_warp_threads, k, max_items),
+      std::clamp(logical_warp_threads + 1, k, max_items),
+      std::clamp(max_k - 1, k, max_items),
+      max_k,
+      std::clamp(max_k + 1, k, max_items),
+      std::clamp(max_items - 1, k, max_items),
+      max_items,
+      take(5, random(k, max_items)));
   }
 
   if constexpr (!(algo == WarpBitonicTopKAlgorithm::eager && cuda::std::is_same_v<action_t, topk_pairs_iterator_t>) )
