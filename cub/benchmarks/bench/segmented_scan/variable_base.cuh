@@ -13,6 +13,7 @@
 #include <thrust/transform.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__cmath/round_up.h>
 #include <cuda/iterator>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__functional/invoke.h>
@@ -25,26 +26,57 @@
 
 #if !TUNE_BASE
 template <typename AccumT>
+struct policy_selector_t
+{
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability cc) const
+    -> cub::SegmentedScanPolicy
+  {
+    auto policy = cub::detail::segmented_scan::policy_selector_from_types<AccumT>{}(cc);
+    const int augmented_size =
+      cuda::round_up(int{sizeof(AccumT)} + ((policy.block.max_segments == 1) ? 0 : 1), int{alignof(AccumT)});
+    const auto scaled = cub::detail::scale_mem_bound(1 << TUNE_THREADS_PER_BLOCK_POW2, TUNE_ITEMS, augmented_size);
+    policy.block.threads_per_block = scaled.threads_per_block;
+    policy.block.items_per_thread  = scaled.items_per_thread;
+#  if TUNE_TRANSPOSE == 0
+    policy.block.load_algorithm  = cub::BLOCK_LOAD_DIRECT;
+    policy.block.store_algorithm = cub::BLOCK_STORE_DIRECT;
+#  else // TUNE_TRANSPOSE == 1
+    const bool large_values = augmented_size > 128;
+    policy.block.load_algorithm =
+      large_values ? cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_LOAD_WARP_TRANSPOSE;
+    policy.block.store_algorithm =
+      large_values ? cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_STORE_WARP_TRANSPOSE;
+#  endif // TUNE_TRANSPOSE
+    return policy;
+  }
+};
+
+template <typename AccumT>
 struct load_balanced_policy_selector_t
 {
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr auto operator()(cuda::compute_capability) const
     -> cub::SegmentedScanLoadBalancedPolicy
   {
-    constexpr int pair_size               = int{sizeof(cub::KeyValuePair<int, AccumT>)};
-    constexpr int min_tiles_per_block     = 16;
-    constexpr int max_subscription_factor = 5;
+    constexpr int pair_size = int{sizeof(cub::KeyValuePair<int, AccumT>)};
     const auto scaled       = cub::detail::scale_mem_bound(1 << TUNE_THREADS_PER_BLOCK_POW2, TUNE_ITEMS, pair_size);
-    const bool large_values = pair_size > 128;
+#  if TUNE_TRANSPOSE == 0
+    constexpr auto load_algorithm  = cub::BLOCK_LOAD_DIRECT;
+    constexpr auto store_algorithm = cub::BLOCK_STORE_DIRECT;
+#  else // TUNE_TRANSPOSE == 1
+    constexpr bool large_values = pair_size > 128;
+    constexpr auto load_algorithm =
+      large_values ? cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_LOAD_WARP_TRANSPOSE;
+    constexpr auto store_algorithm =
+      large_values ? cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_STORE_WARP_TRANSPOSE;
+#  endif // TUNE_TRANSPOSE
 
     return cub::SegmentedScanLoadBalancedPolicy{
       scaled.threads_per_block,
       scaled.items_per_thread,
-      large_values ? cub::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_LOAD_WARP_TRANSPOSE,
+      load_algorithm,
       cub::LOAD_DEFAULT,
-      large_values ? cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : cub::BLOCK_STORE_WARP_TRANSPOSE,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      min_tiles_per_block,
-      max_subscription_factor};
+      store_algorithm,
+      cub::BLOCK_SCAN_WARP_SCANS};
   }
 };
 #endif // !TUNE_BASE
@@ -260,14 +292,32 @@ void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT
         env);
     };
 
+#if !TUNE_BASE
+    using accum_t = ::cuda::std::__accumulator_t<op_t, T, T>;
+#endif // !TUNE_BASE
     if constexpr (Schedule == schedule::default_)
     {
-      const auto env = cub_bench_env(alloc, launch);
+      const auto env = cub_bench_env(
+        alloc,
+        launch
+#if !TUNE_BASE
+        ,
+        cuda::execution::tune(policy_selector_t<accum_t>{})
+#endif // !TUNE_BASE
+      );
       run(env);
     }
     else if constexpr (Schedule == schedule::num_items)
     {
-      const auto env = cub_bench_env(alloc, launch, cub::segmented_scan_num_items(elements));
+      const auto env = cub_bench_env(
+        alloc,
+        launch,
+        cub::segmented_scan_num_items(elements)
+#if !TUNE_BASE
+          ,
+        cuda::execution::tune(policy_selector_t<accum_t>{})
+#endif // !TUNE_BASE
+      );
       run(env);
     }
     else
@@ -278,7 +328,7 @@ void variable_size_segments(nvbench::state& state, nvbench::type_list<T, OffsetT
         cub::segmented_scan_load_balancing
 #if !TUNE_BASE
         ,
-        cuda::execution::tune(load_balanced_policy_selector_t<::cuda::std::__accumulator_t<op_t, T, T>>{})
+        cuda::execution::tune(policy_selector_t<accum_t>{}, load_balanced_policy_selector_t<accum_t>{})
 #endif // !TUNE_BASE
       );
       run(env);

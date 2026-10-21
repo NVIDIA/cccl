@@ -35,7 +35,7 @@ struct SegmentedScanBlockPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for block scanning
-  int max_segments; //!< Maximum number of segments processed per block
+  int max_segments; //!< Bounds the packed kernel's per-block segment storage
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedScanBlockPolicy& lhs, const SegmentedScanBlockPolicy& rhs) noexcept
@@ -75,17 +75,13 @@ struct SegmentedScanLoadBalancedPolicy
   CacheLoadModifier load_modifier; //!< The @ref CacheLoadModifier used for loading items from global memory
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for block scanning
-  int min_tiles_per_block; //!< Tiles each block should receive before the grid grows past one wave
-  int max_subscription_factor; //!< Most waves of resident blocks the load-balanced grid launches
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const SegmentedScanLoadBalancedPolicy& lhs, const SegmentedScanLoadBalancedPolicy& rhs) noexcept
   {
     return lhs.threads_per_block == rhs.threads_per_block && lhs.items_per_thread == rhs.items_per_thread
         && lhs.load_algorithm == rhs.load_algorithm && lhs.load_modifier == rhs.load_modifier
-        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm
-        && lhs.min_tiles_per_block == rhs.min_tiles_per_block
-        && lhs.max_subscription_factor == rhs.max_subscription_factor;
+        && lhs.store_algorithm == rhs.store_algorithm && lhs.scan_algorithm == rhs.scan_algorithm;
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
@@ -101,8 +97,7 @@ struct SegmentedScanLoadBalancedPolicy
         << "SegmentedScanLoadBalancedPolicy { .threads_per_block = " << policy.threads_per_block
         << ", .items_per_thread = " << policy.items_per_thread << ", .load_algorithm = " << policy.load_algorithm
         << ", .load_modifier = " << policy.load_modifier << ", .store_algorithm = " << policy.store_algorithm
-        << ", .scan_algorithm = " << policy.scan_algorithm << ", .min_tiles_per_block = " << policy.min_tiles_per_block
-        << ", .max_subscription_factor = " << policy.max_subscription_factor << " }";
+        << ", .scan_algorithm = " << policy.scan_algorithm << " }";
   }
 #endif // _CCCL_HOSTED()
 };
@@ -166,18 +161,12 @@ struct policy_selector
     const auto block_scaled =
       scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, augmented_size_block);
 
-    const bool large_values = augmented_size_block > 128;
-    const auto scan_transposed_blockload =
-      large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
-    const auto scan_transposed_blockstore =
-      large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-
     return SegmentedScanPolicy{SegmentedScanBlockPolicy{
       block_scaled.threads_per_block,
       block_scaled.items_per_thread,
-      scan_transposed_blockload,
+      BLOCK_LOAD_DIRECT,
       LOAD_DEFAULT,
-      scan_transposed_blockstore,
+      BLOCK_STORE_DIRECT,
       BLOCK_SCAN_WARP_SCANS,
       max_segments_per_block}};
   }
@@ -197,23 +186,18 @@ struct load_balanced_policy_selector
   {
     constexpr int nominal_threads_per_block = 128;
     constexpr int nominal_items_per_thread  = 8;
-    constexpr int min_tiles_per_block       = 16;
-    constexpr int max_subscription_factor   = 5;
 
     _CCCL_ASSERT(pair_size > 0, "Pair size must be positive");
 
-    const auto scaled       = scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, pair_size);
-    const bool large_values = pair_size > 128;
+    const auto scaled = scale_mem_bound(nominal_threads_per_block, nominal_items_per_thread, pair_size);
 
     return SegmentedScanLoadBalancedPolicy{
       scaled.threads_per_block,
       scaled.items_per_thread,
-      large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE,
+      BLOCK_LOAD_DIRECT,
       LOAD_DEFAULT,
-      large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE,
-      BLOCK_SCAN_WARP_SCANS,
-      min_tiles_per_block,
-      max_subscription_factor};
+      BLOCK_STORE_DIRECT,
+      BLOCK_SCAN_WARP_SCANS};
   }
 };
 

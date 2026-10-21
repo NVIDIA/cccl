@@ -110,6 +110,14 @@ private:
   static constexpr auto store_algorithm = agent_policy.store_algorithm;
   static constexpr auto scan_algorithm  = agent_policy.scan_algorithm;
 
+  // Whether the BlockLoad and BlockStore algorithms use shared memory to load, store or exchange the data
+  static constexpr bool loads_via_smem =
+    !(load_algorithm == BLOCK_LOAD_DIRECT || load_algorithm == BLOCK_LOAD_STRIPED
+      || load_algorithm == BLOCK_LOAD_VECTORIZE);
+  static constexpr bool stores_via_smem =
+    !(store_algorithm == BLOCK_STORE_DIRECT || store_algorithm == BLOCK_STORE_STRIPED
+      || store_algorithm == BLOCK_STORE_VECTORIZE);
+
   using block_load_t  = BlockLoad<AccumT, threads_per_block, items_per_thread, load_algorithm>;
   using block_store_t = BlockStore<AccumT, threads_per_block, items_per_thread, store_algorithm>;
   using block_scan_t  = BlockScan<AccumT, threads_per_block, scan_algorithm>;
@@ -233,7 +241,10 @@ public:
           loader.Load(d_in + chunk_begin, thread_values, chunk_size, AccumT{});
         }
       }
-      __syncthreads();
+      if constexpr (loads_via_smem)
+      {
+        __syncthreads();
+      }
 
       {
         block_scan_t scanner(temp_storage.reused.scan);
@@ -247,7 +258,10 @@ public:
           scan_later_tile(scanner, thread_values, scan_op, prefix_op);
         }
       }
-      __syncthreads();
+      if constexpr (stores_via_smem)
+      {
+        __syncthreads();
+      }
 
       {
         block_store_t storer(temp_storage.reused.store);
@@ -428,7 +442,10 @@ public:
             (tid * items_per_thread + item < tile_size) ? static_cast<AccumT>(d_in[indices[item]]) : AccumT{};
         }
       }
-      __syncthreads();
+      if constexpr (loads_via_smem)
+      {
+        __syncthreads();
+      }
 
       if (!has_heads)
       {
@@ -479,7 +496,12 @@ public:
           }
         }
       }
-      __syncthreads();
+      // Without a barrier after the load, this one orders the reads of the tile's heads before the next tile marks
+      // its own.
+      if constexpr (stores_via_smem || !loads_via_smem)
+      {
+        __syncthreads();
+      }
 
       if (block_io)
       {

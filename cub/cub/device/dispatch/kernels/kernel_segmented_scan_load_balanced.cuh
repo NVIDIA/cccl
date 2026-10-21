@@ -551,6 +551,11 @@ private:
   using scan_tile_state_t  = ReduceByKeyScanTileState<AccumT, int>;
   using prefix_callback_t  = TilePrefixCallbackOp<flag_value_t, pair_scan_op_t, scan_tile_state_t>;
 
+  // Whether the BlockLoad algorithm uses shared memory to load or exchange the data
+  static constexpr bool loads_via_smem =
+    !(policy.load_algorithm == BLOCK_LOAD_DIRECT || policy.load_algorithm == BLOCK_LOAD_STRIPED
+      || policy.load_algorithm == BLOCK_LOAD_VECTORIZE);
+
   union tile_storage_t
   {
     typename block_load_t::TempStorage load;
@@ -875,7 +880,7 @@ private:
       block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
     }
     // A gathered tile uses no tile storage.
-    if (!gather)
+    if (loads_via_smem && !gather)
     {
       __syncthreads();
     }
@@ -1002,14 +1007,20 @@ private:
       if (valid_items == items_per_tile)
       {
         block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
-        __syncthreads();
+        if constexpr (loads_via_smem)
+        {
+          __syncthreads();
+        }
 
         tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(values, scan_op);
       }
       else
       {
         block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
-        __syncthreads();
+        if constexpr (loads_via_smem)
+        {
+          __syncthreads();
+        }
 
         const int thread_items = valid_items - static_cast<int>(threadIdx.x) * items_per_thread;
         AccumT partial         = values[0];

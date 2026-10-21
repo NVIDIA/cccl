@@ -790,8 +790,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
     return error;
   }
 
-  const int min_tiles_per_block = active_policy.min_tiles_per_block;
-  const int max_factor          = active_policy.max_subscription_factor;
+  // Tiles each block should receive before the grid grows past one wave
+  constexpr int min_tiles_per_block = 16;
+  // Most waves of resident blocks the grid launches
+  constexpr int max_factor = 5;
   int resident_blocks{};
   int capacity{};
   if (!load_balanced_grid_size(blocks_per_sm, sm_count, 1, resident_blocks)

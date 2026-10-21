@@ -411,9 +411,9 @@ CUB_TEST("Device segmented scan gives the same result with every schedule",
   constexpr offset_t large_size = num_items / 16;
 
   // The first row gives segments short enough to share a block for every value type, the second puts most items in a
-  // few segments.
+  // few segments, and the third gives one item per segment, so every item of every tile starts a segment.
   const std::tuple<offset_t, offset_t> seg_size_range =
-    GENERATE_COPY(table<offset_t, offset_t>({{0, 32}, {large_size, num_items}}));
+    GENERATE_COPY(table<offset_t, offset_t>({{0, 32}, {large_size, num_items}, {1, 1}}));
   INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << ")");
 
   c2h::device_vector<offset_t> d_segment_offsets = c2h::gen_uniform_offsets<offset_t>(

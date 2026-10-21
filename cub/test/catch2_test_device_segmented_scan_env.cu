@@ -1336,9 +1336,7 @@ struct segmented_scan_load_balanced_tuning
       cub::BLOCK_LOAD_DIRECT,
       cub::LOAD_DEFAULT,
       cub::BLOCK_STORE_DIRECT,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      16,
-      5};
+      cub::BLOCK_SCAN_WARP_SCANS};
   }
 };
 
@@ -1643,21 +1641,17 @@ CUB_TEST("Test SegmentedScanLoadBalancedPolicy properties", "[segmented_scan][de
     cub::BLOCK_LOAD_WARP_TRANSPOSE,
     cub::LOAD_DEFAULT,
     cub::BLOCK_STORE_WARP_TRANSPOSE,
-    cub::BLOCK_SCAN_WARP_SCANS,
-    16,
-    5};
+    cub::BLOCK_SCAN_WARP_SCANS};
 
 #  if _CCCL_STD_VER >= 2020
   // designated init
   constexpr auto p2 = cub::SegmentedScanLoadBalancedPolicy{
-    .threads_per_block       = 128,
-    .items_per_thread        = 4,
-    .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-    .load_modifier           = cub::LOAD_DEFAULT,
-    .store_algorithm         = cub::BLOCK_STORE_WARP_TRANSPOSE,
-    .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-    .min_tiles_per_block     = 16,
-    .max_subscription_factor = 5};
+    .threads_per_block = 128,
+    .items_per_thread  = 4,
+    .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+    .load_modifier     = cub::LOAD_DEFAULT,
+    .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+    .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS};
 #  else // _CCCL_STD_VER >= 2020
   constexpr auto p2 = p1;
 #  endif // _CCCL_STD_VER >= 2020
@@ -1671,7 +1665,6 @@ CUB_TEST("Test SegmentedScanLoadBalancedPolicy properties", "[segmented_scan][de
   REQUIRE(os.str()
           == "SegmentedScanLoadBalancedPolicy { .threads_per_block = 128, .items_per_thread = 4"
              ", .load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE, .load_modifier = LOAD_DEFAULT"
-             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS"
-             ", .min_tiles_per_block = 16, .max_subscription_factor = 5 }");
+             ", .store_algorithm = BLOCK_STORE_WARP_TRANSPOSE, .scan_algorithm = BLOCK_SCAN_WARP_SCANS }");
 }
 #endif // _CCCL_COMPILER(GCC, >=, 8)

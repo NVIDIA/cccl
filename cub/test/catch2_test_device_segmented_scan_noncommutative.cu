@@ -340,8 +340,8 @@ CUB_TEST("Device segmented scan with num_items works with non-commutative operat
   }
 }
 
-// With no minimum of tiles per block, the load-balanced grid gives every tile its own range when the work is a whole
-// number of tiles and the resident blocks can hold them.
+// The load-balanced grid gives every tile its own range when the work is a whole number of tiles and the resident
+// blocks can hold them.
 struct one_tile_per_range_policy_selector
 {
   [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto operator()(::cuda::compute_capability) const
@@ -353,9 +353,7 @@ struct one_tile_per_range_policy_selector
       cub::BLOCK_LOAD_WARP_TRANSPOSE,
       cub::LOAD_DEFAULT,
       cub::BLOCK_STORE_WARP_TRANSPOSE,
-      cub::BLOCK_SCAN_WARP_SCANS,
-      0,
-      4};
+      cub::BLOCK_SCAN_WARP_SCANS};
   }
 };
 

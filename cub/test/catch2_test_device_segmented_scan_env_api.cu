@@ -444,14 +444,12 @@ struct SegmentedScanLoadBalancedPolicySelector
 {
   __host__ __device__ constexpr auto operator()(cuda::compute_capability) const -> cub::SegmentedScanLoadBalancedPolicy
   {
-    return {.threads_per_block       = 128,
-            .items_per_thread        = 4,
-            .load_algorithm          = cub::BLOCK_LOAD_WARP_TRANSPOSE,
-            .load_modifier           = cub::LOAD_DEFAULT,
-            .store_algorithm         = cub::BLOCK_STORE_WARP_TRANSPOSE,
-            .scan_algorithm          = cub::BLOCK_SCAN_WARP_SCANS,
-            .min_tiles_per_block     = 16,
-            .max_subscription_factor = 5};
+    return {.threads_per_block = 128,
+            .items_per_thread  = 4,
+            .load_algorithm    = cub::BLOCK_LOAD_WARP_TRANSPOSE,
+            .load_modifier     = cub::LOAD_DEFAULT,
+            .store_algorithm   = cub::BLOCK_STORE_WARP_TRANSPOSE,
+            .scan_algorithm    = cub::BLOCK_SCAN_WARP_SCANS};
   }
 };
 // example-end segmented-scan-load-balanced-policy-selector
