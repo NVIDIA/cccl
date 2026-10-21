@@ -22,6 +22,8 @@
 
 #include <cub/agent/agent_select_if.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -35,6 +37,7 @@
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/sstream>
 #include <cuda/std/__type_traits/conditional.h>
@@ -457,7 +460,7 @@ template <
     detail::it_value_t<FlagsInputIteratorT>,
     // if/flagged/unique only have a single code path for different offset types, partition has different code paths
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
-    detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+    ::cuda::__is_specialization_of_v<SelectedOutputIteratorT, detail::select::partition_distinct_output_t>,
     SelectionOpt>>
 struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") DispatchSelectIf
 {

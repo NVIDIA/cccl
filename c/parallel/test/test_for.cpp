@@ -263,9 +263,9 @@ C2H_TEST("For works with C++ source operations using custom headers", "[for]")
   pointer_t<T> input_ptr(input);
 
   // Test _ex version with custom build configuration
-  const char* extra_flags[] = {"-DTEST_IDENTITY_ENABLED"};
-  const char* extra_dirs[]  = {TEST_INCLUDE_PATH};
-  cccl_build_config config  = make_build_config(extra_flags, 1, extra_dirs, 1);
+  const char* extra_flags[]      = {"-DTEST_IDENTITY_ENABLED"};
+  const char* extra_dirs[]       = {TEST_INCLUDE_PATH};
+  const cccl_build_config config = make_build_config(extra_flags, 1, extra_dirs, 1);
 
   // Build with _ex version
   cccl_device_for_build_result_t build{};

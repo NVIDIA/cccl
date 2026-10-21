@@ -248,7 +248,7 @@ CUresult cccl_device_histogram_compile(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 try
 {
   const char* name = "test";
@@ -278,7 +278,8 @@ try
     static_cast<int>(d_samples.value_type.size),
     num_channels,
     num_active_channels,
-    is_evenly_segmented};
+    is_evenly_segmented,
+    cccl_type_enum_to_cub_type(d_samples.value_type.type)};
 
   const auto active_policy = policy_sel(cc);
 
@@ -489,7 +490,7 @@ CUresult cccl_device_histogram_build_ex(
   const char* thrust_path,
   const char* libcudacxx_path,
   const char* ctk_path,
-  cccl_build_config* config)
+  const cccl_build_config* config)
 {
   CUresult r = cccl_device_histogram_compile(
     build_ptr,

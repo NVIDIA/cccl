@@ -23,9 +23,9 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/tuple.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/cstddef>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -42,11 +42,13 @@ template <class _Tp, class _Alloc>
 inline constexpr bool __uses_allocator_v<_Tp, _Alloc, true> = is_convertible_v<_Alloc, typename _Tp::allocator_type>;
 
 template <class _Tp, class _Alloc>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator : public integral_constant<bool, __uses_allocator_v<_Tp, _Alloc>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator : public bool_constant<__uses_allocator_v<_Tp, _Alloc>>
 {};
 
+// Critical: this *must* be defined as uses_allocator::value because the user is allowed to
+// specialize uses_allocator for their own type.
 template <class _Tp, class _Alloc>
-inline constexpr bool uses_allocator_v = __uses_allocator_v<_Tp, _Alloc>;
+inline constexpr bool uses_allocator_v = uses_allocator<_Tp, _Alloc>::value;
 
 template <class... _Tp, class _Alloc>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator<tuple<_Tp...>, _Alloc> : true_type

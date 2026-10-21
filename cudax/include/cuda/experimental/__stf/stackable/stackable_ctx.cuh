@@ -765,14 +765,11 @@ template <typename T, typename reduce_op, bool initialize>
 class stackable_task_dep
 {
 public:
-  using data_t      = T;
-  using dep_type    = T;
-  using op_and_init = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
-  using op_type     = reduce_op;
-  enum : bool
-  {
-    does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>
-  };
+  using data_t                    = T;
+  using dep_type                  = T;
+  using op_and_init               = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type                   = reduce_op;
+  static constexpr bool does_work = !::cuda::std::is_same_v<reduce_op, ::cuda::std::monostate>;
 
   stackable_task_dep(stackable_logical_data<T> _d, access_mode _mode, data_place _dplace = data_place::affine())
       : d(mv(_d))

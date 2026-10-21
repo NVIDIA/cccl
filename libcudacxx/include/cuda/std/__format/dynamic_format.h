@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/format.h>
 #include <cuda/std/string_view>
 
 #include <cuda/std/__cccl/prologue.h>

@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef TEST_CUDA_STD_TIME_REP_H
-#define TEST_CUDA_STD_TIME_REP_H
+#ifndef TEST_CUDA_STD_UTILITIES_TIME_REP_H
+#define TEST_CUDA_STD_UTILITIES_TIME_REP_H
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
@@ -123,4 +123,4 @@ TEST_FUNC cuda::std::chrono::duration<Rep, Period>& operator%=(cuda::std::chrono
   return d;
 }
 
-#endif // TEST_CUDA_STD_TIME_REP_H
+#endif // TEST_CUDA_STD_UTILITIES_TIME_REP_H

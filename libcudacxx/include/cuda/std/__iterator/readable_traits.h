@@ -23,18 +23,14 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/iterator.h>
-#include <cuda/std/__iterator/incrementable_traits.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_array.h>
-#include <cuda/std/__type_traits/is_const.h>
+#include <cuda/std/__type_traits/is_const.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_extent.h>
-#include <cuda/std/__type_traits/void_t.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -43,8 +39,8 @@ _CCCL_BEGIN_NAMESPACE_CUDA_STD
 template <class _Tp>
 _CCCL_CONCEPT __has_member_value_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::value_type));
 
-template <class _Tp>
-_CCCL_CONCEPT __has_member_element_type = _CCCL_REQUIRES_EXPR((_Tp))(typename(typename _Tp::element_type));
+template <class _Up>
+_CCCL_CONCEPT __has_member_element_type = _CCCL_REQUIRES_EXPR((_Up))(typename(typename _Up::element_type));
 
 template <class, class = void>
 struct __cond_value_type

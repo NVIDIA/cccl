@@ -146,8 +146,10 @@ public:
 
   //! @brief Asynchronously resets the estimator, i.e., clears the current count estimate.
   //!
+  //! @throw cuda::cuda_error If the kernel launch fails.
+  //!
   //! @param __stream CUDA stream this operation is executed in
-  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream) noexcept
+  _CCCL_HOST_API constexpr void clear_async(::cuda::stream_ref __stream)
   {
     __impl.__clear_async(__stream);
   }
@@ -288,7 +290,7 @@ public:
   //! @brief Gets the hash function.
   //!
   //! @return The hash function
-  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr auto hash_function() const
   {
     return __impl.__hash_function();
   }

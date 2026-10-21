@@ -13,5 +13,5 @@
 #  pragma system_header
 #endif // no system header
 
-// this system inherits generate
+// omp system inherits generate
 #include <thrust/system/cpp/detail/generate.h>

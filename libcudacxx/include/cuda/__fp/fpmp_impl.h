@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -87,31 +87,25 @@
     [5] Fukuda et al. (2010). FPAN: A Fast Pairwise Addition Normalization Algorithm. SC '10.
 */
 
-#include <cuda/__fp/fpmp_common.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cccl/preprocessor.h> // _CCCL_PP_FOR_EACH, to fold __CUDA_ARCH_LIST__
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/__fp/fpmp_common.h> // IWYU pragma: keep
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/fma.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__cmath/roots.h> // IWYU pragma: keep
+#include <cuda/std/__cmath/rounding_functions.h> // IWYU pragma: keep
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cfloat> // LDBL_* , to recognize a binary128 long double
-#include <cuda/std/cmath>
+#include <cuda/std/cfloat>
 #include <cuda/std/cstdint>
-#include <cuda/std/cstring>
 
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // ===================================================================
 // Internal implementation vocabulary and helpers (moved from fpmp_common.h;
 // fpmp_common.h now carries only the public API surface).
@@ -542,12 +536,12 @@ inline constexpr bool __fpmp2_is_lossless_int_v =
 // the fallback is the appropriate arithmetic operation
 //
 // The CUDA intrinsics are called as ::__dadd_rn etc. because these wrappers live in
-// cuda::experimental, where <cuda/fpemu> declares same-named overloads for its own
+// cuda, where <cuda/fpemu> declares same-named overloads for its own
 // types: unqualified lookup would stop there and never reach the global scope.
 */
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_internal_fabs(float __x) noexcept
 {
-  return fabsf(__x);
+  return ::fabsf(__x);
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API bool __fpmp_internal_isnan(float __x) noexcept
 {
@@ -567,7 +561,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_add_rz(float __x, float __y) noexcept
                       {
                         return __sum;
                       }
-                      float __error = fmaf(-1.0f, __sum, __x) + __y;
+                      float __error = ::fmaf(-1.0f, __sum, __x) + __y;
                       if (__error == 0.0f)
                       {
                         return __sum;
@@ -593,7 +587,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_mul_rn(float __x, float __y) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_fma_rn(float __x, float __y, float __z) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return fmaf(__x, __y, __z);))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__fmaf_ieee_rn(__x, __y, __z);), (return ::fmaf(__x, __y, __z);))
 }
 // On device the approximate SFU reciprocal / reciprocal square root are emitted as
 // inline asm rather than through __frcp_rn / __frsqrt_rn: they are the fastest option
@@ -617,7 +611,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API float __fpmp_rsqrt_rn(float __x) noexcept
                       asm("rsqrt.approx.ftz.f32 %0,%1;" : "=f"(__r) : "f"(__x));
                       return __r;
                     }),
-                    (return 1.0f / sqrtf(__x);))
+                    (return 1.0f / ::sqrtf(__x);))
 }
 // Fast single-precision base-2 exp / log mapped to the FP32 SFU approximation units
 // (ex2.approx / lg2.approx) on device and to the libm single-precision routines on the
@@ -649,7 +643,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rz(float __x) noexcept
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API int32_t __fpmp_fp2int_rn(float __x) noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(roundf(__x));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::__float2int_rn(__x);), (return static_cast<int32_t>(::roundf(__x));))
 }
 _CCCL_TRIVIAL_HOST_DEVICE_API uint32_t __fpmp_fp2uint_rz(float __x) noexcept
 {
@@ -690,11 +684,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_int2fp_rz(int32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -710,11 +704,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_uint2fp_rz(uint32_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -730,11 +724,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ll2fp_rz(int64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -750,11 +744,11 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_ull2fp_rz(uint64_t __x) noexcept
                       {
                         if constexpr (__fpmp2_is_fp32_v<_FpType>)
                         {
-                          __f = nextafterf(__f, 0.0f);
+                          __f = ::nextafterf(__f, 0.0f);
                         }
                         else
                         {
-                          __f = nextafter(__f, 0.0);
+                          __f = ::nextafter(__f, 0.0);
                         }
                       }
                       return __f;
@@ -866,7 +860,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ll2fp_rz<double>(int64_t __x) noexcep
                       long double __exact = static_cast<long double>(__x);
                       if ((__x > 0 && __d > __exact) || (__x < 0 && __d < __exact))
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -879,7 +873,7 @@ _CCCL_HOST_DEVICE_API inline double __fpmp_ull2fp_rz<double>(uint64_t __x) noexc
                       long double __exact = static_cast<long double>(__x);
                       if (__d > __exact)
                       {
-                        __d = nextafter(__d, 0.0);
+                        __d = ::nextafter(__d, 0.0);
                       }
                       return __d;
                     }))
@@ -895,7 +889,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -907,8 +901,8 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_trunc(const _FpType __x) n
         return ::__int2float_rz(__xi);
       }),
       ({
-        const int32_t __xi = __fpmp_fp2int_rz(__x);
-        return __fpmp_int2fp_rz<_FpType>(__xi);
+        const int32_t __xi = ::cuda::__fpmp_fp2int_rz(__x);
+        return ::cuda::__fpmp_int2fp_rz<_FpType>(__xi);
       }))
   }
   else
@@ -922,7 +916,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -932,7 +926,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_floor(const _FpType __x) n
                         const int32_t __xi = ::__float2int_rd(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return floorf(__x);))
+                      (return ::floorf(__x);))
   }
   else
   {
@@ -945,7 +939,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
 {
   if constexpr (__fpmp2_is_fp32_v<_FpType>)
   {
-    const _FpType __abs_x = __fpmp_internal_fabs(__x);
+    const _FpType __abs_x = ::cuda::__fpmp_internal_fabs(__x);
     if (__abs_x >= _FpType(0x1.0p23f))
     {
       return __x;
@@ -955,7 +949,7 @@ _CCCL_TRIVIAL_HOST_DEVICE_API _FpType __fpmp_internal_ceil(const _FpType __x) no
                         const int32_t __xi = ::__float2int_ru(__x);
                         return ::__int2float_rn(__xi);
                       }),
-                      (return ceilf(__x);))
+                      (return ::ceilf(__x);))
   }
   else
   {
@@ -971,8 +965,8 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_two_mult_fma(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi = __fpmp_mul_rn(__x, __y);
-  *__res_lo        = __fpmp_fma_rn(__x, __y, -__res_hi);
+  _FpType __res_hi = ::cuda::__fpmp_mul_rn(__x, __y);
+  *__res_lo        = ::cuda::__fpmp_fma_rn(__x, __y, -__res_hi);
   return __res_hi;
 }
 
@@ -984,9 +978,9 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_fast_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi = __fpmp_add_rn(__x, __y);
-  _FpType __diff   = __fpmp_sub_rn(__res_hi, __x);
-  *__res_lo        = __fpmp_sub_rn(__y, __diff);
+  _FpType __res_hi = ::cuda::__fpmp_add_rn(__x, __y);
+  _FpType __diff   = ::cuda::__fpmp_sub_rn(__res_hi, __x);
+  *__res_lo        = ::cuda::__fpmp_sub_rn(__y, __diff);
   return __res_hi;
 }
 
@@ -996,12 +990,12 @@ template <typename _FpType>
 _CCCL_TRIVIAL_HOST_DEVICE_API _FpType
 __fpmp_two_sum(const _FpType __x, const _FpType __y, _FpType* const __res_lo) noexcept
 {
-  _FpType __res_hi  = __fpmp_add_rn(__x, __y);
-  _FpType __a_prime = __fpmp_sub_rn(__res_hi, __y);
-  _FpType __b_prime = __fpmp_sub_rn(__res_hi, __a_prime);
-  _FpType __delta_a = __fpmp_sub_rn(__x, __a_prime);
-  _FpType __delta_b = __fpmp_sub_rn(__y, __b_prime);
-  *__res_lo         = __fpmp_add_rn(__delta_a, __delta_b);
+  _FpType __res_hi  = ::cuda::__fpmp_add_rn(__x, __y);
+  _FpType __a_prime = ::cuda::__fpmp_sub_rn(__res_hi, __y);
+  _FpType __b_prime = ::cuda::__fpmp_sub_rn(__res_hi, __a_prime);
+  _FpType __delta_a = ::cuda::__fpmp_sub_rn(__x, __a_prime);
+  _FpType __delta_b = ::cuda::__fpmp_sub_rn(__y, __b_prime);
+  *__res_lo         = ::cuda::__fpmp_add_rn(__delta_a, __delta_b);
   return __res_hi;
 }
 
@@ -1012,7 +1006,7 @@ _CCCL_HOST_DEVICE_API constexpr void __fpmp_from_double(const double __x, float*
   *__res_hi = (float) __x;
   *__res_lo = (float) (__x - (double) (float) __x);
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
