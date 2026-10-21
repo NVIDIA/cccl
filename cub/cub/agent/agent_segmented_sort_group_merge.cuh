@@ -34,18 +34,19 @@ struct group_merge_shape
 };
 
 // Expansion belongs to the sorter. Configuration order must already be capacity order.
-template <const auto* Tuning>
+template <typename PolicyGetter>
 struct group_merge_expansion
 {
-  static_assert(Tuning->min_threads > 0 && (Tuning->min_threads & (Tuning->min_threads - 1)) == 0);
-  static_assert(Tuning->max_threads >= Tuning->min_threads && (Tuning->max_threads & (Tuning->max_threads - 1)) == 0
-                && Tuning->max_threads <= Tuning->block_threads);
-  static_assert(Tuning->min_ipt > 0 && Tuning->max_ipt >= Tuning->min_ipt);
-  static constexpr int ipt_choices = Tuning->max_ipt - Tuning->min_ipt + 1;
+  inline static constexpr auto policy = PolicyGetter{}();
+  static_assert(policy.min_threads > 0 && (policy.min_threads & (policy.min_threads - 1)) == 0);
+  static_assert(policy.max_threads >= policy.min_threads && (policy.max_threads & (policy.max_threads - 1)) == 0
+                && policy.max_threads <= policy.block_threads);
+  static_assert(policy.min_ipt > 0 && policy.max_ipt >= policy.min_ipt);
+  static constexpr int ipt_choices = policy.max_ipt - policy.min_ipt + 1;
   _CCCL_HOST_DEVICE_API static constexpr int thread_choices()
   {
     int count = 0;
-    for (int threads = Tuning->min_threads; threads <= Tuning->max_threads; threads *= 2)
+    for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
     {
       ++count;
     }
@@ -54,7 +55,7 @@ struct group_merge_expansion
   static constexpr int size = thread_choices() * ipt_choices;
   _CCCL_HOST_DEVICE_API static constexpr group_merge_shape shape(int bin)
   {
-    return {Tuning->min_threads << (bin / ipt_choices), Tuning->min_ipt + bin % ipt_choices};
+    return {policy.min_threads << (bin / ipt_choices), policy.min_ipt + bin % ipt_choices};
   }
   template <::cuda::std::size_t... I>
   static auto expand(::cuda::std::index_sequence<I...>)
@@ -66,21 +67,22 @@ struct group_merge_expansion
 // work unit. Warp work units have independent scratch and never use CTA barriers.
 struct group_merge_algorithm
 {
-  template <const auto* Tuning>
+  template <typename PolicyGetter>
   struct implementation
   {
-    using expansion                   = group_merge_expansion<Tuning>;
-    static constexpr bool is_warp     = Tuning->max_threads <= 32;
-    static constexpr int unit_threads = is_warp ? 32 : Tuning->block_threads;
-    static_assert(Tuning->block_threads % 32 == 0);
-    static_assert(is_warp || Tuning->min_threads >= 64);
-    static_assert(Tuning->block_threads % Tuning->max_threads == 0);
-    static_assert(Tuning->min_ipt >= 5 && Tuning->max_ipt <= 15, "GroupMerge workers support IPT 5..15");
+    inline static constexpr auto policy = PolicyGetter{}();
+    using expansion                     = group_merge_expansion<PolicyGetter>;
+    static constexpr bool is_warp       = policy.max_threads <= 32;
+    static constexpr int unit_threads   = is_warp ? 32 : policy.block_threads;
+    static_assert(policy.block_threads % 32 == 0);
+    static_assert(is_warp || policy.min_threads >= 64);
+    static_assert(policy.block_threads % policy.max_threads == 0);
+    static_assert(policy.min_ipt >= 5 && policy.max_ipt <= 15, "GroupMerge workers support IPT 5..15");
 
     template <typename Key>
     _CCCL_HOST_DEVICE_API static constexpr size_t scratch_bytes()
     {
-      return sizeof(Key) * (Tuning->block_threads * Tuning->max_ipt + (is_warp ? Tuning->block_threads / 32 : 1));
+      return sizeof(Key) * (policy.block_threads * policy.max_ipt + (is_warp ? policy.block_threads / 32 : 1));
     }
     _CCCL_DEVICE_API static void sync()
     {
@@ -109,7 +111,7 @@ struct group_merge_algorithm
       const int lane = threadIdx.x % unit_threads;
       if constexpr (is_warp)
       {
-        scratch += (threadIdx.x / 32) * (32 * Tuning->max_ipt + 1);
+        scratch += (threadIdx.x / 32) * (32 * policy.max_ipt + 1);
       }
       const int group_lane   = lane % shape.threads;
       const int group_base   = (lane / shape.threads) * shape.threads * ItemsPerThread;
