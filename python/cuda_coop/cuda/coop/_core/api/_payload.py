@@ -63,8 +63,8 @@ class TempStorageLike(Protocol):
 
         An omitted dtype returns bytes. An explicit dtype must fit the
         region's existing capacity and alignment. No allocation or barrier is
-        added. Every alias becomes unavailable for subsequent primitive,
-        reservation, or release calls on any reachable control-flow path.
+        added. Every alias becomes unavailable for subsequent primitive or
+        release calls on any reachable control-flow path.
         """
         ...
 

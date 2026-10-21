@@ -572,9 +572,9 @@ prior accesses and any
 asynchronous operations before using the returned array, then synchronize
 application reads and writes as for any shared array.
 
-Every alias of the descriptor is consumed. Later primitive, reservation, or
-release calls are compile errors if a path from an earlier release reaches
-them. Releasing in one runtime branch prevents later use after the branches
+Every alias of the descriptor is consumed. Later primitive or release calls
+are compile errors if a path from an earlier release reaches them.
+Releasing in one runtime branch prevents later use after the branches
 join. Separate terminal releases in mutually exclusive branches are valid.
 Releasing a selection that merges distinct constructor sites is rejected;
 construct one descriptor before selecting its uses instead. A constructor or
@@ -583,6 +583,17 @@ A descriptor created before a loop cannot be released repeatedly through its
 backedge. Constructing inside the loop gives each iteration a fresh descriptor,
 but reuses physical storage: finish accessing the previous returned array and
 synchronize before that reuse.
+
+This example copies a tile with cooperative Load and Store, then hands the
+scratch region to application code:
+
+.. literalinclude:: ../../../python/cuda_coop/tests/backends/numba_mlir/runtime/test_storage_examples.py
+   :language: python
+   :name: coop-pg-temp-storage-release
+   :start-after: # temp-storage-release-example-begin
+   :end-before: # temp-storage-release-example-end
+   :dedent: 4
+   :prepend: items_per_thread, sharing = 4, "shared"
 
 When the combined scratch requirement exceeds the default static shared-memory
 limit, the backend can use dynamic shared memory, subject to the GPU's opt-in

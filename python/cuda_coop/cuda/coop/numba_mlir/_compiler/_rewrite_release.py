@@ -82,7 +82,10 @@ class _ReleaseRewrite:
                     if not receivers:
                         continue
                     owners = {
-                        rewrite._resolve_temp_storage_ctor_key(receiver)
+                        cast(
+                            str,
+                            rewrite._resolve_temp_storage_ctor_key(receiver),
+                        )
                         for receiver in receivers
                     }
                     owner = rewrite._merge_temp_storage_ctor_keys(owners)
@@ -108,7 +111,7 @@ class _ReleaseRewrite:
                     continue
                 if (
                     inst in rewrite._temp_storage_releases
-                    and used & methods == {inst.value.func.name}
+                    and used & methods == {cast(ir.Expr, inst.value).func.name}
                 ):
                     continue
                 raise CoopSinglePhaseRewriteError(
@@ -369,7 +372,7 @@ class _ReleaseRewrite:
         byte_view = ir.Var(scope, _next_global_name("release_bytes"), loc)
         rewrite._emit_array_slice(
             block,
-            source_var=rewrite._temp_storage_backing_var,
+            source_var=cast(ir.Var, rewrite._temp_storage_backing_var),
             target_var=byte_view,
             start=plan.base_offset,
             stop=plan.base_offset + plan.size_in_bytes,

@@ -61,8 +61,8 @@ def TempStorage(
         Compiler-recognized scratch descriptor. After its last cooperative
         use, ``storage.release(dtype=None)`` returns the complete region as a
         native shared array (bytes by default), consuming every descriptor
-        alias. Later primitive, reservation, or release calls are rejected
-        along every reachable control-flow path. Release preserves preceding
+        alias. Later primitive or release calls are rejected along every
+        reachable control-flow path. Release preserves preceding
         automatic barriers and adds no barrier itself. Release does not
         initialize the returned memory; the caller owns synchronization and
         completion.

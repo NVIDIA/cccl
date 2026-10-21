@@ -86,9 +86,9 @@ class TempStorage:
         Finish previous accesses and required asynchronous operations before
         using it. Automatic barriers on preceding primitive calls are retained.
 
-        Every alias of this descriptor is consumed. A subsequent primitive,
-        reservation, or release on any reachable control-flow path is a compile
-        error, including reuse through a loop backedge. A new construction in
+        Every alias of this descriptor is consumed. A subsequent primitive or
+        release on any reachable control-flow path is a compile error,
+        including reuse through a loop backedge. A new construction in
         a loop creates a new instance but reuses the same physical region, so
         the caller must finish accesses and synchronize before that reuse.
         """
