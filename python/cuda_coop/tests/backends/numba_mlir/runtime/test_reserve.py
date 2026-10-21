@@ -7,8 +7,9 @@
 import numpy as np
 import pytest
 
-cuda = pytest.importorskip("numba_cuda_mlir.cuda")
-from numba_cuda_mlir import types
+pytest.importorskip("numba_cuda_mlir")
+
+from numba_cuda_mlir import cuda, types
 
 import cuda.coop.numba_mlir as numba_coop
 from cuda import coop
@@ -261,17 +262,140 @@ def test_large_reservations_survive_cooperative_scratch_reuse():
         cuda.syncthreads()
         total = coop.sum(coop.this_block(), own[thread], temp_storage=storage)
         cuda.syncthreads()
-        output[thread] = own[31 - thread] + reserved[count - 1 - thread]
+        released = storage.release(types.int32)
+        # Primitive scratch precedes the two exclusive reservation slices.
+        own_start = released.size - count - 32
+        output[thread] = (
+            released[own_start + 31 - thread]
+            + released[own_start + 32 + count - 1 - thread]
+        )
         if thread == 0:
             output[32] = total
             output[33] = own.size
             output[34] = reserved.size
+            output[35] = released.size
 
-    output = np.empty(35, dtype=np.int32)
+    output = np.empty(36, dtype=np.int32)
     kernel[1, 32](output)
     expected = 1000 + np.arange(32)[::-1] + count - 1 - np.arange(32)
     np.testing.assert_array_equal(output[:32], expected)
     assert output[32] == np.arange(1000, 1032).sum()
-    np.testing.assert_array_equal(output[33:], [32, count])
+    np.testing.assert_array_equal(output[33:35], [32, count])
     compiled = next(iter(kernel._launch_config_overloads.values()))
-    assert compiled.metadata["required_dynamic_shared_memory"] >= count * 4
+    required_bytes = compiled.metadata["required_dynamic_shared_memory"]
+    assert required_bytes >= count * 4
+    released_bytes = int(output[35]) * np.dtype(np.int32).itemsize
+    assert released_bytes > (count + 32) * np.dtype(np.int32).itemsize
+    # The backing allocation also rounds the region up to its alignment.
+    assert (released_bytes + 15) // 16 * 16 == required_bytes
+
+
+@pytest.mark.parametrize(
+    "dtype, c_type, released_count",
+    [
+        pytest.param(None, "unsigned char", 424, id="default-bytes"),
+        pytest.param(types.float64, "double", 53, id="float64"),
+    ],
+)
+def test_release_hands_off_complete_exclusive_reservation_region(
+    dtype, c_type, released_count
+):
+    cffi = pytest.importorskip("cffi")
+    ffi = cffi.FFI()
+    record_addresses = cuda.declare_device(
+        "record_reservation_addresses",
+        types.void(
+            types.CPointer(types.int32),
+            types.CPointer(types.float64),
+            types.CPointer(types.int32),
+            types.CPointer(types.uint64),
+        ),
+        link=cuda.CUSource(
+            """
+            extern "C" __device__ void record_reservation_addresses(
+                int* prefix, double* values, int* independent,
+                unsigned long long* facts) {
+                facts[0] = (unsigned long long)prefix;
+                facts[1] = (unsigned long long)values;
+                facts[2] = (unsigned long long)independent;
+            }
+            """
+        ),
+        abi="c",
+    )
+    inspect_released = cuda.declare_device(
+        "inspect_released_reservations",
+        types.uint64(
+            types.CPointer(types.uint8 if dtype is None else dtype),
+            types.CPointer(types.uint8),
+        ),
+        link=cuda.CUSource(
+            f"""
+            extern "C" __device__ unsigned long long
+            inspect_released_reservations({c_type}* data,
+                                          unsigned char* output) {{
+                unsigned char* bytes = (unsigned char*)data;
+                for (int i = threadIdx.x; i < 424; i += blockDim.x) {{
+                    // Initialize padding before reading the whole region.
+                    if (i >= 132 && i < 160) bytes[i] = 0xa5;
+                    output[i] = bytes[i];
+                }}
+                return (unsigned long long)data;
+            }}
+            """
+        ),
+        abi="c",
+    )
+
+    @cuda.jit
+    def kernel(output, independent_output, facts):
+        storage = coop.TempStorage(sharing="exclusive")
+        prefix = storage.reserve(33, types.int32)
+        values = storage.reserve(33, types.float64, alignment=32)
+        independent = coop.TempStorage()
+        live = independent.reserve(32, types.int32)
+        thread = cuda.threadIdx.x
+        for i in range(thread, 33, cuda.blockDim.x):
+            prefix[i] = 1000 + i
+            values[i] = 100.25 + i
+        live[thread] = 500 + thread
+        cuda.syncthreads()
+        if thread == 0:
+            record_addresses(
+                ffi.from_buffer(prefix),
+                ffi.from_buffer(values),
+                ffi.from_buffer(live),
+                ffi.from_buffer(facts),
+            )
+
+        if dtype is None:
+            released = storage.release()
+        else:
+            released = storage.release(dtype)
+        address = inspect_released(
+            ffi.from_buffer(released), ffi.from_buffer(output)
+        )
+        if thread == 0:
+            facts[3] = address
+            facts[4] = released.size
+
+        # Releasing one descriptor does not consume another descriptor.
+        still_live = independent.reserve(32, types.int32)
+        independent_output[thread] = still_live[31 - thread]
+
+    output = np.empty(424, dtype=np.uint8)
+    independent_output = np.empty(32, dtype=np.int32)
+    facts = np.zeros(5, dtype=np.uint64)
+    kernel[1, 32](output, independent_output, facts)
+
+    expected = np.empty(424, dtype=np.uint8)
+    expected[:132] = (1000 + np.arange(33, dtype=np.int32)).view(np.uint8)
+    expected[132:160] = 0xA5
+    expected[160:] = (100.25 + np.arange(33, dtype=np.float64)).view(np.uint8)
+    np.testing.assert_array_equal(output, expected)
+    np.testing.assert_array_equal(independent_output, np.arange(500, 532)[::-1])
+    assert facts[1] - facts[0] == 160
+    assert facts[3] == facts[0]
+    assert facts[3] % 32 == 0
+    assert not facts[0] <= facts[2] < facts[0] + 424
+    assert facts[4] == released_count

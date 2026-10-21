@@ -164,3 +164,115 @@ def test_reserve_rejects_unsupported_dtype(dtype):
         ),
     ):
         _compile(kernel, types.int32[::1])
+
+
+@pytest.mark.parametrize(
+    "access", ["direct", "alias", "bound_method", "helper"]
+)
+def test_reserve_after_release_fails(access):
+    @cuda.jit(device=True, inline="always")
+    def allocate(storage):
+        return storage.reserve(32, types.int32)
+
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage()
+        alias = storage
+        reserve = storage.reserve
+        initial = storage.reserve(32, types.int32)
+        released = storage.release()
+        output[0] = initial.size + released.size
+        if access == "alias":
+            values = alias.reserve(32, types.int32)
+        elif access == "bound_method":
+            values = reserve(32, types.int32)
+        elif access == "helper":
+            values = allocate(storage)
+        else:
+            values = storage.reserve(32, types.int32)
+        output[0] = values.size
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after.*release|released"
+    ):
+        _compile(kernel, types.int32[::1])
+
+
+def test_reserve_rejects_join_after_conditional_release():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, release_now):
+        storage = coop.TempStorage()
+        initial = storage.reserve(32, types.int32)
+        output[0] = initial.size
+        if release_now:
+            released = storage.release()
+            output[0] = released.size
+        values = storage.reserve(32, types.int32)
+        output[0] = values.size
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after.*release|released"
+    ):
+        _compile(kernel, types.int32[::1], types.boolean)
+
+
+def test_reserve_rejects_released_descriptor_on_loop_backedge():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, iterations):
+        storage = coop.TempStorage()
+        for phase in range(iterations):
+            values = storage.reserve(32, types.int32)
+            released = storage.release()
+            output[phase] = values.size + released.size
+
+    with pytest.raises(
+        CoopSinglePhaseRewriteError, match="after.*release|released"
+    ):
+        _compile(kernel, types.int32[::1], types.int32)
+
+
+def test_reserve_accepts_fresh_descriptor_in_each_loop_iteration():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, iterations):
+        thread = cuda.threadIdx.x
+        for phase in range(iterations):
+            storage = coop.TempStorage()
+            values = storage.reserve(32, types.int32)
+            values[thread] = phase + thread
+            cuda.syncthreads()
+            released = storage.release(types.int32)
+            output[phase * 32 + thread] = released[31 - thread]
+            cuda.syncthreads()
+
+    _compile(kernel, types.int32[::1], types.int32)
+
+
+def test_reserve_accepts_release_in_mutually_exclusive_branches():
+    @cuda.jit(chip="sm_90")
+    def kernel(output, reverse):
+        storage = coop.TempStorage()
+        values = storage.reserve(32, types.int32)
+        thread = cuda.threadIdx.x
+        values[thread] = thread
+        cuda.syncthreads()
+        if reverse:
+            reversed_values = storage.release(types.int32)
+            output[thread] = reversed_values[31 - thread]
+        else:
+            forward_values = storage.release(types.int32)
+            output[thread] = forward_values[thread]
+
+    _compile(kernel, types.int32[::1], types.boolean)
+
+
+def test_release_requires_reservation_extent_to_fit_dtype():
+    @cuda.jit(chip="sm_90")
+    def kernel(output):
+        storage = coop.TempStorage()
+        values = storage.reserve(3, types.uint8)
+        output[0] = values.size
+        released = storage.release(types.float64)
+        output[0] = released.size
+
+    with pytest.raises(CoopSinglePhaseRewriteError, match="not divisible"):
+        _compile(kernel, types.int32[::1])

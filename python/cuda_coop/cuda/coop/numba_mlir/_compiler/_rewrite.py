@@ -175,10 +175,17 @@ class CoopSinglePhaseRewrite(
         try:
             matches = self._collect_function_calls(func_ir)
             self._collect_temp_storage_releases(func_ir)
-            self._validate_temp_storage_lifetimes(func_ir, matches)
             # Invalid ownership or escaping descriptors must fail before
             # provider compilation. The retained calls serve both stages.
             self._collect_temp_storage_reservations(func_ir)
+            self._validate_temp_storage_lifetimes(
+                func_ir,
+                matches,
+                additional_uses={
+                    inst: inst.value.func
+                    for inst in self._temp_storage_reservations
+                },
+            )
             storage_uses = self._collect_temp_storage_uses(func_ir, matches)
             self._validate_released_region_owners()
             self._prepare_ltoir_bundle_for_matches(list(matches.values()))
