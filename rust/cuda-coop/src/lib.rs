@@ -30,11 +30,13 @@
 //! [`this_block`] and the other dimension-free group constructors describe
 //! the executing thread's current launch. Queries grant no collective
 //! participation or synchronization guarantee. [`load`] and [`store`] support
-//! Direct, Striped, Vectorize and three transpose algorithms on complete blocks,
-//! and Direct on physical Warp groups, with compiler-checked participation and
-//! collective memory ownership. The transpose algorithms use compiler-planned
-//! shared scratch. [`TempStorage`] selects explicit Block reuse and completion
-//! policies; [`StorageReservation`] exposes typed scratch through raw pointers.
+//! Direct, Striped, Vectorize and three transpose algorithms on complete blocks.
+//! Physical Warp groups and logical widths 1, 2, 4, 8, 16 and 32 support Direct,
+//! Striped, Vectorize and Transpose. These operations have compiler-checked
+//! participation and collective memory ownership. The transpose algorithms use
+//! compiler-planned shared scratch. [`TempStorage`] selects explicit Block reuse
+//! and completion policies; [`StorageReservation`] exposes typed scratch through
+//! raw pointers.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 

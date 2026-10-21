@@ -8,10 +8,10 @@ The Rust workspace contains per-thread payloads, CUDA group queries, and the
 native host compiler foundation for ``cuda.coop``. The ``cuda-coop`` crate supplies checked
 ``ThreadData`` values, physical/mapped hierarchy queries, block Load/Store with
 Direct, Striped, Vectorize, Transpose, WarpTranspose and WarpTransposeTimesliced,
-explicit block storage, and physical/logical Warp Direct; see :doc:`payload`,
-:doc:`groups`, and :doc:`load_store`. Its private ``cuda-coop-codegen`` crate
-specializes CUB block operations and returns
-linkable device LTO-IR with exact temporary-storage requirements. It supports
+explicit block storage, and Direct, Striped, Vectorize and Transpose on physical
+and logical Warp groups; see :doc:`payload`, :doc:`groups`, and :doc:`load_store`.
+Its private ``cuda-coop-codegen`` crate specializes CUB block and warp operations
+and returns linkable device LTO-IR with exact temporary-storage requirements. It supports
 compiler integration development. Additional collective algorithms and Warp
 capabilities remain under development. The crate is unpublished and its interface
 can change.
@@ -30,10 +30,12 @@ Each request carries exact ``[X,Y,Z]`` block dimensions and a
 positive compile-time item count per thread. ``Request::new`` and
 ``Request::new_typed`` retain their one-dimensional ``[B,1,1]`` shape;
 ``new_with_shape`` and ``new_typed_with_shape`` accept all three dimensions.
-Thread rank is x-fastest. Validity-aware Direct requests also support aligned
-logical warps of 1, 2, 4, 8, 16 or 32 lanes when the block contains complete
-physical warps. Each logical warp receives a separate tile, with no shared
-scratch. The original raw ``i32`` recipes support these forms:
+Thread rank is x-fastest. Validity-aware Direct, Striped, Vectorize and Transpose
+requests also support physical warps and aligned logical warps of 1, 2, 4, 8, 16
+or 32 lanes when the block contains complete physical warps. Each group receives
+a separate tile. Direct, Striped and Vectorize use no shared scratch; Transpose
+uses compiler-planned shared scratch for each group. The original raw ``i32``
+recipes support these forms:
 
 .. list-table::
    :header-rows: 1
