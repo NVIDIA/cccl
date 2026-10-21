@@ -22,6 +22,7 @@
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 
+#include <cuda/__bit/bit_trunc.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/std/climits>
@@ -324,14 +325,8 @@ struct identify_candidates_op_t<T, SelectDirection, BitsPerPass, DecomposerT, No
 
     // Top word may be partially filled
     {
-      unsigned int key_w = key_prefix.words[top_word_idx];
-      unsigned int kth_w = kth_key_bits->words[top_word_idx];
-      if (bits_in_top_word < 32)
-      {
-        const unsigned int mask = (1u << bits_in_top_word) - 1u;
-        key_w &= mask;
-        kth_w &= mask;
-      }
+      const unsigned int key_w = ::cuda::bit_trunc(key_prefix.words[top_word_idx], bits_in_top_word);
+      const unsigned int kth_w = ::cuda::bit_trunc(kth_key_bits->words[top_word_idx], bits_in_top_word);
       if (key_w < kth_w)
       {
         return candidate_class::selected;
