@@ -14,21 +14,28 @@
 #endif // no system header
 
 #include <thrust/detail/function.h>
+#include <thrust/detail/internal_functional.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/static_assert.h> // for depend_on_instantiation
 #include <thrust/detail/temporary_array.h>
+#include <thrust/iterator/detail/tuple_of_iterator_references.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/sequential/copy_if.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/omp/detail/pragma_omp.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__memory/align_up.h>
+#include <cuda/atomic>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/fill_n.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/atomic>
 #include <cuda/std/cstdint>
+#include <cuda/std/optional>
+#include <cuda/std/tuple>
 
 // don't attempt to #include this file without omp support
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
@@ -54,6 +61,18 @@ using status_word = ::cuda::std::uint64_t;
 // A tile's status word holds a number of selected elements, shifted left by two, and one of these flags
 inline constexpr status_word status_partial = 1; // selected elements in this tile
 inline constexpr status_word status_prefix  = 2; // selected elements in this tile and all earlier ones
+
+// Whether an iterator's reference is an rvalue reference or a tuple holding one, like a zip_iterator over a
+// move_iterator
+template <typename Reference>
+inline constexpr bool has_rvalue_reference = ::cuda::std::is_rvalue_reference_v<Reference>;
+
+template <typename... Ts>
+inline constexpr bool has_rvalue_reference<::cuda::std::tuple<Ts...>> = (has_rvalue_reference<Ts> || ...);
+
+template <typename... Ts>
+inline constexpr bool has_rvalue_reference<thrust::detail::tuple_of_iterator_references<Ts...>> =
+  (has_rvalue_reference<Ts> || ...);
 } // namespace copy_if_detail
 
 template <typename DerivedPolicy,
@@ -78,6 +97,12 @@ OutputIterator copy_if(
                                                         (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value,
                 "OpenMP compiler support is not enabled");
 
+  // Moving the selected elements out would break the algorithms built on copy_if that read their input again, like
+  // unique_copy and stable_partition_copy
+  static_assert(!copy_if_detail::has_rvalue_reference<thrust::detail::it_reference_t<InputIterator1>>,
+                "copy_if and the algorithms built on it do not support an input iterator with an rvalue reference, "
+                "like a move_iterator, with the OpenMP system");
+
   using Size = thrust::detail::it_difference_t<InputIterator1>;
   using copy_if_detail::status_word;
 
@@ -89,9 +114,12 @@ OutputIterator copy_if(
   const int num_threads = 1;
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
 
+  // Like generic::copy_if, call pred with a const lvalue, also for prvalue references like zip_iterator's
+  using const_lvalue_predicate = thrust::detail::predicate_to_integral<Predicate, bool>;
+
   if (n < parallel_copy_if_threshold || num_threads <= 1)
   {
-    return thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, pred);
+    return thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, const_lvalue_predicate{pred});
   }
 
   // Single pass with decoupled look-back. Threads take tiles in increasing order from a shared counter. For its tile, a
@@ -114,16 +142,24 @@ OutputIterator copy_if(
     static_cast<Size>(copy_if_detail::max_tile_size));
   const Size num_tiles = ::cuda::ceil_div(n, tile_size);
 
-  thrust::detail::temporary_array<status_word, DerivedPolicy> status_storage(exec, num_tiles);
-  status_word* const tile_status = thrust::raw_pointer_cast(status_storage.data());
+  // A custom temporary allocator may return memory that is only aligned for its own value_type, e.g. char, while a
+  // misaligned status word can be read torn. Allocate bytes with room for one more word and align the start.
+  thrust::detail::temporary_array<::cuda::std::uint8_t, DerivedPolicy> status_storage(
+    exec, (num_tiles + 1) * static_cast<Size>(sizeof(status_word)));
+  status_word* const tile_status = reinterpret_cast<status_word*>(::cuda::align_up(
+    thrust::raw_pointer_cast(status_storage.data()), ::cuda::atomic_ref<status_word>::required_alignment));
   ::cuda::std::fill_n(tile_status, num_tiles, status_word{0});
 
   ::cuda::std::atomic<Size> next_tile{0};
 
-  // Set by the thread that handles the last tile, or by a team of one thread
+  // Set by the thread that handles the last tile
   Size num_selected = 0;
 
-  const thrust::detail::wrapped_function<Predicate, bool> wrapped_pred{pred};
+  // Set by a team of one thread. Keeping the end returned by sequential::copy_if, instead of its distance to result,
+  // requires no comparison or difference of OutputIterators.
+  ::cuda::std::optional<OutputIterator> team_of_one_result;
+
+  const thrust::detail::wrapped_function<const_lvalue_predicate, bool> wrapped_pred{const_lvalue_predicate{pred}};
 
   THRUST_PRAGMA_OMP(parallel)
   {
@@ -136,8 +172,8 @@ OutputIterator copy_if(
     if (team_of_one)
     {
       // E.g. inside another parallel region with nested parallelism disabled, where tiles only add overhead
-      num_selected = static_cast<Size>(::cuda::std::distance(
-        result, thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, pred)));
+      team_of_one_result.emplace(
+        thrust::system::detail::sequential::copy_if(exec, first, last, stencil, result, const_lvalue_predicate{pred}));
     }
     else
     {
@@ -152,7 +188,8 @@ OutputIterator copy_if(
         }
 
         const Size tile_begin = tile * tile_size;
-        const Size tile_items = (::cuda::std::min) (tile_size, n - tile_begin);
+        // n - tile_begin is an int for a Size like short
+        const Size tile_items = (::cuda::std::min) (tile_size, static_cast<Size>(n - tile_begin));
 
         Size count                = 0;
         InputIterator2 stencil_it = stencil + tile_begin;
@@ -164,7 +201,7 @@ OutputIterator copy_if(
 
         // Number of selected elements in all earlier tiles
         Size offset = 0;
-        ::cuda::std::atomic_ref<status_word> own_status(tile_status[tile]);
+        const ::cuda::atomic_ref<status_word> own_status(tile_status[tile]);
         if (tile > 0)
         {
           own_status.store((static_cast<status_word>(count) << 2) | copy_if_detail::status_partial,
@@ -172,7 +209,7 @@ OutputIterator copy_if(
           own_status.notify_all();
           for (Size earlier = tile - 1;; --earlier)
           {
-            ::cuda::std::atomic_ref<status_word> earlier_status(tile_status[earlier]);
+            const ::cuda::atomic_ref<status_word> earlier_status(tile_status[earlier]);
             status_word word;
             while ((word = earlier_status.load(::cuda::std::memory_order_relaxed)) == 0)
             {
@@ -208,6 +245,10 @@ OutputIterator copy_if(
     }
   }
 
+  if (team_of_one_result)
+  {
+    return *team_of_one_result;
+  }
   return result + num_selected;
 } // end copy_if()
 } // end namespace system::omp::detail
