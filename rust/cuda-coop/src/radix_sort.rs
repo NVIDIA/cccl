@@ -21,6 +21,12 @@ pub struct Descending;
 /// Sealed Radix Sort key types: i32, u32, i64 and u64.
 pub trait RadixKey: Numeric + sealed::Key {}
 
+/// Sealed associated-value types for [`radix_sort_pairs`].
+///
+/// Supports i8, u8, i16, u16, i32, u32, i64, u64, f32 and f64. Values move
+/// with their keys without comparisons or arithmetic, preserving their bits.
+pub trait RadixValue: Numeric + sealed::Value {}
+
 /// A sealed static Radix Sort order: [`Ascending`] or [`Descending`].
 pub trait RadixSortOrder: sealed::Order {}
 
@@ -38,7 +44,7 @@ pub struct RadixBit<const BIT: i64>;
 /// endpoints must be Block-uniform, as checked by the device compiler.
 pub trait RadixSortBit: sealed::Bit {}
 
-/// Order, independent bit endpoints and scratch for [`radix_sort_keys`].
+/// Order, independent bit endpoints and scratch for Radix Sort keys or pairs.
 ///
 /// Canonical [`Default`] selects [`Ascending`], begin zero, omitted end and
 /// implicit scratch. The omitted end is always the key width, even with a
@@ -109,7 +115,7 @@ impl<T: RadixKey, O, Begin, End, S> RadixSortOptions<T, O, Begin, End, S> {
         }
     }
 
-    /// Set a static begin, checked when [`radix_sort_keys`] is instantiated.
+    /// Set a static begin, checked when the sort operation is instantiated.
     ///
     /// An omitted end remains the full key width. This replaces any prior begin
     /// selection; validation uses the final options, not intermediate builders.
@@ -122,7 +128,7 @@ impl<T: RadixKey, O, Begin, End, S> RadixSortOptions<T, O, Begin, End, S> {
         }
     }
 
-    /// Set a static end, checked when [`radix_sort_keys`] is instantiated.
+    /// Set a static end, checked when the sort operation is instantiated.
     pub fn end_bit_const<const BIT: i64>(self) -> RadixSortOptions<T, O, Begin, RadixBit<BIT>, S> {
         RadixSortOptions {
             begin: self.begin,
@@ -204,9 +210,87 @@ where
     boundary::radix_sort_keys(keys, options)
 }
 
+/// Stably sort a complete Block's key/value pairs into two fresh payloads.
+///
+/// Keys use the four [`RadixKey`] types; associated values use [`RadixValue`].
+/// Both borrowed inputs have the same positive `ITEMS_PER_THREAD`, with
+/// independent minimum alignments. Each result preserves its input's type,
+/// extent and alignment, and every result slot is initialized. Both inputs
+/// and their validity maps remain unchanged, including through mutable
+/// reborrows. Generic K/V/N/ALIGN consumers need no `generic_const_exprs`.
+///
+/// Every member of the complete XYZ Block participates. Rank `r`, item `i`
+/// has blocked index `r * ITEMS_PER_THREAD + i`, with x-fastest rank. The
+/// checked Block-size/extent product must not exceed 65,535. Both input maps
+/// must be fully readable, even when an unreadable value's key is initialized.
+///
+/// Selected digits order the keys, and values follow their corresponding
+/// keys. Equal selected digits retain their original blocked order in either
+/// direction. Signed keys invert the sign bit before selecting the interval,
+/// then restore their representation. Default options sort all key bits
+/// ascending. An omitted end means the key width, independently of begin.
+///
+/// [`RadixSortOptions`] shares the keys-only static/runtime endpoint and
+/// storage rules: `0 <= begin < end <= key_width`, runtime endpoints are
+/// Block-uniform i64, and invalid bounds or unreadable inputs trap before
+/// native numeric reads. Manual scratch reuse needs an explicit Block
+/// completion; auto-sync storage supplies it. Internal sorting does not
+/// complete unrelated global accesses. There is no Warp, partial-input,
+/// floating-key or striped-output form. Execution needs an Oxide CUDA kernel.
+///
+/// ```no_run
+/// use cuda_coop as coop;
+/// fn sorted<K: coop::RadixKey, V: coop::RadixValue,
+///           const N: usize, const KA: usize, const VA: usize>(
+///     block: coop::ThreadGroup<coop::Block>,
+///     keys: &coop::ThreadData<K, N, KA>,
+///     values: &coop::ThreadData<V, N, VA>,
+/// ) -> (coop::ThreadData<K, N, KA>, coop::ThreadData<V, N, VA>)
+/// where coop::Alignment<KA>: coop::SupportedAlignment,
+///       coop::Alignment<VA>: coop::SupportedAlignment {
+///     coop::radix_sort_pairs(block, keys, values, Default::default())
+/// }
+/// ```
+#[inline(always)]
+pub fn radix_sort_pairs<
+    K,
+    V,
+    O,
+    Begin,
+    End,
+    S,
+    const ITEMS_PER_THREAD: usize,
+    const KEY_ALIGN: usize,
+    const VALUE_ALIGN: usize,
+>(
+    _group: ThreadGroup<Block>,
+    keys: &ThreadData<K, ITEMS_PER_THREAD, KEY_ALIGN>,
+    values: &ThreadData<V, ITEMS_PER_THREAD, VALUE_ALIGN>,
+    options: RadixSortOptions<K, O, Begin, End, S>,
+) -> (
+    ThreadData<K, ITEMS_PER_THREAD, KEY_ALIGN>,
+    ThreadData<V, ITEMS_PER_THREAD, VALUE_ALIGN>,
+)
+where
+    K: RadixKey,
+    V: RadixValue,
+    O: RadixSortOrder,
+    Begin: RadixSortBit,
+    End: RadixSortBit,
+    S: TempStorageLike,
+    Alignment<KEY_ALIGN>: SupportedAlignment,
+    Alignment<VALUE_ALIGN>: SupportedAlignment,
+{
+    boundary::radix_sort_pairs(keys, values, options)
+}
+
 mod sealed {
     pub trait Key {
         const WIDTH: i64;
+    }
+    pub trait Value {
+        const ASCENDING_REGISTRATION: &'static str;
+        const DESCENDING_REGISTRATION: &'static str;
     }
     pub trait Order {
         const DESCENDING: bool;
@@ -225,6 +309,70 @@ macro_rules! keys {
     )+};
 }
 keys!((i32, 32), (u32, 32), (i64, 64), (u64, 64));
+
+macro_rules! values {
+    ($(($ty:ty, $ascending:literal, $descending:literal)),+ $(,)?) => {$ (
+        impl sealed::Value for $ty {
+            const ASCENDING_REGISTRATION: &'static str =
+                cuda_device::library::registration!($ascending);
+            const DESCENDING_REGISTRATION: &'static str =
+                cuda_device::library::registration!($descending);
+        }
+        impl RadixValue for $ty {}
+    )+};
+}
+values!(
+    (
+        i8,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_I8",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_I8"
+    ),
+    (
+        u8,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_U8",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_U8"
+    ),
+    (
+        i16,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_I16",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_I16"
+    ),
+    (
+        u16,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_U16",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_U16"
+    ),
+    (
+        i32,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_I32",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_I32"
+    ),
+    (
+        u32,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_U32",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_U32"
+    ),
+    (
+        i64,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_I64",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_I64"
+    ),
+    (
+        u64,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_U64",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_U64"
+    ),
+    (
+        f32,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_F32",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_F32"
+    ),
+    (
+        f64,
+        "COOP_RADIX_SORT_PAIRS_ASCENDING_F64",
+        "COOP_RADIX_SORT_PAIRS_DESCENDING_F64"
+    ),
+);
 
 impl sealed::Order for Ascending {
     const DESCENDING: bool = false;

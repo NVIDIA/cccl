@@ -69,6 +69,8 @@
 //! [`radix_sort_keys`] stably sorts a complete XYZ Block's integer keys into a
 //! fresh blocked payload, preserving input. [`RadixSortOptions`] selects static
 //! order, independent static/runtime bit endpoints and existing scratch policy.
+//! [`radix_sort_pairs`] carries associated numeric values through the same stable
+//! ordering, returning fresh key/value payloads with independent alignments.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -112,7 +114,7 @@ pub use load_store::{
 };
 pub use radix_sort::{
     Ascending, Descending, RadixBit, RadixKey, RadixSortBit, RadixSortOptions, RadixSortOrder,
-    radix_sort_keys,
+    RadixValue, radix_sort_keys, radix_sort_pairs,
 };
 pub use reduce::{
     RakingCommutativeOnly, ReduceAlgorithm, ReduceGroup, ReduceOperator, ReduceOptions,

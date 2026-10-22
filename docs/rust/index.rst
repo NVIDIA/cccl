@@ -45,8 +45,8 @@ group's tile, and must be uniform across that group.
 
 The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
 :doc:`reduce_batched`, :doc:`exchange`, :doc:`shuffle`,
-:doc:`adjacent_difference`, :doc:`discontinuity`, :doc:`histogram` and
-:doc:`radix_sort_keys`.
+:doc:`adjacent_difference`, :doc:`discontinuity`, :doc:`histogram`,
+:doc:`radix_sort_keys` and :doc:`radix_sort_pairs`.
 Scan returns fresh per-group prefixes;
 Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
@@ -55,11 +55,14 @@ Shuffle shifts blocked values by one item, leaving the exposed edge invalid.
 Discontinuity returns head flags, tail flags or both as fresh ``i32`` payloads.
 Histogram returns fresh striped counters with an independent type and extent.
 Radix Sort Keys stably sorts integer keys into a fresh blocked payload.
-Both require generic native-registration support beyond the currently pinned
-Oxide revision; their guides explain the compiler requirement.
+Radix Sort Pairs carries associated numeric values through that stable order
+and returns two fresh payloads. Histogram and both Radix Sort forms require
+generic native-registration support beyond the currently pinned Oxide revision;
+their guides explain the compiler requirement.
 Scan, Reduce, batched reduction, Exchange, Shuffle, Adjacent Difference,
-Discontinuity, Histogram and Radix Sort Keys preserve their input. Additional primitive families
-are under development. The crate is unpublished and its interface can change.
+Discontinuity, Histogram and Radix Sort preserve their inputs. Additional
+primitive families are under development. The crate is unpublished and its
+interface can change.
 
 Build and run
 -------------
@@ -124,6 +127,7 @@ Read next
    discontinuity
    histogram
    radix_sort_keys
+   radix_sort_pairs
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

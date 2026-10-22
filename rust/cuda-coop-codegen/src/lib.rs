@@ -59,7 +59,9 @@
 //! with independent counter type/output extent and initialized zero padding.
 //! [`RadixSortKeysRequest`] stably sorts a complete integer Block tile over a
 //! uniform bit range, preserving input and producing fresh blocked keys.
-//! [`Provider::compile_native`] batches these families in one native compilation.
+//! [`RadixSortPairsRequest`] carries independently typed values with each key
+//! into fresh paired outputs. [`Provider::compile_native`] batches these families
+//! in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -102,7 +104,9 @@ pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceReques
 pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use histogram::{HistogramAlgorithm, HistogramRecipe, HistogramRequest};
-pub use radix_sort::{RadixSortKeysRecipe, RadixSortKeysRequest};
+pub use radix_sort::{
+    RadixSortKeysRecipe, RadixSortKeysRequest, RadixSortPairsRecipe, RadixSortPairsRequest,
+};
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
@@ -505,6 +509,8 @@ pub enum NativeRequest {
     Histogram(HistogramRequest),
     /// Stable Block radix sort with preserved input and fresh blocked keys.
     RadixSortKeys(RadixSortKeysRequest),
+    /// Stable Block radix sort preserving independently typed key/value inputs.
+    RadixSortPairs(RadixSortPairsRequest),
 }
 
 impl NativeRequest {
@@ -520,6 +526,7 @@ impl NativeRequest {
             Self::Discontinuity(request) => request.block_shape(),
             Self::Histogram(request) => request.block_shape(),
             Self::RadixSortKeys(request) => request.block_shape(),
+            Self::RadixSortPairs(request) => request.block_shape(),
         }
     }
 
@@ -535,6 +542,7 @@ impl NativeRequest {
             Self::Discontinuity(request) => request.source(symbol),
             Self::Histogram(request) => request.source(symbol),
             Self::RadixSortKeys(request) => request.source(symbol),
+            Self::RadixSortPairs(request) => request.source(symbol),
         }
     }
 
@@ -550,6 +558,7 @@ impl NativeRequest {
             Self::Discontinuity(request) => request.recipe.token().into(),
             Self::Histogram(request) => request.recipe.token(),
             Self::RadixSortKeys(request) => request.recipe.token().into(),
+            Self::RadixSortPairs(request) => request.recipe.token(request.value_dtype),
         }
     }
 
@@ -564,7 +573,8 @@ impl NativeRequest {
             | Self::AdjacentDifference(_)
             | Self::Discontinuity(_)
             | Self::Histogram(_)
-            | Self::RadixSortKeys(_) => false,
+            | Self::RadixSortKeys(_)
+            | Self::RadixSortPairs(_) => false,
         }
     }
 
@@ -582,7 +592,8 @@ impl NativeRequest {
             | Self::AdjacentDifference(_)
             | Self::Discontinuity(_)
             | Self::Histogram(_)
-            | Self::RadixSortKeys(_) => false,
+            | Self::RadixSortKeys(_)
+            | Self::RadixSortPairs(_) => false,
         }
     }
 }
@@ -606,7 +617,8 @@ pub struct Layout {
 /// ABI and validity contracts are documented by [`ScanRequest`], [`ReduceRequest`],
 /// [`ReduceBatchedRequest`], [`ExchangeRequest`], [`ShuffleRequest`],
 /// [`AdjacentDifferenceRequest`], [`DiscontinuityRequest`], [`HistogramRequest`]
-/// and [`RadixSortKeysRequest`].
+/// and [`RadixSortKeysRequest`]. [`RadixSortPairsRequest`] returns fresh keys and
+/// independently typed associated values while preserving both inputs.
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
