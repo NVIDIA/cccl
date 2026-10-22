@@ -4,9 +4,10 @@
 //! Register the owning host provider for native cooperative operations.
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, Algorithm, DiscontinuityRecipe, Dtype, ExchangeMode, ExchangeRecipe,
-    HistogramAlgorithm, Operation, RadixRankKeysRecipe, RadixSortKeysRecipe, RadixSortPairsRecipe,
-    ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm, ReduceOperator,
-    ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ShuffleRecipe, oxide,
+    HistogramAlgorithm, MergeSortKeysRecipe, Operation, RadixRankKeysRecipe, RadixSortKeysRecipe,
+    RadixSortPairsRecipe, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe, ReduceForm,
+    ReduceOperator, ReduceRecipe, ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe,
+    ShuffleRecipe, oxide,
 };
 
 fn main() {
@@ -18,6 +19,19 @@ fn main() {
         return;
     }
     let executable = std::env::current_exe().expect("cuda.coop provider executable");
+    for (recipe, name) in [
+        (MergeSortKeysRecipe::AscendingFull, "ASCENDING_FULL"),
+        (MergeSortKeysRecipe::DescendingFull, "DESCENDING_FULL"),
+        (MergeSortKeysRecipe::AscendingPartial, "ASCENDING_PARTIAL"),
+        (MergeSortKeysRecipe::DescendingPartial, "DESCENDING_PARTIAL"),
+    ] {
+        let value = oxide::merge_sort_keys_registration(&executable, recipe)
+            .expect("cuda.coop merge sort keys registration");
+        println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_{name}={value}");
+        let value = oxide::warp_merge_sort_keys_registration(&executable, recipe)
+            .expect("cuda.coop Warp merge sort keys registration");
+        println!("cargo::rustc-env=COOP_MERGE_SORT_KEYS_WARP_{name}={value}");
+    }
     for bits in 1..=8 {
         for (recipe, order) in [
             (RadixRankKeysRecipe::Ascending(bits), "ASCENDING"),

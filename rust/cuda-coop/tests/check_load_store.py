@@ -1873,6 +1873,84 @@ cases.update(
     ),
 )
 
+# Merge Sort uses complete groups, typed partial controls and existing scratch epochs.
+merge_sort = "let result=coop::merge_sort_keys(block,&values,Default::default());"
+merge_sort_manual = merge_sort.replace(
+    "Default::default()", "coop::MergeSortOptions::default().temp_storage(&mut scratch)"
+)
+cases.update(
+    merge_sort_generic=(
+        "fn sorted<T:coop::Numeric,G:coop::MergeSortGroup<S>,O:coop::MergeSortOrder,"
+        "P:coop::MergeSortPrefix<T>,S:coop::TempStorageLike,const N:usize,const A:usize>"
+        "(g:coop::ThreadGroup<G>,v:&coop::ThreadData<T,N,A>,o:coop::MergeSortOptions<T,O,P,S>)"
+        "->coop::ThreadData<T,N,A> where coop::Alignment<A>:coop::SupportedAlignment"
+        "{coop::merge_sort_keys(g,v,o)}"
+        + load
+        + "let _=sorted(block,&values,Default::default());"
+        "let group=coop::this_warp().group_by::<8>();"
+        "let _=sorted(group,&values,coop::MergeSortOptions::default()"
+        ".order(coop::Descending).valid_items(8,i32::MIN));"
+        "let _=sorted(group,&values,coop::MergeSortOptions::default()"
+        ".valid_items(8,i32::MIN).order(coop::Descending));",
+        None,
+    ),
+    merge_sort_storage_completed=(
+        load
+        + new_storage
+        + merge_sort_manual
+        + sync
+        + merge_sort_manual
+        + sync
+        + store,
+        None,
+    ),
+    merge_sort_auto_epoch_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + sync
+        + new_storage.replace("new()", "new().auto_sync()")
+        + merge_sort_manual
+        + merge_sort_manual
+        + sync
+        + store,
+        None,
+    ),
+    merge_sort_nonpower_partial_block=(load + merge_sort, "power-of-two Block"),
+    merge_sort_warp_partial_geometry=(
+        load + merge_sort.replace("(block,", "(coop::this_warp(),"),
+        "complete physical warps",
+    ),
+    merge_sort_varying_count=(
+        load
+        + merge_sort.replace(
+            "Default::default()",
+            "coop::MergeSortOptions::default().valid_items(thread::threadIdx_x() as i64,i32::MAX)",
+        ),
+        "not proved block-uniform",
+    ),
+    merge_sort_varying_sentinel=(
+        load
+        + merge_sort.replace(
+            "Default::default()",
+            "coop::MergeSortOptions::default().valid_items(1,thread::threadIdx_x() as i32)",
+        ),
+        "not proved block-uniform",
+    ),
+    merge_sort_result_control=(
+        load + merge_sort + "if result[0]==0 {" + merge_sort + "}",
+        "lane-varying",
+    ),
+    merge_sort_storage_missing_barrier=(
+        load + new_storage + merge_sort_manual + merge_sort_manual,
+        "requires a full-block barrier",
+    ),
+    merge_sort_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + merge_sort
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:
@@ -1933,6 +2011,8 @@ for name, (body, diagnostic) in cases.items():
         case_prefix = case_prefix.replace(
             "domain=1,block=(128,1,1)", "domain=3,block=(4,4,8)"
         )
+    if name == "merge_sort_warp_partial_geometry":
+        case_prefix = case_prefix.replace("block=(128,1,1)", "block=(48,1,1)")
     if name == "warp_partial_geometry":
         case_prefix = case_prefix.replace("block=(64,1,1)", "block=(48,1,1)")
     elif name.endswith("_partial_block"):

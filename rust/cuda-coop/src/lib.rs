@@ -73,6 +73,10 @@
 //! ordering, returning fresh key/value payloads with independent alignments.
 //! [`radix_rank_keys`] returns fresh naturally aligned i32 ranks for selected
 //! key digits. [`RadixRankOptions`] selects static width/order and begin/end.
+//! [`merge_sort_keys`] sorts numeric keys on complete power-of-two XYZ Blocks
+//! or physical/logical Warps, with existing explicit storage available to Blocks.
+//! [`MergeSortOptions`] selects built-in order and an optional count/sentinel;
+//! fresh results preserve the input shape and expose only the sorted prefix.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -87,6 +91,7 @@ mod exchange;
 mod group;
 mod histogram;
 mod load_store;
+mod merge_sort;
 mod radix_sort;
 mod reduce;
 mod reduce_batched;
@@ -113,6 +118,9 @@ pub use histogram::{
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,
+};
+pub use merge_sort::{
+    MergeSortGroup, MergeSortOptions, MergeSortOrder, MergeSortPrefix, merge_sort_keys,
 };
 pub use radix_sort::{
     Ascending, Descending, RadixBit, RadixKey, RadixRankBits, RadixRankOptions, RadixRankWidth,

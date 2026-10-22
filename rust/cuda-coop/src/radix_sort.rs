@@ -10,11 +10,11 @@ use crate::{
 
 mod boundary;
 
-/// Sort selected digits in ascending order (the default Radix Sort order).
+/// Select ascending ordering.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ascending;
 
-/// Sort selected digits in descending order, preserving the order of ties.
+/// Select descending ordering.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Descending;
 

@@ -5,7 +5,7 @@
 //!
 //! This private development crate compiles Load/Store, Scan, Reduce, batched
 //! Reduce, Exchange, Shuffle, Adjacent Difference, Discontinuity, Histogram
-//! and Radix Sort Keys/Pairs and Rank Keys with NVRTC.
+//! and Radix Sort Keys/Pairs, Rank Keys and Merge Sort Keys with NVRTC.
 //! It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -60,8 +60,9 @@
 //! uniform bit range, preserving input and producing fresh blocked keys.
 //! [`RadixSortPairsRequest`] carries independently typed values with each key
 //! into fresh paired outputs. [`RadixRankKeysRequest`] returns stable selected-digit
-//! i32 ranks in original input-slot order. [`Provider::compile_native`] batches these families
-//! in one native compilation.
+//! i32 ranks in original input-slot order. [`MergeSortKeysRequest`] sorts numeric
+//! Block/Warp keys with full or prefix-valid fresh output. [`Provider::compile_native`]
+//! batches these families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
 //! [`Provider::compile`] uses those exact bytes and loaded NVRTC to emit an
@@ -95,6 +96,7 @@ mod discontinuity;
 mod exchange;
 mod headers;
 mod histogram;
+mod merge_sort;
 mod radix_sort;
 mod reduce;
 mod reduce_batched;
@@ -104,6 +106,7 @@ pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceReques
 pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use histogram::{HistogramAlgorithm, HistogramRecipe, HistogramRequest};
+pub use merge_sort::{MergeSortKeysRecipe, MergeSortKeysRequest};
 pub use radix_sort::{
     RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
     RadixSortPairsRecipe, RadixSortPairsRequest,
@@ -514,6 +517,8 @@ pub enum NativeRequest {
     RadixSortPairs(RadixSortPairsRequest),
     /// Stable selected-digit Block ranks with preserved keys and fresh i32 output.
     RadixRankKeys(RadixRankKeysRequest),
+    /// Numeric Block merge sort preserving inputs with fresh full/partial output.
+    MergeSortKeys(MergeSortKeysRequest),
 }
 
 impl NativeRequest {
@@ -531,6 +536,7 @@ impl NativeRequest {
             Self::RadixSortKeys(request) => request.block_shape(),
             Self::RadixSortPairs(request) => request.block_shape(),
             Self::RadixRankKeys(request) => request.block_shape(),
+            Self::MergeSortKeys(request) => request.block_shape(),
         }
     }
 
@@ -548,6 +554,7 @@ impl NativeRequest {
             Self::RadixSortKeys(request) => request.source(symbol),
             Self::RadixSortPairs(request) => request.source(symbol),
             Self::RadixRankKeys(request) => request.source(symbol),
+            Self::MergeSortKeys(request) => request.source(symbol),
         }
     }
 
@@ -565,6 +572,7 @@ impl NativeRequest {
             Self::RadixSortKeys(request) => request.recipe.token().into(),
             Self::RadixSortPairs(request) => request.recipe.token(request.value_dtype),
             Self::RadixRankKeys(request) => request.recipe.token(),
+            Self::MergeSortKeys(request) => request.recipe.token().into(),
         }
     }
 
@@ -581,7 +589,8 @@ impl NativeRequest {
             | Self::Histogram(_)
             | Self::RadixSortKeys(_)
             | Self::RadixSortPairs(_)
-            | Self::RadixRankKeys(_) => false,
+            | Self::RadixRankKeys(_)
+            | Self::MergeSortKeys(_) => false,
         }
     }
 
@@ -601,7 +610,8 @@ impl NativeRequest {
             | Self::Histogram(_)
             | Self::RadixSortKeys(_)
             | Self::RadixSortPairs(_)
-            | Self::RadixRankKeys(_) => false,
+            | Self::RadixRankKeys(_)
+            | Self::MergeSortKeys(_) => false,
         }
     }
 }
@@ -628,6 +638,7 @@ pub struct Layout {
 /// and [`RadixSortKeysRequest`]. [`RadixSortPairsRequest`] returns fresh keys and
 /// independently typed associated values while preserving both inputs.
 /// [`RadixRankKeysRequest`] returns fresh i32 ranks independently of key type.
+/// [`MergeSortKeysRequest`] sorts Block/Warp numeric keys with full or prefix-valid output.
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.

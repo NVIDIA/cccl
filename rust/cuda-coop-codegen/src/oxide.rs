@@ -26,17 +26,19 @@
 //! carries an independent numeric value type into a fresh paired output.
 //! [`RadixRankKeysRecipe`] selects stable i32 ranks with a static digit width
 //! and signed64 begin/end-constraint controls, preserving input-slot order.
+//! [`MergeSortKeysRecipe`] selects numeric Block/Warp sorting with full output or a
+//! signed64 count and key-typed sentinel for prefix-valid output.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
 use crate::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, DiscontinuityRecipe,
     DiscontinuityRequest, Dtype, Error, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
-    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider,
-    RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
-    RadixSortPairsRecipe, RadixSortPairsRequest, ReduceBatchedRecipe, ReduceBatchedRequest,
-    ReduceForm, ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
-    ShuffleRecipe, ShuffleRequest,
+    HistogramRecipe, HistogramRequest, Layout, MergeSortKeysRecipe, MergeSortKeysRequest,
+    NativeRequest, Operation, Provider, RadixRankKeysRecipe, RadixRankKeysRequest,
+    RadixSortKeysRecipe, RadixSortKeysRequest, RadixSortPairsRecipe, RadixSortPairsRequest,
+    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe, ReduceRequest, Request,
+    Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -139,6 +141,26 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("merge_sort_keys_") {
+            let recipe = MergeSortKeysRecipe::parse(&self.operation, &self.algorithm)?;
+            let dtype = self.dtype.dtype()?;
+            return match (self.algorithm.as_str(), self.warp_width) {
+                ("block", None) => {
+                    MergeSortKeysRequest::block(dtype, recipe, self.block, self.items_per_thread)
+                }
+                ("warp", Some(width)) => MergeSortKeysRequest::warp(
+                    dtype,
+                    recipe,
+                    self.block,
+                    width,
+                    self.items_per_thread,
+                ),
+                _ => Err(Error::message(
+                    "Merge Sort Keys scope and warp width disagree",
+                )),
+            }
+            .map(NativeRequest::MergeSortKeys);
+        }
         if self.operation.starts_with("radix_rank_keys_") {
             let recipe = RadixRankKeysRecipe::parse(&self.operation, &self.algorithm)?;
             if self.warp_width.is_some() {
@@ -385,6 +407,19 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::MergeSortKeys(request) => {
+            let dtype = Scalar::from(request.dtype);
+            let mut arguments = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if request.recipe.partial() {
+                arguments.extend([Argument::Value(Scalar::Signed(64)), Argument::Value(dtype)]);
+            }
+            return arguments;
+        }
         NativeRequest::RadixRankKeys(request) => {
             return vec![
                 Argument::ConstPointer(Scalar::from(request.dtype)),
@@ -752,6 +787,62 @@ pub fn shuffle_registration(executable: &Path, recipe: ShuffleRecipe) -> Result<
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
 }
 
+/// Encode one of four Block Merge Sort Keys order/prefix registrations.
+///
+/// Key dtype, exact XYZ and per-lane extent arrive with specialization. Four
+/// typed pointers describe preserved input and fresh output with independent
+/// packed validity. Full recipes have no controls; partial recipes append a
+/// signed64 count and sentinel of exactly the key type. Scratch is inserted at
+/// slot 2, giving five or seven native arguments. See [`MergeSortKeysRequest`]
+/// for input validity, sentinel ordering, scratch and participation obligations.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn merge_sort_keys_registration(
+    executable: &Path,
+    recipe: MergeSortKeysRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of four physical/logical Warp Merge Sort Keys registrations.
+///
+/// Uses the same typed five/seven-argument native ABI as
+/// [`merge_sort_keys_registration`]. The genuine checked Warp marker supplies
+/// the logical width and exact enclosing XYZ Block at specialization. Only
+/// widths 1/2/4/8/16/32 and complete physical warps are supported. Controls agree
+/// within each group; the compiler supplies its independent scratch replica.
+/// See [`MergeSortKeysRequest`] for input, validity and sentinel obligations.
+///
+/// # Errors
+/// Rejects a nonabsolute executable or a path that cannot be encoded as JSON.
+pub fn warp_merge_sort_keys_registration(
+    executable: &Path,
+    recipe: MergeSortKeysRecipe,
+) -> Result<String> {
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: recipe.token(),
+        algorithm: "warp",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
 /// Encode one of sixteen Block Radix Rank Keys order/width registrations.
 ///
 /// `recipe` selects ascending/descending order and 1..=8 radix bits. Key type,
@@ -1096,6 +1187,94 @@ mod tests {
         ReduceAlgorithm, ReduceBatchedLayout, ReduceOperator, ScanAlgorithm, ScanOperation,
         ScanOperator,
     };
+
+    #[test]
+    fn merge_sort_keys_registration_preserves_count_and_sentinel_types() {
+        for (recipe, dtype) in [
+            (MergeSortKeysRecipe::AscendingFull, Scalar::Signed(8)),
+            (MergeSortKeysRecipe::DescendingFull, Scalar::Float(32)),
+            (MergeSortKeysRecipe::AscendingPartial, Scalar::Unsigned(64)),
+            (MergeSortKeysRecipe::DescendingPartial, Scalar::Float(64)),
+        ] {
+            let registration: serde_json::Value = serde_json::from_str(
+                &merge_sort_keys_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            let mut request = SpecializationRequest {
+                operation: registration["operation"].as_str().unwrap().into(),
+                algorithm: registration["algorithm"].as_str().unwrap().into(),
+                dtype,
+                block: [4, 4, 4],
+                items_per_thread: 9,
+                warp_width: None,
+            };
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::MergeSortKeys(
+                    MergeSortKeysRequest::block(dtype.dtype().unwrap(), recipe, [4, 4, 4], 9)
+                        .unwrap()
+                )
+            );
+            let mut expected = vec![
+                Argument::ConstPointer(dtype),
+                Argument::MutPointer(dtype),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+            ];
+            if recipe.partial() {
+                expected.extend([Argument::Value(Scalar::Signed(64)), Argument::Value(dtype)]);
+            }
+            assert_eq!(arguments(native), expected);
+            assert!(!native.mutates_payload() && !native.scratch_free());
+            request.warp_width = Some(32);
+            assert!(request.native().is_err());
+            request.warp_width = None;
+            request.block = [3, 5, 2];
+            assert!(request.native().is_err());
+
+            let warp: serde_json::Value = serde_json::from_str(
+                &warp_merge_sort_keys_registration(Path::new("/provider"), recipe).unwrap(),
+            )
+            .unwrap();
+            request.operation = warp["operation"].as_str().unwrap().into();
+            request.algorithm = warp["algorithm"].as_str().unwrap().into();
+            request.block = [4, 4, 6];
+            assert!(request.native().is_err()); // No authenticated width.
+            request.warp_width = Some(8);
+            let native = request.native().unwrap();
+            assert_eq!(
+                native,
+                NativeRequest::MergeSortKeys(
+                    MergeSortKeysRequest::warp(dtype.dtype().unwrap(), recipe, [4, 4, 6], 8, 9)
+                        .unwrap()
+                )
+            );
+            assert_eq!(arguments(native), expected);
+            assert!(!native.mutates_payload() && !native.scratch_free());
+            request.warp_width = Some(17);
+            assert!(request.native().is_err());
+        }
+        assert!(
+            merge_sort_keys_registration(Path::new("relative"), MergeSortKeysRecipe::AscendingFull)
+                .is_err()
+        );
+        assert!(
+            warp_merge_sort_keys_registration(
+                Path::new("relative"),
+                MergeSortKeysRecipe::AscendingFull
+            )
+            .is_err()
+        );
+        for (operation, algorithm) in [
+            ("merge_sort_keys_ascending_full_validity_bits_v1", "other"),
+            ("merge_sort_keys_ascending_full_validity_bits_v2", "block"),
+            ("merge_sort_keys_custom_full_validity_bits_v1", "block"),
+            ("merge_sort_pairs_ascending_full_validity_bits_v1", "block"),
+        ] {
+            assert!(MergeSortKeysRecipe::parse(operation, algorithm).is_err());
+        }
+    }
 
     #[test]
     fn radix_sort_pairs_registration_preserves_independent_value_abi() {
