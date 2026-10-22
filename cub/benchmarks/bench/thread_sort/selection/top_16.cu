@@ -3,7 +3,7 @@
 
 #include "common.cuh"
 
-using item_counts = nvbench::enum_type_list<16, 31, 32, 63, 64>;
+using item_counts = nvbench::enum_type_list<16>;
 
 template <typename KeyT, int ItemsPerThread>
 void top_16(nvbench::state& state, nvbench::type_list<KeyT, nvbench::enum_type<ItemsPerThread>>)
