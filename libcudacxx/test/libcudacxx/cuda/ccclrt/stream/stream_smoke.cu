@@ -28,18 +28,18 @@ namespace
       Catch::Matchers::ContainsSubstring("The NULL/default stream requires a current CUDA context.") \
       && Catch::Matchers::ContainsSubstring("Set the current device or make a CUDA context current"))
 
-#  define CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(EXPR) \
+#  define REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(EXPR) \
     REQUIRE_THROWS_MATCHES(EXPR, cuda::cuda_error, CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER())
 
 void check_default_stream_invalid_context_message(::CUstream native_stream)
 {
   const cuda::stream_ref stream{native_stream};
 
-  CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(stream.sync());
-  CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT((void) stream.is_done());
+  REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT(stream.sync());
+  REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT((void) stream.is_done());
 }
 } // namespace
-#  undef CCCLRT_REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT
+#  undef REQUIRE_THROWS_DEFAULT_STREAM_INVALID_CONTEXT
 #  undef CCCLRT_DEFAULT_STREAM_INVALID_CONTEXT_MATCHER
 #endif // TEST_HAS_EXCEPTIONS()
 
@@ -49,30 +49,30 @@ C2H_CCCLRT_TEST("Can create a stream and launch work into it", "[stream]")
   ::test::pinned<int> i(0);
   ::test::launch_kernel_single_thread(str, ::test::assign_42{}, i.get());
   str.sync();
-  CCCLRT_REQUIRE(*i == 42);
+  REQUIRE(*i == 42);
 }
 
 C2H_CCCLRT_TEST("From native handle", "[stream]")
 {
   const cuda::__ensure_current_context guard(cuda::device_ref{0});
   cudaStream_t handle;
-  CUDART(cudaStreamCreate(&handle));
+  REQUIRE_CUDART(cudaStreamCreate(&handle));
   {
     auto stream = cuda::stream::from_native_handle(handle);
 
     ::test::pinned<int> i(0);
     ::test::launch_kernel_single_thread(stream, ::test::assign_42{}, i.get());
     stream.sync();
-    CCCLRT_REQUIRE(*i == 42);
+    REQUIRE(*i == 42);
     (void) stream.release();
   }
-  CUDART(cudaStreamDestroy(handle));
+  REQUIRE_CUDART(cudaStreamDestroy(handle));
 }
 
 template <typename StreamType>
 void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
 {
-  CCCLRT_REQUIRE(waiter != waitee);
+  REQUIRE(waiter != waitee);
 
   auto verify_dependency = [&](const auto& insert_dependency) {
     ::test::pinned<int> i(0);
@@ -82,8 +82,8 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
     ::test::launch_kernel_single_thread(waitee, ::test::assign_42{}, i.get());
     insert_dependency();
     ::test::launch_kernel_single_thread(waiter, ::test::verify_42{}, i.get());
-    CCCLRT_REQUIRE(atomic_i.load() != 42);
-    CCCLRT_REQUIRE(!waiter.is_done());
+    REQUIRE(atomic_i.load() != 42);
+    REQUIRE(!waiter.is_done());
     atomic_i.store(80);
     waiter.sync();
     waitee.sync();
@@ -132,25 +132,25 @@ C2H_CCCLRT_TEST("Can add dependency into a stream", "[stream]")
 C2H_CCCLRT_TEST("Stream priority", "[stream]")
 {
   const cuda::stream stream_default_prio{cuda::device_ref{0}};
-  CCCLRT_REQUIRE(stream_default_prio.priority() == cuda::stream::default_priority);
+  REQUIRE(stream_default_prio.priority() == cuda::stream::default_priority);
 
   auto priority = cuda::stream::default_priority - 1;
   const cuda::stream stream{cuda::device_ref{0}, priority};
-  CCCLRT_REQUIRE(stream.priority() == priority);
+  REQUIRE(stream.priority() == priority);
 }
 
 C2H_CCCLRT_TEST("Stream get device", "[stream]")
 {
   const cuda::stream dev0_stream(cuda::device_ref{0});
-  CCCLRT_REQUIRE(dev0_stream.device() == 0);
+  REQUIRE(dev0_stream.device() == 0);
 
   const cuda::__ensure_current_context guard(cuda::device_ref{*std::prev(cuda::devices.end())});
   cudaStream_t stream_handle;
-  CUDART(cudaStreamCreate(&stream_handle));
+  REQUIRE_CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cuda::stream::from_native_handle(stream_handle);
-  CCCLRT_REQUIRE(stream_cudart.device() == *std::prev(cuda::devices.end()));
+  REQUIRE(stream_cudart.device() == *std::prev(cuda::devices.end()));
   auto stream_ref_cudart = cuda::stream_ref(stream_handle);
-  CCCLRT_REQUIRE(stream_ref_cudart.device() == *std::prev(cuda::devices.end()));
+  REQUIRE(stream_ref_cudart.device() == *std::prev(cuda::devices.end()));
 }
 
 C2H_CCCLRT_TEST("Stream construction uses the explicit device", "[stream][multi_gpu]")
@@ -168,7 +168,7 @@ C2H_CCCLRT_TEST("Stream construction uses the explicit device", "[stream][multi_
     return cuda::stream{explicit_device};
   }();
 
-  CCCLRT_REQUIRE(stream.device() == explicit_device);
+  REQUIRE(stream.device() == explicit_device);
 }
 
 C2H_CCCLRT_TEST("Stream dependency uses the explicit stream device", "[stream][multi_gpu]")
@@ -196,8 +196,8 @@ C2H_CCCLRT_TEST("Stream dependency uses the explicit stream device", "[stream][m
   }
 
   ::test::launch_kernel_single_thread(waiter, ::test::verify_42{}, value.get());
-  CCCLRT_REQUIRE(atomic_value.load() != 42);
-  CCCLRT_REQUIRE(!waiter.is_done());
+  REQUIRE(atomic_value.load() != 42);
+  REQUIRE(!waiter.is_done());
 
   atomic_value.store(80);
   waiter.sync();
@@ -218,18 +218,18 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
 
   // Test that different streams have different IDs
 #if _CCCL_COMPILER(NVHPC, <, 25, 11)
-  CCCLRT_REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
+  REQUIRE(cuda::std::to_underlying(id1) != cuda::std::to_underlying(id2));
 #else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
-  CCCLRT_REQUIRE(id1 != id2);
+  REQUIRE(id1 != id2);
 #endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   // Test that the same stream returns the same ID when called multiple times
 #if _CCCL_COMPILER(NVHPC, <, 25, 11)
-  CCCLRT_REQUIRE(cuda::std::to_underlying(stream1.id()) == cuda::std::to_underlying(id1));
-  CCCLRT_REQUIRE(cuda::std::to_underlying(stream2.id()) == cuda::std::to_underlying(id2));
+  REQUIRE(cuda::std::to_underlying(stream1.id()) == cuda::std::to_underlying(id1));
+  REQUIRE(cuda::std::to_underlying(stream2.id()) == cuda::std::to_underlying(id2));
 #else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
-  CCCLRT_REQUIRE(stream1.id() == id1);
-  CCCLRT_REQUIRE(stream2.id() == id2);
+  REQUIRE(stream1.id() == id1);
+  REQUIRE(stream2.id() == id2);
 #endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
 
   {
@@ -240,11 +240,11 @@ C2H_CCCLRT_TEST("Stream ID", "[stream]")
     const cuda::stream_ref ref2(stream1);
 
 #if _CCCL_COMPILER(NVHPC, <, 25, 11)
-    CCCLRT_REQUIRE(cuda::std::to_underlying(ref1.id()) != cuda::std::to_underlying(ref2.id()));
-    CCCLRT_REQUIRE(cuda::std::to_underlying(ref2.id()) == cuda::std::to_underlying(id1));
+    REQUIRE(cuda::std::to_underlying(ref1.id()) != cuda::std::to_underlying(ref2.id()));
+    REQUIRE(cuda::std::to_underlying(ref2.id()) == cuda::std::to_underlying(id1));
 #else // ^^^ _CCCL_COMPILER(NVHPC, <, 25, 11) ^^^ / vvv !_CCCL_COMPILER(NVHPC, <, 25, 11) vvv
-    CCCLRT_REQUIRE(ref1.id() != ref2.id());
-    CCCLRT_REQUIRE(ref2.id() == id1);
+    REQUIRE(ref1.id() != ref2.id());
+    REQUIRE(ref2.id() == id1);
 #endif // ^^^ !_CCCL_COMPILER(NVHPC, <, 25, 11) ^^^
   }
 }
@@ -260,18 +260,18 @@ C2H_CCCLRT_TEST("Stream hash", "[stream]")
   cuda::stream stream{cuda::device_ref{0}};
 
   // The hash is stable across calls.
-  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream>{}(stream));
+  REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream>{}(stream));
 
   // A stream and a stream_ref that refer to the same stream are equal, so they
   // must hash equally.
   const cuda::stream_ref ref{stream};
-  CCCLRT_REQUIRE(ref == stream);
-  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream_ref>{}(ref));
+  REQUIRE(ref == stream);
+  REQUIRE(std::hash<cuda::stream>{}(stream) == std::hash<cuda::stream_ref>{}(ref));
 
   // A moved-to stream owns the same underlying stream, so the hash follows it.
   auto hash_before = std::hash<cuda::stream>{}(stream);
   const cuda::stream moved{cuda::std::move(stream)};
-  CCCLRT_REQUIRE(std::hash<cuda::stream>{}(moved) == hash_before);
+  REQUIRE(std::hash<cuda::stream>{}(moved) == hash_before);
 }
 #endif // _CCCL_HAS_HOST_STD_LIB()
 
@@ -279,7 +279,7 @@ C2H_CCCLRT_TEST("Default stream diagnostics mention the missing current context"
 {
 #if TEST_HAS_EXCEPTIONS()
   test::empty_driver_stack();
-  CCCLRT_REQUIRE(::cuda::__driver::__ctxGetCurrent() == nullptr);
+  REQUIRE(::cuda::__driver::__ctxGetCurrent() == nullptr);
 
   check_default_stream_invalid_context_message(nullptr);
   check_default_stream_invalid_context_message(CU_STREAM_LEGACY);
@@ -297,7 +297,7 @@ C2H_CCCLRT_TEST("Invalid stream", "[stream]")
   STATIC_REQUIRE(!cuda::std::is_convertible_v<cuda::invalid_stream_t, cuda::stream_ref>);
   {
     const cuda::stream_ref stream{cuda::invalid_stream};
-    CCCLRT_REQUIRE(stream.get() == (cudaStream_t) (~0ull)); // NOLINT(performance-no-int-to-ptr)
+    REQUIRE(stream.get() == (cudaStream_t) (~0ull)); // NOLINT(performance-no-int-to-ptr)
   }
 
   // 3. Test stream_ref comparisons
@@ -305,14 +305,14 @@ C2H_CCCLRT_TEST("Invalid stream", "[stream]")
     const cuda::stream_ref valid_stream{(cudaStream_t) (123ull)}; // NOLINT(performance-no-int-to-ptr)
     const cuda::stream_ref invalid_stream{cuda::invalid_stream};
 
-    CCCLRT_REQUIRE(!(valid_stream == cuda::invalid_stream));
-    CCCLRT_REQUIRE(invalid_stream == cuda::invalid_stream);
-    CCCLRT_REQUIRE(!(cuda::invalid_stream == valid_stream));
-    CCCLRT_REQUIRE(cuda::invalid_stream == invalid_stream);
+    REQUIRE(!(valid_stream == cuda::invalid_stream));
+    REQUIRE(invalid_stream == cuda::invalid_stream);
+    REQUIRE(!(cuda::invalid_stream == valid_stream));
+    REQUIRE(cuda::invalid_stream == invalid_stream);
 
-    CCCLRT_REQUIRE(valid_stream != cuda::invalid_stream);
-    CCCLRT_REQUIRE(!(invalid_stream != cuda::invalid_stream));
-    CCCLRT_REQUIRE(cuda::invalid_stream != valid_stream);
-    CCCLRT_REQUIRE(!(cuda::invalid_stream != invalid_stream));
+    REQUIRE(valid_stream != cuda::invalid_stream);
+    REQUIRE(!(invalid_stream != cuda::invalid_stream));
+    REQUIRE(cuda::invalid_stream != valid_stream);
+    REQUIRE(!(cuda::invalid_stream != invalid_stream));
   }
 }
