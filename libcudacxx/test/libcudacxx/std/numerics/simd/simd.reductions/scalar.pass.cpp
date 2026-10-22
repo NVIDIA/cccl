@@ -30,8 +30,6 @@ template <class T>
 TEST_HOST_DEVICE_FUNC constexpr void test_type()
 {
   T value{7};
-  int calls = 0;
-
   static_assert(cuda::std::is_same_v<decltype(simd::reduce(value)), T>);
   static_assert(cuda::std::is_same_v<decltype(simd::reduce(value, true)), T>);
   static_assert(cuda::std::is_same_v<decltype(simd::reduce(value, false, cuda::std::multiplies<>{}, T{})), T>);
@@ -153,7 +151,8 @@ TEST_HOST_DEVICE_FUNC bool test_runtime()
 int main(int, char**)
 {
   static_assert(test());
-  assert(test());
+  // Also exercise the reductions at runtime.
+  assert(test()); // NOLINT(cert-dcl03-c,misc-static-assert)
   assert(test_runtime());
   return 0;
 }
