@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_reverse.h>
-#include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__bit/popcount.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -32,55 +30,11 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 
-#if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-#  include <cuda/__ptx/instructions/bfind.h>
-#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-
 #include <nv/target>
 
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA
-
-#if _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-template <class _Tp>
-[[nodiscard]] _CCCL_DEVICE_API int __bit_fns_impl_rank_0_device(const _Tp __v) noexcept
-{
-  using ::cuda::std::uint32_t;
-  using ::cuda::std::uint64_t;
-
-  if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
-  {
-    using _Up          = ::cuda::std::conditional_t<(sizeof(_Tp) <= sizeof(uint32_t)), uint32_t, uint64_t>;
-    const auto __v_rev = ::cuda::std::bit_reverse(static_cast<_Up>(__v));
-    return static_cast<int>(::cuda::ptx::bfind_shiftamt(__v_rev));
-  }
-#  if _CCCL_HAS_INT128()
-  else if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
-  {
-    const auto __lo = static_cast<uint64_t>(__v);
-    const auto __hi = static_cast<uint64_t>(__v >> 64);
-
-    const auto __pos_lo = static_cast<int>(::cuda::ptx::bfind_shiftamt(::cuda::std::bit_reverse(__lo)));
-    const auto __pos_hi = static_cast<int>(::cuda::ptx::bfind_shiftamt(::cuda::std::bit_reverse(__hi)));
-    return (__pos_lo != -1) ? __pos_lo : (__pos_hi != -1) ? __pos_hi + 64 : -1;
-  }
-#  endif // _CCCL_HAS_INT128()
-  _CCCL_UNREACHABLE();
-}
-#endif // _CCCL_CUDA_COMPILATION() && !_CCCL_TILE_COMPILATION()
-
-template <class _Tp>
-[[nodiscard]] _CCCL_API constexpr int __bit_fns_impl_rank_0(const _Tp __v) noexcept
-{
-#if !_CCCL_TILE_COMPILATION() // error: asm statement is unsupported in tile code
-  _CCCL_IF_NOT_CONSTEVAL_DEFAULT
-  {
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_fns_impl_rank_0_device(__v);))
-  }
-#endif // !_CCCL_TILE_COMPILATION()
-  return __v != 0 ? ::cuda::std::countr_zero(__v) : -1;
-}
 
 template <class _Tp>
 [[nodiscard]] _CCCL_API constexpr int __bit_fns_impl(const _Tp __v, const int __rank) noexcept
@@ -135,11 +89,7 @@ _CCCL_REQUIRES(::cuda::std::__cccl_is_unsigned_integer_v<_Tp>)
   _CCCL_ASSERT(__rank >= 0 && __rank < __nbits, "rank out of range");
   int __ret{};
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
-  if (_CCCL_BUILTIN_CONSTANT_P(__rank) && __rank == 0)
-  {
-    __ret = ::cuda::__bit_fns_impl_rank_0(__value);
-  }
-  else if (_CCCL_BUILTIN_CONSTANT_P(__rank) && __rank == __nbits - 1)
+  if (_CCCL_BUILTIN_CONSTANT_P(__rank) && __rank == __nbits - 1)
   {
     __ret = (__value == static_cast<_Tp>(-1)) ? __nbits - 1 : -1;
   }
