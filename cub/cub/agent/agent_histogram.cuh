@@ -233,6 +233,11 @@ struct AgentHistogram
     BlockLoad<PixelT, threads_per_block, pixels_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
   using BlockLoadVecT = BlockLoad<VecT, threads_per_block, vecs_per_thread, AgentHistogramPolicyT::LOAD_ALGORITHM>;
 
+  // The samples loaded by BlockLoadSampleT are interpreted as samples[pixels_per_thread][NumChannels]
+  static_assert(NumChannels == 1 || AgentHistogramPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED,
+                "HistogramPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED for multi-channel histograms, since "
+                "the channels of a pixel must be loaded by the same thread");
+
   struct _TempStorage
   {
     // Smem needed for block-privatized smem histogram (with 1 word of padding)

@@ -249,6 +249,13 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto dispatch(
     return error;
   }
 
+  // A sweep_kernel that cannot be launched (e.g., because of too many threads per block) has zero occupancy, which must
+  // not be mistaken for an empty problem below
+  if (histogram_sweep_sm_occupancy == 0)
+  {
+    return CubDebug(cudaErrorInvalidConfiguration);
+  }
+
   // Get device occupancy for sweep_kernel
   const int histogram_sweep_occupancy = histogram_sweep_sm_occupancy * sm_count;
 
