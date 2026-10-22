@@ -30,7 +30,6 @@
 #include <cub/util_namespace.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>
