@@ -77,9 +77,7 @@ struct has_unique_value_overload<
 // The trait below checks if the freedom to copy trivial types can be regained.
 template <typename Value, typename Fn>
 using can_regain_copy_freedom =
-  ::cuda::std::integral_constant<
-    bool,
-    ::cuda::std::is_trivially_constructible_v<Value> &&
+  ::cuda::std::bool_constant<::cuda::std::is_trivially_constructible_v<Value> &&
     ::cuda::std::is_trivially_copy_assignable_v<Value> &&
     ::cuda::std::is_trivially_move_assignable_v<Value> &&
     ::cuda::std::is_trivially_destructible_v<Value> &&

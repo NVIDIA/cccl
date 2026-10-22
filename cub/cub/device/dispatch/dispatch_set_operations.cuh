@@ -21,8 +21,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/mul_overflow.h>
@@ -238,7 +236,7 @@ template <typename KeysIt1,
       const int init_grid_size =
         ::cuda::std::max(1, static_cast<int>(::cuda::ceil_div(num_tiles, Offset{init_kernel_threads})));
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_kernel_threads, 0, stream)
+            launcher_factory(init_grid_size, init_kernel_threads, 0, stream)
               .doit(detail::scan::DeviceCompactInitKernel<scan_tile_state_t, NumSelectedIteratorT>,
                     tile_state,
                     static_cast<int>(num_tiles),
@@ -263,8 +261,7 @@ template <typename KeysIt1,
       const int partition_grid_size =
         static_cast<int>(::cuda::ceil_div(num_partitions, Offset{partition_kernel_threads}));
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-              partition_grid_size, partition_kernel_threads, 0, stream)
+            launcher_factory(partition_grid_size, partition_kernel_threads, 0, stream)
               .doit(device_set_op_partition_kernel<KeysIt1, KeysIt2, Offset, CompareOp>,
                     keys1,
                     keys2,
@@ -298,7 +295,7 @@ template <typename KeysIt1,
         SetOp,
         NumSelectedIteratorT>;
       if (const auto error = CubDebug(
-            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(static_cast<int>(num_tiles), block_threads, 0, stream)
+            launcher_factory(static_cast<int>(num_tiles), block_threads, 0, stream)
               .doit(sweep_kernel,
                     keys1,
                     keys2,

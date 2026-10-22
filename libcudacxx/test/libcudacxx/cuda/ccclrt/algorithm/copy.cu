@@ -304,7 +304,7 @@ C2H_CCCLRT_TEST("Mdspan copy", "[algorithm]")
     test_mdspan_copy_bytes(stream, static_extents, static_extents);
     test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, static_extents);
 
-    auto dynamic_extents = cuda::std::dextents<size_t, 2>(3, 4);
+    auto dynamic_extents = cuda::std::dims<2>(3, 4);
     test_mdspan_copy_bytes(stream, dynamic_extents, dynamic_extents);
     test_mdspan_copy_bytes(stream, static_extents, dynamic_extents);
     test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, dynamic_extents);
