@@ -275,9 +275,15 @@ public:
       _CCCL_ASSERT(::cuda::std::accumulate(__unit_counts_, __unit_counts_ + __curr_ngroups, 0u) == __prev_nunits,
                    "group_as mapping would produce units without a group during exhaustive mapping");
     }
-    else if (__prev_unit_rank >= ::cuda::std::accumulate(__unit_counts_, __unit_counts_ + __curr_ngroups, 0u))
+    else
     {
-      return _MappingResult::__invalid();
+      _CCCL_ASSERT(::cuda::std::accumulate(__unit_counts_, __unit_counts_ + __curr_ngroups, 0u) <= __prev_nunits,
+                   "group_as mapping requires more units than are available");
+
+      if (__prev_unit_rank >= ::cuda::std::accumulate(__unit_counts_, __unit_counts_ + __curr_ngroups, 0u))
+      {
+        return _MappingResult::__invalid();
+      }
     }
 
     ::cuda::std::uint32_t __sum = 0;
