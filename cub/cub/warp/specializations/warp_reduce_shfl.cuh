@@ -212,7 +212,7 @@ struct WarpReduceShfl
   Reduce(const T input, const int valid_items, ReductionOp reduction_op)
   {
     // Dispatch to more efficient intrinsics when applicable
-    const int last_lane = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
+    [[maybe_unused]] const int last_lane = (AllValidLanes) ? LogicalWarpThreads - 1 : valid_items - 1;
 
     if constexpr (is_warp_vote_any_op<ReductionOp, T>)
     {
