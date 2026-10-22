@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#pragma once
+
 #include <cub/thread/thread_sort.cuh>
 
 #include <cuda/std/functional>
@@ -101,7 +103,6 @@ void run_benchmark(nvbench::state& state)
 //----------------------------------------------------------------------------------------------------------------------
 // parameter lists
 
-using algorithms  = nvbench::enum_type_list<sort_algorithm::stable, sort_algorithm::unstable>;
 using key_types   = nvbench::type_list<uint32_t, uint64_t>;
 using value_types = nvbench::type_list<uint32_t, uint64_t>;
 using item_counts = nvbench::enum_type_list<3, 4, 7, 8, 15, 16, 31, 32, 63, 64>;
@@ -114,9 +115,6 @@ void keys(nvbench::state& state,
   run_benchmark<Algorithm, KeyT, void, ItemsPerThread>(state);
 }
 
-NVBENCH_BENCH_TYPES(keys, NVBENCH_TYPE_AXES(algorithms, key_types, item_counts))
-  .set_type_axes_names({"algorithm", "KeyT", "items"});
-
 // key-value sorting benchmarks
 template <sort_algorithm Algorithm, typename KeyT, typename ValueT, int ItemsPerThread>
 void pairs(nvbench::state& state,
@@ -124,6 +122,3 @@ void pairs(nvbench::state& state,
 {
   run_benchmark<Algorithm, KeyT, ValueT, ItemsPerThread>(state);
 }
-
-NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(algorithms, key_types, value_types, item_counts))
-  .set_type_axes_names({"algorithm", "KeyT", "ValueT", "items"});
