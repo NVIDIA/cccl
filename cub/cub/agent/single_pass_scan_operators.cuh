@@ -761,10 +761,8 @@ public:
     StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
-  /**
-   * Reset the specified tile to not-yet-set, so that the descriptor can be reused.
-   */
-  _CCCL_DEVICE_API void SetInvalid(int tile_idx)
+  //! Reset the specified tile to not-yet-set, so that the descriptor can be reused.
+  _CCCL_DEVICE_API void __set_invalid(int tile_idx)
   {
     TxnWord value{};
     auto* const descriptor = reinterpret_cast<TileDescriptor*>(&value);
@@ -947,10 +945,8 @@ struct ScanTileState<T, false>
     detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
   }
 
-  /**
-   * Reset the specified tile to not-yet-set.
-   */
-  _CCCL_DEVICE_API void SetInvalid(int tile_idx)
+  //! Reset the specified tile to not-yet-set.
+  _CCCL_DEVICE_API void __set_invalid(int tile_idx)
   {
     detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
   }

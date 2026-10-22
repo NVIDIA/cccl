@@ -40,6 +40,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::scan
 {
+// Occupancy-sized batch grids may fall below the 500-CTA cutoff, which replaces nanosleeps with fences.
+// Keep these adapters to avoid that regression until deferred tuning selects the appropriate delay policy.
 // Backoff policies already wait independently of grid size.
 template <typename DelayConstructorT>
 struct batch_delay_constructor_t : DelayConstructorT
@@ -443,7 +445,7 @@ struct batch_completion_op
       const auto batch_idx = tile_idx / tiles_per_batch;
       for (::cuda::std::uint32_t tile = threadIdx.x; tile < tiles_per_batch; tile += blockDim.x)
       {
-        tile_state.SetInvalid(static_cast<int>(tile));
+        tile_state.__set_invalid(static_cast<int>(tile));
       }
       __syncthreads();
       if (threadIdx.x == 0)
