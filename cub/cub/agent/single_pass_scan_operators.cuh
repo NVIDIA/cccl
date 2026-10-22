@@ -122,7 +122,7 @@ _CCCL_IKET_CREATE_PUSH_POP_RANGE(Delay);
 
 namespace detail
 {
-template <int Delay, unsigned int GridThreshold = 500>
+template <unsigned int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
   _CCCL_IKET_RANGE_PUSH(Delay);
@@ -162,7 +162,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
   _CCCL_IKET_RANGE_POP();
 }
 
-template <int Delay>
+template <unsigned int Delay>
 _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
 {
   _CCCL_IKET_RANGE_PUSH(Delay);
