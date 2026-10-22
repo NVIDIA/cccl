@@ -47,6 +47,7 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__memory/pointer_traits.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -995,7 +996,9 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     store_vec_size > 1 && ::cuda::std::is_same_v<Predicate, ::cuda::always_true>
     && THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorOut>
     && ::cuda::is_trivially_copyable_v<output_t>
-    && ::cuda::std::is_trivially_assignable_v<output_t&, ::cuda::std::invoke_result_t<F, InTs&...>>
+    // add_lvalue_reference_t instead of output_t& to handle output_t being void
+    && ::cuda::std::is_trivially_assignable_v<::cuda::std::add_lvalue_reference_t<output_t>,
+                                              ::cuda::std::invoke_result_t<F, InTs&...>>
     && ::cuda::is_power_of_two(out_size) && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
 
   [[maybe_unused]] bool can_vectorize = false;
