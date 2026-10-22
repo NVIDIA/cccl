@@ -36,8 +36,6 @@
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__execution/determinism.h>
