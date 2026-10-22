@@ -182,6 +182,39 @@ struct device_segmented_scan_load_balanced_kernel_source
       addressing_t>);
 };
 
+// CUB's default load-balanced policy does not depend on the compute capability, so the host can evaluate it.
+template <typename AccumT>
+struct default_load_balanced_policy_getter
+{
+  _CCCL_HOST_DEVICE_API constexpr auto operator()() const
+  {
+    return load_balanced_policy_selector_from_types<AccumT>{}(::cuda::compute_capability{});
+  }
+};
+
+// Whether the load-balanced kernel fits max_smem_per_block under CUB's default policy. A call that would exceed it
+// scans one block per segment instead.
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          bool ForceInclusive,
+          typename AddressingT>
+inline constexpr bool default_load_balanced_policy_fits =
+  load_balanced_kernel_smem_bytes<
+    default_load_balanced_policy_getter<AccumT>,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ScanOpT,
+    InitValueT,
+    AccumT,
+    ForceInclusive,
+    AddressingT>
+  <= max_smem_per_block;
+
 // Most tiles a tile state holds: its allocation adds one warp of padding to an int tile count.
 inline constexpr int max_tile_state_tiles = ::cuda::std::numeric_limits<int>::max() - detail::warp_threads;
 
@@ -696,10 +729,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
   InitValueT init_value,
   ::cuda::std::optional<::cuda::std::int64_t> num_items,
   cudaStream_t stream,
-  PolicySelector policy_selector                           = {},
-  LoadBalancedPolicySelector load_balanced_policy_selector = {},
-  KernelSource kernel_source                               = {},
-  KernelLauncherFactory launcher_factory                   = {})
+  PolicySelector policy_selector                                            = {},
+  [[maybe_unused]] LoadBalancedPolicySelector load_balanced_policy_selector = {},
+  [[maybe_unused]] KernelSource kernel_source                               = {},
+  KernelLauncherFactory launcher_factory                                    = {})
 {
   static_assert(::cuda::std::is_integral_v<OffsetT> && sizeof(OffsetT) >= 4 && sizeof(OffsetT) <= 8,
                 "dispatch_load_balanced only supports integral offset types of 4- or 8-bytes");
@@ -713,16 +746,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
     return num_segments == 0 ? cudaSuccess : cudaErrorUnknown;
   }
 
-  // The work index holds num_segments + 1 prefixes indexed by OffsetT, scanned in at most max_tile_state_tiles
-  // tiles. Calls with more segments, or with a total the work type cannot hold, take one block per segment, which
-  // launches in pieces of at most INT32_MAX segments.
-  using work_t              = load_balanced_work_t<OffsetT>;
-  constexpr auto offset_max = ::cuda::std::numeric_limits<OffsetT>::max();
-  const bool fits_load_balanced =
-    ::cuda::std::cmp_less(num_segments, offset_max) && num_segments <= max_work_index_segments
-    && (!num_items || ::cuda::std::cmp_less_equal(*num_items, ::cuda::std::numeric_limits<work_t>::max()));
-  if (!fits_load_balanced)
-  {
+  const auto dispatch_blocks = [&] {
     using fallback_output_begin_t = decltype(output_begin_offsets(segments));
     return dispatch<EnforceInclusive,
                     InputIteratorT,
@@ -760,128 +784,160 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_load_balanced(
         AccumT,
         EnforceInclusive>{},
       launcher_factory);
-  }
+  };
 
-  ::cuda::compute_capability cc{};
-  if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+  // An accumulator too large for the load-balanced kernel under CUB's default policy takes one block per segment, and
+  // the kernel is not instantiated for it.
+  if constexpr (::cuda::std::is_same_v<LoadBalancedPolicySelector, load_balanced_policy_selector_from_types<AccumT>>
+                && !default_load_balanced_policy_fits<
+                   InputIteratorT,
+                   OutputIteratorT,
+                   OffsetT,
+                   ScanOpT,
+                   typename InitValueT::value_type,
+                   AccumT,
+                   EnforceInclusive == ForceInclusive::Yes,
+                   typename KernelSource::addressing_t>)
   {
-    return error;
+    return dispatch_blocks();
   }
+  else
+  {
+    // The work index holds num_segments + 1 prefixes indexed by OffsetT, scanned in at most max_tile_state_tiles
+    // tiles. Calls with more segments, or with a total the work type cannot hold, take one block per segment, which
+    // launches in pieces of at most INT32_MAX segments.
+    using work_t              = load_balanced_work_t<OffsetT>;
+    constexpr auto offset_max = ::cuda::std::numeric_limits<OffsetT>::max();
+    const bool fits_load_balanced =
+      ::cuda::std::cmp_less(num_segments, offset_max) && num_segments <= max_work_index_segments
+      && (!num_items || ::cuda::std::cmp_less_equal(*num_items, ::cuda::std::numeric_limits<work_t>::max()));
+    if (!fits_load_balanced)
+    {
+      return dispatch_blocks();
+    }
 
-  const SegmentedScanLoadBalancedPolicy active_policy = load_balanced_policy_selector(cc);
-  log_dispatch("DeviceSegmentedScan", cc, active_policy);
+    ::cuda::compute_capability cc{};
+    if (const auto error = CubDebug(launcher_factory.PtxComputeCap(cc)))
+    {
+      return error;
+    }
 
-  _CCCL_ASSERT((active_policy.load_modifier != CacheLoadModifier::LOAD_LDG),
-               "The memory consistency model does not apply to texture accesses");
-  _CCCL_ASSERT(active_policy.threads_per_block > 0, "Policy value for threads_per_block is not positive");
-  _CCCL_ASSERT(active_policy.items_per_thread > 0, "Policy value for items_per_thread is not positive");
+    const SegmentedScanLoadBalancedPolicy active_policy = load_balanced_policy_selector(cc);
+    log_dispatch("DeviceSegmentedScan", cc, active_policy);
 
-  const int threads_per_block = active_policy.threads_per_block;
-  const work_t tile_size = static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
+    _CCCL_ASSERT((active_policy.load_modifier != CacheLoadModifier::LOAD_LDG),
+                 "The memory consistency model does not apply to texture accesses");
+    _CCCL_ASSERT(active_policy.threads_per_block > 0, "Policy value for threads_per_block is not positive");
+    _CCCL_ASSERT(active_policy.items_per_thread > 0, "Policy value for items_per_thread is not positive");
 
-  int blocks_per_sm{};
-  if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
-        blocks_per_sm, kernel_source.segmented_scan_load_balanced_kernel(), threads_per_block)))
-  {
-    return error;
-  }
-  int sm_count{};
-  if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
-  {
-    return error;
-  }
+    const int threads_per_block = active_policy.threads_per_block;
+    const work_t tile_size =
+      static_cast<work_t>(threads_per_block) * static_cast<work_t>(active_policy.items_per_thread);
 
-  // Tiles each block should receive before the grid grows past one wave
-  constexpr int min_tiles_per_block = 16;
-  // Most waves of resident blocks the grid launches
-  constexpr int max_factor = 5;
-  int resident_blocks{};
-  int capacity{};
-  if (!load_balanced_grid_size(blocks_per_sm, sm_count, 1, resident_blocks)
-      || !load_balanced_grid_size(blocks_per_sm, sm_count, max_factor, capacity))
-  {
-    return cudaErrorInvalidValue;
-  }
+    int blocks_per_sm{};
+    if (const auto error = CubDebug(launcher_factory.MaxSmOccupancy(
+          blocks_per_sm, kernel_source.segmented_scan_load_balanced_kernel(), threads_per_block)))
+    {
+      return error;
+    }
+    int sm_count{};
+    if (const auto error = CubDebug(launcher_factory.MultiProcessorCount(sm_count)))
+    {
+      return error;
+    }
 
-  if (num_items)
-  {
-    capacity =
-      (::cuda::std::max) (1,
-                          load_balanced_block_count(
-                            static_cast<work_t>(*num_items),
-                            tile_size,
-                            resident_blocks,
-                            min_tiles_per_block,
-                            max_factor));
-  }
+    // Tiles each block should receive before the grid grows past one wave
+    constexpr int min_tiles_per_block = 16;
+    // Most waves of resident blocks the grid launches
+    constexpr int max_factor = 5;
+    int resident_blocks{};
+    int capacity{};
+    if (!load_balanced_grid_size(blocks_per_sm, sm_count, 1, resident_blocks)
+        || !load_balanced_grid_size(blocks_per_sm, sm_count, max_factor, capacity))
+    {
+      return cudaErrorInvalidValue;
+    }
 
-  using scan_tile_state_t = typename KernelSource::scan_tile_state_t;
-  size_t tile_state_bytes{};
-  if (const auto error = CubDebug(scan_tile_state_t::AllocationSize(capacity, tile_state_bytes)))
-  {
-    return error;
-  }
-  work_index_plan plan{};
-  if (const auto error = plan_work_index<KernelSource, OffsetT>(num_segments, plan))
-  {
-    return error;
-  }
+    if (num_items)
+    {
+      capacity =
+        (::cuda::std::max) (1,
+                            load_balanced_block_count(
+                              static_cast<work_t>(*num_items),
+                              tile_size,
+                              resident_blocks,
+                              min_tiles_per_block,
+                              max_factor));
+    }
 
-  void* allocations[3]             = {};
-  const size_t allocation_sizes[3] = {tile_state_bytes, plan.index_bytes, plan.scan_state_bytes};
-  if (const auto error =
-        CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
-  {
-    return error;
-  }
-  if (d_temp_storage == nullptr)
-  {
-    return cudaSuccess;
-  }
+    using scan_tile_state_t = typename KernelSource::scan_tile_state_t;
+    size_t tile_state_bytes{};
+    if (const auto error = CubDebug(scan_tile_state_t::AllocationSize(capacity, tile_state_bytes)))
+    {
+      return error;
+    }
+    work_index_plan plan{};
+    if (const auto error = plan_work_index<KernelSource, OffsetT>(num_segments, plan))
+    {
+      return error;
+    }
 
-  scan_tile_state_t tile_state;
-  if (const auto error = CubDebug(tile_state.Init(capacity, allocations[0], allocation_sizes[0])))
-  {
-    return error;
-  }
-  if (const auto error = launch_work_index<OffsetT>(
-        plan,
-        segments,
-        num_segments,
-        allocations[1],
-        allocations[2],
-        tile_state,
-        capacity,
-        stream,
-        kernel_source,
-        launcher_factory))
-  {
-    return error;
-  }
+    void* allocations[3]             = {};
+    const size_t allocation_sizes[3] = {tile_state_bytes, plan.index_bytes, plan.scan_state_bytes};
+    if (const auto error =
+          CubDebug(detail::alias_temporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+    {
+      return error;
+    }
+    if (d_temp_storage == nullptr)
+    {
+      return cudaSuccess;
+    }
 
-  auto launcher = launcher_factory(capacity, threads_per_block, 0, stream);
-  if (const auto error = CubDebug(launcher.doit(
-        kernel_source.segmented_scan_load_balanced_kernel(),
-        d_in,
-        d_out,
-        static_cast<const work_t*>(allocations[1]),
-        static_cast<OffsetT>(num_segments),
-        scan_op,
-        init_value,
-        resident_blocks,
-        min_tiles_per_block,
-        max_factor,
-        capacity,
-        tile_state,
-        typename KernelSource::addressing_t{segments.begin, segments.output_begin})))
-  {
-    return error;
+    scan_tile_state_t tile_state;
+    if (const auto error = CubDebug(tile_state.Init(capacity, allocations[0], allocation_sizes[0])))
+    {
+      return error;
+    }
+    if (const auto error = launch_work_index<OffsetT>(
+          plan,
+          segments,
+          num_segments,
+          allocations[1],
+          allocations[2],
+          tile_state,
+          capacity,
+          stream,
+          kernel_source,
+          launcher_factory))
+    {
+      return error;
+    }
+
+    auto launcher = launcher_factory(capacity, threads_per_block, 0, stream);
+    if (const auto error = CubDebug(launcher.doit(
+          kernel_source.segmented_scan_load_balanced_kernel(),
+          d_in,
+          d_out,
+          static_cast<const work_t*>(allocations[1]),
+          static_cast<OffsetT>(num_segments),
+          scan_op,
+          init_value,
+          resident_blocks,
+          min_tiles_per_block,
+          max_factor,
+          capacity,
+          tile_state,
+          typename KernelSource::addressing_t{segments.begin, segments.output_begin})))
+    {
+      return error;
+    }
+    if (const auto error = CubDebug(cudaPeekAtLastError()))
+    {
+      return error;
+    }
+    return CubDebug(DebugSyncStream(stream));
   }
-  if (const auto error = CubDebug(cudaPeekAtLastError()))
-  {
-    return error;
-  }
-  return CubDebug(DebugSyncStream(stream));
 }
 } // namespace detail::segmented_scan
 

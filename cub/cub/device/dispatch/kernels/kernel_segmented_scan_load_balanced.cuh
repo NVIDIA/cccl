@@ -66,6 +66,13 @@ struct boundary_record
   bool is_head;
 };
 
+template <typename WorkT>
+struct range_split
+{
+  WorkT total;
+  int virtual_blocks;
+};
+
 // Returns min(tiles, F x resident_blocks), where
 // F = clamp(floor(tiles / (min_tiles_per_block x resident_blocks)), 1, max_factor).
 // A zero min_tiles_per_block forces F = max_factor.
@@ -557,12 +564,14 @@ private:
     !(policy.load_algorithm == BLOCK_LOAD_DIRECT || policy.load_algorithm == BLOCK_LOAD_STRIPED
       || policy.load_algorithm == BLOCK_LOAD_VECTORIZE);
 
+  // The look-back runs while no tile is in flight, so its storage shares the tile's.
   union tile_storage_t
   {
     typename block_load_t::TempStorage load;
     typename block_scan_t::TempStorage scan;
     typename block_store_t::TempStorage store;
     typename block_reduce_t::TempStorage reduce;
+    typename prefix_callback_t::TempStorage prefix;
   };
 
   struct tile_deltas_t
@@ -580,24 +589,27 @@ private:
     bool output_is_contiguous;
   };
 
-  struct local_storage_t
+  // Entry 0 holds the look-back's result and, with one entry, the inclusive pair of the tile's last valid item. With
+  // one entry per thread, entry t holds the inclusive pair of thread t's last valid item.
+  template <int TailCount>
+  struct storage_t
   {
     tile_storage_t tile;
     Uninitialized<unsigned char[items_per_tile]> head_flags;
-    Uninitialized<flag_value_t[threads_per_block]> thread_tails;
+    Uninitialized<flag_value_t[TailCount]> tails;
     tile_deltas_t deltas;
     OffsetT segment_cursor;
     work_t next_head;
   };
 
-  static_assert(sizeof(typename prefix_callback_t::TempStorage) <= sizeof(tile_storage_t),
-                "look-back storage must not overlap the per-tile state after the tile storage");
+  // An exclusive scan keeps one tail per thread, from which each thread's first output follows, when the kernel's
+  // shared memory holds them. Otherwise it scans exclusively in the block and keeps one tail.
+  static constexpr bool per_thread_tails =
+    !is_inclusive
+    && sizeof(storage_t<threads_per_block>) + sizeof(boundary_record<OffsetT>) + sizeof(range_split<work_t>)
+         <= max_smem_per_block;
 
-  union _TempStorage
-  {
-    local_storage_t local;
-    typename prefix_callback_t::TempStorage prefix;
-  };
+  using _TempStorage = storage_t<per_thread_tails ? threads_per_block : 1>;
 
   _TempStorage& temp_storage;
   wrapped_input_iterator_t d_in;
@@ -636,7 +648,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   initialize_cursor([[maybe_unused]] work_t range_begin, [[maybe_unused]] OffsetT num_segments, OffsetT first_segment)
   {
-    auto& shared_head_flags = temp_storage.local.head_flags.Alias();
+    auto& shared_head_flags = temp_storage.head_flags.Alias();
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
     {
@@ -648,9 +660,9 @@ private:
       const work_t head = offsets[first_segment];
       _CCCL_ASSERT(head <= range_begin, "a range begins in its first segment");
 
-      auto& deltas                      = temp_storage.local.deltas;
-      temp_storage.local.segment_cursor = first_segment;
-      temp_storage.local.next_head      = head;
+      auto& deltas                = temp_storage.deltas;
+      temp_storage.segment_cursor = first_segment;
+      temp_storage.next_head      = head;
       if (!deltas.input_is_contiguous)
       {
         deltas.carried_input = make_delta(static_cast<OffsetT>(addressing.input_begin[first_segment]), head);
@@ -674,17 +686,16 @@ private:
   {
     constexpr unsigned int warp_mask   = 0xffffffffu;
     constexpr work_t past_last_segment = ::cuda::std::numeric_limits<work_t>::max();
-    auto& local                        = temp_storage.local;
-    if (local.next_head >= tile_end)
+    if (temp_storage.next_head >= tile_end)
     {
       return 0;
     }
 
     const int lane                  = static_cast<int>(threadIdx.x);
     const unsigned int lanes_before = (1u << lane) - 1u;
-    auto& head_flags                = local.head_flags.Alias();
-    auto& deltas                    = local.deltas;
-    OffsetT batch                   = local.segment_cursor;
+    auto& head_flags                = temp_storage.head_flags.Alias();
+    auto& deltas                    = temp_storage.deltas;
+    OffsetT batch                   = temp_storage.segment_cursor;
     int entry_count                 = 0;
     while (true)
     {
@@ -741,8 +752,8 @@ private:
         const work_t stop_head = ShuffleIndex<detail::warp_threads>(head, stop, warp_mask);
         if (lane == 0)
         {
-          local.segment_cursor = batch + static_cast<OffsetT>(stop);
-          local.next_head      = stop_head;
+          temp_storage.segment_cursor = batch + static_cast<OffsetT>(stop);
+          temp_storage.next_head      = stop_head;
         }
         return entry_count;
       }
@@ -761,8 +772,8 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void finish_tile_deltas(int entry_count)
   {
     const int lane        = static_cast<int>(threadIdx.x);
-    auto& deltas          = temp_storage.local.deltas;
-    const int first_entry = (entry_count > 0 && temp_storage.local.head_flags.Alias()[0] != 0) ? 1 : 0;
+    auto& deltas          = temp_storage.deltas;
+    const int first_entry = (entry_count > 0 && temp_storage.head_flags.Alias()[0] != 0) ? 1 : 0;
 
     const auto check = [&](const delta_t* table, delta_t& uniform_delta, bool& is_uniform, delta_t& carried) {
       const delta_t reference = table[first_entry];
@@ -799,7 +810,7 @@ private:
     {
       return;
     }
-    auto& deltas              = temp_storage.local.deltas;
+    auto& deltas              = temp_storage.deltas;
     const bool records_input  = !deltas.input_is_contiguous;
     const bool records_output = has_output_deltas && !deltas.output_is_contiguous;
     if (threadIdx.x == 0)
@@ -832,7 +843,7 @@ private:
     discover_noncontiguous_heads(tile_begin, tile_end, num_segments);
     __syncthreads();
 
-    auto& shared_head_flags = temp_storage.local.head_flags.Alias();
+    auto& shared_head_flags = temp_storage.head_flags.Alias();
     int head_counts[items_per_thread];
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
@@ -842,7 +853,7 @@ private:
       shared_head_flags[local_index] = 0;
     }
 
-    auto& deltas             = temp_storage.local.deltas;
+    auto& deltas             = temp_storage.deltas;
     const delta_t tile_delta = deltas.uniform_input;
     const bool gather        = !deltas.input_is_uniform;
     const bool needs_entries = gather || (has_output_deltas && !deltas.output_is_uniform);
@@ -874,11 +885,11 @@ private:
     }
     else if (valid_items == items_per_tile)
     {
-      block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
+      block_load_t(temp_storage.tile.load).Load(d_in + tile_start, values);
     }
     else
     {
-      block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
+      block_load_t(temp_storage.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
     }
     // A gathered tile uses no tile storage.
     if (loads_via_smem && !gather)
@@ -904,7 +915,7 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void store_tile(
     work_t tile_begin, int valid_items, AccumT (&output_items)[items_per_thread], const int (&entries)[items_per_thread])
   {
-    auto& deltas          = temp_storage.local.deltas;
+    auto& deltas          = temp_storage.deltas;
     const bool is_uniform = has_output_deltas ? deltas.output_is_uniform : deltas.input_is_uniform;
     const delta_t delta   = has_output_deltas ? deltas.uniform_output : deltas.uniform_input;
     if (!is_uniform)
@@ -956,11 +967,11 @@ private:
     }
     if (valid_items == items_per_tile)
     {
-      block_store_t(temp_storage.local.tile.store).Store(d_out + tile_start, output_items);
+      block_store_t(temp_storage.tile.store).Store(d_out + tile_start, output_items);
     }
     else
     {
-      block_store_t(temp_storage.local.tile.store).Store(d_out + tile_start, output_items, valid_items);
+      block_store_t(temp_storage.tile.store).Store(d_out + tile_start, output_items, valid_items);
     }
   }
 
@@ -971,7 +982,7 @@ private:
     flag_value_t (&items)[items_per_thread],
     int (&entries)[items_per_thread])
   {
-    const auto& deltas = temp_storage.local.deltas;
+    const auto& deltas = temp_storage.deltas;
     if (deltas.input_is_contiguous && (!has_output_deltas || deltas.output_is_contiguous))
     {
       load_contiguous_tile(tile_begin, tile_end, num_segments, items, deltas.uniform_input);
@@ -989,11 +1000,11 @@ private:
 
     if (valid_items == items_per_tile)
     {
-      block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
+      block_load_t(temp_storage.tile.load).Load(d_in + tile_start, values);
     }
     else
     {
-      block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
+      block_load_t(temp_storage.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
     }
 
     if (threadIdx.x < detail::warp_threads)
@@ -1002,7 +1013,7 @@ private:
     }
     __syncthreads();
 
-    auto& shared_head_flags = temp_storage.local.head_flags.Alias();
+    auto& shared_head_flags = temp_storage.head_flags.Alias();
 
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < items_per_thread; ++item)
@@ -1038,17 +1049,17 @@ private:
       AccumT tile_aggregate{};
       if (valid_items == items_per_tile)
       {
-        block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values);
+        block_load_t(temp_storage.tile.load).Load(d_in + tile_start, values);
         if constexpr (loads_via_smem)
         {
           __syncthreads();
         }
 
-        tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(values, scan_op);
+        tile_aggregate = block_reduce_t(temp_storage.tile.reduce).Reduce(values, scan_op);
       }
       else
       {
-        block_load_t(temp_storage.local.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
+        block_load_t(temp_storage.tile.load).Load(d_in + tile_start, values, valid_items, d_in[tile_start]);
         if constexpr (loads_via_smem)
         {
           __syncthreads();
@@ -1065,7 +1076,7 @@ private:
           }
         }
         const int valid_threads = (valid_items + items_per_thread - 1) / items_per_thread;
-        tile_aggregate = block_reduce_t(temp_storage.local.tile.reduce).Reduce(partial, scan_op, valid_threads);
+        tile_aggregate          = block_reduce_t(temp_storage.tile.reduce).Reduce(partial, scan_op, valid_threads);
       }
 
       if (threadIdx.x == 0)
@@ -1083,7 +1094,7 @@ private:
   {
     _CCCL_ASSERT(tile_idx > 0, "the first block begins at a segment head");
 
-    prefix_callback_t prefix_op(tile_state, temp_storage.prefix, pair_scan_op, tile_idx);
+    prefix_callback_t prefix_op(tile_state, temp_storage.tile.prefix, pair_scan_op, tile_idx);
     if (threadIdx.x < detail::warp_threads)
     {
       prefix_op(range_aggregate);
@@ -1096,7 +1107,7 @@ private:
   {
     _CCCL_ASSERT(tile_idx > 0, "the first block begins at a segment head");
 
-    prefix_callback_t prefix_op(tile_state, temp_storage.prefix, pair_scan_op, tile_idx);
+    prefix_callback_t prefix_op(tile_state, temp_storage.tile.prefix, pair_scan_op, tile_idx);
     if (threadIdx.x < detail::warp_threads)
     {
       using status_word_t       = typename prefix_callback_t::StatusWord;
@@ -1117,11 +1128,11 @@ private:
 
       if (threadIdx.x == 0)
       {
-        detail::uninitialized_copy_single(&temp_storage.local.thread_tails.Alias()[0], exclusive_prefix);
+        detail::uninitialized_copy_single(&temp_storage.tails.Alias()[0], exclusive_prefix);
       }
     }
     __syncthreads();
-    return temp_storage.local.thread_tails.Alias()[0];
+    return temp_storage.tails.Alias()[0];
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -1155,26 +1166,63 @@ private:
         head_flags[item] = items[item].key != 0;
       }
 
-      flag_value_t ignored_aggregate;
-      block_scan_t(temp_storage.local.tile.scan).InclusiveScan(items, items, pair_scan_op, ignored_aggregate);
-
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int item = 0; item < items_per_thread; ++item)
+      // With one tail, the thread holding the tile's last valid item records its inclusive pair for the next tile.
+      const int last_thread                = (valid_items - 1) / items_per_thread;
+      [[maybe_unused]] const int last_item = valid_items - 1 - last_thread * items_per_thread;
+      const bool full_tile                 = valid_items == items_per_tile;
+      auto& tails                          = temp_storage.tails.Alias();
+      if constexpr (is_inclusive || per_thread_tails)
       {
-        if (items[item].key == 0)
+        flag_value_t ignored_aggregate;
+        block_scan_t(temp_storage.tile.scan).InclusiveScan(items, items, pair_scan_op, ignored_aggregate);
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int item = 0; item < items_per_thread; ++item)
         {
-          items[item] = pair_scan_op(running_prefix, items[item]);
+          if (items[item].key == 0)
+          {
+            items[item] = pair_scan_op(running_prefix, items[item]);
+          }
+        }
+
+        if constexpr (per_thread_tails)
+        {
+          const int local_begin = static_cast<int>(threadIdx.x) * items_per_thread;
+          if (local_begin < valid_items)
+          {
+            const int thread_items     = valid_items - local_begin;
+            const int thread_last_item = (thread_items < items_per_thread ? thread_items : items_per_thread) - 1;
+            tails[threadIdx.x]         = full_tile ? items[items_per_thread - 1] : select_item(items, thread_last_item);
+          }
+        }
+        else if (static_cast<int>(threadIdx.x) == last_thread)
+        {
+          tails[0] = full_tile ? items[items_per_thread - 1] : select_item(items, last_item);
         }
       }
-
-      auto& thread_tails    = temp_storage.local.thread_tails.Alias();
-      const int local_begin = static_cast<int>(threadIdx.x) * items_per_thread;
-      if (local_begin < valid_items)
+      else
       {
-        const int thread_items = valid_items - local_begin;
-        const int last_item    = (thread_items < items_per_thread ? thread_items : items_per_thread) - 1;
-        thread_tails[threadIdx.x] =
-          valid_items == items_per_tile ? items[items_per_thread - 1] : select_item(items, last_item);
+        const flag_value_t tail_input = full_tile ? items[items_per_thread - 1] : select_item(items, last_item);
+        // Leaves the first item of thread 0 undefined; it takes running_prefix.
+        block_scan_t(temp_storage.tile.scan).ExclusiveScan(items, items, pair_scan_op);
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int item = 0; item < items_per_thread; ++item)
+        {
+          if (item == 0 && threadIdx.x == 0)
+          {
+            items[item] = running_prefix;
+          }
+          else if (items[item].key == 0)
+          {
+            items[item] = pair_scan_op(running_prefix, items[item]);
+          }
+        }
+
+        if (static_cast<int>(threadIdx.x) == last_thread)
+        {
+          tails[0] = pair_scan_op(full_tile ? items[items_per_thread - 1] : select_item(items, last_item), tail_input);
+        }
       }
       __syncthreads();
 
@@ -1189,19 +1237,22 @@ private:
           {
             output_items[item] = items[item].value;
           }
-          else
+          else if constexpr (per_thread_tails)
           {
             output_items[item] =
               head_flags[item]
                 ? static_cast<AccumT>(init_value)
-                : (item == 0 ? (threadIdx.x == 0 ? running_prefix.value : thread_tails[threadIdx.x - 1].value)
+                : (item == 0 ? (threadIdx.x == 0 ? running_prefix.value : tails[threadIdx.x - 1].value)
                              : items[item - 1].value);
+          }
+          else
+          {
+            output_items[item] = head_flags[item] ? static_cast<AccumT>(init_value) : items[item].value;
           }
         }
       }
 
-      const int last_thread = (valid_items - 1) / items_per_thread;
-      running_prefix        = thread_tails[last_thread];
+      running_prefix = tails[per_thread_tails ? last_thread : 0];
       store_tile(tile_begin, valid_items, output_items, entries);
       __syncthreads();
       tile_begin = tile_end;
@@ -1254,7 +1305,7 @@ public:
     const bool input_is_contiguous  = (contiguity & contiguous_input_flag) != 0;
     const bool output_is_contiguous = (contiguity & contiguous_output_flag) != 0;
 
-    auto& deltas                = temp_storage.local.deltas;
+    auto& deltas                = temp_storage.deltas;
     deltas.input_is_contiguous  = input_is_contiguous;
     deltas.output_is_contiguous = output_is_contiguous;
     if (input_is_contiguous)
@@ -1305,12 +1356,28 @@ public:
   }
 };
 
-template <typename WorkT>
-struct range_split
-{
-  WorkT total;
-  int virtual_blocks;
-};
+// Static shared memory of device_segmented_scan_load_balanced_kernel under the policy that PolicyGetter returns
+template <typename PolicyGetter,
+          typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ScanOpT,
+          typename InitValueT,
+          typename AccumT,
+          bool ForceInclusive,
+          typename AddressingT>
+inline constexpr ::cuda::std::size_t load_balanced_kernel_smem_bytes =
+  sizeof(typename agent_segmented_scan_load_balanced<
+         PolicyGetter,
+         InputIteratorT,
+         OutputIteratorT,
+         OffsetT,
+         ScanOpT,
+         InitValueT,
+         AccumT,
+         ForceInclusive,
+         AddressingT>::TempStorage)
+  + sizeof(boundary_record<OffsetT>) + sizeof(range_split<load_balanced_work_t<OffsetT>>);
 
 //! @brief Scans the block's range of the work items. The work is split evenly across the blocks the grid
 //!        uses, and a range that begins inside a segment takes that segment's prefix from the blocks before it
@@ -1399,10 +1466,20 @@ __launch_bounds__(current_policy<LoadBalancedPolicySelector>().threads_per_block
   __shared__ typename agent_t::TempStorage temp_storage;
   __shared__ boundary_record<OffsetT> begin_record;
   __shared__ range_split<work_t> split;
-  static_assert(sizeof(typename agent_t::TempStorage) + sizeof(boundary_record<OffsetT>) + sizeof(range_split<work_t>)
-                  <= max_smem_per_block,
-                "The load-balanced segmented scan's shared memory exceeds max_smem_per_block: reduce the accumulator "
-                "size, the policy's tile or the offset width");
+  static_assert(
+    load_balanced_kernel_smem_bytes<
+      policy_getter,
+      InputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      ScanOpT,
+      ActualInitValueT,
+      AccumT,
+      ForceInclusive,
+      AddressingT>
+      <= max_smem_per_block,
+    "The load-balanced segmented scan's shared memory exceeds max_smem_per_block: reduce the accumulator "
+    "size, the policy's tile or the offset width");
 
   _CCCL_ASSERT(num_segments < ::cuda::std::numeric_limits<OffsetT>::max(), "the work index is indexed by OffsetT");
 
