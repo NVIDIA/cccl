@@ -1,0 +1,145 @@
+{
+  "artifacts": {
+    "legacy-8192": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+      }
+    },
+    "legacy-65536": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "d590750c22f4ae49d7d6c6361d477d308ab1174971d8e71e52882152b79aeeb6"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "6d41e2544883b801d7613c4685103ef97bc478288f00b07f9610056a6f48cf2f"
+      }
+    },
+    "retained-8192": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "retained-65536": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "integer-8192": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "3425665ac0515afdd4713f58f5d1136b2c038a29cef9c634927107cf39fe4bc8"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "518db0d3bb188b743ee9fab38c4873b98461dc2060ff61049b490452a645cd2d"
+      }
+    },
+    "integer-65536": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "3425665ac0515afdd4713f58f5d1136b2c038a29cef9c634927107cf39fe4bc8"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "518db0d3bb188b743ee9fab38c4873b98461dc2060ff61049b490452a645cd2d"
+      }
+    },
+    "model-b1": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    },
+    "model-b16": {
+      "A": {
+        "source_sha": "0909f9ee05c632af18fba74a366b657370a12aee",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "c535a50dcffa2cde3aa5a09c88aa1df0d8ed39ef5d2a00ab5c2113c62cc98eeb"
+      },
+      "P": {
+        "source_sha": "76db7e3f3ab0d665fc87282b0160a321e51e698e",
+        "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "library_sha256": "211662c0c54b065db998a060b098858bf7d0bc29c7dcafd81e73fa55bdfe8be0"
+      }
+    }
+  },
+  "protocol": "# Frozen formal follow-up protocol\n\nScreening palindromes select a candidate; their measurements are retained but excluded\nfrom formal estimates. Compare the candidate to the same upstream-header control in\nfresh independently built workers. Freeze both source commits, consumers, flags and\ncheckpoint hashes before formal timing. No source edits during sampling.\n\nFor each consumer and row size, run eight balanced quartets, alternating APPA/PAAP.\nThe unit of resampling is a whole quartet, never an inner CUDA-event repetition.\nUse all 20 samples per worker and report quartet ratios and medians in Markdown.\nPredeclare a 1% minimum useful normalization speedup and a 1% default-path regression\nbound. Use 10,000 fixed-seed bootstrap draws over the eight log-ratio quartets.\nDeclare stable improvement for a case only when the two-sided 95% interval lower\nbound exceeds 1.01; declare model improvement by the same criterion. Results whose\ninterval crosses 1 or falls below the 1% practical bound are reported explicitly.\nAll scheduled widths/row sizes, failed workers and invalidated groups remain visible.\nNo general claim when only selected widths improve.\n\nAny observed foreign process on the selected GPU invalidates its entire quartet.\nNo partial quartet substitution. A rerun is a separately labelled complete quartet.\nKeep raw observations, source/library/input/output/checkpoint hashes and commands.\n\nFull-checkpoint resident screening loads all 28 BF16 Qwen3 layers, uses native greedy\nHF generation, fresh KV state, exact 32 tokens against native attention, and all-step\nlogit checks against the independent FP64 normalization reference with a baseline-only\nfrozen budget. Both batch sizes 1 and 16 and prompt lengths 128/512 remain disclosed.\nThe independent FP64 reference is for normalization; it is not a full FP64 network.\nNative Torch attention timings are context, not an interchangeable upstream-CUB control.\nFormal model runs require the same validation in separate fresh workers.\n\nCommon register-retention/__expf or generation-harness changes apply equally to both\narms and cannot be attributed to the PR. Original rereading-expf results remain in\nthe report alongside the new consumer. A kernel-level useful gain does not establish\na model-level gain.\n\nFor the sink exponential follow-up, use eight balanced APPA/PAAP quartets per\nreturn-LSE mode in fresh processes. Keep all 16 shape/sink cases from each worker,\nincluding no-sink controls. The same 1% practical threshold and whole-quartet\nbootstrap apply. Compare to the already-correct published sink implementation.\nA Qwen3 checkpoint without trained sinks supplies a no-sink regression only;\nits timings cannot establish a learned-sink model speedup.\n",
+  "harnesses": [
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_legacy/benchmark.py",
+      "sha256": "5e3a712dd16d1b0151f2c70c595eb543284134f1c4f15a988e132afbba82fd31"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_legacy/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_retained/benchmark.py",
+      "sha256": "76167587aa5885ede4a685713b0583cc4220bab291c34f8907724ee2c322c952"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_retained/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_integer/benchmark.py",
+      "sha256": "e7cc4ba607d8081264e230c07b5c741fb4a54fc4d4c3c7bbf3d1af85eaa4a529"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/consumer_integer/common.py",
+      "sha256": "3aacf34535aa9097dbea73a147e9d58da497c084986651c7a7cce00dcc473b5e"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/gpu_plan.py",
+      "sha256": "96f5a7a88350d785b8b42fe458bfd4e334bb70798b41073e08bdd3015af90b12"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/model_generation_screen.py",
+      "sha256": "ec124c22b60cb7c117f05418f66ebc89d1030c11d15c5717af6201859e5c26cc"
+    },
+    {
+      "path": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/tools/fa_model_sink_iteration.py",
+      "sha256": "1271a3f77836520d8970cb64f16263da0e3ac091cc26f6fd13e0742fd501bbfd"
+    }
+  ],
+  "recovery": {
+    "boot_id": "4b91a1ff-29c9-406d-9f9f-a492befea521",
+    "gpu": "0, GPU-12812ea6-65db-7709-44f5-d1a18756e037, NVIDIA H20, 580.65.06\n1, GPU-a603caaa-2262-235a-315b-3152c90bfe66, NVIDIA H20, 580.65.06",
+    "assets": "six libraries and all checkpoint files match original hashes",
+    "runtime": "/root/autodl-tmp/cccl-reduce-broadcast-h20/recovery-39817/runtime/bin/python"
+  }
+}

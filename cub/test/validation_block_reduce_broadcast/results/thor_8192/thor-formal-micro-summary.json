@@ -1,0 +1,3054 @@
+{
+  "invalid_quartets": [],
+  "cases": [
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 32,
+      "ratio": 0.9998490034777225,
+      "ci95": [
+        0.9992592090194024,
+        1.0003721587487817
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 22.568160226895515,
+          "candidate": 22.56416020734398,
+          "ratio": 1.0001772731408913,
+          "baseline_worker_medians": [
+            22.56991982460022,
+            22.56640076637268
+          ],
+          "candidate_worker_medians": [
+            22.565120458602905,
+            22.563199996948242
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 22.58862498373431,
+          "candidate": 22.585035481768006,
+          "ratio": 1.0001589327574536,
+          "baseline_worker_medians": [
+            22.6145601272583,
+            22.562719583511353
+          ],
+          "candidate_worker_medians": [
+            22.57024049758911,
+            22.59984016418457
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 22.61084038146692,
+          "candidate": 22.639040124731498,
+          "ratio": 0.9987543754898968,
+          "baseline_worker_medians": [
+            22.65328049659729,
+            22.568479776382446
+          ],
+          "candidate_worker_medians": [
+            22.642240524291992,
+            22.63584017753601
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 22.603516439317985,
+          "candidate": 22.588071801876158,
+          "ratio": 1.0006837519190348,
+          "baseline_worker_medians": [
+            22.616480588912964,
+            22.590559720993042
+          ],
+          "candidate_worker_medians": [
+            22.568639516830444,
+            22.607520818710327
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 22.60743143469294,
+          "candidate": 22.64223976489832,
+          "ratio": 0.9984626816707708,
+          "baseline_worker_medians": [
+            22.5873601436615,
+            22.62752056121826
+          ],
+          "candidate_worker_medians": [
+            22.639520168304443,
+            22.644959688186646
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 22.57151916869312,
+          "candidate": 22.56879986859613,
+          "ratio": 1.0001204893531257,
+          "baseline_worker_medians": [
+            22.57599949836731,
+            22.567039728164673
+          ],
+          "candidate_worker_medians": [
+            22.573920488357544,
+            22.563680410385132
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 22.605260690482904,
+          "candidate": 22.587667807683587,
+          "ratio": 1.000778871149917,
+          "baseline_worker_medians": [
+            22.635040283203125,
+            22.575520277023315
+          ],
+          "candidate_worker_medians": [
+            22.611360549926758,
+            22.563999891281128
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 22.618744895779873,
+          "candidate": 22.626479728257895,
+          "ratio": 0.9996581513089567,
+          "baseline_worker_medians": [
+            22.568960189819336,
+            22.668639421463013
+          ],
+          "candidate_worker_medians": [
+            22.62895941734314,
+            22.624000310897827
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 22.581679821014404,
+      "candidate_latency": 22.60368049144745
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 128,
+      "ratio": 1.0016799205508706,
+      "ci95": [
+        0.9989729234433857,
+        1.0044261450431404
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 22.684546774632782,
+          "candidate": 22.565919576419468,
+          "ratio": 1.0052569184168003,
+          "baseline_worker_medians": [
+            22.709439992904663,
+            22.65968084335327
+          ],
+          "candidate_worker_medians": [
+            22.571840286254883,
+            22.5600004196167
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 22.736377280521985,
+          "candidate": 22.708546773072477,
+          "ratio": 1.0012255521116178,
+          "baseline_worker_medians": [
+            22.70400047302246,
+            22.768800258636475
+          ],
+          "candidate_worker_medians": [
+            22.683839797973633,
+            22.733280658721924
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 22.650775780901498,
+          "candidate": 22.73943924723956,
+          "ratio": 0.9961008947769534,
+          "baseline_worker_medians": [
+            22.684160470962524,
+            22.617440223693848
+          ],
+          "candidate_worker_medians": [
+            22.731040716171265,
+            22.747840881347656
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 22.636792197051744,
+          "candidate": 22.62617095387809,
+          "ratio": 1.0004694229171742,
+          "baseline_worker_medians": [
+            22.549760341644287,
+            22.724159955978394
+          ],
+          "candidate_worker_medians": [
+            22.68224000930786,
+            22.57024049758911
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 22.633229597238476,
+          "candidate": 22.713719662970497,
+          "ratio": 0.996456323890303,
+          "baseline_worker_medians": [
+            22.585439682006836,
+            22.68112063407898
+          ],
+          "candidate_worker_medians": [
+            22.7566397190094,
+            22.670880556106567
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 22.607439296558773,
+          "candidate": 22.5520801134009,
+          "ratio": 1.00245472625494,
+          "baseline_worker_medians": [
+            22.602880001068115,
+            22.61199951171875
+          ],
+          "candidate_worker_medians": [
+            22.55344033241272,
+            22.55071997642517
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 22.70636576368211,
+          "candidate": 22.648612467009375,
+          "ratio": 1.0025499706331618,
+          "baseline_worker_medians": [
+            22.666879892349243,
+            22.745920419692993
+          ],
+          "candidate_worker_medians": [
+            22.578880786895752,
+            22.718559503555298
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 22.784559532647624,
+          "candidate": 22.581568379199503,
+          "ratio": 1.0089892406957481,
+          "baseline_worker_medians": [
+            22.790560722351074,
+            22.778559923171997
+          ],
+          "candidate_worker_medians": [
+            22.61936068534851,
+            22.5438392162323
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 22.682640552520752,
+      "candidate_latency": 22.64512062072754
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 256,
+      "ratio": 0.9995732614787057,
+      "ci95": [
+        0.9988148850761617,
+        1.0003771296410302
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 42.18207913802805,
+          "candidate": 42.12029435112281,
+          "ratio": 1.001466865031621,
+          "baseline_worker_medians": [
+            42.18800067901611,
+            42.17615842819214
+          ],
+          "candidate_worker_medians": [
+            42.073121070861816,
+            42.16752052307129
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 42.259110518018424,
+          "candidate": 42.213520836282065,
+          "ratio": 1.0010799781878694,
+          "baseline_worker_medians": [
+            42.229440212249756,
+            42.28880167007446
+          ],
+          "candidate_worker_medians": [
+            42.20976114273071,
+            42.217280864715576
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 42.20167934430886,
+          "candidate": 42.19535841245453,
+          "ratio": 1.0001498015917423,
+          "baseline_worker_medians": [
+            42.1945595741272,
+            42.208800315856934
+          ],
+          "candidate_worker_medians": [
+            42.18591928482056,
+            42.20479965209961
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 42.168955904101,
+          "candidate": 42.20495283893266,
+          "ratio": 0.9991470921678544,
+          "baseline_worker_medians": [
+            42.186079025268555,
+            42.15183973312378
+          ],
+          "candidate_worker_medians": [
+            42.18143939971924,
+            42.22847938537598
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 42.184877663942444,
+          "candidate": 42.236056663321506,
+          "ratio": 0.9987882628393312,
+          "baseline_worker_medians": [
+            42.17151880264282,
+            42.198240756988525
+          ],
+          "candidate_worker_medians": [
+            42.19151973724365,
+            42.280640602111816
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 42.160478491799566,
+          "candidate": 42.22462009708759,
+          "ratio": 0.9984809429868039,
+          "baseline_worker_medians": [
+            42.14911937713623,
+            42.17184066772461
+          ],
+          "candidate_worker_medians": [
+            42.18400001525879,
+            42.2652792930603
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 42.12463627077564,
+          "candidate": 42.203750266057526,
+          "ratio": 0.998125427366451,
+          "baseline_worker_medians": [
+            42.10752010345459,
+            42.141759395599365
+          ],
+          "candidate_worker_medians": [
+            42.174880504608154,
+            42.2326397895813
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 42.198785762907846,
+          "candidate": 42.2261109508673,
+          "ratio": 0.9993528840960217,
+          "baseline_worker_medians": [
+            42.23327875137329,
+            42.164320945739746
+          ],
+          "candidate_worker_medians": [
+            42.290239334106445,
+            42.16207981109619
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 42.18111872673035,
+      "candidate_latency": 42.19815969467163
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "first-thread",
+      "width": 512,
+      "ratio": 1.0004201330847864,
+      "ci95": [
+        0.9995117670774682,
+        1.001245391100453
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 93.65190260618927,
+          "candidate": 93.59893865824148,
+          "ratio": 1.000565860561103,
+          "baseline_worker_medians": [
+            93.78736019134521,
+            93.51664066314697
+          ],
+          "candidate_worker_medians": [
+            93.73712062835693,
+            93.4609603881836
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 93.71773648614383,
+          "candidate": 93.49823947770646,
+          "ratio": 1.002347605790906,
+          "baseline_worker_medians": [
+            93.78560066223145,
+            93.64992141723633
+          ],
+          "candidate_worker_medians": [
+            93.49552154541016,
+            93.50095748901367
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 93.59345577508341,
+          "candidate": 93.4446358969308,
+          "ratio": 1.0015925994758732,
+          "baseline_worker_medians": [
+            93.70207786560059,
+            93.48495960235596
+          ],
+          "candidate_worker_medians": [
+            93.47440242767334,
+            93.41487884521484
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 93.55326546752893,
+          "candidate": 93.48600046705586,
+          "ratio": 1.0007195195017116,
+          "baseline_worker_medians": [
+            93.50399971008301,
+            93.60255718231201
+          ],
+          "candidate_worker_medians": [
+            93.47216129302979,
+            93.49984169006348
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 93.68615104531744,
+          "candidate": 93.61916078935975,
+          "ratio": 1.000715561380735,
+          "baseline_worker_medians": [
+            93.64288330078125,
+            93.72943878173828
+          ],
+          "candidate_worker_medians": [
+            93.46848011016846,
+            93.77008438110352
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 93.57245219634127,
+          "candidate": 93.60135686584621,
+          "ratio": 0.999691193904952,
+          "baseline_worker_medians": [
+            93.3849573135376,
+            93.7603235244751
+          ],
+          "candidate_worker_medians": [
+            93.58719825744629,
+            93.61551761627197
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 93.62470449273889,
+          "candidate": 93.63321615239457,
+          "ratio": 0.9999090957247284,
+          "baseline_worker_medians": [
+            93.67536067962646,
+            93.57407569885254
+          ],
+          "candidate_worker_medians": [
+            93.52208137512207,
+            93.74448299407959
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 93.63567653673563,
+          "candidate": 93.83968084704642,
+          "ratio": 0.9978260336302368,
+          "baseline_worker_medians": [
+            93.66352081298828,
+            93.6078405380249
+          ],
+          "candidate_worker_medians": [
+            93.8472032546997,
+            93.8321590423584
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 93.64640235900879,
+      "candidate_latency": 93.51151943206787
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 32,
+      "ratio": 0.9988142695308043,
+      "ci95": [
+        0.9982982452152145,
+        0.9993989562327058
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 26.735810872193557,
+          "candidate": 26.76958527119823,
+          "ratio": 0.9987383293890245,
+          "baseline_worker_medians": [
+            26.69648051261902,
+            26.77519917488098
+          ],
+          "candidate_worker_medians": [
+            26.741600036621094,
+            26.79759979248047
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 26.685045404862155,
+          "candidate": 26.741968189678328,
+          "ratio": 0.9978714063074032,
+          "baseline_worker_medians": [
+            26.622079610824585,
+            26.748160123825073
+          ],
+          "candidate_worker_medians": [
+            26.664799451828003,
+            26.81936025619507
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 26.643267856063215,
+          "candidate": 26.70368082168242,
+          "ratio": 0.9977376539952444,
+          "baseline_worker_medians": [
+            26.66912078857422,
+            26.61743998527527
+          ],
+          "candidate_worker_medians": [
+            26.63872003555298,
+            26.768800020217896
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 26.71902291845913,
+          "candidate": 26.740160308682665,
+          "ratio": 0.9992095264209516,
+          "baseline_worker_medians": [
+            26.791200637817383,
+            26.647039651870728
+          ],
+          "candidate_worker_medians": [
+            26.744000911712646,
+            26.73632025718689
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 26.719758575693582,
+          "candidate": 26.75736006620495,
+          "ratio": 0.9985947234548427,
+          "baseline_worker_medians": [
+            26.71199917793274,
+            26.72752022743225
+          ],
+          "candidate_worker_medians": [
+            26.756000518798828,
+            26.75871968269348
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 26.763530635873355,
+          "candidate": 26.79447938885248,
+          "ratio": 0.9988449578538182,
+          "baseline_worker_medians": [
+            26.702879667282104,
+            26.82431936264038
+          ],
+          "candidate_worker_medians": [
+            26.79215908050537,
+            26.796799898147583
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 26.72055139791751,
+          "candidate": 26.70900602623872,
+          "ratio": 1.0004322651193926,
+          "baseline_worker_medians": [
+            26.698880195617676,
+            26.74224019050598
+          ],
+          "candidate_worker_medians": [
+            26.751519441604614,
+            26.666560173034668
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 26.74022234589871,
+          "candidate": 26.764637801215397,
+          "ratio": 0.9990877718765326,
+          "baseline_worker_medians": [
+            26.709120273590088,
+            26.771360635757446
+          ],
+          "candidate_worker_medians": [
+            26.75328016281128,
+            26.776000261306763
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 26.710559725761414,
+      "candidate_latency": 26.754640340805054
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 128,
+      "ratio": 1.0612860530544834,
+      "ci95": [
+        1.058673183034988,
+        1.0635922586905027
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 37.98736092698955,
+          "candidate": 35.746922328722036,
+          "ratio": 1.0626750067506472,
+          "baseline_worker_medians": [
+            37.985920906066895,
+            37.98880100250244
+          ],
+          "candidate_worker_medians": [
+            35.606240034103394,
+            35.88816046714783
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 37.83307300492394,
+          "candidate": 35.8993569618569,
+          "ratio": 1.0538649214558804,
+          "baseline_worker_medians": [
+            37.708319425582886,
+            37.95823931694031
+          ],
+          "candidate_worker_medians": [
+            35.91456055641174,
+            35.8841598033905
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 38.07294419995766,
+          "candidate": 35.86781038983116,
+          "ratio": 1.0614794654638766,
+          "baseline_worker_medians": [
+            37.987520694732666,
+            38.158559799194336
+          ],
+          "candidate_worker_medians": [
+            35.95631957054138,
+            35.77951908111572
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 37.97631977776182,
+          "candidate": 35.76858809457718,
+          "ratio": 1.0617226399137447,
+          "baseline_worker_medians": [
+            37.97727942466736,
+            37.97536015510559
+          ],
+          "candidate_worker_medians": [
+            35.707679986953735,
+            35.8296000957489
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 37.98868828666117,
+          "candidate": 35.69351777400636,
+          "ratio": 1.064302166213672,
+          "baseline_worker_medians": [
+            37.93967962265015,
+            38.03776025772095
+          ],
+          "candidate_worker_medians": [
+            35.68175911903381,
+            35.70528030395508
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 38.01539413581414,
+          "candidate": 35.853982652373055,
+          "ratio": 1.0602837209020077,
+          "baseline_worker_medians": [
+            38.07456016540527,
+            37.95632004737854
+          ],
+          "candidate_worker_medians": [
+            35.88912010192871,
+            35.8188796043396
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 37.85267848058729,
+          "candidate": 35.74005925398327,
+          "ratio": 1.0591106805836805,
+          "baseline_worker_medians": [
+            37.796640396118164,
+            37.90879964828491
+          ],
+          "candidate_worker_medians": [
+            35.89631915092468,
+            35.584479570388794
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 38.005998853127494,
+          "candidate": 35.62287551528263,
+          "ratio": 1.0668986796650506,
+          "baseline_worker_medians": [
+            37.99999952316284,
+            38.01199913024902
+          ],
+          "candidate_worker_medians": [
+            35.60528039932251,
+            35.64047932624817
+          ]
+        }
+      ],
+      "result": "stable >1% gain",
+      "baseline_latency": 37.98160016536713,
+      "candidate_latency": 35.79919934272766
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 256,
+      "ratio": 1.0524169119099633,
+      "ci95": [
+        1.0517764557513956,
+        1.0531399657202298
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 75.88543369701526,
+          "candidate": 72.19743807067765,
+          "ratio": 1.051082084418664,
+          "baseline_worker_medians": [
+            75.9166407585144,
+            75.85423946380615
+          ],
+          "candidate_worker_medians": [
+            72.21263885498047,
+            72.18224048614502
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 75.90127938202463,
+          "candidate": 72.10690184064086,
+          "ratio": 1.0526215583325087,
+          "baseline_worker_medians": [
+            75.89807987213135,
+            75.90447902679443
+          ],
+          "candidate_worker_medians": [
+            72.01551914215088,
+            72.19840049743652
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 75.86416005479805,
+          "candidate": 72.13453223805571,
+          "ratio": 1.0517037776641285,
+          "baseline_worker_medians": [
+            75.86319923400879,
+            75.86512088775635
+          ],
+          "candidate_worker_medians": [
+            72.19824075698853,
+            72.07087993621826
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 75.90383866849808,
+          "candidate": 72.10804919029535,
+          "ratio": 1.052640301891756,
+          "baseline_worker_medians": [
+            75.91840028762817,
+            75.88927984237671
+          ],
+          "candidate_worker_medians": [
+            71.9815993309021,
+            72.23472118377686
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 75.89888067515965,
+          "candidate": 72.0982852084926,
+          "ratio": 1.0527140896024996,
+          "baseline_worker_medians": [
+            75.90543985366821,
+            75.89232206344604
+          ],
+          "candidate_worker_medians": [
+            71.97007894515991,
+            72.2267198562622
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 75.89111847336329,
+          "candidate": 72.18367307484719,
+          "ratio": 1.0513612738253406,
+          "baseline_worker_medians": [
+            75.88032007217407,
+            75.90191841125488
+          ],
+          "candidate_worker_medians": [
+            72.21375942230225,
+            72.15359926223755
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 75.91558989901388,
+          "candidate": 72.10775304852707,
+          "ratio": 1.0528075926582292,
+          "baseline_worker_medians": [
+            75.87631940841675,
+            75.9548807144165
+          ],
+          "candidate_worker_medians": [
+            72.22032070159912,
+            71.99536085128784
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 75.8686398229841,
+          "candidate": 71.95375984753208,
+          "ratio": 1.0544082753110822,
+          "baseline_worker_medians": [
+            75.86431980133057,
+            75.8729600906372
+          ],
+          "candidate_worker_medians": [
+            71.94496154785156,
+            71.96255922317505
+          ]
+        }
+      ],
+      "result": "stable >1% gain",
+      "baseline_latency": 75.89080095291138,
+      "candidate_latency": 72.16791987419128
+    },
+    {
+      "experiment": "integer-8192",
+      "kind": "normalization",
+      "width": 512,
+      "ratio": 1.0521755062605045,
+      "ci95": [
+        1.051913180931008,
+        1.052471237371903
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 162.30702254932163,
+          "candidate": 154.24303995209647,
+          "ratio": 1.0522810144284604,
+          "baseline_worker_medians": [
+            162.37855911254883,
+            162.23551750183105
+          ],
+          "candidate_worker_medians": [
+            154.23664093017578,
+            154.24943923950195
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 162.33248120224016,
+          "candidate": 154.17437939762135,
+          "ratio": 1.052914769863148,
+          "baseline_worker_medians": [
+            162.3516845703125,
+            162.31328010559082
+          ],
+          "candidate_worker_medians": [
+            154.09136295318604,
+            154.2574405670166
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 162.23647248175095,
+          "candidate": 154.21327798835264,
+          "ratio": 1.052026612740858,
+          "baseline_worker_medians": [
+            162.28816032409668,
+            162.18480110168457
+          ],
+          "candidate_worker_medians": [
+            154.24208164215088,
+            154.18447971343994
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 162.2220753711043,
+          "candidate": 154.2289550531677,
+          "ratio": 1.0518263273921624,
+          "baseline_worker_medians": [
+            162.2166347503662,
+            162.2275161743164
+          ],
+          "candidate_worker_medians": [
+            154.2734432220459,
+            154.18447971343994
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 162.2769509924594,
+          "candidate": 154.26272151170244,
+          "ratio": 1.0519518222044917,
+          "baseline_worker_medians": [
+            162.21152305603027,
+            162.34240531921387
+          ],
+          "candidate_worker_medians": [
+            154.26559925079346,
+            154.25984382629395
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 162.28662985373208,
+          "candidate": 154.2520703113471,
+          "ratio": 1.0520872071679024,
+          "baseline_worker_medians": [
+            162.2315216064453,
+            162.3417568206787
+          ],
+          "candidate_worker_medians": [
+            154.19487953186035,
+            154.30928230285645
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 162.26352185455332,
+          "candidate": 154.14121395973865,
+          "ratio": 1.0526939400966195,
+          "baseline_worker_medians": [
+            162.2537612915039,
+            162.27328300476074
+          ],
+          "candidate_worker_medians": [
+            154.00047779083252,
+            154.28207874298096
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 162.23135663473252,
+          "candidate": 154.2676017950221,
+          "ratio": 1.0516229898374383,
+          "baseline_worker_medians": [
+            162.2617530822754,
+            162.20096588134766
+          ],
+          "candidate_worker_medians": [
+            154.26032066345215,
+            154.27488327026367
+          ]
+        }
+      ],
+      "result": "stable >1% gain",
+      "baseline_latency": 162.25775718688965,
+      "candidate_latency": 154.25343990325928
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "first-thread",
+      "width": 32,
+      "ratio": 1.0006061341623604,
+      "ci95": [
+        0.9996031527215599,
+        1.0016263229505415
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 22.64639962562869,
+          "candidate": 22.569040056489023,
+          "ratio": 1.0034276854020392,
+          "baseline_worker_medians": [
+            22.648639678955078,
+            22.64415979385376
+          ],
+          "candidate_worker_medians": [
+            22.568639516830444,
+            22.569440603256226
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 22.604632106891103,
+          "candidate": 22.576159333098616,
+          "ratio": 1.0012611876702493,
+          "baseline_worker_medians": [
+            22.62368083000183,
+            22.585599422454834
+          ],
+          "candidate_worker_medians": [
+            22.569119930267334,
+            22.583200931549072
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 22.60351292465333,
+          "candidate": 22.584719657756718,
+          "ratio": 1.0008321230983337,
+          "baseline_worker_medians": [
+            22.621599435806274,
+            22.58544087409973
+          ],
+          "candidate_worker_medians": [
+            22.58463978767395,
+            22.58479952812195
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 22.583280204449142,
+          "candidate": 22.632914144634416,
+          "ratio": 0.9978070017909275,
+          "baseline_worker_medians": [
+            22.58303999900818,
+            22.58352041244507
+          ],
+          "candidate_worker_medians": [
+            22.5873601436615,
+            22.67856001853943
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 22.616857043841577,
+          "candidate": 22.595596535922176,
+          "ratio": 1.0009409137698844,
+          "baseline_worker_medians": [
+            22.585119009017944,
+            22.648639678955078
+          ],
+          "candidate_worker_medians": [
+            22.582240104675293,
+            22.6089608669281
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 22.600547189089337,
+          "candidate": 22.599038082817234,
+          "ratio": 1.0000667774560392,
+          "baseline_worker_medians": [
+            22.624800205230713,
+            22.5763201713562
+          ],
+          "candidate_worker_medians": [
+            22.60751962661743,
+            22.590559720993042
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 22.597028788016047,
+          "candidate": 22.579276906234604,
+          "ratio": 1.0007862024038752,
+          "baseline_worker_medians": [
+            22.618879079818726,
+            22.575199604034424
+          ],
+          "candidate_worker_medians": [
+            22.56719946861267,
+            22.591360807418823
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 22.61658357658541,
+          "candidate": 22.6225579450997,
+          "ratio": 0.9997359110084373,
+          "baseline_worker_medians": [
+            22.566239833831787,
+            22.66703963279724
+          ],
+          "candidate_worker_medians": [
+            22.632800340652466,
+            22.61232018470764
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 22.60223925113678,
+      "candidate_latency": 22.586079835891724
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "first-thread",
+      "width": 128,
+      "ratio": 0.99913005089295,
+      "ci95": [
+        0.9978546769953334,
+        1.0002033014741012
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 28.828700312242795,
+          "candidate": 28.962782735967156,
+          "ratio": 0.9953705268949226,
+          "baseline_worker_medians": [
+            28.72704029083252,
+            28.93072009086609
+          ],
+          "candidate_worker_medians": [
+            28.99488091468811,
+            28.93072009086609
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 28.87193323857791,
+          "candidate": 28.888879232165024,
+          "ratio": 0.9994134077182113,
+          "baseline_worker_medians": [
+            28.93407940864563,
+            28.8099205493927
+          ],
+          "candidate_worker_medians": [
+            28.892159461975098,
+            28.885599374771118
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 28.85712021655546,
+          "candidate": 28.891335487995633,
+          "ratio": 0.9988157255155482,
+          "baseline_worker_medians": [
+            28.789280652999878,
+            28.925119638442993
+          ],
+          "candidate_worker_medians": [
+            28.853600025177002,
+            28.929120302200317
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 28.834079599126344,
+          "candidate": 28.825914752869256,
+          "ratio": 1.0002832467356921,
+          "baseline_worker_medians": [
+            28.90223979949951,
+            28.766080141067505
+          ],
+          "candidate_worker_medians": [
+            28.808159828186035,
+            28.84368062019348
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 28.814452487039837,
+          "candidate": 28.783998859341413,
+          "ratio": 1.0010580054511273,
+          "baseline_worker_medians": [
+            28.89311909675598,
+            28.736000061035156
+          ],
+          "candidate_worker_medians": [
+            28.777120113372803,
+            28.790879249572754
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 28.887330009532537,
+          "candidate": 28.916355943836525,
+          "ratio": 0.9989962105059031,
+          "baseline_worker_medians": [
+            28.807520866394043,
+            28.967360258102417
+          ],
+          "candidate_worker_medians": [
+            29.000959396362305,
+            28.8319993019104
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 28.853395140200224,
+          "candidate": 28.904463417019475,
+          "ratio": 0.9982332044680275,
+          "baseline_worker_medians": [
+            28.80239963531494,
+            28.904480934143066
+          ],
+          "candidate_worker_medians": [
+            28.935199975967407,
+            28.873759508132935
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 28.931486038992084,
+          "candidate": 28.905998792489797,
+          "ratio": 1.000881728622673,
+          "baseline_worker_medians": [
+            28.887200355529785,
+            28.975839614868164
+          ],
+          "candidate_worker_medians": [
+            28.915200233459473,
+            28.89680027961731
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 28.890159726142883,
+      "candidate_latency": 28.888879418373108
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "first-thread",
+      "width": 256,
+      "ratio": 1.0002419670639244,
+      "ci95": [
+        0.999882605738002,
+        1.0006416029200123
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 59.524878416917545,
+          "candidate": 59.438719749236064,
+          "ratio": 1.0014495377431576,
+          "baseline_worker_medians": [
+            59.5359992980957,
+            59.51375961303711
+          ],
+          "candidate_worker_medians": [
+            59.438560009002686,
+            59.43887948989868
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 59.469029394001694,
+          "candidate": 59.44319186502207,
+          "ratio": 1.0004346591791082,
+          "baseline_worker_medians": [
+            59.505600929260254,
+            59.432480335235596
+          ],
+          "candidate_worker_medians": [
+            59.4758415222168,
+            59.410560131073
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 59.45327676784432,
+          "candidate": 59.48759643416537,
+          "ratio": 0.9994230786184305,
+          "baseline_worker_medians": [
+            59.47279930114746,
+            59.43376064300537
+          ],
+          "candidate_worker_medians": [
+            59.46608066558838,
+            59.50911998748779
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 59.47479732639632,
+          "candidate": 59.480956151506035,
+          "ratio": 0.9998964571938953,
+          "baseline_worker_medians": [
+            59.45440053939819,
+            59.495201110839844
+          ],
+          "candidate_worker_medians": [
+            59.5033597946167,
+            59.458560943603516
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 59.49647034244877,
+          "candidate": 59.50119895266188,
+          "ratio": 0.9999205291608179,
+          "baseline_worker_medians": [
+            59.46431875228882,
+            59.52863931655884
+          ],
+          "candidate_worker_medians": [
+            59.51647996902466,
+            59.48592185974121
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 59.487198788107854,
+          "candidate": 59.47184005745579,
+          "ratio": 1.00025825215156,
+          "baseline_worker_medians": [
+            59.49808120727539,
+            59.476318359375
+          ],
+          "candidate_worker_medians": [
+            59.48160171508789,
+            59.462080001831055
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 59.46896058103772,
+          "candidate": 59.449999656313835,
+          "ratio": 1.0003189390215896,
+          "baseline_worker_medians": [
+            59.46432113647461,
+            59.47360038757324
+          ],
+          "candidate_worker_medians": [
+            59.43984031677246,
+            59.46016073226929
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 59.47119860316572,
+          "candidate": 59.457197610037646,
+          "ratio": 1.000235480205776,
+          "baseline_worker_medians": [
+            59.46079969406128,
+            59.4815993309021
+          ],
+          "candidate_worker_medians": [
+            59.472479820251465,
+            59.44191932678223
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 59.47495937347412,
+      "candidate_latency": 59.46408033370972
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "first-thread",
+      "width": 512,
+      "ratio": 0.9997602311554501,
+      "ci95": [
+        0.9988757932954713,
+        1.0005401852172817
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 120.37375021464014,
+          "candidate": 120.39917564409271,
+          "ratio": 0.9997888238908901,
+          "baseline_worker_medians": [
+            120.42623996734619,
+            120.3212833404541
+          ],
+          "candidate_worker_medians": [
+            120.47343730926514,
+            120.32495975494385
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 120.3926151202611,
+          "candidate": 120.4723476482648,
+          "ratio": 0.9993381673922676,
+          "baseline_worker_medians": [
+            120.23327827453613,
+            120.55216312408447
+          ],
+          "candidate_worker_medians": [
+            120.6987190246582,
+            120.24640083312988
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 120.23847785575728,
+          "candidate": 120.56025347323093,
+          "ratio": 0.997330997503708,
+          "baseline_worker_medians": [
+            120.24735927581787,
+            120.2295970916748
+          ],
+          "candidate_worker_medians": [
+            120.79375743865967,
+            120.3272008895874
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 120.4015074565401,
+          "candidate": 120.3416325151878,
+          "ratio": 1.0004975413753403,
+          "baseline_worker_medians": [
+            120.55232048034668,
+            120.25088310241699
+          ],
+          "candidate_worker_medians": [
+            120.44864177703857,
+            120.2347183227539
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 120.41820439993846,
+          "candidate": 120.331339697701,
+          "ratio": 1.0007218792914272,
+          "baseline_worker_medians": [
+            120.25167942047119,
+            120.58495998382568
+          ],
+          "candidate_worker_medians": [
+            120.3993558883667,
+            120.26336193084717
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 120.2795054863631,
+          "candidate": 120.43919671766263,
+          "ratio": 0.9986740925242645,
+          "baseline_worker_medians": [
+            120.12832164764404,
+            120.43087959289551
+          ],
+          "candidate_worker_medians": [
+            120.75071811676025,
+            120.12847900390625
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 120.45648717360437,
+          "candidate": 120.42454457795263,
+          "ratio": 1.0002652498771216,
+          "baseline_worker_medians": [
+            120.09168148040771,
+            120.82240104675293
+          ],
+          "candidate_worker_medians": [
+            120.62959671020508,
+            120.21984100341797
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 120.57851923437626,
+          "candidate": 120.40140190762466,
+          "ratio": 1.0014710570138334,
+          "baseline_worker_medians": [
+            120.35967826843262,
+            120.79775810241699
+          ],
+          "candidate_worker_medians": [
+            120.18352031707764,
+            120.61967849731445
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 120.34048080444336,
+      "candidate_latency": 120.36327838897705
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "normalization",
+      "width": 32,
+      "ratio": 1.0101775399435802,
+      "ci95": [
+        1.0075751619070439,
+        1.012949586480061
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 27.143779154077336,
+          "candidate": 26.888145073363695,
+          "ratio": 1.0095073155852197,
+          "baseline_worker_medians": [
+            27.28800058364868,
+            27.000319957733154
+          ],
+          "candidate_worker_medians": [
+            26.816799640655518,
+            26.959680318832397
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 27.158778930867157,
+          "candidate": 26.754998058350523,
+          "ratio": 1.0150917922563858,
+          "baseline_worker_medians": [
+            27.023040056228638,
+            27.295199632644653
+          ],
+          "candidate_worker_medians": [
+            26.802239418029785,
+            26.707839965820312
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 27.016157963244446,
+          "candidate": 26.90719120634103,
+          "ratio": 1.004049726189099,
+          "baseline_worker_medians": [
+            27.027840614318848,
+            27.004480361938477
+          ],
+          "candidate_worker_medians": [
+            26.92847967147827,
+            26.88591957092285
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 27.088293784547428,
+          "candidate": 26.904138592461482,
+          "ratio": 1.0068448648319686,
+          "baseline_worker_medians": [
+            27.125760316848755,
+            27.05087900161743
+          ],
+          "candidate_worker_medians": [
+            26.938400268554688,
+            26.86992049217224
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 27.09934886220634,
+          "candidate": 26.81660859228901,
+          "ratio": 1.010543476030695,
+          "baseline_worker_medians": [
+            27.075200080871582,
+            27.1235191822052
+          ],
+          "candidate_worker_medians": [
+            26.954240798950195,
+            26.67967915534973
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 27.24573671734712,
+          "candidate": 26.795608383122456,
+          "ratio": 1.0167985860887632,
+          "baseline_worker_medians": [
+            27.17087984085083,
+            27.320799827575684
+          ],
+          "candidate_worker_medians": [
+            26.857600212097168,
+            26.73375964164734
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 27.044272832479862,
+          "candidate": 26.773237163900305,
+          "ratio": 1.0101233805579928,
+          "baseline_worker_medians": [
+            26.903680562973022,
+            27.18559980392456
+          ],
+          "candidate_worker_medians": [
+            26.72544002532959,
+            26.821119785308838
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 27.01907036541282,
+          "candidate": 26.7907988757941,
+          "ratio": 1.008520518207651,
+          "baseline_worker_medians": [
+            26.894240379333496,
+            27.144479751586914
+          ],
+          "candidate_worker_medians": [
+            26.697920560836792,
+            26.884000301361084
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 27.09935963153839,
+      "candidate_latency": 26.839359998703003
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "normalization",
+      "width": 128,
+      "ratio": 1.0839403458773016,
+      "ci95": [
+        1.082651402019308,
+        1.085237169485616
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 39.09267676550654,
+          "candidate": 36.030477159820734,
+          "ratio": 1.0849891493832506,
+          "baseline_worker_medians": [
+            39.15055990219116,
+            39.034879207611084
+          ],
+          "candidate_worker_medians": [
+            36.045440435409546,
+            36.015520095825195
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 39.07279987738204,
+          "candidate": 35.94376114606288,
+          "ratio": 1.0870537370478242,
+          "baseline_worker_medians": [
+            39.06720042228699,
+            39.07840013504028
+          ],
+          "candidate_worker_medians": [
+            35.86848020553589,
+            36.01920008659363
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 39.057039370580654,
+          "candidate": 35.981279508751605,
+          "ratio": 1.0854822258636172,
+          "baseline_worker_medians": [
+            39.05263900756836,
+            39.061440229415894
+          ],
+          "candidate_worker_medians": [
+            35.98399996757507,
+            35.978559255599976
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 39.03555481633242,
+          "candidate": 36.034864764508214,
+          "ratio": 1.0832718555053293,
+          "baseline_worker_medians": [
+            38.976320028305054,
+            39.09487962722778
+          ],
+          "candidate_worker_medians": [
+            36.00144028663635,
+            36.06832027435303
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 39.06335553261853,
+          "candidate": 36.01046606220895,
+          "ratio": 1.084777838341099,
+          "baseline_worker_medians": [
+            39.044480323791504,
+            39.082239866256714
+          ],
+          "candidate_worker_medians": [
+            35.97887992858887,
+            36.04207992553711
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 39.02743090710455,
+          "candidate": 36.046637145569555,
+          "ratio": 1.0826927002787377,
+          "baseline_worker_medians": [
+            39.00175929069519,
+            39.05311942100525
+          ],
+          "candidate_worker_medians": [
+            36.03312015533447,
+            36.06015920639038
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 38.971262701110874,
+          "candidate": 36.049512768622286,
+          "ratio": 1.081048250256289,
+          "baseline_worker_medians": [
+            38.934080600738525,
+            39.00848031044006
+          ],
+          "candidate_worker_medians": [
+            36.02704048156738,
+            36.071999073028564
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 38.98399062751003,
+          "candidate": 36.02225666347782,
+          "ratio": 1.0822195564176036,
+          "baseline_worker_medians": [
+            38.95600080490112,
+            39.0120005607605
+          ],
+          "candidate_worker_medians": [
+            35.95487952232361,
+            36.089760065078735
+          ]
+        }
+      ],
+      "result": "stable >1% gain",
+      "baseline_latency": 39.04855966567993,
+      "candidate_latency": 36.023120284080505
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "normalization",
+      "width": 256,
+      "ratio": 0.9999847091289045,
+      "ci95": [
+        0.99982384762117,
+        1.0001761286911903
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 77.94247841329006,
+          "candidate": 77.92247603203278,
+          "ratio": 1.0002566959146557,
+          "baseline_worker_medians": [
+            77.93631792068481,
+            77.94863939285278
+          ],
+          "candidate_worker_medians": [
+            77.947678565979,
+            77.89728164672852
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 77.91535932477294,
+          "candidate": 77.92576073269639,
+          "ratio": 0.9998665215735381,
+          "baseline_worker_medians": [
+            77.92335987091064,
+            77.90735960006714
+          ],
+          "candidate_worker_medians": [
+            77.92432069778442,
+            77.92720079421997
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 77.90823709648217,
+          "candidate": 77.92167875047015,
+          "ratio": 0.9998274978901439,
+          "baseline_worker_medians": [
+            77.92703866958618,
+            77.88944005966187
+          ],
+          "candidate_worker_medians": [
+            77.92815923690796,
+            77.915198802948
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 77.94846622078742,
+          "candidate": 77.9075201997734,
+          "ratio": 1.0005255721258877,
+          "baseline_worker_medians": [
+            77.90271997451782,
+            77.99423933029175
+          ],
+          "candidate_worker_medians": [
+            77.90031909942627,
+            77.9147219657898
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 77.91288136742467,
+          "candidate": 77.93319538262944,
+          "ratio": 0.9997393406608696,
+          "baseline_worker_medians": [
+            77.91392087936401,
+            77.91184186935425
+          ],
+          "candidate_worker_medians": [
+            77.90815830230713,
+            77.9582405090332
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 77.91128039323199,
+          "candidate": 77.90863986034326,
+          "ratio": 1.0000338926837058,
+          "baseline_worker_medians": [
+            77.91152000427246,
+            77.91104078292847
+          ],
+          "candidate_worker_medians": [
+            77.90591955184937,
+            77.91136026382446
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 77.91335940356929,
+          "candidate": 77.92215770761956,
+          "ratio": 0.9998870885469665,
+          "baseline_worker_medians": [
+            77.91327953338623,
+            77.91343927383423
+          ],
+          "candidate_worker_medians": [
+            77.90575981140137,
+            77.93855905532837
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 77.9149594724224,
+          "candidate": 77.93511880292071,
+          "ratio": 0.9997413318821096,
+          "baseline_worker_medians": [
+            77.90303945541382,
+            77.92688131332397
+          ],
+          "candidate_worker_medians": [
+            77.94800043106079,
+            77.92223930358887
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 77.91335940361023,
+      "candidate_latency": 77.91871905326843
+    },
+    {
+      "experiment": "legacy-8192",
+      "kind": "normalization",
+      "width": 512,
+      "ratio": 1.0000102581188273,
+      "ci95": [
+        0.9993492570274926,
+        1.0006784923057215
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 166.33514977051058,
+          "candidate": 166.06248130403546,
+          "ratio": 1.0016419630992741,
+          "baseline_worker_medians": [
+            166.46608352661133,
+            166.20431900024414
+          ],
+          "candidate_worker_medians": [
+            166.0912036895752,
+            166.03376388549805
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 166.1465516763589,
+          "candidate": 166.13192187388083,
+          "ratio": 1.0000880613569811,
+          "baseline_worker_medians": [
+            166.09487533569336,
+            166.19824409484863
+          ],
+          "candidate_worker_medians": [
+            166.29504203796387,
+            165.96896171569824
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 166.25321561259537,
+          "candidate": 166.08470288532683,
+          "ratio": 1.0010146191933456,
+          "baseline_worker_medians": [
+            166.4737606048584,
+            166.03296279907227
+          ],
+          "candidate_worker_medians": [
+            166.32800102233887,
+            165.84176063537598
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 166.21687447411796,
+          "candidate": 166.2876289249607,
+          "ratio": 0.9995745056243801,
+          "baseline_worker_medians": [
+            166.2551975250244,
+            166.178560256958
+          ],
+          "candidate_worker_medians": [
+            166.02176666259766,
+            166.55391693115234
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 166.02639325371948,
+          "candidate": 166.02287886423156,
+          "ratio": 1.0000211681035287,
+          "baseline_worker_medians": [
+            165.99231719970703,
+            166.0604763031006
+          ],
+          "candidate_worker_medians": [
+            166.0574436187744,
+            165.9883213043213
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 165.93256468532724,
+          "candidate": 166.17374234267533,
+          "ratio": 0.9985486415967527,
+          "baseline_worker_medians": [
+            165.92848777770996,
+            165.93664169311523
+          ],
+          "candidate_worker_medians": [
+            166.3535976409912,
+            165.99408149719238
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 166.08359255260223,
+          "candidate": 166.0382811407856,
+          "ratio": 1.0002728973794797,
+          "baseline_worker_medians": [
+            166.02496147155762,
+            166.14224433898926
+          ],
+          "candidate_worker_medians": [
+            166.1484718322754,
+            165.92816352844238
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 166.08375625216664,
+          "candidate": 166.26268238104348,
+          "ratio": 0.998923834703528,
+          "baseline_worker_medians": [
+            166.0297679901123,
+            166.13776206970215
+          ],
+          "candidate_worker_medians": [
+            166.15504264831543,
+            166.37039184570312
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 166.11631870269775,
+      "candidate_latency": 166.0743236541748
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 32,
+      "ratio": 0.999887379786211,
+      "ci95": [
+        0.9988473490019717,
+        1.0010686005656553
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 22.617337232872945,
+          "candidate": 22.597998890747807,
+          "ratio": 1.0008557546275947,
+          "baseline_worker_medians": [
+            22.585439682006836,
+            22.649279832839966
+          ],
+          "candidate_worker_medians": [
+            22.605600357055664,
+            22.590399980545044
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 22.5853598082522,
+          "candidate": 22.621877342356136,
+          "ratio": 0.9983857425468592,
+          "baseline_worker_medians": [
+            22.584960460662842,
+            22.585759162902832
+          ],
+          "candidate_worker_medians": [
+            22.57823944091797,
+            22.665599584579468
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 22.622398676203623,
+          "candidate": 22.617562596706023,
+          "ratio": 1.0002138196579284,
+          "baseline_worker_medians": [
+            22.62992024421692,
+            22.614879608154297
+          ],
+          "candidate_worker_medians": [
+            22.659040689468384,
+            22.576160430908203
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 22.67189699471967,
+          "candidate": 22.59735755092478,
+          "ratio": 1.0032985911572585,
+          "baseline_worker_medians": [
+            22.703839540481567,
+            22.639999389648438
+          ],
+          "candidate_worker_medians": [
+            22.58560061454773,
+            22.6091206073761
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 22.56519973150196,
+          "candidate": 22.593428393692086,
+          "ratio": 0.9987505808459769,
+          "baseline_worker_medians": [
+            22.5654399394989,
+            22.56495952606201
+          ],
+          "candidate_worker_medians": [
+            22.570719718933105,
+            22.616159915924072
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 22.594557687618984,
+          "candidate": 22.628154906195633,
+          "ratio": 0.998515247101855,
+          "baseline_worker_medians": [
+            22.58352041244507,
+            22.605600357055664
+          ],
+          "candidate_worker_medians": [
+            22.61280059814453,
+            22.643519639968872
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 22.60279117486412,
+          "candidate": 22.592239577894745,
+          "ratio": 1.000467045196338,
+          "baseline_worker_medians": [
+            22.622239589691162,
+            22.583359479904175
+          ],
+          "candidate_worker_medians": [
+            22.58799910545349,
+            22.59648084640503
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 22.60710913024637,
+          "candidate": 22.63829856062686,
+          "ratio": 0.9986222714442535,
+          "baseline_worker_medians": [
+            22.585279941558838,
+            22.62895941734314
+          ],
+          "candidate_worker_medians": [
+            22.6692795753479,
+            22.607359886169434
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 22.595679759979248,
+      "candidate_latency": 22.60648012161255
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 128,
+      "ratio": 0.9988286499605842,
+      "ci95": [
+        0.9973577585070948,
+        1.0001206347590408
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 28.7746618631774,
+          "candidate": 28.740633976177037,
+          "ratio": 1.0011839643839648,
+          "baseline_worker_medians": [
+            28.83247971534729,
+            28.716959953308105
+          ],
+          "candidate_worker_medians": [
+            28.721600770950317,
+            28.759679794311523
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 28.715113307409947,
+          "candidate": 28.737032438801567,
+          "ratio": 0.9992372513954495,
+          "baseline_worker_medians": [
+            28.69472026824951,
+            28.735520839691162
+          ],
+          "candidate_worker_medians": [
+            28.75727891921997,
+            28.716800212860107
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 28.762442722970366,
+          "candidate": 28.78511140794504,
+          "ratio": 0.9992124857655261,
+          "baseline_worker_medians": [
+            28.71616005897522,
+            28.808799982070923
+          ],
+          "candidate_worker_medians": [
+            28.80768060684204,
+            28.76255989074707
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 28.77223099200221,
+          "candidate": 28.739188545489576,
+          "ratio": 1.0011497348458651,
+          "baseline_worker_medians": [
+            28.749120235443115,
+            28.795360326766968
+          ],
+          "candidate_worker_medians": [
+            28.713279962539673,
+            28.76512050628662
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 28.736467897359482,
+          "candidate": 28.882982887254943,
+          "ratio": 0.9949272902155784,
+          "baseline_worker_medians": [
+            28.762720823287964,
+            28.710238933563232
+          ],
+          "candidate_worker_medians": [
+            29.045920372009277,
+            28.720959424972534
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 28.74775818703277,
+          "candidate": 28.752439220602586,
+          "ratio": 0.9998371952538043,
+          "baseline_worker_medians": [
+            28.7391996383667,
+            28.756319284439087
+          ],
+          "candidate_worker_medians": [
+            28.800638914108276,
+            28.704320192337036
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 28.742917116954192,
+          "candidate": 28.84338745488212,
+          "ratio": 0.9965166942306938,
+          "baseline_worker_medians": [
+            28.693599700927734,
+            28.792319297790527
+          ],
+          "candidate_worker_medians": [
+            28.89840006828308,
+            28.788479566574097
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 28.853635935730477,
+          "candidate": 28.894635553354476,
+          "ratio": 0.9985810647257242,
+          "baseline_worker_medians": [
+            29.014240503311157,
+            28.693920373916626
+          ],
+          "candidate_worker_medians": [
+            28.91103982925415,
+            28.87824058532715
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 28.744159936904907,
+      "candidate_latency": 28.763840198516846
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 256,
+      "ratio": 1.000095199904867,
+      "ci95": [
+        0.9998216405327488,
+        1.000388710710946
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 59.458239023384266,
+          "candidate": 59.47935743319262,
+          "ratio": 0.9996449455622974,
+          "baseline_worker_medians": [
+            59.45567846298218,
+            59.46079969406128
+          ],
+          "candidate_worker_medians": [
+            59.502081871032715,
+            59.45664167404175
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 59.495279532732205,
+          "candidate": 59.45039656550003,
+          "ratio": 1.0007549649762677,
+          "baseline_worker_medians": [
+            59.50080156326294,
+            59.489758014678955
+          ],
+          "candidate_worker_medians": [
+            59.47023868560791,
+            59.43056106567383
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 59.48720096488644,
+          "candidate": 59.44895667795236,
+          "ratio": 1.0006433130044865,
+          "baseline_worker_medians": [
+            59.48832035064697,
+            59.48608160018921
+          ],
+          "candidate_worker_medians": [
+            59.42624092102051,
+            59.471681118011475
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 59.462718526389914,
+          "candidate": 59.48783742764507,
+          "ratio": 0.9995777472784129,
+          "baseline_worker_medians": [
+            59.4488000869751,
+            59.47664022445679
+          ],
+          "candidate_worker_medians": [
+            59.50511932373047,
+            59.4705605506897
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 59.466960127355684,
+          "candidate": 59.47007955531297,
+          "ratio": 0.9999475462622446,
+          "baseline_worker_medians": [
+            59.46095943450928,
+            59.47296142578125
+          ],
+          "candidate_worker_medians": [
+            59.46176052093506,
+            59.47839975357056
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 59.47111166656727,
+          "candidate": 59.482873565517885,
+          "ratio": 0.9998022641098927,
+          "baseline_worker_medians": [
+            59.440319538116455,
+            59.501919746398926
+          ],
+          "candidate_worker_medians": [
+            59.456000328063965,
+            59.509758949279785
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 59.49336051677095,
+          "candidate": 59.47399661373483,
+          "ratio": 1.0003255860399274,
+          "baseline_worker_medians": [
+            59.49280023574829,
+            59.49392080307007
+          ],
+          "candidate_worker_medians": [
+            59.493279457092285,
+            59.45472002029419
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 59.481439758017444,
+          "candidate": 59.47751925284612,
+          "ratio": 1.0000659157480098,
+          "baseline_worker_medians": [
+            59.4704008102417,
+            59.492480754852295
+          ],
+          "candidate_worker_medians": [
+            59.48687791824341,
+            59.468162059783936
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 59.481360912323,
+      "candidate_latency": 59.470399618148804
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "first-thread",
+      "width": 512,
+      "ratio": 1.0006944068036279,
+      "ci95": [
+        0.9995673130547162,
+        1.001823194420778
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 120.27006707685108,
+          "candidate": 120.17431451812263,
+          "ratio": 1.000796780569229,
+          "baseline_worker_medians": [
+            120.3270435333252,
+            120.2131175994873
+          ],
+          "candidate_worker_medians": [
+            120.20976066589355,
+            120.13887882232666
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 120.40826430201308,
+          "candidate": 120.6276036972432,
+          "ratio": 0.9981816815678389,
+          "baseline_worker_medians": [
+            120.52207946777344,
+            120.29455661773682
+          ],
+          "candidate_worker_medians": [
+            120.76320171356201,
+            120.49215793609619
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 120.44188183260593,
+          "candidate": 120.41539035100453,
+          "ratio": 1.0002200007949498,
+          "baseline_worker_medians": [
+            120.11695861816406,
+            120.76768398284912
+          ],
+          "candidate_worker_medians": [
+            120.11680126190186,
+            120.7147216796875
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 120.3942984293588,
+          "candidate": 120.50623013998403,
+          "ratio": 0.9990711541594555,
+          "baseline_worker_medians": [
+            120.46720027923584,
+            120.32144069671631
+          ],
+          "candidate_worker_medians": [
+            120.22527694702148,
+            120.78783988952637
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 120.62775527155884,
+          "candidate": 120.28280627055203,
+          "ratio": 1.0028678163712852,
+          "baseline_worker_medians": [
+            120.65567970275879,
+            120.59983730316162
+          ],
+          "candidate_worker_medians": [
+            120.4150390625,
+            120.15071868896484
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 120.41376069868161,
+          "candidate": 120.16983504957695,
+          "ratio": 1.0020298409247548,
+          "baseline_worker_medians": [
+            120.43984413146973,
+            120.38768291473389
+          ],
+          "candidate_worker_medians": [
+            120.20383834838867,
+            120.1358413696289
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 120.55525846605413,
+          "candidate": 120.21503565662807,
+          "ratio": 1.0028301186084396,
+          "baseline_worker_medians": [
+            120.48448085784912,
+            120.62607765197754
+          ],
+          "candidate_worker_medians": [
+            120.25296211242676,
+            120.17712116241455
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 120.28478756923384,
+          "candidate": 120.33669916355302,
+          "ratio": 0.9995686137755148,
+          "baseline_worker_medians": [
+            120.34063816070557,
+            120.2289628982544
+          ],
+          "candidate_worker_medians": [
+            120.4091215133667,
+            120.26432037353516
+          ]
+        }
+      ],
+      "result": "within default bound",
+      "baseline_latency": 120.4137635231018,
+      "candidate_latency": 120.23911952972412
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 32,
+      "ratio": 1.0080414889635931,
+      "ci95": [
+        1.0051948925395338,
+        1.0109962508152557
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 27.011796436711276,
+          "candidate": 26.897674760770737,
+          "ratio": 1.0042428082336314,
+          "baseline_worker_medians": [
+            27.13584065437317,
+            26.88831925392151
+          ],
+          "candidate_worker_medians": [
+            26.88159942626953,
+            26.91375970840454
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 27.182450421454032,
+          "candidate": 26.84844678342219,
+          "ratio": 1.012440333726794,
+          "baseline_worker_medians": [
+            27.14271903038025,
+            27.22223997116089
+          ],
+          "candidate_worker_medians": [
+            26.806559562683105,
+            26.89039945602417
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 26.949435797669807,
+          "candidate": 26.81907520131132,
+          "ratio": 1.0048607416691278,
+          "baseline_worker_medians": [
+            26.93503975868225,
+            26.963839530944824
+          ],
+          "candidate_worker_medians": [
+            26.867839097976685,
+            26.770399808883667
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 27.07189327110853,
+          "candidate": 26.796714429476754,
+          "ratio": 1.0102691261779868,
+          "baseline_worker_medians": [
+            27.22432017326355,
+            26.92031979560852
+          ],
+          "candidate_worker_medians": [
+            26.864479780197144,
+            26.729120016098022
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 27.084993759157253,
+          "candidate": 26.9580221727818,
+          "ratio": 1.0047099741057284,
+          "baseline_worker_medians": [
+            27.035199403762817,
+            27.13487982749939
+          ],
+          "candidate_worker_medians": [
+            27.173919677734375,
+            26.743839979171753
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 27.230132820270914,
+          "candidate": 26.89183180702216,
+          "ratio": 1.0125800657863855,
+          "baseline_worker_medians": [
+            27.268800735473633,
+            27.191519737243652
+          ],
+          "candidate_worker_medians": [
+            26.870720386505127,
+            26.912959814071655
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 27.189715462067483,
+          "candidate": 26.84484289139502,
+          "ratio": 1.0128468835547928,
+          "baseline_worker_medians": [
+            27.272160053253174,
+            27.10752010345459
+          ],
+          "candidate_worker_medians": [
+            26.742238998413086,
+            26.947840452194214
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 26.853200110341707,
+          "candidate": 26.787599868529426,
+          "ratio": 1.0024489033035524,
+          "baseline_worker_medians": [
+            26.85536026954651,
+            26.85104012489319
+          ],
+          "candidate_worker_medians": [
+            26.78928017616272,
+            26.785919666290283
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 27.12119996547699,
+      "candidate_latency": 26.866159439086914
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 128,
+      "ratio": 1.0830175341406636,
+      "ci95": [
+        1.0812964289893583,
+        1.0847073165473833
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 39.07909601553416,
+          "candidate": 36.15871798908558,
+          "ratio": 1.0807655301089516,
+          "baseline_worker_medians": [
+            39.122560024261475,
+            39.035680294036865
+          ],
+          "candidate_worker_medians": [
+            36.14591956138611,
+            36.171520948410034
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 39.123117320212984,
+          "candidate": 36.21955642739924,
+          "ratio": 1.0801655563792953,
+          "baseline_worker_medians": [
+            39.109439849853516,
+            39.136799573898315
+          ],
+          "candidate_worker_medians": [
+            36.163519620895386,
+            36.27568006515503
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 39.093597494005316,
+          "candidate": 36.1627952749428,
+          "ratio": 1.0810446813300758,
+          "baseline_worker_medians": [
+            39.07984018325806,
+            39.107359647750854
+          ],
+          "candidate_worker_medians": [
+            36.180479526519775,
+            36.14511966705322
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 39.115681321865694,
+          "candidate": 36.05871989018508,
+          "ratio": 1.0847773143636388,
+          "baseline_worker_medians": [
+            39.037439823150635,
+            39.194079637527466
+          ],
+          "candidate_worker_medians": [
+            36.0644805431366,
+            36.05296015739441
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 39.13720003856465,
+          "candidate": 36.05078431753491,
+          "ratio": 1.0856129978711315,
+          "baseline_worker_medians": [
+            39.13472056388855,
+            39.13967967033386
+          ],
+          "candidate_worker_medians": [
+            35.96783995628357,
+            36.13391995429993
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 39.0886313385192,
+          "candidate": 36.17415610080508,
+          "ratio": 1.0805678846962585,
+          "baseline_worker_medians": [
+            39.11407947540283,
+            39.06319975852966
+          ],
+          "candidate_worker_medians": [
+            36.04144096374512,
+            36.30735993385315
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 39.09016315156702,
+          "candidate": 35.983276699098916,
+          "ratio": 1.0863425106737403,
+          "baseline_worker_medians": [
+            39.20079946517944,
+            38.97983908653259
+          ],
+          "candidate_worker_medians": [
+            35.96799969673157,
+            35.998560190200806
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 39.105352498215424,
+          "candidate": 36.04559631738938,
+          "ratio": 1.0848857140240993,
+          "baseline_worker_medians": [
+            39.08128023147583,
+            39.12943959236145
+          ],
+          "candidate_worker_medians": [
+            36.02768063545227,
+            36.06352090835571
+          ]
+        }
+      ],
+      "result": "stable >1% gain",
+      "baseline_latency": 39.111759662628174,
+      "candidate_latency": 36.09920024871826
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 256,
+      "ratio": 0.9999835676623183,
+      "ci95": [
+        0.9998261223409451,
+        1.0001369207588404
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 77.92830982109771,
+          "candidate": 77.93912048635391,
+          "ratio": 0.9998612934661215,
+          "baseline_worker_medians": [
+            77.96848058700562,
+            77.88815975189209
+          ],
+          "candidate_worker_medians": [
+            77.9417610168457,
+            77.9364800453186
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 77.92438967646659,
+          "candidate": 77.94031077937414,
+          "ratio": 0.9997957269768577,
+          "baseline_worker_medians": [
+            77.88320064544678,
+            77.96560049057007
+          ],
+          "candidate_worker_medians": [
+            77.90543794631958,
+            77.9751992225647
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 77.92655859667573,
+          "candidate": 77.91047903777732,
+          "ratio": 1.000206385060097,
+          "baseline_worker_medians": [
+            77.93807983398438,
+            77.9150390625
+          ],
+          "candidate_worker_medians": [
+            77.9040002822876,
+            77.91695833206177
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 77.92784086859433,
+          "candidate": 77.91088081757218,
+          "ratio": 1.000217685268658,
+          "baseline_worker_medians": [
+            77.9313611984253,
+            77.92432069778442
+          ],
+          "candidate_worker_medians": [
+            77.91680097579956,
+            77.90496110916138
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 77.90672044829569,
+          "candidate": 77.9004798841987,
+          "ratio": 1.0000801094435652,
+          "baseline_worker_medians": [
+            77.91216135025024,
+            77.90127992630005
+          ],
+          "candidate_worker_medians": [
+            77.90527820587158,
+            77.89568185806274
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 77.94815418070803,
+          "candidate": 77.96008106103228,
+          "ratio": 0.999847012982004,
+          "baseline_worker_medians": [
+            77.97872066497803,
+            77.91759967803955
+          ],
+          "candidate_worker_medians": [
+            77.95760154724121,
+            77.96256065368652
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 77.93895822376399,
+          "candidate": 77.91879992018639,
+          "ratio": 1.0002587091125408,
+          "baseline_worker_medians": [
+            77.92432069778442,
+            77.9535984992981
+          ],
+          "candidate_worker_medians": [
+            77.92431831359863,
+            77.91328191757202
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 77.92503973528018,
+          "candidate": 77.95608020573061,
+          "ratio": 0.9996018210463056,
+          "baseline_worker_medians": [
+            77.93744087219238,
+            77.91264057159424
+          ],
+          "candidate_worker_medians": [
+            77.95007944107056,
+            77.96208143234253
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 77.92432069778442,
+      "candidate_latency": 77.9206383228302
+    },
+    {
+      "experiment": "retained-8192",
+      "kind": "normalization",
+      "width": 512,
+      "ratio": 1.0000222350001398,
+      "ci95": [
+        0.9992255887489535,
+        1.000812487379445
+      ],
+      "quartets": [
+        {
+          "quartet": 0,
+          "baseline": 166.09571458441826,
+          "candidate": 166.0244751248187,
+          "ratio": 1.0004290901058173,
+          "baseline_worker_medians": [
+            165.9699249267578,
+            166.22159957885742
+          ],
+          "candidate_worker_medians": [
+            166.0641574859619,
+            165.98480224609375
+          ]
+        },
+        {
+          "quartet": 1,
+          "baseline": 166.08255847561276,
+          "candidate": 166.14089544154967,
+          "ratio": 0.9996488705217227,
+          "baseline_worker_medians": [
+            166.08976364135742,
+            166.07535362243652
+          ],
+          "candidate_worker_medians": [
+            166.28928184509277,
+            165.9926414489746
+          ]
+        },
+        {
+          "quartet": 2,
+          "baseline": 166.24591604898612,
+          "candidate": 166.35607099732223,
+          "ratio": 0.9993378363189529,
+          "baseline_worker_medians": [
+            166.21871948242188,
+            166.2731170654297
+          ],
+          "candidate_worker_medians": [
+            166.29568099975586,
+            166.41648292541504
+          ]
+        },
+        {
+          "quartet": 3,
+          "baseline": 166.04192147760577,
+          "candidate": 166.3394981262305,
+          "ratio": 0.998211028336764,
+          "baseline_worker_medians": [
+            166.06096267700195,
+            166.02288246154785
+          ],
+          "candidate_worker_medians": [
+            166.52591705322266,
+            166.15328788757324
+          ]
+        },
+        {
+          "quartet": 4,
+          "baseline": 166.3310429567286,
+          "candidate": 166.04583739214246,
+          "ratio": 1.001717631523111,
+          "baseline_worker_medians": [
+            166.3212776184082,
+            166.3408088684082
+          ],
+          "candidate_worker_medians": [
+            166.0476779937744,
+            166.0439968109131
+          ]
+        },
+        {
+          "quartet": 5,
+          "baseline": 166.02727884997253,
+          "candidate": 166.2195466247872,
+          "ratio": 0.9988432902223667,
+          "baseline_worker_medians": [
+            166.02319717407227,
+            166.0313606262207
+          ],
+          "candidate_worker_medians": [
+            165.9075164794922,
+            166.53216361999512
+          ]
+        },
+        {
+          "quartet": 6,
+          "baseline": 166.18370525112996,
+          "candidate": 165.92246083956573,
+          "ratio": 1.0015744969682967,
+          "baseline_worker_medians": [
+            166.04576110839844,
+            166.32176399230957
+          ],
+          "candidate_worker_medians": [
+            166.00144386291504,
+            165.84351539611816
+          ]
+        },
+        {
+          "quartet": 7,
+          "baseline": 166.1712013175659,
+          "candidate": 166.10125957116412,
+          "ratio": 1.0004210789646169,
+          "baseline_worker_medians": [
+            166.15008354187012,
+            166.19232177734375
+          ],
+          "candidate_worker_medians": [
+            166.17167472839355,
+            166.03087425231934
+          ]
+        }
+      ],
+      "result": "no stable >1% gain",
+      "baseline_latency": 166.11992359161377,
+      "candidate_latency": 166.05591773986816
+    }
+  ],
+  "protocol": "Independent native Thor sm110 run; frozen A/P sources and libraries. 8192 rows, widths32/128/256/512, normalization and unchanged first-thread controls. Eight fresh-process balanced APPA/PAAP whole quartets per workload; original seeds, correctness gates, warmups, graph/event samples retained. Whole-quartet foreign GPU invalidation. 10000 bootstrap draws seed11504, lower95%CI>1.01 useful gain; default lower95%CI>=.99. Never pool H20/5080/Thor. Screening excluded. Downloads are CPU-only; preserve load and all GPU observations."
+}

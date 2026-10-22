@@ -1,0 +1,218 @@
+[
+  {
+    "workload": "retained",
+    "kind": "normalization",
+    "width": 32,
+    "host100_median_us": 7.225600183010101,
+    "graph100_median_us": 4.696479886770248,
+    "host100_sample_cv": 0.04025184066244274,
+    "graph100_sample_cv": 0.004132775044475605
+  },
+  {
+    "workload": "retained",
+    "kind": "first-thread",
+    "width": 32,
+    "host100_median_us": 7.259359955787659,
+    "graph100_median_us": 4.4651199877262115,
+    "host100_sample_cv": 0.03605642711247809,
+    "graph100_sample_cv": 0.00921414483320891
+  },
+  {
+    "workload": "retained",
+    "kind": "normalization",
+    "width": 128,
+    "host100_median_us": 8.711360096931458,
+    "graph100_median_us": 7.282879948616028,
+    "host100_sample_cv": 0.05280142900030308,
+    "graph100_sample_cv": 0.0165128864668795
+  },
+  {
+    "workload": "retained",
+    "kind": "first-thread",
+    "width": 128,
+    "host100_median_us": 8.479520082473755,
+    "graph100_median_us": 6.1454397439956665,
+    "host100_sample_cv": 0.02366794583263956,
+    "graph100_sample_cv": 0.004374109748106438
+  },
+  {
+    "workload": "retained",
+    "kind": "normalization",
+    "width": 256,
+    "host100_median_us": 14.505599737167358,
+    "graph100_median_us": 13.302720189094543,
+    "host100_sample_cv": 0.004768487284909638,
+    "graph100_sample_cv": 0.025528892715235778
+  },
+  {
+    "workload": "retained",
+    "kind": "first-thread",
+    "width": 256,
+    "host100_median_us": 12.437600493431091,
+    "graph100_median_us": 10.695520043373108,
+    "host100_sample_cv": 0.01366156934966053,
+    "graph100_sample_cv": 0.006321554582211666
+  },
+  {
+    "workload": "retained",
+    "kind": "normalization",
+    "width": 512,
+    "host100_median_us": 28.792160749435425,
+    "graph100_median_us": 27.575039863586426,
+    "host100_sample_cv": 0.0030601247986573425,
+    "graph100_sample_cv": 0.002533119529447313
+  },
+  {
+    "workload": "retained",
+    "kind": "first-thread",
+    "width": 512,
+    "host100_median_us": 22.72704005241394,
+    "graph100_median_us": 21.727041006088257,
+    "host100_sample_cv": 0.005487056469550254,
+    "graph100_sample_cv": 0.002213920144013324
+  },
+  {
+    "workload": "integer",
+    "kind": "normalization",
+    "width": 32,
+    "host100_median_us": 23.52128028869629,
+    "graph100_median_us": 4.587679952383041,
+    "host100_sample_cv": 0.5013890765649851,
+    "graph100_sample_cv": 0.09934631926963025
+  },
+  {
+    "workload": "integer",
+    "kind": "first-thread",
+    "width": 32,
+    "host100_median_us": 7.528479993343353,
+    "graph100_median_us": 4.4227200746536255,
+    "host100_sample_cv": 0.0384608265944044,
+    "graph100_sample_cv": 0.014293268509687696
+  },
+  {
+    "workload": "integer",
+    "kind": "normalization",
+    "width": 128,
+    "host100_median_us": 8.20576012134552,
+    "graph100_median_us": 5.775520205497742,
+    "host100_sample_cv": 0.11817905548257991,
+    "graph100_sample_cv": 0.007007615335086378
+  },
+  {
+    "workload": "integer",
+    "kind": "first-thread",
+    "width": 128,
+    "host100_median_us": 7.269120216369629,
+    "graph100_median_us": 4.485760033130646,
+    "host100_sample_cv": 0.04100353647355138,
+    "graph100_sample_cv": 0.010436760013449979
+  },
+  {
+    "workload": "integer",
+    "kind": "normalization",
+    "width": 256,
+    "host100_median_us": 12.596960067749023,
+    "graph100_median_us": 11.113759875297546,
+    "host100_sample_cv": 0.2745203366144645,
+    "graph100_sample_cv": 0.004517488275890161
+  },
+  {
+    "workload": "integer",
+    "kind": "first-thread",
+    "width": 256,
+    "host100_median_us": 8.817279934883118,
+    "graph100_median_us": 7.290080189704895,
+    "host100_sample_cv": 0.057660956030744996,
+    "graph100_sample_cv": 0.004174551137514916
+  },
+  {
+    "workload": "integer",
+    "kind": "normalization",
+    "width": 512,
+    "host100_median_us": 24.659039974212646,
+    "graph100_median_us": 22.80959963798523,
+    "host100_sample_cv": 0.0012950435791907833,
+    "graph100_sample_cv": 0.006968617192957056
+  },
+  {
+    "workload": "integer",
+    "kind": "first-thread",
+    "width": 512,
+    "host100_median_us": 16.45039975643158,
+    "graph100_median_us": 14.660959839820862,
+    "host100_sample_cv": 0.017961615820574442,
+    "graph100_sample_cv": 0.004501037318202429
+  },
+  {
+    "workload": "legacy",
+    "kind": "normalization",
+    "width": 32,
+    "host100_median_us": 7.4428799748420715,
+    "graph100_median_us": 4.695360064506531,
+    "host100_sample_cv": 0.05097885574185407,
+    "graph100_sample_cv": 0.008347298006690117
+  },
+  {
+    "workload": "legacy",
+    "kind": "first-thread",
+    "width": 32,
+    "host100_median_us": 7.520959973335266,
+    "graph100_median_us": 4.4652800261974335,
+    "host100_sample_cv": 0.08653386643241974,
+    "graph100_sample_cv": 0.011820702068307765
+  },
+  {
+    "workload": "legacy",
+    "kind": "normalization",
+    "width": 128,
+    "host100_median_us": 8.489280045032501,
+    "graph100_median_us": 7.278719842433929,
+    "host100_sample_cv": 0.035916122595266525,
+    "graph100_sample_cv": 0.004905555241320074
+  },
+  {
+    "workload": "legacy",
+    "kind": "first-thread",
+    "width": 128,
+    "host100_median_us": 8.59472006559372,
+    "graph100_median_us": 6.145600080490112,
+    "host100_sample_cv": 0.3995397047311555,
+    "graph100_sample_cv": 0.03298736104814707
+  },
+  {
+    "workload": "legacy",
+    "kind": "normalization",
+    "width": 256,
+    "host100_median_us": 14.502080082893372,
+    "graph100_median_us": 13.294399976730347,
+    "host100_sample_cv": 0.003652090719267175,
+    "graph100_sample_cv": 0.002885895491139969
+  },
+  {
+    "workload": "legacy",
+    "kind": "first-thread",
+    "width": 256,
+    "host100_median_us": 12.556959986686707,
+    "graph100_median_us": 10.701280236244202,
+    "host100_sample_cv": 0.019722526170649846,
+    "graph100_sample_cv": 0.0018044654160869122
+  },
+  {
+    "workload": "legacy",
+    "kind": "normalization",
+    "width": 512,
+    "host100_median_us": 28.800159692764282,
+    "graph100_median_us": 27.583199739456177,
+    "host100_sample_cv": 0.0012614104017120414,
+    "graph100_sample_cv": 0.003967688989231533
+  },
+  {
+    "workload": "legacy",
+    "kind": "first-thread",
+    "width": 512,
+    "host100_median_us": 22.78623938560486,
+    "graph100_median_us": 21.757599115371704,
+    "host100_sample_cv": 0.007346895867061025,
+    "graph100_sample_cv": 0.005944334038049976
+  }
+]

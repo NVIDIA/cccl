@@ -1,0 +1,166 @@
+[
+  {
+    "label": "sm120-screen-retained-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/retained-A",
+      "--rows",
+      "8192",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-retained-A.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-retained-A.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py"
+  },
+  {
+    "label": "sm120-screen-retained-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/retained-P",
+      "--rows",
+      "8192",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-retained-P.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-retained-P.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_retained/benchmark.py"
+  },
+  {
+    "label": "sm120-screen-integer-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/integer-A",
+      "--rows",
+      "8192",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-integer-A.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-integer-A.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py"
+  },
+  {
+    "label": "sm120-screen-integer-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/integer-P",
+      "--rows",
+      "8192",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-integer-P.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-integer-P.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_integer/benchmark.py"
+  },
+  {
+    "label": "sm120-screen-legacy-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/legacy-A",
+      "--rows",
+      "8192",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-legacy-A.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-legacy-A.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py"
+  },
+  {
+    "label": "sm120-screen-legacy-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/legacy-P",
+      "--rows",
+      "8192",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-legacy-P.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-screen-legacy-P.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_legacy/benchmark.py"
+  },
+  {
+    "label": "sm120-accuracy-torch-order-A",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/source",
+      "--variant",
+      "baseline",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-A",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-accuracy-torch-order-A.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-accuracy-torch-order-A.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py"
+  },
+  {
+    "label": "sm120-accuracy-torch-order-P",
+    "command": [
+      "/usr/bin/python3",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/run_sm120.py",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py",
+      "--source",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/candidate",
+      "--variant",
+      "patch",
+      "--build",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/build/torch_order-P",
+      "--output",
+      "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-accuracy-torch-order-P.json"
+    ],
+    "cwd": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001",
+    "log": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/evidence/sm120-accuracy-torch-order-P.log",
+    "harness_script": "/mnt/d/0z5a/cccl-broadcast-blackwell-20261001/tools/consumer_torch_order/accuracy_probe.py"
+  }
+]
