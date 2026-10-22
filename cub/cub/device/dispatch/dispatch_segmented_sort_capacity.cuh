@@ -16,17 +16,24 @@
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/segmented_sort_capacity.cuh>
+#include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort_capacity.cuh>
+#include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+
+#include <cuda/std/cstdint>
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// Callers retain this workspace until both sorting and overflow handling finish.
+// These pointers alias caller-provided global storage. It must remain valid until
+// every operation queued on the stream has completed, as with other CUB algorithms.
 // Empty ranges are skipped; singletons use the same sorting path as other ranges.
 template <typename Capacities,
           typename BeginIterator,
@@ -102,42 +109,41 @@ CUB_RUNTIME_FUNCTION cudaError_t dispatch_partition(
   return CubDebug(DebugSyncStream(stream));
 }
 
-template <typename Entry, typename Key, typename BeginIterator, typename EndIterator, typename Compare, typename Launcher>
+template <typename Entry, typename Key, typename BeginIterator, typename EndIterator, typename Launcher>
 CUB_RUNTIME_FUNCTION cudaError_t launch_entry(
   partition_result bins,
   BeginIterator begins,
   EndIterator ends,
   const Key* in,
   Key* out,
-  Compare compare,
   int sm_count,
   cudaStream_t stream,
   Launcher launcher)
 {
-  constexpr auto kernel  = sort_entry_kernel<Entry, Key, BeginIterator, EndIterator, Compare>;
+  constexpr auto kernel  = sort_entry_kernel<Entry, Key, BeginIterator, EndIterator>;
   constexpr size_t bytes = Entry::implementation::template scratch_bytes<Key>();
-  cudaFuncAttributes attributes{};
-  if (const auto error = CubDebug(cudaFuncGetAttributes(&attributes, kernel)))
-  {
-    return error;
-  }
-  if (Entry::block_threads > attributes.maxThreadsPerBlock)
-  {
-    return cudaErrorInvalidConfiguration;
-  }
   // Explicit opt-in is required by the larger merge entries. Infeasible tunings fail.
   if (const auto error =
         CubDebug(cudaFuncSetAttribute(kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, int{bytes})))
   {
     return error;
   }
+  int occupancy = 0;
+  if (const auto error = CubDebug(launcher.MaxSmOccupancy(occupancy, kernel, Entry::tuning.block_threads, bytes)))
+  {
+    return error;
+  }
+  if (!occupancy)
+  {
+    return cudaErrorInvalidConfiguration;
+  }
   const unsigned long long blocks = static_cast<unsigned long long>(sm_count) * Entry::tuning.blocks_per_sm;
   if (blocks > 2147483647u)
   {
     return cudaErrorInvalidConfiguration;
   }
-  if (const auto error = CubDebug(launcher(static_cast<unsigned>(blocks), Entry::block_threads, bytes, stream)
-                                    .doit(kernel, bins, begins, ends, in, out, compare)))
+  if (const auto error = CubDebug(launcher(static_cast<unsigned>(blocks), Entry::tuning.block_threads, bytes, stream)
+                                    .doit(kernel, bins, begins, ends, in, out)))
   {
     return error;
   }
@@ -152,7 +158,6 @@ template <typename Plan,
           typename Key,
           typename BeginIterator,
           typename EndIterator,
-          typename Compare,
           typename Launcher,
           ::cuda::std::size_t... I>
 CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
@@ -161,7 +166,6 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
   EndIterator ends,
   const Key* in,
   Key* out,
-  Compare compare,
   cudaStream_t stream,
   Launcher launcher,
   ::cuda::std::index_sequence<I...>)
@@ -177,64 +181,95 @@ CUB_RUNTIME_FUNCTION cudaError_t launch_entries(
     if (error == cudaSuccess)
     {
       error = launch_entry<typename Plan::template entry<i>>(
-        {bins.bin_offsets + Plan::bin_begin(i), bins.segment_ids},
-        begins,
-        ends,
-        in,
-        out,
-        compare,
-        sm_count,
-        stream,
-        launcher);
+        {bins.bin_offsets + Plan::bin_begin(i), bins.segment_ids}, begins, ends, in, out, sm_count, stream, launcher);
     }
   };
   (launch(::cuda::std::integral_constant<int, I>{}), ...);
   return error;
 }
 
-// Entries selects the launch composition from the chosen tuning values.
-// Internal keys-only prototype. The caller handles the exposed overflow range
-// [bin_offsets[capacities::size], bin_offsets[capacities::size + 1]).
-// The existing DeviceSegmentedSort API and its fallback behavior are unchanged.
-template <template <typename> class Entries,
-          typename Key,
+// Empty ranges mask out all segments already owned by GroupMerge. The existing
+// CUB backend handles only overflow, without a device-to-host count transfer.
+template <int MaxCapacity, typename BeginIterator, typename EndIterator>
+struct overflow_end_offset
+{
+  BeginIterator begins;
+  EndIterator ends;
+  _CCCL_HOST_DEVICE_API auto operator()(unsigned segment) const
+  {
+    const auto begin = begins[segment];
+    const auto end   = ends[segment];
+    return end > begin && end - begin > MaxCapacity ? end : begin;
+  }
+};
+
+// Internal ascending keys-only backend. Its entry composition and policies are
+// selected here; no DeviceSegmentedSort API routes to this implementation.
+template <typename Key,
           typename BeginIterator,
           typename EndIterator,
-          typename Compare,
-          typename Selector,
           typename Launcher = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
 CUB_RUNTIME_FUNCTION cudaError_t dispatch(
   void* temp_storage,
   size_t& temp_storage_bytes,
   BeginIterator begins,
   EndIterator ends,
+  ::cuda::std::int64_t num_items,
   unsigned num_segments,
   const Key* in,
   Key* out,
-  Compare compare,
   partition_result& result,
-  cudaStream_t stream,
-  Selector selector,
-  Launcher launcher = {})
+  cudaStream_t stream = 0,
+  Launcher launcher   = {})
 {
   ::cuda::compute_capability cc{};
   if (const auto error = CubDebug(launcher.PtxComputeCap(cc)))
   {
     return error;
   }
-  return dispatch_compute_cap(selector, cc, [&](auto getter) -> cudaError_t {
-    using plan = typename Entries<decltype(getter)>::type;
+  return dispatch_compute_cap(group_merge_policy_selector<Key>{}, cc, [&](auto getter) -> cudaError_t {
+    using plan                 = typename group_merge_entries<decltype(getter)>::type;
+    constexpr int max_capacity = plan::capacities::bounds.back();
+    const auto overflow_ends   = THRUST_NS_QUALIFIER::make_transform_iterator(
+      THRUST_NS_QUALIFIER::counting_iterator<unsigned>{0},
+      overflow_end_offset<max_capacity, BeginIterator, EndIterator>{begins, ends});
+    size_t partition_bytes = 0, fallback_bytes = 0;
     if (const auto error = dispatch_partition<typename plan::capacities>(
-          temp_storage, temp_storage_bytes, begins, ends, num_segments, result, stream, launcher))
+          nullptr, partition_bytes, begins, ends, num_segments, result, stream, launcher))
     {
       return error;
     }
-    if (!temp_storage || !num_segments)
+    if (const auto error = CubDebug(DeviceSegmentedSort::SortKeys(
+          nullptr, fallback_bytes, in, out, num_items, num_segments, begins, overflow_ends, stream)))
+    {
+      return error;
+    }
+    const size_t sizes[] = {partition_bytes, fallback_bytes};
+    void* allocations[2]{};
+    if (const auto error = CubDebug(alias_temporaries(temp_storage, temp_storage_bytes, allocations, sizes)))
+    {
+      return error;
+    }
+    if (!temp_storage)
     {
       return cudaSuccess;
     }
-    return launch_entries<plan>(
-      result, begins, ends, in, out, compare, stream, launcher, ::cuda::std::make_index_sequence<plan::size>{});
+    if (const auto error = dispatch_partition<typename plan::capacities>(
+          allocations[0], partition_bytes, begins, ends, num_items ? num_segments : 0u, result, stream, launcher))
+    {
+      return error;
+    }
+    if (!num_segments || !num_items)
+    {
+      return cudaSuccess;
+    }
+    if (const auto error = launch_entries<plan>(
+          result, begins, ends, in, out, stream, launcher, ::cuda::std::make_index_sequence<plan::size>{}))
+    {
+      return error;
+    }
+    return CubDebug(DeviceSegmentedSort::SortKeys(
+      allocations[1], fallback_bytes, in, out, num_items, num_segments, begins, overflow_ends, stream));
   });
 }
 } // namespace detail::segmented_sort_capacity

@@ -20,19 +20,13 @@
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/functional>
 #include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::segmented_sort_capacity
 {
-// One selected thread/IPT pair, rather than the range described by tuning.
-struct group_merge_shape
-{
-  int threads;
-  int items_per_thread;
-};
-
 // Expansion belongs to the sorter. Configuration order must already be capacity order.
 template <typename PolicyGetter>
 struct group_merge_expansion
@@ -53,18 +47,48 @@ struct group_merge_expansion
     return count;
   }
   static constexpr int size = thread_choices() * ipt_choices;
-  _CCCL_HOST_DEVICE_API static constexpr group_merge_shape shape(int bin)
+  _CCCL_HOST_DEVICE_API static constexpr bin_config expanded_config(int bin)
   {
     return {policy.min_threads << (bin / ipt_choices), policy.min_ipt + bin % ipt_choices};
   }
   template <::cuda::std::size_t... I>
   static auto expand(::cuda::std::index_sequence<I...>)
-    -> capacity_list<(shape(I).threads * shape(I).items_per_thread)...>;
+    -> capacity_list<(expanded_config(I).threads * expanded_config(I).items_per_thread)...>;
   using capacities = decltype(expand(::cuda::std::make_index_sequence<size>{}));
+  _CCCL_HOST_DEVICE_API static constexpr bin_config select(int capacity)
+  {
+    bin_config selected{};
+    int best_capacity = 0;
+    for (int threads = policy.min_threads; threads <= policy.max_threads; threads *= 2)
+    {
+      for (int ipt = policy.min_ipt; ipt <= policy.max_ipt; ++ipt)
+      {
+        if (threads * ipt >= capacity && (!best_capacity || threads * ipt < best_capacity))
+        {
+          selected      = {threads, ipt};
+          best_capacity = threads * ipt;
+        }
+      }
+    }
+    return selected;
+  }
+  template <int Capacity>
+  struct selection
+  {
+    inline static constexpr auto chosen = select(Capacity);
+    static_assert(Capacity > 0 && chosen.threads != 0);
+    using type = bin_shape<chosen.threads, chosen.items_per_thread>;
+  };
+  template <int Capacity>
+  using config_for_capacity = typename selection<Capacity>::type;
+  template <int Bin>
+  using config_for_bin = config_for_capacity<capacities::bounds[Bin]>;
 };
 
-// Merge-path implementation from the prototype, with one runtime group size per
-// work unit. Warp work units have independent scratch and never use CTA barriers.
+// Adapted from call_group_merge_runtime_impl (sort_block_combined.cuh) and
+// merge_warp_groups_runtime (merge_warp_groups.cuh) in the LRB prototype.
+// This ascending numeric worker omits the FP-twiddle and half-presort paths.
+// Warp work units have independent scratch and never use CTA barriers.
 struct group_merge_algorithm
 {
   template <typename PolicyGetter>
@@ -96,25 +120,25 @@ struct group_merge_algorithm
       }
     }
 
-    template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator, typename Compare>
+    template <int ItemsPerThread, typename Key, typename BeginIterator, typename EndIterator>
     _CCCL_DEVICE_API static void sort_segment(
       unsigned slot,
-      group_merge_shape shape,
+      bin_config config,
       const partition_result& bins,
       BeginIterator begins,
       EndIterator ends,
       const Key* in,
       Key* out,
-      Key* scratch,
-      Compare compare)
+      Key* scratch)
     {
+      const ::cuda::std::less<Key> compare{};
       const int lane = threadIdx.x % unit_threads;
       if constexpr (is_warp)
       {
         scratch += (threadIdx.x / 32) * (32 * policy.max_ipt + 1);
       }
-      const int group_lane   = lane % shape.threads;
-      const int group_base   = (lane / shape.threads) * shape.threads * ItemsPerThread;
+      const int group_lane   = lane % config.threads;
+      const int group_base   = (lane / config.threads) * config.threads * ItemsPerThread;
       const bool active      = slot != ~0u;
       const unsigned segment = active ? bins.segment_ids[slot] : 0;
       const auto begin       = active ? begins[segment] : ::cuda::std::remove_cvref_t<decltype(begins[segment])>{};
@@ -122,7 +146,7 @@ struct group_merge_algorithm
       Key keys[ItemsPerThread];
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int local             = item * shape.threads + group_lane;
+        const int local             = item * config.threads + group_lane;
         scratch[group_base + local] = local < count ? in[begin + local] : Key{};
       }
       // SerialMerge prefetches one unused key beyond its runs.
@@ -152,7 +176,7 @@ struct group_merge_algorithm
         NullType values[ItemsPerThread];
         StableOddEvenSort(keys, values, compare);
       }
-      for (int merged_threads = 2; merged_threads <= shape.threads; merged_threads *= 2)
+      for (int merged_threads = 2; merged_threads <= config.threads; merged_threads *= 2)
       {
         sync();
         for (int item = 0; item < ItemsPerThread; ++item)
@@ -187,7 +211,7 @@ struct group_merge_algorithm
       sync();
       for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const int local = item * shape.threads + group_lane;
+        const int local = item * config.threads + group_lane;
         if (local < count)
         {
           out[begin + local] = scratch[group_base + local];
@@ -196,53 +220,52 @@ struct group_merge_algorithm
       sync();
     }
 
-    template <typename Key, typename BeginIterator, typename EndIterator, typename Compare>
+    template <typename Key, typename BeginIterator, typename EndIterator>
     _CCCL_DEVICE_API static void invoke(
       unsigned slot,
-      group_merge_shape shape,
+      bin_config config,
       const partition_result& bins,
       BeginIterator begins,
       EndIterator ends,
       const Key* in,
       Key* out,
-      Key* scratch,
-      Compare compare)
+      Key* scratch)
     {
       // Match the source workers: select a fixed register-array size with a switch.
-      switch (shape.items_per_thread)
+      switch (config.items_per_thread)
       {
         case 5:
-          sort_segment<5>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<5>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 6:
-          sort_segment<6>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<6>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 7:
-          sort_segment<7>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<7>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 8:
-          sort_segment<8>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<8>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 9:
-          sort_segment<9>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<9>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 10:
-          sort_segment<10>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<10>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 11:
-          sort_segment<11>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<11>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 12:
-          sort_segment<12>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<12>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 13:
-          sort_segment<13>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<13>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 14:
-          sort_segment<14>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<14>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         case 15:
-          sort_segment<15>(slot, shape, bins, begins, ends, in, out, scratch, compare);
+          sort_segment<15>(slot, config, bins, begins, ends, in, out, scratch);
           break;
         default:
           _CCCL_UNREACHABLE();
