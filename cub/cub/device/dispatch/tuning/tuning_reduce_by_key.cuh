@@ -20,14 +20,15 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
 
 CUB_NAMESPACE_BEGIN
 

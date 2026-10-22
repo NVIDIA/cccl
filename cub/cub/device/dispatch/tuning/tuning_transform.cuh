@@ -19,17 +19,20 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/__functional/address_stability.h>
-#include <cuda/__functional/always_true_false.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__concepts/same_as.h>
-#include <cuda/std/__fwd/format.h>
+#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
-#include <cuda/std/concepts>
-#include <cuda/std/tuple>
+
+#if __cpp_lib_format >= 201907L
+#  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__fwd/format.h> // IWYU pragma: keep
+#endif // __cpp_lib_format >= 201907L
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 

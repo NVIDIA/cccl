@@ -13,17 +13,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_segmented_radix_sort.cuh>
+#include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_sub_warp_merge_sort.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
+#include <cub/util_math.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/concepts>
+#include <cuda/std/__type_traits/void_t.h>
 
 CUB_NAMESPACE_BEGIN
 

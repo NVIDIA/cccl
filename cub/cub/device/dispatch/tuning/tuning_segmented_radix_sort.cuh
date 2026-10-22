@@ -13,11 +13,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/block_scan.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
+#include <cub/thread/thread_load.cuh>
 
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 

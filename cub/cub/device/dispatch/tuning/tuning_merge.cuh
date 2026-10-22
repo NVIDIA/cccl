@@ -13,10 +13,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
 #include <cub/block/block_store.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
-#include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_sort.cuh>
 #include <cub/util_math.cuh>
@@ -25,9 +26,11 @@
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
-#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 

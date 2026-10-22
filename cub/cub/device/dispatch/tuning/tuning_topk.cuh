@@ -17,13 +17,16 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
-#include <cub/util_device.cuh>
 
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/clamp.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/concepts>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/util_device.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 namespace detail::topk

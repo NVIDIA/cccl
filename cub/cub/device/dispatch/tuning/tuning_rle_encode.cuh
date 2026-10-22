@@ -13,8 +13,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
 #include <cub/agent/agent_reduce_by_key.cuh>
-#include <cub/agent/agent_rle.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
@@ -23,21 +24,22 @@
 #include <cub/detail/numeric_traits.cuh>
 #include <cub/device/dispatch/tuning/common.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__device/arch_traits.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__host_stdlib/ostream>
-#include <cuda/std/concepts>
+#include <cuda/std/__optional/nullopt.h>
+#include <cuda/std/__optional/optional.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/optional>
 
 CUB_NAMESPACE_BEGIN
 
