@@ -14,6 +14,7 @@ struct stream_registry_factory_t;
 #include <cuda/execution>
 #include <cuda/std/tuple>
 
+#include <algorithm>
 #include <cstdint>
 
 #include "catch2_radix_sort_helper.cuh"
@@ -362,8 +363,18 @@ CUB_TEST("Device radix sort queries storage with a mismatched runs_on capability
 {
   cuda::compute_capability cc{};
   REQUIRE(cudaSuccess == cub::detail::ptx_compute_cap(cc));
-  const auto wrong_cc =
-    cc == cuda::compute_capability{8, 0} ? cuda::compute_capability{9, 0} : cuda::compute_capability{8, 0};
+  // RunsOn has to name a compute capability this binary was compiled for. Pick one that differs from the device's.
+  constexpr auto target_ccs = cuda::__target_compute_capabilities();
+  const auto wrong_cc_it = std::find_if(target_ccs.begin(), target_ccs.end(), [&](cuda::compute_capability target_cc) {
+    return target_cc != cc;
+  });
+  if (wrong_cc_it == target_ccs.end())
+  {
+    // SKIP(); Not available until Catch2 3.3.0
+    // A single-architecture build has no other compute capability to use.
+    return;
+  }
+  const auto wrong_cc = *wrong_cc_it;
   const auto env =
     cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{wrong_cc, 1}});
   c2h::device_vector<std::int32_t> keys_in{3, 1, 2};
@@ -395,8 +406,10 @@ CUB_TEST("Device radix sort queries storage with runs_on and no device allocatio
          "[radix_sort][device][runs_on][storage-query]",
          CUB_SMALL)
 {
-  const auto cc        = GENERATE(cuda::compute_capability{7, 5}, cuda::compute_capability{9, 0});
-  const auto num_items = GENERATE(1, 100'000);
+  // RunsOn has to name a compute capability this binary was compiled for.
+  constexpr auto target_ccs = cuda::__target_compute_capabilities();
+  const auto cc             = GENERATE_COPY(from_range(target_ccs.begin(), target_ccs.end()));
+  const auto num_items      = GENERATE(1, 100'000);
   CAPTURE(num_items);
   const auto env = cuda::execution::guarantee(cub::experimental::RunsOn{cub::experimental::DeviceDescription{cc, 128}});
   // Null data pointers let this query run without allocating memory or accessing a device.
