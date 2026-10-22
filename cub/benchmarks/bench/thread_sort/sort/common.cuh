@@ -105,7 +105,12 @@ void run_benchmark(nvbench::state& state)
 
 using key_types   = nvbench::type_list<uint32_t, uint64_t>;
 using value_types = nvbench::type_list<uint32_t, uint64_t>;
-using item_counts = nvbench::enum_type_list<3, 4, 7, 8, 15, 16>;
+// TODO(fbusato):
+//
+// Find a way to restore the larger item counts. Currently these large item counts (coupled
+// with PRAGMA_UNROLL_FULL in both the sorting and cleanup code after it) result in excessive
+// compile-time.
+using item_counts = nvbench::enum_type_list<3, 4, 7, 8, 15, 16 /*, 31, 32, 63, 64 */>;
 
 // key-only sorting benchmarks
 template <sort_algorithm Algorithm, typename KeyT, int ItemsPerThread>

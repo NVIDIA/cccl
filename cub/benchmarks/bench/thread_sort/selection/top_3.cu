@@ -3,7 +3,12 @@
 
 #include "common.cuh"
 
-using item_counts = nvbench::enum_type_list<4, 7, 8, 15, 16>;
+// TODO(fbusato):
+//
+// Find a way to restore the larger item counts. Currently these large item counts (coupled
+// with PRAGMA_UNROLL_FULL in both the sorting and cleanup code after it) result in excessive
+// compile-time.
+using item_counts = nvbench::enum_type_list<4, 7, 8, 15, 16 /*, 31, 32, 63, 64 */>;
 
 template <typename KeyT, int ItemsPerThread>
 void top_3(nvbench::state& state, nvbench::type_list<KeyT, nvbench::enum_type<ItemsPerThread>>)
