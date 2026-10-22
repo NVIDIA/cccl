@@ -372,7 +372,6 @@ CUB_TEST("Device radix sort queries storage with a mismatched runs_on capability
       }
     }
     SKIP("Test requires building with more than one compute-capability");
-    return cuda::compute_capability{};
   }();
 
   CAPTURE(cc.get());
