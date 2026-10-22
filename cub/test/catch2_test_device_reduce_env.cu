@@ -10,6 +10,9 @@ struct stream_registry_factory_t;
 #include <cub/device/device_reduce.cuh>
 
 #include <thrust/device_vector.h>
+#include <thrust/functional.h>
+#include <thrust/sequence.h>
+#include <thrust/tabulate.h>
 
 #include <cuda/devices>
 #include <cuda/iterator>
@@ -276,13 +279,13 @@ CUB_TEST("Device ArgMax can be tuned", "[reduce][device]", CUB_SMALL, block_size
 
 #endif // TEST_LAUNCH != 1
 
-template <int BlockThreads>
+template <int BlockThreads, int ItemsPerThread = 1>
 struct reduce_by_key_tuning
 {
   _CCCL_HOST_DEVICE_API constexpr auto operator()(cuda::compute_capability) const -> cub::ReduceByKeyPolicy
   {
     return {cub::ReduceByKeyAlgorithm::lookback,
-            {BlockThreads, 1, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
+            {BlockThreads, ItemsPerThread, cub::BLOCK_LOAD_DIRECT, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS, {}}};
   }
 };
 
@@ -324,6 +327,45 @@ CUB_TEST("Device ReduceByKey can be tuned", "[reduce][device]", CUB_SMALL, reduc
   REQUIRE(d_unique_out == expected_keys);
   REQUIRE(d_aggregates_out == expected_aggregates);
   REQUIRE(d_block_size[0] == target_block_size);
+}
+
+// The agent's temporary storage for 32 threads x 100 items exceeds the static shared memory limit, so the kernel falls
+// back to a larger block of 64 threads, which its launch bounds must allow
+CUB_TEST_CASE("Device ReduceByKey can be tuned with a small block size that needs the fallback policy",
+              "[reduce][device]",
+              CUB_SMALL)
+{
+  constexpr int num_items = 10000;
+  constexpr int run_size  = 7;
+  constexpr int num_runs  = cuda::ceil_div(num_items, run_size);
+
+  // runs of run_size equal keys 0, 0, ..., 1, 1, ..., 2, ...; all values are 1
+  auto d_keys_in = c2h::device_vector<long long>(num_items, thrust::no_init);
+  thrust::tabulate(d_keys_in.begin(), d_keys_in.end(), thrust::placeholders::_1 / run_size);
+  auto d_values_in      = c2h::device_vector<double>(num_items, 1.0);
+  auto d_unique_out     = c2h::device_vector<long long>(num_runs, thrust::no_init);
+  auto d_aggregates_out = c2h::device_vector<double>(num_runs, thrust::no_init);
+  auto d_num_runs_out   = c2h::device_vector<int>(1, thrust::no_init);
+
+  auto env = cuda::execution::tune(reduce_by_key_tuning<32, 100>{});
+
+  device_reduce_by_key(
+    d_keys_in.begin(),
+    d_unique_out.begin(),
+    d_values_in.begin(),
+    d_aggregates_out.begin(),
+    d_num_runs_out.begin(),
+    cuda::std::plus<>{},
+    num_items,
+    env);
+
+  REQUIRE(d_num_runs_out[0] == num_runs);
+  auto expected_keys = c2h::device_vector<long long>(num_runs, thrust::no_init);
+  thrust::sequence(expected_keys.begin(), expected_keys.end());
+  auto expected_aggregates   = c2h::device_vector<double>(num_runs, run_size);
+  expected_aggregates.back() = num_items - (num_runs - 1) * run_size; // the last run is shorter
+  REQUIRE(d_unique_out == expected_keys);
+  REQUIRE(d_aggregates_out == expected_aggregates);
 }
 
 #endif // TEST_LAUNCH != 1
