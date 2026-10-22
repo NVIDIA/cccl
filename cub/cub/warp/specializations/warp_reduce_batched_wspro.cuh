@@ -17,9 +17,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/null_type.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_redux.cuh>
 
 #include <cuda/__cmath/ceil_div.h>

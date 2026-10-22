@@ -83,7 +83,7 @@ inline auto create_fake_strided_mdspan()
 #else
   const cuda::std::layout_stride::mapping map{dynamic_extents, strides};
 #endif
-  return cuda::std::mdspan<int, cuda::std::dextents<size_t, 3>, cuda::std::layout_stride>(nullptr, map);
+  return cuda::std::mdspan<int, cuda::std::dims<3>, cuda::std::layout_stride>(nullptr, map);
 };
 
 #endif // TEST_LIBCUDACXX_CCCLRT_ALGORITHM_COMMON_CUH

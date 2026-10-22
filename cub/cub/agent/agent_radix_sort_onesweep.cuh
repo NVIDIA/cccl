@@ -22,8 +22,9 @@
 #include <cub/block/block_radix_rank.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/detail/null_type.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__concepts/same_as.h>
@@ -40,7 +41,7 @@ CUB_NAMESPACE_BEGIN
  * memory. Currently applies only to writing 4B keys in full tiles; in all other cases,
  * RADIX_SORT_STORE_DIRECT is used.
  */
-enum RadixSortStoreAlgorithm
+enum RadixSortStoreAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
 {
   /** \brief Elements are statically distributed among block threads, which write them
    * into the appropriate partition in global memory. This results in fewer instructions

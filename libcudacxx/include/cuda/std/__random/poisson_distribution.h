@@ -23,16 +23,20 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/exponential_functions.h>
+#include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/roots.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__host_stdlib/istream>
+#include <cuda/std/__host_stdlib/math.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__random/generate_canonical.h>
 #include <cuda/std/__random/is_valid.h>
 #include <cuda/std/__random/normal_distribution.h>
 #include <cuda/std/__random/uniform_real_distribution.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -118,8 +122,8 @@ private:
             bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits)>
   [[nodiscard]] _CCCL_HOST_DEVICE_API static constexpr _IntT __max_representable_int_for_float() noexcept
   {
-    static_assert(::cuda::std::is_floating_point<_FloatT>::value, "must be a floating point type");
-    static_assert(::cuda::std::is_integral<_IntT>::value, "must be an integral type");
+    static_assert(::cuda::std::is_floating_point_v<_FloatT>, "must be a floating point type");
+    static_assert(::cuda::std::is_integral_v<_IntT>, "must be an integral type");
     static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
     constexpr int _bits = ::cuda::std::max(numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits, 0);
     return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _bits << _bits);

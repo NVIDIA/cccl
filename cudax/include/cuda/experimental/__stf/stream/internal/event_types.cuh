@@ -28,6 +28,7 @@
 #include <cuda/experimental/__utility/unstable_unique.cuh>
 
 #include <mutex>
+#include <tuple>
 
 namespace cuda::experimental::stf
 {
@@ -61,10 +62,11 @@ protected:
     // int(this->unique_prereq_id), cudaEvent);
     if (cudaEvent)
     {
-      cuda_safe_call(cudaEventDestroy(cudaEvent));
-
-      //            fprintf(stderr, "DESTROY EVENT %p #%d (created %d)\n", event, ++destroyed_event_cnt,
-      //            event_cnt);
+      // A destructor cannot throw: a failing destroy leaks the event and is reported.
+      ON_THROW(notify)
+      {
+        cuda_try<cudaEventDestroy>(cudaEvent);
+      };
     }
   }
 
@@ -99,9 +101,14 @@ public:
 
     // Query the context associated with a stream by using the underlying driver API
     cuda_try<cuCtxPushCurrent>(ctx);
+    // Restoring the thread's context is not a release: if it fails, everything after runs on the
+    // wrong context and fails somewhere unrelated. Report and abort.
     SCOPE(exit)
     {
-      cuda_safe_call(cuCtxPopCurrent(&ctx));
+      ON_THROW(abort)
+      {
+        ::std::ignore = cuda_try<cuCtxPopCurrent>();
+      };
     };
     const CUdevice s2_dev = cuda_try<cuCtxGetDevice>();
 
@@ -112,8 +119,11 @@ public:
       const cudaEvent_t sync_event = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
       SCOPE(exit)
       {
-        // Asynchronously destroy event to avoid a memleak
-        cuda_safe_call(cudaEventDestroy(sync_event));
+        // Asynchronously destroy the event to avoid a leak; a failing destroy leaks it and is reported.
+        ON_THROW(notify)
+        {
+          cuda_try<cudaEventDestroy>(sync_event);
+        };
       };
       cuda_try<cudaEventRecord>(sync_event, s2);
 
@@ -149,12 +159,14 @@ public:
         cudaEvent = cuda_try<cudaEventCreateWithFlags>(cudaEventDisableTiming);
         SCOPE(fail)
         {
-          cuda_safe_call(cudaEventDestroy(cudaEvent));
+          ON_THROW(notify)
+          {
+            cuda_try<cudaEventDestroy>(cudaEvent);
+          };
           cudaEvent = nullptr;
         };
-        // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
         assert(cudaEvent);
-        cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
+        cuda_try<cudaEventRecord>(cudaEvent, dstream.stream);
       };
     };
   }
@@ -425,9 +437,13 @@ private:
       CUcontext ctx      = cuda_try<cuStreamGetCtx>(stream_driver);
 
       cuda_try<cuCtxPushCurrent>(ctx);
+      // Restoring the thread's context is not a release (see above): report and abort on failure.
       SCOPE(exit)
       {
-        cuda_safe_call(cuCtxPopCurrent(&ctx));
+        ON_THROW(abort)
+        {
+          ::std::ignore = cuda_try<cuCtxPopCurrent>();
+        };
       };
       const CUdevice stream_dev = cuda_try<cuCtxGetDevice>();
 

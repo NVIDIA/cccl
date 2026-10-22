@@ -25,10 +25,12 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
+// IWYU pragma: begin_exports
 #include <cuda/std/__latch/latch.h>
 #include <cuda/std/version>
 
 // TODO: drop transitive cuda only include
 #include <cuda/__latch/latch.h>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_STD_LATCH

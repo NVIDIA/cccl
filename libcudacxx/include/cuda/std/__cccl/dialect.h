@@ -140,6 +140,12 @@
 #  define _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() 0
 #endif // ^^^ no static operator[] ^^^
 
+#if _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR()
+#  define _CCCL_STATIC_SUBSCRIPT_OPERATOR(...) static operator[](__VA_ARGS__)
+#else // ^^^ _CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^ / vvv !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() vvv
+#  define _CCCL_STATIC_SUBSCRIPT_OPERATOR(...) operator[](__VA_ARGS__) const
+#endif // ^^^ !_CCCL_HAS_STATIC_SUBSCRIPT_OPERATOR() ^^^
+
 // clang 16+, gcc 13+ and nvhpc 26.1 backport the static call operator back to c++17.
 #if __cpp_static_call_operator >= 202207L                          \
   || (_CCCL_COMPILER(CLANG, >=, 16) || _CCCL_COMPILER(GCC, >=, 13) \

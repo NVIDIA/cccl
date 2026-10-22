@@ -33,30 +33,36 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  include <cub/device/device_merge_sort.cuh>
 #  include <cub/device/device_radix_sort.cuh>
 #  include <cub/device/device_transform.cuh>
+#  include <cub/util_namespace.cuh>
+#  include <cub/util_type.cuh>
 
 _CCCL_DIAG_POP
 
 #  include <cuda/__cmath/round_up.h>
-#  include <cuda/__execution/policy.h>
 #  include <cuda/__functional/always_true_false.h>
 #  include <cuda/__functional/call_or.h>
+#  include <cuda/__runtime/api_wrapper.h>
 #  include <cuda/__stream/get_stream.h>
 #  include <cuda/__stream/stream_ref.h>
-#  include <cuda/std/__algorithm/sort.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__cstddef/types.h>
 #  include <cuda/std/__exception/cuda_error.h>
 #  include <cuda/std/__exception/exception_macros.h>
-#  include <cuda/std/__execution/env.h>
-#  include <cuda/std/__execution/policy.h>
+#  include <cuda/std/__functional/identity.h>
 #  include <cuda/std/__functional/operations.h>
+#  include <cuda/std/__fwd/execution_policy.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
+#  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__pstl/cuda/ensure_current_context.h>
 #  include <cuda/std/__pstl/cuda/temporary_storage.h>
 #  include <cuda/std/__pstl/dispatch.h>
+#  include <cuda/std/__tuple_dir/tuple.h>
 #  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/is_one_of.h>
 #  include <cuda/std/__type_traits/remove_cvref.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/climits>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -67,12 +73,12 @@ _CCCL_BEGIN_NAMESPACE_ARCH_DEPENDENT
 template <>
 struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 {
-  template <class _Tp>
+  template <class _Tp, class _Policy>
   using _DeviceRadixSort =
-    cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, cudaStream_t);
+    cudaError_t (*)(void*, size_t&, CUB_NS_QUALIFIER::DoubleBuffer<_Tp>&, size_t, int, int, const _Policy&);
 
-  template <class _Tp, class _BinaryPredicate>
-  [[nodiscard]] static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp> __select_radix_impl() noexcept
+  template <class _Tp, class _Policy, class _BinaryPredicate>
+  [[nodiscard]] static _CCCL_CONSTEVAL _DeviceRadixSort<_Tp, _Policy> __select_radix_impl() noexcept
   {
     if constexpr (__is_one_of_v<remove_cvref_t<_BinaryPredicate>, less<>, less<_Tp>>)
     {
@@ -94,7 +100,8 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
 
     CUB_NS_QUALIFIER::DoubleBuffer<_Tp> __buffer{__first, nullptr};
 
-    constexpr _DeviceRadixSort<_Tp> __device_radix_sort = __select_radix_impl<_Tp, _BinaryPredicate>();
+    constexpr _DeviceRadixSort<_Tp, _Policy> __device_radix_sort =
+      __select_radix_impl<_Tp, _Policy, _BinaryPredicate>();
 
     // Determine temporary device storage requirements for device_sort
     size_t __num_bytes = 0;
@@ -107,7 +114,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
       __count,
       0,
       static_cast<int>(sizeof(_Tp) * CHAR_BIT),
-      __stream.get());
+      __policy);
 
     {
       __temporary_storage<_Tp> __storage{__policy, __num_bytes, ::cuda::round_up(__count, 128)};
@@ -123,7 +130,7 @@ struct __pstl_dispatch<__pstl_algorithm::__sort, __execution_backend::__cuda>
         __count,
         0,
         static_cast<int>(sizeof(_Tp) * CHAR_BIT),
-        __stream.get());
+        __policy);
 
       // Need to copy the memory back
       if (__buffer.selector != 0)

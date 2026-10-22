@@ -109,6 +109,37 @@ CUB_TEST("Device reduce handles vectorized 16-bit input", "[reduce][device]", CU
   REQUIRE(output[0] == num_items);
 }
 
+CUB_TEST("Device ArgMin and ArgMax compare input values before conversion", "[reduce][device]", CUB_SMALL)
+{
+  using input_t  = float;
+  using output_t = int;
+  using index_t  = cuda::std::int64_t;
+
+  SECTION("ArgMin")
+  {
+    c2h::device_vector<input_t> input{1.9f, 1.2f};
+    c2h::device_vector<output_t> output(1, thrust::no_init);
+    c2h::device_vector<index_t> index(1, thrust::no_init);
+
+    device_arg_min(input.data(), output.data(), index.data(), static_cast<int>(input.size()));
+
+    REQUIRE(output[0] == 1);
+    REQUIRE(index[0] == 1);
+  }
+
+  SECTION("ArgMax")
+  {
+    c2h::device_vector<input_t> input{1.2f, 1.9f};
+    c2h::device_vector<output_t> output(1, thrust::no_init);
+    c2h::device_vector<index_t> index(1, thrust::no_init);
+
+    device_arg_max(input.data(), output.data(), index.data(), static_cast<int>(input.size()));
+
+    REQUIRE(output[0] == 1);
+    REQUIRE(index[0] == 1);
+  }
+}
+
 CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", CUB_SMALL, full_type_list)
 {
   using params   = params_t<TestType>;

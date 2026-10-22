@@ -25,13 +25,11 @@
 
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
-#  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__memory/pointer_traits.h>
 #  include <cuda/std/__type_traits/is_const.h>
 #  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__type_traits/maybe_const.h>
 #  include <cuda/std/__type_traits/remove_const.h>
-#  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
 

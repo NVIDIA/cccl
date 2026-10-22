@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+// IWYU pragma: begin_exports
 #include <cuda/__type_traits/is_bitwise_comparable.h>
 #include <cuda/__type_traits/is_floating_point.h>
 #include <cuda/__type_traits/is_trivially_copyable.h>
@@ -29,5 +30,6 @@
 #include <cuda/__type_traits/vector_size.h>
 #include <cuda/__type_traits/vector_type.h>
 #include <cuda/std/type_traits>
+// IWYU pragma: end_exports
 
 #endif // _CUDA_TYPE_TRAITS_
