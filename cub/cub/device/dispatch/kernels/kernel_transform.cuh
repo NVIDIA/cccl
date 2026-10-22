@@ -998,7 +998,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
     && ::cuda::is_trivially_copyable_v<output_t>
     // add_lvalue_reference_t instead of output_t& to handle output_t being void
     && ::cuda::std::is_trivially_assignable_v<::cuda::std::add_lvalue_reference_t<output_t>,
-                                              ::cuda::std::invoke_result_t<F, InTs&...>>
+                                              ::cuda::std::invoke_result_t<F&, InTs&...>>
     && ::cuda::is_power_of_two(out_size) && (... && ::cuda::is_power_of_two(int{sizeof(InTs)}));
 
   [[maybe_unused]] bool can_vectorize = false;
