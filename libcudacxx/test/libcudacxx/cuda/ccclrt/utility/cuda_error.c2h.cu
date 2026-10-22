@@ -94,8 +94,7 @@ C2H_TEST("cuda_error: a driver status is kept exactly and still reads as a runti
   REQUIRE(error.status<CUresult>() == CUDA_ERROR_NOT_READY);
   // The numeric view the runtime wrappers have always produced for driver failures.
   REQUIRE(error.status() == cudaErrorNotReady);
-  REQUIRE(error.status_type_name().find("cudaError_enum") != cuda::std::string_view::npos); // CUresult is a typedef
-                                                                                            // of enum cudaError_enum
+  REQUIRE(error.status_type_name() == "CUresult");
   REQUIRE(std::string(error.what()).find("still running") != std::string::npos);
 }
 

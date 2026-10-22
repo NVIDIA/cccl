@@ -208,6 +208,12 @@ class cuda_error : public ::std::runtime_error
     {
       return "cudaError_t"; // one spelling for the runtime family, with or without the toolkit
     }
+#  if _CCCL_HAS_CTK()
+    else if constexpr (::cuda::std::is_same_v<_Status, ::CUresult>)
+    {
+      return "CUresult"; // the pretty name would be the enum's tag, cudaError_enum
+    }
+#  endif // _CCCL_HAS_CTK()
     else
     {
       return ::cuda::std::__pretty_nameof<_Status>();
