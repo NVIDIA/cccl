@@ -94,6 +94,11 @@ struct std::formatter<CUB_NS_QUALIFIER::ScanAlgorithm, CharT> : formatter<const 
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::scan
+{
+inline constexpr int lookback_default_tiles_per_batch = 65536;
+} // namespace detail::scan
+
 //! The tuning policy for the lookback scan algorithm in @ref DeviceScan.
 struct ScanLookbackPolicy
 {
@@ -104,7 +109,7 @@ struct ScanLookbackPolicy
   BlockStoreAlgorithm store_algorithm; //!< The @ref BlockStoreAlgorithm used for storing items to global memory
   BlockScanAlgorithm scan_algorithm; //!< The @ref BlockScanAlgorithm used for scanning within a thread block
   LookbackDelayPolicy lookback_delay; //!< The policy configuring the delay used in decoupled lookback
-  int tiles_per_batch = 0; //!< Number of tiles in a deferred scan batch; 0 selects the default of 65,536
+  int tiles_per_batch = detail::scan::lookback_default_tiles_per_batch; //!< Number of tiles in a deferred scan batch
 
   [[nodiscard]] _CCCL_HOST_DEVICE_API friend constexpr bool
   operator==(const ScanLookbackPolicy& lhs, const ScanLookbackPolicy& rhs) noexcept
@@ -726,14 +731,6 @@ template <typename T>
 concept scan_policy_selector = policy_selector<T, ScanPolicy>;
 #endif // _CCCL_HAS_CONCEPTS()
 
-inline constexpr int lookback_default_tiles_per_batch = 65536;
-
-// Policies predating batched scans leave tiles_per_batch at zero.
-[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr int get_tiles_per_batch(const ScanLookbackPolicy& policy)
-{
-  return policy.tiles_per_batch == 0 ? lookback_default_tiles_per_batch : policy.tiles_per_batch;
-}
-
 _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   int nominal_4b_threads_per_block,
   int nominal_4b_items_per_thread,
@@ -743,7 +740,7 @@ _CCCL_HOST_DEVICE_API constexpr auto make_mem_scaled_lookback_scan_policy(
   BlockStoreAlgorithm store_algorithm,
   BlockScanAlgorithm scan_algorithm,
   LookbackDelayPolicy delay_constructor = {LookbackDelayAlgorithm::fixed_delay, 350, 450},
-  int tiles_per_batch                   = 0) -> ScanPolicy
+  int tiles_per_batch                   = lookback_default_tiles_per_batch) -> ScanPolicy
 {
   const auto scaled = scale_mem_bound(nominal_4b_threads_per_block, nominal_4b_items_per_thread, compute_t_size);
   return ScanPolicy{
@@ -1581,12 +1578,7 @@ struct policy_selector
       }
     }
 
-    auto policy = get_lookback_scan_policy(cc);
-    if (is_deferred && policy.lookback.tiles_per_batch == 0)
-    {
-      policy.lookback.tiles_per_batch = lookback_default_tiles_per_batch;
-    }
-    return policy;
+    return get_lookback_scan_policy(cc);
   }
 };
 

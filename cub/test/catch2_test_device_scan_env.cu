@@ -621,7 +621,7 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
     cub::LookbackDelayPolicy{cub::LookbackDelayAlgorithm::fixed_delay, 832, 1165}};
   constexpr auto p1_la = cub::ScanLookaheadPolicy{3, 8, 4, 2};
   constexpr auto p1    = cub::ScanPolicy{cub::ScanAlgorithm::lookback, p1_lb, p1_la};
-  STATIC_REQUIRE(p1_lb.tiles_per_batch == 0);
+  STATIC_REQUIRE(p1_lb.tiles_per_batch == 65536);
   constexpr auto custom_batch = [](auto p) {
     p.tiles_per_batch = 17;
     return p;
@@ -671,7 +671,7 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
              ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
              ", .store_algorithm = BLOCK_STORE_DIRECT, .scan_algorithm = BLOCK_SCAN_RAKING"
              ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-             ", .delay = 832, .l2_write_latency = 1165 }, .tiles_per_batch = 0 }");
+             ", .delay = 832, .l2_write_latency = 1165 }, .tiles_per_batch = 65536 }");
   REQUIRE(to_string(p1_la)
           == "ScanLookaheadPolicy { .reduce_and_scan_warps = 3, .items_per_thread = 8"
              ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1 }");
@@ -682,7 +682,7 @@ CUB_TEST("Test ScanPolicy properties", "[scan][device]", CUB_SMALL)
        ", .load_algorithm = BLOCK_LOAD_DIRECT, .load_modifier = LOAD_DEFAULT"
        ", .store_algorithm = BLOCK_STORE_DIRECT, .scan_algorithm = BLOCK_SCAN_RAKING"
        ", .lookback_delay = LookbackDelayPolicy { .kind = LookbackDelayAlgorithm::fixed_delay"
-       ", .delay = 832, .l2_write_latency = 1165 }, .tiles_per_batch = 0 }"
+       ", .delay = 832, .l2_write_latency = 1165 }, .tiles_per_batch = 65536 }"
        ", .lookahead = ScanLookaheadPolicy { .reduce_and_scan_warps = 3, .items_per_thread = 8"
        ", .lookahead_items_per_thread = 4, .lookahead_stages = 2, .block_idx_stages = -1 } }");
 }

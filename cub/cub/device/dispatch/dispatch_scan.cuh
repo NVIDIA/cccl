@@ -974,7 +974,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_batched_loo
   KernelLauncherFactory launcher_factory)
 {
   constexpr ScanLookbackPolicy policy = policy_getter().lookback;
-  constexpr int tiles_per_batch       = get_tiles_per_batch(policy);
+  constexpr int tiles_per_batch       = policy.tiles_per_batch;
   auto tile_state                     = kernel_source.TileState();
 
   // Specify temporary storage requirements for the reusable tile states and batch state
@@ -1081,8 +1081,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
     active_policy.items_per_thread >= 1, "Lookback scan policy must have at least 1 item per thread");
   CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.load_modifier != CacheLoadModifier::LOAD_LDG,
                                "The memory consistency model does not apply to texture accesses");
-  CUB_DETAIL_STATIC_ISH_ASSERT(
-    active_policy.tiles_per_batch >= 0, "Lookback scan batch size must be nonnegative (0 selects the default)");
+  CUB_DETAIL_STATIC_ISH_ASSERT(active_policy.tiles_per_batch > 0, "Lookback scan batch size must be positive");
   CUB_DETAIL_STATIC_ISH_ASSERT(
     active_policy.tiles_per_batch <= ::cuda::std::numeric_limits<int>::max() - detail::warp_threads,
     "Lookback scan batch size must leave room for tile-state padding");
@@ -1093,7 +1092,7 @@ CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t invoke_lookback(
                                           static_cast<::cuda::std::uint64_t>(tile_size));
   if constexpr (::cuda::args::__is_deferred_v<NumItemsT>)
   {
-    if (max_tiles > static_cast<::cuda::std::uint64_t>(get_tiles_per_batch(active_policy)))
+    if (max_tiles > static_cast<::cuda::std::uint64_t>(active_policy.tiles_per_batch))
     {
       return invoke_batched_lookback(
         policy_getter,

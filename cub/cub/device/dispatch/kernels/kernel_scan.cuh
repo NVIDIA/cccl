@@ -163,7 +163,7 @@ template <typename PolicySelector, typename ScanTileState, typename AccumT>
 _CCCL_KERNEL_ATTRIBUTES
 __launch_bounds__(128) void DeviceScanBatchInitKernel(ScanTileState tile_state, scan_batch_state<AccumT>* batch_state)
 {
-  constexpr int tiles_per_batch = get_tiles_per_batch(current_policy<PolicySelector>().lookback);
+  constexpr int tiles_per_batch = current_policy<PolicySelector>().lookback.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   _CCCL_PDL_GRID_DEPENDENCY_SYNC();
   _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
@@ -482,7 +482,7 @@ __launch_bounds__(device_scan_launch_bounds<PolicySelector>, 1) _CCCL_KERNEL_ATT
   const KernelNumItemsT kernel_num_items)
 {
   constexpr ScanLookbackPolicy policy = current_policy<PolicySelector>().lookback;
-  constexpr int tiles_per_batch       = get_tiles_per_batch(policy);
+  constexpr int tiles_per_batch       = policy.tiles_per_batch;
   static_assert(tiles_per_batch > 0, "Lookback scan batch size must be positive");
   // Occupancy-based grids caused sharp regressions when the delay helper switched to fences below 500 CTAs.
   // Use batch-specific adapters to retain nanosleeps while leaving other users of the delay constructors unchanged.
