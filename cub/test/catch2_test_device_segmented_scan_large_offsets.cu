@@ -12,12 +12,15 @@ struct stream_registry_factory_t;
 #include <thrust/equal.h>
 #include <thrust/fill.h>
 
+#include <cuda/atomic>
 #include <cuda/iterator>
+#include <cuda/std/algorithm>
 #include <cuda/std/cstdint>
 #include <cuda/std/execution>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_segmented_scan_schedules.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub_test_macros.h"
@@ -95,6 +98,155 @@ struct one_block_expected
     return index < long_segment_items ? static_cast<item_t>(index + 1) : item_t{1};
   }
 };
+
+__host__ __device__ void count_stray_write(unsigned long long* stray_writes)
+{
+  cuda::atomic_ref<unsigned long long, cuda::thread_scope_device>{*stray_writes}.fetch_add(
+    1, cuda::std::memory_order_relaxed);
+}
+
+// Passes a write at output position first_position + k, for k in [0, num_positions), to check_op as position k, and
+// counts every other write in *stray_writes.
+template <typename CheckOpT>
+struct bounded_write_op
+{
+  CheckOpT check_op;
+  cuda::std::int64_t first_position;
+  cuda::std::int64_t num_positions;
+  unsigned long long* stray_writes;
+
+  template <typename T>
+  __host__ __device__ void operator()(cuda::std::int64_t index, T value)
+  {
+    const cuda::std::int64_t position = index - first_position;
+    if (position >= 0 && position < num_positions)
+    {
+      check_op(position, value);
+    }
+    else
+    {
+      count_stray_write(stray_writes);
+    }
+  }
+};
+
+template <typename CheckOpT>
+bounded_write_op<CheckOpT> make_bounded_write_op(
+  CheckOpT check_op,
+  cuda::std::int64_t first_position,
+  cuda::std::int64_t num_positions,
+  unsigned long long* stray_writes)
+{
+  return bounded_write_op<CheckOpT>{check_op, first_position, num_positions, stray_writes};
+}
+
+// Every input item is 1 and the output segments are back to back from position 0; the last segment holds the
+// remainder.
+struct expected_back_to_back_ones_sum
+{
+  cuda::std::int64_t segment_items;
+  cuda::std::int64_t last_segment;
+
+  __host__ __device__ int operator()(cuda::std::int64_t position) const
+  {
+    const cuda::std::int64_t segment = cuda::std::min(position / segment_items, last_segment);
+    return static_cast<int>(position - segment * segment_items + 1);
+  }
+};
+
+// Stores a write at output position first + k, for k in {0, 1}, in slots[k], and at second + k, for k in {0, 1, 2}, in
+// slots[2 + k], and counts every other write in *stray_writes.
+struct two_window_recorder
+{
+  cuda::std::int64_t first;
+  cuda::std::int64_t second;
+  int* slots;
+  unsigned long long* stray_writes;
+
+  template <typename T>
+  __host__ __device__ void operator()(cuda::std::int64_t index, T value) const
+  {
+    if (index - first >= 0 && index - first < 2)
+    {
+      slots[index - first] = static_cast<int>(value);
+    }
+    else if (index - second >= 0 && index - second < 3)
+    {
+      slots[2 + index - second] = static_cast<int>(value);
+    }
+    else
+    {
+      count_stray_write(stray_writes);
+    }
+  }
+};
+
+// The first three segments, of two items at inputs [0, 2), two at [2, 4) and one at [4, 5), write to output positions
+// OffsetT max - 1, OffsetT min and OffsetT min + 2; the first two are adjacent modulo 2^n but 2^n - 2 positions apart,
+// and any further segment is empty. The output iterator records writes with 64-bit positions, so a store that runs on
+// from max - 1 past max lands outside the segments and is counted instead of written. The default path scans each
+// segment in its own block; with num_items alone, the segments share one block; with load balancing, one block scans
+// the range from the head of its last segment separately, so the third segment keeps the first two in one tile.
+template <typename OffsetT>
+void check_outputs_either_side_of_the_wrap(
+  const c2h::device_vector<OffsetT>& begins,
+  const c2h::device_vector<OffsetT>& ends,
+  const c2h::device_vector<OffsetT>& out_begin)
+{
+  constexpr cuda::std::int64_t first       = cuda::std::int64_t{cuda::std::numeric_limits<OffsetT>::max()} - 1;
+  constexpr cuda::std::int64_t second      = cuda::std::int64_t{cuda::std::numeric_limits<OffsetT>::min()};
+  constexpr cuda::std::int64_t total_items = 5;
+  const cuda::std::int64_t num_segments    = static_cast<cuda::std::int64_t>(begins.size());
+  const OffsetT* d_begins                  = thrust::raw_pointer_cast(begins.data());
+  const OffsetT* d_ends                    = thrust::raw_pointer_cast(ends.data());
+  const OffsetT* d_out_begin               = thrust::raw_pointer_cast(out_begin.data());
+  const auto d_in                          = cuda::counting_iterator(int{1});
+
+  c2h::device_vector<int> slots(5);
+  c2h::device_vector<unsigned long long> stray_writes(1);
+  const auto d_out = cuda::make_tabulate_output_iterator(two_window_recorder{
+    first, second, thrust::raw_pointer_cast(slots.data()), thrust::raw_pointer_cast(stray_writes.data())});
+
+  // gcc 7 ICEs when a generic lambda captures num_segments implicitly
+  const auto run = [&, num_segments](const auto& schedule_env) {
+    thrust::fill(c2h::device_policy, slots.begin(), slots.end(), -1);
+    thrust::fill(c2h::device_policy, stray_writes.begin(), stray_writes.end(), 0ull);
+    const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env, d_in, d_out, num_segments, d_begins, d_ends, d_out_begin, cuda::std::plus<>{}, cub::NullType{});
+    device_segmented_inclusive_sum(
+      d_in,
+      d_out,
+      d_begins,
+      d_ends,
+      d_out_begin,
+      num_segments,
+      cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+
+    const c2h::host_vector<int> expected = {1, 3, 3, 7, 5};
+    REQUIRE(stray_writes[0] == 0ull);
+    REQUIRE(c2h::host_vector<int>(slots) == expected);
+  };
+
+  SECTION("default")
+  {
+    run(cuda::std::execution::env{});
+  }
+
+  SECTION("with num_items")
+  {
+    run(cuda::std::execution::env{cub::segmented_scan_num_items(total_items)});
+  }
+
+  SECTION("with load balancing")
+  {
+    run(cuda::std::execution::env{cub::segmented_scan_load_balancing});
+  }
+
+  SECTION("with load balancing and num_items")
+  {
+    run(cuda::std::execution::env{cub::segmented_scan_num_items(total_items), cub::segmented_scan_load_balancing});
+  }
+}
 } // namespace
 
 // The two output segments are disjoint and cover 2^31 items, one past the int32 maximum; the inputs overlap.
@@ -142,6 +294,121 @@ try
   {
     run(cuda::std::execution::env{cub::segmented_scan_num_items(total_past_max), cub::segmented_scan_load_balancing});
   }
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
+}
+
+// The four output segments are disjoint and cover every int32 position, [-2^31, 2^31), so the total is 2^32, one
+// past the uint32_t maximum; the inputs overlap. Load balancing with 32-bit offsets requires a total below 2^32 unless
+// num_items is supplied, in which case the call takes the default path.
+CUB_TEST("Device segmented scan with load balancing and num_items handles a total of 2^32 with 32-bit offsets",
+         "[segmented][scan][device]",
+         CUB_LARGE)
+try
+{
+  constexpr offset_t segment_items             = offset_t{1} << 30;
+  constexpr cuda::std::int64_t total_items     = cuda::std::int64_t{1} << 32;
+  const c2h::device_vector<offset_t> begins    = {0, 0, 0, 0};
+  const c2h::device_vector<offset_t> ends      = {segment_items, segment_items, segment_items, segment_items};
+  const c2h::device_vector<offset_t> out_begin = {
+    cuda::std::numeric_limits<offset_t>::min(), -segment_items, 0, segment_items};
+  const offset_t* d_begins                  = thrust::raw_pointer_cast(begins.data());
+  const offset_t* d_ends                    = thrust::raw_pointer_cast(ends.data());
+  const offset_t* d_out_begin               = thrust::raw_pointer_cast(out_begin.data());
+  const auto d_in                           = cuda::constant_iterator<item_t>(item_t{1});
+  constexpr cuda::std::int64_t num_segments = 4;
+
+  c2h::device_vector<item_t> d_out(static_cast<size_t>(total_items));
+  // Output position 0 is the middle of the buffer, so position -2^31 is its first item.
+  item_t* d_out_ptr = thrust::raw_pointer_cast(d_out.data()) + total_items / 2;
+
+  const auto run = [&](const auto& schedule_env) {
+    const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env, d_in, d_out_ptr, num_segments, d_begins, d_ends, d_out_begin, cuda::std::plus<>{}, cub::NullType{});
+    thrust::fill(c2h::device_policy, d_out.begin(), d_out.end(), item_t{0});
+    device_segmented_inclusive_sum(
+      d_in,
+      d_out_ptr,
+      d_begins,
+      d_ends,
+      d_out_begin,
+      num_segments,
+      cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+    const auto expected = cuda::transform_iterator(
+      cuda::counting_iterator(cuda::std::int64_t{0}), expected_ones_sum{cuda::std::int64_t{segment_items}});
+    REQUIRE(thrust::equal(d_out.cbegin(), d_out.cend(), expected));
+  };
+
+  SECTION("default")
+  {
+    run(cuda::std::execution::env{});
+  }
+
+  SECTION("with load balancing and num_items")
+  {
+    run(cuda::std::execution::env{cub::segmented_scan_num_items(total_items), cub::segmented_scan_load_balancing});
+  }
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
+  SUCCEED("exceeding memory is not a failure");
+}
+
+// The four output segments are disjoint and cover [-2^31, 2^31], so the total is 2^32 + 1 and the last output position
+// is one past the int32 maximum; the inputs overlap. The output iterator records each write in one bit per position,
+// so no output buffer is allocated, and counts writes outside the four segments. The default path scans each segment
+// in its own block and addresses outputs by pointer addition; num_items and load balancing require every output
+// position to fit the offset type.
+CUB_TEST("Device segmented scan handles output positions past the offset maximum with 32-bit offsets",
+         "[segmented][scan][device]",
+         CUB_LARGE)
+try
+{
+  constexpr offset_t segment_items             = offset_t{1} << 30;
+  constexpr cuda::std::int64_t total_items     = (cuda::std::int64_t{1} << 32) + 1;
+  constexpr cuda::std::int64_t first_position  = cuda::std::numeric_limits<offset_t>::min();
+  const c2h::device_vector<offset_t> begins    = {0, 0, 0, 0};
+  const c2h::device_vector<offset_t> ends      = {segment_items, segment_items, segment_items, segment_items + 1};
+  const c2h::device_vector<offset_t> out_begin = {
+    cuda::std::numeric_limits<offset_t>::min(), -segment_items, 0, segment_items};
+  const offset_t* d_begins                  = thrust::raw_pointer_cast(begins.data());
+  const offset_t* d_ends                    = thrust::raw_pointer_cast(ends.data());
+  const offset_t* d_out_begin               = thrust::raw_pointer_cast(out_begin.data());
+  const auto d_in                           = cuda::constant_iterator<int>(int{1});
+  constexpr cuda::std::int64_t num_segments = 4;
+
+  c2h::device_vector<unsigned long long> stray_writes(1);
+
+  const auto run = [&](const auto& schedule_env) {
+    detail::large_problem_test_helper helper(static_cast<std::size_t>(total_items));
+    const auto expected = cuda::transform_iterator(
+      cuda::counting_iterator(cuda::std::int64_t{0}),
+      expected_back_to_back_ones_sum{cuda::std::int64_t{segment_items}, num_segments - 1});
+    const auto d_out = cuda::make_tabulate_output_iterator(make_bounded_write_op(
+      detail::make_checking_write_op(expected, thrust::raw_pointer_cast(helper.correctness_flags.data())),
+      first_position,
+      total_items,
+      thrust::raw_pointer_cast(stray_writes.data())));
+    thrust::fill(c2h::device_policy, stray_writes.begin(), stray_writes.end(), 0ull);
+    const size_t bytes = schedule_allocation_size<cub::ForceInclusive::No, false>(
+      schedule_env, d_in, d_out, num_segments, d_begins, d_ends, d_out_begin, cuda::std::plus<>{}, cub::NullType{});
+    device_segmented_inclusive_sum(
+      d_in,
+      d_out,
+      d_begins,
+      d_ends,
+      d_out_begin,
+      num_segments,
+      cuda::std::execution::env{expected_allocation_size(bytes), schedule_env});
+    REQUIRE(stray_writes[0] == 0ull);
+    helper.check_all_results_correct();
+  };
+
+  run(cuda::std::execution::env{});
 }
 catch (std::bad_alloc&)
 {
@@ -278,4 +545,39 @@ CUB_TEST("Device segmented scan handles a segment ending at the offset maximum",
 
   run(cuda::std::execution::env{});
   run(cuda::std::execution::env{cub::segmented_scan_num_items(segment_items)});
+}
+
+// The three output segments are adjacent in the offset type's wrapped order, so every output segment follows the one
+// before it.
+CUB_TEST("Device segmented scan keeps output segments either side of the offset wrap apart",
+         "[segmented][scan][device]",
+         CUB_SMALL,
+         c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t>)
+{
+  using wrap_offset_t                               = typename c2h::get<0, TestType>;
+  const c2h::device_vector<wrap_offset_t> begins    = {0, 2, 4};
+  const c2h::device_vector<wrap_offset_t> ends      = {2, 4, 5};
+  const c2h::device_vector<wrap_offset_t> out_begin = {
+    cuda::std::numeric_limits<wrap_offset_t>::max() - 1,
+    cuda::std::numeric_limits<wrap_offset_t>::min(),
+    cuda::std::numeric_limits<wrap_offset_t>::min() + 2};
+  check_outputs_either_side_of_the_wrap(begins, ends, out_begin);
+}
+
+// An empty fourth segment whose output begins elsewhere means not every output segment follows the one before it, but
+// the first two still share one tile with address deltas that are equal modulo 2^n.
+CUB_TEST("Device segmented scan keeps output segments either side of the offset wrap apart within a tile",
+         "[segmented][scan][device]",
+         CUB_SMALL,
+         c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t>)
+{
+  using wrap_offset_t                               = typename c2h::get<0, TestType>;
+  const c2h::device_vector<wrap_offset_t> begins    = {0, 2, 4, 5};
+  const c2h::device_vector<wrap_offset_t> ends      = {2, 4, 5, 5};
+  const c2h::device_vector<wrap_offset_t> out_begin = {
+    cuda::std::numeric_limits<wrap_offset_t>::max() - 1,
+    cuda::std::numeric_limits<wrap_offset_t>::min(),
+    cuda::std::numeric_limits<wrap_offset_t>::min() + 2,
+    cuda::std::numeric_limits<wrap_offset_t>::max() / 2};
+  check_outputs_either_side_of_the_wrap(begins, ends, out_begin);
 }
