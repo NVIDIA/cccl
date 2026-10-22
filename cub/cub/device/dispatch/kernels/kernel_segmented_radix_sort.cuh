@@ -255,7 +255,7 @@ __launch_bounds__(segmented_radix_sort_kernel_launch_bounds<PolicySelector, AltD
 
       if ((threads_per_block == radix_digits) || (bin_idx < radix_digits))
       {
-        temp_storage.reverse_counts_out[threadIdx.x] = bin_offset[track];
+        temp_storage.reverse_counts_out[bin_idx] = bin_offset[track];
       }
     }
 
