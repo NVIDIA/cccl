@@ -142,6 +142,7 @@ private:
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
             typename InputIteratorT,
             typename OutputIteratorT,
+            typename SegmentSizeT,
             typename ScanOpT,
             typename InitValueT,
             typename EnvT>
@@ -149,7 +150,7 @@ private:
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
     const EnvT& env)
@@ -2803,6 +2804,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -2822,20 +2826,22 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
@@ -2883,6 +2889,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
@@ -2899,18 +2908,23 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::ExclusiveSegmentedSum");
@@ -2960,6 +2974,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -2985,6 +3002,8 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -2997,14 +3016,14 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ScanOpT, typename InitValueT>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSegmentedScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
     cudaStream_t stream = nullptr)
@@ -3056,6 +3075,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -3078,6 +3100,8 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3092,6 +3116,7 @@ public:
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
+            typename SegmentSizeT,
             typename ScanOpT,
             typename InitValueT,
             typename EnvT = ::cuda::std::execution::env<>>
@@ -3099,7 +3124,7 @@ public:
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
     const EnvT& env = {})
@@ -3139,6 +3164,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @param[in] d_temp_storage
   //!   @devicestorage
   //!
@@ -3158,20 +3186,22 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedSum(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     cudaStream_t stream = nullptr)
   {
     _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedScan::InclusiveSegmentedSum");
@@ -3217,6 +3247,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam EnvT
   //!   **[inferred]** Execution environment type. Default is ``cuda::std::execution::env<>``.
   //!
@@ -3233,18 +3266,23 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] env
   //!   @rst
   //!   **[optional]** Execution environment. Default is ``cuda::std::execution::env{}``.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename EnvT = ::cuda::std::execution::env<>>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename SegmentSizeT,
+            typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedSum(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     const EnvT& env = {})
   {
     _CCCL_NVTX_RANGE_SCOPE("cub::DeviceSegmentedScan::InclusiveSegmentedSum");
@@ -3284,6 +3322,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -3306,6 +3347,8 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3315,14 +3358,14 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ScanOpT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScan(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     cudaStream_t stream = nullptr)
   {
@@ -3364,6 +3407,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -3383,6 +3429,8 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3394,13 +3442,14 @@ public:
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
+            typename SegmentSizeT,
             typename ScanOpT,
             typename EnvT = ::cuda::std::execution::env<>>
   [[nodiscard]] CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScan(
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     const EnvT& env = {})
   {
@@ -3443,6 +3492,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -3468,6 +3520,8 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3480,14 +3534,14 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename SegmentSizeT, typename ScanOpT, typename InitValueT>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSegmentedScanInit(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
     cudaStream_t stream = nullptr)
@@ -3542,6 +3596,9 @@ public:
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing segmented scan outputs @iterator
   //!
+  //! @tparam SegmentSizeT
+  //!   **[inferred]** Integral type or ``cuda::args`` annotation of the segment size
+  //!
   //! @tparam ScanOpT
   //!   **[inferred]** Binary associative scan functor type having member `T operator()(const T &a, const T &b)`
   //!
@@ -3564,6 +3621,8 @@ public:
   //!   @rst
   //!   The number of items in each segment. The \ *i*\ :sup:`th` segment occupies
   //!   ``[i * segment_size, (i + 1) * segment_size)`` in both ``d_in`` and ``d_out``.
+  //!   Can be a plain integral value, ``cuda::args::immediate{n}``, or ``cuda::args::constant<N>{}``.
+  //!   Must be in ``[0, INT_MAX]``, or ``cudaErrorInvalidValue`` is returned.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -3578,6 +3637,7 @@ public:
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
+            typename SegmentSizeT,
             typename ScanOpT,
             typename InitValueT,
             typename EnvT = ::cuda::std::execution::env<>>
@@ -3585,7 +3645,7 @@ public:
     InputIteratorT d_in,
     OutputIteratorT d_out,
     ::cuda::std::int64_t num_segments,
-    int segment_size,
+    SegmentSizeT segment_size,
     ScanOpT scan_op,
     InitValueT init_value,
     const EnvT& env = {})
