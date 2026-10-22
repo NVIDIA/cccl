@@ -157,6 +157,13 @@ struct AgentRle
   static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS;
 
+  // The run detection and the warp-wide scans and exchanges require full warps and a blocked arrangement
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RleNonTrivialRunsLookbackPolicy: threads_per_block must be a multiple of the warp size (32)");
+  static_assert(AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+                "RleNonTrivialRunsLookbackPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless "
+                "items_per_thread is 1, since the run detection requires a blocked arrangement");
+
   /// Whether or not to sync after loading data
   static constexpr bool SYNC_AFTER_LOAD = (AgentRlePolicyT::LOAD_ALGORITHM != BLOCK_LOAD_DIRECT);
 

@@ -154,6 +154,16 @@ struct AgentRadixSortUpsweep
   static constexpr int LOG_COUNTER_LANES = ::cuda::std::max(0, int(RADIX_BITS) - int(LOG_PACKING_RATIO));
   static constexpr int COUNTER_LANES     = 1 << LOG_COUNTER_LANES;
 
+  // ExtractCounts() writes PACKING_RATIO digit counts per counter lane into block_counters[][RADIX_DIGITS]
+  static_assert(RADIX_BITS >= LOG_PACKING_RATIO,
+                "RadixSortUpsweepPolicy / SegmentedRadixSortPolicy / SegmentedSortRadixSortPolicy: radix_bits must "
+                "be at least 2");
+
+  // UnpackDigitCounts() and ExtractCounts() aggregate the per-thread counters in strides of full warps
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RadixSortUpsweepPolicy / SegmentedRadixSortPolicy / SegmentedSortRadixSortPolicy: threads_per_block "
+                "must be a multiple of the warp size (32)");
+
   // To prevent counter overflow, we must periodically unpack and aggregate the
   // digit counters back into registers.  Each counter lane is assigned to a
   // warp for aggregation.
@@ -163,6 +173,11 @@ struct AgentRadixSortUpsweep
   // Unroll tiles in batches without risk of counter overflow
   static constexpr int UNROLL_COUNT      = ::cuda::std::min(64, 255 / KEYS_PER_THREAD);
   static constexpr int UNROLLED_ELEMENTS = UNROLL_COUNT * TILE_ITEMS;
+
+  // Each thread must be able to bucket at least one full tile before its 8-bit digit counters may overflow
+  static_assert(UNROLL_COUNT > 0,
+                "RadixSortUpsweepPolicy / SegmentedRadixSortPolicy / SegmentedSortRadixSortPolicy: items_per_thread "
+                "must be at most 255, since digit counts are accumulated in 8-bit counters");
 
   // Input iterator wrapper type (for applying cache modifier)s
   using KeysItr = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;

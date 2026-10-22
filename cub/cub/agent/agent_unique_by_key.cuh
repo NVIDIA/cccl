@@ -22,6 +22,7 @@
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
+#include <cub/block/block_raking_layout.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/uninitialized.cuh>
@@ -122,6 +123,14 @@ struct AgentUniqueByKey
   static constexpr int BLOCK_THREADS    = AgentUniqueByKeyPolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = AgentUniqueByKeyPolicyT::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // The head flagging, scan and scatter require the items in a blocked arrangement
+  static_assert(AgentUniqueByKeyPolicyT::LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+                "UniqueByKeyPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless items_per_thread is 1, "
+                "since the selection requires a blocked arrangement");
+  static_assert(BlockRakingLayout<int, BLOCK_THREADS>::RAKING_THREADS == detail::warp_threads,
+                "UniqueByKeyPolicy: threads_per_block must be a multiple of 32 or otherwise yield a full raking warp "
+                "of 32 threads, since the decoupled look-back runs on a full warp");
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
   using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<

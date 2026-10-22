@@ -192,6 +192,17 @@ struct AgentRadixSortOnesweep
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
                 "for onesweep agent, the ranking algorithm must warp-strided key arrangement");
 
+  // The warp-striped loads and stores, the warp-aligned scatter and BlockRadixRankMatchEarlyCounts require full warps
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RadixSortPolicy: onesweep.threads_per_block must be a multiple of the warp size (32)");
+
+  // LookbackGlobal() is executed by the threads owning a digit and uses __ballot_sync() on full warps. This also
+  // ensures RADIX_DIGITS is a multiple of the warp size, which BlockRadixRankMatchEarlyCounts requires for
+  // RANK_NUM_PARTS > 1.
+  static_assert(RADIX_DIGITS % BINS_PER_THREAD == 0 && (RADIX_DIGITS / BINS_PER_THREAD) % WARP_THREADS == 0,
+                "RadixSortPolicy: the number of threads owning digits, 2^onesweep.radix_bits / "
+                "ceil(2^onesweep.radix_bits / onesweep.threads_per_block), must be a multiple of 32");
+
   using BlockRadixRankT = ::cuda::std::_If<
     RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
     BlockRadixRankMatchEarlyCounts<BLOCK_THREADS, RADIX_BITS, false, SCAN_ALGORITHM, WARP_MATCH_ATOMIC_OR, RANK_NUM_PARTS>,

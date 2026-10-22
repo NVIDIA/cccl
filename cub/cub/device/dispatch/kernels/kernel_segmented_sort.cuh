@@ -165,6 +165,11 @@ __launch_bounds__(current_policy<PolicySelector>().large_segment.threads_per_blo
     medium_policy.load_modifier,
     medium_policy.store_algorithm>;
 
+  // Medium-sized segments are sorted by the first medium_segment.threads_per_warp threads of the block
+  static_assert(large_policy.threads_per_block >= medium_policy.threads_per_warp,
+                "SegmentedSortPolicy: large_segment.threads_per_block must be at least "
+                "medium_segment.threads_per_warp");
+
   const auto segment_id = static_cast<local_segment_index_t>(blockIdx.x);
   OffsetT segment_begin = d_begin_offsets[segment_id];
   OffsetT segment_end   = d_end_offsets[segment_id];
@@ -379,6 +384,19 @@ __launch_bounds__(current_policy<PolicySelector>().small_segment.threads_per_blo
   constexpr auto segments_per_medium_block = static_cast<local_segment_index_t>(MediumPolicyT::SEGMENTS_PER_BLOCK);
 
   constexpr auto segments_per_small_block = static_cast<local_segment_index_t>(SmallPolicyT::SEGMENTS_PER_BLOCK);
+
+  // Medium and small segments are sorted by the same kernel launch, which uses small_segment.threads_per_block, and
+  // each block is split into sub-warps of threads_per_warp threads, each sorting one segment
+  static_assert(medium_policy.threads_per_block == small_policy.threads_per_block,
+                "SegmentedSortPolicy: medium_segment.threads_per_block must equal small_segment.threads_per_block");
+  static_assert(medium_policy.threads_per_block >= medium_policy.threads_per_warp
+                  && medium_policy.threads_per_block % medium_policy.threads_per_warp == 0,
+                "SegmentedSortPolicy: medium_segment.threads_per_block must be a positive multiple of "
+                "medium_segment.threads_per_warp");
+  static_assert(small_policy.threads_per_block >= small_policy.threads_per_warp
+                  && small_policy.threads_per_block % small_policy.threads_per_warp == 0,
+                "SegmentedSortPolicy: small_segment.threads_per_block must be a positive multiple of "
+                "small_segment.threads_per_warp");
 
   __shared__ union
   {

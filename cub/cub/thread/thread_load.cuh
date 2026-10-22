@@ -365,10 +365,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE detail::it_value_t<RandomAccessIterator> ThreadLo
   {
     using LoadWord              = typename UnitWord<T>::VolatileWord;
     constexpr int LOAD_MULTIPLE = sizeof(T) / sizeof(LoadWord);
-    T retval;
-    auto* words = reinterpret_cast<LoadWord*>(&retval);
+    alignas(T) LoadWord words[LOAD_MULTIPLE]; // avoid default constructing a T
     UnrolledCopy<LOAD_MULTIPLE>(reinterpret_cast<const volatile LoadWord*>(::cuda::std::to_address(itr)), words);
-    return retval;
+    return *reinterpret_cast<T*>(words);
   }
   else
   {

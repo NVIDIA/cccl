@@ -98,6 +98,11 @@ __launch_bounds__(int(AltDigitBits ? current_policy<PolicySelector>().alt_upswee
   static constexpr RadixSortDownsweepPolicy active_downsweep_policy =
     AltDigitBits ? policy.alt_downsweep : policy.downsweep;
 
+  // The digit counts written to the spine must use the digit layout the downsweep kernel of the same pass expects
+  static_assert(active_upsweep_policy.radix_bits == active_downsweep_policy.radix_bits,
+                "RadixSortPolicy: upsweep.radix_bits must equal downsweep.radix_bits and alt_upsweep.radix_bits must "
+                "equal alt_downsweep.radix_bits");
+
   static constexpr int TILE_ITEMS =
     ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
                      active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
@@ -261,6 +266,12 @@ __launch_bounds__(int(AltDigitBits ? current_policy<PolicySelector>().alt_downsw
   static constexpr RadixSortDownsweepPolicy active_downsweep_policy =
     AltDigitBits ? policy.alt_downsweep : policy.downsweep;
 
+  // The pass planning in the dispatch runs ceil(num_bits / downsweep.radix_bits) passes in total, using alternate
+  // passes to sort the excess bits. This only adds up if each alternate pass sorts at most one bit less.
+  static_assert(policy.alt_downsweep.radix_bits == policy.downsweep.radix_bits
+                  || policy.alt_downsweep.radix_bits == policy.downsweep.radix_bits - 1,
+                "RadixSortPolicy: alt_downsweep.radix_bits must equal downsweep.radix_bits or be one less");
+
   static constexpr int TILE_ITEMS =
     ::cuda::std::max(active_upsweep_policy.threads_per_block * active_upsweep_policy.items_per_thread,
                      active_downsweep_policy.threads_per_block * active_downsweep_policy.items_per_thread);
@@ -361,6 +372,11 @@ __launch_bounds__(current_policy<PolicySelector>().single_tile.threads_per_block
                    policy.single_tile.radix_bits,
                    (policy.single_tile.rank_algorithm == RADIX_RANK_MEMOIZE),
                    policy.single_tile.scan_algorithm>;
+
+  // BlockRadixSort::SortBlockedToStriped only sorts stably if the items are loaded in a blocked arrangement
+  static_assert(policy.single_tile.load_algorithm != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+                "RadixSortPolicy: single_tile.load_algorithm must not be BLOCK_LOAD_STRIPED (unless "
+                "single_tile.items_per_thread is 1), since sorting requires a blocked arrangement");
 
   // BlockLoad type (keys)
   using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, policy.single_tile.load_algorithm>;
@@ -521,7 +537,10 @@ _CCCL_KERNEL_ATTRIBUTES void __launch_bounds__(current_policy<PolicySelector>().
     const DecomposerT decomposer = {})
 {
   static constexpr RadixSortOnesweepPolicy policy = current_policy<PolicySelector>().onesweep;
-  using OnesweepPolicyT                           = detail::agent_radix_sort_onesweep_policy<
+  // The digit offsets computed by the histogram and exclusive sum kernels must use the same digits as this kernel
+  static_assert(policy.radix_bits == current_policy<PolicySelector>().histogram.radix_bits,
+                "RadixSortPolicy: onesweep.radix_bits must equal histogram.radix_bits");
+  using OnesweepPolicyT = detail::agent_radix_sort_onesweep_policy<
     0,
     0,
     void,
@@ -566,11 +585,14 @@ template <typename PolicySelector, typename OffsetT>
 _CCCL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* const d_bins)
 {
   static constexpr RadixSortExclusiveSumPolicy policy = current_policy<PolicySelector>().exclusive_sum;
-  constexpr int RADIX_BITS                            = policy.radix_bits;
-  constexpr int RADIX_DIGITS                          = 1 << RADIX_BITS;
-  constexpr int BLOCK_THREADS                         = policy.threads_per_block;
-  constexpr int BINS_PER_THREAD                       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
-  using BlockScan                                     = cub::BlockScan<OffsetT, BLOCK_THREADS>;
+  // The bins written by the histogram kernel must use the same digits as this kernel
+  static_assert(policy.radix_bits == current_policy<PolicySelector>().histogram.radix_bits,
+                "RadixSortPolicy: exclusive_sum.radix_bits must equal histogram.radix_bits");
+  constexpr int RADIX_BITS      = policy.radix_bits;
+  constexpr int RADIX_DIGITS    = 1 << RADIX_BITS;
+  constexpr int BLOCK_THREADS   = policy.threads_per_block;
+  constexpr int BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
+  using BlockScan               = cub::BlockScan<OffsetT, BLOCK_THREADS>;
   __shared__ typename BlockScan::TempStorage temp_storage;
 
   // Make sure the histograms are done

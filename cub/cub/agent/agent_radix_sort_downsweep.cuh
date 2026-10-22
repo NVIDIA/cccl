@@ -176,6 +176,24 @@ struct AgentRadixSortDownsweep
     RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
     || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
 
+  // The warp-striped loads used for the matching rank algorithms require full warps
+  static_assert(!LOAD_WARP_STRIPED || BLOCK_THREADS % warp_threads == 0,
+                "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: threads_per_block must be a multiple of "
+                "the warp size (32) when rank_algorithm is RADIX_RANK_MATCH or RADIX_RANK_MATCH_EARLY_COUNTS_*");
+
+  // The ranking of the non-matching rank algorithms is only stable for keys loaded in a blocked arrangement
+  static_assert(LOAD_WARP_STRIPED || LOAD_ALGORITHM != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+                "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: load_algorithm must not be "
+                "BLOCK_LOAD_STRIPED (unless items_per_thread is 1), since ranking requires a blocked arrangement");
+
+  // For descending sorts, BlockRadixRankMatchEarlyCounts returns the exclusive digit prefixes in reversed digit order,
+  // whereas ProcessTile() expects them in digit order (like the other rank algorithms provide)
+  static_assert(!IsDescending
+                  || (RANK_ALGORITHM != RADIX_RANK_MATCH_EARLY_COUNTS_ANY
+                      && RANK_ALGORITHM != RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR),
+                "RadixSortDownsweepPolicy / SegmentedSortRadixSortPolicy: rank_algorithm must not be "
+                "RADIX_RANK_MATCH_EARLY_COUNTS_* for descending sorts");
+
   // Input iterator wrapper type (for applying cache modifier)s
   using KeysItr   = CacheModifiedInputIterator<LOAD_MODIFIER, bit_ordered_type, OffsetT>;
   using ValuesItr = CacheModifiedInputIterator<LOAD_MODIFIER, ValueT, OffsetT>;

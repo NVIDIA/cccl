@@ -56,6 +56,11 @@ struct agent_t
   static constexpr int threads_per_block = ThreadsPerBlock; // also used for kernel launch bounds and dispatch logic
   static constexpr int items_per_tile    = ItemsPerThread * ThreadsPerBlock; // also used by dispatch logic
 
+  // The serial merge produces the items in a blocked arrangement
+  static_assert(StoreAlgorithm != BLOCK_STORE_STRIPED || ItemsPerThread == 1,
+                "MergePolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread is 1, since "
+                "the merge produces a blocked arrangement");
+
   // key and value type are taken from the first input sequence (consistent with old Thrust behavior)
   using key_type  = it_value_t<KeysIt1>;
   using item_type = it_value_t<ItemsIt1>;

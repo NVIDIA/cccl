@@ -173,6 +173,16 @@ class AgentSubWarpSort
 public:
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, cub::NullType>;
 
+  static_assert(PolicyT::WARP_THREADS <= detail::warp_threads,
+                "SegmentedSortSubWarpMergeSortPolicy: threads_per_warp must not exceed the warp size (32)");
+  // WarpMergeSort expects and produces a blocked arrangement of items
+  static_assert(PolicyT::LOAD_ALGORITHM != WARP_LOAD_STRIPED || PolicyT::ITEMS_PER_THREAD == 1,
+                "SegmentedSortSubWarpMergeSortPolicy: load_algorithm must not be WARP_LOAD_STRIPED (unless "
+                "items_per_thread is 1), since the sub-warp merge sort requires a blocked arrangement");
+  static_assert(PolicyT::STORE_ALGORITHM != WARP_STORE_STRIPED || PolicyT::ITEMS_PER_THREAD == 1,
+                "SegmentedSortSubWarpMergeSortPolicy: store_algorithm must not be WARP_STORE_STRIPED (unless "
+                "items_per_thread is 1), since the sub-warp merge sort produces a blocked arrangement");
+
   using WarpMergeSortT = WarpMergeSort<KeyT, PolicyT::ITEMS_PER_THREAD, PolicyT::WARP_THREADS, ValueT>;
 
   using KeysLoadItT  = try_make_cache_modified_iterator_t<PolicyT::LOAD_MODIFIER, const KeyT*>;

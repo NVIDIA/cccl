@@ -105,6 +105,13 @@ struct agent_batched_topk_worker_per_segment
   // -------------------------------------------------------------------------
   // Primitive Types
   // -------------------------------------------------------------------------
+  // block_topk masks invalid items of partial tiles and returns the selected items assuming a blocked arrangement
+  static_assert(active_policy.load_algorithm != BLOCK_LOAD_STRIPED || items_per_thread == 1,
+                "worker_policy: load_algorithm must not be BLOCK_LOAD_STRIPED (unless items_per_thread is 1), since "
+                "block_topk requires a blocked arrangement");
+  static_assert(active_policy.store_algorithm != BLOCK_STORE_STRIPED || items_per_thread == 1,
+                "worker_policy: store_algorithm must not be BLOCK_STORE_STRIPED (unless items_per_thread is 1), "
+                "since block_topk produces a blocked arrangement");
   using block_load_keys_t = BlockLoad<key_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
   using block_load_vals_t = BlockLoad<value_t, threads_per_block, items_per_thread, active_policy.load_algorithm>;
 

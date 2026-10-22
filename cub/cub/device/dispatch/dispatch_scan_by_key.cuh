@@ -139,6 +139,10 @@ __launch_bounds__(int(current_policy<PolicySelector>().lookback.threads_per_bloc
     const OffsetT num_items)
 {
   static constexpr ScanByKeyPolicy policy = current_policy<PolicySelector>();
+  static_assert(
+    policy.lookback.load_modifier != CacheLoadModifier::LOAD_LDG,
+    "ScanByKeyLookbackPolicy: load_modifier must not be LOAD_LDG, since the memory consistency model does not apply "
+    "to texture accesses");
 
   using scan_by_key_policy_t = agent_scan_by_key_policy<
     policy.lookback.threads_per_block,
