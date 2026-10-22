@@ -16,8 +16,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>
+
+#include <cuda/std/__type_traits/integral_constant.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -114,7 +115,7 @@ inline const error_category& cuda_category();
 /*! Specialization of \p is_error_code_enum for \p cuda::errc::errc_t
  */
 template <>
-struct is_error_code_enum<cuda::errc::errc_t> : thrust::detail::true_type
+struct is_error_code_enum<cuda::errc::errc_t> : ::cuda::std::true_type
 {};
 
 // XXX replace cuda::errc::errc_t with cuda::errc upon c++0x

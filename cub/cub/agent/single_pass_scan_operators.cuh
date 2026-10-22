@@ -20,8 +20,12 @@
 #endif // no system header
 
 #include <cub/detail/iket_support.cuh>
+#include <cub/detail/key_value_pair.cuh>
+#include <cub/detail/log2.cuh>
+#include <cub/detail/numeric_traits.cuh>
 #include <cub/detail/strong_load.cuh>
 #include <cub/detail/strong_store.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -388,7 +392,7 @@ struct exponential_backon_jitter_window_constructor_t
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
-      int prev_delay = max_delay >> 1;
+      const int prev_delay = max_delay >> 1;
       always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
       max_delay = prev_delay;
     }
@@ -757,6 +761,15 @@ public:
     StoreStatus<Order>(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
+  //! Reset the specified tile to not-yet-set, so that the descriptor can be reused.
+  _CCCL_DEVICE_API void __set_invalid(int tile_idx)
+  {
+    TxnWord value{};
+    auto* const descriptor = reinterpret_cast<TileDescriptor*>(&value);
+    descriptor->status     = StatusWord(SCAN_TILE_INVALID);
+    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, value);
+  }
+
   /**
    * Wait for the corresponding tile to become non-invalid
    */
@@ -930,6 +943,12 @@ struct ScanTileState<T, false>
     // Update tile partial value
     ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
     detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
+  }
+
+  //! Reset the specified tile to not-yet-set.
+  _CCCL_DEVICE_API void __set_invalid(int tile_idx)
+  {
+    detail::store_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INVALID));
   }
 
   /**

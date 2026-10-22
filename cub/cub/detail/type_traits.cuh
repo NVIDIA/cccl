@@ -28,33 +28,14 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
-template <typename T, typename... TArgs>
-inline constexpr bool is_one_of_v = (::cuda::std::is_same_v<T, TArgs> || ...);
-
-template <typename T, typename V, typename = void>
-struct has_binary_call_operator : ::cuda::std::false_type
-{};
-
-template <typename T, typename V>
-struct has_binary_call_operator<
-  T,
-  V,
-  ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(::cuda::std::declval<V>(), ::cuda::std::declval<V>()))>>
-    : ::cuda::std::true_type
-{};
-
 /***********************************************************************************************************************
  * Array-like type traits
  **********************************************************************************************************************/

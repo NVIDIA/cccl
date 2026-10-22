@@ -28,8 +28,6 @@
 #include <cub/device/dispatch/dispatch_copy_mdspan.cuh>
 #include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/mdspan>

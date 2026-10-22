@@ -42,8 +42,6 @@
 
 #include <nv/target>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/experimental/__execution/prologue.cuh>
 
 _CCCL_DIAG_PUSH

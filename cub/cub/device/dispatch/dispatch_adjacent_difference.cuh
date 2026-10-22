@@ -15,6 +15,7 @@
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/type_traits.cuh>
@@ -25,8 +26,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
@@ -210,7 +209,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
           "DeviceAdjacentDifferenceInitKernel", init_grid_size, 1, 1, init_block_size, 0, stream, "");
 
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
+          detail::TripleChevronFactory{}(init_grid_size, init_block_size, 0, stream)
             .doit(detail::adjacent_difference::
                     DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
                   d_input,
@@ -242,8 +241,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceAdjacentDifference"
 
       using KernelPolicySelector = detail::adjacent_difference::policy_selector_from_hub<PolicyHub>;
       error                      = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-          num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
+        detail::TripleChevronFactory{}(num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
           .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel<
                   KernelPolicySelector,
                   InputIteratorT,
@@ -395,7 +393,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     _CUB_LOG_KERNEL_LAUNCH("DeviceAdjacentDifferenceInitKernel", init_grid_size, 1, 1, init_block_size, 0, stream, "");
 
     if (const auto error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
+          launcher_factory(init_grid_size, init_block_size, 0, stream)
             .doit(detail::adjacent_difference::
                     DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, input_t, offset_t>,
                   d_input,
@@ -416,7 +414,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
     "DeviceAdjacentDifferenceDifferenceKernel", num_tiles, 1, 1, active_policy.threads_per_block, 0, stream, "");
 
   if (const auto error = CubDebug(
-        THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, active_policy.threads_per_block, 0, stream)
+        launcher_factory(num_tiles, active_policy.threads_per_block, 0, stream)
           .doit(DeviceAdjacentDifferenceDifferenceKernel<
                   policy_selector_t,
                   InputIteratorT,
