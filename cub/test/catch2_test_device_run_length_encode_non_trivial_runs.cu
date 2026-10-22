@@ -33,6 +33,9 @@ using all_types =
 
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
+// List of types to be used for num_items
+using num_items_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
+
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int64_t, std::uint32_t, std::int32_t>;
 
@@ -69,9 +72,13 @@ struct run_index_to_offset_op
   }
 };
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]", CUB_SMALL)
+CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input",
+         "[device][run_length_encode]",
+         CUB_SMALL,
+         num_items_types)
 {
-  constexpr int num_items = 0;
+  using num_items_t        = c2h::get<0, TestType>;
+  constexpr auto num_items = num_items_t{0};
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
