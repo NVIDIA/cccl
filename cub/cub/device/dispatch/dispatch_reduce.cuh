@@ -23,7 +23,6 @@
 
 #include <cub/block/block_reduce.cuh>
 #include <cub/detail/cc_dispatch.cuh>
-#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/deferred_parameter.cuh>
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
@@ -37,15 +36,14 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__device/compute_capability.h>
-#include <cuda/argument>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>

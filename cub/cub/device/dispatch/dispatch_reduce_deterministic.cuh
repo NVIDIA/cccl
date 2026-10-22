@@ -24,7 +24,6 @@
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/rfa.cuh>
-#include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/kernels/kernel_reduce_deterministic.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/util_debug.cuh>

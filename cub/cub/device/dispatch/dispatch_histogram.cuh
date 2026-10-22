@@ -45,7 +45,6 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/array>
-#include <cuda/std/tuple>
 
 #include <nv/target>
 

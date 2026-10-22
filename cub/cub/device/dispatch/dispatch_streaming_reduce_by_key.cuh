@@ -30,6 +30,7 @@
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__limits/numeric_limits.h>

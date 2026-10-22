@@ -37,6 +37,7 @@
 #include <cub/util_macro.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/__argument/argument.h>
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/__execution/determinism.h>
@@ -46,12 +47,13 @@
 #include <cuda/__iterator/strided_iterator.h>
 #include <cuda/__iterator/transform_iterator.h>
 #include <cuda/__numeric/narrow.h>
-#include <cuda/argument>
 #include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__expected/expected.h>
+#include <cuda/std/__expected/unexpected.h>
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/always_false.h>
@@ -59,7 +61,6 @@
 #include <cuda/std/__utility/cmp.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/expected>
 
 CUB_NAMESPACE_BEGIN
 

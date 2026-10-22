@@ -49,6 +49,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_same.h>

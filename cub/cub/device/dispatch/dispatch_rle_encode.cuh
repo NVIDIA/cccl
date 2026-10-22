@@ -24,7 +24,7 @@
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__device/compute_capability.h>
-#include <cuda/iterator>
+#include <cuda/__iterator/constant_iterator.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/functional>
 
