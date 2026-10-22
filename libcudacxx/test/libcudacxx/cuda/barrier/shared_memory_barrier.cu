@@ -58,7 +58,7 @@ TEST_DEVICE_FUNC void execute_on_thread_zero(Fn&& fn)
 template <class Fn0, class Fn1>
 TEST_DEVICE_FUNC void concurrent_threads_launch(Fn0 fn0, Fn1 fn1)
 {
-  REQUIRE_DEVICE(blockDim.x == 2);
+  REQUIRE(blockDim.x == 2);
 
   __syncthreads();
 
@@ -316,16 +316,16 @@ TEST_DEVICE_FUNC void test_shared_memory_barrier_choreography()
 template <cuda::thread_scope Scope>
 TEST_DEVICE_FUNC void check_success_status(const typename cuda::shared_memory_barrier<Scope>::operation_status& status)
 {
-  REQUIRE_DEVICE(status.complete());
-  REQUIRE_DEVICE(!status.has_report());
+  REQUIRE(status.complete());
+  REQUIRE(!status.has_report());
 
-  REQUIRE_DEVICE(status.get_error_count(cuda::status_source::generic_fabric) == 0);
+  REQUIRE(status.get_error_count(cuda::status_source::generic_fabric) == 0);
 
   unsigned int visited = 0;
   status.for_each_error(cuda::status_source::generic_fabric, [&](cudaFabricOpStatusInfo) {
     ++visited;
   });
-  REQUIRE_DEVICE(visited == 0);
+  REQUIRE(visited == 0);
 }
 
 template <cuda::thread_scope Scope>
@@ -349,7 +349,7 @@ template <cuda::thread_scope Scope>
 TEST_DEVICE_FUNC void test_tx_wait(cuda::shared_memory_barrier<Scope>* bar, int tx_count, int arrive_count = 1)
 {
   auto token = bar->arrive_tx(arrive_count, tx_count);
-  REQUIRE_DEVICE(!bar->test_wait(token, cuda::ignore_status));
+  REQUIRE(!bar->test_wait(token, cuda::ignore_status));
   complete_tx<Scope>(*bar, tx_count);
   bar->wait(token, cuda::ignore_status);
 
@@ -377,45 +377,45 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_memory_barrier<Scope>* bar)
   typename cuda::shared_memory_barrier<Scope>::arrival_token token;
   execute_on_thread_zero([&] {
     token = bar->arrive();
-    REQUIRE_DEVICE(!bar->test_wait(token, cuda::ignore_status));
+    REQUIRE(!bar->test_wait(token, cuda::ignore_status));
 
     auto status = bar->test_wait(token, cuda::return_status);
-    REQUIRE_DEVICE(!status.complete());
-    REQUIRE_DEVICE(!status.has_report());
+    REQUIRE(!status.complete());
+    REQUIRE(!status.has_report());
 
     // The other thread has not arrived, so every poll must return an incomplete status with no report.
     // Reassignment also checks that incomplete results can be overwritten without an inspection failure.
     for (int i = 0; i != 4; ++i)
     {
       status = bar->try_wait(token, cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_for(token, cuda::std::chrono::nanoseconds(1), cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_until(
         token, cuda::std::chrono::system_clock::now() - cuda::std::chrono::seconds(1), cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->test_wait(0, cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait(0, cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_for(0, cuda::std::chrono::nanoseconds(1), cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
 
       status = bar->try_wait_until(
         0, cuda::std::chrono::system_clock::now() - cuda::std::chrono::seconds(1), cuda::return_status);
-      REQUIRE_DEVICE(!status.complete());
-      REQUIRE_DEVICE(!status.has_report());
+      REQUIRE(!status.complete());
+      REQUIRE(!status.has_report());
     }
   });
 
@@ -427,7 +427,7 @@ TEST_DEVICE_FUNC void test_test_waits(cuda::shared_memory_barrier<Scope>* bar)
   __syncthreads();
 
   execute_on_thread_zero([&] {
-    REQUIRE_DEVICE(bar->test_wait(token, cuda::ignore_status));
+    REQUIRE(bar->test_wait(token, cuda::ignore_status));
 
     auto status = bar->test_wait(token, cuda::return_status);
     check_success_status<Scope>(status);
@@ -473,7 +473,7 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier<Scope>* bar)
   (void) bar->arrive();
   bar->wait(0, cuda::ignore_status);
 
-  REQUIRE_DEVICE(bar->test_wait(0, cuda::ignore_status));
+  REQUIRE(bar->test_wait(0, cuda::ignore_status));
 
   auto status = bar->test_wait(0, cuda::return_status);
   check_success_status<Scope>(status);
@@ -484,10 +484,10 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier<Scope>* bar)
   check_success_status<Scope>(status);
 
   bar->wait_conditional_phase(0);
-  REQUIRE_DEVICE(bar->test_wait_conditional_phase(0));
-  REQUIRE_DEVICE(bar->try_wait_conditional_phase(0));
-  REQUIRE_DEVICE(bar->try_wait_conditional_phase_for(0, cuda::std::chrono::nanoseconds(1)));
-  REQUIRE_DEVICE(
+  REQUIRE(bar->test_wait_conditional_phase(0));
+  REQUIRE(bar->try_wait_conditional_phase(0));
+  REQUIRE(bar->try_wait_conditional_phase_for(0, cuda::std::chrono::nanoseconds(1)));
+  REQUIRE(
     bar->try_wait_conditional_phase_until(0, cuda::std::chrono::system_clock::now() + cuda::std::chrono::seconds(1)));
 
   bar->arrive_and_wait(cuda::ignore_status);
@@ -499,14 +499,14 @@ TEST_DEVICE_FUNC void test_phase_waits(cuda::shared_memory_barrier<Scope>* bar)
 
   bar->arrive_and_wait(cuda::ignore_status);
 
-  REQUIRE_DEVICE(bar->try_wait_for(2, cuda::std::chrono::nanoseconds(1), cuda::ignore_status));
+  REQUIRE(bar->try_wait_for(2, cuda::std::chrono::nanoseconds(1), cuda::ignore_status));
 
   status = bar->try_wait_for(2, cuda::std::chrono::nanoseconds(1), cuda::return_status);
   check_success_status<Scope>(status);
 
   bar->arrive_and_wait(cuda::ignore_status);
 
-  REQUIRE_DEVICE(bar->try_wait_until(
+  REQUIRE(bar->try_wait_until(
     3, cuda::std::chrono::system_clock::now() + cuda::std::chrono::seconds(1), cuda::ignore_status));
 
   status =
@@ -553,13 +553,13 @@ C2H_TEST("shared_memory_barrier", "[barrier]")
   // Do not reference a kernel until the driver is known to provide the fabric status decoder device symbols.
   if (cuda::__driver::__version_below(13, 4))
   {
-    SKIP("shared_memory_barrier status inspection requires a CUDA 13.4 driver");
+    return;
   }
 
   auto device = c2h::current_device();
   if (device.attribute(cuda::device_attributes::compute_capability_major) < 9)
   {
-    SKIP("shared_memory_barrier requires SM90 or newer");
+    return;
   }
 
   cuda::stream stream{device};
@@ -576,6 +576,6 @@ C2H_TEST("shared_memory_barrier", "[barrier]")
     stream.sync();
   }
 #else // ^^^ CUDA 13.4+ ^^^ / vvv older toolkits vvv
-  SKIP("shared_memory_barrier requires CUDA Toolkit 13.4 or newer");
+  return;
 #endif // _CCCL_CUDA_COMPILATION() && !_CCCL_COMPILER(NVRTC) && _CCCL_CUDACC_AT_LEAST(13, 4)
 }
