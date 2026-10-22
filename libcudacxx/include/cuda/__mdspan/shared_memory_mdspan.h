@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/extents.h>
 #include <cuda/std/__fwd/span.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/mdspan.h>
@@ -87,11 +88,11 @@ _CCCL_DEDUCTION_GUIDE_ATTRIBUTES shared_memory_mdspan(_CArray&)
 
 template <typename _ElementType, typename _OtherIndexType, ::cuda::std::size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES shared_memory_mdspan(_ElementType*, const ::cuda::std::array<_OtherIndexType, _Size>&)
-  -> shared_memory_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::size_t, _Size>>;
+  -> shared_memory_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 template <typename _ElementType, typename _OtherIndexType, ::cuda::std::size_t _Size>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES shared_memory_mdspan(_ElementType*, ::cuda::std::span<_OtherIndexType, _Size>)
-  -> shared_memory_mdspan<_ElementType, ::cuda::std::dextents<::cuda::std::size_t, _Size>>;
+  -> shared_memory_mdspan<_ElementType, ::cuda::std::dims<_Size>>;
 
 // This one is necessary because all the constructors take `data_handle_type`s, not
 // `_ElementType*`s, and `data_handle_type` is taken from `accessor_type::data_handle_type`, which

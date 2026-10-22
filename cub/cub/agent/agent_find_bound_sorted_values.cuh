@@ -22,6 +22,7 @@
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/cstddef>
 
 CUB_NAMESPACE_BEGIN
 
@@ -194,7 +195,8 @@ struct agent_t
       }
       else
       {
-        using output_value_t     = cub::detail::non_void_value_t<OutputIt, Offset>;
+        // Match LowerBound/UpperBound when the output iterator has a void value_type.
+        using output_value_t     = cub::detail::non_void_value_t<OutputIt, ::cuda::std::ptrdiff_t>;
         const Offset bound       = range_beg + i;
         d_output[values_beg + j] = static_cast<output_value_t>(bound);
         ++j;
