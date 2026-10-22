@@ -210,6 +210,15 @@ CUB_TEST("DeviceSegmentedScan fixed-size overloads accept cuda::args segment siz
     REQUIRE(sum == c2h::host_vector<int>(output));
   }
 
+  SECTION("plain char")
+  {
+    if constexpr (segment_size <= cuda::std::numeric_limits<char>::max())
+    {
+      device_inclusive_segmented_sum(d_in, d_out, num_segments, static_cast<char>(segment_size));
+      REQUIRE(sum == c2h::host_vector<int>(output));
+    }
+  }
+
   SECTION("immediate with bounds")
   {
     const auto size = cuda::args::immediate{cuda::std::int64_t{segment_size}, cuda::args::bounds<1, 2048>()};
