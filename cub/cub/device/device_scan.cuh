@@ -147,6 +147,7 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceScan
 {
+private:
   //! @cond
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
             bool StableReductionOrder       = false,
@@ -293,6 +294,7 @@ struct DeviceScan
   }
   //! @endcond
 
+public:
   //! @name Exclusive scans
   //! @{
 
