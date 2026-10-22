@@ -85,10 +85,6 @@ private:
 
   static constexpr auto agent_policy = SegmentedScanPolicyGetterT{}().block;
 
-  // Volatile loads are never beneficial for performance and require a default constructible value type
-  static_assert(agent_policy.load_modifier != CacheLoadModifier::LOAD_VOLATILE,
-                "SegmentedScanBlockPolicy: load_modifier must not be LOAD_VOLATILE");
-
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
