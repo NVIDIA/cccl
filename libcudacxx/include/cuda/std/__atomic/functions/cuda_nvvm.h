@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__atomic/functions/cuda_nvvm_backend.h>
-#include <cuda/std/__atomic/functions/generic.h>
-#include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__type_traits/always_false.h>
-#include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__atomic/functions/cuda_nvvm_backend.h> // IWYU pragma: keep
+#include <cuda/std/__atomic/functions/generic.h> // IWYU pragma: keep
+#include <cuda/std/__bit/bit_cast.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_integral.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_signed.h> // IWYU pragma: keep
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 

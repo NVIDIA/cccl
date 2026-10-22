@@ -30,7 +30,7 @@
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__simd/abi.h>
-#include <cuda/std/__simd/basic_mask.h>
+#include <cuda/std/__simd/basic_mask.h> // IWYU pragma: keep
 #include <cuda/std/__simd/basic_vec.h>
 #include <cuda/std/__simd/concepts.h>
 #include <cuda/std/__simd/exposition.h>

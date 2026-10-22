@@ -23,11 +23,12 @@
 #include <cuda/std/__fwd/iterator.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
-#include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/__type_traits/void_t.h> // IWYU pragma: keep
 
 #if _CCCL_HOSTED()
 #  include <iterator>

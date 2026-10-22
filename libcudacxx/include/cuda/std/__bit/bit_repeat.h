@@ -29,6 +29,8 @@
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD

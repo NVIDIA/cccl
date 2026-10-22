@@ -52,13 +52,6 @@ class __interwarp_synchronizer_instance
   __interwarp_barrier_id __barrier_id_;
 
 public:
-  [[nodiscard]] _CCCL_DEVICE_API static __interwarp_synchronizer_instance invalid() noexcept
-  {
-    __interwarp_synchronizer_instance __ret{0};
-    __ret.__barrier_id_ = 0xffff'ffff;
-    return __ret;
-  }
-
   _CCCL_DEVICE_API __interwarp_synchronizer_instance(__interwarp_barrier_id __barrier_id) noexcept
       : __barrier_id_{__barrier_id}
   {
@@ -116,9 +109,10 @@ public:
     static_assert(::cuda::std::is_same_v<_Unit, warp_level> && ::cuda::std::is_same_v<_Level, block_level>,
                   "interwarp_synchronizer can be only used to group warps within a single block");
 
+    // Default construct the synchronizer instance for units that don't have a valid mapping result.
     if (!__mapping_result.is_valid())
     {
-      return __synchronizer_instance::invalid();
+      return __synchronizer_instance{0};
     }
 
     if constexpr (::cuda::std::ranges::sized_range<_RangeView>)

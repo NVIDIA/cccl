@@ -3,15 +3,24 @@ FPMP — Multi-Precision Arithmetic on Pairs of Floats
 
 An `fpmp2` value represents a number as the unevaluated sum of two IEEE-754 floats,
 `value = hi + lo`, which roughly doubles the available mantissa. The pair is stored
-directly in the object and every operation is an error-free transformation on the two
-limbs, so the extra precision comes from arithmetic the hardware already does fast rather
-than from a wider format the hardware does not have.
+directly in the object, and each operation is built from error-free transformations —
+primitives such as `two_sum` that recover the rounding error of a single hardware operation
+exactly — so the extra precision comes from arithmetic the hardware already does fast rather
+than from a wider format the hardware does not have. The exactness belongs to those
+primitives rather than to the operation composed from them: a pair addition or multiply
+carries a small error of its own, and how small is what the accuracy levels choose between.
 
 That matters in two places. Below `double`, GPUs typically have far more FP32 throughput
 than FP64, so a float pair can be both more precise than `float` and faster than native
 `double`. Above `double`, there is usually no IEEE-754 binary128 hardware at all, and a
-double pair reaches 104 mantissa bits out of FP64 operations for far less than a software
-binary128 costs.
+double pair reaches 104 mantissa bits out of ordinary FP64 operations.
+
+Which of the two applies is decided by the rate at which the part runs FP64 against FP32 —
+1:2 on B200 against 1:32 on B300 and RTX PRO 6000 Blackwell. `fp64mp2` spends FP64
+throughput, so it is the cheap route to quad-like precision where FP64 runs close to FP32,
+and a costly one where FP64 is rationed: a software binary128 is integer code and is not
+competing for the units `fp64mp2` needs. `fp32mp2` is the mirror image, and wins exactly
+where `fp64mp2` struggles.
 
 For the example set, see the [examples README](README.md).
 
@@ -126,12 +135,11 @@ The level can also be chosen per operation instead of per type, which is the poi
 accuracy-explicit functions:
 
 ```c++
-namespace cudax = cuda::experimental;
 
-using ffloat = cudax::fp32mp2_low;              // low accuracy for the bulk of the work
+using ffloat = cuda::fp32mp2_low;              // low accuracy for the bulk of the work
 ffloat a = ..., b = ...;
 
-ffloat r = cudax::add<cudax::fpmp2_accuracy::high>(a, b);   // this one step at high
+ffloat r = cuda::add<cuda::fpmp2_accuracy::high>(a, b);   // this one step at high
 ```
 
 `add`, `sub`, `mul`, `div`, `fma` and `mad` all take the level this way. The result type is
@@ -150,23 +158,19 @@ Using the types
 
 One header carries the whole interface, the transcendental math functions included.
 
-The CCCL FP component lives in `cuda::experimental` (to be promoted to `cuda::` later). The
-examples abbreviate it rather than using a using-directive:
-
-```c++
-namespace cudax = cuda::experimental;
-```
+The CCCL FP component lives in the `cuda` namespace. The examples qualify its names rather
+than using a using-directive.
 
 Two spellings then appear, and the split is deliberate. Type names and the component's own
-functions — `renormalize`, the accuracy-selecting `add<>` — carry the `cudax::` prefix,
+functions — `renormalize`, the accuracy-selecting `add<>` — carry the `cuda::` prefix,
 since they have no counterpart for `double` and so only occur in code written against the
 component to begin with. The standard-named math functions are left **unqualified** and found
 by argument-dependent lookup:
 
 ```c++
-cudax::fp64mp2 x{2.0};
+cuda::fp64mp2 x{2.0};
 auto r = sqrt(x);                  // unqualified: ADL finds the fpmp2 overload
-auto s = cudax::renormalize(x);    // component-specific: qualified
+auto s = cuda::renormalize(x);    // component-specific: qualified
 ```
 
 This is what lets an existing body of `double` code keep its call sites unchanged when the
@@ -181,8 +185,8 @@ the first thing a new user is likely to hit. A conversion **into** the pair that
 represented exactly is a narrowing conversion, and by default it must be written out:
 
 ```c++
-cudax::fp32mp2 x = 1.2345678901234567;                       // error by default
-cudax::fp32mp2 y = static_cast<cudax::fp32mp2>(1.2345678901234567);   // correct, and constexpr
+cuda::fp32mp2 x = 1.2345678901234567;                       // error by default
+cuda::fp32mp2 y = static_cast<cuda::fp32mp2>(1.2345678901234567);   // correct, and constexpr
 ```
 
 The reason is that an implicit narrowing conversion has only one place to go — the
@@ -230,8 +234,8 @@ written out, not how precisely it is done.
 Changing the accuracy tag is a separate matter, and always explicit in both directions:
 
 ```c++
-cudax::fp32mp2_low fast = ...;
-cudax::fp32mp2      safe(fast);    // explicit; renormalizes on the way
+cuda::fp32mp2_low fast = ...;
+cuda::fp32mp2      safe(fast);    // explicit; renormalizes on the way
 ```
 
 Converting **out of** `low` renormalizes. The `low` algorithms skip the closing

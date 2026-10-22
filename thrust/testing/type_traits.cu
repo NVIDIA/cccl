@@ -58,7 +58,7 @@ struct NonTriviallyCopyable
 };
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(NonTriviallyCopyable);
 
-static_assert(!::cuda::std::is_trivially_copyable<NonTriviallyCopyable>::value);
+static_assert(!::cuda::std::is_trivially_copyable_v<NonTriviallyCopyable>);
 static_assert(thrust::is_trivially_relocatable<NonTriviallyCopyable>::value);
 
 TEST_CASE("TestTriviallyRelocatable", "[type_traits]")

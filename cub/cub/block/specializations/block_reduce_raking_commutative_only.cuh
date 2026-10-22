@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cub/block/specializations/block_reduce_raking.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>

@@ -21,10 +21,8 @@
 #endif // no system header
 
 #include <cuda/std/__cstddef/types.h>
-#include <cuda/std/__format/buffer.h>
 #include <cuda/std/__format/formatter.h>
 #include <cuda/std/__fwd/format.h>
-#include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>

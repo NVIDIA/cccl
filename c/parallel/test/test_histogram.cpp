@@ -300,7 +300,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     {
       return n; // out of range
     }
-    if constexpr (::cuda::std::is_integral<level_t>::value)
+    if constexpr (::cuda::std::is_integral_v<level_t>)
     {
       // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
       return static_cast<int>(
