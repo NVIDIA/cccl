@@ -705,6 +705,9 @@ def _run_debugger(
     OSError
         If the transcript cannot be written.
     """
+    # Drop the transcript of a previous attempt, so that a failed attempt never leaves
+    # an older transcript (and its skip marker) behind.
+    args.output_log.unlink(missing_ok=True)
     try:
         completed = subprocess.run(
             debugger.command(command_file),
