@@ -112,9 +112,21 @@ reduce(const basic_vec<_Tp, _Abi>& __x,
        const type_identity_t<_Tp> __identity_element) //
   noexcept(__is_nothrow_reduction_binary_operation_v<_BinaryOperation, _Tp>)
 {
-  vec<_Tp, 1> __result{__identity_element};
+  __simd_size_type __first = 0;
+  for (; __first < __x.__size; ++__first)
+  {
+    if (__mask[__first])
+    {
+      break;
+    }
+  }
+  if (__first == __x.__size)
+  {
+    return __identity_element;
+  }
+  vec<_Tp, 1> __result{__x[__first]};
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (__simd_size_type __i = 0; __i < __x.__size; ++__i)
+  for (__simd_size_type __i = __first + 1; __i < __x.__size; ++__i)
   {
     if (__mask[__i])
     {
@@ -160,9 +172,21 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>::mask_type& __mask) noexcept
 {
-  auto __result = numeric_limits<_Tp>::max();
+  __simd_size_type __first = 0;
+  for (; __first < __x.__size; ++__first)
+  {
+    if (__mask[__first])
+    {
+      break;
+    }
+  }
+  if (__first == __x.__size)
+  {
+    return numeric_limits<_Tp>::max();
+  }
+  auto __result = __x[__first];
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (__simd_size_type __i = 0; __i < __x.__size; ++__i)
+  for (__simd_size_type __i = __first + 1; __i < __x.__size; ++__i)
   {
     if (__mask[__i])
     {
@@ -200,9 +224,21 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce_max(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>::mask_type& __mask) noexcept
 {
-  auto __result = numeric_limits<_Tp>::lowest();
+  __simd_size_type __first = 0;
+  for (; __first < __x.__size; ++__first)
+  {
+    if (__mask[__first])
+    {
+      break;
+    }
+  }
+  if (__first == __x.__size)
+  {
+    return numeric_limits<_Tp>::lowest();
+  }
+  auto __result = __x[__first];
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (__simd_size_type __i = 0; __i < __x.__size; ++__i)
+  for (__simd_size_type __i = __first + 1; __i < __x.__size; ++__i)
   {
     if (__mask[__i])
     {
