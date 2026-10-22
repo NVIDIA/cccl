@@ -24,6 +24,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN

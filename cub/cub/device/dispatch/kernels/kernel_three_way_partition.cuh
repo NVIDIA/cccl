@@ -18,6 +18,7 @@
 #include <cub/detail/delay_constructor.cuh>
 #include <cub/util_arch.cuh>
 
+#include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 
 #if _CCCL_HAS_CONCEPTS()

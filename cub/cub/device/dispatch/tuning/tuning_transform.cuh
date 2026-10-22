@@ -23,6 +23,7 @@
 #include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/array>
 
 #if __cpp_lib_format >= 201907L

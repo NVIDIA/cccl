@@ -41,6 +41,7 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstdint>

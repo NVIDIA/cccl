@@ -23,6 +23,7 @@
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__host_stdlib/ostream>
+#include <cuda/std/__type_traits/is_same.h>
 
 #if _CCCL_HAS_CONCEPTS()
 #  include <cub/util_device.cuh>

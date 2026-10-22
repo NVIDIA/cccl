@@ -29,6 +29,8 @@
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
 #  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
+
+#  include <cuda/std/__type_traits/always_false.h> // IWYU pragma: keep
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
 #include <cuda/__atomic/atomic.h>

@@ -35,6 +35,7 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__optional/optional.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstdint>
 
