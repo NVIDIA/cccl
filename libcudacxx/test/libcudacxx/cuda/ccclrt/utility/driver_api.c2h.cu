@@ -34,7 +34,7 @@ C2H_TEST("Call each driver api", "[utility]")
   // test leaves 2+ ctxs on the stack
 
   // Pushes the primary context if the stack is empty
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
 
   auto ctx = driver::__ctxGetCurrent();
   REQUIRE(ctx != nullptr);
@@ -57,7 +57,7 @@ C2H_TEST("Call each driver api", "[utility]")
   auto stream_ctx = driver::__streamGetCtx(stream);
   REQUIRE(ctx == stream_ctx);
 
-  CUDART(cudaStreamDestroy(stream));
+  REQUIRE_CUDART(cudaStreamDestroy(stream));
 
   REQUIRE(driver::__deviceGet(0) == 0);
 
@@ -82,10 +82,10 @@ C2H_TEST("Call each driver api", "[utility]")
   REQUIRE(!driver::__isPrimaryCtxActive(0));
 
   // Confirm cudart can recover
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   REQUIRE(driver::__ctxGetCurrent() == ctx);
 
-  CUDART(driver::__streamDestroyNoThrow(stream));
+  REQUIRE_CUDART(driver::__streamDestroyNoThrow(stream));
 }
 
 C2H_TEST("Driver status stores CUresult and preserves runtime conversion", "[utility]")

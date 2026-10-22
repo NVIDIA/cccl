@@ -25,8 +25,6 @@
 #include "utility.cuh"
 #include <c2h/catch2_test_helper.h>
 
-#define CUDART(call) REQUIRE((call) == cudaSuccess)
-
 TEST_FUNC constexpr bool operator==(const dim3& lhs, const dim3& rhs) noexcept
 {
   return (lhs.x == rhs.x) && (lhs.y == rhs.y) && (lhs.z == rhs.z);

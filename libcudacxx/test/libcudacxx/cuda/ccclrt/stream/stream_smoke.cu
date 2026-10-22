@@ -56,7 +56,7 @@ C2H_CCCLRT_TEST("From native handle", "[stream]")
 {
   const cuda::__ensure_current_context guard(cuda::device_ref{0});
   cudaStream_t handle;
-  CUDART(cudaStreamCreate(&handle));
+  REQUIRE_CUDART(cudaStreamCreate(&handle));
   {
     auto stream = cuda::stream::from_native_handle(handle);
 
@@ -66,7 +66,7 @@ C2H_CCCLRT_TEST("From native handle", "[stream]")
     REQUIRE(*i == 42);
     (void) stream.release();
   }
-  CUDART(cudaStreamDestroy(handle));
+  REQUIRE_CUDART(cudaStreamDestroy(handle));
 }
 
 template <typename StreamType>
@@ -146,7 +146,7 @@ C2H_CCCLRT_TEST("Stream get device", "[stream]")
 
   const cuda::__ensure_current_context guard(cuda::device_ref{*std::prev(cuda::devices.end())});
   cudaStream_t stream_handle;
-  CUDART(cudaStreamCreate(&stream_handle));
+  REQUIRE_CUDART(cudaStreamCreate(&stream_handle));
   auto stream_cudart = cuda::stream::from_native_handle(stream_handle);
   REQUIRE(stream_cudart.device() == *std::prev(cuda::devices.end()));
   auto stream_ref_cudart = cuda::stream_ref(stream_handle);

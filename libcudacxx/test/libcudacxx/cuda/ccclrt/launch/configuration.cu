@@ -205,7 +205,7 @@ auto configuration_test(
 C2H_TEST("Launch configuration", "[launch]")
 {
   cudaStream_t stream;
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   SECTION("No cluster")
   {
     configuration_test<false>(stream, 8, 64);
@@ -215,7 +215,7 @@ C2H_TEST("Launch configuration", "[launch]")
     configuration_test<true>(stream, 8, 32, 2);
   }
 
-  CUDART(cudaStreamDestroy(stream));
+  REQUIRE_CUDART(cudaStreamDestroy(stream));
   CHECK(replacementCalled);
 }
 
@@ -316,7 +316,7 @@ C2H_TEST("Queries on config", "[launch]")
   auto config = cuda::make_config(cuda::grid_dims(4), cuda::block_dims<256>(), cuda::cooperative_launch());
   test_queries_on_config(config);
   test_kernel<<<4, 256>>>(config);
-  CUDART(cudaGetLastError());
-  CUDART(cudaDeviceSynchronize());
+  REQUIRE_CUDART(cudaGetLastError());
+  REQUIRE_CUDART(cudaDeviceSynchronize());
 }
 #endif // !_CCCL_CUDA_COMPILER(CLANG)

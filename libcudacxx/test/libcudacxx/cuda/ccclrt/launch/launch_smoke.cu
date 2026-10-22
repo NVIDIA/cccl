@@ -24,7 +24,7 @@ __managed__ bool kernel_run_proof = false;
 
 void check_kernel_run(cudaStream_t stream)
 {
-  CUDART(cudaStreamSynchronize(stream));
+  REQUIRE_CUDART(cudaStreamSynchronize(stream));
   CHECK(kernel_run_proof);
   kernel_run_proof = false;
 }
@@ -133,7 +133,7 @@ struct launch_transform_to_int_convertible
     {
       // Check that the destructor runs after the kernel is launched
       // Disabled for now because we don't handle it with graphs
-      // CUDART(cudaStreamSynchronize(stream_));
+      // REQUIRE_CUDART(cudaStreamSynchronize(stream_));
       // CHECK(kernel_run_proof);
     }
 
@@ -159,7 +159,7 @@ void launch_smoke_test(cudaStream_t dst)
   // launch
   cudaStream_t stream;
 
-  CUDART(cudaStreamCreate(&stream));
+  REQUIRE_CUDART(cudaStreamCreate(&stream));
   // Spell out all overloads to make sure they compile, include a check for
   // implicit conversions
   {
@@ -261,15 +261,15 @@ C2H_CCCLRT_TEST("Launch smoke stream", "[launch]")
 
   {
     ::cuda::__ensure_current_context guard(cuda::device_ref{0});
-    CUDART(cudaStreamCreate(&stream));
+    REQUIRE_CUDART(cudaStreamCreate(&stream));
   }
 
   launch_smoke_test(stream);
 
   {
     ::cuda::__ensure_current_context guard(cuda::device_ref{0});
-    CUDART(cudaStreamSynchronize(stream));
-    CUDART(cudaStreamDestroy(stream));
+    REQUIRE_CUDART(cudaStreamSynchronize(stream));
+    REQUIRE_CUDART(cudaStreamDestroy(stream));
   }
 }
 
@@ -381,8 +381,8 @@ C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[l
   int* device_value{};
   {
     cuda::__ensure_current_context guard(explicit_device);
-    CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
-    CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
+    REQUIRE_CUDART(cudaMalloc(reinterpret_cast<void**>(&device_value), sizeof(int)));
+    REQUIRE_CUDART(cudaMemsetAsync(device_value, 0, sizeof(int), stream.get()));
   }
 
   {
@@ -396,8 +396,8 @@ C2H_CCCLRT_TEST("Launch uses the stream device when current device differs", "[l
   int value{};
   {
     cuda::__ensure_current_context guard(explicit_device);
-    CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
-    CUDART(cudaFree(device_value));
+    REQUIRE_CUDART(cudaMemcpy(&value, device_value, sizeof(int), cudaMemcpyDeviceToHost));
+    REQUIRE_CUDART(cudaFree(device_value));
   }
 
   CHECK(value == 42);
