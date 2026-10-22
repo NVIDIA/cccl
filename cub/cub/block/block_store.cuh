@@ -22,6 +22,7 @@
 #include <cub/detail/it_traits.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/uninitialized.cuh>
+#include <cub/detail/unit_word.cuh>
 #include <cub/util_ptx.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -30,7 +31,7 @@
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
-#include <cuda/std/__type_traits/is_default_constructible.h>
+#include <cuda/std/__new/device_new.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/remove_reference.h>
@@ -168,37 +169,28 @@ template <typename T, int ItemsPerThread>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ItemsPerThread])
 {
-  // Maximum CUDA vector size is 4 elements
-  static constexpr int MAX_VEC_SIZE = ::cuda::std::min(4, ItemsPerThread);
+  // Find biggest memory access word that T is a whole multiple of
+  using device_word_t              = typename UnitWord<T>::DeviceWord;
+  constexpr int total_words        = static_cast<int>(ItemsPerThread * sizeof(T) / sizeof(device_word_t));
+  constexpr int vector_size        = (total_words % 4 == 0) ? 4 : (total_words % 2 == 0) ? 2 : 1;
+  constexpr int vectors_per_thread = total_words / vector_size;
 
-  // Vector size must be a power of two and an even divisor of the items per thread
-  static constexpr int VEC_SIZE =
-    ((((MAX_VEC_SIZE - 1) & MAX_VEC_SIZE) == 0) && ((ItemsPerThread % MAX_VEC_SIZE) == 0)) ? MAX_VEC_SIZE : 1;
-
-  static constexpr int VECTORS_PER_THREAD = ItemsPerThread / VEC_SIZE;
-
-  // Vector type
-  using Vector = typename CubVector<T, VEC_SIZE>::Type;
+  using vector_t = typename CubVector<device_word_t, vector_size>::Type;
 
   // Add the alignment check to ensure the vectorized storing can proceed.
-  if (::cuda::std::is_sufficiently_aligned<alignof(Vector)>(block_ptr))
+  if (::cuda::std::is_sufficiently_aligned<alignof(vector_t)>(block_ptr))
   {
-    // Alias global pointer
-    Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
+    // Stage the items in an array of vectors of device words
+    vector_t vec_items[vectors_per_thread];
 
-    // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
-    Vector raw_vector[VECTORS_PER_THREAD];
-    T* raw_items = reinterpret_cast<T*>(raw_vector);
-
-    // Copy
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int ITEM = 0; ITEM < ItemsPerThread; ITEM++)
+    for (int i = 0; i < ItemsPerThread; i++)
     {
-      raw_items[ITEM] = items[ITEM];
+      ::new (reinterpret_cast<T*>(vec_items) + i) T(items[i]);
     }
 
     // Direct-store using vector types
-    StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+    StoreDirectBlocked(linear_tid, reinterpret_cast<vector_t*>(block_ptr), vec_items);
   }
   else
   {
@@ -850,9 +842,7 @@ public:
                     && ::cuda::std::is_same_v<detail::it_value_t<OutputIteratorT>, T>
                     // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
                     && !::cuda::std::is_volatile_v<
-                       ::cuda::std::remove_reference_t<detail::it_reference_t<OutputIteratorT>>>
-                    // needed to default construct vectors of T
-                    && ::cuda::std::is_default_constructible_v<T>)
+                       ::cuda::std::remove_reference_t<detail::it_reference_t<OutputIteratorT>>>)
       {
         StoreDirectBlockedVectorized(linear_tid, ::cuda::std::to_address(block_itr), items);
       }
