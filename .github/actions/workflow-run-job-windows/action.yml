@@ -71,13 +71,13 @@ runs:
         echo "ENVARGS=${ENVARGS}" | tee -a "${GITHUB_ENV}"
 
         # SCCACHE config:
+        echo "SCCACHE_ASYNC_IO_PIPELINE=true" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_BUCKET=rapids-sccache-devs" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_REGION=us-east-2" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_IDLE_TIMEOUT=0" | tee -a "${GITHUB_ENV}"
+        echo "SCCACHE_S3_KEY_PREFIX=cccl-test/sccache-v0.18.0-rapids.7" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_USE_SSL=true" | tee -a "${GITHUB_ENV}"
         echo "SCCACHE_S3_NO_CREDENTIALS=false" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=true" | tee -a "${GITHUB_ENV}"
-        echo "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX=cccl-preprocessor-cache" | tee -a "${GITHUB_ENV}"
 
     - name: Install GPU driver
       if: ${{ inputs.gpu_count != '0' }}
@@ -294,13 +294,13 @@ runs:
           --env "RUNNER_TEMP=${{env.RUNNER_TEMP_HOST}}" \
           --env "RUST_LOG_STYLE=never" \
           --env "SCCACHE_SERVER_LOG=sccache=debug" \
+          --env "SCCACHE_ASYNC_IO_PIPELINE=${{env.SCCACHE_ASYNC_IO_PIPELINE}}" \
           --env "SCCACHE_BUCKET=${{env.SCCACHE_BUCKET}}" \
           --env "SCCACHE_IDLE_TIMEOUT=${{env.SCCACHE_IDLE_TIMEOUT}}" \
           --env "SCCACHE_REGION=${{env.SCCACHE_REGION}}" \
+          --env "SCCACHE_S3_KEY_PREFIX=${{env.SCCACHE_S3_KEY_PREFIX}}" \
           --env "SCCACHE_S3_NO_CREDENTIALS=${{env.SCCACHE_S3_NO_CREDENTIALS}}" \
           --env "SCCACHE_S3_USE_SSL=${{env.SCCACHE_S3_USE_SSL}}" \
-          --env "SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX=${{env.SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX}}" \
-          --env "SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=${{env.SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE}}" \
           --env "WORKFLOW_ARTIFACT=${{env.WORKFLOW_ARTIFACT}}" \
           --env "WORKFLOW_DIR=${{env.WORKFLOW_DIR}}" \
           "${extra_launch_args[@]}" \
