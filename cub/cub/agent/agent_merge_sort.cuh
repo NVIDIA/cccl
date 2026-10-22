@@ -50,6 +50,14 @@ struct AgentBlockSort
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
 
+  // BlockMergeSort requires and produces the items in a blocked arrangement
+  static_assert(policy.load_algorithm != BLOCK_LOAD_STRIPED || ITEMS_PER_THREAD == 1,
+                "MergeSortPolicy: load_algorithm must not be BLOCK_LOAD_STRIPED unless items_per_thread is 1, since "
+                "the block sort requires a blocked arrangement");
+  static_assert(policy.store_algorithm != BLOCK_STORE_STRIPED || ITEMS_PER_THREAD == 1,
+                "MergeSortPolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread is 1, "
+                "since the block sort produces a blocked arrangement");
+
   using BlockMergeSortT = BlockMergeSort<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ValueT, 1, 1, policy.unroll>;
 
   using KeysLoadIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyInputIteratorT>;
@@ -386,6 +394,11 @@ struct AgentMerge
   static constexpr int BLOCK_THREADS      = policy.threads_per_block;
   static constexpr int ITEMS_PER_THREAD   = policy.items_per_thread;
   static constexpr int ITEMS_PER_TILE     = BLOCK_THREADS * ITEMS_PER_THREAD;
+
+  // The serial merge produces the items in a blocked arrangement
+  static_assert(policy.store_algorithm != BLOCK_STORE_STRIPED || ITEMS_PER_THREAD == 1,
+                "MergeSortPolicy: store_algorithm must not be BLOCK_STORE_STRIPED unless items_per_thread is 1, "
+                "since the merge produces a blocked arrangement");
 
   using KeysLoadPingIt  = try_make_cache_modified_iterator_t<policy.load_modifier, KeyIteratorT>;
   using ItemsLoadPingIt = try_make_cache_modified_iterator_t<policy.load_modifier, ValueIteratorT>;
