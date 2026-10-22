@@ -117,7 +117,8 @@ CUB_RUNTIME_FUNCTION int host_segment_size(SegmentSizeT segment_size)
                 "is not supported.");
   if constexpr (validation::all_ok && !validation::args_traits::is_deferred)
   {
-    const auto size = params::get_param(segment_size, 0);
+    // Unary plus promotes character types, which in_range does not accept
+    const auto size = +params::get_param(segment_size, 0);
     return ::cuda::std::in_range<int>(size) ? static_cast<int>(size) : -1;
   }
   else
