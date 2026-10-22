@@ -134,7 +134,6 @@ CUB_TEST("DispatchHistogram: uint64_t counters", "[histogram][device]", CUB_SMAL
   using counter_t                                    = cuda::std::uint64_t;
   using level_t                                      = int;
   using offset_t                                     = cuda::std::int32_t;
-  constexpr int num_channels                         = 1;
   [[maybe_unused]] constexpr int num_active_channels = 1;
   constexpr int num_bins                             = 16;
   constexpr offset_t num_row_pixels                  = 256;
@@ -148,7 +147,7 @@ CUB_TEST("DispatchHistogram: uint64_t counters", "[histogram][device]", CUB_SMAL
   c2h::device_vector<sample_t> d_samples = h_samples;
   const cuda::std::array<int, num_active_channels> num_levels{num_output_levels};
 
-  using dispatch_t = DispatchHistogram<num_channels, num_active_channels, sample_t*, counter_t, level_t, offset_t>;
+  using dispatch_t = DispatchHistogram<1, num_active_channels, sample_t*, counter_t, level_t, offset_t>;
 
   SECTION("HistogramEven")
   {
@@ -191,7 +190,7 @@ CUB_TEST("DispatchHistogram: uint64_t counters", "[histogram][device]", CUB_SMAL
         nullptr,
         cuda::std::true_type{}));
 
-    c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
+    const c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
     REQUIRE(d_histogram == expected_histogram);
   }
 
@@ -241,7 +240,7 @@ CUB_TEST("DispatchHistogram: uint64_t counters", "[histogram][device]", CUB_SMAL
         nullptr,
         cuda::std::true_type{}));
 
-    c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
+    const c2h::host_vector<counter_t> expected_histogram(num_bins, num_row_pixels / num_bins);
     REQUIRE(d_histogram == expected_histogram);
   }
 }
