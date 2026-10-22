@@ -661,7 +661,8 @@ enum BlockLoadAlgorithm // NOLINT(cppcoreguidelines-use-enum-class)
   //! - The following conditions will prevent vectorization and loading will fall back to cub::BLOCK_LOAD_DIRECT:
   //!
   //!   - ``ItemsPerThread`` is odd
-  //!   - The ``RandomAccessIterator`` is not a contiguous iterator
+  //!   - The ``RandomAccessIterator`` is not a contiguous iterator (``cub::CacheModifiedInputIterator`` is an exception
+  //!     and is still vectorized)
   //!   - The block input offset is not aligned to the vector access width
   //!   - The data type ``T`` is not a built-in primitive or CUDA vector type
   //!     (e.g., ``short``, ``int2``, ``double``, ``float2``, etc.)

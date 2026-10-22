@@ -155,7 +155,7 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ItemsPe
 //!   A suitable 1D thread-identifier for the calling thread
 //!   (e.g., ``(threadIdx.y * blockDim.x) + linear_tid`` for 2D thread blocks)
 //!
-//! @param[in] block_ptr
+//! @param[out] block_ptr
 //!   Output pointer for storing to
 //!
 //! @param[in] items
