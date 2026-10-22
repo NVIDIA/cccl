@@ -852,7 +852,7 @@ def generate_dispatch_group_jobs(matrix_job):
                     matrix_job,
                     job_type,
                     # True,
-                    Use the build cluster for:
+                    # Use the build cluster for:
                     # 50% of Linux arm64 standalone jobs
                     # 50% of Windows standalone jobs
                     # 10% of Linux amd64 standalone jobs
