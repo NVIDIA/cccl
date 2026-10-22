@@ -27,6 +27,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
@@ -281,8 +282,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
   accumulating_out_op.d_previous_aggregate = d_global_aggregates;
   accumulating_out_op.d_aggregate_out      = d_global_aggregates + 1;
 
-  for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
-       current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
+  // Process at least one (possibly empty) partition, so the result of an empty problem is written as well
+  GlobalOffsetT current_partition_offset = 0;
+  do
   {
     const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
     const GlobalOffsetT current_num_items =
@@ -309,7 +311,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     const bool next_partition_is_last =
       (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
     accumulating_out_op.advance(current_num_items, next_partition_is_last);
-  }
+    current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size);
+  } while (current_partition_offset < static_cast<GlobalOffsetT>(num_items));
 
   return cudaSuccess;
 }
@@ -375,7 +378,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t dispatch_streaming_arg_reduce
     {
       return ::cuda::std::numeric_limits<input_value_t>::max();
     }
-    else if constexpr (::cuda::std::is_same_v<ReductionOpT, arg_max>
+    // The ArgMax overloads without a comparison operator use cuda::std::greater instead of swap_args<less>
+    else if constexpr ((::cuda::std::is_same_v<ReductionOpT, arg_max>
+                        || ::cuda::std::is_same_v<ReductionOpT, arg_reduce_op<::cuda::std::greater<>>>)
                        && ::cuda::std::numeric_limits<input_value_t>::is_specialized)
     {
       return ::cuda::std::numeric_limits<input_value_t>::lowest();
