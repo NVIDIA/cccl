@@ -320,6 +320,7 @@ ignore_regexes:
   - '^\.github/workflows/update-branch-version\.yml$'
   - '\.github/workflows/verify-devcontainers\.yml'
   - '\.github/workflows/sass-diff-approve\.yml'
+  - '\.github/workflows/label-review-teams\.yml'
   - '\.gitignore'
   - '^\.lldbinit$'
   - '^\.pre-commit-config\.yaml$'
