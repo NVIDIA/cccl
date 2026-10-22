@@ -33,6 +33,9 @@
 #include <cuda/std/__host_stdlib/ostream>
 #include <cuda/std/__memory/is_sufficiently_aligned.h>
 #include <cuda/std/__new/device_new.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/is_volatile.h>
+#include <cuda/std/__type_traits/remove_reference.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -1011,11 +1014,16 @@ public:
     }
     else if constexpr (Algorithm == BLOCK_LOAD_VECTORIZE)
     {
-      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>)
+      if constexpr (detail::is_CacheModifiedInputIterator<RandomAccessIterator>
+                    && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>)
       {
         InternalLoadDirectBlockedVectorized<RandomAccessIterator::__modifier>(linear_tid, block_src_it.ptr, dst_items);
       }
-      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>)
+      else if constexpr (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIterator>
+                         && ::cuda::std::is_same_v<detail::it_value_t<RandomAccessIterator>, T>
+                         // handles contiguous iterators wrapping volatile pointers, like span<volatile int>::iterator
+                         && !::cuda::std::is_volatile_v<
+                            ::cuda::std::remove_reference_t<detail::it_reference_t<RandomAccessIterator>>>)
       {
         InternalLoadDirectBlockedVectorized<LOAD_DEFAULT>(linear_tid, ::cuda::std::to_address(block_src_it), dst_items);
       }
