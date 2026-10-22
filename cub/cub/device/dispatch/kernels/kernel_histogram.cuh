@@ -202,8 +202,12 @@ struct Transforms
       } reciprocal;
     };
 
+    // These are protected state because FastScaleTransform reuses the validated range and scale.
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     CommonT m_max; // Max sample level (exclusive)
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     CommonT m_min; // Min sample level (inclusive)
+    // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
     ScaleT m_scale; // Bin scaling
 
     template <typename T>
