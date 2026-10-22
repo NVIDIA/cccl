@@ -316,19 +316,24 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedReduce") D
           segmented_reduce_config.sm_occupancy);
 
         // Invoke DeviceSegmentedReduceKernel
-        launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
-                         policy.SegmentedReduce().ThreadsPerBlock(),
-                         0,
-                         stream)
-          .doit(segmented_reduce_kernel,
-                d_in,
-                d_out,
-                d_begin_offsets,
-                d_end_offsets,
-                static_cast<int>(num_current_segments),
-                reduction_op,
-                init,
-                0);
+        error = CubDebug(
+          launcher_factory(static_cast<::cuda::std::uint32_t>(num_current_segments),
+                           policy.SegmentedReduce().ThreadsPerBlock(),
+                           0,
+                           stream)
+            .doit(segmented_reduce_kernel,
+                  d_in,
+                  d_out,
+                  d_begin_offsets,
+                  d_end_offsets,
+                  static_cast<int>(num_current_segments),
+                  reduction_op,
+                  init,
+                  0));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());

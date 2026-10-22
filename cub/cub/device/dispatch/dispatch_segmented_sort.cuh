@@ -138,19 +138,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
       stream,
       "");
 
-    launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
-      .doit(small_kernel,
-            small_segments,
-            medium_segments,
-            medium_blocks,
-            small_segments_indices,
-            large_and_medium_segments_indices + num_segments - medium_segments,
-            d_current_keys,
-            d_final_keys,
-            d_current_values,
-            d_final_values,
-            d_begin_offsets,
-            d_end_offsets);
+    if (const auto error = CubDebug(
+          launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
+            .doit(small_kernel,
+                  small_segments,
+                  medium_segments,
+                  medium_blocks,
+                  small_segments_indices,
+                  large_and_medium_segments_indices + num_segments - medium_segments,
+                  d_current_keys,
+                  d_final_keys,
+                  d_current_values,
+                  d_final_values,
+                  d_begin_offsets,
+                  d_end_offsets)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -952,16 +956,20 @@ private:
       wrapped_policy.LargeSegmentRadixBits());
 
     // Invoke fallback kernel
-    launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
-      .doit(fallback_kernel,
-            d_keys.Current(),
-            GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_keys),
-            d_keys_double_buffer,
-            d_values.Current(),
-            GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_values),
-            d_values_double_buffer,
-            d_begin_offsets,
-            d_end_offsets);
+    if (const auto error = CubDebug(
+          launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
+            .doit(fallback_kernel,
+                  d_keys.Current(),
+                  GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_keys),
+                  d_keys_double_buffer,
+                  d_values.Current(),
+                  GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_values),
+                  d_values_double_buffer,
+                  d_begin_offsets,
+                  d_end_offsets)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))

@@ -284,8 +284,12 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect::UniqueByKey
     _CUB_LOG_KERNEL_LAUNCH("init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
     // Invoke init_kernel to initialize tile descriptors
-    launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-      .doit(kernel_source.CompactInitKernel(), tile_state, num_tiles, d_num_selected_out);
+    if (const auto error = CubDebug(
+          launcher_factory(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+            .doit(kernel_source.CompactInitKernel(), tile_state, num_tiles, d_num_selected_out)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))

@@ -329,18 +329,22 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSegmentedRadixSort"
         current_bit,
         pass_bits);
 
-      launcher_factory(
-        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
-        .doit(pass_config.segmented_kernel,
-              d_keys_in,
-              d_keys_out,
-              d_values_in,
-              d_values_out,
-              begin_offsets_current_it,
-              end_offsets_current_it,
-              current_bit,
-              pass_bits,
-              decomposer);
+      if (const auto error = CubDebug(
+            launcher_factory(
+              static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.threads_per_block, 0, stream)
+              .doit(pass_config.segmented_kernel,
+                    d_keys_in,
+                    d_keys_out,
+                    d_values_in,
+                    d_values_out,
+                    begin_offsets_current_it,
+                    end_offsets_current_it,
+                    current_bit,
+                    pass_bits,
+                    decomposer)))
+      {
+        return error;
+      }
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
