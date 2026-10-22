@@ -32,7 +32,6 @@
 #include <cuda/__warp/warp_shuffle.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__functional/operations.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
@@ -82,16 +81,6 @@ struct WarpReduceShfl
     {
       lane_id = lane_id % LogicalWarpThreads;
     }
-  }
-
-  // Single reduction step with PTX fused shuffle down + op
-  template <typename Tp, ::cuda::std::enable_if_t<is_shfl_down_op_supported_v<::cuda::std::plus<>, Tp>, int> = 0>
-  [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
-  ReduceStep(const Tp input, const ::cuda::std::plus<> reduction_op, const int last_lane, const int offset)
-  {
-    constexpr unsigned shfl_c_base = (warp_threads - LogicalWarpThreads) << 8;
-    const int shfl_c               = last_lane | shfl_c_base;
-    return CUB_NS_QUALIFIER::detail::shfl_down_op(input, reduction_op, offset, shfl_c, member_mask);
   }
 
   /**
@@ -170,36 +159,30 @@ struct WarpReduceShfl
     return output;
   }
 
-  /**
-   * @brief Reduction step (generic)
-   *
-   * @param[in] input
-   *   Calling thread's input item
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] last_lane
-   *   Index of last lane in segment
-   *
-   * @param[in] offset
-   *   Up-offset to pull from
-   */
+  // Single step of a warp reduction
+  // last_lane: Index of last lane in segment
+  // offset: Up-offset to pull from
   template <typename Tp, typename ReductionOp>
   [[nodiscard]] _CCCL_DEVICE_API _CCCL_FORCEINLINE Tp
   ReduceStep(const Tp input, ReductionOp reduction_op, const int last_lane, const int offset)
   {
-    Tp output = input;
-
-    Tp temp = CUB_NS_QUALIFIER::ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
-
-    // Perform reduction op if valid
-    if (offset + lane_id <= last_lane)
+    if constexpr (is_shfl_down_op_supported_v<ReductionOp, Tp>)
     {
-      output = reduction_op(input, temp);
+      constexpr unsigned shfl_c_base = (warp_threads - LogicalWarpThreads) << 8;
+      const int shfl_c               = last_lane | shfl_c_base;
+      return CUB_NS_QUALIFIER::detail::shfl_down_op(input, reduction_op, offset, shfl_c, member_mask);
     }
-
-    return output;
+    else
+    {
+      Tp output = input;
+      Tp tmp    = CUB_NS_QUALIFIER::ShuffleDown<LogicalWarpThreads>(output, offset, last_lane, member_mask);
+      // Perform reduction op if valid
+      if (offset + lane_id <= last_lane)
+      {
+        output = reduction_op(input, tmp);
+      }
+      return output;
+    }
   }
 
   // Unrolls the reduction steps
@@ -218,8 +201,8 @@ struct WarpReduceShfl
   _CCCL_DEVICE_API _CCCL_FORCEINLINE void FullShuffleReduce(T& input, ReductionOp reduction_op)
   {
     ::cuda::static_for<steps>([&](const auto step) {
-      const T temp = ::cuda::device::warp_shuffle_down<LogicalWarpThreads>(input, 1u << step, member_mask);
-      input        = reduction_op(input, temp);
+      const T tmp = ::cuda::device::warp_shuffle_down<LogicalWarpThreads>(input, 1u << step, member_mask);
+      input       = reduction_op(input, tmp);
     });
   }
 
