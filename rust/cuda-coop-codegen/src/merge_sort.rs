@@ -253,6 +253,258 @@ extern "C" __device__ void {symbol}(const {dtype}* input, {dtype}* output,
     }
 }
 
+/// Built-in ordering and full/partial selection for associated key/value pairs.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum MergeSortPairsRecipe {
+    /// Sort all pairs in ascending key order.
+    AscendingFull,
+    /// Sort all pairs in descending key order.
+    DescendingFull,
+    /// Sort a uniform prefix of pairs in ascending key order.
+    AscendingPartial,
+    /// Sort a uniform prefix of pairs in descending key order.
+    DescendingPartial,
+}
+
+impl MergeSortPairsRecipe {
+    fn keys(self) -> MergeSortKeysRecipe {
+        match self {
+            Self::AscendingFull => MergeSortKeysRecipe::AscendingFull,
+            Self::DescendingFull => MergeSortKeysRecipe::DescendingFull,
+            Self::AscendingPartial => MergeSortKeysRecipe::AscendingPartial,
+            Self::DescendingPartial => MergeSortKeysRecipe::DescendingPartial,
+        }
+    }
+    pub(crate) fn partial(self) -> bool {
+        self.keys().partial()
+    }
+    pub(crate) fn token(self, value: Dtype) -> String {
+        let form = match self {
+            Self::AscendingFull => "ascending_full",
+            Self::DescendingFull => "descending_full",
+            Self::AscendingPartial => "ascending_partial",
+            Self::DescendingPartial => "descending_partial",
+        };
+        let value = match value {
+            Dtype::I8 => "i8",
+            Dtype::U8 => "u8",
+            Dtype::I16 => "i16",
+            Dtype::U16 => "u16",
+            Dtype::I32 => "i32",
+            Dtype::U32 => "u32",
+            Dtype::I64 => "i64",
+            Dtype::U64 => "u64",
+            Dtype::F32 => "f32",
+            Dtype::F64 => "f64",
+        };
+        format!("merge_sort_pairs_{form}_{value}_validity_bits_v1")
+    }
+    pub(crate) fn parse(operation: &str, algorithm: &str) -> Result<(Self, Dtype)> {
+        if !matches!(algorithm, "block" | "warp") {
+            return Err(Error::message(
+                "Merge Sort Pairs requires a Block or Warp recipe",
+            ));
+        }
+        let unsupported = || Error::message("unsupported Merge Sort Pairs operation");
+        let operation = operation
+            .strip_prefix("merge_sort_pairs_")
+            .and_then(|op| op.strip_suffix("_validity_bits_v1"))
+            .ok_or_else(unsupported)?;
+        let (recipe, value) = [
+            ("ascending_full_", Self::AscendingFull),
+            ("descending_full_", Self::DescendingFull),
+            ("ascending_partial_", Self::AscendingPartial),
+            ("descending_partial_", Self::DescendingPartial),
+        ]
+        .into_iter()
+        .find_map(|(prefix, recipe)| operation.strip_prefix(prefix).map(|v| (recipe, v)))
+        .ok_or_else(unsupported)?;
+        let value = match value {
+            "i8" => Dtype::I8,
+            "u8" => Dtype::U8,
+            "i16" => Dtype::I16,
+            "u16" => Dtype::U16,
+            "i32" => Dtype::I32,
+            "u32" => Dtype::U32,
+            "i64" => Dtype::I64,
+            "u64" => Dtype::U64,
+            "f32" => Dtype::F32,
+            "f64" => Dtype::F64,
+            _ => return Err(unsupported()),
+        };
+        Ok((recipe, value))
+    }
+}
+
+/// Validated Block/Warp merge sort with independently typed associated values.
+///
+/// Keys and values independently use any [`Dtype`], with the same positive
+/// per-lane extent. Full native calls use `(const K* keys_in, K* keys_out,
+/// u8* scratch, const V* values_in, V* values_out, const u8* keys_in_bits,
+/// u8* keys_out_bits, const u8* values_in_bits, u8* values_out_bits)`.
+/// Partial calls append `(i64 valid_items, K sentinel)`. The count and sentinel
+/// are uniform within the group; `0 <= valid_items <= group_threads*items` is
+/// checked before narrowing or numeric reads. The key-typed sentinel must
+/// follow all valid keys in the chosen order. Values are carried unchanged,
+/// not compared. Equal keys have no stable-tie guarantee; floating keys must
+/// satisfy strict weak ordering, with no NaN total-order guarantee.
+///
+/// Each lane supplies fully initialized keys AND values, even for a zero
+/// count, with separate packed low-bit-first `ceil(items/8)` validity maps.
+/// Every input bit is checked before reading either array. Both inputs and
+/// maps are preserved; sorting uses private copies. Outputs, output maps and
+/// scratch are mutually disjoint and disjoint from both input arrays/maps.
+/// Read-only inputs may alias. Pointers remain live and naturally aligned.
+/// Full calls initialize both complete outputs; partial calls write only the
+/// same blocked prefix in both outputs. All other bits, including padding,
+/// are cleared; invalid output slots are not written.
+///
+/// Group geometry, rank, participation and completion follow
+/// [`MergeSortKeysRequest`]. Scratch is the complete queried *pair* CUB
+/// TempStorage including padding and value exchange, not the keys-only
+/// layout. Each Warp group has an independent replica. No trailing barrier
+/// is inserted; the caller completes accesses before scratch reuse.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct MergeSortPairsRequest {
+    pub(crate) recipe: MergeSortPairsRecipe,
+    pub(crate) key_dtype: Dtype,
+    pub(crate) value_dtype: Dtype,
+    keys: MergeSortKeysRequest,
+}
+
+impl MergeSortPairsRequest {
+    /// Validate independently typed pairs for a complete XYZ Block.
+    ///
+    /// `recipe` selects key ordering and full/partial output. `items` is the
+    /// shared per-lane extent of both inputs and outputs.
+    ///
+    /// # Errors
+    /// Rejects the same geometry, zero extent and padded signed-int capacity
+    /// violations as [`MergeSortKeysRequest::block`].
+    pub fn block(
+        key_dtype: Dtype,
+        value_dtype: Dtype,
+        recipe: MergeSortPairsRecipe,
+        block: [u32; 3],
+        items: u32,
+    ) -> Result<Self> {
+        let keys = MergeSortKeysRequest::block(key_dtype, recipe.keys(), block, items)?;
+        Ok(Self {
+            recipe,
+            key_dtype,
+            value_dtype,
+            keys,
+        })
+    }
+    /// Validate independently typed pairs for a physical/logical Warp group.
+    ///
+    /// Supports widths 1/2/4/8/16/32 within complete physical warps. `items`
+    /// is the shared per-lane extent; scratch is queried for one group.
+    ///
+    /// # Errors
+    /// Rejects the same geometry, width and padded capacity violations as
+    /// [`MergeSortKeysRequest::warp`].
+    pub fn warp(
+        key_dtype: Dtype,
+        value_dtype: Dtype,
+        recipe: MergeSortPairsRecipe,
+        block: [u32; 3],
+        width: u32,
+        items: u32,
+    ) -> Result<Self> {
+        let keys = MergeSortKeysRequest::warp(key_dtype, recipe.keys(), block, width, items)?;
+        Ok(Self {
+            recipe,
+            key_dtype,
+            value_dtype,
+            keys,
+        })
+    }
+    pub(crate) fn block_shape(self) -> [u32; 3] {
+        self.keys.block
+    }
+    pub(crate) fn source(self, symbol: &str) -> String {
+        let (key, _) = self.key_dtype.native();
+        let (value, _) = self.value_dtype.native();
+        let [x, y, z] = self.keys.block;
+        let items = self.keys.items;
+        let tile = self.keys.width.unwrap_or(x * y * z) * items;
+        let (header, primitive, rank) = if let Some(width) = self.keys.width {
+            (
+                "warp/warp_merge_sort.cuh",
+                format!("cub::WarpMergeSort<key_type, {items}, {width}, value_type>"),
+                format!("(threadIdx.x + {x} * (threadIdx.y + {y} * threadIdx.z)) % {width}"),
+            )
+        } else {
+            (
+                "block/block_merge_sort.cuh",
+                format!("cub::BlockMergeSort<key_type, {x}, {items}, value_type, {y}, {z}>"),
+                format!("threadIdx.x + {x} * (threadIdx.y + {y} * threadIdx.z)"),
+            )
+        };
+        let bytes = items / 8 + u32::from(items % 8 != 0);
+        let comparison = match self.recipe {
+            MergeSortPairsRecipe::AscendingFull | MergeSortPairsRecipe::AscendingPartial => "<",
+            MergeSortPairsRecipe::DescendingFull | MergeSortPairsRecipe::DescendingPartial => ">",
+        };
+        let (parameters, bounds, arguments, count) = if self.recipe.partial() {
+            (
+                format!(", long long valid_items, {key} sentinel"),
+                format!("if (valid_items < 0 || valid_items > {tile}) __trap();"),
+                ", static_cast<int>(valid_items), sentinel",
+                "valid_items".into(),
+            )
+        } else {
+            (String::new(), String::new(), "", tile.to_string())
+        };
+        format!(
+            r#"
+#include <cub/{header}>
+namespace {symbol}_detail {{
+using key_type = {key};
+using value_type = {value};
+using primitive = {primitive};
+using scratch_storage = primitive::TempStorage;
+struct compare {{
+  __device__ __forceinline__ bool operator()(key_type lhs, key_type rhs) const {{
+    return lhs {comparison} rhs;
+  }}
+}};
+}}
+extern "C" __device__ void {symbol}(const {key}* keys_in, {key}* keys_out,
+    unsigned char* scratch, const {value}* values_in, {value}* values_out,
+    const unsigned char* keys_in_bits, unsigned char* keys_out_bits,
+    const unsigned char* values_in_bits, unsigned char* values_out_bits{parameters}) {{
+  using namespace {symbol}_detail;
+  {bounds}
+#pragma unroll
+  for (int i = 0; i < {bytes}; ++i) {{ keys_out_bits[i] = 0; values_out_bits[i] = 0; }}
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    const unsigned int bit = 1u << (i % 8);
+    if ((keys_in_bits[i / 8] & bit) == 0 || (values_in_bits[i / 8] & bit) == 0) __trap();
+  }}
+  key_type local_keys[{items}];
+  value_type local_values[{items}];
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{ local_keys[i] = keys_in[i]; local_values[i] = values_in[i]; }}
+  primitive operation{{*reinterpret_cast<scratch_storage*>(scratch)}};
+  operation.Sort(local_keys, local_values, compare{{}}{arguments});
+  const int rank = static_cast<int>({rank});
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    if (rank * {items} + i < {count}) {{
+      keys_out[i] = local_keys[i]; values_out[i] = local_values[i];
+      keys_out_bits[i / 8] |= static_cast<unsigned char>(1u << (i % 8));
+      values_out_bits[i / 8] |= static_cast<unsigned char>(1u << (i % 8));
+    }}
+  }}
+}}
+"#
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

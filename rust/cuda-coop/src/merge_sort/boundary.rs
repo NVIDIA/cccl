@@ -1,7 +1,7 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{MergeSortGroup, MergeSortOptions, MergeSortOrder, MergeSortPrefix};
+use super::{MergeSortGroup, MergeSortOptions, MergeSortOrder, MergeSortPrefix, MergeSortValue};
 use crate::{Alignment, Numeric, SupportedAlignment, TempStorageLike, ThreadData};
 use cuda_device::library;
 
@@ -76,4 +76,91 @@ where
         }
     }
     output
+}
+
+fn pairs_ascending_full<V: MergeSortValue>() -> &'static str {
+    V::ASCENDING_FULL_REGISTRATION
+}
+fn pairs_descending_full<V: MergeSortValue>() -> &'static str {
+    V::DESCENDING_FULL_REGISTRATION
+}
+fn pairs_ascending_partial<V: MergeSortValue>() -> &'static str {
+    V::ASCENDING_PARTIAL_REGISTRATION
+}
+fn pairs_descending_partial<V: MergeSortValue>() -> &'static str {
+    V::DESCENDING_PARTIAL_REGISTRATION
+}
+fn pairs_warp_ascending_full<V: MergeSortValue>() -> &'static str {
+    V::WARP_ASCENDING_FULL_REGISTRATION
+}
+fn pairs_warp_descending_full<V: MergeSortValue>() -> &'static str {
+    V::WARP_DESCENDING_FULL_REGISTRATION
+}
+fn pairs_warp_ascending_partial<V: MergeSortValue>() -> &'static str {
+    V::WARP_ASCENDING_PARTIAL_REGISTRATION
+}
+fn pairs_warp_descending_partial<V: MergeSortValue>() -> &'static str {
+    V::WARP_DESCENDING_PARTIAL_REGISTRATION
+}
+
+#[inline(always)]
+pub(super) fn merge_sort_pairs<K, V, G, O, P, S, const N: usize, const KA: usize, const VA: usize>(
+    keys: &ThreadData<K, N, KA>,
+    values: &ThreadData<V, N, VA>,
+    options: MergeSortOptions<K, O, P, S>,
+) -> (ThreadData<K, N, KA>, ThreadData<V, N, VA>)
+where
+    K: Numeric,
+    V: MergeSortValue,
+    O: MergeSortOrder,
+    P: MergeSortPrefix<K>,
+    S: TempStorageLike,
+    G: MergeSortGroup<S>,
+    Alignment<KA>: SupportedAlignment,
+    Alignment<VA>: SupportedAlignment,
+{
+    let mut output_keys = ThreadData::new();
+    let mut output_values = ThreadData::new();
+    let (keys_pointer, keys_bits) = keys.block_io_read_parts();
+    let (values_pointer, values_bits) = values.block_io_read_parts();
+    let (output_keys_pointer, output_keys_bits) = output_keys.block_io_parts();
+    let (output_values_pointer, output_values_bits) = output_values.block_io_parts();
+    let payload = (
+        keys_pointer,
+        output_keys_pointer,
+        values_pointer,
+        output_values_pointer,
+        keys_bits,
+        output_keys_bits,
+        values_bits,
+        output_values_bits,
+    );
+    let _order = options.order;
+    let storage = options.storage.into_raw();
+    macro_rules! call {
+        ($registration:ident) => {
+            G::call::<K, _, _, _, _, N>($registration::<V>, storage, options.prefix, payload)
+        };
+    }
+    // SAFETY: shared inputs and two fresh same-shape outputs are live, aligned
+    // lane-local buffers with independent N-bit maps. The closed recipe checks
+    // wide count bounds and EVERY bit in both inputs before reading either
+    // array, including at count zero. It sorts private copies, writes paired
+    // valid-prefix outputs, and clears all other output bits. No pointer
+    // escapes. Sealed value constants and options preserve exact K/V/count/
+    // sentinel ABI. The genuine marker proves participation, uniform controls
+    // and storage reuse; the provider queries complete pair scratch.
+    unsafe {
+        match (G::WARP, O::DESCENDING, P::PARTIAL) {
+            (false, false, false) => call!(pairs_ascending_full),
+            (false, true, false) => call!(pairs_descending_full),
+            (false, false, true) => call!(pairs_ascending_partial),
+            (false, true, true) => call!(pairs_descending_partial),
+            (true, false, false) => call!(pairs_warp_ascending_full),
+            (true, true, false) => call!(pairs_warp_descending_full),
+            (true, false, true) => call!(pairs_warp_ascending_partial),
+            (true, true, true) => call!(pairs_warp_descending_partial),
+        }
+    }
+    (output_keys, output_values)
 }

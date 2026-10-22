@@ -18,6 +18,13 @@ mod boundary;
 /// not guarantee the relative order of equal keys.
 pub trait MergeSortOrder: sealed::Order {}
 
+/// Sealed associated-value types for [`merge_sort_pairs`].
+///
+/// All ten [`Numeric`] types are supported independently of the key type.
+/// Values follow their keys unchanged, including floating-point bit patterns;
+/// they do not participate in comparisons.
+pub trait MergeSortValue: Numeric + sealed::Value {}
+
 /// A sealed full or partial tile selection for [`MergeSortOptions`].
 ///
 /// Omitted `()` selects the full tile. The [`MergeSortOptions::valid_items`]
@@ -92,7 +99,7 @@ macro_rules! logical_groups {
 }
 logical_groups!(1, 2, 4, 8, 16, 32);
 
-/// Built-in order and optional count/sentinel for [`merge_sort_keys`].
+/// Built-in order and optional count/sentinel for [`merge_sort_keys`] or [`merge_sort_pairs`].
 ///
 /// `T` is inferred from the input. Only canonical [`Default`] is implemented:
 /// ascending order, every input and implicit scratch. Builders consume options
@@ -237,7 +244,88 @@ where
     boundary::merge_sort_keys::<T, G, O, P, S, ITEMS_PER_THREAD, ALIGN>(keys, options)
 }
 
+/// Merge-sort associated keys and values into two fresh blocked payloads.
+///
+/// Keys support all ten [`Numeric`] types, and values independently support
+/// all ten [`MergeSortValue`] types. Both inputs share `ITEMS_PER_THREAD`;
+/// their minimum alignments `KEY_ALIGN` and `VALUE_ALIGN` are independent.
+/// Each output keeps its corresponding input's type, extent and alignment.
+/// Both borrowed inputs and their validity maps remain unchanged.
+///
+/// The group, built-in order, count/sentinel, storage and completion rules
+/// are the same as [`merge_sort_keys`]. Default options sort the complete tile
+/// ascending with implicit scratch. Partial options take a uniform signed64
+/// count and a sentinel of the key type. ALL keys and values must be initialized,
+/// even beyond the prefix or at count zero. Invalid counts or either missing
+/// input bit trap before numeric reads. Both outputs have the same valid
+/// prefix; suffix [`ThreadData::get`] calls return `None`.
+///
+/// Each value follows its associated key without numeric conversion. Equal
+/// keys have no stable-tie guarantee. Floating keys must satisfy strict weak
+/// ordering; no NaN total order is supplied. Values are not compared and may
+/// contain any numeric bit pattern. Scratch is queried for the pair primitive,
+/// including its padded value storage, and cannot be inferred from key size.
+/// Execution requires an Oxide-compiled CUDA kernel; no `generic_const_exprs`
+/// feature is needed for generic K/V/N/alignment callers.
+///
+/// ```no_run
+/// use cuda_coop as coop;
+/// fn sorted<K: coop::Numeric, V: coop::MergeSortValue,
+///           const N: usize, const KA: usize, const VA: usize>(
+///     block: coop::ThreadGroup<coop::Block>,
+///     keys: &coop::ThreadData<K, N, KA>, values: &coop::ThreadData<V, N, VA>,
+/// ) -> (coop::ThreadData<K, N, KA>, coop::ThreadData<V, N, VA>)
+/// where coop::Alignment<KA>: coop::SupportedAlignment,
+///       coop::Alignment<VA>: coop::SupportedAlignment {
+///     coop::merge_sort_pairs(block, keys, values, Default::default())
+/// }
+/// ```
+#[inline(always)]
+pub fn merge_sort_pairs<
+    K,
+    V,
+    G,
+    O,
+    P,
+    S,
+    const ITEMS_PER_THREAD: usize,
+    const KEY_ALIGN: usize,
+    const VALUE_ALIGN: usize,
+>(
+    _group: ThreadGroup<G>,
+    keys: &ThreadData<K, ITEMS_PER_THREAD, KEY_ALIGN>,
+    values: &ThreadData<V, ITEMS_PER_THREAD, VALUE_ALIGN>,
+    options: MergeSortOptions<K, O, P, S>,
+) -> (
+    ThreadData<K, ITEMS_PER_THREAD, KEY_ALIGN>,
+    ThreadData<V, ITEMS_PER_THREAD, VALUE_ALIGN>,
+)
+where
+    K: Numeric,
+    V: MergeSortValue,
+    O: MergeSortOrder,
+    P: MergeSortPrefix<K>,
+    S: TempStorageLike,
+    G: MergeSortGroup<S>,
+    Alignment<KEY_ALIGN>: SupportedAlignment,
+    Alignment<VALUE_ALIGN>: SupportedAlignment,
+{
+    boundary::merge_sort_pairs::<K, V, G, O, P, S, ITEMS_PER_THREAD, KEY_ALIGN, VALUE_ALIGN>(
+        keys, values, options,
+    )
+}
+
 mod sealed {
+    pub trait Value {
+        const ASCENDING_FULL_REGISTRATION: &'static str;
+        const DESCENDING_FULL_REGISTRATION: &'static str;
+        const ASCENDING_PARTIAL_REGISTRATION: &'static str;
+        const DESCENDING_PARTIAL_REGISTRATION: &'static str;
+        const WARP_ASCENDING_FULL_REGISTRATION: &'static str;
+        const WARP_DESCENDING_FULL_REGISTRATION: &'static str;
+        const WARP_ASCENDING_PARTIAL_REGISTRATION: &'static str;
+        const WARP_DESCENDING_PARTIAL_REGISTRATION: &'static str;
+    }
     pub trait Group {
         const WARP: bool;
         unsafe fn call<
@@ -278,3 +366,131 @@ impl<T: Numeric> sealed::Prefix<T> for (i64, T) {
     const PARTIAL: bool = true;
 }
 impl<T: Numeric> MergeSortPrefix<T> for (i64, T) {}
+
+macro_rules! pair_values {
+    ($(($ty:ty, $ascending_full:literal, $descending_full:literal, $ascending_partial:literal, $descending_partial:literal, $warp_ascending_full:literal, $warp_descending_full:literal, $warp_ascending_partial:literal, $warp_descending_partial:literal)), + $(,)?) => {$ (
+        impl sealed::Value for $ty {
+            const ASCENDING_FULL_REGISTRATION: &'static str = library::registration!($ascending_full);
+            const DESCENDING_FULL_REGISTRATION: &'static str = library::registration!($descending_full);
+            const ASCENDING_PARTIAL_REGISTRATION: &'static str = library::registration!($ascending_partial);
+            const DESCENDING_PARTIAL_REGISTRATION: &'static str = library::registration!($descending_partial);
+            const WARP_ASCENDING_FULL_REGISTRATION: &'static str = library::registration!($warp_ascending_full);
+            const WARP_DESCENDING_FULL_REGISTRATION: &'static str = library::registration!($warp_descending_full);
+            const WARP_ASCENDING_PARTIAL_REGISTRATION: &'static str = library::registration!($warp_ascending_partial);
+            const WARP_DESCENDING_PARTIAL_REGISTRATION: &'static str = library::registration!($warp_descending_partial);
+        }
+        impl MergeSortValue for $ty {}
+    )+};
+}
+pair_values!(
+    (
+        i8,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_I8",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_I8",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_I8",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_I8",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_I8",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_I8",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_I8",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_I8"
+    ),
+    (
+        u8,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_U8",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_U8",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_U8",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_U8",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_U8",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_U8",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_U8",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_U8"
+    ),
+    (
+        i16,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_I16",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_I16",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_I16",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_I16",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_I16",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_I16",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_I16",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_I16"
+    ),
+    (
+        u16,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_U16",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_U16",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_U16",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_U16",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_U16",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_U16",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_U16",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_U16"
+    ),
+    (
+        i32,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_I32",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_I32",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_I32",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_I32",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_I32",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_I32",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_I32",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_I32"
+    ),
+    (
+        u32,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_U32",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_U32",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_U32",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_U32",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_U32",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_U32",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_U32",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_U32"
+    ),
+    (
+        i64,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_I64",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_I64",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_I64",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_I64",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_I64",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_I64",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_I64",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_I64"
+    ),
+    (
+        u64,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_U64",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_U64",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_U64",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_U64",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_U64",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_U64",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_U64",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_U64"
+    ),
+    (
+        f32,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_F32",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_F32",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_F32",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_F32",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_F32",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_F32",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_F32",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_F32"
+    ),
+    (
+        f64,
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_FULL_F64",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_FULL_F64",
+        "COOP_MERGE_SORT_PAIRS_ASCENDING_PARTIAL_F64",
+        "COOP_MERGE_SORT_PAIRS_DESCENDING_PARTIAL_F64",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_FULL_F64",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_FULL_F64",
+        "COOP_MERGE_SORT_PAIRS_WARP_ASCENDING_PARTIAL_F64",
+        "COOP_MERGE_SORT_PAIRS_WARP_DESCENDING_PARTIAL_F64"
+    ),
+);

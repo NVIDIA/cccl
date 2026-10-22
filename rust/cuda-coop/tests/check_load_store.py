@@ -1951,6 +1951,83 @@ cases.update(
     ),
 )
 
+# Merge Sort Pairs keeps independent value types, extents and result owners.
+merge_pairs = "let (result,pair_result)=coop::merge_sort_pairs(block,&values,&associated,Default::default());"
+merge_pairs_manual = merge_pairs.replace(
+    "Default::default()", "coop::MergeSortOptions::default().temp_storage(&mut scratch)"
+)
+cases.update(
+    merge_pairs_generic=(
+        "fn sorted<K:coop::Numeric,V:coop::MergeSortValue,G:coop::MergeSortGroup<S>,"
+        "O:coop::MergeSortOrder,P:coop::MergeSortPrefix<K>,S:coop::TempStorageLike,"
+        "const N:usize,const KA:usize,const VA:usize>(g:coop::ThreadGroup<G>,"
+        "keys:&coop::ThreadData<K,N,KA>,values:&coop::ThreadData<V,N,VA>,"
+        "o:coop::MergeSortOptions<K,O,P,S>)"
+        "->(coop::ThreadData<K,N,KA>,coop::ThreadData<V,N,VA>) "
+        "where coop::Alignment<KA>:coop::SupportedAlignment,coop::Alignment<VA>:coop::SupportedAlignment"
+        "{coop::merge_sort_pairs(g,keys,values,o)}"
+        + load
+        + pair_values
+        + "let _=sorted(block,&values,&associated,Default::default());"
+        "let (result,pair_result)=sorted(block,&values,&associated,coop::MergeSortOptions::default()"
+        ".valid_items(valid as i64,i32::MIN).order(coop::Descending));"
+        "let _:coop::ThreadData<f64,4,32>=pair_result;"
+        + store.replace("&values", "&result"),
+        None,
+    ),
+    merge_pairs_storage_completed=(
+        load
+        + pair_values
+        + new_storage
+        + merge_pairs_manual.replace("result,pair_result", "first,first_values")
+        + sync
+        + merge_pairs_manual
+        + sync
+        + "values.write(0,first[0]+result[0]+first_values[0] as i32+pair_result[0] as i32);"
+        + "let mut scratch=coop::TempStorage::new().auto_sync();"
+        + merge_pairs_manual
+        + merge_pairs_manual
+        + sync
+        + store,
+        None,
+    ),
+    merge_pairs_unequal_extent=(
+        load
+        + pair_values.replace("f64,4,32", "f64,3,32").replace("0..4", "0..3")
+        + merge_pairs,
+        "mismatched types",
+    ),
+    merge_pairs_value_sentinel=(
+        load
+        + pair_values
+        + merge_pairs.replace(
+            "Default::default()",
+            "coop::MergeSortOptions::default().valid_items(1,0_f64)",
+        ),
+        "mismatched types",
+    ),
+    merge_pairs_value_result_type=(
+        load
+        + pair_values
+        + merge_pairs
+        + "let _:coop::ThreadData<i32,4,32>=pair_result;",
+        "mismatched types",
+    ),
+    merge_pairs_value_control=(
+        load
+        + pair_values
+        + merge_pairs
+        + "if pair_result[0]==0.0 {"
+        + merge_pairs
+        + "}",
+        "lane-varying",
+    ),
+    merge_pairs_storage_missing_barrier=(
+        load + pair_values + new_storage + merge_pairs_manual + merge_pairs_manual,
+        "requires a full-block barrier",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

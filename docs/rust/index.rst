@@ -46,8 +46,8 @@ group's tile, and must be uniform across that group.
 The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
 :doc:`reduce_batched`, :doc:`exchange`, :doc:`shuffle`,
 :doc:`adjacent_difference`, :doc:`discontinuity`, :doc:`histogram`,
-:doc:`radix_sort_keys`, :doc:`radix_sort_pairs`, :doc:`radix_rank_keys` and
-:doc:`merge_sort_keys`.
+:doc:`radix_sort_keys`, :doc:`radix_sort_pairs`, :doc:`radix_rank_keys`,
+:doc:`merge_sort_keys` and :doc:`merge_sort_pairs`.
 Scan returns fresh per-group prefixes;
 Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
@@ -59,9 +59,10 @@ Radix Sort Keys stably sorts integer keys into a fresh blocked payload.
 Radix Sort Pairs carries associated numeric values through that stable order
 and returns two fresh payloads. Radix Rank Keys returns each input's stable
 selected-digit position as a fresh ``i32`` payload. Merge Sort Keys sorts numeric
-keys or a selected prefix into a fresh payload. Histogram, Radix Sort and
-Radix Rank require generic native-registration support beyond the currently
-pinned Oxide revision; their guides explain the compiler requirement.
+keys or a selected prefix into a fresh payload. Merge Sort Pairs carries
+associated numeric values into independent fresh payloads. Histogram, Radix Sort,
+Radix Rank and Merge Sort Pairs require generic native-registration support
+beyond the currently pinned Oxide revision; their guides explain the compiler requirement.
 Scan, Reduce, batched reduction, Exchange, Shuffle, Adjacent Difference,
 Discontinuity, Histogram, Radix Sort, Radix Rank and Merge Sort preserve their
 inputs.
@@ -134,6 +135,7 @@ Read next
    radix_sort_pairs
    radix_rank_keys
    merge_sort_keys
+   merge_sort_pairs
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

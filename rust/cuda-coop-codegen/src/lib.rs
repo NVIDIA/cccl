@@ -5,7 +5,7 @@
 //!
 //! This private development crate compiles Load/Store, Scan, Reduce, batched
 //! Reduce, Exchange, Shuffle, Adjacent Difference, Discontinuity, Histogram
-//! and Radix Sort Keys/Pairs, Rank Keys and Merge Sort Keys with NVRTC.
+//! and Radix Sort Keys/Pairs, Rank Keys and Merge Sort Keys/Pairs with NVRTC.
 //! It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -106,7 +106,9 @@ pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceReques
 pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use histogram::{HistogramAlgorithm, HistogramRecipe, HistogramRequest};
-pub use merge_sort::{MergeSortKeysRecipe, MergeSortKeysRequest};
+pub use merge_sort::{
+    MergeSortKeysRecipe, MergeSortKeysRequest, MergeSortPairsRecipe, MergeSortPairsRequest,
+};
 pub use radix_sort::{
     RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
     RadixSortPairsRecipe, RadixSortPairsRequest,
@@ -519,6 +521,8 @@ pub enum NativeRequest {
     RadixRankKeys(RadixRankKeysRequest),
     /// Numeric Block merge sort preserving inputs with fresh full/partial output.
     MergeSortKeys(MergeSortKeysRequest),
+    /// Numeric Block/Warp merge sort preserving associated key/value inputs.
+    MergeSortPairs(MergeSortPairsRequest),
 }
 
 impl NativeRequest {
@@ -537,6 +541,7 @@ impl NativeRequest {
             Self::RadixSortPairs(request) => request.block_shape(),
             Self::RadixRankKeys(request) => request.block_shape(),
             Self::MergeSortKeys(request) => request.block_shape(),
+            Self::MergeSortPairs(request) => request.block_shape(),
         }
     }
 
@@ -555,6 +560,7 @@ impl NativeRequest {
             Self::RadixSortPairs(request) => request.source(symbol),
             Self::RadixRankKeys(request) => request.source(symbol),
             Self::MergeSortKeys(request) => request.source(symbol),
+            Self::MergeSortPairs(request) => request.source(symbol),
         }
     }
 
@@ -573,6 +579,7 @@ impl NativeRequest {
             Self::RadixSortPairs(request) => request.recipe.token(request.value_dtype),
             Self::RadixRankKeys(request) => request.recipe.token(),
             Self::MergeSortKeys(request) => request.recipe.token().into(),
+            Self::MergeSortPairs(request) => request.recipe.token(request.value_dtype),
         }
     }
 
@@ -590,7 +597,8 @@ impl NativeRequest {
             | Self::RadixSortKeys(_)
             | Self::RadixSortPairs(_)
             | Self::RadixRankKeys(_)
-            | Self::MergeSortKeys(_) => false,
+            | Self::MergeSortKeys(_)
+            | Self::MergeSortPairs(_) => false,
         }
     }
 
@@ -611,7 +619,8 @@ impl NativeRequest {
             | Self::RadixSortKeys(_)
             | Self::RadixSortPairs(_)
             | Self::RadixRankKeys(_)
-            | Self::MergeSortKeys(_) => false,
+            | Self::MergeSortKeys(_)
+            | Self::MergeSortPairs(_) => false,
         }
     }
 }
@@ -639,6 +648,7 @@ pub struct Layout {
 /// independently typed associated values while preserving both inputs.
 /// [`RadixRankKeysRequest`] returns fresh i32 ranks independently of key type.
 /// [`MergeSortKeysRequest`] sorts Block/Warp numeric keys with full or prefix-valid output.
+/// [`MergeSortPairsRequest`] carries independently typed associated values.
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
