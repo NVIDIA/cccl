@@ -21,12 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__iterator/iterator.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__utility/ctad_support.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // IWYU pragma: keep
 
 #include <cuda/std/__cccl/prologue.h>
 

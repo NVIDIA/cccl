@@ -36,6 +36,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/cstddef>
@@ -187,8 +188,8 @@ public:
     piecewise_construct_t __pc,
     tuple<_Args1...> __first_args,
     tuple<_Args2...> __second_args) noexcept(is_constructible_v<_T1, _Args1...> && is_constructible_v<_T2, _Args2...>)
-      : _Base1(__pc, ::cuda::std::move(__first_args), typename __make_tuple_indices<sizeof...(_Args1)>::type())
-      , _Base2(__pc, ::cuda::std::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
+      : _Base1(__pc, ::cuda::std::move(__first_args), __make_tuple_indices_t<sizeof...(_Args1)>())
+      , _Base2(__pc, ::cuda::std::move(__second_args), __make_tuple_indices_t<sizeof...(_Args2)>())
   {}
 
   _CCCL_API constexpr typename _Base1::reference first() noexcept

@@ -21,26 +21,31 @@
 #endif // no system header
 
 #include <cub/agent/agent_select_if.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
-#include <cub/device/dispatch/dispatch_scan.cuh>
+#include <cub/device/dispatch/kernels/kernel_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
-#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
-
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
+#include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -457,7 +462,7 @@ template <
     detail::it_value_t<FlagsInputIteratorT>,
     // if/flagged/unique only have a single code path for different offset types, partition has different code paths
     ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
-    detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+    ::cuda::__is_specialization_of_v<SelectedOutputIteratorT, detail::select::partition_distinct_output_t>,
     SelectionOpt>>
 struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartition") DispatchSelectIf
 {
@@ -697,9 +702,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
         // Invoke scan_init_kernel to initialize tile descriptors
-        error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-            .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out));
+        error = CubDebug(detail::TripleChevronFactory{}(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+                           .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out));
         if (cudaSuccess != error)
         {
           return error;
@@ -751,7 +755,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
 
         // Invoke select_if_kernel
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(current_num_tiles, threads_per_block, 0, stream)
             .doit(select_if_kernel,
                   d_in,
                   d_flags,

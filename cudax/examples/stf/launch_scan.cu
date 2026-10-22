@@ -139,6 +139,8 @@ int main(int argc, char** argv)
   ctx.finalize();
 
   float ms = 0;
+  // finalize() does not wait for work recorded in a stream returned by fence().
+  cuda_safe_call(cudaEventSynchronize(stop));
   cuda_safe_call(cudaEventElapsedTime(&ms, start, stop));
 
   printf("%s in %f ms (%g GB/s)\n",

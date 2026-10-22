@@ -151,18 +151,6 @@ warp-dependent but lane-uniform guard like `if (warp_id == 0)` is fine when ever
 the mask reaches the call); verify the uniformity from the surrounding code rather than taking a
 guard's presence on faith.
 
-## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
-
-<!-- provenance:
-  #8210→#8254 warp_shuffle static_assert(cuda::std::is_trivially_copyable_v) rejected __half/__nv_bfloat16 and composites, breaking CUB consumers; reverted
--->
-
-Flag `cuda::std::is_trivially_copyable(_v)` or `std::is_trivially_copyable(_v)` applied to a generic
-value-type parameter;
-use `cuda::is_trivially_copyable(_v)` instead, which supports more cases. The vendor headers give
-`__half`/`__nv_bfloat16` non-trivial special members, so the standard trait reports false for them
-(and aggregates of them) even though they are functionally copyable. Candidate for a pre-commit grep.
-
 ## api.internal-symbol-exposure (important, new implementation-detail types/functions)
 
 <!-- provenance:
@@ -555,6 +543,24 @@ policy struct shifting every positional brace-init (`ScanLookaheadPolicy{6, 104 
 dispatch wrapper no longer forwarding its policy selector to an inner dispatch call. A claim of "no
 SASS changes" verified on one test type is not sufficient; demand a SASS diff or benchmark sweep over
 non-default/non-primitive value types and every affected architecture.
+
+## perf.arch-gate-coverage (important, tuning-policy selectors conditioned on compute capability in `cub/cub/device/dispatch/tuning/**`)
+
+<!-- provenance:
+  #10923→#10943 adding Rubin (cc 10.7) tunings as an open-ended `cc >= {10,7}` branch silently re-routed consumer Blackwell (cc 12.0), which had deliberately inherited the SM100 tunings
+-->
+
+When a diff touches a policy selector — changing a compute-capability condition, or changing, adding,
+or removing policy values — work out for every existing architecture (see
+`_CCCL_KNOWN_CUDA_ARCH_LIST` in `libcudacxx/include/cuda/std/__cccl/execution_space.h`) whether the
+policy or values it receives change, including architectures that previously fell through to an older
+branch. The architectures affected by the diff must be exactly those that were benchmarked. A
+condition `cc >= X` with existing architectures above X is a deliberate choice to serve multiple
+architectures from the same branch and fine as-is — the hazard is a diff changing what those
+architectures receive: inserting a higher-cc branch in front of it, with an even higher-cc
+architecture existing, re-routes that architecture too (new cc 10.7 tunings capturing cc 12.0, which
+inherited the cc 10.0 tunings on purpose), and editing the branch's values changes them all. Flag each affected, unbenchmarked architecture; the author must bound the
+condition or provide benchmarks for what it captures.
 
 ## perf.shared-primitive-consumers (important, shared thread/warp/block-scope primitives in cub/thrust/libcudacxx)
 

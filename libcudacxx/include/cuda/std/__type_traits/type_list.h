@@ -21,12 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__type_traits/type_set.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/undefined.h>
 

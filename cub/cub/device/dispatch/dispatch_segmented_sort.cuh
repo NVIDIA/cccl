@@ -13,28 +13,42 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/detail/config.h>
+
+#include <cub/block/block_load.cuh>
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_double_buffer.cuh>
+#include <cub/detail/double_buffer.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>
-#include <cub/device/device_partition.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 #include <cub/device/dispatch/kernels/kernel_segmented_sort.cuh>
+#include <cub/device/dispatch/kernels/kernel_three_way_partition.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_three_way_partition.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
-#include <cub/util_math.cuh>
 #include <cub/util_namespace.cuh>
+#include <cub/warp/warp_load.cuh>
+#include <cub/warp/warp_store.cuh>
 
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__host_stdlib/sstream>
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
-#include <cuda/std/limits>
 
 #include <nv/target>
 
@@ -135,19 +149,23 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t device_segmented_sort_c
       stream,
       "");
 
-    launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
-      .doit(small_kernel,
-            small_segments,
-            medium_segments,
-            medium_blocks,
-            small_segments_indices,
-            large_and_medium_segments_indices + num_segments - medium_segments,
-            d_current_keys,
-            d_final_keys,
-            d_current_values,
-            d_final_values,
-            d_begin_offsets,
-            d_end_offsets);
+    if (const auto error = CubDebug(
+          launcher_factory(small_and_medium_blocks_in_grid, small_threads_per_block, 0, stream)
+            .doit(small_kernel,
+                  small_segments,
+                  medium_segments,
+                  medium_blocks,
+                  small_segments_indices,
+                  large_and_medium_segments_indices + num_segments - medium_segments,
+                  d_current_keys,
+                  d_final_keys,
+                  d_current_values,
+                  d_final_values,
+                  d_begin_offsets,
+                  d_end_offsets)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))
@@ -949,16 +967,20 @@ private:
       wrapped_policy.LargeSegmentRadixBits());
 
     // Invoke fallback kernel
-    launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
-      .doit(fallback_kernel,
-            d_keys.Current(),
-            GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_keys),
-            d_keys_double_buffer,
-            d_values.Current(),
-            GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_values),
-            d_values_double_buffer,
-            d_begin_offsets,
-            d_end_offsets);
+    if (const auto error = CubDebug(
+          launcher_factory(blocks_in_grid, threads_in_block, 0, stream)
+            .doit(fallback_kernel,
+                  d_keys.Current(),
+                  GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_keys),
+                  d_keys_double_buffer,
+                  d_values.Current(),
+                  GetFinalOutput(wrapped_policy.LargeSegmentRadixBits(), d_values),
+                  d_values_double_buffer,
+                  d_begin_offsets,
+                  d_end_offsets)))
+    {
+      return error;
+    }
 
     // Check for failure to launch
     if (const auto error = CubDebug(cudaPeekAtLastError()))

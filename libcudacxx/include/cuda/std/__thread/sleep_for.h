@@ -24,12 +24,14 @@
 #include <cuda/std/__chrono/duration.h>
 #include <cuda/std/__limits/numeric_limits.h>
 
+#include <nv/target>
+
 #if _CCCL_HOSTED()
 #  if _CCCL_HAS_THREAD_API(PTHREAD)
 #    include <cuda/std/__utility/cmp.h>
 #    include <cuda/std/ctime>
 
-#    include <errno.h>
+#    include <errno.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_THREAD_API(PTHREAD)
 #  if _CCCL_HAS_THREAD_API(WIN32)
 #    include <windows.h>
