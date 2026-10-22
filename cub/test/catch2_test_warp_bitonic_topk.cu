@@ -23,6 +23,9 @@
 #include <c2h/vector.h>
 #include <catch2/matchers/catch_matchers_range_equals.hpp>
 
+// %PARAM% TEST_ALGORITHM alg 0:1
+// %PARAM% LWT lwt 1:4:32
+
 using cub::detail::warp_threads;
 using cub::detail::WarpBitonicTopKAlgorithm;
 inline constexpr int vectorized_load_bytes = 16;
@@ -468,9 +471,13 @@ using key_types = c2h::type_list<std::uint8_t, float>;
 // List of value types
 using value_types = c2h::type_list<std::int32_t>;
 
-using algo_list =
-  c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::eager, WarpBitonicTopKAlgorithm::buffered>;
-using logical_warp_threads_list   = c2h::enum_type_list<int, 1, 4, warp_threads>;
+#if TEST_ALGORITHM == 0
+using algo_list = c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::eager>;
+#else
+using algo_list = c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>;
+#endif
+
+using logical_warp_threads_list   = c2h::enum_type_list<int, LWT>;
 using max_k_per_thread_list       = c2h::enum_type_list<int, 1, 2, 3>;
 using extra_items_per_thread_list = c2h::enum_type_list<int, 0, 1, 2, 3, 4>;
 
@@ -568,11 +575,12 @@ CUB_TEST("Warp top-k on keys works",
   test_topk_keys<TestType, topk_keys_full_t>(k, num_items);
 }
 
+#if TEST_ALGORITHM == 0
 CUB_TEST("Warp top-k on keys of a partial warp-tile with an OOB default works",
          "[topk][warp]",
          CUB_SMALL,
          key_types,
-         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::eager>,
+         algo_list,
          logical_warp_threads_list,
          max_k_per_thread_list,
          extra_items_per_thread_list)
@@ -585,6 +593,7 @@ CUB_TEST("Warp top-k on keys of a partial warp-tile with an OOB default works",
 
   test_topk_keys<TestType, topk_keys_partial_oob_t>(k, num_items);
 }
+#endif
 
 CUB_TEST("Warp top-k on keys of a partial warp-tile works",
          "[topk][warp]",
@@ -604,11 +613,12 @@ CUB_TEST("Warp top-k on keys of a partial warp-tile works",
   test_topk_keys<TestType, topk_keys_partial_t>(k, num_items);
 }
 
+#if TEST_ALGORITHM == 1
 CUB_TEST("Warp top-k iterator on keys of a partial warp-tile works",
          "[topk][warp]",
          CUB_SMALL,
          key_types,
-         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
+         algo_list,
          logical_warp_threads_list,
          max_k_per_thread_list,
          c2h::enum_type_list<int, 0> // extra_items_per_thread is not used by iterator overload
@@ -627,7 +637,7 @@ CUB_TEST("Warp top-k vectorized iterator on keys works",
          "[topk][warp]",
          CUB_SMALL,
          key_types,
-         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
+         algo_list,
          logical_warp_threads_list,
          max_k_per_thread_list,
          c2h::enum_type_list<int, 0> // extra_items_per_thread is not used by iterator overload
@@ -656,6 +666,7 @@ CUB_TEST("Warp top-k vectorized iterator on keys works",
 
   test_topk_keys<TestType, topk_keys_vectorized_iterator_t>(k, num_items);
 }
+#endif
 
 // Exercise more num_items cases in key-value tests. Keep keys-only coverage smaller to reduce test time,
 // because keys-only overloads delegate to key-value overloads with ValueT=NullType.
@@ -678,11 +689,12 @@ CUB_TEST("Warp top-k on key-value pairs works",
   test_topk_pairs<TestType, topk_pairs_full_t>(k, num_items);
 }
 
+#if TEST_ALGORITHM == 0
 CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile with an OOB default works",
          "[topk][warp]",
          CUB_SMALL,
          key_types,
-         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::eager>,
+         algo_list,
          logical_warp_threads_list,
          max_k_per_thread_list,
          extra_items_per_thread_list,
@@ -711,6 +723,7 @@ CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile with an OOB defau
 
   test_topk_pairs<TestType, topk_pairs_partial_oob_t>(k, num_items);
 }
+#endif
 
 CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile works",
          "[topk][warp]",
@@ -746,11 +759,12 @@ CUB_TEST("Warp top-k on key-value pairs of a partial warp-tile works",
   test_topk_pairs<TestType, topk_pairs_partial_t>(k, num_items);
 }
 
+#if TEST_ALGORITHM == 1
 CUB_TEST("Warp top-k iterator on key-value pairs of a partial warp-tile works",
          "[topk][warp]",
          CUB_SMALL,
          key_types,
-         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
+         algo_list,
          logical_warp_threads_list,
          max_k_per_thread_list,
          c2h::enum_type_list<int, 0>, // extra_items_per_thread is not used by iterator overload
@@ -783,7 +797,7 @@ CUB_TEST("Warp top-k vectorized iterator on key-value pairs works",
          "[topk][warp]",
          CUB_SMALL,
          key_types,
-         c2h::enum_type_list<WarpBitonicTopKAlgorithm, WarpBitonicTopKAlgorithm::buffered>,
+         algo_list,
          logical_warp_threads_list,
          max_k_per_thread_list,
          c2h::enum_type_list<int, 0>, // extra_items_per_thread is not used by iterator overload
@@ -812,6 +826,7 @@ CUB_TEST("Warp top-k vectorized iterator on key-value pairs works",
 
   test_topk_pairs<TestType, topk_pairs_vectorized_iterator_t>(k, num_items);
 }
+#endif
 
 // Keep custom_t coverage narrow because it is expensive to instantiate.
 using custom_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
@@ -821,7 +836,7 @@ CUB_TEST("Warp top-k on custom key-value pairs works",
          CUB_SMALL,
          c2h::type_list<custom_t>, // key_types,
          algo_list,
-         c2h::enum_type_list<int, 4, warp_threads>, // logical_warp_threads
+         logical_warp_threads_list,
          c2h::enum_type_list<int, 2>, // max_k_per_thread
          c2h::enum_type_list<int, 1>, // extra_items_per_thread
          c2h::type_list<custom_t>, // value_types,
