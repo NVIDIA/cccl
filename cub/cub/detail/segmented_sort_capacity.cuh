@@ -70,6 +70,38 @@ struct concatenate_capacities<capacity_list<Left...>, capacity_list<Right...>, R
     : concatenate_capacities<capacity_list<Left..., Right...>, Rest...>
 {};
 
+template <int Threads, int ItemsPerThread>
+struct bin_shape
+{
+  static constexpr int threads          = Threads;
+  static constexpr int items_per_thread = ItemsPerThread;
+};
+
+// One selected bin configuration; the launch policy describes the supported range.
+struct bin_config
+{
+  int threads;
+  int items_per_thread;
+};
+
+// The algorithm supplies a constant configuration for each local bin. Runtime
+// dispatch only selects a leaf; configuration search is evaluated at compile time.
+template <typename Expansion, int Begin = 0, int End = Expansion::capacities::size>
+_CCCL_HOST_DEVICE_API bin_config config_for_bin(int bin)
+{
+  static_assert(Begin < End);
+  if constexpr (End - Begin == 1)
+  {
+    using config = typename Expansion::template config_for_bin<Begin>;
+    return {config::threads, config::items_per_thread};
+  }
+  else
+  {
+    constexpr int mid = Begin + (End - Begin) / 2;
+    return bin < mid ? config_for_bin<Expansion, Begin, mid>(bin) : config_for_bin<Expansion, mid, End>(bin);
+  }
+}
+
 template <typename Algorithm, typename PolicyGetter>
 struct sort_entry
 {
@@ -77,11 +109,15 @@ struct sort_entry
   using expansion                     = typename implementation::expansion;
   using capacities                    = typename expansion::capacities;
   inline static constexpr auto tuning = PolicyGetter{}();
-  static constexpr int block_threads  = tuning.block_threads;
   static constexpr int unit_threads   = implementation::unit_threads;
-  static_assert(block_threads > 0 && block_threads <= 1024 && block_threads % unit_threads == 0);
+  static_assert(tuning.block_threads > 0 && tuning.block_threads <= 1024);
+  static_assert(unit_threads > 0 && tuning.block_threads % unit_threads == 0);
   static_assert(tuning.blocks_per_sm > 0 && tuning.min_blocks_per_sm > 0);
   static_assert(capacities::valid());
+  _CCCL_HOST_DEVICE_API static bin_config config(int bin)
+  {
+    return config_for_bin<expansion>(bin);
+  }
 };
 
 template <typename... Entries>

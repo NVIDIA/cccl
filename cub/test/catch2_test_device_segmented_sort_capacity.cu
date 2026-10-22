@@ -4,8 +4,6 @@
 #include <cub/device/dispatch/dispatch_segmented_sort_capacity.cuh>
 #include <cub/device/dispatch/tuning/tuning_segmented_sort_group_merge.cuh>
 
-#include <cuda/std/functional>
-
 #include <algorithm>
 #include <vector>
 
@@ -14,20 +12,24 @@
 
 namespace capacity = cub::detail::segmented_sort_capacity;
 
-// A small grid exercises persistent work and scratch reuse on either test GPU.
-template <typename Key>
-struct test_selector : capacity::group_merge_policy_selector<Key>
+// Irregular capacities exercise bin selection independently of rectangular tuning.
+struct irregular_expansion
 {
-  _CCCL_HOST_DEVICE_API constexpr capacity::group_merge_launch_policy operator()(cuda::compute_capability cc) const
-  {
-    auto policy               = capacity::group_merge_policy_selector<Key>::operator()(cc);
-    policy.warp.blocks_per_sm = policy.small.blocks_per_sm = policy.large.blocks_per_sm = 1;
-    return policy;
-  }
+  using capacities = capacity::capacity_list<36, 80, 144>;
+  template <int Bin>
+  using config_for_bin = cuda::std::tuple_element_t<
+    Bin,
+    cuda::std::tuple<capacity::bin_shape<4, 9>, capacity::bin_shape<8, 10>, capacity::bin_shape<16, 9>>>;
 };
 
 CUB_TEST("Capacity partition accepts arbitrary bounds without sort tuning", "[segmented][sort][device]", CUB_SMALL)
 {
+  for (int bin = 0; bin < 3; ++bin)
+  {
+    const auto config = capacity::config_for_bin<irregular_expansion>(bin);
+    REQUIRE(config.threads == (4 << bin));
+    REQUIRE(config.items_per_thread == (bin == 1 ? 10 : 9));
+  }
   using capacities = capacity::capacity_list<3, 10, 21>;
   static_assert(capacities::first_fit(3) == 0 && capacities::first_fit(4) == 1);
   static_assert(capacities::first_fit(21) == 2 && capacities::first_fit(22) == 3);
@@ -71,11 +73,14 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
          CUB_SMALL,
          c2h::type_list<int, double>)
 {
-  using key_type   = c2h::get<0, TestType>;
-  using selector   = test_selector<key_type>;
-  using getter     = cub::detail::policy_getter<selector, 75>;
-  using plan       = typename capacity::group_merge_entries<getter>::type;
-  using capacities = typename plan::capacities;
+  using key_type       = c2h::get<0, TestType>;
+  using selector       = capacity::group_merge_policy_selector<key_type>;
+  using getter         = cub::detail::policy_getter<selector, 75>;
+  using plan           = typename capacity::group_merge_entries<getter>::type;
+  using capacities     = typename plan::capacities;
+  using warp_expansion = typename plan::template entry<0>::expansion;
+  using fitted         = typename warp_expansion::template config_for_capacity<37>;
+  static_assert(fitted::threads == 4 && fitted::items_per_thread == 10);
   std::vector<int> lengths{0, 1};
   for (int bound : capacities::bounds)
   {
@@ -86,6 +91,7 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   }
   // A partially filled final group, many work iterations, and absent bins.
   lengths.insert(lengths.end(), 4097, 480);
+  lengths.push_back(100000); // Exercise the existing CUB backend beyond bounded bins.
   c2h::host_vector<long long> begins, ends;
   c2h::host_vector<key_type> input, expected;
   for (int length : lengths)
@@ -102,10 +108,6 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   expected.assign(input.size(), key_type{-99});
   for (size_t segment = 0; segment < lengths.size(); ++segment)
   {
-    if (lengths[segment] > capacities::bounds.back())
-    {
-      continue; // overflow is returned to the caller
-    }
     std::copy(input.begin() + begins[segment], input.begin() + ends[segment], expected.begin() + begins[segment]);
     std::stable_sort(expected.begin() + begins[segment], expected.begin() + ends[segment]);
   }
@@ -116,18 +118,17 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   cudaStream_t stream{};
   REQUIRE(cudaStreamCreate(&stream) == cudaSuccess);
   const auto run = [&](void* storage) {
-    return capacity::dispatch<capacity::group_merge_entries>(
+    return capacity::dispatch(
       storage,
       bytes,
       thrust::raw_pointer_cast(d_begins.data()),
       thrust::raw_pointer_cast(d_ends.data()),
+      static_cast<cuda::std::int64_t>(input.size()),
       static_cast<unsigned>(lengths.size()),
       thrust::raw_pointer_cast(d_in.data()),
       thrust::raw_pointer_cast(d_out.data()),
-      cuda::std::less<key_type>{},
       result,
-      stream,
-      selector{});
+      stream);
   };
   REQUIRE(run(nullptr) == cudaSuccess);
   c2h::device_vector<unsigned char> storage(bytes);
@@ -137,8 +138,33 @@ CUB_TEST("Capacity sort reconstructs work prefixes in each CTA",
   c2h::host_vector<unsigned> offsets(capacities::size + 2);
   REQUIRE(cudaMemcpy(offsets.data(), result.bin_offsets, offsets.size() * sizeof(unsigned), cudaMemcpyDeviceToHost)
           == cudaSuccess);
-  REQUIRE(offsets.back() - offsets[capacities::size] == 1);
+  REQUIRE(offsets.back() - offsets[capacities::size] == 2);
+  REQUIRE(c2h::host_vector<key_type>(d_in) == input);
+  // Exercise persistent work and scratch reuse with a small internal launch grid.
+  auto retry = expected;
+  for (size_t segment = 0; segment < lengths.size(); ++segment)
+  {
+    if (lengths[segment] <= warp_expansion::capacities::bounds.back())
+    {
+      std::fill(retry.begin() + begins[segment], retry.begin() + ends[segment], key_type{-99});
+    }
+  }
+  d_out = retry;
+  REQUIRE(
+    capacity::launch_entry<typename plan::template entry<0>>(
+      result,
+      thrust::raw_pointer_cast(d_begins.data()),
+      thrust::raw_pointer_cast(d_ends.data()),
+      thrust::raw_pointer_cast(d_in.data()),
+      thrust::raw_pointer_cast(d_out.data()),
+      1,
+      stream,
+      cub::detail::TripleChevronFactory{})
+    == cudaSuccess);
+  REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
+  REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
   // Prefixes and scatter cursors must reset on a subsequent invocation.
+  thrust::fill(d_out.begin(), d_out.end(), key_type{-99});
   REQUIRE(run(thrust::raw_pointer_cast(storage.data())) == cudaSuccess);
   REQUIRE(cudaStreamSynchronize(stream) == cudaSuccess);
   REQUIRE(c2h::host_vector<key_type>(d_out) == expected);
