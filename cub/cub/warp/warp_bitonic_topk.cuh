@@ -498,8 +498,8 @@ public:
         warp_bitonic_topk::compare_and_replace<max_k_per_thread, LogicalWarpThreads>(
           keys, values, keys + i, values + i, compare_op, remain_items, lane);
         MaxKSortT{}.template merge<CompareOp, true>(keys, values, compare_op);
-        warp_bitonic_topk::reverse_items<max_k_per_thread, LogicalWarpThreads>(keys, values, lane, member_mask);
-        return;
+        // Don't reverse and then return here. A common return point here may cause the compiler to use runtime
+        // indexing, which spills the array to local memory.
       }
     }
 

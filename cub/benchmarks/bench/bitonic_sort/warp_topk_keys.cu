@@ -51,7 +51,7 @@ template <int WarpsPerBlock, int MaxK, WarpBitonicTopKAlgorithm Algo>
 struct full_op_t
 {
   template <typename KeyT, int ItemsPerThread>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread]) const
+  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], int) const
   {
     using warp_topk_t = cub::detail::WarpBitonicTopK<KeyT, MaxK, warp_threads, cub::NullType, Algo>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
@@ -79,16 +79,12 @@ template <int WarpsPerBlock, int MaxK, WarpBitonicTopKAlgorithm Algo>
 struct partial_op_t
 {
   template <typename KeyT, int ItemsPerThread>
-  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread]) const
+  __device__ __forceinline__ void operator()(KeyT (&keys)[ItemsPerThread], int valid_items) const
   {
     using warp_topk_t = cub::detail::WarpBitonicTopK<KeyT, MaxK, warp_threads, cub::NullType, Algo>;
     __shared__ typename warp_topk_t::TempStorage temp_storage[WarpsPerBlock];
 
-    // All items are assumed valid, because for best efficiency, ItemsPerThread should be set to
-    // ceil(valid_nums / warp_threads). This also matches full_op_t's workload and avoids adding a
-    // valid_items axis that would bloat benchmark combinations.
-    constexpr int valid_nums = ItemsPerThread * warp_threads;
-    warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, CustomLess{}, calc_k(MaxK), valid_nums);
+    warp_topk_t{temp_storage[threadIdx.x / warp_threads]}.TopK(keys, CustomLess{}, calc_k(MaxK), valid_items);
     __syncwarp(); // reuse temp_storage in the next benchmark iteration
   }
 };

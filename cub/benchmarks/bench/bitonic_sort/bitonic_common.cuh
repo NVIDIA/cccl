@@ -112,14 +112,19 @@ void run_topk_bench(nvbench::state& state)
   else
   {
     constexpr int items_per_thread = Len / warp_threads;
-    const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT>;
+    const auto kernel              = benchmark_kernel<items_per_thread, KeyT, ValueT, ActionT, int>;
     constexpr RunParams run_params = calc_topk_run_params<ModeValue>(Len);
 
     state.add_element_count(count_items(run_params, Len));
 
+    // For full workload, parameter valid_items is unused; conceptually, it's equal to Len.
+    // For partial workload, all items are assumed valid (Len is passed as valid_items). This is a
+    // realistic assumption for benchmark, because for best efficiency, ItemsPerThread should be set to
+    // ceil(valid_items / warp_threads). This also matches full workload and avoids adding a
+    // valid_items axis that would bloat benchmark combinations.
     state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
       kernel<<<run_params.grid_dim, run_params.block_dim, 0, launch.get_stream()>>>(
-        run_params.num_iterations, ActionT{});
+        run_params.num_iterations, ActionT{}, Len);
     });
   }
 }
