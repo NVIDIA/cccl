@@ -26,7 +26,9 @@
 #include <cub/detail/uninitialized.cuh>
 #include <cub/util_ptx.cuh>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__fwd/format.h>
 #include <cuda/std/__host_stdlib/ostream>
@@ -143,6 +145,23 @@ using AgentRadixSortOnesweepPolicy
 
 namespace detail::radix_sort
 {
+// Returns whether, when distributing radix_digits digits in contiguous chunks of ceil(radix_digits / block_threads)
+// over block_threads threads, the threads owning a digit form full warps for each digit of the chunk.
+[[nodiscard]] _CCCL_HOST_DEVICE_API constexpr bool
+onesweep_digit_owners_form_full_warps(int block_threads, int radix_digits)
+{
+  const int bins_per_thread = ::cuda::ceil_div(radix_digits, block_threads);
+  for (int u = 0; u < bins_per_thread; ++u)
+  {
+    const int num_owners = ::cuda::std::min(block_threads, ::cuda::ceil_div(radix_digits - u, bins_per_thread));
+    if (num_owners % warp_threads != 0)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename AgentRadixSortOnesweepPolicy,
           bool IsDescending,
           typename KeyT,
@@ -191,6 +210,17 @@ struct AgentRadixSortOnesweep
   static_assert(RANK_ALGORITHM == RADIX_RANK_MATCH || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ANY
                   || RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
                 "for onesweep agent, the ranking algorithm must warp-strided key arrangement");
+
+  // The warp-striped loads and stores, the warp-aligned scatter and BlockRadixRankMatchEarlyCounts require full warps
+  static_assert(BLOCK_THREADS % WARP_THREADS == 0,
+                "RadixSortPolicy: onesweep.threads_per_block must be a multiple of the warp size (32)");
+
+  // LookbackGlobal() is executed by the threads owning a digit and uses warp-wide __ballot_sync(). This also ensures
+  // RADIX_DIGITS is a multiple of the warp size, which BlockRadixRankMatchEarlyCounts requires for RANK_NUM_PARTS > 1.
+  static_assert(onesweep_digit_owners_form_full_warps(BLOCK_THREADS, RADIX_DIGITS),
+                "RadixSortPolicy: onesweep.radix_bits must be at least 5 and onesweep.threads_per_block must be "
+                "chosen such that the threads owning the 2^radix_bits digits (ceil(2^radix_bits / threads_per_block) "
+                "consecutive digits per thread) form full warps");
 
   using BlockRadixRankT = ::cuda::std::_If<
     RANK_ALGORITHM == RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR,
