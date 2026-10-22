@@ -148,12 +148,12 @@
   _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                                  \
   _CCCL_HOST_DEVICE_API inline remove_cv_t<_Tp> operator+=(remove_cv_t<_Tp> __op) _CONST _VOLATILE noexcept \
   {                                                                                                         \
-    return fetch_add(__op) + __op;                                                                          \
+    return ::cuda::std::__cuda_atomic_add(fetch_add(__op), __op);                                           \
   }                                                                                                         \
   _LIBCUDACXX_ATOMIC_MUTATING_CONSTRAINT()                                                                  \
   _CCCL_HOST_DEVICE_API inline remove_cv_t<_Tp> operator-=(remove_cv_t<_Tp> __op) _CONST _VOLATILE noexcept \
   {                                                                                                         \
-    return fetch_sub(__op) - __op;                                                                          \
+    return ::cuda::std::__cuda_atomic_sub(fetch_sub(__op), __op);                                           \
   }
 
 // API definitions for bitwise atomics
