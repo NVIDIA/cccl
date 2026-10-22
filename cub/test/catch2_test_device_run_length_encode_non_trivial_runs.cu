@@ -33,7 +33,6 @@ using all_types =
 
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
-// List of types to be used for num_items
 using num_items_types = c2h::type_list<std::int32_t, std::uint32_t, std::int64_t, std::uint64_t>;
 
 // List of offset types to be used for testing large number of items
