@@ -71,6 +71,8 @@
 //! order, independent static/runtime bit endpoints and existing scratch policy.
 //! [`radix_sort_pairs`] carries associated numeric values through the same stable
 //! ordering, returning fresh key/value payloads with independent alignments.
+//! [`radix_rank_keys`] returns fresh naturally aligned i32 ranks for selected
+//! key digits. [`RadixRankOptions`] selects static width/order and begin/end.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -113,8 +115,9 @@ pub use load_store::{
     Transpose, Vectorize, WarpTranspose, WarpTransposeTimesliced, load, store,
 };
 pub use radix_sort::{
-    Ascending, Descending, RadixBit, RadixKey, RadixSortBit, RadixSortOptions, RadixSortOrder,
-    RadixValue, radix_sort_keys, radix_sort_pairs,
+    Ascending, Descending, RadixBit, RadixKey, RadixRankBits, RadixRankOptions, RadixRankWidth,
+    RadixSortBit, RadixSortOptions, RadixSortOrder, RadixValue, radix_rank_keys, radix_sort_keys,
+    radix_sort_pairs,
 };
 pub use reduce::{
     RakingCommutativeOnly, ReduceAlgorithm, ReduceGroup, ReduceOperator, ReduceOptions,

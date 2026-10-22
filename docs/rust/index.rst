@@ -46,7 +46,7 @@ group's tile, and must be uniform across that group.
 The public operations include :doc:`load_store`, :doc:`scan`, :doc:`reduce`,
 :doc:`reduce_batched`, :doc:`exchange`, :doc:`shuffle`,
 :doc:`adjacent_difference`, :doc:`discontinuity`, :doc:`histogram`,
-:doc:`radix_sort_keys` and :doc:`radix_sort_pairs`.
+:doc:`radix_sort_keys`, :doc:`radix_sort_pairs` and :doc:`radix_rank_keys`.
 Scan returns fresh per-group prefixes;
 Reduce returns a total only at each group's root. Batched reduction returns a fresh
 payload whose extent and valid slots follow its Warp width and output layout.
@@ -56,13 +56,14 @@ Discontinuity returns head flags, tail flags or both as fresh ``i32`` payloads.
 Histogram returns fresh striped counters with an independent type and extent.
 Radix Sort Keys stably sorts integer keys into a fresh blocked payload.
 Radix Sort Pairs carries associated numeric values through that stable order
-and returns two fresh payloads. Histogram and both Radix Sort forms require
-generic native-registration support beyond the currently pinned Oxide revision;
-their guides explain the compiler requirement.
+and returns two fresh payloads. Radix Rank Keys returns each input's stable
+selected-digit position as a fresh ``i32`` payload. Histogram, Radix Sort and
+Radix Rank require generic native-registration support beyond the currently
+pinned Oxide revision; their guides explain the compiler requirement.
 Scan, Reduce, batched reduction, Exchange, Shuffle, Adjacent Difference,
-Discontinuity, Histogram and Radix Sort preserve their inputs. Additional
-primitive families are under development. The crate is unpublished and its
-interface can change.
+Discontinuity, Histogram, Radix Sort and Radix Rank preserve their inputs.
+Additional primitive families are under development. The crate is unpublished
+and its interface can change.
 
 Build and run
 -------------
@@ -128,6 +129,7 @@ Read next
    histogram
    radix_sort_keys
    radix_sort_pairs
+   radix_rank_keys
    provider
 
 Generate the API reference with ``cargo doc --workspace --no-deps`` from

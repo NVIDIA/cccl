@@ -1,7 +1,7 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-//! Validated Block radix sorting with preserved keys and fresh blocked output.
+//! Validated Block radix sorting and ranking with preserved input keys.
 
 use crate::{Dtype, Error, Result};
 
@@ -357,9 +357,261 @@ extern "C" __device__ void {symbol}(const {key}* keys_in, {key}* keys_out,
     }
 }
 
+/// Stable ordering and static digit width for Block radix ranks.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RadixRankKeysRecipe {
+    /// Rank selected digits in ascending order with a width of 1 through 8 bits.
+    Ascending(u32),
+    /// Rank selected digits in descending order with a width of 1 through 8 bits.
+    Descending(u32),
+}
+
+impl RadixRankKeysRecipe {
+    fn bits(self) -> u32 {
+        match self {
+            Self::Ascending(bits) | Self::Descending(bits) => bits,
+        }
+    }
+
+    pub(crate) fn validate(self) -> Result<()> {
+        if !(1..=8).contains(&self.bits()) {
+            return Err(Error::message("Radix Rank Keys requires 1..=8 radix bits"));
+        }
+        Ok(())
+    }
+
+    pub(crate) fn token(self) -> String {
+        let order = match self {
+            Self::Ascending(_) => "ascending",
+            Self::Descending(_) => "descending",
+        };
+        format!("radix_rank_keys_{order}_{}_validity_bits_v1", self.bits())
+    }
+
+    pub(crate) fn parse(operation: &str, algorithm: &str) -> Result<Self> {
+        if algorithm != "block" {
+            return Err(Error::message("Radix Rank Keys requires a Block recipe"));
+        }
+        let unsupported = || Error::message("unsupported Radix Rank Keys operation");
+        let operation = operation
+            .strip_prefix("radix_rank_keys_")
+            .and_then(|token| token.strip_suffix("_validity_bits_v1"))
+            .ok_or_else(unsupported)?;
+        let (descending, bits) = if let Some(bits) = operation.strip_prefix("ascending_") {
+            (false, bits)
+        } else if let Some(bits) = operation.strip_prefix("descending_") {
+            (true, bits)
+        } else {
+            return Err(unsupported());
+        };
+        let bits = match bits {
+            "1" => 1,
+            "2" => 2,
+            "3" => 3,
+            "4" => 4,
+            "5" => 5,
+            "6" => 6,
+            "7" => 7,
+            "8" => 8,
+            _ => return Err(unsupported()),
+        };
+        Ok(if descending {
+            Self::Descending(bits)
+        } else {
+            Self::Ascending(bits)
+        })
+    }
+}
+
+/// Validated integer Block ranking with fresh i32 ranks in input-slot order.
+///
+/// Native calls use `(const T* keys, i32* ranks, u8* scratch,
+/// const u8* key_bits, u8* rank_bits, i64 begin_bit, i64 end_constraint)`.
+/// Both scalar controls are uniform across the Block. The static digit width
+/// is 1 through 8; `begin_bit` must be in `0..=sizeof(T)*8-width`.
+/// `end_constraint` is -1 for an omitted end, or an explicit static endpoint
+/// equal to `begin_bit+width` and at most the key width. Checks use signed64
+/// arithmetic before narrowing, reading keys or calling CUB.
+///
+/// Each lane supplies `items` initialized keys and `ceil(items/8)` packed,
+/// low-bit-first validity bytes. Every input bit is checked before any numeric
+/// read. Keys and their validity map remain unchanged. Output contains `items`
+/// naturally aligned i32 ranks with a separate packed validity map, independent
+/// of key width/alignment. All output slots become valid; padding bits are zero.
+/// Output arrays, output maps and scratch are mutually disjoint and disjoint
+/// from the input arrays and maps, which remain live throughout the call.
+///
+/// Ranks describe stable selected-digit order in the complete blocked tile:
+/// input slot `i` at x-fastest rank `r` has position `r*items+i`. Signed keys
+/// are transformed by flipping their sign bit before digit extraction. Equal
+/// digits retain input order in either direction. The ranks form a permutation
+/// of `0..Block_threads*items`, stored in original input-slot order.
+///
+/// Every member of the exact Block participates in converged control flow.
+/// Scratch is the queried BlockRadixRank TempStorage, not sort/exchange storage.
+/// The caller supplies its alignment and lifetime and synchronizes members
+/// before reuse. No trailing completion barrier is added.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RadixRankKeysRequest {
+    pub(crate) recipe: RadixRankKeysRecipe,
+    pub(crate) dtype: Dtype,
+    block: [u32; 3],
+    items: u32,
+}
+
+impl RadixRankKeysRequest {
+    /// Validate stable ranking for an exact complete XYZ Block.
+    ///
+    /// `dtype` is i32/u32/i64/u64; `recipe` selects ordering and static width.
+    /// `block` contains positive XYZ axes and `items` is the positive per-lane
+    /// extent of keys and ranks. Runtime begin/end controls do not enter identity.
+    ///
+    /// # Errors
+    /// Rejects widths outside 1..=8 and the key types, shapes and tile capacities
+    /// rejected by [`RadixSortKeysRequest::block`], including tiles above 65535 keys.
+    pub fn block(
+        dtype: Dtype,
+        recipe: RadixRankKeysRecipe,
+        block: [u32; 3],
+        items: u32,
+    ) -> Result<Self> {
+        recipe.validate()?;
+        RadixSortKeysRequest::block(dtype, RadixSortKeysRecipe::Ascending, block, items)?;
+        Ok(Self {
+            recipe,
+            dtype,
+            block,
+            items,
+        })
+    }
+
+    pub(crate) fn block_shape(self) -> [u32; 3] {
+        self.block
+    }
+
+    pub(crate) fn source(self, symbol: &str) -> String {
+        let (dtype, width) = self.dtype.native();
+        let bits = width * 8;
+        let unsigned = if width == 4 {
+            "unsigned int"
+        } else {
+            "unsigned long long"
+        };
+        let transform = if matches!(self.dtype, Dtype::I32 | Dtype::I64) {
+            format!(" ^ (unsigned_type{{1}} << {})", bits - 1)
+        } else {
+            String::new()
+        };
+        let [x, y, z] = self.block;
+        let items = self.items;
+        let bytes = items / 8 + u32::from(items % 8 != 0);
+        let radix_bits = self.recipe.bits();
+        let descending = matches!(self.recipe, RadixRankKeysRecipe::Descending(_));
+        format!(
+            r#"
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/block/block_scan.cuh>
+#include <driver_types.h>
+namespace {symbol}_detail {{
+using unsigned_type = {unsigned};
+using primitive = cub::BlockRadixRank<{x}, {radix_bits}, {descending}, true,
+    cub::BLOCK_SCAN_WARP_SCANS, cudaSharedMemBankSizeFourByte, {y}, {z}>;
+using scratch_storage = primitive::TempStorage;
+}}
+extern "C" __device__ void {symbol}(const {dtype}* keys, int* ranks,
+    unsigned char* scratch, const unsigned char* key_bits, unsigned char* rank_bits,
+    long long begin_bit, long long end_constraint) {{
+  using namespace {symbol}_detail;
+  if (begin_bit < 0 || begin_bit > {bits} - {radix_bits} ||
+      (end_constraint != -1 &&
+       (end_constraint < {radix_bits} || end_constraint > {bits} ||
+        begin_bit != end_constraint - {radix_bits}))) __trap();
+#pragma unroll
+  for (int i = 0; i < {items}; ++i)
+    if ((key_bits[i / 8] & (1u << (i % 8))) == 0) __trap();
+  unsigned_type local_keys[{items}];
+  int local_ranks[{items}];
+#pragma unroll
+  for (int i = 0; i < {items}; ++i)
+    local_keys[i] = static_cast<unsigned_type>(keys[i]){transform};
+  primitive operation{{*reinterpret_cast<scratch_storage*>(scratch)}};
+  operation.RankKeys(local_keys, local_ranks,
+      cub::BFEDigitExtractor<unsigned_type>(static_cast<int>(begin_bit), {radix_bits}));
+#pragma unroll
+  for (int i = 0; i < {bytes}; ++i) rank_bits[i] = 0;
+#pragma unroll
+  for (int i = 0; i < {items}; ++i) {{
+    ranks[i] = local_ranks[i];
+    rank_bits[i / 8] |= static_cast<unsigned char>(1u << (i % 8));
+  }}
+}}
+"#
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rank_key_types_and_tile_capacity() {
+        for dtype in [Dtype::I32, Dtype::U32, Dtype::I64, Dtype::U64] {
+            assert!(
+                RadixRankKeysRequest::block(
+                    dtype,
+                    RadixRankKeysRecipe::Ascending(1),
+                    [3, 5, 17],
+                    257
+                )
+                .is_ok()
+            );
+            assert!(
+                RadixRankKeysRequest::block(
+                    dtype,
+                    RadixRankKeysRecipe::Descending(8),
+                    [256, 1, 1],
+                    256
+                )
+                .is_err()
+            );
+        }
+        for dtype in [
+            Dtype::I8,
+            Dtype::U8,
+            Dtype::I16,
+            Dtype::U16,
+            Dtype::F32,
+            Dtype::F64,
+        ] {
+            assert!(
+                RadixRankKeysRequest::block(
+                    dtype,
+                    RadixRankKeysRecipe::Ascending(4),
+                    [64, 1, 1],
+                    4
+                )
+                .is_err()
+            );
+        }
+        for (block, items) in [
+            ([0, 1, 1], 1),
+            ([u32::MAX, 2, 2], 1),
+            ([1025, 1, 1], 1),
+            ([64, 1, 1], 0),
+        ] {
+            assert!(
+                RadixRankKeysRequest::block(
+                    Dtype::I64,
+                    RadixRankKeysRecipe::Ascending(4),
+                    block,
+                    items
+                )
+                .is_err()
+            );
+        }
+    }
 
     #[test]
     fn key_types_and_complete_tile_counter_bounds() {

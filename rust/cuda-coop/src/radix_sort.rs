@@ -18,7 +18,7 @@ pub struct Ascending;
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Descending;
 
-/// Sealed Radix Sort key types: i32, u32, i64 and u64.
+/// Sealed Radix Sort and Rank key types: i32, u32, i64 and u64.
 pub trait RadixKey: Numeric + sealed::Key {}
 
 /// Sealed associated-value types for [`radix_sort_pairs`].
@@ -27,7 +27,7 @@ pub trait RadixKey: Numeric + sealed::Key {}
 /// with their keys without comparisons or arithmetic, preserving their bits.
 pub trait RadixValue: Numeric + sealed::Value {}
 
-/// A sealed static Radix Sort order: [`Ascending`] or [`Descending`].
+/// A sealed static Radix Sort or Rank order: [`Ascending`] or [`Descending`].
 pub trait RadixSortOrder: sealed::Order {}
 
 /// A compile-time bit endpoint selected by the const option builders.
@@ -284,6 +284,146 @@ where
     boundary::radix_sort_pairs(keys, values, options)
 }
 
+/// A compile-time digit width selected by [`RadixRankOptions::radix_bits`].
+#[derive(Clone, Copy, Debug, Default)]
+pub struct RadixRankBits<const BITS: i64>;
+
+/// A sealed Rank width: omitted `()` or explicit [`RadixRankBits`].
+pub trait RadixRankWidth: sealed::RankWidth {}
+
+/// Static order and digit width, with a static or Block-uniform runtime begin.
+///
+/// Canonical [`Default`] selects ascending, begin zero and four radix bits.
+/// With a static end and no explicit width, the width is `end - begin`.
+/// Every width must be in `1..=8`, and the complete interval must fit the key.
+/// A runtime begin requires an explicit width; a literal passed to `begin_bit`
+/// still selects the runtime route. An optional end is always static and must
+/// equal begin plus width. Builders validate their final combined choices at
+/// monomorphization, or at runtime where begin is dynamic.
+///
+/// `T` is inferred from the input. Rank uses implicit compiler-planned scratch.
+///
+/// ```
+/// use cuda_coop as coop;
+/// let _: coop::RadixRankOptions<i64> = Default::default();
+/// let _ = coop::RadixRankOptions::<i64>::default()
+///     .begin_bit_const::<61>().end_bit_const::<64>();
+/// let _ = coop::RadixRankOptions::<i64>::default()
+///     .begin_bit(61).radix_bits::<3>().order(coop::Descending);
+/// ```
+pub struct RadixRankOptions<T, O = Ascending, Begin = (), End = (), Bits = ()> {
+    begin: Begin,
+    selection: PhantomData<(T, O, End, Bits)>,
+}
+
+impl<T: RadixKey> Default for RadixRankOptions<T> {
+    fn default() -> Self {
+        Self {
+            begin: (),
+            selection: PhantomData,
+        }
+    }
+}
+
+impl<T: RadixKey, O, Begin, End, Bits> RadixRankOptions<T, O, Begin, End, Bits> {
+    /// Select static order, preserving the interval choices.
+    pub fn order<O2: RadixSortOrder>(
+        self,
+        _order: O2,
+    ) -> RadixRankOptions<T, O2, Begin, End, Bits> {
+        RadixRankOptions {
+            begin: self.begin,
+            selection: PhantomData,
+        }
+    }
+
+    /// Set a Block-uniform runtime begin; an explicit radix width is required.
+    pub fn begin_bit(self, begin: i64) -> RadixRankOptions<T, O, i64, End, Bits> {
+        RadixRankOptions {
+            begin,
+            selection: PhantomData,
+        }
+    }
+
+    /// Set a static begin, checked with the final width and optional end.
+    pub fn begin_bit_const<const BIT: i64>(
+        self,
+    ) -> RadixRankOptions<T, O, RadixBit<BIT>, End, Bits> {
+        RadixRankOptions {
+            begin: RadixBit,
+            selection: PhantomData,
+        }
+    }
+
+    /// Set a static end, deriving width when no explicit width is selected.
+    pub fn end_bit_const<const BIT: i64>(
+        self,
+    ) -> RadixRankOptions<T, O, Begin, RadixBit<BIT>, Bits> {
+        RadixRankOptions {
+            begin: self.begin,
+            selection: PhantomData,
+        }
+    }
+
+    /// Select a static digit width in `1..=8`, preserving begin and end.
+    pub fn radix_bits<const BITS: i64>(
+        self,
+    ) -> RadixRankOptions<T, O, Begin, End, RadixRankBits<BITS>> {
+        RadixRankOptions {
+            begin: self.begin,
+            selection: PhantomData,
+        }
+    }
+}
+
+/// Rank selected key digits across a complete XYZ Block, preserving the input.
+///
+/// Each input item receives its position in the stable ascending or descending
+/// selected-digit order. Ties receive increasing ranks in original blocked
+/// order. The fresh result is `ThreadData<i32, ITEMS_PER_THREAD>` with natural
+/// i32 alignment, independently of the key payload's minimum alignment.
+/// Every rank slot is initialized; input values and validity bits are unchanged.
+///
+/// All Block members participate with positive `ITEMS_PER_THREAD` initialized
+/// keys. The x-fastest Block-size/extent product must not exceed 65,535. Signed
+/// keys invert their sign bit before extracting the selected digit. Defaults
+/// rank the low four transformed bits, rather than sorting the whole key.
+/// Generic T/N/ALIGN callers need no `generic_const_exprs` feature.
+///
+/// [`RadixRankOptions`] validates static choices at monomorphization. Dynamic
+/// begin values must be Block-uniform; invalid intervals or unreadable inputs
+/// trap before numeric reads, with wide bounds checked before narrowing.
+/// Scratch and synchronization before dirty reuse are compiler-planned. Rank
+/// does not complete unrelated global accesses. There is no explicit storage,
+/// prefix-output, Warp or partial-input form. Execution needs an Oxide kernel.
+///
+/// ```no_run
+/// use cuda_coop as coop;
+/// fn ranks<T: coop::RadixKey, const N: usize, const ALIGN: usize>(
+///     block: coop::ThreadGroup<coop::Block>,
+///     keys: &coop::ThreadData<T, N, ALIGN>,
+/// ) -> coop::ThreadData<i32, N>
+/// where coop::Alignment<ALIGN>: coop::SupportedAlignment {
+///     coop::radix_rank_keys(block, keys, Default::default())
+/// }
+/// ```
+#[inline(always)]
+pub fn radix_rank_keys<T, O, Begin, End, Bits, const ITEMS_PER_THREAD: usize, const ALIGN: usize>(
+    _group: ThreadGroup<Block>,
+    keys: &ThreadData<T, ITEMS_PER_THREAD, ALIGN>,
+    options: RadixRankOptions<T, O, Begin, End, Bits>,
+) -> ThreadData<i32, ITEMS_PER_THREAD>
+where
+    T: RadixKey,
+    O: RadixSortOrder,
+    Begin: RadixSortBit,
+    End: RadixSortBit,
+    Bits: RadixRankWidth,
+    Alignment<ALIGN>: SupportedAlignment,
+{
+    boundary::radix_rank_keys(keys, options)
+}
+
 mod sealed {
     pub trait Key {
         const WIDTH: i64;
@@ -291,6 +431,9 @@ mod sealed {
     pub trait Value {
         const ASCENDING_REGISTRATION: &'static str;
         const DESCENDING_REGISTRATION: &'static str;
+    }
+    pub trait RankWidth {
+        const STATIC: Option<i64>;
     }
     pub trait Order {
         const DESCENDING: bool;
@@ -410,3 +553,12 @@ impl<const BIT: i64> sealed::Bit for RadixBit<BIT> {
     }
 }
 impl<const BIT: i64> RadixSortBit for RadixBit<BIT> {}
+
+impl sealed::RankWidth for () {
+    const STATIC: Option<i64> = None;
+}
+impl RadixRankWidth for () {}
+impl<const BITS: i64> sealed::RankWidth for RadixRankBits<BITS> {
+    const STATIC: Option<i64> = Some(BITS);
+}
+impl<const BITS: i64> RadixRankWidth for RadixRankBits<BITS> {}

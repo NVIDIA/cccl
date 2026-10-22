@@ -1,7 +1,10 @@
 // Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-use super::{RadixKey, RadixSortBit, RadixSortOptions, RadixSortOrder, RadixValue};
+use super::{
+    RadixKey, RadixRankOptions, RadixRankWidth, RadixSortBit, RadixSortOptions, RadixSortOrder,
+    RadixValue,
+};
 use crate::{Alignment, SupportedAlignment, TempStorageLike, ThreadData};
 use cuda_device::library;
 
@@ -160,4 +163,128 @@ where
         }
     }
     (output_keys, output_values)
+}
+
+struct RankBounds<T, O, Begin, End, Bits>(core::marker::PhantomData<(T, O, Begin, End, Bits)>);
+impl<T: RadixKey, O: RadixSortOrder, Begin: RadixSortBit, End: RadixSortBit, Bits: RadixRankWidth>
+    RankBounds<T, O, Begin, End, Bits>
+{
+    const BEGIN: Option<i64> = if Begin::DEFAULT {
+        Some(0)
+    } else {
+        Begin::STATIC
+    };
+    const END: Option<i64> = if End::DEFAULT { None } else { End::STATIC };
+    const WIDTH: i64 = {
+        assert!(
+            End::DEFAULT || End::STATIC.is_some(),
+            "Radix Rank end must be static"
+        );
+        if let Some(begin) = Self::BEGIN {
+            assert!(
+                begin >= 0 && begin < T::WIDTH,
+                "Radix Rank begin must be in 0..key_width"
+            );
+        }
+        if let Some(end) = Self::END {
+            assert!(
+                end > 0 && end <= T::WIDTH,
+                "Radix Rank end must be in 1..=key_width"
+            );
+        }
+        let width = match (Bits::STATIC, Self::BEGIN, Self::END) {
+            (Some(width), _, _) => width,
+            (None, Some(begin), Some(end)) => end - begin,
+            (None, Some(_), None) => 4,
+            (None, None, _) => panic!("Radix Rank runtime begin requires explicit radix_bits"),
+        };
+        assert!(
+            width >= 1 && width <= 8,
+            "Radix Rank radix_bits must be in 1..=8"
+        );
+        if let Some(begin) = Self::BEGIN {
+            assert!(
+                begin <= T::WIDTH - width,
+                "Radix Rank interval exceeds key width"
+            );
+        }
+        if let Some(end) = Self::END {
+            assert!(end >= width, "Radix Rank end is smaller than radix_bits");
+            if let Some(begin) = Self::BEGIN {
+                assert!(
+                    begin == end - width,
+                    "Radix Rank end must equal begin + radix_bits"
+                );
+            }
+        }
+        width
+    };
+    const REGISTRATION: &'static str = match (O::DESCENDING, Self::WIDTH) {
+        (false, 1) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_1"),
+        (false, 2) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_2"),
+        (false, 3) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_3"),
+        (false, 4) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_4"),
+        (false, 5) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_5"),
+        (false, 6) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_6"),
+        (false, 7) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_7"),
+        (false, 8) => library::registration!("COOP_RADIX_RANK_KEYS_ASCENDING_8"),
+        (true, 1) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_1"),
+        (true, 2) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_2"),
+        (true, 3) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_3"),
+        (true, 4) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_4"),
+        (true, 5) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_5"),
+        (true, 6) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_6"),
+        (true, 7) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_7"),
+        (true, 8) => library::registration!("COOP_RADIX_RANK_KEYS_DESCENDING_8"),
+        _ => unreachable!(),
+    };
+}
+
+fn rank_registration<
+    T: RadixKey,
+    O: RadixSortOrder,
+    Begin: RadixSortBit,
+    End: RadixSortBit,
+    Bits: RadixRankWidth,
+>() -> &'static str {
+    RankBounds::<T, O, Begin, End, Bits>::REGISTRATION
+}
+
+#[inline(always)]
+pub(super) fn radix_rank_keys<T, O, Begin, End, Bits, const N: usize, const ALIGN: usize>(
+    input: &ThreadData<T, N, ALIGN>,
+    options: RadixRankOptions<T, O, Begin, End, Bits>,
+) -> ThreadData<i32, N>
+where
+    T: RadixKey,
+    O: RadixSortOrder,
+    Begin: RadixSortBit,
+    End: RadixSortBit,
+    Bits: RadixRankWidth,
+    Alignment<ALIGN>: SupportedAlignment,
+{
+    let _ = RankBounds::<T, O, Begin, End, Bits>::WIDTH;
+    let mut output = ThreadData::<i32, N>::new();
+    let (input_pointer, input_bits) = input.block_io_read_parts();
+    let (output_pointer, output_bits) = output.block_io_parts();
+    let payload = (input_pointer, output_pointer, input_bits, output_bits);
+    let uniform = (
+        options.begin.value(0),
+        RankBounds::<T, O, Begin, End, Bits>::END.unwrap_or(-1),
+    );
+    // SAFETY: the borrowed T input and fresh naturally aligned i32 output are
+    // distinct live local buffers with independent N-bit maps. The closed
+    // width/order recipe checks the wide interval and every input bit before
+    // reads, ranks a private unsigned copy and initializes every output/map.
+    // No pointer escapes. The genuine marker proves complete Block membership
+    // and uniform controls; the provider checks XYZ and 65,535-item capacity.
+    unsafe {
+        library::checked_block_payload_call_v1::<T, _, _, _, _, N>(
+            rank_registration::<T, O, Begin, End, Bits>,
+            (),
+            uniform,
+            payload,
+        );
+    }
+    output
 }

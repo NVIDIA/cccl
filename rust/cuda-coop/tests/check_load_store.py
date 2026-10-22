@@ -1816,6 +1816,63 @@ cases.update(
     ),
 )
 
+# Rank returns natural-aligned i32 positions while preserving its key payload.
+radix_rank = "let result=coop::radix_rank_keys(block,&values,Default::default());"
+cases.update(
+    radix_rank_generic_defaults=(
+        load + "fn forward<T:coop::RadixKey,const N:usize,const A:usize>("
+        "block:coop::ThreadGroup<coop::Block>,keys:&coop::ThreadData<T,N,A>,begin:i64)"
+        "->coop::ThreadData<i32,N> where coop::Alignment<A>:coop::SupportedAlignment {"
+        "let _:coop::ThreadData<i32,N>=coop::radix_rank_keys(block,keys,Default::default());"
+        "coop::radix_rank_keys(block,keys,coop::RadixRankOptions::default()"
+        ".radix_bits::<4>().begin_bit(begin).order(coop::Descending))}"
+        "let mut keys=coop::ThreadData::<i32,4,32>::new();"
+        + load.replace("&mut values", "&mut keys")
+        + "let result=forward(block,&keys,valid as i64);"
+        + store.replace("&values", "&result"),
+        None,
+    ),
+    radix_rank_implicit_reuse=(
+        load
+        + radix_rank.replace("result", "first")
+        + radix_rank
+        + "values.write(0,first[0]+result[0]);"
+        + store,
+        None,
+    ),
+    radix_rank_read_completed=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + radix_rank
+        + sync
+        + store,
+        None,
+    ),
+    radix_rank_varying_begin=(
+        load
+        + radix_rank.replace(
+            "Default::default()",
+            "coop::RadixRankOptions::default().radix_bits::<4>()"
+            ".begin_bit(thread::threadIdx_x() as i64)",
+        ),
+        "not proved block-uniform",
+    ),
+    radix_rank_result_control=(
+        load + radix_rank + "if result[0]==0 {" + radix_rank + "}",
+        "lane-varying",
+    ),
+    radix_rank_read_epoch=(
+        reload.replace(".valid_items(valid)", ".valid_items(valid).oob_default(0)")
+        + radix_rank
+        + store,
+        "requires a barrier covering both accesses",
+    ),
+    radix_rank_tile_capacity=(
+        "values.write(0,0_i32);let keys=coop::ThreadData::<i32,512>::new();"
+        "let _=coop::radix_rank_keys(block,&keys,Default::default());",
+        "at most 65535 keys",
+    ),
+)
+
 if args.case:
     unknown = set(args.case).difference(cases)
     if unknown:

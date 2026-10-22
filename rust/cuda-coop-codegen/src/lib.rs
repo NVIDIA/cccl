@@ -5,8 +5,7 @@
 //!
 //! This private development crate compiles Load/Store, Scan, Reduce, batched
 //! Reduce, Exchange, Shuffle, Adjacent Difference, Discontinuity, Histogram
-//! and Radix Sort Keys
-//! with NVRTC.
+//! and Radix Sort Keys/Pairs and Rank Keys with NVRTC.
 //! It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -60,7 +59,8 @@
 //! [`RadixSortKeysRequest`] stably sorts a complete integer Block tile over a
 //! uniform bit range, preserving input and producing fresh blocked keys.
 //! [`RadixSortPairsRequest`] carries independently typed values with each key
-//! into fresh paired outputs. [`Provider::compile_native`] batches these families
+//! into fresh paired outputs. [`RadixRankKeysRequest`] returns stable selected-digit
+//! i32 ranks in original input-slot order. [`Provider::compile_native`] batches these families
 //! in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
@@ -105,7 +105,8 @@ pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
 pub use histogram::{HistogramAlgorithm, HistogramRecipe, HistogramRequest};
 pub use radix_sort::{
-    RadixSortKeysRecipe, RadixSortKeysRequest, RadixSortPairsRecipe, RadixSortPairsRequest,
+    RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
+    RadixSortPairsRecipe, RadixSortPairsRequest,
 };
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
@@ -511,6 +512,8 @@ pub enum NativeRequest {
     RadixSortKeys(RadixSortKeysRequest),
     /// Stable Block radix sort preserving independently typed key/value inputs.
     RadixSortPairs(RadixSortPairsRequest),
+    /// Stable selected-digit Block ranks with preserved keys and fresh i32 output.
+    RadixRankKeys(RadixRankKeysRequest),
 }
 
 impl NativeRequest {
@@ -527,6 +530,7 @@ impl NativeRequest {
             Self::Histogram(request) => request.block_shape(),
             Self::RadixSortKeys(request) => request.block_shape(),
             Self::RadixSortPairs(request) => request.block_shape(),
+            Self::RadixRankKeys(request) => request.block_shape(),
         }
     }
 
@@ -543,6 +547,7 @@ impl NativeRequest {
             Self::Histogram(request) => request.source(symbol),
             Self::RadixSortKeys(request) => request.source(symbol),
             Self::RadixSortPairs(request) => request.source(symbol),
+            Self::RadixRankKeys(request) => request.source(symbol),
         }
     }
 
@@ -559,6 +564,7 @@ impl NativeRequest {
             Self::Histogram(request) => request.recipe.token(),
             Self::RadixSortKeys(request) => request.recipe.token().into(),
             Self::RadixSortPairs(request) => request.recipe.token(request.value_dtype),
+            Self::RadixRankKeys(request) => request.recipe.token(),
         }
     }
 
@@ -574,7 +580,8 @@ impl NativeRequest {
             | Self::Discontinuity(_)
             | Self::Histogram(_)
             | Self::RadixSortKeys(_)
-            | Self::RadixSortPairs(_) => false,
+            | Self::RadixSortPairs(_)
+            | Self::RadixRankKeys(_) => false,
         }
     }
 
@@ -593,7 +600,8 @@ impl NativeRequest {
             | Self::Discontinuity(_)
             | Self::Histogram(_)
             | Self::RadixSortKeys(_)
-            | Self::RadixSortPairs(_) => false,
+            | Self::RadixSortPairs(_)
+            | Self::RadixRankKeys(_) => false,
         }
     }
 }
@@ -619,6 +627,7 @@ pub struct Layout {
 /// [`AdjacentDifferenceRequest`], [`DiscontinuityRequest`], [`HistogramRequest`]
 /// and [`RadixSortKeysRequest`]. [`RadixSortPairsRequest`] returns fresh keys and
 /// independently typed associated values while preserving both inputs.
+/// [`RadixRankKeysRequest`] returns fresh i32 ranks independently of key type.
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.

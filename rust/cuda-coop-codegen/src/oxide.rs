@@ -24,6 +24,8 @@
 //! [`RadixSortKeysRecipe`] selects stable Block key sorting with two signed64
 //! uniform bit bounds and fresh blocked output. [`RadixSortPairsRecipe`] also
 //! carries an independent numeric value type into a fresh paired output.
+//! [`RadixRankKeysRecipe`] selects stable i32 ranks with a static digit width
+//! and signed64 begin/end-constraint controls, preserving input-slot order.
 //! Device calls retain all participation, validity and scratch obligations of
 //! [`crate::Specialization`]. No allocation or synchronization policy is supplied.
 
@@ -31,9 +33,10 @@ use crate::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, Artifact, DiscontinuityRecipe,
     DiscontinuityRequest, Dtype, Error, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
     HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider,
-    RadixSortKeysRecipe, RadixSortKeysRequest, RadixSortPairsRecipe, RadixSortPairsRequest,
-    ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceRecipe, ReduceRequest, Request,
-    Result, ScanRecipe, ScanRequest, ShuffleRecipe, ShuffleRequest,
+    RadixRankKeysRecipe, RadixRankKeysRequest, RadixSortKeysRecipe, RadixSortKeysRequest,
+    RadixSortPairsRecipe, RadixSortPairsRequest, ReduceBatchedRecipe, ReduceBatchedRequest,
+    ReduceForm, ReduceRecipe, ReduceRequest, Request, Result, ScanRecipe, ScanRequest,
+    ShuffleRecipe, ShuffleRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
@@ -136,6 +139,19 @@ struct SpecializationRequest {
 
 impl SpecializationRequest {
     fn native(&self) -> Result<NativeRequest> {
+        if self.operation.starts_with("radix_rank_keys_") {
+            let recipe = RadixRankKeysRecipe::parse(&self.operation, &self.algorithm)?;
+            if self.warp_width.is_some() {
+                return Err(Error::message("Radix Rank Keys requires a Block scope"));
+            }
+            return RadixRankKeysRequest::block(
+                self.dtype.dtype()?,
+                recipe,
+                self.block,
+                self.items_per_thread,
+            )
+            .map(NativeRequest::RadixRankKeys);
+        }
         if self.operation.starts_with("radix_sort_pairs_") {
             let (recipe, value_dtype) =
                 RadixSortPairsRecipe::parse(&self.operation, &self.algorithm)?;
@@ -369,6 +385,16 @@ struct BatchResponse {
 
 fn arguments(request: NativeRequest) -> Vec<Argument> {
     let request = match request {
+        NativeRequest::RadixRankKeys(request) => {
+            return vec![
+                Argument::ConstPointer(Scalar::from(request.dtype)),
+                Argument::MutPointer(Scalar::Signed(32)),
+                Argument::ConstPointer(Scalar::Unsigned(8)),
+                Argument::MutPointer(Scalar::Unsigned(8)),
+                Argument::Value(Scalar::Signed(64)),
+                Argument::Value(Scalar::Signed(64)),
+            ];
+        }
         NativeRequest::RadixSortPairs(request) => {
             let key = Scalar::from(request.key_dtype);
             let value = Scalar::from(request.value_dtype);
@@ -721,6 +747,35 @@ pub fn shuffle_registration(executable: &Path, recipe: ShuffleRecipe) -> Result<
         provider: "cuda_coop",
         executable,
         operation: recipe.token(),
+        algorithm: "block",
+    })
+    .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
+}
+
+/// Encode one of sixteen Block Radix Rank Keys order/width registrations.
+///
+/// `recipe` selects ascending/descending order and 1..=8 radix bits. Key type,
+/// exact XYZ and per-lane extent arrive with specialization. Four pointers
+/// describe preserved keys, fresh i32 ranks and independent validity maps.
+/// Two signed64 uniform controls follow: begin bit and an explicit static end
+/// constraint, or -1 for omitted end. Scratch is inserted at slot 2, giving
+/// seven native arguments. See [`RadixRankKeysRequest`] for the native contract.
+///
+/// # Errors
+/// Rejects widths outside 1..=8, a nonabsolute executable or an unencodable path.
+pub fn radix_rank_keys_registration(
+    executable: &Path,
+    recipe: RadixRankKeysRecipe,
+) -> Result<String> {
+    recipe.validate()?;
+    if !executable.is_absolute() {
+        return Err(Error::message("provider executable path must be absolute"));
+    }
+    serde_json::to_string(&Registration {
+        version: VERSION,
+        provider: "cuda_coop",
+        executable,
+        operation: &recipe.token(),
         algorithm: "block",
     })
     .map_err(|error| Error::message(format!("cannot encode provider registration: {error}")))
@@ -1116,6 +1171,75 @@ mod tests {
                 request.operation = "radix_sort_pairs_ascending_f16_validity_bits_v1".into();
                 assert!(request.native().is_err());
             }
+        }
+    }
+
+    #[test]
+    fn radix_rank_registration_preserves_width_and_independent_output_abi() {
+        for bits in 1..=8 {
+            for recipe in [
+                RadixRankKeysRecipe::Ascending(bits),
+                RadixRankKeysRecipe::Descending(bits),
+            ] {
+                let registration: serde_json::Value = serde_json::from_str(
+                    &radix_rank_keys_registration(Path::new("/provider"), recipe).unwrap(),
+                )
+                .unwrap();
+                let mut request = SpecializationRequest {
+                    operation: registration["operation"].as_str().unwrap().into(),
+                    algorithm: registration["algorithm"].as_str().unwrap().into(),
+                    dtype: Scalar::Signed(64),
+                    block: [4, 4, 4],
+                    items_per_thread: 9,
+                    warp_width: None,
+                };
+                let native = request.native().unwrap();
+                assert_eq!(
+                    native,
+                    NativeRequest::RadixRankKeys(
+                        RadixRankKeysRequest::block(Dtype::I64, recipe, [4, 4, 4], 9).unwrap()
+                    )
+                );
+                assert_eq!(
+                    arguments(native),
+                    vec![
+                        Argument::ConstPointer(Scalar::Signed(64)),
+                        Argument::MutPointer(Scalar::Signed(32)),
+                        Argument::ConstPointer(Scalar::Unsigned(8)),
+                        Argument::MutPointer(Scalar::Unsigned(8)),
+                        Argument::Value(Scalar::Signed(64)),
+                        Argument::Value(Scalar::Signed(64)),
+                    ]
+                );
+                assert!(!native.mutates_payload() && !native.scratch_free());
+                request.warp_width = Some(32);
+                assert!(request.native().is_err());
+                request.warp_width = None;
+                request.dtype = Scalar::Float(64);
+                assert!(request.native().is_err());
+            }
+        }
+        for bits in [0, 9, u32::MAX] {
+            for recipe in [
+                RadixRankKeysRecipe::Ascending(bits),
+                RadixRankKeysRecipe::Descending(bits),
+            ] {
+                assert!(radix_rank_keys_registration(Path::new("/provider"), recipe).is_err());
+                assert!(RadixRankKeysRequest::block(Dtype::I32, recipe, [32, 1, 1], 1).is_err());
+            }
+        }
+        assert!(
+            radix_rank_keys_registration(Path::new("relative"), RadixRankKeysRecipe::Ascending(4))
+                .is_err()
+        );
+        for (operation, algorithm) in [
+            ("radix_rank_keys_ascending_0_validity_bits_v1", "block"),
+            ("radix_rank_keys_descending_9_validity_bits_v1", "block"),
+            ("radix_rank_keys_ascending_04_validity_bits_v1", "block"),
+            ("radix_rank_keys_ascending_4_validity_bits_v2", "block"),
+            ("radix_rank_keys_ascending_4_validity_bits_v1", "warp"),
+        ] {
+            assert!(RadixRankKeysRecipe::parse(operation, algorithm).is_err());
         }
     }
 
