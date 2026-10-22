@@ -14,24 +14,28 @@
 #endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/deferred_parameter.cuh>
-#include <cub/detail/it_traits.cuh>
+#include <cub/detail/delay_constructor.cuh>
+#include <cub/detail/it_traits.cuh> // IWYU pragma: keep
+#include <cub/detail/uninitialized.cuh>
 #include <cub/detail/warpspeed/look_ahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 
-#include <cuda/std/__type_traits/always_false.h>
+#include <nv/target>
 
 #if _CCCL_CUDACC_AT_LEAST(12, 8)
 #  include <cub/device/dispatch/kernels/kernel_scan_lookahead.cuh>
 #endif // _CCCL_CUDACC_AT_LEAST(12, 8)
 
-#include <thrust/type_traits/is_contiguous_iterator.h>
-
+#include <cuda/__atomic/atomic.h>
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/atomic>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__atomic/order.h>
+#include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/cstdint>

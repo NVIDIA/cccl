@@ -25,18 +25,25 @@
 #include <cub/detail/null_type.cuh>
 #include <cub/detail/segmented_scan_helpers.cuh>
 #include <cub/detail/uninitialized.cuh>
-#include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
 #include <cub/util_macro.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/iterator>
-#include <cuda/std/__functional/invoke.h>
+#include <cuda/__functional/minimum.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__functional/operations.h>
+#include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/span>
+
+#if _CCCL_HAS_CONCEPTS()
+#  include <cub/device/dispatch/tuning/tuning_segmented_scan.cuh>
+#endif // _CCCL_HAS_CONCEPTS()
 
 CUB_NAMESPACE_BEGIN
 
