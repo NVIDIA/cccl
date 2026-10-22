@@ -221,7 +221,7 @@ template <class _Tp>
 _CCCL_DEDUCTION_GUIDE_ATTRIBUTES take(_Tp) -> take<::cuda::std::__maybe_static_ext<_Tp>>;
 } // namespace cuda::experimental::coop
 
-_CCCL_END_NV_DIAG_SUPPRESS
+_CCCL_END_NV_DIAG_SUPPRESS()
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
