@@ -763,7 +763,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! @endrst
   //!
@@ -866,7 +866,7 @@ struct DeviceFind
   //! sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! This is an environment-based API that allows customization of:
   //!
@@ -1006,6 +1006,7 @@ struct DeviceFind
   //! - @devicestorage
   //!
   //! .. versionadded:: 3.5.0
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! @endrst
   //!
@@ -1108,7 +1109,7 @@ struct DeviceFind
   //! sorted consistently with ``comp``.
   //!
   //! .. versionadded:: 3.5.0
-  //!    First appears in CUDA Toolkit 13.4.
+  //!    First appears in CUDA Toolkit 13.5.
   //!
   //! This is an environment-based API that allows customization of:
   //!
