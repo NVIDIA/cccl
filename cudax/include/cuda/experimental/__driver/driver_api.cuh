@@ -31,14 +31,13 @@
 
 #  include <cuda/std/__cccl/prologue.h>
 
-// Get a driver function pointer, casting to the PFN typedef for type safety.
+// Get a non-throwing driver function result using the PFN typedef for type safety.
 // Uses PFN_ typedefs from cudaTypedefs.h to avoid ABI mismatches caused by
 // #define'd version aliases in cuda.h (e.g. #define cuFoo cuFoo_v2).
 // The ## operator suppresses macro expansion of the function name, so this is
 // safe even for names that are #define'd to versioned variants.
-#  define _CUDAX_GET_DRIVER_FUNCTION(pfn_name, major, minor)    \
-    reinterpret_cast<::PFN_##pfn_name##_v##major##0##minor##0>( \
-      ::cuda::__driver::__get_driver_entry_point(#pfn_name, major, minor))
+#  define _CUDAX_GET_DRIVER_FUNCTION(pfn_name, major, minor) \
+    _CCCLRT_GET_DRIVER_FUNCTION_TYPED(::PFN_##pfn_name##_v##major##0##minor##0, #pfn_name, major, minor)
 
 namespace cuda::experimental::__driver
 {
@@ -49,9 +48,9 @@ namespace cuda::experimental::__driver
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraphNode __graphAddNode(
   ::CUgraph __graph, const ::CUgraphNode* __deps, ::cuda::std::size_t __ndeps, ::CUgraphNodeParams* __params)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddNode, 12, 2);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddNode, 12, 2);
   ::CUgraphNode __node{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to add a node to graph", &__node, __graph, __deps, __ndeps, __params);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to add a node to graph", &__node, __graph, __deps, __ndeps, __params);
   return __node;
 }
 
@@ -72,7 +71,7 @@ struct __graphAddMemAllocNodeResult
   ::cuda::std::size_t __bytesize,
   int __device_id)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddMemAllocNode, 11, 4);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddMemAllocNode, 11, 4);
   ::CUgraphNode __node{};
   ::CUDA_MEM_ALLOC_NODE_PARAMS __params{};
   __params.poolProps.allocType   = ::CU_MEM_ALLOCATION_TYPE_PINNED;
@@ -87,7 +86,7 @@ struct __graphAddMemAllocNodeResult
   __params.accessDescs     = &__access_desc;
   __params.accessDescCount = 1;
 
-  _CCCL_TRY_DRIVER_API(
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __driver_fn, "Failed to add a memory allocation node to graph", &__node, __graph, __deps, __ndeps, &__params);
   return {__node, __params.dptr};
 }
@@ -99,15 +98,15 @@ struct __graphAddMemAllocNodeResult
 struct __graphAddMemFreeNodeResult
 {
   ::CUgraphNode __node;
-  ::cudaError_t __status;
+  ::cuda::__driver::__driver_status __status;
 };
 
 [[nodiscard]] _CCCL_HOST_API inline __graphAddMemFreeNodeResult __graphAddMemFreeNodeNoThrow(
   ::CUgraph __graph, const ::CUgraphNode* __deps, ::cuda::std::size_t __ndeps, ::CUdeviceptr __dptr) noexcept
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddMemFreeNode, 11, 4);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddMemFreeNode, 11, 4);
   ::CUgraphNode __node{};
-  auto __status = static_cast<::cudaError_t>(__driver_fn(&__node, __graph, __deps, __ndeps, __dptr));
+  const auto __status = _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, &__node, __graph, __deps, __ndeps, __dptr);
   return {__node, __status};
 }
 
@@ -115,15 +114,15 @@ struct __graphAddMemFreeNodeResult
 
 _CCCL_HOST_API inline void __graphRetainUserObject(::CUgraph __graph, void* __ptr, ::CUhostFn __destroy)
 {
-  static auto __create_fn = _CUDAX_GET_DRIVER_FUNCTION(cuUserObjectCreate, 11, 3);
-  static auto __retain_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphRetainUserObject, 11, 3);
+  static const auto __create_fn = _CUDAX_GET_DRIVER_FUNCTION(cuUserObjectCreate, 11, 3);
+  static const auto __retain_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphRetainUserObject, 11, 3);
 
   ::CUuserObject __obj{};
-  _CCCL_TRY_DRIVER_API(
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __create_fn, "Failed to create user object", &__obj, __ptr, __destroy, 1u, ::CU_USER_OBJECT_NO_DESTRUCTOR_SYNC);
   // CU_GRAPH_USER_OBJECT_MOVE transfers our reference to the graph without incrementing.
   // After this call, the graph owns the sole reference — do not release.
-  _CCCL_TRY_DRIVER_API(
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __retain_fn, "Failed to retain user object on graph", __graph, __obj, 1u, ::CU_GRAPH_USER_OBJECT_MOVE);
 }
 
@@ -134,9 +133,9 @@ _CCCL_HOST_API inline void __graphRetainUserObject(::CUgraph __graph, void* __pt
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraphConditionalHandle
 __graphConditionalHandleCreate(::CUgraph __graph, ::CUcontext __ctx, unsigned int __default_val, unsigned int __flags)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphConditionalHandleCreate, 12, 3);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphConditionalHandleCreate, 12, 3);
   ::CUgraphConditionalHandle __handle{};
-  _CCCL_TRY_DRIVER_API(
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __driver_fn, "Failed to create a conditional handle", &__handle, __graph, __ctx, __default_val, __flags);
   return __handle;
 }
@@ -147,27 +146,27 @@ __graphConditionalHandleCreate(::CUgraph __graph, ::CUcontext __ctx, unsigned in
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraph __graphCreate()
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphCreate, 10, 0);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphCreate, 10, 0);
   ::CUgraph __graph{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to create graph", &__graph, 0u);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to create graph", &__graph, 0u);
   return __graph;
 }
 
 // ── Graph: destroy (no-throw, for use in destructors) ───────────────────────
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __graphDestroyNoThrow(::CUgraph __graph) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__driver::__driver_status __graphDestroyNoThrow(::CUgraph __graph) noexcept
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphDestroy, 10, 0);
-  return static_cast<::cudaError_t>(__driver_fn(__graph));
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphDestroy, 10, 0);
+  return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __graph);
 }
 
 // ── Graph: clone ────────────────────────────────────────────────────────────
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraph __graphClone(::CUgraph __original)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphClone, 10, 0);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphClone, 10, 0);
   ::CUgraph __clone{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to clone graph", &__clone, __original);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to clone graph", &__clone, __original);
   return __clone;
 }
 
@@ -175,9 +174,9 @@ __graphConditionalHandleCreate(::CUgraph __graph, ::CUcontext __ctx, unsigned in
 
 [[nodiscard]] _CCCL_HOST_API inline ::cuda::std::size_t __graphGetNodeCount(::CUgraph __graph)
 {
-  static auto __driver_fn     = _CUDAX_GET_DRIVER_FUNCTION(cuGraphGetNodes, 10, 0);
-  ::cuda::std::size_t __count = 0;
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to get graph node count", __graph, nullptr, &__count);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphGetNodes, 10, 0);
+  ::cuda::std::size_t __count   = 0;
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to get graph node count", __graph, nullptr, &__count);
   return __count;
 }
 
@@ -185,9 +184,9 @@ __graphConditionalHandleCreate(::CUgraph __graph, ::CUcontext __ctx, unsigned in
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraphExec __graphInstantiate(::CUgraph __graph, unsigned long long __flags = 0)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphInstantiateWithFlags, 11, 4);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphInstantiateWithFlags, 11, 4);
   ::CUgraphExec __exec{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to instantiate graph", &__exec, __graph, __flags);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to instantiate graph", &__exec, __graph, __flags);
   return __exec;
 }
 
@@ -195,16 +194,17 @@ __graphConditionalHandleCreate(::CUgraph __graph, ::CUcontext __ctx, unsigned in
 
 _CCCL_HOST_API inline void __graphLaunch(::CUgraphExec __exec, ::CUstream __stream)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphLaunch, 10, 0);
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to launch graph", __exec, __stream);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphLaunch, 10, 0);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to launch graph", __exec, __stream);
 }
 
 // ── Graph exec: destroy (no-throw, for use in destructors) ──────────────────
 
-[[nodiscard]] _CCCL_HOST_API inline ::cudaError_t __graphExecDestroyNoThrow(::CUgraphExec __exec) noexcept
+[[nodiscard]] _CCCL_HOST_API inline ::cuda::__driver::__driver_status
+__graphExecDestroyNoThrow(::CUgraphExec __exec) noexcept
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphExecDestroy, 10, 0);
-  return static_cast<::cudaError_t>(__driver_fn(__exec));
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphExecDestroy, 10, 0);
+  return _CCCLRT_CALL_DRIVER_FUNCTION(__driver_fn, __exec);
 }
 
 // ── Graph: add empty node ───────────────────────────────────────────────────
@@ -212,9 +212,9 @@ _CCCL_HOST_API inline void __graphLaunch(::CUgraphExec __exec, ::CUstream __stre
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraphNode
 __graphAddEmptyNode(::CUgraph __graph, const ::CUgraphNode* __deps, ::cuda::std::size_t __ndeps)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddEmptyNode, 10, 0);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddEmptyNode, 10, 0);
   ::CUgraphNode __node{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to add an empty node to graph", &__node, __graph, __deps, __ndeps);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to add an empty node to graph", &__node, __graph, __deps, __ndeps);
   return __node;
 }
 
@@ -223,8 +223,8 @@ __graphAddEmptyNode(::CUgraph __graph, const ::CUgraphNode* __deps, ::cuda::std:
 _CCCL_HOST_API inline void __graphAddDependencies(
   ::CUgraph __graph, const ::CUgraphNode* __from, const ::CUgraphNode* __to, ::cuda::std::size_t __ndeps)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddDependencies, 10, 0);
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to add graph dependencies", __graph, __from, __to, __ndeps);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddDependencies, 10, 0);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to add graph dependencies", __graph, __from, __to, __ndeps);
 }
 
 #  if _CCCL_CTK_AT_LEAST(12, 3)
@@ -235,8 +235,9 @@ _CCCL_HOST_API inline void __graphAddDependencies(
   ::cuda::std::size_t __ndeps,
   const ::CUgraphEdgeData* __edge_data)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddDependencies, 12, 3);
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to add graph dependencies", __graph, __from, __to, __edge_data, __ndeps);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphAddDependencies, 12, 3);
+  _CCCLRT_TRY_DRIVER_FUNCTION(
+    __driver_fn, "Failed to add graph dependencies", __graph, __from, __to, __edge_data, __ndeps);
 }
 #  endif // _CCCL_CTK_AT_LEAST(12, 3)
 
@@ -244,9 +245,9 @@ _CCCL_HOST_API inline void __graphAddDependencies(
 
 [[nodiscard]] _CCCL_HOST_API inline ::CUgraphNodeType __graphNodeGetType(::CUgraphNode __node)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphNodeGetType, 10, 0);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuGraphNodeGetType, 10, 0);
   ::CUgraphNodeType __type{};
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to get graph node type", __node, &__type);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to get graph node type", __node, &__type);
   return __type;
 }
 
@@ -261,8 +262,8 @@ _CCCL_HOST_API inline void __streamBeginCaptureToGraph(
   ::cuda::std::size_t __ndeps,
   ::CUstreamCaptureMode __mode)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamBeginCaptureToGraph, 12, 3);
-  _CCCL_TRY_DRIVER_API(
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamBeginCaptureToGraph, 12, 3);
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __driver_fn, "Failed to begin stream capture to graph", __stream, __graph, __deps, nullptr, __ndeps, __mode);
 }
 
@@ -281,8 +282,8 @@ __streamGetCaptureInfo(::CUstream __stream, const ::CUgraphEdgeData** __edge_dat
 {
   __stream_capture_info __info{};
 #    if _CCCL_CTK_AT_LEAST(12, 4)
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCaptureInfo, 12, 3);
-  _CCCL_TRY_DRIVER_API(
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCaptureInfo, 12, 3);
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __driver_fn,
     "Failed to get stream capture info",
     __stream,
@@ -294,9 +295,9 @@ __streamGetCaptureInfo(::CUstream __stream, const ::CUgraphEdgeData** __edge_dat
     &__info.__ndeps);
 #    else
   _CCCL_ASSERT(__edge_data_out == nullptr, "Edge data requires CUDA Toolkit 12.4 or later");
-  __info.__edge_data      = nullptr;
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCaptureInfo, 11, 3);
-  _CCCL_TRY_DRIVER_API(
+  __info.__edge_data            = nullptr;
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamGetCaptureInfo, 11, 3);
+  _CCCLRT_TRY_DRIVER_FUNCTION(
     __driver_fn,
     "Failed to get stream capture info",
     __stream,
@@ -313,8 +314,8 @@ __streamGetCaptureInfo(::CUstream __stream, const ::CUgraphEdgeData** __edge_dat
 
 _CCCL_HOST_API inline void __streamEndCapture(::CUstream __stream, ::CUgraph* __graph_out)
 {
-  static auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamEndCapture, 10, 0);
-  _CCCL_TRY_DRIVER_API(__driver_fn, "Failed to end stream capture", __stream, __graph_out);
+  static const auto __driver_fn = _CUDAX_GET_DRIVER_FUNCTION(cuStreamEndCapture, 10, 0);
+  _CCCLRT_TRY_DRIVER_FUNCTION(__driver_fn, "Failed to end stream capture", __stream, __graph_out);
 }
 
 #  endif // _CCCL_CTK_AT_LEAST(12, 3)

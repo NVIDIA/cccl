@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -51,8 +51,7 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_CCCL_BEGIN_NAMESPACE_CUDA
 // constexpr 2^__e for FpType (host/device, no <cmath>). __e is small in magnitude here and every
 // result used by the numeric_limits specialization is an exact power of two, so the repeated product
 // is exact.
@@ -68,19 +67,19 @@ template <class _FpType>
   }
   return __r;
 }
-} // namespace cuda::experimental
+_CCCL_END_NAMESPACE_CUDA
 
 _CCCL_BEGIN_NAMESPACE_CUDA_STD
 
-template <class _FpType, ::cuda::experimental::fpmp2_accuracy _Met>
-class numeric_limits<::cuda::experimental::fpmp2<_FpType, _Met>>
+template <class _FpType, ::cuda::fpmp2_accuracy _Met>
+class numeric_limits<::cuda::fpmp2<_FpType, _Met>>
 {
 private:
   // numeric_limits of the underlying IEEE-754 component type (float or double).
   using __base = numeric_limits<_FpType>;
 
 public:
-  using type = ::cuda::experimental::fpmp2<_FpType, _Met>;
+  using type = ::cuda::fpmp2<_FpType, _Met>;
 
   static constexpr bool is_specialized = true;
 
@@ -103,18 +102,16 @@ public:
   // Smallest all-normal value: hi = FpType_min scaled up by p so that lo is still normal.
   _CCCL_HOST_DEVICE_API static constexpr type min() noexcept
   {
-    return type(__base::min() * ::cuda::experimental::__fpmp_limits_exp2<_FpType>(__base::digits), _FpType(0));
+    return type(__base::min() * ::cuda::__fpmp_limits_exp2<_FpType>(__base::digits), _FpType(0));
   }
   // Largest value: hi = FpType_max, plus the largest lo that keeps (hi, lo) non-overlapping.
   _CCCL_HOST_DEVICE_API static constexpr type max() noexcept
   {
-    return type(__base::max(),
-                __base::max() * ::cuda::experimental::__fpmp_limits_exp2<_FpType>(-(__base::digits + 1)));
+    return type(__base::max(), __base::max() * ::cuda::__fpmp_limits_exp2<_FpType>(-(__base::digits + 1)));
   }
   _CCCL_HOST_DEVICE_API static constexpr type lowest() noexcept
   {
-    return type(-__base::max(),
-                -(__base::max() * ::cuda::experimental::__fpmp_limits_exp2<_FpType>(-(__base::digits + 1))));
+    return type(-__base::max(), -(__base::max() * ::cuda::__fpmp_limits_exp2<_FpType>(-(__base::digits + 1))));
   }
 
   static constexpr bool is_integer = false;
@@ -122,7 +119,7 @@ public:
   static constexpr int radix       = __base::radix;
   _CCCL_HOST_DEVICE_API static constexpr type epsilon() noexcept
   {
-    return type(::cuda::experimental::__fpmp_limits_exp2<_FpType>(1 - digits), _FpType(0));
+    return type(::cuda::__fpmp_limits_exp2<_FpType>(1 - digits), _FpType(0));
   }
   _CCCL_HOST_DEVICE_API static constexpr type round_error() noexcept
   {

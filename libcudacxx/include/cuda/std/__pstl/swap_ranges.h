@@ -23,22 +23,18 @@
 
 #if _CCCL_HOSTED()
 
-#  include <cuda/__functional/address_stability.h>
 #  include <cuda/__iterator/counting_iterator.h>
 #  include <cuda/__iterator/zip_iterator.h>
 #  include <cuda/__nvtx/nvtx.h>
 #  include <cuda/std/__algorithm/iter_swap.h>
 #  include <cuda/std/__algorithm/swap_ranges.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__execution/policy.h>
-#  include <cuda/std/__iterator/concepts.h>
 #  include <cuda/std/__iterator/distance.h>
 #  include <cuda/std/__iterator/incrementable_traits.h>
 #  include <cuda/std/__iterator/iterator_traits.h>
 #  include <cuda/std/__iterator/next.h>
 #  include <cuda/std/__pstl/dispatch.h>
 #  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_execution_policy.h>
 #  include <cuda/std/__type_traits/is_swappable.h>
 #  include <cuda/std/__utility/move.h>
@@ -46,8 +42,8 @@
 #  include <cuda/std/tuple>
 
 #  if _CCCL_HAS_BACKEND_CUDA()
-#    include <cuda/std/__pstl/cuda/for_each_n.h>
-#    include <cuda/std/__pstl/cuda/transform.h>
+#    include <cuda/std/__pstl/cuda/for_each_n.h> // IWYU pragma: keep
+#    include <cuda/std/__pstl/cuda/transform.h> // IWYU pragma: keep
 #  endif // _CCCL_HAS_BACKEND_CUDA()
 
 #  include <cuda/std/__cccl/prologue.h>

@@ -26,7 +26,7 @@
 #  include <cuda/std/__fwd/simd.h>
 #  include <cuda/std/__simd/abi.h>
 #  include <cuda/std/__simd/specializations/fixed_size_vec.h>
-#  include <cuda/std/__simd/specializations/fp32x2_intrinsics_array.h>
+#  include <cuda/std/__simd/specializations/fp32x2_intrinsics_array.h> // IWYU pragma: keep
 
 #  include <nv/target>
 

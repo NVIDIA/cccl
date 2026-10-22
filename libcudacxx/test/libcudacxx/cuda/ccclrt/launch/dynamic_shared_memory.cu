@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -106,3 +106,48 @@ C2H_TEST("Dynamic shared memory option", "[launch]")
   test_ref(stream);
   test_span(stream);
 }
+
+#if _CCCL_CTK_AT_LEAST(13, 2)
+__global__ void shared_memory_mode_kernel()
+{
+  extern __shared__ int shared[];
+  shared[0] = 42;
+  CCCLRT_REQUIRE_DEVICE(shared[0] == 42);
+}
+
+C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
+{
+  if (cuda::__driver::__version_below(13, 2))
+  {
+    SKIP("per-launch shared memory mode requires a CUDA 13.2 driver");
+  }
+
+  cuda::device_ref device = cuda::devices[0];
+  cuda::stream stream{device};
+  CUDART(cudaFuncSetAttribute(shared_memory_mode_kernel, cudaFuncAttributeMaxDynamicSharedMemorySize, 0));
+
+  auto dims = cuda::make_hierarchy(cuda::block_dims<1>(), cuda::grid_dims<1>());
+  SECTION("Portable shared memory")
+  {
+    auto config = cuda::make_config(dims, cuda::dynamic_shared_memory<int[128]>());
+    cuda::launch(stream, config, shared_memory_mode_kernel);
+  }
+  SECTION("Non-portable shared memory")
+  {
+    constexpr int num_ints = 13 * 1024;
+    int max_shared_memory{};
+    CUDART(cudaDeviceGetAttribute(&max_shared_memory, cudaDevAttrMaxSharedMemoryPerBlockOptin, device.get()));
+    if (static_cast<cuda::std::size_t>(max_shared_memory) < num_ints * sizeof(int))
+    {
+      SKIP("device does not support the requested non-portable shared memory size");
+    }
+    auto config = cuda::make_config(dims, cuda::dynamic_shared_memory<int[num_ints]>(cuda::non_portable));
+    cuda::launch(stream, config, shared_memory_mode_kernel);
+  }
+  stream.sync();
+
+  cudaFuncAttributes attributes{};
+  CUDART(cudaFuncGetAttributes(&attributes, shared_memory_mode_kernel));
+  CCCLRT_REQUIRE(attributes.maxDynamicSharedSizeBytes == 0);
+}
+#endif // _CCCL_CTK_AT_LEAST(13, 2)

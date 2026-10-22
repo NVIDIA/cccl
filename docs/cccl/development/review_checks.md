@@ -22,6 +22,7 @@ Each guideline is a section of the form:
 <!-- provenance (optional):
   #<introducing PR>→#<fixing PR> <short note>;
   review feedback on #<PR> (<link>) <short note>;
+  <third-party source> (<link>) <short note>;
   ...
 -->
 
@@ -33,10 +34,11 @@ Each guideline is a section of the form:
 - `<severity>` — `critical` (must be addressed), `important` (not addressing requires a justification),
   or `suggestion` (worth considering, no action required).
 - `<scope>` — which files/diffs the rule applies to.
-- The provenance comment is optional. When the rule was distilled from a historical regression
-  (introducing PR → fixing PR) or review feedback that prevented a defect from shipping
-  (link to the review comment), list it there; it is metadata for maintainers, not part of the
-  rule. Omit the comment entirely for a rule that was not distilled from such a case.
+- The provenance comment is optional and lists where the rule comes from: a historical regression
+  (introducing PR → fixing PR), review feedback that prevented a defect from shipping (link to the
+  review comment), or a third-party source the rule was adapted from (name + link). It is metadata
+  for maintainers, not part of the rule. Omit the comment entirely for a rule that was not derived
+  from such a case.
 - Rules are grouped by area, in the order `build`, `correctness`, `api`, `abi`, `perf`,
   `test`, `infra`, `docs`.
 
@@ -129,17 +131,25 @@ at the kernel launcher, flag any global-memory access in the kernel's body that 
 call to `_CCCL_PDL_GRID_DEPENDENCY_SYNC` by that thread — the previous kernel's writes may not be
 visible yet — unless the access has a comment explaining why a PDL sync can come later.
 
-## correctness.trivially-copyable-trait (important, generic code constraining or branching on trivial copyability)
+## correctness.divergent-collective (critical, CUDA device code adding, moving, or newly guarding block/warp collectives, barriers, or early exits)
 
 <!-- provenance:
-  #8210→#8254 warp_shuffle static_assert(cuda::std::is_trivially_copyable_v) rejected __half/__nv_bfloat16 and composites, breaking CUB consumers; reverted
+  NVIDIA CUDA C++ Programming Guide, Synchronization Functions (https://docs.nvidia.com/cuda/cuda-c-programming-guide/#synchronization-functions);
+  rapidsai/cudf and rapidsai/raft cpp/REVIEW_GUIDELINES.md CUDA-kernel checklists
 -->
 
-Flag `cuda::std::is_trivially_copyable(_v)` or `std::is_trivially_copyable(_v)` applied to a generic
-value-type parameter;
-use `cuda::is_trivially_copyable(_v)` instead, which supports more cases. The vendor headers give
-`__half`/`__nv_bfloat16` non-trivial special members, so the standard trait reports false for them
-(and aggregates of them) even though they are functionally copyable. Candidate for a pre-commit grep.
+When a diff places `__syncthreads()`, `__syncwarp(...)`, or a CUB block/warp collective (any
+`cub::Block*`/`Warp*` member call — these synchronize internally) under thread-dependent control
+flow, or adds a thread-dependent early exit (`if (...) return;`, `break`, `continue`) upstream of
+an existing one, flag it: threads that skip a barrier other threads reach deadlock the block or
+corrupt the collective's shared state. Tests where all threads take the same path never exercise
+the divergent case, so this ships silently. Acceptable only if the governing condition is uniform
+across the operation's scope: block-uniform for `__syncthreads()` and `cub::Block*` collectives
+(computed identically in every thread from `blockIdx`/`blockDim`/kernel arguments), or uniform
+across the participating lanes for `__syncwarp(mask)` and `cub::Warp*` collectives (a
+warp-dependent but lane-uniform guard like `if (warp_id == 0)` is fine when every lane named in
+the mask reaches the call); verify the uniformity from the surrounding code rather than taking a
+guard's presence on faith.
 
 ## api.internal-symbol-exposure (important, new implementation-detail types/functions)
 
@@ -533,6 +543,24 @@ policy struct shifting every positional brace-init (`ScanLookaheadPolicy{6, 104 
 dispatch wrapper no longer forwarding its policy selector to an inner dispatch call. A claim of "no
 SASS changes" verified on one test type is not sufficient; demand a SASS diff or benchmark sweep over
 non-default/non-primitive value types and every affected architecture.
+
+## perf.arch-gate-coverage (important, tuning-policy selectors conditioned on compute capability in `cub/cub/device/dispatch/tuning/**`)
+
+<!-- provenance:
+  #10923→#10943 adding Rubin (cc 10.7) tunings as an open-ended `cc >= {10,7}` branch silently re-routed consumer Blackwell (cc 12.0), which had deliberately inherited the SM100 tunings
+-->
+
+When a diff touches a policy selector — changing a compute-capability condition, or changing, adding,
+or removing policy values — work out for every existing architecture (see
+`_CCCL_KNOWN_CUDA_ARCH_LIST` in `libcudacxx/include/cuda/std/__cccl/execution_space.h`) whether the
+policy or values it receives change, including architectures that previously fell through to an older
+branch. The architectures affected by the diff must be exactly those that were benchmarked. A
+condition `cc >= X` with existing architectures above X is a deliberate choice to serve multiple
+architectures from the same branch and fine as-is — the hazard is a diff changing what those
+architectures receive: inserting a higher-cc branch in front of it, with an even higher-cc
+architecture existing, re-routes that architecture too (new cc 10.7 tunings capturing cc 12.0, which
+inherited the cc 10.0 tunings on purpose), and editing the branch's values changes them all. Flag each affected, unbenchmarked architecture; the author must bound the
+condition or provide benchmarks for what it captures.
 
 ## perf.shared-primitive-consumers (important, shared thread/warp/block-scope primitives in cub/thrust/libcudacxx)
 

@@ -28,6 +28,10 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/device_memory_resource.cuh>
 #include <cub/detail/env_dispatch.cuh>
+#include <cub/detail/future_value.cuh>
+#include <cub/detail/input_value.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/temporary_storage.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
@@ -143,6 +147,7 @@ CUB_NAMESPACE_BEGIN
 //! @endrst
 struct DeviceScan
 {
+private:
   //! @cond
   template <ForceInclusive EnforceInclusive = ForceInclusive::No,
             bool StableReductionOrder       = false,
@@ -289,6 +294,7 @@ struct DeviceScan
   }
   //! @endcond
 
+public:
   //! @name Exclusive scans
   //! @{
 

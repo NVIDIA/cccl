@@ -19,7 +19,21 @@
 
 #include <cuda/__device/compute_capability.h>
 
+// By default, CUB uses `cub::detail::TripleChevronFactory` to access the CUDA runtime.
+// The `CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY` indirection is used to override the default kernel launcher factory
+// in CUB tests. This allows us to:
+//   1. retrieve kernel pointers on the usage side of the API, and
+//   2. validate use of specified CUDA stream by accelerated algorithms.
+#ifndef CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY
+#  define CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY cub::detail::TripleChevronFactory
+#endif
+
 CUB_NAMESPACE_BEGIN
+
+namespace experimental
+{
+class DeviceDescription;
+} // namespace experimental
 
 namespace detail
 {
@@ -81,7 +95,7 @@ struct TripleChevronFactory
 
   template <typename Kernel>
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t
-  MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0)
+  MaxSmOccupancy(int& sm_occupancy, Kernel kernel_ptr, int block_size, int dynamic_smem_bytes = 0) const
   {
     return ::cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
@@ -146,6 +160,66 @@ struct TripleChevronFactory
   _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION ::cudaError_t set_max_dynamic_smem_size_for(Kernel kernel_ptr, int smem_size)
   {
     return CubDebug(::cudaFuncSetAttribute(kernel_ptr, cudaFuncAttributeMaxDynamicSharedMemorySize, smem_size));
+  }
+};
+
+/**
+ * Kernel dispatch configuration
+ */
+struct KernelConfig
+{
+  int threads_per_block{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
+
+  // TODO(bgruber): remove this overload in CCCL 4.0 when we drop the public dispatchers
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    threads_per_block = cub::detail::MakePolicyWrapper(agent_policy).ThreadsPerBlock();
+    items_per_thread  = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
+  }
+
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory,
+            // This is always experimental::DeviceDescription, but we must make it a template
+            // argument to stop compilers type-checking on incomplete types, because we don't
+            // want to include the whole header for it here.
+            //
+            // The translation units that call this overload will already include the
+            // appropriate header anyways.
+            typename DeviceDescriptionT = experimental::DeviceDescription>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t __init(
+    KernelPtrT kernel_ptr,
+    AgentPolicyT agent_policy,
+    const LauncherFactory& launcher_factory,
+    const DeviceDescriptionT& device_descr,
+    const void* d_temp_storage)
+  {
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return device_descr.__occupancy(kernel_ptr, launcher_factory, d_temp_storage, threads_per_block, 0, sm_occupancy);
+  }
+
+  // Using new tuning API conventions
+  template <typename AgentPolicyT,
+            typename KernelPtrT,
+            typename LauncherFactory = CUB_DETAIL_DEFAULT_KERNEL_LAUNCHER_FACTORY>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  __init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
+  {
+    threads_per_block = agent_policy.threads_per_block;
+    items_per_thread  = agent_policy.items_per_thread;
+    tile_size         = threads_per_block * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, threads_per_block);
   }
 };
 } // namespace detail

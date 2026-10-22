@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 
+#include <nv/target>
+
 #include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_HAS_BUILTIN(__builtin_bitreverse8)

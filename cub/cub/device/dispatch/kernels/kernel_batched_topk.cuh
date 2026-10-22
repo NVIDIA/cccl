@@ -20,6 +20,7 @@
 #include <cub/agent/agent_batched_topk_cluster.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_radix_sort.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/tuning/tuning_batched_topk.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
