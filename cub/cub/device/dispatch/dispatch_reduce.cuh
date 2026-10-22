@@ -853,8 +853,9 @@ template <typename InputIteratorT,
 _CCCL_HOST_DEVICE_API auto select_accum_t(OverrideAccumT*) -> OverrideAccumT;
 
 template <
-  typename OverrideAccumT   = use_default,
-  bool StableReductionOrder = true,
+  typename OverrideAccumT               = use_default,
+  bool StableReductionOrder             = true,
+  bool NondeterminismFellBackToRunToRun = false,
   typename InputIteratorT,
   typename OutputIteratorT,
   typename OffsetT,
@@ -919,8 +920,10 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE auto dispatch(
   return dispatch_compute_cap(policy_selector, cc, [&](auto policy_getter) {
     CUB_DETAIL_CONSTEXPR_ISH const ReducePolicy active_policy = policy_getter();
 
-    // known operators for integers are stable, even when using a non-deterministic reduction order
-    if constexpr (StableReductionOrder
+    // known operators for integers are stable, even when using a non-deterministic reduction order. If the user
+    // requested non-determinism, but we fell back to the run-to-run deterministic dispatch (e.g., because the output
+    // type differs from the accumulator type), a non-deterministic reduce_algorithm is fine as well.
+    if constexpr (StableReductionOrder && !NondeterminismFellBackToRunToRun
                   && (!::cuda::std::is_integral_v<AccumT> || !is_cuda_binary_operator<ReductionOpT>) )
     {
       CUB_DETAIL_STATIC_ISH_ASSERT(
