@@ -36,6 +36,9 @@ struct agent_t
   // The input value type
   using InputT = typename ::cuda::std::iterator_traits<InputIteratorT>::value_type;
 
+  // vectorized loads require a power-of-two vector size supported by CubVector
+  static_assert(VecSize == 1 || VecSize == 2 || VecSize == 4, "FindIfPolicy: vec_size must be 1, 2 or 4");
+
   // Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, VecSize>::Type;
 
