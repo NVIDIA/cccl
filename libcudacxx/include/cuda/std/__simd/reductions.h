@@ -113,6 +113,8 @@ reduce(const basic_vec<_Tp, _Abi>& __x,
        const type_identity_t<_Tp> __identity_element) //
   noexcept(__is_nothrow_reduction_binary_operation_v<_BinaryOperation, _Tp>)
 {
+  // we need two loops to prevent that the identity element (default to T(), not -0.0) could change the result of the
+  // reduction when the first element is -0.0 and the binary operation is plus<> or multiplies<>.
   __simd_size_type __first = 0;
   for (; __first < __x.__size; ++__first)
   {
@@ -200,7 +202,13 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>::mask_type& __mask) noexcept
 {
+  // we need two loops to prevent that the identity element (numeric_limits<_Tp>::max()) could change the result of the
+  // reduction when the first element is inf
   __simd_size_type __first = 0;
+  for (; __first < __x.__size; ++__first)
+  {
+    __simd_size_type __first = 0;
+  }
   for (; __first < __x.__size; ++__first)
   {
     if (__mask[__first])
@@ -265,6 +273,8 @@ _CCCL_REQUIRES(totally_ordered<_Tp>)
 [[nodiscard]] _CCCL_HOST_DEVICE_API constexpr _Tp
 reduce_max(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>::mask_type& __mask) noexcept
 {
+  // we need two loops to prevent that the identity element (numeric_limits<_Tp>::lowest()) could change the result of
+  // the reduction when the first element is -inf
   __simd_size_type __first = 0;
   for (; __first < __x.__size; ++__first)
   {
