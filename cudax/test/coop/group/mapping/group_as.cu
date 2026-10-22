@@ -27,7 +27,7 @@ namespace
 template <cuda::std::size_t... Ns, class Config>
 __device__ void test_group_as(Config config)
 {
-  using NsSeq = cuda::std::integer_sequence<cuda::std::size_t, Ns...>;
+  using NsSeq = cuda::std::index_sequence<Ns...>;
   constexpr unsigned ns[]{static_cast<unsigned>(Ns)...};
   constexpr cuda::std::size_t ngroups = sizeof...(Ns);
 
@@ -253,7 +253,7 @@ __device__ void test_group_as(Config config)
 template <cuda::std::size_t... Ns, class Config>
 __device__ void test_group_as_non_exhaustive(Config config)
 {
-  using NsSeq = cuda::std::integer_sequence<cuda::std::size_t, Ns...>;
+  using NsSeq = cuda::std::index_sequence<Ns...>;
   constexpr unsigned ns[]{static_cast<unsigned>(Ns)...};
   constexpr cuda::std::size_t ngroups = sizeof...(Ns);
 
