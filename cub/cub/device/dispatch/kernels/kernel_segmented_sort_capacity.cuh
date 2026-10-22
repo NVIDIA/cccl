@@ -75,12 +75,13 @@ _CCCL_KERNEL_ATTRIBUTES void segment_prefix_kernel(const unsigned* counts, unsig
   offsets[Capacities::size + 1] = prefix;
 }
 
-template <typename Entry, typename Key, typename BeginIterator, typename EndIterator, typename Compare>
-__launch_bounds__(Entry::block_threads, Entry::tuning.min_blocks_per_sm) _CCCL_KERNEL_ATTRIBUTES void sort_entry_kernel(
-  partition_result bins, BeginIterator begins, EndIterator ends, const Key* in, Key* out, Compare compare)
+template <typename Entry, typename Key, typename BeginIterator, typename EndIterator>
+__launch_bounds__(Entry::tuning.block_threads, Entry::tuning.min_blocks_per_sm)
+  _CCCL_KERNEL_ATTRIBUTES void sort_entry_kernel(
+    partition_result bins, BeginIterator begins, EndIterator ends, const Key* in, Key* out)
 {
   constexpr int bin_count  = Entry::capacities::size;
-  constexpr unsigned units = Entry::block_threads / Entry::unit_threads;
+  constexpr unsigned units = Entry::tuning.block_threads / Entry::unit_threads;
   if (static_cast<unsigned long long>(blockIdx.x) * units >= bins.bin_offsets[bin_count] - bins.bin_offsets[0])
   {
     return;
@@ -92,8 +93,8 @@ __launch_bounds__(Entry::block_threads, Entry::tuning.min_blocks_per_sm) _CCCL_K
     work_offsets[0] = 0;
     for (int bin = 0; bin < bin_count; ++bin)
     {
-      const auto shape       = Entry::expansion::shape(bin);
-      const unsigned packing = Entry::unit_threads / shape.threads;
+      const auto config      = Entry::config(bin);
+      const unsigned packing = Entry::unit_threads / config.threads;
       const unsigned count   = bins.bin_offsets[bin + 1] - bins.bin_offsets[bin];
       prefix += count / packing + (count % packing != 0);
       work_offsets[bin + 1] = prefix;
@@ -121,19 +122,18 @@ __launch_bounds__(Entry::block_threads, Entry::tuning.min_blocks_per_sm) _CCCL_K
       }
     }
     const int bin          = first - 1;
-    const auto shape       = Entry::expansion::shape(bin);
-    const unsigned packing = Entry::unit_threads / shape.threads;
-    const auto slot        = bins.bin_offsets[bin] + (work - work_offsets[bin]) * packing + lane / shape.threads;
+    const auto config      = Entry::config(bin);
+    const unsigned packing = Entry::unit_threads / config.threads;
+    const auto slot        = bins.bin_offsets[bin] + (work - work_offsets[bin]) * packing + lane / config.threads;
     Entry::implementation::invoke(
       slot < bins.bin_offsets[bin + 1] ? slot : ~0u,
-      shape,
+      config,
       bins,
       begins,
       ends,
       in,
       out,
-      reinterpret_cast<Key*>(scratch),
-      compare);
+      reinterpret_cast<Key*>(scratch));
   }
 }
 } // namespace detail::segmented_sort_capacity
