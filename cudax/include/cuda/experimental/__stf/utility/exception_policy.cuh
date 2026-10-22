@@ -3564,16 +3564,16 @@ UNITTEST("alternation and repetition nested under & and |")
   EXPECT((on_throw(catch_only<key>(subst(1)) | (catch_only<boom>(subst(2)) | subst(3))) << throw_other) == 3);
 
   // `*` with a value-answering fallback, nested under `&`.
-  int n = 0;
-  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << [&]() -> int {
-           ++n;
-           if (n < 3)
-           {
-             throw boom();
-           }
-           return n;
-         })
-         == 3);
+  int n                = 0;
+  const auto third_try = [&]() -> int {
+    ++n;
+    if (n < 3)
+    {
+      throw boom();
+    }
+    return n;
+  };
+  EXPECT((on_throw(notify(quiet) & (retry * 2 | subst(-1))) << third_try) == 3);
   n = 0;
   EXPECT((on_throw(notify(quiet) & (retry * 1 | subst(-1))) << [&]() -> int {
            ++n;
