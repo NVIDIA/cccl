@@ -8,6 +8,7 @@
 
 #include <cuda/cmath>
 #include <cuda/iterator>
+#include <cuda/std/type_traits>
 
 #include <algorithm>
 #include <cstdint>
@@ -176,6 +177,72 @@ CUB_TEST("DeviceFind::UpperBoundSortedValues almost tile-sized input sizes", "[f
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, tile_size, 1);
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, 1, tile_size - 1);
   test_sorted<value_type>(upper_bound_sorted_values, std_upper_bound, 1, tile_size);
+}
+
+struct heterogeneous_key
+{
+  int value;
+};
+
+// Only provides the (haystack, needle) and (needle, haystack) overloads required by the algorithm
+struct heterogeneous_less
+{
+  __host__ __device__ bool operator()(const heterogeneous_key& a, int b) const
+  {
+    return a.value < b;
+  }
+
+  __host__ __device__ bool operator()(int a, const heterogeneous_key& b) const
+  {
+    return a < b.value;
+  }
+};
+
+static_assert(!cuda::std::is_invocable_v<heterogeneous_less, int, int>);
+static_assert(!cuda::std::is_invocable_v<heterogeneous_less, heterogeneous_key, heterogeneous_key>);
+
+template <typename Variant, typename HostVariant>
+void test_sorted_heterogeneous(Variant variant, HostVariant host_variant)
+{
+  constexpr int range_num_items  = 7492;
+  constexpr int values_num_items = 749;
+
+  c2h::host_vector<heterogeneous_key> range_h(range_num_items);
+  for (int i = 0; i < range_num_items; ++i)
+  {
+    range_h[i] = heterogeneous_key{i / 3 * 2}; // duplicates and gaps
+  }
+  c2h::host_vector<int> values_h(values_num_items);
+  for (int i = 0; i < values_num_items; ++i)
+  {
+    values_h[i] = i * 7 - 10; // includes values before, inside, and after the range
+  }
+
+  const c2h::device_vector<heterogeneous_key> range_d = range_h;
+  const c2h::device_vector<int> values_d              = values_h;
+  c2h::device_vector<std::ptrdiff_t> offsets_d(values_num_items, thrust::default_init);
+  variant(thrust::raw_pointer_cast(range_d.data()),
+          range_num_items,
+          thrust::raw_pointer_cast(values_d.data()),
+          values_num_items,
+          thrust::raw_pointer_cast(offsets_d.data()),
+          heterogeneous_less{});
+
+  c2h::host_vector<std::ptrdiff_t> offsets_ref(values_num_items);
+  for (int i = 0; i < values_num_items; ++i)
+  {
+    offsets_ref[i] = host_variant(range_h.data(), range_h.data() + range_num_items, values_h[i], heterogeneous_less{})
+                   - range_h.data();
+  }
+  CHECK(offsets_ref == offsets_d);
+}
+
+// CUB tests are built with CCCL_ENABLE_ASSERTIONS, so this also checks that the device assertions only use comparator
+// call forms required by the algorithm
+CUB_TEST("DeviceFind sorted bounds work with a heterogeneous comparator", "[find][device][binary-search]", CUB_SMALL)
+{
+  test_sorted_heterogeneous(lower_bound_sorted_values, std_lower_bound);
+  test_sorted_heterogeneous(upper_bound_sorted_values, std_upper_bound);
 }
 
 template <typename Variant, typename HostVariant>

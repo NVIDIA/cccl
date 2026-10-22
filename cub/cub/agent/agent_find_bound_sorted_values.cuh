@@ -21,6 +21,7 @@
 #include <cub/util_namespace.cuh>
 
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
@@ -152,14 +153,19 @@ struct agent_t
     __syncthreads();
 
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int item = 0; item < ItemsPerThread; ++item)
+    // The algorithm only requires comp(haystack, needle) and comp(needle, haystack), so we can only check the
+    // sortedness of the needles if the comparator also accepts two needles.
+    if constexpr (::cuda::std::is_invocable_v<CompareOp&, const needles_type&, const needles_type&>)
     {
-      const int idx = ThreadsPerBlock * item + threadIdx.x;
-      if (idx < needles_count && (values_beg + idx) > 0)
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int item = 0; item < ItemsPerThread; ++item)
       {
-        const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
-        _CCCL_ASSERT(!compare_op(storage.needles[idx], prev), "d_values must be sorted consistently with comp");
+        const int idx = ThreadsPerBlock * item + threadIdx.x;
+        if (idx < needles_count && (values_beg + idx) > 0)
+        {
+          const needles_type prev = (idx == 0) ? d_values[values_beg - 1] : storage.needles[idx - 1];
+          _CCCL_ASSERT(!compare_op(storage.needles[idx], prev), "d_values must be sorted consistently with comp");
+        }
       }
     }
 #endif // CCCL_ENABLE_DEVICE_ASSERTIONS
