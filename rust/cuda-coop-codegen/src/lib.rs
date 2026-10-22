@@ -4,7 +4,8 @@
 //! Native, host-only CUB specialization for Rust cooperative algorithms.
 //!
 //! This private development crate compiles Load/Store, Scan, Reduce, batched
-//! Reduce, Exchange, Shuffle, Adjacent Difference and Discontinuity with NVRTC.
+//! Reduce, Exchange, Shuffle, Adjacent Difference, Discontinuity and Histogram
+//! with NVRTC.
 //! It returns linkable LTO-IR and the exact C++ scratch layout from the
 //! **same compilation**, without a CUDA context, GPU or Python dependency.
 //! It is a compiler building block, not a device API or a package release.
@@ -53,6 +54,8 @@
 //! into a fully initialized fresh output.
 //! [`DiscontinuityRequest`] compares neighboring Block items, preserving input
 //! and returning fresh i32 head flags, tail flags or both, with complete validity.
+//! [`HistogramRequest`] counts bounded integer samples in a complete 1D Block,
+//! with independent counter type/output extent and initialized zero padding.
 //! [`Provider::compile_native`] batches these families in one native compilation.
 //!
 //! [`Provider::from_checkout`] snapshots the selected CCCL and CUDA headers;
@@ -86,6 +89,7 @@ mod adjacent_difference;
 mod discontinuity;
 mod exchange;
 mod headers;
+mod histogram;
 mod reduce;
 mod reduce_batched;
 mod scan;
@@ -93,6 +97,7 @@ mod shuffle;
 pub use adjacent_difference::{AdjacentDifferenceRecipe, AdjacentDifferenceRequest};
 pub use discontinuity::{DiscontinuityRecipe, DiscontinuityRequest};
 pub use exchange::{ExchangeMode, ExchangeRecipe, ExchangeRequest};
+pub use histogram::{HistogramAlgorithm, HistogramRecipe, HistogramRequest};
 pub use reduce::{ReduceAlgorithm, ReduceForm, ReduceOperator, ReduceRecipe, ReduceRequest};
 pub use reduce_batched::{ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest};
 pub use scan::{ScanAlgorithm, ScanOperation, ScanOperator, ScanRecipe, ScanRequest};
@@ -491,6 +496,8 @@ pub enum NativeRequest {
     AdjacentDifference(AdjacentDifferenceRequest),
     /// Block head/tail flags with preserved input and one or two fresh i32 outputs.
     Discontinuity(DiscontinuityRequest),
+    /// Bounded integer samples with independent counter type and output extent.
+    Histogram(HistogramRequest),
 }
 
 impl NativeRequest {
@@ -504,6 +511,7 @@ impl NativeRequest {
             Self::Shuffle(request) => request.block_shape(),
             Self::AdjacentDifference(request) => request.block_shape(),
             Self::Discontinuity(request) => request.block_shape(),
+            Self::Histogram(request) => request.block_shape(),
         }
     }
 
@@ -517,6 +525,7 @@ impl NativeRequest {
             Self::Shuffle(request) => request.source(symbol),
             Self::AdjacentDifference(request) => request.source(symbol),
             Self::Discontinuity(request) => request.source(symbol),
+            Self::Histogram(request) => request.source(symbol),
         }
     }
 
@@ -530,6 +539,7 @@ impl NativeRequest {
             Self::Shuffle(request) => request.recipe.token().into(),
             Self::AdjacentDifference(request) => request.recipe.token().into(),
             Self::Discontinuity(request) => request.recipe.token().into(),
+            Self::Histogram(request) => request.recipe.token(),
         }
     }
 
@@ -542,7 +552,8 @@ impl NativeRequest {
             | Self::Exchange(_)
             | Self::Shuffle(_)
             | Self::AdjacentDifference(_)
-            | Self::Discontinuity(_) => false,
+            | Self::Discontinuity(_)
+            | Self::Histogram(_) => false,
         }
     }
 
@@ -558,7 +569,8 @@ impl NativeRequest {
             | Self::Exchange(_)
             | Self::Shuffle(_)
             | Self::AdjacentDifference(_)
-            | Self::Discontinuity(_) => false,
+            | Self::Discontinuity(_)
+            | Self::Histogram(_) => false,
         }
     }
 }
@@ -577,11 +589,11 @@ pub struct Layout {
 /// # Device ABI obligations
 ///
 /// The memory-tile and payload-layout requirements below describe Load/Store.
-/// Scan, Reduce, batched Reduce, Exchange, Shuffle, Adjacent Difference and
-/// Discontinuity use lane-private input and fresh output. Their ABI and validity contracts are
-/// documented by [`ScanRequest`], [`ReduceRequest`], [`ReduceBatchedRequest`],
-/// [`ExchangeRequest`], [`ShuffleRequest`], [`AdjacentDifferenceRequest`] and
-/// [`DiscontinuityRequest`].
+/// Scan, Reduce, batched Reduce, Exchange, Shuffle, Adjacent Difference,
+/// Discontinuity and Histogram use lane-private input and fresh output. Their
+/// ABI and validity contracts are documented by [`ScanRequest`], [`ReduceRequest`],
+/// [`ReduceBatchedRequest`], [`ExchangeRequest`], [`ShuffleRequest`],
+/// [`AdjacentDifferenceRequest`], [`DiscontinuityRequest`] and [`HistogramRequest`].
 ///
 /// Every thread in the selected group executes the provider in converged control
 /// flow. The group is the exact block, or one aligned Warp of the selected width.
@@ -782,6 +794,7 @@ impl Provider {
             include_bytes!("shuffle.rs"),
             include_bytes!("adjacent_difference.rs"),
             include_bytes!("discontinuity.rs"),
+            include_bytes!("histogram.rs"),
         ] {
             hash_field(&mut inputs, bytes);
         }

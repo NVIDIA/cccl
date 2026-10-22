@@ -63,6 +63,9 @@
 //! selects direction, typed outside neighbors, count and existing scratch policy.
 //! [`discontinuity`] returns fresh i32 head or tail flags, or both payloads,
 //! preserving the full-readable input's extent and minimum alignment.
+//! [`histogram`] counts a complete 1D Block's samples into fresh striped counters.
+//! [`HistogramOptions`] selects the required bin count, independent counter type
+//! and extent, Atomic or Sort algorithm, and existing scratch policy.
 //! Host payload tests need no GPU;
 //! executing hardware queries requires an Oxide-compiled CUDA kernel.
 
@@ -75,6 +78,7 @@ mod alignment;
 mod discontinuity;
 mod exchange;
 mod group;
+mod histogram;
 mod load_store;
 mod reduce;
 mod reduce_batched;
@@ -93,6 +97,10 @@ pub use discontinuity::{
 };
 pub use exchange::{
     BlockedToStriped, ExchangeGroup, ExchangeMode, ExchangeOptions, StripedToBlocked, exchange,
+};
+pub use histogram::{
+    Atomic, HistogramAlgorithm, HistogramCounter, HistogramOptions, HistogramSample, Sort,
+    histogram,
 };
 pub use load_store::{
     Algorithm, Direct, LoadOptions, LoadSource, LoadStoreGroup, StoreOptions, StoreValue, Striped,

@@ -5,12 +5,127 @@
 
 use cuda_coop_codegen::{
     AdjacentDifferenceRecipe, AdjacentDifferenceRequest, Algorithm, DiscontinuityRecipe,
-    DiscontinuityRequest, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, Layout,
-    NativeRequest, Operation, Provider, ReduceAlgorithm, ReduceBatchedLayout, ReduceBatchedRecipe,
-    ReduceBatchedRequest, ReduceForm, ReduceOperator, ReduceRequest, Request, ScanAlgorithm,
-    ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe, ShuffleRequest,
+    DiscontinuityRequest, Dtype, ExchangeMode, ExchangeRecipe, ExchangeRequest, HistogramAlgorithm,
+    HistogramRecipe, HistogramRequest, Layout, NativeRequest, Operation, Provider, ReduceAlgorithm,
+    ReduceBatchedLayout, ReduceBatchedRecipe, ReduceBatchedRequest, ReduceForm, ReduceOperator,
+    ReduceRequest, Request, ScanAlgorithm, ScanOperation, ScanOperator, ScanRequest, ShuffleRecipe,
+    ShuffleRequest,
 };
 use std::{env, path::Path, time::Instant};
+
+#[test]
+#[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
+fn native_mixed_histogram_recipes() -> Result<(), Box<dyn std::error::Error>> {
+    use HistogramAlgorithm::{Atomic, Sort};
+    let toolkit = env::var("CUDA_HOME")?;
+    let target = env::var("CUDA_COOP_TEST_TARGET").unwrap_or_else(|_| "compute_120".into());
+    let checkout = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let provider = Provider::from_checkout(&checkout, &toolkit)?;
+    // All sample/counter types, independent N/K, both algorithms and bitmap
+    // tails. The first row is the required public mixed-output checkpoint.
+    let rows = [
+        (Dtype::U8, Dtype::U64, 64, 4, 65, 2, Sort),
+        (Dtype::I32, Dtype::I32, 1, 1, 1, 1, Atomic),
+        (Dtype::U32, Dtype::U32, 33, 9, 33, 1, Sort),
+        (Dtype::U64, Dtype::I64, 1, 9, 5, 9, Atomic),
+        (Dtype::I64, Dtype::U64, 33, 4, 65, 3, Atomic),
+        (Dtype::U8, Dtype::I32, 33, 1, 257, 9, Sort),
+        (Dtype::I32, Dtype::U32, 64, 4, 32, 1, Atomic),
+        (Dtype::U8, Dtype::U64, 64, 4, 65, 2, Atomic),
+        (Dtype::U8, Dtype::U64, 64, 4, 65, 3, Sort),
+        (Dtype::U64, Dtype::U64, 64, 4, 65, 2, Sort),
+    ];
+    let mut requests = Vec::new();
+    for (sample, counter, threads, items, bins, output, algorithm) in rows {
+        requests.push(NativeRequest::Histogram(HistogramRequest::block(
+            sample,
+            HistogramRecipe::new(algorithm, counter, bins, output)?,
+            [threads, 1, 1],
+            items,
+        )?));
+    }
+    requests.extend([
+        NativeRequest::LoadStore(Request::new_typed(
+            Dtype::I32,
+            Operation::LoadFullValidity,
+            Algorithm::Direct,
+            64,
+            4,
+        )?),
+        NativeRequest::Discontinuity(DiscontinuityRequest::block(
+            Dtype::F64,
+            DiscontinuityRecipe::HeadsAndTailsBoth,
+            [4, 3, 2],
+            4,
+        )?),
+        NativeRequest::AdjacentDifference(AdjacentDifferenceRequest::block(
+            Dtype::I32,
+            AdjacentDifferenceRecipe::LeftPartialPredecessor,
+            [64, 1, 1],
+            4,
+        )?),
+    ]);
+    let artifact = provider.compile_native(&requests, &target)?;
+    assert_eq!(artifact.specializations.len(), 13);
+    assert!(!artifact.ltoir.is_empty());
+    let mut identities = std::collections::HashSet::new();
+    let mut symbols = std::collections::HashSet::new();
+    for (index, (request, entry)) in requests.iter().zip(&artifact.specializations).enumerate() {
+        assert!(identities.insert(entry.identity));
+        assert!(symbols.insert(&entry.symbol));
+        assert!(!entry.mutates_payload);
+        if index < rows.len() {
+            let (_, counter, _, _, bins, _, _) = rows[index];
+            let width = if matches!(counter, Dtype::I64 | Dtype::U64) {
+                8
+            } else {
+                4
+            };
+            let alignment = entry.cub_layout.alignment.max(width);
+            let counter_offset = entry.cub_layout.size.next_multiple_of(width);
+            assert_eq!(
+                entry.scratch,
+                Layout {
+                    size: (counter_offset + bins as usize * width).next_multiple_of(alignment),
+                    alignment,
+                }
+            );
+            assert!(entry.scratch.size > entry.cub_layout.size);
+            assert!(!entry.scratch_free);
+        } else if matches!(request, NativeRequest::LoadStore(_)) {
+            assert!(entry.scratch_free);
+            assert_eq!(entry.scratch.size, 0);
+        } else {
+            assert_eq!(entry.cub_layout, entry.scratch);
+            assert!(!entry.scratch_free);
+        }
+        eprintln!(
+            "{request:?}: CUB {:?}, scratch {:?}",
+            entry.cub_layout, entry.scratch
+        );
+    }
+    // K changes the output contract and identity without changing shared storage.
+    assert_ne!(
+        artifact.specializations[0].identity,
+        artifact.specializations[8].identity
+    );
+    assert_eq!(
+        artifact.specializations[0].scratch,
+        artifact.specializations[8].scratch
+    );
+    // The algorithm also participates in identity; Atomic still owns counters.
+    assert_ne!(
+        artifact.specializations[0].identity,
+        artifact.specializations[7].identity
+    );
+    assert!(artifact.specializations[7].scratch.size >= 65 * 8);
+    eprintln!(
+        "{} mixed Histogram/Load/Discontinuity/Adjacent Difference specializations, {} LTO bytes",
+        requests.len(),
+        artifact.ltoir.len()
+    );
+    Ok(())
+}
 
 #[test]
 #[ignore = "requires CUDA_HOME and a Linux CUDA toolkit with NVRTC LTO support"]
