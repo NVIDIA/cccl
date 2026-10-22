@@ -55,8 +55,8 @@ jobs:
       run: |
         echo "Fetch history and determine merge base..."
         git fetch origin --unshallow -q
-        git fetch origin $BASE_SHA -q
-        merge_base_sha=$(git merge-base $GITHUB_SHA $BASE_SHA)
+        git fetch origin "$BASE_SHA" -q
+        merge_base_sha=$(git merge-base "$GITHUB_SHA" "$BASE_SHA")
 
         echo "Head SHA: $GITHUB_SHA"
         echo "PR Base SHA: $BASE_SHA"
@@ -79,10 +79,10 @@ jobs:
 
         if [[ -z "${relevant_dirty_files}" ]]; then
           echo "No relevant changes detected. Skipping devcontainer testing."
-          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "skip=true" >> "$GITHUB_OUTPUT"
         else
           echo "Detected relevant changes. Continuing."
-          echo "skip=false" >> $GITHUB_OUTPUT
+          echo "skip=false" >> "$GITHUB_OUTPUT"
         fi
     - name: Get list of devcontainer.json paths and names
       if: ${{ steps.inspect-changes.outputs.skip != 'true' }}
@@ -96,13 +96,10 @@ jobs:
   verify-devcontainers:
     name: ${{matrix.devcontainer.name}}
     needs: get-devcontainer-list
-    # Stop here on forks -- these jobs can OOM public runners.
-    if: >-
-      ${{
-        github.repository == 'NVIDIA/cccl' &&
-        needs.get-devcontainer-list.outputs.skip != 'true'
-      }}
-    runs-on: 'linux-amd64-cpu4'
+    if: ${{ needs.get-devcontainer-list.outputs.skip != 'true' }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu4' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,6 +125,7 @@ jobs:
       # We don't really need sccache configured, but we need the AWS credentials envvars to be set
       # in order to avoid the devcontainer hanging waiting for GitHub authentication
     - name: Get AWS credentials for sccache bucket
+      if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
       uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
       with:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -135,11 +133,13 @@ jobs:
         role-duration-seconds: 43200 # 12 hours
     - name: Set environment variables
       run: |
-        echo "SCCACHE_BUCKET=rapids-sccache-devs" >> $GITHUB_ENV
-        echo "SCCACHE_REGION=us-east-2" >> $GITHUB_ENV
-        echo "SCCACHE_IDLE_TIMEOUT=0" >> $GITHUB_ENV
-        echo "SCCACHE_S3_USE_SSL=true" >> $GITHUB_ENV
-        echo "SCCACHE_S3_NO_CREDENTIALS=false" >> $GITHUB_ENV
+        {
+          echo "SCCACHE_BUCKET=rapids-sccache-devs"
+          echo "SCCACHE_REGION=us-east-2"
+          echo "SCCACHE_IDLE_TIMEOUT=0"
+          echo "SCCACHE_S3_USE_SSL=true"
+          echo "SCCACHE_S3_NO_CREDENTIALS=false"
+        } >> "$GITHUB_ENV"
 
     - name: Run in devcontainer
       uses: devcontainers/ci@v0.3

@@ -80,7 +80,7 @@ _CCCL_API constexpr __uint128_t __convert_to_integral(__uint128_t __val)
 template <class _Tp, bool = is_enum_v<_Tp>>
 struct __sfinae_underlying_type
 {
-  using type            = typename underlying_type<_Tp>::type;
+  using type            = underlying_type_t<_Tp>;
   using __promoted_type = decltype(((type) 1) + 0);
 };
 

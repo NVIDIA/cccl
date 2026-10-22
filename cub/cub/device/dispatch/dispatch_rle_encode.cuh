@@ -14,8 +14,10 @@
 #endif // no system header
 
 #include <cub/detail/cc_dispatch.cuh>
+#include <cub/detail/it_traits.cuh>
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
+#include <cub/detail/non_void_value.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/kernels/kernel_rle_encode_lookahead.cuh>
 #include <cub/device/dispatch/tuning/tuning_rle_encode.cuh>

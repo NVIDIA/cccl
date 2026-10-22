@@ -37,28 +37,11 @@ on:
         type: boolean
 
 jobs:
-  check-event:
-    name: Check GH Event
-    runs-on: ubuntu-latest
-    outputs:
-      ok: ${{ steps.check_gh_event.outputs.ok }}
-    steps:
-      - id: check_gh_event
-        name: Check GH Event
-        shell: bash
-        run: |
-          [[ '${{ github.event_name }}' == 'push' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
-          [[ '${{ github.event_name }}' == 'schedule' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
-          [[ '${{ github.event_name }}' == 'workflow_dispatch' && '${{ github.repository }}' == 'NVIDIA/cccl' ]] || \
-          [[ '${{ github.event_name }}' == 'pull_request' && '${{ github.repository }}' != 'NVIDIA/cccl' ]] \
-          && echo "ok=true"  | tee -a $GITHUB_OUTPUT \
-          || echo "ok=false" | tee -a $GITHUB_OUTPUT;
-
   build-rapids:
     name: "${{ matrix.libs }}"
-    if: needs.check-event.outputs.ok == 'true'
-    needs: check-event
-    runs-on: ${{ fromJSON(github.repository != 'NVIDIA/cccl' && '"ubuntu-latest"' || '"linux-amd64-cpu16"') }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu16' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -80,7 +63,7 @@ jobs:
       - name: Add NVCC problem matcher
         run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
       - uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b  # v6
-        if: ${{ github.repository == 'NVIDIA/cccl' }}
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
@@ -92,7 +75,7 @@ jobs:
           CI: true
           CONDA_ENV_CREATE_QUIET: true
           GH_TOKEN: ${{ github.token }}
-          PYTHON_VERSION: ${{ matrix.python_version }}
+          PYTHON_VERSION: ""
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
           # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "main"}'
@@ -215,7 +198,7 @@ jobs:
     name: Notify Slack of RAPIDS failure
     if: ${{ failure() && inputs.enable_slack_alerts }}
     needs: build-rapids
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Notify
         uses: slackapi/slack-github-action@v1.26.0

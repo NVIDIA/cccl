@@ -46,7 +46,9 @@ jobs:
     name: "SASS diff: ${{ inputs.id }}"
     # No GPU is necessary: the benchmarks are compiled and disassembled, not
     # run. A CPU runner is enough and is much cheaper.
-    runs-on: linux-amd64-cpu32m
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu32m' || 'ubuntu-latest' }}
     permissions:
       id-token: write
       contents: read
@@ -64,6 +66,7 @@ jobs:
           persist-credentials: false
 
       - name: Get AWS credentials for sccache bucket
+        if: ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) }}
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
@@ -72,11 +75,7 @@ jobs:
 
       - name: Prepare AWS config for devcontainer
         run: |
-          # `defaults.run.shell` sets `-u`, so an unset credential stops the job
-          # here. Without it the file would hold an empty value, the build would
-          # run with no access to the sccache bucket, and every compile would
-          # miss while the job still reported success.
-          #
+          # Credentials can be unset when AWS setup is skipped.
           # The devcontainer mounts this path to /home/coder/.aws.
           aws_dir="${{ github.workspace }}/.aws"
           mkdir -p "${aws_dir}"
@@ -87,9 +86,9 @@ jobs:
           EOF
           cat > "${aws_dir}/credentials" <<EOF
           [default]
-          aws_access_key_id=${AWS_ACCESS_KEY_ID}
-          aws_session_token=${AWS_SESSION_TOKEN}
-          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}
+          aws_access_key_id=${AWS_ACCESS_KEY_ID:-}
+          aws_session_token=${AWS_SESSION_TOKEN:-}
+          aws_secret_access_key=${AWS_SECRET_ACCESS_KEY:-}
           EOF
           chmod 0600 "${aws_dir}/credentials"
           chmod 0664 "${aws_dir}/config"
@@ -112,6 +111,8 @@ jobs:
         run: |
           mkdir -p "${ARTIFACT_ROOT}"
 
+          # LAUNCH_ARGS intentionally contains multiple launch arguments.
+          # shellcheck disable=SC2086
           .devcontainer/launch.sh \
             -d ${LAUNCH_ARGS} \
             --env "AWS_ROLE_ARN=" \

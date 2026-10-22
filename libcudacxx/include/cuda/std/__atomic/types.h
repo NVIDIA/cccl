@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__atomic/platform.h>
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__atomic/types/locked.h>
-#include <cuda/std/__atomic/types/reference.h>
 #include <cuda/std/__atomic/types/small.h>
 #include <cuda/std/__type_traits/conditional.h>
 

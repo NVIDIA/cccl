@@ -21,12 +21,15 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/class_or_enum.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/referenceable.h>
 #include <cuda/std/__concepts/swappable.h>
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iter_move.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/readable_traits.h>
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/add_lvalue_reference.h> // IWYU pragma: keep
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>

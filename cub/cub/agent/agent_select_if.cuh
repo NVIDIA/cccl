@@ -25,10 +25,13 @@
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
+#include <cub/detail/constant.cuh>
+#include <cub/detail/it_traits.cuh>
+#include <cub/detail/null_type.cuh>
 #include <cub/detail/prefetch.cuh>
+#include <cub/detail/uninitialized.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
-#include <cub/util_type.cuh>
 
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -138,15 +141,6 @@ struct partition_distinct_output_t
   selected_iterator_t selected_it;
   rejected_iterator_t rejected_it;
 };
-
-template <typename OutputIterator>
-struct is_partition_distinct_output_t : ::cuda::std::false_type
-{};
-
-template <typename SelectedOutputItT, typename RejectedOutputItT>
-struct is_partition_distinct_output_t<partition_distinct_output_t<SelectedOutputItT, RejectedOutputItT>>
-    : ::cuda::std::true_type
-{};
 
 /**
  * @brief AgentSelectIf implements a stateful abstraction of CUDA thread blocks for participating in
