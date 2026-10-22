@@ -33,7 +33,6 @@ jobs:
   build-workflow:
     name: Build workflow from matrix
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'NVIDIA/cccl' }}
     permissions:
       contents: read
       pull-requests: write
@@ -220,7 +219,12 @@ jobs:
           allow_override: "true"
           inspect_changes_script: 'ci/inspect_changes.py'
           inspect_changes_base_sha: ${{ steps.export-pr-info.outputs.base_sha }}
-          workflows: ${{ github.repository == 'NVIDIA/cccl' && 'pull_request' || 'pull_request_fork' }}
+          workflows: |-
+            ${{ case(
+              github.event.repository.fork, 'pull_request_fork',
+              contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner), 'pull_request',
+              'pull_request_fork'
+            ) }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
@@ -333,11 +337,7 @@ jobs:
   verify-devcontainers:
     name: Verify Dev Containers
     needs: build-workflow
-    if: >-
-      ${{
-           needs.build-workflow.outputs.vdc_enabled == 'true' &&
-           github.repository == 'NVIDIA/cccl'
-      }}
+    if: ${{ needs.build-workflow.outputs.vdc_enabled == 'true' }}
     permissions:
       id-token: write
       contents: read
@@ -351,10 +351,11 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pr_number &&
-        needs.build-workflow.outputs.docs_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        needs.build-workflow.outputs.docs_enabled == 'true'
       }}
-    runs-on: ${{ github.repository == 'NVIDIA/cccl' && 'linux-amd64-cpu32' || 'ubuntu-latest' }}
+    runs-on: |-
+      ${{ contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner) &&
+          'linux-amd64-cpu32' || 'ubuntu-latest' }}
     permissions:
       contents: read
     steps:
@@ -374,7 +375,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.rapids_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -391,7 +392,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.matx_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -405,7 +406,7 @@ jobs:
     if: >-
       ${{
         needs.build-workflow.outputs.pytorch_enabled == 'true' &&
-        github.repository == 'NVIDIA/cccl'
+        contains(fromJSON('["NVIDIA", "NVIDIA-dev"]'), github.repository_owner)
       }}
     secrets: inherit
     permissions:
@@ -420,7 +421,7 @@ jobs:
     needs:
       - dispatch-groups-linux-two-stage
       - dispatch-groups-linux-standalone
-    if: ${{ !cancelled() && github.repository == 'NVIDIA/cccl' }}
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
     steps:
@@ -500,7 +501,7 @@ jobs:
       arch: ${{ matrix.arch }}
       base_ref: ${{ matrix.base_ref }}
       test_ref: ${{ matrix.test_ref }}
-      cub_filters: ${{ matrix.cub_filters }}
+      cpp_filters: ${{ matrix.cpp_filters }}
       python_filters: ${{ matrix.python_filters }}
       nvbench_args: ${{ matrix.nvbench_args }}
       nvbench_compare_args: ${{ matrix.nvbench_compare_args }}
@@ -581,7 +582,7 @@ jobs:
     needs: [build-workflow, dispatch-bench]
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Determine outcome
         id: outcome
@@ -620,7 +621,7 @@ jobs:
     permissions:
       actions: read
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Download the SASS comment artifacts
         uses: actions/download-artifact@v4
@@ -714,7 +715,7 @@ jobs:
       - dispatch-bench
       - dispatch-sass-diff
       - sass-results
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Check results
         run: |
@@ -879,7 +880,7 @@ jobs:
     needs: analyze-failures
     permissions:
       pull-requests: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Append to CI Workflow Results
         uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5

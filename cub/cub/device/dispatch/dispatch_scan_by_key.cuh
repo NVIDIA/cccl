@@ -22,6 +22,7 @@
 
 #include <cub/agent/agent_scan_by_key.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/detail/null_type.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -31,8 +32,6 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/__algorithm/min.h>

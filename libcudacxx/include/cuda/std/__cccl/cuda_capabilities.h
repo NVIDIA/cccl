@@ -49,6 +49,8 @@
     (__VA_ARGS__),                           \
     NV_IS_EXACTLY_SM_87,                     \
     (__VA_ARGS__),                           \
+    NV_IS_EXACTLY_SM_88,                     \
+    (__VA_ARGS__),                           \
     NV_IS_EXACTLY_SM_89,                     \
     (__VA_ARGS__),                           \
     NV_HAS_FEATURE_SM_103a,                  \

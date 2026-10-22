@@ -23,6 +23,7 @@
 #include <cub/agent/agent_select_if.cuh>
 #include <cub/detail/cc_dispatch.cuh>
 #include <cub/detail/it_traits.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/logging.cuh>
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -32,8 +33,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_vsmem.cuh>
-
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__type_traits/is_specialization_of.h>
@@ -699,9 +698,8 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
         _CUB_LOG_KERNEL_LAUNCH("scan_init_kernel", init_grid_size, 1, 1, INIT_KERNEL_THREADS, 0, stream, "");
 
         // Invoke scan_init_kernel to initialize tile descriptors
-        error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-            .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out));
+        error = CubDebug(detail::TripleChevronFactory{}(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+                           .doit(scan_init_kernel, tile_status, current_num_tiles, d_num_selected_out));
         if (cudaSuccess != error)
         {
           return error;
@@ -753,7 +751,7 @@ struct CCCL_DEPRECATED_BECAUSE("Use the tuning API for DeviceSelect/DevicePartit
 
         // Invoke select_if_kernel
         error = CubDebug(
-          THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(current_num_tiles, threads_per_block, 0, stream)
+          detail::TripleChevronFactory{}(current_num_tiles, threads_per_block, 0, stream)
             .doit(select_if_kernel,
                   d_in,
                   d_flags,

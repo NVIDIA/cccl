@@ -38,7 +38,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #include <cuda/__cmath/ceil_div.h>
@@ -54,7 +53,6 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda_runtime_api.h>
 #include <cudaTypedefs.h>
 
 CUB_NAMESPACE_BEGIN

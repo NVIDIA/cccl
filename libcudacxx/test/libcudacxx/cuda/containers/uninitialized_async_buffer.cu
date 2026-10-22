@@ -58,9 +58,9 @@ C2H_TEST_LIST(
   "__uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
   using __uninitialized_async_buffer = cuda::__uninitialized_async_buffer<TestType, cuda::mr::device_accessible>;
-  static_assert(!cuda::std::is_default_constructible<__uninitialized_async_buffer>::value);
-  static_assert(!cuda::std::is_copy_constructible<__uninitialized_async_buffer>::value);
-  static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value);
+  static_assert(!cuda::std::is_default_constructible_v<__uninitialized_async_buffer>);
+  static_assert(!cuda::std::is_copy_constructible_v<__uninitialized_async_buffer>);
+  static_assert(!cuda::std::is_copy_assignable_v<__uninitialized_async_buffer>);
 
   cuda::device_memory_pool_ref resource = cuda::device_default_memory_pool(cuda::device_ref{0});
   const cuda::stream stream{cuda::device_ref{0}};
@@ -132,7 +132,7 @@ C2H_TEST_LIST(
 
   SECTION("assignment")
   {
-    static_assert(!cuda::std::is_copy_assignable<__uninitialized_async_buffer>::value);
+    static_assert(!cuda::std::is_copy_assignable_v<__uninitialized_async_buffer>);
 
     {
       const cuda::stream other_stream{cuda::device_ref{0}};
@@ -168,9 +168,9 @@ C2H_TEST_LIST(
   SECTION("access")
   {
     __uninitialized_async_buffer buf{resource, stream, 42};
-    static_assert(cuda::std::is_same<decltype(buf.begin()), TestType*>::value);
-    static_assert(cuda::std::is_same<decltype(buf.end()), TestType*>::value);
-    static_assert(cuda::std::is_same<decltype(buf.data()), TestType*>::value);
+    static_assert(cuda::std::is_same_v<decltype(buf.begin()), TestType*>);
+    static_assert(cuda::std::is_same_v<decltype(buf.end()), TestType*>);
+    static_assert(cuda::std::is_same_v<decltype(buf.data()), TestType*>);
     CCCLRT_CHECK(buf.data() != nullptr);
     CCCLRT_CHECK(buf.size() == 42);
     CCCLRT_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
@@ -179,9 +179,9 @@ C2H_TEST_LIST(
     CCCLRT_CHECK(buf.stream() == stream);
     CCCLRT_CHECK(buf.memory_resource() == resource);
 
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).begin()), TestType const*>::value);
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).end()), TestType const*>::value);
-    static_assert(cuda::std::is_same<decltype(cuda::std::as_const(buf).data()), TestType const*>::value);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(buf).begin()), TestType const*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(buf).end()), TestType const*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::as_const(buf).data()), TestType const*>);
     CCCLRT_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CCCLRT_CHECK(cuda::std::as_const(buf).size() == 42);
     CCCLRT_CHECK(cuda::std::as_const(buf).size_bytes() == 42 * sizeof(TestType));
