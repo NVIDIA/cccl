@@ -207,10 +207,6 @@ reduce_min(const basic_vec<_Tp, _Abi>& __x, const typename basic_vec<_Tp, _Abi>:
   __simd_size_type __first = 0;
   for (; __first < __x.__size; ++__first)
   {
-    __simd_size_type __first = 0;
-  }
-  for (; __first < __x.__size; ++__first)
-  {
     if (__mask[__first])
     {
       break;
