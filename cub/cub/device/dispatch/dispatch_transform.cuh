@@ -42,6 +42,7 @@
 #include <cuda/std/__tuple_dir/get.h>
 #include <cuda/std/__tuple_dir/tie.h>
 #include <cuda/std/__tuple_dir/tuple.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>

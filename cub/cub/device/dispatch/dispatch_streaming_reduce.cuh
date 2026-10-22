@@ -27,6 +27,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__functional/identity.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/limits>
 

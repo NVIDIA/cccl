@@ -32,10 +32,12 @@
 
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_integral.h>
 
 CUB_NAMESPACE_BEGIN
 

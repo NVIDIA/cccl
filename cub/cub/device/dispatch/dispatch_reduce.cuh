@@ -38,12 +38,14 @@
 
 #include <cuda/__argument/argument.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/identity.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__iterator/readable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>

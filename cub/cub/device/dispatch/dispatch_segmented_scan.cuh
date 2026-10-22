@@ -29,12 +29,15 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__device/compute_capability.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__tuple_dir/tuple.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 

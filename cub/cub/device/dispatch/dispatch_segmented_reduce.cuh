@@ -37,7 +37,9 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_empty.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/cstdint>

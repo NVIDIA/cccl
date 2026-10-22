@@ -25,6 +25,7 @@
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__numeric/add_overflow.h>
 #include <cuda/__numeric/mul_overflow.h>
 #include <cuda/std/__algorithm/max.h>

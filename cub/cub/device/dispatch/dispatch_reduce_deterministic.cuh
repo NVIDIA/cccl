@@ -44,6 +44,7 @@
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN

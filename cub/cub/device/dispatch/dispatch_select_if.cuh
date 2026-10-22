@@ -37,11 +37,13 @@
 #include <cub/util_vsmem.cuh>
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/__device/compute_capability.h>
 #include <cuda/__type_traits/is_specialization_of.h>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__limits/numeric_limits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_empty.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstdint>
 
