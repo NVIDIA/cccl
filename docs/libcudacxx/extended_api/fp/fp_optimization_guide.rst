@@ -57,7 +57,7 @@ is 1:64.
 
    * - More than 104 significand bits, or a wider exponent range than ``double``'s
      - any
-     - software binary128 (__float128) on the device sm_100 and later
+     - software binary128 (``__float128``) on the device sm_100 and later
      - nothing narrower holds it
 
    * - Beyond ``double``, up to 104 bits
