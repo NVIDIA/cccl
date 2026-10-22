@@ -37,53 +37,53 @@ C2H_TEST("Call each driver api", "[utility]")
   CUDART(cudaStreamCreate(&stream));
 
   auto ctx = driver::__ctxGetCurrent();
-  CCCLRT_REQUIRE(ctx != nullptr);
+  REQUIRE(ctx != nullptr);
 
   // Confirm pop will leave the stack empty
   driver::__ctxPop();
-  CCCLRT_REQUIRE(driver::__ctxGetCurrent() == nullptr);
+  REQUIRE(driver::__ctxGetCurrent() == nullptr);
 
   // Confirm we can push multiple times
   driver::__ctxPush(ctx);
-  CCCLRT_REQUIRE(driver::__ctxGetCurrent() == ctx);
+  REQUIRE(driver::__ctxGetCurrent() == ctx);
 
   driver::__ctxPush(ctx);
-  CCCLRT_REQUIRE(driver::__ctxGetCurrent() == ctx);
+  REQUIRE(driver::__ctxGetCurrent() == ctx);
 
   driver::__ctxPop();
-  CCCLRT_REQUIRE(driver::__ctxGetCurrent() == ctx);
+  REQUIRE(driver::__ctxGetCurrent() == ctx);
 
   // Confirm stream ctx match
   auto stream_ctx = driver::__streamGetCtx(stream);
-  CCCLRT_REQUIRE(ctx == stream_ctx);
+  REQUIRE(ctx == stream_ctx);
 
   CUDART(cudaStreamDestroy(stream));
 
-  CCCLRT_REQUIRE(driver::__deviceGet(0) == 0);
+  REQUIRE(driver::__deviceGet(0) == 0);
 
   // Confirm we can retain the primary ctx that cudart retained first
   auto primary_ctx = driver::__primaryCtxRetain(0);
-  CCCLRT_REQUIRE(ctx == primary_ctx);
+  REQUIRE(ctx == primary_ctx);
 
   driver::__ctxPop();
-  CCCLRT_REQUIRE(driver::__ctxGetCurrent() == nullptr);
+  REQUIRE(driver::__ctxGetCurrent() == nullptr);
 
-  CCCLRT_REQUIRE(driver::__isPrimaryCtxActive(0));
+  REQUIRE(driver::__isPrimaryCtxActive(0));
   // Confirm we can reset the primary context with double release
-  CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
-  CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
+  REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
+  REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
 
   // Try a third release in case curand retained the primary ctx as well
   if (driver::__isPrimaryCtxActive(0))
   {
-    CCCLRT_REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
+    REQUIRE(driver::__primaryCtxReleaseNoThrow(0) == cudaSuccess);
   }
 
-  CCCLRT_REQUIRE(!driver::__isPrimaryCtxActive(0));
+  REQUIRE(!driver::__isPrimaryCtxActive(0));
 
   // Confirm cudart can recover
   CUDART(cudaStreamCreate(&stream));
-  CCCLRT_REQUIRE(driver::__ctxGetCurrent() == ctx);
+  REQUIRE(driver::__ctxGetCurrent() == ctx);
 
   CUDART(driver::__streamDestroyNoThrow(stream));
 }
@@ -127,14 +127,14 @@ C2H_TEST("Driver function results preserve lookup and call diagnostics", "[utili
   int argument_evaluations = 0;
   const function_result available{&test_driver_call, driver::__driver_success("test_driver_call")};
   auto success = _CCCLRT_CALL_DRIVER_FUNCTION(available, (++argument_evaluations, &result), CUDA_SUCCESS);
-  CCCLRT_REQUIRE(success.__ok());
-  CCCLRT_REQUIRE(result == 42);
-  CCCLRT_REQUIRE(argument_evaluations == 1);
+  REQUIRE(success.__ok());
+  REQUIRE(result == 42);
+  REQUIRE(argument_evaluations == 1);
 
   auto failure = _CCCLRT_CALL_DRIVER_FUNCTION(available, &result, CUDA_ERROR_INVALID_VALUE);
-  CCCLRT_REQUIRE(failure.__status_ == CUDA_ERROR_INVALID_VALUE);
-  CCCLRT_REQUIRE(failure.__source_ == driver::__driver_error_source::__api_call);
-  CCCLRT_REQUIRE(failure.__api_ == available.__status_.__api_);
+  REQUIRE(failure.__status_ == CUDA_ERROR_INVALID_VALUE);
+  REQUIRE(failure.__source_ == driver::__driver_error_source::__api_call);
+  REQUIRE(failure.__api_ == available.__status_.__api_);
 
   const function_result missing{
     nullptr,
@@ -142,12 +142,12 @@ C2H_TEST("Driver function results preserve lookup and call diagnostics", "[utili
   result               = 0;
   argument_evaluations = 0;
   auto missing_call    = _CCCLRT_CALL_DRIVER_FUNCTION(missing, (++argument_evaluations, &result), CUDA_SUCCESS);
-  CCCLRT_REQUIRE(result == 0);
-  CCCLRT_REQUIRE(argument_evaluations == 0);
-  CCCLRT_REQUIRE(missing_call.__status_ == missing.__status_.__status_);
-  CCCLRT_REQUIRE(missing_call.__api_ == missing.__status_.__api_);
-  CCCLRT_REQUIRE(missing_call.__source_ == missing.__status_.__source_);
-  CCCLRT_REQUIRE(missing_call.__message_ == missing.__status_.__message_);
+  REQUIRE(result == 0);
+  REQUIRE(argument_evaluations == 0);
+  REQUIRE(missing_call.__status_ == missing.__status_.__status_);
+  REQUIRE(missing_call.__api_ == missing.__status_.__api_);
+  REQUIRE(missing_call.__source_ == missing.__status_.__source_);
+  REQUIRE(missing_call.__message_ == missing.__status_.__message_);
 }
 
 C2H_TEST("NoThrow driver API lookup reports missing symbol", "[utility]")
@@ -155,14 +155,14 @@ C2H_TEST("NoThrow driver API lookup reports missing symbol", "[utility]")
   const auto missing_symbol =
     _CCCLRT_GET_DRIVER_FUNCTION_TYPED_NO_INIT(::CUresult(CUDAAPI*)(), "__cccl_missing_driver_symbol_for_test");
 
-  CCCLRT_REQUIRE(missing_symbol.__status_ != cudaSuccess);
-  CCCLRT_REQUIRE(missing_symbol.__fn_ == nullptr);
-  CCCLRT_REQUIRE(missing_symbol.__status_.__source_ == cuda::__driver::__driver_error_source::__entry_point_lookup);
-  CCCLRT_REQUIRE(missing_symbol.__status_.__message_ != nullptr);
+  REQUIRE(missing_symbol.__status_ != cudaSuccess);
+  REQUIRE(missing_symbol.__fn_ == nullptr);
+  REQUIRE(missing_symbol.__status_.__source_ == cuda::__driver::__driver_error_source::__entry_point_lookup);
+  REQUIRE(missing_symbol.__status_.__message_ != nullptr);
 
   const auto missing_call = _CCCLRT_CALL_DRIVER_FUNCTION(missing_symbol);
-  CCCLRT_REQUIRE(missing_call.__source_ == cuda::__driver::__driver_error_source::__entry_point_lookup);
-  CCCLRT_REQUIRE(missing_call.__message_ == missing_symbol.__status_.__message_);
+  REQUIRE(missing_call.__source_ == cuda::__driver::__driver_error_source::__entry_point_lookup);
+  REQUIRE(missing_call.__message_ == missing_symbol.__status_.__message_);
 }
 
 #if TEST_HAS_EXCEPTIONS()
@@ -174,7 +174,7 @@ C2H_TEST("Driver exception translation preserves failure provenance", "[utility]
   int result = 0;
   const function_result available{&test_driver_call, driver::__driver_success("test_driver_call")};
   _CCCLRT_TRY_DRIVER_FUNCTION(available, "Operation failed", &result, CUDA_SUCCESS);
-  CCCLRT_REQUIRE(result == 42);
+  REQUIRE(result == 42);
 
   REQUIRE_THROWS_MATCHES(
     [&] {
@@ -195,6 +195,6 @@ C2H_TEST("Driver exception translation preserves failure provenance", "[utility]
     cuda::cuda_error,
     Catch::Matchers::MessageMatches(
       Catch::Matchers::ContainsSubstring("Lookup failed") && !Catch::Matchers::ContainsSubstring("Operation failed")));
-  CCCLRT_REQUIRE(result == 0);
+  REQUIRE(result == 0);
 }
 #endif // TEST_HAS_EXCEPTIONS()

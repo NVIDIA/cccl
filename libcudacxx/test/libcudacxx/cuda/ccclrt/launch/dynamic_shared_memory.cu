@@ -36,7 +36,7 @@ struct TestKernel
   TEST_DEVICE_FUNC void write_smem(T& view)
   {
     view = T{};
-    CCCLRT_REQUIRE_DEVICE(view == T{});
+    REQUIRE_DEVICE(view == T{});
   }
 
   template <cuda::std::size_t N>
@@ -45,7 +45,7 @@ struct TestKernel
     for (cuda::std::size_t i = 0; i < view.size(); ++i)
     {
       view[i] = T{};
-      CCCLRT_REQUIRE_DEVICE(view[i] == T{});
+      REQUIRE_DEVICE(view[i] == T{});
     }
   }
 };
@@ -112,7 +112,7 @@ __global__ void shared_memory_mode_kernel()
 {
   extern __shared__ int shared[];
   shared[0] = 42;
-  CCCLRT_REQUIRE_DEVICE(shared[0] == 42);
+  REQUIRE_DEVICE(shared[0] == 42);
 }
 
 C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
@@ -148,6 +148,6 @@ C2H_TEST("Dynamic shared memory preserves the function limit", "[launch]")
 
   cudaFuncAttributes attributes{};
   CUDART(cudaFuncGetAttributes(&attributes, shared_memory_mode_kernel));
-  CCCLRT_REQUIRE(attributes.maxDynamicSharedSizeBytes == 0);
+  REQUIRE(attributes.maxDynamicSharedSizeBytes == 0);
 }
 #endif // _CCCL_CTK_AT_LEAST(13, 2)

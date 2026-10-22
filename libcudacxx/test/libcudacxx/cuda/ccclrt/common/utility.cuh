@@ -131,7 +131,7 @@ struct verify_n
   TEST_DEVICE_FUNC void operator()(int* pi) const noexcept
   {
     // TODO: fix clang CUDA require macro
-    // CCCLRT_REQUIRE(*pi == N);
+    // REQUIRE(*pi == N);
     ccclrt_require_impl(*pi == N, "*pi == N", __FILE__, __LINE__, __PRETTY_FUNCTION__);
   }
 };
